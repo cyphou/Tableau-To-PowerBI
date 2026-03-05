@@ -157,14 +157,33 @@ def _build_semantic_model(datasources, report_name="Report", extra_objects=None,
         all_calculations.extend(calculations)
 
         # Collect column metadata
-        all_columns_metadata.extend(ds.get('columns', []))
+        ds_columns = ds.get('columns', [])
+        all_columns_metadata.extend(ds_columns)
 
-        for table in ds.get('tables', []):
+        # Extract physical columns from datasource-level list (excluding calculations)
+        ds_physical_cols = [c for c in ds_columns if not c.get('calculation')]
+
+        tables = ds.get('tables', [])
+        for table in tables:
             table_name = table.get('name', 'Table1')
 
             # Skip tables without a name
             if not table_name or table_name == 'Unknown':
                 continue
+
+            # Inherit datasource-level columns into tables that have none
+            # (common for Tableau Extracts: single table with columns at DS level)
+            if not table.get('columns') and ds_physical_cols and len(tables) == 1:
+                # Clean DS-level columns: strip bracket notation and skip special columns
+                cleaned_cols = []
+                for c in ds_physical_cols:
+                    raw = c.get('name', '')
+                    if raw.startswith('[:') or not raw:
+                        continue  # Skip special Tableau columns (e.g. [:Measure Names])
+                    clean = dict(c)
+                    clean['name'] = raw.strip('[]')
+                    cleaned_cols.append(clean)
+                table['columns'] = cleaned_cols
 
             col_count = len(table.get('columns', []))
 

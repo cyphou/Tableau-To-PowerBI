@@ -295,21 +295,41 @@ class PowerBIProjectGenerator:
                     sort_field = sort_def.get('field', '')
                     sort_dir = sort_def.get('direction', 'ASC')
                     sort_by = sort_def.get('sort_by', '')
+
+                    # Clean Tableau notation: strip "DatasourceName." prefix
+                    if '.' in sort_field:
+                        sort_field = sort_field.split('.', 1)[1]
+                    if '.' in sort_by:
+                        sort_by = sort_by.split('.', 1)[1]
+                    # Strip aggregation prefixes (sum:, avg:, etc.) and type suffixes (:qk, :nk)
+                    sort_field = self._clean_field_name(sort_field)
+                    sort_by = self._clean_field_name(sort_by)
                     if sort_field:
+                        # Resolve sort field and sort_by through _field_map for correct Entity/Property
+                        sort_entity = self._main_table
+                        sort_prop = sort_field
+                        if hasattr(self, '_field_map') and sort_field in self._field_map:
+                            sort_entity, sort_prop = self._field_map[sort_field]
+
                         sort_entry = {
                             "direction": "Descending" if sort_dir.upper() == 'DESC' else "Ascending"
                         }
                         if sort_by:
+                            # Resolve sort_by measure through _field_map
+                            by_entity = self._main_table
+                            by_prop = sort_by
+                            if hasattr(self, '_field_map') and sort_by in self._field_map:
+                                by_entity, by_prop = self._field_map[sort_by]
                             # Computed sort: sort category by a measure
                             sort_entry["field"] = {
                                 "Aggregation": {
-                                    "Expression": {"Column": {"Expression": {"SourceRef": {"Entity": self._main_table}}, "Property": sort_by}},
+                                    "Expression": {"Column": {"Expression": {"SourceRef": {"Entity": by_entity}}, "Property": by_prop}},
                                     "Function": 0
                                 }
                             }
                         else:
                             sort_entry["field"] = {
-                                "Column": {"Expression": {"SourceRef": {"Entity": self._main_table}}, "Property": sort_field}
+                                "Column": {"Expression": {"SourceRef": {"Entity": sort_entity}}, "Property": sort_prop}
                             }
                         query["queryState"] = query.get("queryState", {})
                         query["sortDefinition"] = {"sort": [sort_entry]}
@@ -429,9 +449,15 @@ class PowerBIProjectGenerator:
         calc_col_id = obj.get('calc_column_id', '')
         column_name = calc_id_to_caption.get(calc_col_id, '')
         if not column_name:
-            column_name = obj.get('field', obj.get('name', ''))
+            # Try the raw calc_column_id as a physical column name
+            column_name = calc_col_id if calc_col_id else obj.get('field', obj.get('name', ''))
 
-        table_name = self._find_column_table(column_name, converted_objects)
+        # Resolve table via _field_map first (more reliable), then _find_column_table
+        table_name = ''
+        if hasattr(self, '_field_map') and column_name in self._field_map:
+            table_name, column_name = self._field_map[column_name]
+        if not table_name:
+            table_name = self._find_column_table(column_name, converted_objects)
 
         vx = round(pos.get('x', 0) * scale_x)
         vy = round(pos.get('y', 0) * scale_y)
@@ -1021,10 +1047,26 @@ class PowerBIProjectGenerator:
         # Phase 1: Collect deduplicated physical tables
         best_tables = {}
         for ds in datasources:
-            for table in ds.get('tables', []):
+            tables = ds.get('tables', [])
+            # Extract physical columns from datasource-level list (excluding calculations)
+            ds_cols = [c for c in ds.get('columns', []) if not c.get('calculation')]
+            for table in tables:
                 tname = table.get('name', '?')
                 if not tname or tname == 'Unknown':
                     continue
+                # Inherit datasource-level columns into tables that have none
+                # (common for Tableau Extracts: single table with columns at DS level)
+                if not table.get('columns') and ds_cols and len(tables) == 1:
+                    # Clean DS-level columns: strip bracket notation and skip special columns
+                    cleaned_cols = []
+                    for c in ds_cols:
+                        raw = c.get('name', '')
+                        if raw.startswith('[:') or not raw:
+                            continue  # Skip special Tableau columns (e.g. [:Measure Names])
+                        clean = dict(c)
+                        clean['name'] = raw.strip('[]')
+                        cleaned_cols.append(clean)
+                    table['columns'] = cleaned_cols
                 if tname not in best_tables or len(table.get('columns', [])) > len(best_tables[tname].get('columns', [])):
                     best_tables[tname] = table
         
@@ -1043,6 +1085,10 @@ class PowerBIProjectGenerator:
             for col in t.get('columns', []):
                 cname = col.get('name', '?')
                 self._field_map[cname] = (tname, cname)
+                # Also index by caption for visual references using display name
+                caption = col.get('caption', '')
+                if caption and caption not in self._field_map:
+                    self._field_map[caption] = (tname, cname)
         
         # Phase 4: Map Tableau calculations (rawID -> caption/friendly name)
         # Measures are on the main table
@@ -1125,9 +1171,10 @@ class PowerBIProjectGenerator:
         if not fields:
             return None
         
-        # Clean field names and filter out Tableau meta-fields
+        # Clean field names and filter out Tableau meta-fields and generated geo fields
         skip_names = {'Measure Names', 'Measure Values', 'Multiple Values',
-                      ':Measure Names', ':Measure Values'}
+                      ':Measure Names', ':Measure Values',
+                      'Longitude (generated)', 'Latitude (generated)'}
         cleaned_fields = []
         seen_names = set()
         for f in fields:
@@ -1803,7 +1850,7 @@ class PowerBIProjectGenerator:
                 ``'Between'`` (range/slider), or ``'Basic'`` (relative date).
         """
         clean_field = field_name.replace('[', '').replace(']', '')
-        clean_table = table_name.replace("'", "''") if table_name else 'CORN'
+        clean_table = table_name.replace("'", "''") if table_name else getattr(self, '_main_table', 'Table')
         
         # Build objects with the correct mode
         slicer_objects = {
