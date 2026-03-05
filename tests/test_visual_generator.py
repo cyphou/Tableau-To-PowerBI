@@ -361,7 +361,7 @@ class TestSortState(unittest.TestCase):
         container = create_visual_container(ws, col_table_map={"Revenue": "Sales"})
         sort_def = container["visual"].get("query", {}).get("sortDefinition", {})
         self.assertIn("sort", sort_def)
-        self.assertEqual(sort_def["sort"][0]["direction"], 1)
+        self.assertEqual(sort_def["sort"][0]["direction"], "Ascending")
 
     def test_descending_sort(self):
         ws = {"name": "V", "visualType": "bar",
@@ -369,7 +369,7 @@ class TestSortState(unittest.TestCase):
               "dataFields": []}
         container = create_visual_container(ws, col_table_map={"Revenue": "Sales"})
         sort_def = container["visual"]["query"]["sortDefinition"]
-        self.assertEqual(sort_def["sort"][0]["direction"], 2)
+        self.assertEqual(sort_def["sort"][0]["direction"], "Descending")
 
 
 class TestReferenceLines(unittest.TestCase):

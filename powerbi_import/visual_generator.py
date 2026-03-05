@@ -643,7 +643,7 @@ def create_visual_container(worksheet, visual_id=None, x=10, y=10,
                             "Property": sort_field,
                         }
                     },
-                    "direction": 1 if direction.lower() == 'ascending' else 2,
+                    "direction": "Ascending" if direction.lower() == 'ascending' else "Descending",
                 })
         if sort_state:
             visual_obj.setdefault("query", {})

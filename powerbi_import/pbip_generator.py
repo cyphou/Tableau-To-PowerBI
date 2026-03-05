@@ -312,7 +312,7 @@ class PowerBIProjectGenerator:
                                 "Column": {"Expression": {"SourceRef": {"Entity": self._main_table}}, "Property": sort_field}
                             }
                         query["queryState"] = query.get("queryState", {})
-                        query["queryState"]["sortDefinition"] = {"sort": [sort_entry]}
+                        query["sortDefinition"] = {"sort": [sort_entry]}
 
         # Visual objects: title + encodings
         visual_objects = self._build_visual_objects(ws_name, ws_data, visual_type)

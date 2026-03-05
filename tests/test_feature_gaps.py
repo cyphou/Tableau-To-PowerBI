@@ -612,7 +612,7 @@ class TestSortStateApplication(unittest.TestCase):
                     with open(visual_path, 'r') as f:
                         visual = json.load(f)
                     query = visual.get('visual', {}).get('query', {})
-                    sort_def = query.get('queryState', {}).get('sortDefinition', {})
+                    sort_def = query.get('sortDefinition', {})
                     self.assertIn('sort', sort_def)
                     self.assertEqual(sort_def['sort'][0]['direction'], 'Descending')
                     break
