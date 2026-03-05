@@ -13,6 +13,7 @@ These tests use no external dependencies (azure-identity, requests)
 and validate all logic paths including fallback behaviors.
 """
 
+import importlib.util
 import json
 import os
 import shutil
@@ -368,8 +369,9 @@ class TestFabricAuthenticator(unittest.TestCase):
 
     def test_import_error_without_azure_identity(self):
         """Creating authenticator requires azure-identity."""
-        from powerbi_import.deploy.auth import FabricAuthenticator, ClientSecretCredential
-        if ClientSecretCredential is None:
+        from powerbi_import.deploy import auth as _auth_mod
+        FabricAuthenticator = _auth_mod.FabricAuthenticator
+        if _auth_mod.ClientSecretCredential is None:
             with self.assertRaises(ImportError):
                 FabricAuthenticator(use_managed_identity=False)
         else:
@@ -426,7 +428,6 @@ class TestMigrateCLI(unittest.TestCase):
 
     def test_setup_logging_exists(self):
         """Check that setup_logging function exists in migrate.py."""
-        import importlib
         spec = importlib.util.spec_from_file_location('migrate', os.path.join(ROOT, 'migrate.py'))
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
@@ -434,7 +435,6 @@ class TestMigrateCLI(unittest.TestCase):
 
     def test_run_batch_migration_exists(self):
         """Check that run_batch_migration exists."""
-        import importlib
         spec = importlib.util.spec_from_file_location('migrate', os.path.join(ROOT, 'migrate.py'))
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
