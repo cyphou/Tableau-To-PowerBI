@@ -1,0 +1,203 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<workbook source-build='2024.1.0' source-platform='win' version='18.1' xmlns:user='http://www.tableausoftware.com/xml/user'>
+  <preferences>
+    <preference name='ui.encoding.shelf.height' value='24' />
+  </preferences>
+  <datasources>
+    <datasource caption='Web Analytics' inline='true' name='federated.1' version='18.1'>
+      <connection class='federated'>
+        <named-connections>
+          <named-connection caption='BigQuery Analytics' name='bigquery'>
+            <connection class='bigquery' project='my-analytics-project' dataset='web_data' service-account-email='analytics@my-project.iam.gserviceaccount.com' />
+          </named-connection>
+        </named-connections>
+        <relation connection='bigquery' name='sessions' table='web_data.sessions' type='table'>
+          <columns>
+            <column datatype='string' name='session_id' ordinal='0' />
+            <column datatype='date' name='session_date' ordinal='1' />
+            <column datatype='string' name='user_id' ordinal='2' />
+            <column datatype='string' name='channel' ordinal='3' />
+            <column datatype='string' name='device_type' ordinal='4' />
+            <column datatype='string' name='country' ordinal='5' />
+            <column datatype='integer' name='page_views' ordinal='6' />
+            <column datatype='real' name='session_duration' ordinal='7' />
+            <column datatype='boolean' name='converted' ordinal='8' />
+            <column datatype='real' name='revenue' ordinal='9' />
+          </columns>
+        </relation>
+        <relation connection='bigquery' name='users' table='web_data.users' type='table'>
+          <columns>
+            <column datatype='string' name='user_id' ordinal='0' />
+            <column datatype='string' name='user_name' ordinal='1' />
+            <column datatype='string' name='email' ordinal='2' />
+            <column datatype='date' name='signup_date' ordinal='3' />
+            <column datatype='string' name='plan' ordinal='4' />
+            <column datatype='string' name='region' ordinal='5' />
+          </columns>
+        </relation>
+        <_.fcp.ObjectModelEncapsulateLegacy.true...object-graph>
+          <objects>
+            <object id='sessions' name='sessions' />
+            <object id='users' name='users' />
+          </objects>
+          <relationships>
+            <relationship expression='[sessions].[user_id] = [users].[user_id]' type='Left'>
+              <left object='sessions' />
+              <right object='users' />
+            </relationship>
+          </relationships>
+        </_.fcp.ObjectModelEncapsulateLegacy.true...object-graph>
+      </connection>
+      <column caption='Total Sessions' datatype='integer' name='[Total_Sessions]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='COUNT([session_id])' />
+      </column>
+      <column caption='Unique Visitors' datatype='integer' name='[Unique_Visitors]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='COUNTD([user_id])' />
+      </column>
+      <column caption='Conversion Rate' datatype='real' name='[Conversion_Rate]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='SUM(IF [converted] THEN 1 ELSE 0 END) / COUNT([session_id])' />
+      </column>
+      <column caption='Avg Session Duration' datatype='real' name='[Avg_Duration]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='AVG([session_duration])' />
+      </column>
+      <column caption='Total Revenue' datatype='real' name='[Total_Revenue]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='SUM([revenue])' />
+      </column>
+      <column caption='Revenue per Session' datatype='real' name='[Rev_Per_Session]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='SUM([revenue]) / COUNT([session_id])' />
+      </column>
+      <column caption='Channel Category' datatype='string' name='[Channel_Category]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='IF [channel] = &quot;Organic Search&quot; OR [channel] = &quot;Paid Search&quot; THEN &quot;Search&quot;&#10;ELSEIF [channel] = &quot;Social&quot; OR [channel] = &quot;Referral&quot; THEN &quot;Social/Referral&quot;&#10;ELSEIF [channel] = &quot;Direct&quot; THEN &quot;Direct&quot;&#10;ELSE &quot;Other&quot;&#10;END' />
+      </column>
+      <column caption='Engagement Level' datatype='string' name='[Engagement_Level]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='IF [page_views] &gt;= 10 THEN &quot;High&quot;&#10;ELSEIF [page_views] &gt;= 5 THEN &quot;Medium&quot;&#10;ELSE &quot;Low&quot;&#10;END' />
+      </column>
+      <column caption='Revenue by Channel' datatype='real' name='[Revenue_By_Channel]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='{FIXED [channel] : SUM([revenue])}' />
+      </column>
+      <column caption='Days Since Signup' datatype='integer' name='[Days_Since_Signup]' role='dimension' type='ordinal'>
+        <calculation class='tableau' formula='DATEDIFF(&quot;day&quot;, [signup_date], TODAY())' />
+      </column>
+      <layout dim-ordering='alphabetic' dim-percentage='0.5' measure-ordering='alphabetic' measure-percentage='0.4' show-structure='true' />
+    </datasource>
+  </datasources>
+  <worksheets>
+    <worksheet name='Sessions by Channel'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Web Analytics' name='federated.1' />
+          </datasources>
+          <datasource-dependencies datasource='federated.1'>
+            <column datatype='string' name='[channel]' role='dimension' type='nominal' />
+            <column datatype='integer' name='[Total_Sessions]' role='measure' type='quantitative' />
+          </datasource-dependencies>
+        </view>
+        <style />
+        <panes>
+          <pane selection-relaxation-option='selection-relaxation-allow'>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Automatic' />
+            <encodings>
+              <color column='[federated.1].[channel]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[federated.1].[Total_Sessions]</rows>
+        <cols>[federated.1].[channel]</cols>
+      </table>
+    </worksheet>
+    <worksheet name='Revenue Trend'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Web Analytics' name='federated.1' />
+          </datasources>
+          <datasource-dependencies datasource='federated.1'>
+            <column datatype='date' name='[session_date]' role='dimension' type='ordinal' />
+            <column datatype='real' name='[Total_Revenue]' role='measure' type='quantitative' />
+          </datasource-dependencies>
+        </view>
+        <style />
+        <panes>
+          <pane selection-relaxation-option='selection-relaxation-allow'>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Line' />
+          </pane>
+        </panes>
+        <rows>[federated.1].[Total_Revenue]</rows>
+        <cols>[federated.1].[session_date]</cols>
+      </table>
+    </worksheet>
+    <worksheet name='Conversion by Device'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Web Analytics' name='federated.1' />
+          </datasources>
+          <datasource-dependencies datasource='federated.1'>
+            <column datatype='string' name='[device_type]' role='dimension' type='nominal' />
+            <column datatype='real' name='[Conversion_Rate]' role='measure' type='quantitative' />
+          </datasource-dependencies>
+        </view>
+        <style />
+        <panes>
+          <pane selection-relaxation-option='selection-relaxation-allow'>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Automatic' />
+          </pane>
+        </panes>
+        <rows>[federated.1].[Conversion_Rate]</rows>
+        <cols>[federated.1].[device_type]</cols>
+      </table>
+    </worksheet>
+    <worksheet name='User Engagement'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Web Analytics' name='federated.1' />
+          </datasources>
+          <datasource-dependencies datasource='federated.1'>
+            <column datatype='string' name='[Engagement_Level]' role='dimension' type='nominal' />
+            <column datatype='string' name='[country]' role='dimension' type='nominal' />
+            <column datatype='integer' name='[Unique_Visitors]' role='measure' type='quantitative' />
+          </datasource-dependencies>
+        </view>
+        <style />
+        <panes>
+          <pane selection-relaxation-option='selection-relaxation-allow'>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Automatic' />
+            <encodings>
+              <size column='[federated.1].[Unique_Visitors]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[federated.1].[Engagement_Level]</rows>
+        <cols>[federated.1].[country]</cols>
+      </table>
+    </worksheet>
+  </worksheets>
+  <dashboards>
+    <dashboard name='Web Analytics Dashboard'>
+      <style />
+      <size maxheight='900' maxwidth='1400' minheight='900' minwidth='1400' />
+      <zones>
+        <zone h='100000' id='1' type-v2='layout-basic' w='100000' x='0' y='0'>
+          <zone h='50000' id='2' name='Sessions by Channel' type-v2='worksheet' w='50000' x='0' y='0' />
+          <zone h='50000' id='3' name='Revenue Trend' type-v2='worksheet' w='50000' x='50000' y='0' />
+          <zone h='50000' id='4' name='Conversion by Device' type-v2='worksheet' w='50000' x='0' y='50000' />
+          <zone h='50000' id='5' name='User Engagement' type-v2='worksheet' w='50000' x='50000' y='50000' />
+        </zone>
+      </zones>
+    </dashboard>
+  </dashboards>
+</workbook>

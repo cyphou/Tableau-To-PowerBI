@@ -1,0 +1,117 @@
+table Leads
+	lineageTag: 2da8a36e-34fe-4f56-9ae0-18f3cb18b09a
+
+	column lead_id
+		dataType: int64
+		lineageTag: ac3c7a9e-234e-4e95-82b7-b0a9cd653810
+		summarizeBy: sum
+		sourceColumn: lead_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column campaign_id
+		dataType: int64
+		lineageTag: 7221e60d-cf41-44c6-acb7-14286b34f9c8
+		summarizeBy: sum
+		sourceColumn: campaign_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column lead_name
+		dataType: string
+		lineageTag: 23dd9272-1d8f-4123-96d8-3cc431b5792a
+		summarizeBy: none
+		sourceColumn: lead_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column email
+		dataType: string
+		lineageTag: 98af6183-a82a-4d0f-a060-7717455003fc
+		summarizeBy: none
+		sourceColumn: email
+
+		annotation SummarizationSetBy = Automatic
+
+	column phone
+		dataType: string
+		lineageTag: 56f1fa82-d75c-451c-bf56-8d49973b8e13
+		summarizeBy: none
+		sourceColumn: phone
+
+		annotation SummarizationSetBy = Automatic
+
+	column company
+		dataType: string
+		lineageTag: 7f70b8d3-8cbe-477d-9483-46e4b170280d
+		summarizeBy: none
+		sourceColumn: company
+
+		annotation SummarizationSetBy = Automatic
+
+	column job_title
+		dataType: string
+		lineageTag: 2af71c15-ca98-4495-b025-f7960c34c31c
+		summarizeBy: none
+		sourceColumn: job_title
+
+		annotation SummarizationSetBy = Automatic
+
+	column created_date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: bb75b7a2-8feb-48df-8e5f-7fedecdfcbd0
+		summarizeBy: none
+		sourceColumn: created_date
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column deal_value
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 71338de1-10c7-4f50-9309-61a32cb61c89
+		summarizeBy: sum
+		sourceColumn: deal_value
+
+		annotation SummarizationSetBy = Automatic
+
+	column lead_source
+		dataType: string
+		lineageTag: f3cb21c2-bb05-40c3-96f8-d087b5b72138
+		summarizeBy: none
+		sourceColumn: lead_source
+
+		annotation SummarizationSetBy = Automatic
+
+	column lead_status
+		dataType: string
+		lineageTag: 431965e8-228c-4b2e-bed1-f7a46916aa49
+		summarizeBy: none
+		sourceColumn: lead_status
+
+		annotation SummarizationSetBy = Automatic
+
+	column engagement_score
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 9397cab5-49e7-4624-bed8-6bb7599459ee
+		summarizeBy: sum
+		sourceColumn: engagement_score
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Leads-421a4fd8-0897-4b41-8bb0-5f95752b9915' = m
+		mode: import
+		source =
+				let
+				    // Source MySQL: analytics-mysql.corp.local:3306
+				    Source = MySQL.Database("analytics-mysql.corp.local:3306", "marketing_db"),
+				    #"Leads Table" = Source{[Schema="marketing_db", Item="Leads"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(#"Leads Table", {{"lead_id", "Lead ID"}, {"campaign_id", "Campaign ID"}, {"lead_name", "Lead Name"}, {"email", "Email"}, {"phone", "Phone"}, {"company", "Company"}, {"job_title", "Job Title"}, {"created_date", "Created Date"}, {"deal_value", "Deal Value"}, {"lead_source", "Lead Source"}, {"lead_status", "Lead Status"}, {"engagement_score", "Engagement Score"}}),
+				    Result = #"Renamed Columns"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+

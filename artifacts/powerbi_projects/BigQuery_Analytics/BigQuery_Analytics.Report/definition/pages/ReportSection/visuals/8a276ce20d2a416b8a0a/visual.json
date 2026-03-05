@@ -1,0 +1,107 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
+  "name": "8a276ce20d2a416b8a0a",
+  "position": {
+    "x": 640,
+    "y": 360,
+    "z": 3000,
+    "height": 360,
+    "width": 640,
+    "tabOrder": 3000
+  },
+  "visual": {
+    "visualType": "table",
+    "drillFilterOtherVisuals": true,
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "sessions"
+                    }
+                  },
+                  "Property": "country"
+                }
+              },
+              "queryRef": "sessions.country",
+              "active": true
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "sessions"
+                    }
+                  },
+                  "Property": "Engagement Level"
+                }
+              },
+              "queryRef": "sessions.Engagement Level",
+              "active": true
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "sessions"
+                    }
+                  },
+                  "Property": "Unique Visitors"
+                }
+              },
+              "queryRef": "sessions.Unique Visitors",
+              "active": true
+            }
+          ]
+        }
+      }
+    },
+    "objects": {
+      "title": [
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'User Engagement'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "categoryAxis": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "valueAxis": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

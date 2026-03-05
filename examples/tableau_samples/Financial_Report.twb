@@ -1,0 +1,280 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<workbook source-build='2024.1.0' source-platform='win' version='18.1' xmlns:user='http://www.tableausoftware.com/xml/user'>
+  <preferences>
+    <preference name='ui.encoding.shelf.height' value='24' />
+  </preferences>
+  <datasources>
+    <datasource caption='Financial Data' inline='true' name='federated.1' version='18.1'>
+      <connection class='federated'>
+        <named-connections>
+          <named-connection caption='Finance DB' name='postgres'>
+            <connection class='postgres' dbname='finance' server='db.company.com' username='analyst' />
+          </named-connection>
+        </named-connections>
+        <relation connection='postgres' name='transactions' table='public.transactions' type='table'>
+          <columns>
+            <column datatype='integer' name='transaction_id' ordinal='0' />
+            <column datatype='date' name='transaction_date' ordinal='1' />
+            <column datatype='string' name='account' ordinal='2' />
+            <column datatype='string' name='category' ordinal='3' />
+            <column datatype='real' name='amount' ordinal='4' />
+            <column datatype='string' name='type' ordinal='5' />
+            <column datatype='string' name='business_unit' ordinal='6' />
+            <column datatype='string' name='cost_center' ordinal='7' />
+          </columns>
+        </relation>
+      </connection>
+      <column caption='Revenue' datatype='real' name='[Revenue]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='SUM(IF [type] = &quot;Revenue&quot; THEN [amount] ELSE 0 END)' />
+      </column>
+      <column caption='Expenses' datatype='real' name='[Expenses]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='SUM(IF [type] = &quot;Expense&quot; THEN [amount] ELSE 0 END)' />
+      </column>
+      <column caption='Net Income' datatype='real' name='[Net_Income]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='SUM(IF [type] = &quot;Revenue&quot; THEN [amount] ELSE -[amount] END)' />
+      </column>
+      <column caption='Profit Margin %' datatype='real' name='[Profit_Margin]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='([Revenue] - [Expenses]) / [Revenue]' />
+      </column>
+      <column caption='YTD Revenue' datatype='real' name='[YTD_Revenue]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='{FIXED : SUM(IF YEAR([transaction_date]) = YEAR(TODAY()) THEN [amount] ELSE 0 END)}' />
+      </column>
+      <column caption='Budget Variance' datatype='real' name='[Budget_Variance]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='SUM([amount]) - WINDOW_AVG(SUM([amount]))' />
+      </column>
+      <layout dim-ordering='alphabetic' dim-percentage='0.5' measure-ordering='alphabetic' measure-percentage='0.4' show-structure='true' />
+    </datasource>
+  </datasources>
+  <parameters>
+    <parameter name='[Parameters].[Fiscal Year]' caption='Fiscal Year' datatype='integer' value='2024'>
+      <range max='2030' min='2020' />
+    </parameter>
+    <parameter name='[Parameters].[Business Unit Filter]' caption='Business Unit' datatype='string' value='All'>
+      <domain>
+        <member value='"All"' />
+        <member value='"North America"' />
+        <member value='"Europe"' />
+        <member value='"Asia Pacific"' />
+      </domain>
+    </parameter>
+  </parameters>
+  <worksheets>
+    <worksheet name='Revenue vs Expenses'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Financial Data' name='federated.1' />
+          </datasources>
+          <datasource-dependencies datasource='federated.1'>
+            <column caption='Expenses' datatype='real' name='[Expenses]' role='measure' type='quantitative'>
+              <calculation class='tableau' formula='SUM(IF [type] = &quot;Expense&quot; THEN [amount] ELSE 0 END)' />
+            </column>
+            <column caption='Revenue' datatype='real' name='[Revenue]' role='measure' type='quantitative'>
+              <calculation class='tableau' formula='SUM(IF [type] = &quot;Revenue&quot; THEN [amount] ELSE 0 END)' />
+            </column>
+            <column datatype='date' name='[transaction_date]' role='dimension' type='ordinal' />
+            <column-instance column='[transaction_date]' derivation='Month' name='[mn:transaction_date:ok]' pivot='key' type='ordinal' />
+            <column-instance column='[Revenue]' derivation='User' name='[usr:Revenue:qk]' pivot='key' type='quantitative' />
+            <column-instance column='[Expenses]' derivation='User' name='[usr:Expenses:qk]' pivot='key' type='quantitative' />
+          </datasource-dependencies>
+          <filter class='categorical' column='[Parameters].[Business Unit Filter]'>
+            <groupfilter function='level-members' level='[business_unit]' user:ui-domain='relevant' user:ui-enumeration='inclusive' user:ui-marker='enumerate' />
+          </filter>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Line' />
+            <encodings>
+              <color column='[federated.1].[Measure Names]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[federated.1].[Measure Values]</rows>
+        <cols>[federated.1].[mn:transaction_date:ok]</cols>
+      </table>
+    </worksheet>
+    <worksheet name='Category Breakdown'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Financial Data' name='federated.1' />
+          </datasources>
+          <datasource-dependencies datasource='federated.1'>
+            <column datatype='string' name='[category]' role='dimension' type='nominal' />
+            <column caption='Net Income' datatype='real' name='[Net_Income]' role='measure' type='quantitative'>
+              <calculation class='tableau' formula='SUM(IF [type] = &quot;Revenue&quot; THEN [amount] ELSE -[amount] END)' />
+            </column>
+            <column-instance column='[category]' derivation='None' name='[none:category:nk]' pivot='key' type='nominal' />
+            <column-instance column='[Net_Income]' derivation='User' name='[usr:Net_Income:qk]' pivot='key' type='quantitative' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Bar' />
+            <encodings>
+              <color column='[federated.1].[usr:Net_Income:qk]' palette='Red-Green Diverging'>
+                <map>
+                  <bucket>&lt; 0</bucket>
+                </map>
+              </color>
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[federated.1].[none:category:nk]</rows>
+        <cols>[federated.1].[usr:Net_Income:qk]</cols>
+      </table>
+    </worksheet>
+    <worksheet name='Business Unit Performance'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Financial Data' name='federated.1' />
+          </datasources>
+          <datasource-dependencies datasource='federated.1'>
+            <column datatype='string' name='[business_unit]' role='dimension' type='nominal' />
+            <column caption='Profit Margin %' datatype='real' name='[Profit_Margin]' role='measure' type='quantitative'>
+              <calculation class='tableau' formula='([Revenue] - [Expenses]) / [Revenue]' />
+            </column>
+            <column caption='Revenue' datatype='real' name='[Revenue]' role='measure' type='quantitative'>
+              <calculation class='tableau' formula='SUM(IF [type] = &quot;Revenue&quot; THEN [amount] ELSE 0 END)' />
+            </column>
+            <column-instance column='[business_unit]' derivation='None' name='[none:business_unit:nk]' pivot='key' type='nominal' />
+            <column-instance column='[Revenue]' derivation='User' name='[usr:Revenue:qk]' pivot='key' type='quantitative' />
+            <column-instance column='[Profit_Margin]' derivation='User' name='[usr:Profit_Margin:qk]' pivot='key' type='quantitative' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Circle' />
+            <encodings>
+              <color column='[federated.1].[usr:Profit_Margin:qk]' />
+              <size column='[federated.1].[usr:Revenue:qk]' />
+              <text column='[federated.1].[none:business_unit:nk]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[federated.1].[usr:Profit_Margin:qk]</rows>
+        <cols>[federated.1].[none:business_unit:nk]</cols>
+      </table>
+    </worksheet>
+    <worksheet name='Top 10 Accounts'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Financial Data' name='federated.1' />
+          </datasources>
+          <datasource-dependencies datasource='federated.1'>
+            <column datatype='string' name='[account]' role='dimension' type='nominal' />
+            <column datatype='real' name='[amount]' role='measure' type='quantitative' />
+            <column-instance column='[account]' derivation='None' name='[none:account:nk]' pivot='key' type='nominal' />
+            <column-instance column='[amount]' derivation='Sum' name='[sum:amount:qk]' pivot='key' type='quantitative' />
+          </datasource-dependencies>
+          <filter class='topn' column='[federated.1].[sum:amount:qk]' direction='top' max='10' />
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Bar' />
+            <encodings>
+              <color column='[federated.1].[sum:amount:qk]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[federated.1].[none:account:nk]</rows>
+        <cols>[federated.1].[sum:amount:qk]</cols>
+      </table>
+    </worksheet>
+  </worksheets>
+  <dashboards>
+    <dashboard name='Financial Overview'>
+      <style />
+      <size maxheight='900' maxwidth='1600' minheight='900' minwidth='1600' />
+      <zones>
+        <zone h='100' id='1' type='layout-basic' w='100' x='0' y='0'>
+          <zone h='8' id='2' mode='horz' type='title' w='100' x='0' y='0'>
+            <format attr='border-color' value='#1F4E78' />
+            <format attr='height' value='60' />
+            <format attr='font-size' value='20' />
+          </zone>
+          <zone h='8' id='10' type='param-ctrl' w='100' x='0' y='8'>
+            <zone-contains>Parameter: Fiscal Year</zone-contains>
+            <zone-contains>Parameter: Business Unit Filter</zone-contains>
+          </zone>
+          <zone h='84' id='3' type='layout-flow' w='100' x='0' y='16'>
+            <zone h='42' id='4' name='Revenue vs Expenses' w='65' x='0' y='0'>
+              <zone-contains>Worksheet: Revenue vs Expenses</zone-contains>
+            </zone>
+            <zone h='42' id='5' name='Business Unit Performance' w='35' x='65' y='0'>
+              <zone-contains>Worksheet: Business Unit Performance</zone-contains>
+            </zone>
+            <zone h='42' id='6' name='Category Breakdown' w='50' x='0' y='42'>
+              <zone-contains>Worksheet: Category Breakdown</zone-contains>
+            </zone>
+            <zone h='42' id='7' name='Top 10 Accounts' w='50' x='50' y='42'>
+              <zone-contains>Worksheet: Top 10 Accounts</zone-contains>
+            </zone>
+          </zone>
+        </zone>
+      </zones>
+    </dashboard>
+  </dashboards>
+  <windows source-height='30'>
+    <window class='worksheet' name='Revenue vs Expenses'>
+      <cards>
+        <edge name='left'>
+          <strip size='160'>
+            <card type='pages' />
+            <card type='filters' />
+            <card type='marks' />
+          </strip>
+        </edge>
+      </cards>
+    </window>
+    <window class='dashboard' name='Financial Overview'>
+      <viewpoints />
+    </window>
+  </windows>
+  <stories>
+    <story name='Financial Story'>
+      <story-points>
+        <story-point caption='Q1 Overview' id='1'>
+          <story-point-dashboard name='Financial Overview'>
+            <filters>
+              <filter class='categorical' column='[federated.1].[transaction_date]'>
+                <groupfilter function='range' level='[transaction_date]' start-date='2024-01-01' end-date='2024-03-31' />
+              </filter>
+            </filters>
+          </story-point-dashboard>
+        </story-point>
+        <story-point caption='Year End Summary' id='2'>
+          <story-point-dashboard name='Financial Overview'>
+            <filters>
+              <filter class='categorical' column='[federated.1].[transaction_date]'>
+                <groupfilter function='range' level='[transaction_date]' start-date='2024-01-01' end-date='2024-12-31' />
+              </filter>
+            </filters>
+          </story-point-dashboard>
+        </story-point>
+      </story-points>
+    </story>
+  </stories>
+</workbook>

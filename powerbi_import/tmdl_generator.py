@@ -1,0 +1,2673 @@
+"""
+TMDL (Tabular Model Definition Language) Generator
+
+Converts extracted Tableau data directly into TMDL files
+for the Power BI SemanticModel.
+
+Handles:
+- Physical tables with M query partitions
+- DAX measures and calculated columns
+- Relationships (manyToOne, manyToMany)
+- Hierarchies, sets, groups, bins
+- Parameter tables (What-If)
+- Date table with time intelligence
+- Geographic data categories
+- RLS roles from Tableau user filters
+
+Generated structure:
+  definition/
+    database.tmdl
+    model.tmdl
+    relationships.tmdl
+    expressions.tmdl
+    roles.tmdl (if RLS)
+    tables/
+      {TableName}.tmdl
+"""
+
+import sys
+import os
+import re
+import uuid
+import json
+
+# Add path to import from tableau_export
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'tableau_export'))
+from datasource_extractor import (
+    generate_power_query_m,
+    convert_tableau_formula_to_dax,
+    map_tableau_to_powerbi_type
+)
+from m_query_builder import (
+    inject_m_steps,
+    m_transform_rename,
+    m_transform_remove_columns,
+    m_transform_filter_values,
+    m_transform_filter_nulls,
+)
+
+
+# ════════════════════════════════════════════════════════════════════
+#  PUBLIC ENTRY POINT
+# ════════════════════════════════════════════════════════════════════
+
+def generate_tmdl(datasources, report_name, extra_objects, output_dir,
+                  calendar_start=None, calendar_end=None, culture=None):
+    """
+    Main entry point: directly convert extracted Tableau data to TMDL files.
+
+    Args:
+        datasources: List of datasources with connections, tables, calculations
+        report_name: Name of the report
+        extra_objects: Dict with hierarchies, sets, groups, bins, aliases,
+                       parameters, user_filters, _datasources
+        output_dir: Path to the SemanticModel folder
+        calendar_start: Start year for Calendar table (default: 2020)
+        calendar_end: End year for Calendar table (default: 2030)
+        culture: Override culture/locale (default: en-US)
+
+    Returns:
+        dict: Statistics about the generated model
+    """
+    if extra_objects is None:
+        extra_objects = {}
+
+    # Step 1: Build the semantic model
+    model = _build_semantic_model(datasources, report_name, extra_objects,
+                                  calendar_start=calendar_start,
+                                  calendar_end=calendar_end,
+                                  culture=culture)
+
+    # Step 2: Write TMDL files
+    _write_tmdl_files(model, output_dir)
+
+    # Step 3: Compute and return stats
+    tables = model.get('model', {}).get('tables', [])
+    rels = model.get('model', {}).get('relationships', [])
+    stats = {
+        'tables': len(tables),
+        'columns': sum(len(t.get('columns', [])) for t in tables),
+        'measures': sum(len(t.get('measures', [])) for t in tables),
+        'relationships': len(rels),
+        'hierarchies': sum(len(t.get('hierarchies', [])) for t in tables),
+        'roles': len(model.get('model', {}).get('roles', []))
+    }
+    return stats
+
+
+# ════════════════════════════════════════════════════════════════════
+#  SEMANTIC MODEL BUILDING
+# ════════════════════════════════════════════════════════════════════
+
+def _build_semantic_model(datasources, report_name="Report", extra_objects=None,
+                          calendar_start=None, calendar_end=None, culture=None):
+    """
+    Build a complete semantic model from extracted Tableau datasources.
+
+    Produces tables, partitions with M queries, DAX measures, calculated
+    columns, relationships, hierarchies, sets/groups/bins, parameters,
+    date table, geographic data categories, hidden columns, and RLS roles.
+
+    Args:
+        datasources: List of datasources with connections, tables, calculations
+        report_name: Report name
+        extra_objects: Optional dict with hierarchies, sets, groups, bins, aliases
+        calendar_start: Start year for Calendar table (default: 2020)
+        calendar_end: End year for Calendar table (default: 2030)
+        culture: Override culture/locale (default: en-US)
+
+    Returns:
+        dict: Complete semantic model
+    """
+    if extra_objects is None:
+        extra_objects = {}
+
+    effective_culture = culture or "en-US"
+
+    model = {
+        "name": report_name,
+        "compatibilityLevel": 1550,
+        "model": {
+            "culture": effective_culture,
+            "defaultPowerBIDataSourceVersion": "powerBI_V3",
+            "tables": [],
+            "relationships": [],
+            "roles": []
+        }
+    }
+
+    # Store calendar options for _add_date_table
+    model['_calendar_start'] = calendar_start
+    model['_calendar_end'] = calendar_end
+
+    # Phase 1: Collect all physical tables and deduplicate
+    best_tables = {}  # name -> (table_dict, connection_details)
+    m_query_overrides = {}  # table_name -> complete M query (from Prep flows)
+    all_calculations = []
+    all_columns_metadata = []
+    all_hierarchies = []
+    all_sets = []
+    all_groups = []
+    all_bins = []
+
+    for ds in datasources:
+        ds_connection = ds.get('connection', {})
+        connection_map = ds.get('connection_map', {})
+        calculations = ds.get('calculations', [])
+        all_calculations.extend(calculations)
+
+        # Collect column metadata
+        all_columns_metadata.extend(ds.get('columns', []))
+
+        for table in ds.get('tables', []):
+            table_name = table.get('name', 'Table1')
+
+            # Skip tables without a name
+            if not table_name or table_name == 'Unknown':
+                continue
+
+            col_count = len(table.get('columns', []))
+
+            # Resolve per-table connection
+            table_conn = table.get('connection_details', {})
+            if not table_conn:
+                conn_ref = table.get('connection', '')
+                table_conn = connection_map.get(conn_ref, ds_connection)
+
+            # Deduplicate: keep the version with the most columns
+            if table_name not in best_tables or col_count > len(best_tables[table_name][0].get('columns', [])):
+                best_tables[table_name] = (table, table_conn)
+
+        # Collect Prep flow M query overrides
+        ds_m_overrides = ds.get('m_query_overrides', {})
+        for tname, mq in ds_m_overrides.items():
+            m_query_overrides[tname] = mq
+        # Single-table override (from prep_flow_parser output)
+        single_override = ds.get('m_query_override', '')
+        if single_override:
+            for table in ds.get('tables', []):
+                m_query_overrides[table.get('name', '')] = single_override
+
+    # Phase 2: Identify the main table (the one with the most columns = fact table)
+    main_table_name = None
+    max_cols = -1
+    for tname, (table, conn) in best_tables.items():
+        ncols = len(table.get('columns', []))
+        if ncols > max_cols:
+            max_cols = ncols
+            main_table_name = tname
+
+    # Phase 2a: Build column metadata mapping
+    col_metadata_map = {}
+    for cm in all_columns_metadata:
+        raw = cm.get('name', '').replace('[', '').replace(']', '')
+        caption = cm.get('caption', raw)
+        key = caption if caption else raw
+        col_metadata_map[key] = cm
+        col_metadata_map[raw] = cm
+
+    # Phase 2b: Build context mappings for DAX conversion
+    calc_map = {}
+    for calc in all_calculations:
+        raw = calc.get('name', '').replace('[', '').replace(']', '')
+        caption = calc.get('caption', raw)
+        if raw and raw != caption:
+            calc_map[raw] = caption
+
+    # param_map: "Parameter X" -> parameter caption
+    param_map = {}
+    # Source 1: From "Parameters" datasource calculations (old Tableau format)
+    for ds in datasources:
+        if ds.get('name', '') == 'Parameters':
+            for calc in ds.get('calculations', []):
+                raw = calc.get('name', '').replace('[', '').replace(']', '')
+                caption = calc.get('caption', raw)
+                if raw:
+                    param_map[raw] = caption
+    # Source 2: From extracted parameters (new Tableau format)
+    for param in extra_objects.get('parameters', []):
+        raw_name = param.get('name', '')
+        caption = param.get('caption', '')
+        if raw_name and caption:
+            match = re.match(r'\[Parameters\]\.\[([^\]]+)\]', raw_name)
+            if match:
+                param_map[match.group(1)] = caption
+            else:
+                clean = raw_name.replace('[', '').replace(']', '')
+                if clean and clean not in param_map:
+                    param_map[clean] = caption
+
+    # column_table_map: column_name -> table_name
+    column_table_map = {}
+    for tname, (table, conn) in best_tables.items():
+        for col in table.get('columns', []):
+            cname = col.get('name', '')
+            if cname and cname not in column_table_map:
+                column_table_map[cname] = tname
+
+    # measure_names: set of all measure names (captions)
+    measure_names = set()
+    for calc in all_calculations:
+        caption = calc.get('caption', calc.get('name', '').replace('[', '').replace(']', ''))
+        if caption:
+            measure_names.add(caption)
+    measure_names.update(param_map.values())
+
+    # param_values: {caption: literal_value} for inlining in calculated columns
+    param_values = {}
+    for calc in all_calculations:
+        caption = calc.get('caption', calc.get('name', '').replace('[', '').replace(']', ''))
+        formula = calc.get('formula', '').strip()
+        if caption and formula and '[' not in formula:
+            param_values[caption] = formula
+    for param in extra_objects.get('parameters', []):
+        caption = param.get('caption', '')
+        value = param.get('value', '').strip('"')
+        if caption and value and caption not in param_values:
+            datatype = param.get('datatype', 'string')
+            if datatype == 'string':
+                param_values[caption] = f'"{value}"'
+            elif datatype in ('date', 'datetime'):
+                # Convert Tableau #YYYY-MM-DD# date literal to DAX DATE()
+                date_m = re.match(r'#(\d{4})-(\d{2})-(\d{2})#', value)
+                if date_m:
+                    param_values[caption] = f'DATE({int(date_m.group(1))}, {int(date_m.group(2))}, {int(date_m.group(3))})'
+                else:
+                    param_values[caption] = value
+            else:
+                param_values[caption] = value
+
+    # Also add parameter measure names
+    for param in extra_objects.get('parameters', []):
+        caption = param.get('caption', '')
+        if caption:
+            measure_names.add(caption)
+
+    dax_context = {
+        'calc_map': calc_map,
+        'param_map': param_map,
+        'column_table_map': column_table_map,
+        'measure_names': measure_names,
+        'param_values': param_values
+    }
+
+    # Phase 3: Create tables
+    for table_name, (table, table_conn) in best_tables.items():
+        table_calculations = all_calculations if table_name == main_table_name else []
+
+        tbl = _build_table(
+            table=table,
+            connection=table_conn,
+            calculations=table_calculations,
+            columns_metadata=[],
+            dax_context=dax_context,
+            col_metadata_map=col_metadata_map,
+            extra_objects=extra_objects,
+            m_query_override=m_query_overrides.get(table_name, '')
+        )
+        model["model"]["tables"].append(tbl)
+
+    # Phase 4: Create relationships (with cross-datasource deduplication)
+    seen_rels = set()
+    for ds in datasources:
+        relationships = ds.get('relationships', [])
+        rels = _build_relationships(relationships)
+        for rel in rels:
+            key = (rel.get('fromTable'), rel.get('fromColumn'),
+                   rel.get('toTable'), rel.get('toColumn'))
+            if key not in seen_rels:
+                seen_rels.add(key)
+                model["model"]["relationships"].append(rel)
+            else:
+                print(f"  ⚠ Skipped duplicate relationship: {key[0]}.{key[1]} → {key[2]}.{key[3]}")
+
+    # Validate relationships: keep only those pointing to existing tables/columns
+    valid_relationships = []
+    table_columns = {}
+    for table in model["model"]["tables"]:
+        tname = table.get("name", "")
+        table_columns[tname] = {col.get("name", "") for col in table.get("columns", [])}
+
+    for rel in model["model"]["relationships"]:
+        from_table = rel.get("fromTable", "")
+        to_table = rel.get("toTable", "")
+        from_col = rel.get("fromColumn", "")
+        to_col = rel.get("toColumn", "")
+
+        if (from_table in table_columns and to_table in table_columns
+                and from_col in table_columns[from_table]
+                and to_col in table_columns[to_table]
+                and from_table != to_table):
+            valid_relationships.append(rel)
+        else:
+            reasons = []
+            if from_table not in table_columns:
+                reasons.append(f"fromTable '{from_table}' not found")
+            elif from_col not in table_columns.get(from_table, set()):
+                reasons.append(f"fromColumn '{from_col}' not in '{from_table}'")
+            if to_table not in table_columns:
+                reasons.append(f"toTable '{to_table}' not found")
+            elif to_col not in table_columns.get(to_table, set()):
+                reasons.append(f"toColumn '{to_col}' not in '{to_table}'")
+            if from_table == to_table:
+                reasons.append("self-join")
+            print(f"  ⚠ Dropped relationship: {from_table}.{from_col} → {to_table}.{to_col} ({'; '.join(reasons)})")
+
+    model["model"]["relationships"] = valid_relationships
+
+    # Phase 4b: Fix type mismatches in relationship keys
+    _fix_relationship_type_mismatches(model)
+
+    # Phase 5: Add sets, groups, bins as calculated columns
+    _process_sets_groups_bins(model, extra_objects, main_table_name, column_table_map)
+
+    # Phase 6: Automatic date table if date columns detected
+    has_date_columns = False
+    for table in model["model"]["tables"]:
+        for col in table.get("columns", []):
+            if col.get("dataType") == "DateTime" or col.get("dataCategory") == "DateTime":
+                has_date_columns = True
+                break
+        if has_date_columns:
+            break
+    if has_date_columns:
+        _add_date_table(model)
+
+    # Phase 7: Hierarchies from Tableau drill-paths
+    _apply_hierarchies(model, extra_objects.get('hierarchies', []), column_table_map)
+
+    # Phase 8: Parameter tables (What-If parameters)
+    _create_parameter_tables(model, extra_objects.get('parameters', []), main_table_name)
+
+    # Phase 9: RLS roles from Tableau user filters / security
+    _create_rls_roles(model, extra_objects.get('user_filters', []),
+                      main_table_name, column_table_map)
+
+    # Phase 9b: Auto-generate measures for quick table calculations (% of total, running sum, etc.)
+    _create_quick_table_calc_measures(model, extra_objects.get('worksheets', []),
+                                      main_table_name, column_table_map)
+
+    # Phase 10: Infer missing relationships from cross-table DAX references
+    _infer_cross_table_relationships(model)
+
+    # Phase 10b: Detect cardinality (runs AFTER Phase 10 so inferred rels are included)
+    _detect_many_to_many(model, datasources)
+
+    # Phase 10c: Replace RELATED() with LOOKUPVALUE() for manyToMany
+    _fix_related_for_many_to_many(model)
+
+    # Phase 11: Deactivate relationships that create ambiguous paths
+    _deactivate_ambiguous_paths(model)
+
+    # Deduplicate measures globally
+    global_measure_names = set()
+    for table in model["model"]["tables"]:
+        unique_measures = []
+        for measure in table.get("measures", []):
+            mname = measure.get("name", "")
+            if mname not in global_measure_names:
+                global_measure_names.add(mname)
+                unique_measures.append(measure)
+        table["measures"] = unique_measures
+
+    # Phase 12: Auto-generate perspectives from table list
+    all_table_names = [t.get('name', '') for t in model["model"]["tables"]]
+    model["model"]["perspectives"] = [{
+        "name": "Full Model",
+        "tables": all_table_names
+    }]
+
+    return model
+
+
+def _build_m_transform_steps(columns, col_metadata_map):
+    """
+    Build M transformation steps from TWB-embedded column metadata.
+
+    Detects:
+    - Column renames: caption ≠ raw name → Table.RenameColumns
+    - Hidden columns: hidden=true → Table.RemoveColumns (at query level)
+
+    Args:
+        columns: list of column dicts from the table
+        col_metadata_map: dict {col_name: {caption, hidden, ...}}
+
+    Returns:
+        list of (step_name, step_expression) tuples for inject_m_steps()
+    """
+    steps = []
+
+    # 1. Collect column renames from caption metadata
+    renames = {}
+    for col in columns:
+        col_name = col.get('name', '')
+        meta = col_metadata_map.get(col_name, {})
+        caption = meta.get('caption', '')
+        # Clean bracket notation: [col_name] → col_name
+        clean_name = col_name.strip('[]')
+        if caption and caption != clean_name and caption != col_name:
+            renames[clean_name] = caption
+
+    if renames:
+        steps.append(m_transform_rename(renames))
+
+    return steps
+
+
+def _build_table(table, connection, calculations, columns_metadata, dax_context=None,
+                 col_metadata_map=None, extra_objects=None, m_query_override=''):
+    """
+    Create a semantic model table with columns, partitions and measures.
+
+    Args:
+        table: Dict with name, columns
+        connection: Dict with type and connection details
+        calculations: List of Tableau calculations
+        columns_metadata: List of column metadata
+        dax_context: Dict with calc_map, param_map, column_table_map, measure_names
+        col_metadata_map: Dict {col_name: {hidden, semantic_role, description, ...}}
+        extra_objects: Dict with sets, groups, bins, aliases
+
+    Returns:
+        dict: Complete table definition
+    """
+    if dax_context is None:
+        dax_context = {}
+    if col_metadata_map is None:
+        col_metadata_map = {}
+    if extra_objects is None:
+        extra_objects = {}
+
+    table_name = table.get('name', 'Table1')
+    columns = table.get('columns', [])
+
+    # Generate M query: use Prep flow override if available, else generate from connection
+    if m_query_override:
+        m_query = m_query_override
+    else:
+        m_query = generate_power_query_m(connection, table)
+
+    # Inject TWB-embedded transformation steps from column metadata
+    m_steps = _build_m_transform_steps(columns, col_metadata_map)
+    if m_steps:
+        m_query = inject_m_steps(m_query, m_steps)
+
+    result_table = {
+        "name": table_name,
+        "columns": [],
+        "partitions": [
+            {
+                "name": f"Partition-{table_name}",
+                "mode": "import",
+                "source": {
+                    "type": "m",
+                    "expression": m_query
+                }
+            }
+        ],
+        "measures": []
+    }
+
+    # Track column names (avoid duplicates within the table)
+    column_name_counts = {}
+
+    # Add columns
+    for col in columns:
+        original_col_name = col.get('name', 'Column')
+
+        # Handle duplicate column names by adding a suffix
+        if original_col_name in column_name_counts:
+            column_name_counts[original_col_name] += 1
+            unique_col_name = f"{original_col_name}_{column_name_counts[original_col_name]}"
+        else:
+            column_name_counts[original_col_name] = 0
+            unique_col_name = original_col_name
+
+        bim_column = {
+            "name": unique_col_name,
+            "dataType": map_tableau_to_powerbi_type(col.get('datatype', 'string')),
+            "sourceColumn": col.get('name', 'Column'),
+            "summarizeBy": "none"
+        }
+
+        # Apply metadata (hidden, semantic_role, description)
+        col_meta = col_metadata_map.get(unique_col_name, col_metadata_map.get(col.get('name', ''), {}))
+        if col_meta.get('hidden', False):
+            bim_column["isHidden"] = True
+        if col_meta.get('description', ''):
+            bim_column["description"] = col_meta['description']
+
+        # Geographic data categories from semantic-role
+        semantic_role = col_meta.get('semantic_role', '')
+        geo_category = _map_semantic_role_to_category(semantic_role, unique_col_name)
+        if geo_category:
+            bim_column["dataCategory"] = geo_category
+
+        # Add the appropriate data type
+        if col.get('datatype') == 'date' or col.get('datatype') == 'datetime':
+            bim_column["dataCategory"] = "DateTime"
+            bim_column["formatString"] = "General Date"
+        elif col.get('datatype') in ['integer', 'real']:
+            bim_column["summarizeBy"] = "sum"
+            if col.get('datatype') == 'real':
+                bim_column["formatString"] = "#,0.00"
+
+        # Apply Tableau number format if available (overrides default)
+        tableau_fmt = col_meta.get('default_format', '') or col.get('default_format', '')
+        if tableau_fmt:
+            pbi_fmt = _convert_tableau_format_to_pbi(tableau_fmt)
+            if pbi_fmt:
+                bim_column["formatString"] = pbi_fmt
+
+        result_table["columns"].append(bim_column)
+
+    # Separate calculations into calculated columns vs measures
+    column_table_map = dax_context.get('column_table_map', {})
+    calc_map_ctx = dax_context.get('calc_map', {})
+    param_values = dax_context.get('param_values', {})
+    measure_names_ctx = dax_context.get('measure_names', set())
+
+    # Pre-compiled aggregation pattern (reused in pre-classification and main loop)
+    _agg_pattern = re.compile(
+        r'\b(SUM|COUNT|COUNTA|COUNTD|COUNTROWS|AVERAGE|AVG|MIN|MAX|MEDIAN|'
+        r'STDEV|STDEVP|VAR|VARP|PERCENTILE|DISTINCTCOUNT|CALCULATE|'
+        r'TOTALYTD|SAMEPERIODLASTYEAR|RANKX|SUMX|AVERAGEX|MINX|MAXX|COUNTX|'
+        r'CORR|COVAR|COVARP|RUNNING_SUM|RUNNING_AVG|RUNNING_COUNT|RUNNING_MAX|RUNNING_MIN|'
+        r'WINDOW_SUM|WINDOW_AVG|WINDOW_MAX|WINDOW_MIN|WINDOW_COUNT|'
+        r'WINDOW_MEDIAN|WINDOW_STDEV|WINDOW_STDEVP|WINDOW_VAR|WINDOW_VARP|'
+        r'WINDOW_CORR|WINDOW_COVAR|WINDOW_COVARP|WINDOW_PERCENTILE|'
+        r'RANK|RANK_UNIQUE|RANK_DENSE|RANK_MODIFIED|RANK_PERCENTILE)\s*\(',
+        re.IGNORECASE
+    )
+
+    # --- Pre-classification pass ---
+    # Identify which calculations will be calculated columns so that when
+    # a calc references another calc-column, we correctly treat it as a
+    # column reference (not a measure reference).  Without this, a
+    # dimension-role calc that concatenates other calc-columns (e.g.
+    # Filière = Nucléaire_vrai & Réseaux_vrai & NSE_vrai) is incorrectly
+    # demoted to a measure because the refs appear in calc_map/measure_names.
+    prelim_calc_col_captions = set()
+    prelim_calc_col_raws = set()
+    for _pc in calculations:
+        _pc_name = _pc.get('name', '').replace('[', '').replace(']', '')
+        _pc_caption = _pc.get('caption', _pc_name)
+        _pc_formula = _pc.get('formula', '').strip()
+        _pc_role = _pc.get('role', 'measure')
+        _pc_is_literal = _pc_formula and '[' not in _pc_formula
+        _pc_has_agg = bool(_agg_pattern.search(_pc_formula))
+        # Check for physical column refs (refs not in calc_map/measure_names)
+        _pc_refs = re.findall(r'\[([^\]]+)\]', _pc_formula)
+        _pc_has_col = False
+        for _r in _pc_refs:
+            if _r == _pc_caption or _r.startswith('Parameters'):
+                continue
+            if not (_r in measure_names_ctx or _r in calc_map_ctx.values() or _r in calc_map_ctx):
+                _pc_has_col = True
+                break
+        # Dimension-role calcs without aggregation → pre-classify as calc columns.
+        # The "references only measures" override is NOT applied here; it will
+        # be applied in the main pass with the knowledge of which calcs are
+        # truly calc-columns.
+        _pc_is_cc = (not _pc_is_literal) and (
+            _pc_role == 'dimension' or
+            (_pc_role == 'measure' and not _pc_has_agg and _pc_has_col)
+        )
+        if _pc_is_cc:
+            prelim_calc_col_captions.add(_pc_caption)
+            prelim_calc_col_raws.add(_pc_name)
+
+    for calc in calculations:
+        calc_name = calc.get('name', '').replace('[', '').replace(']', '')
+        caption = calc.get('caption', calc_name)
+        formula = calc.get('formula', '').strip()
+        role = calc.get('role', 'measure')
+        datatype = calc.get('datatype', 'string')
+
+        # Determine if it's a simple literal (parameter) -> measure
+        is_literal = formula and '[' not in formula
+
+        # Classify: calculated column or measure
+        has_aggregation = bool(_agg_pattern.search(formula))
+        refs_in_formula = re.findall(r'\[([^\]]+)\]', formula)
+        has_column_refs = False
+        references_only_measures = True
+        for ref in refs_in_formula:
+            if ref == caption:
+                continue
+            if ref.startswith('Parameters'):
+                continue
+            # A ref is a "measure/calc ref" ONLY if it's a known calc/param
+            # AND it was NOT pre-classified as a calculated column.
+            is_known_calc = (ref in measure_names_ctx or
+                             ref in calc_map_ctx.values() or
+                             ref in calc_map_ctx)
+            is_calc_col_ref = (ref in prelim_calc_col_captions or
+                               ref in prelim_calc_col_raws)
+            is_measure_ref = is_known_calc and not is_calc_col_ref
+            if not is_measure_ref:
+                has_column_refs = True
+                references_only_measures = False
+                break
+
+        is_calc_col = (not is_literal) and (
+            role == 'dimension' or
+            (role == 'measure' and not has_aggregation and has_column_refs)
+        )
+
+        # If a dimension-role calc references ONLY other measures/calcs
+        # (no physical columns), it must be a measure — calc columns
+        # cannot reference measures in DAX.
+        if is_calc_col and not has_column_refs and references_only_measures:
+            is_calc_col = False
+
+        # Security functions must be measures, never calculated columns
+        has_security_func = bool(re.search(
+            r'\b(USERPRINCIPALNAME|USERNAME|CUSTOMDATA|USERCULTURE)\s*\(',
+            dax_context.get('_preview_dax', formula), re.IGNORECASE
+        )) or bool(re.search(
+            r'\b(USERNAME|FULLNAME|USERDOMAIN|ISMEMBEROF)\s*\(',
+            formula, re.IGNORECASE
+        ))
+        if has_security_func:
+            is_calc_col = False
+
+        # Ignore MAKEPOINT (no DAX equivalent)
+        if re.search(r'\bMAKEPOINT\b', formula, re.IGNORECASE):
+            continue
+
+        dax_formula = convert_tableau_formula_to_dax(
+            formula,
+            column_name=calc_name,
+            table_name=table_name,
+            calc_map=dax_context.get('calc_map'),
+            param_map=dax_context.get('param_map'),
+            column_table_map=column_table_map,
+            measure_names=dax_context.get('measure_names'),
+            is_calc_column=is_calc_col,
+            param_values=param_values,
+            calc_datatype=datatype,
+            partition_fields=calc.get('table_calc_partitioning')
+        )
+
+        if is_calc_col:
+            # Post-process: inline literal-value measure references
+            for ms in result_table.get("measures", []):
+                ms_name = ms.get("name", "")
+                ms_expr = ms.get("expression", "").strip()
+                if ms_expr and re.match(r'^[\d.]+$|^"[^"]*"$|^true$|^false$', ms_expr, re.IGNORECASE):
+                    dax_formula = re.sub(
+                        r'\[' + re.escape(ms_name) + r'\]',
+                        ms_expr,
+                        dax_formula
+                    )
+
+            bim_calc_col = {
+                "name": caption,
+                "dataType": map_tableau_to_powerbi_type(datatype),
+                "expression": dax_formula,
+                "summarizeBy": "none",
+                "isCalculated": True
+            }
+            if datatype == 'real':
+                bim_calc_col["formatString"] = "#,0.00"
+
+            calc_meta = col_metadata_map.get(caption, col_metadata_map.get(calc_name, {}))
+            if calc_meta.get('hidden', False):
+                bim_calc_col["isHidden"] = True
+            if calc_meta.get('description', ''):
+                bim_calc_col["description"] = calc_meta['description']
+            sr = calc_meta.get('semantic_role', '')
+            geo_cat = _map_semantic_role_to_category(sr, caption)
+            if geo_cat:
+                bim_calc_col["dataCategory"] = geo_cat
+
+            result_table["columns"].append(bim_calc_col)
+        else:
+            # DAX Measure
+            bim_measure = {
+                "name": caption,
+                "expression": dax_formula,
+                "formatString": _get_format_string(datatype),
+                "displayFolder": _get_display_folder(datatype, role)
+            }
+            result_table["measures"].append(bim_measure)
+
+    return result_table
+
+
+def _build_relationships(relationships):
+    """
+    Create relationships from Tableau joins.
+
+    Args:
+        relationships: List of extracted relations with left/right {table, column}
+
+    Returns:
+        list: Relationship definitions
+    """
+    result = []
+
+    for rel in relationships:
+        left = rel.get('left', {})
+        right = rel.get('right', {})
+
+        from_table = left.get('table', '')
+        from_column = left.get('column', '')
+        to_table = right.get('table', '')
+        to_column = right.get('column', '')
+
+        if not from_table or not to_table or not from_column or not to_column:
+            continue
+
+        join_type = rel.get('type', 'left')
+        result.append({
+            "name": f"Relationship-{len(result)+1}",
+            "fromTable": from_table,
+            "fromColumn": from_column,
+            "toTable": to_table,
+            "toColumn": to_column,
+            "joinType": join_type,
+            "crossFilteringBehavior": "bothDirections" if join_type == 'full' else "oneDirection"
+        })
+
+    return result
+
+
+def _infer_cross_table_relationships(model):
+    """
+    Infer relationships between tables when DAX expressions reference
+    columns from another table but no explicit relationship exists.
+
+    Algorithm:
+    1. Scan all DAX expressions (measures, calc columns, RLS roles)
+    2. Find 'TableName'[ColumnName] cross-table references
+    3. For each unconnected table pair, find the best column-name match
+    4. Create a manyToOne relationship (fact->dimension)
+    """
+    tables = model["model"]["tables"]
+    relationships = model["model"]["relationships"]
+
+    # Build existing relationship pairs (bidirectional)
+    connected_pairs = set()
+    for rel in relationships:
+        ft = rel.get("fromTable", "")
+        tt = rel.get("toTable", "")
+        connected_pairs.add((ft, tt))
+        connected_pairs.add((tt, ft))
+
+    # Build table->columns map
+    table_columns = {}
+    for table in tables:
+        tname = table.get("name", "")
+        table_columns[tname] = {col.get("name", "") for col in table.get("columns", [])}
+
+    cross_ref_pattern = re.compile(r"'([^']+)'\[([^\]]+)\]")
+
+    # Collect needed table pairs from DAX cross-table references
+    needed_pairs = set()
+
+    for table in tables:
+        tname = table.get("name", "")
+        for measure in table.get("measures", []):
+            expr = measure.get("expression", "")
+            for match in cross_ref_pattern.finditer(expr):
+                ref_table = match.group(1)
+                if ref_table != tname and ref_table in table_columns:
+                    needed_pairs.add((tname, ref_table))
+        for col in table.get("columns", []):
+            if col.get("isCalculated"):
+                expr = col.get("expression", "")
+                for match in cross_ref_pattern.finditer(expr):
+                    ref_table = match.group(1)
+                    if ref_table != tname and ref_table in table_columns:
+                        needed_pairs.add((tname, ref_table))
+
+    # Scan RLS roles
+    for role in model["model"].get("roles", []):
+        for tp in role.get("tablePermissions", []):
+            perm_table = tp.get("name", "")
+            expr = tp.get("filterExpression", "")
+            for match in cross_ref_pattern.finditer(expr):
+                ref_table = match.group(1)
+                if ref_table != perm_table and ref_table in table_columns:
+                    needed_pairs.add((perm_table, ref_table))
+
+    # For each needed pair, find a matching column for the relationship
+    for (source_table, ref_table) in needed_pairs:
+        if (source_table, ref_table) in connected_pairs:
+            continue
+
+        source_cols = table_columns.get(source_table, set())
+        ref_cols = table_columns.get(ref_table, set())
+
+        best_match = None
+        best_score = 0
+
+        for sc in source_cols:
+            for rc in ref_cols:
+                sc_lower = sc.lower()
+                rc_lower = rc.lower()
+                score = 0
+
+                if sc_lower == rc_lower:
+                    score = 100
+                elif sc_lower in rc_lower and len(sc_lower) >= 3:
+                    score = 50 - (len(rc) - len(sc))
+                elif rc_lower in sc_lower and len(rc_lower) >= 3:
+                    score = 50 - (len(sc) - len(rc))
+                elif len(sc_lower) >= 3 and len(rc_lower) >= 3:
+                    common = 0
+                    for a, b in zip(sc_lower, rc_lower):
+                        if a == b:
+                            common += 1
+                        else:
+                            break
+                    if common >= 3:
+                        score = common * 5
+
+                if score > best_score:
+                    best_score = score
+                    best_match = (sc, rc)
+
+        if best_match and best_score >= 15:
+            from_col, to_col = best_match
+
+            if len(source_cols) >= len(ref_cols):
+                fact_table, dim_table = source_table, ref_table
+                fk_col, pk_col = from_col, to_col
+            else:
+                fact_table, dim_table = ref_table, source_table
+                fk_col, pk_col = to_col, from_col
+
+            relationships.append({
+                "name": f"inferred_{fact_table}_{dim_table}",
+                "fromTable": fact_table,
+                "fromColumn": fk_col,
+                "toTable": dim_table,
+                "toColumn": pk_col,
+                "crossFilteringBehavior": "oneDirection"
+            })
+
+            connected_pairs.add((source_table, ref_table))
+            connected_pairs.add((ref_table, source_table))
+
+
+def _detect_many_to_many(model, datasources):
+    """
+    Determine cardinality for each relationship.
+
+    Strategy — based on Tableau join type:
+    - Full joins → manyToMany (ambiguous direction)
+    - Left/Inner/Right joins → manyToOne (default PBI behavior)
+      The 'to' side is the dimension/lookup table (one side).
+
+    For left/inner joins the Tableau left table (fromTable) is typically
+    the fact table (many rows) and the right table (toTable) is the
+    lookup (unique keys).  We default to manyToOne which is safe — Power BI
+    will raise an error at refresh if the 'one' side has duplicates,
+    prompting the user to review.  Getting manyToMany wrong (when it
+    should be manyToOne) silently duplicates data, which is worse.
+    """
+    for rel in model['model']['relationships']:
+        to_table = rel.get('toTable', '')
+        to_col = rel.get('toColumn', '')
+        join_type = rel.get('joinType', 'left')
+
+        if join_type == 'full':
+            rel['fromCardinality'] = 'many'
+            rel['toCardinality'] = 'many'
+            rel['crossFilteringBehavior'] = 'bothDirections'
+            print(f"  ⚠️  Relation → '{to_table}.{to_col}' set to manyToMany (full join).")
+        else:
+            # left, inner, right → manyToOne
+            rel['fromCardinality'] = 'many'
+            rel['toCardinality'] = 'one'
+            rel['crossFilteringBehavior'] = 'oneDirection'
+            print(f"  ✓  Relation → '{to_table}.{to_col}' set to manyToOne (lookup table).")
+
+
+def _fix_related_for_many_to_many(model):
+    """
+    Replace RELATED('table'[col]) with LOOKUPVALUE() for manyToMany relationships.
+    """
+    m2m_tables = {}  # {to_table: [(to_col, from_table, from_col), ...]}
+    for rel in model['model']['relationships']:
+        if rel.get('fromCardinality') == 'many' and rel.get('toCardinality') == 'many':
+            to_table = rel.get('toTable', '')
+            to_col = rel.get('toColumn', '')
+            from_table = rel.get('fromTable', '')
+            from_col = rel.get('fromColumn', '')
+            if to_table:
+                if to_table not in m2m_tables:
+                    m2m_tables[to_table] = (to_col, from_table, from_col)
+                # keep first match only (most specific) — avoid overwriting
+
+    if not m2m_tables:
+        return
+
+    for table in model['model']['tables']:
+        for col in table.get('columns', []):
+            expr = col.get('expression', '')
+            if expr and 'RELATED(' in expr:
+                col['expression'] = _replace_related_with_lookupvalue(expr, m2m_tables)
+        for measure in table.get('measures', []):
+            expr = measure.get('expression', '')
+            if expr and 'RELATED(' in expr:
+                measure['expression'] = _replace_related_with_lookupvalue(expr, m2m_tables)
+
+
+def _replace_related_with_lookupvalue(expr, m2m_tables):
+    """Replace RELATED('table'[col]) with LOOKUPVALUE() for m2m tables."""
+    pattern = r"RELATED\(('([^']+)'|([A-Za-z0-9_][A-Za-z0-9_ .-]*))\[([^\]]*(?:\]\][^\]]*)*)\]\)"
+
+    def replacer(match):
+        table_name = match.group(2) if match.group(2) else match.group(3)
+        col_name = match.group(4)
+
+        if table_name not in m2m_tables:
+            return match.group(0)
+
+        join_to_col, from_table, from_col = m2m_tables[table_name]
+
+        t_ref = f"'{table_name}'" if not table_name.isidentifier() else table_name
+        ft_ref = f"'{from_table}'" if not from_table.isidentifier() else from_table
+
+        return f"LOOKUPVALUE({t_ref}[{col_name}], {t_ref}[{join_to_col}], {ft_ref}[{from_col}])"
+
+    return re.sub(pattern, replacer, expr)
+
+
+def _fix_relationship_type_mismatches(model):
+    """
+    Fix type mismatches between relationship key columns.
+    Aligns the toColumn ('one' side) to the fromColumn ('many' side) type.
+    """
+    tables = {t.get('name', ''): t for t in model['model']['tables']}
+
+    pbi_to_m = {
+        'String': 'type text',
+        'string': 'type text',
+        'Int64': 'Int64.Type',
+        'int64': 'Int64.Type',
+        'Double': 'type number',
+        'double': 'type number',
+        'Boolean': 'type logical',
+        'boolean': 'type logical',
+        'DateTime': 'type datetime',
+        'dateTime': 'type datetime',
+    }
+
+    for rel in model['model']['relationships']:
+        from_table = tables.get(rel.get('fromTable', ''))
+        to_table = tables.get(rel.get('toTable', ''))
+        if not from_table or not to_table:
+            continue
+
+        from_col_name = rel.get('fromColumn', '')
+        to_col_name = rel.get('toColumn', '')
+
+        from_col = next((c for c in from_table.get('columns', []) if c.get('name') == from_col_name), None)
+        to_col = next((c for c in to_table.get('columns', []) if c.get('name') == to_col_name), None)
+        if not from_col or not to_col:
+            continue
+
+        from_type = from_col.get('dataType', 'string')
+        to_type = to_col.get('dataType', 'string')
+
+        if from_type == to_type:
+            continue
+
+        print(f"  \u26a0\ufe0f  Type mismatch: {rel.get('fromTable')}.{from_col_name} ({from_type}) "
+              f"-> {rel.get('toTable')}.{to_col_name} ({to_type}). Aligning to {from_type}.")
+
+        old_type = to_type
+        to_col['dataType'] = from_type
+
+        if from_type.lower() == 'string':
+            to_col['summarizeBy'] = 'none'
+            if 'formatString' in to_col:
+                del to_col['formatString']
+
+        old_m_type = pbi_to_m.get(old_type, '')
+        new_m_type = pbi_to_m.get(from_type, '')
+        if old_m_type and new_m_type:
+            for partition in to_table.get('partitions', []):
+                source = partition.get('source', {})
+                if isinstance(source, dict) and 'expression' in source:
+                    expr = source['expression']
+                    old_pattern = f'"{to_col_name}", {old_m_type}'
+                    new_pattern = f'"{to_col_name}", {new_m_type}'
+                    if old_pattern in expr:
+                        source['expression'] = expr.replace(old_pattern, new_pattern)
+        else:
+            print(f"    \u26a0\ufe0f  Cannot map M types for {to_col_name}: {repr(old_type)} / {repr(from_type)}")
+
+
+def _map_semantic_role_to_category(semantic_role, col_name=''):
+    """Map a Tableau semantic-role to a Power BI dataCategory."""
+    role_map = {
+        '[Country].[Name]': 'Country',
+        '[Country].[ISO3166_2]': 'Country',
+        '[State].[Name]': 'StateOrProvince',
+        '[State].[Abbreviation]': 'StateOrProvince',
+        '[County].[Name]': 'County',
+        '[City].[Name]': 'City',
+        '[ZipCode].[Name]': 'PostalCode',
+        '[Latitude]': 'Latitude',
+        '[Longitude]': 'Longitude',
+        '[Geographical].[Latitude]': 'Latitude',
+        '[Geographical].[Longitude]': 'Longitude',
+        '[Address]': 'Address',
+        '[Continent].[Name]': 'Continent',
+    }
+    if semantic_role in role_map:
+        return role_map[semantic_role]
+
+    if not semantic_role:
+        name_lower = col_name.lower()
+        if 'latitude' in name_lower or name_lower in ('lat', 'lat_upgrade'):
+            return 'Latitude'
+        if 'longitude' in name_lower or name_lower in ('lon', 'lng', 'long', 'long_upgrade'):
+            return 'Longitude'
+        if name_lower in ('city', 'ville', 'commune', 'label') and 'code' not in name_lower:
+            return 'City'
+        if name_lower in ('country', 'pays'):
+            return 'Country'
+        if any(x in name_lower for x in ['region', '\u00e9tat', 'state', 'province', 'd\u00e9partement']):
+            return 'StateOrProvince'
+        if 'postal' in name_lower or 'zip' in name_lower or 'code_postal' in name_lower:
+            return 'PostalCode'
+
+    return None
+
+
+def _get_display_folder(datatype, role):
+    """Determine the display folder based on type and role."""
+    if role == 'dimension':
+        return 'Dimensions'
+    if datatype in ('real', 'integer', 'number'):
+        return 'Measures'
+    if datatype in ('date', 'datetime'):
+        return 'Time Intelligence'
+    if datatype == 'boolean':
+        return 'Flags'
+    return 'Calculations'
+
+
+def _process_sets_groups_bins(model, extra_objects, main_table_name, column_table_map):
+    """Add sets, groups and bins as calculated columns."""
+    if not main_table_name:
+        return
+
+    main_table = None
+    for table in model["model"]["tables"]:
+        if table.get("name") == main_table_name:
+            main_table = table
+            break
+    if not main_table:
+        return
+
+    existing_cols = {col.get("name", "") for col in main_table.get("columns", [])}
+
+    # Sets -> boolean calculated column
+    for s in extra_objects.get('sets', []):
+        set_name = s.get('name', '')
+        if not set_name or set_name in existing_cols:
+            continue
+
+        members = s.get('members', [])
+        formula = s.get('formula', '')
+
+        if formula:
+            dax_expr = formula
+        elif members:
+            escaped = [f'"{m}"' for m in members[:50]]
+            dax_expr = f"'{main_table_name}'[{set_name}] IN {{{', '.join(escaped)}}}"
+        else:
+            dax_expr = 'TRUE()'
+
+        main_table["columns"].append({
+            "name": set_name,
+            "dataType": "Boolean",
+            "expression": dax_expr,
+            "summarizeBy": "none",
+            "isCalculated": True,
+            "displayFolder": "Sets"
+        })
+        existing_cols.add(set_name)
+
+    # Groups -> calculated column with SWITCH or concatenation
+    for g in extra_objects.get('groups', []):
+        group_name = g.get('name', '')
+        if not group_name or group_name in existing_cols:
+            continue
+
+        group_type = g.get('group_type', 'values')
+        members = g.get('members', {})
+        source_field = g.get('source_field', '').replace('[', '').replace(']', '')
+        source_fields = g.get('source_fields', [])
+
+        if group_type == 'combined' and source_fields:
+            calc_map_lookup = {}
+            for ds in extra_objects.get('_datasources', []):
+                for calc in ds.get('calculations', []):
+                    raw = calc.get('name', '').replace('[', '').replace(']', '')
+                    cap = calc.get('caption', raw)
+                    calc_map_lookup[raw] = cap
+            for table_obj in model.get('model', {}).get('tables', []):
+                for col in table_obj.get('columns', []):
+                    if col.get('isCalculated'):
+                        col_name = col.get('name', '')
+                        if col_name and col_name not in column_table_map:
+                            column_table_map[col_name] = table_obj.get('name', main_table_name)
+                for meas in table_obj.get('measures', []):
+                    meas_name = meas.get('name', '')
+                    if meas_name and meas_name not in column_table_map:
+                        column_table_map[meas_name] = table_obj.get('name', main_table_name)
+
+            parts = []
+            for sf in source_fields:
+                resolved = calc_map_lookup.get(sf, sf)
+                table_ref = column_table_map.get(resolved, column_table_map.get(sf, main_table_name))
+                escaped_col = resolved.replace(']', ']]')
+                ref = f"'{table_ref}'[{escaped_col}]"
+                if table_ref != main_table_name:
+                    ref = f"RELATED({ref})"
+                parts.append(ref)
+
+            if len(parts) == 1:
+                dax_expr = parts[0]
+            else:
+                dax_expr = ' & " | " & '.join(parts)
+
+        elif members and source_field:
+            table_ref = column_table_map.get(source_field, main_table_name)
+            cases = []
+            for label, values in members.items():
+                for val in values:
+                    cases.append(f'"{val}", "{label}"')
+
+            if cases:
+                dax_expr = f"SWITCH('{table_ref}'[{source_field}], {', '.join(cases)}, \"Other\")"
+            else:
+                dax_expr = f"'{table_ref}'[{source_field}]"
+        else:
+            dax_expr = '""'
+
+        main_table["columns"].append({
+            "name": group_name,
+            "dataType": "String",
+            "expression": dax_expr,
+            "summarizeBy": "none",
+            "isCalculated": True,
+            "displayFolder": "Groups"
+        })
+        existing_cols.add(group_name)
+
+    # Bins -> calculated column with FLOOR
+    for b in extra_objects.get('bins', []):
+        bin_name = b.get('name', '')
+        if not bin_name or bin_name in existing_cols:
+            continue
+
+        source_field = b.get('source_field', '').replace('[', '').replace(']', '')
+        bin_size = b.get('size', '10')
+
+        if source_field:
+            table_ref = column_table_map.get(source_field, main_table_name)
+            dax_expr = f"FLOOR('{table_ref}'[{source_field}], {bin_size})"
+        else:
+            dax_expr = '0'
+
+        main_table["columns"].append({
+            "name": bin_name,
+            "dataType": "Double",
+            "expression": dax_expr,
+            "summarizeBy": "none",
+            "isCalculated": True,
+            "displayFolder": "Bins"
+        })
+        existing_cols.add(bin_name)
+
+
+def _apply_hierarchies(model, hierarchies, column_table_map):
+    """Apply Tableau hierarchies (drill-paths) to the model."""
+    if not hierarchies:
+        return
+
+    for h in hierarchies:
+        h_name = h.get('name', '')
+        levels = h.get('levels', [])
+        if not h_name or not levels:
+            continue
+
+        first_level = levels[0]
+        target_table_name = column_table_map.get(first_level, '')
+        if not target_table_name:
+            continue
+
+        for table in model["model"]["tables"]:
+            if table.get("name") == target_table_name:
+                table_col_names = {col.get("name", "") for col in table.get("columns", [])}
+                valid_levels = [l for l in levels if l in table_col_names]
+
+                if valid_levels:
+                    if "hierarchies" not in table:
+                        table["hierarchies"] = []
+
+                    hierarchy = {
+                        "name": h_name,
+                        "levels": [
+                            {"name": lvl, "ordinal": idx, "column": lvl}
+                            for idx, lvl in enumerate(valid_levels)
+                        ]
+                    }
+                    table["hierarchies"].append(hierarchy)
+                break
+
+
+def _create_parameter_tables(model, parameters, main_table_name):
+    """Create What-If parameter tables for Tableau parameters.
+
+    - Range parameters (integer/real): GENERATESERIES(min, max, step) table
+    - List parameters (string/boolean): DATATABLE with domain values
+    - Any parameters (no domain): measure with default value on main table
+    """
+    if not parameters:
+        return
+
+    type_map = {
+        'integer': ('int64', 'INTEGER'),
+        'real': ('double', 'DOUBLE'),
+        'date': ('dateTime', 'DATETIME'),
+        'datetime': ('dateTime', 'DATETIME'),
+        'boolean': ('boolean', 'BOOLEAN'),
+        'string': ('string', 'STRING'),
+    }
+
+    for param in parameters:
+        caption = param.get('caption', '')
+        if not caption:
+            continue
+
+        datatype = param.get('datatype', 'string')
+        default_value = param.get('value', '').strip('"')
+        domain_type = param.get('domain_type', 'any')
+        allowable_values = param.get('allowable_values', [])
+
+        pbi_type, dax_type = type_map.get(datatype, ('string', 'STRING'))
+
+        if datatype == 'string':
+            default_expr = f'"{default_value}"'
+        elif datatype == 'boolean':
+            default_expr = default_value.upper() if default_value else 'TRUE'
+        elif datatype in ('date', 'datetime'):
+            # Convert Tableau #YYYY-MM-DD# date literal to DAX DATE()
+            date_m = re.match(r'#(\d{4})-(\d{2})-(\d{2})#', default_value)
+            if date_m:
+                default_expr = f'DATE({int(date_m.group(1))}, {int(date_m.group(2))}, {int(date_m.group(3))})'
+            else:
+                default_expr = default_value if default_value else 'DATE(2024, 1, 1)'
+        else:
+            default_expr = default_value if default_value else '0'
+
+        if domain_type == 'any' or not allowable_values:
+            for table in model["model"]["tables"]:
+                if table.get("name") == main_table_name:
+                    if "measures" not in table:
+                        table["measures"] = []
+                    table["measures"].append({
+                        "name": caption,
+                        "expression": default_expr,
+                        "annotations": [
+                            {"name": "displayFolder", "value": "Parameters"}
+                        ]
+                    })
+                    break
+            continue
+
+        table_expr = None
+        col_name = caption
+
+        if domain_type == 'range':
+            range_info = next((v for v in allowable_values if v.get('type') == 'range'), None)
+            if range_info:
+                min_val = range_info.get('min', '0')
+                max_val = range_info.get('max', '100')
+                step = range_info.get('step', '') or '1'
+                table_expr = f"GENERATESERIES({min_val}, {max_val}, {step})"
+                col_name = "Value"
+
+        elif domain_type == 'list':
+            list_values = [v for v in allowable_values if v.get('type') != 'range']
+            if list_values:
+                if datatype == 'string':
+                    rows = ', '.join(f'{{"{v.get("value", "")}"}}' for v in list_values)
+                elif datatype == 'boolean':
+                    rows = ', '.join(f'{{{v.get("value", "TRUE").upper()}}}' for v in list_values)
+                else:
+                    rows = ', '.join(f'{{{v.get("value", "0")}}}' for v in list_values)
+                col_name = "Value"
+                table_expr = f'DATATABLE("Value", {dax_type}, {{{rows}}})'
+
+        if not table_expr:
+            continue
+
+        param_table = {
+            "name": caption,
+            "columns": [{
+                "name": col_name,
+                "dataType": pbi_type,
+                "sourceColumn": col_name,
+                "annotations": [
+                    {"name": "displayFolder", "value": "Parameters"}
+                ]
+            }],
+            "measures": [{
+                "name": caption,
+                "expression": f"SELECTEDVALUE('{caption}'[{col_name}], {default_expr})",
+                "annotations": [
+                    {"name": "displayFolder", "value": "Parameters"}
+                ]
+            }],
+            "partitions": [{
+                "name": caption,
+                "mode": "import",
+                "source": {
+                    "type": "calculated",
+                    "expression": table_expr
+                }
+            }]
+        }
+
+        model["model"]["tables"].append(param_table)
+
+    # Deduplicate: remove parameter measures from other tables
+    param_table_names = set()
+    for param in parameters:
+        caption = param.get('caption', '')
+        domain_type = param.get('domain_type', 'any')
+        if caption and domain_type in ('range', 'list') and param.get('allowable_values'):
+            param_table_names.add(caption)
+
+    if param_table_names:
+        for table in model["model"]["tables"]:
+            table_name = table.get("name", "")
+            if table_name in param_table_names:
+                continue
+            if "measures" in table:
+                table["measures"] = [
+                    m for m in table["measures"]
+                    if m.get("name", "") not in param_table_names
+                ]
+
+
+def _create_rls_roles(model, user_filters, main_table_name, column_table_map):
+    """Create Row-Level Security (RLS) roles from Tableau user filters.
+
+    Converts Tableau security patterns to Power BI RLS roles:
+    - User filter (explicit user->row mappings) -> RLS role with USERPRINCIPALNAME()
+    - Calculated security (USERNAME/FULLNAME formulas) -> RLS role with DAX filter
+    - ISMEMBEROF group patterns -> separate RLS role per group
+    """
+    if not user_filters:
+        return
+
+    if not main_table_name:
+        tables = model.get('model', {}).get('tables', [])
+        if tables:
+            main_table_name = tables[0].get('name', 'Table')
+        else:
+            main_table_name = 'Table'
+
+    roles = []
+    role_names = set()
+
+    for uf in user_filters:
+        uf_type = uf.get('type', '')
+
+        if uf_type == 'user_filter':
+            filter_name = uf.get('name', 'UserFilter')
+            column = uf.get('column', '')
+            user_mappings = uf.get('user_mappings', [])
+
+            table_name = column_table_map.get(column, main_table_name)
+
+            col_clean = column
+            if ':' in col_clean:
+                col_clean = col_clean.split(':')[-1]
+
+            if user_mappings:
+                user_values = {}
+                for mapping in user_mappings:
+                    user = mapping.get('user', '')
+                    val = mapping.get('value', '')
+                    if user and val:
+                        user_values.setdefault(user, []).append(val)
+
+                or_clauses = []
+                for user_email, values in user_values.items():
+                    if len(values) == 1:
+                        val_expr = f'[{col_clean}] = "{values[0]}"'
+                    else:
+                        val_list = ', '.join(f'"{v}"' for v in values)
+                        val_expr = f'[{col_clean}] IN {{{val_list}}}'
+                    or_clauses.append(
+                        f'(USERPRINCIPALNAME() = "{user_email}" && {val_expr})'
+                    )
+
+                if or_clauses:
+                    filter_dax = ' || '.join(or_clauses)
+                else:
+                    filter_dax = 'FALSE()'
+
+                role_name = _unique_role_name(filter_name, role_names)
+                role_names.add(role_name)
+
+                roles.append({
+                    "name": role_name,
+                    "modelPermission": "read",
+                    "tablePermissions": [
+                        {
+                            "name": table_name,
+                            "filterExpression": filter_dax
+                        }
+                    ],
+                    "_migration_note": (
+                        f"Migrated from Tableau user filter '{filter_name}'. "
+                        f"Each user is mapped to their allowed {col_clean} values inline. "
+                        f"Consider creating a security table for dynamic RLS."
+                    ),
+                    "_user_mappings": user_mappings
+                })
+
+            elif column:
+                filter_dax = f"[{col_clean}] = USERPRINCIPALNAME()"
+                role_name = _unique_role_name(filter_name, role_names)
+                role_names.add(role_name)
+
+                roles.append({
+                    "name": role_name,
+                    "modelPermission": "read",
+                    "tablePermissions": [
+                        {
+                            "name": table_name,
+                            "filterExpression": filter_dax
+                        }
+                    ]
+                })
+
+        elif uf_type == 'calculated_security':
+            calc_name = uf.get('name', 'SecurityCalc')
+            formula = uf.get('formula', '')
+            functions_used = uf.get('functions_used', [])
+            ismemberof_groups = uf.get('ismemberof_groups', [])
+
+            if ismemberof_groups:
+                for group in ismemberof_groups:
+                    role_name = _unique_role_name(group, role_names)
+                    role_names.add(role_name)
+
+                    filter_dax = f"TRUE()  /* Members of role '{group}' have access */"
+
+                    roles.append({
+                        "name": role_name,
+                        "modelPermission": "read",
+                        "tablePermissions": [
+                            {
+                                "name": main_table_name,
+                                "filterExpression": filter_dax
+                            }
+                        ],
+                        "_migration_note": (
+                            f"Migrated from Tableau ISMEMBEROF(\"{group}\"). "
+                            f"Assign Azure AD group members to this RLS role."
+                        )
+                    })
+
+            elif 'USERNAME' in functions_used or 'FULLNAME' in functions_used:
+                dax_filter = convert_tableau_formula_to_dax(
+                    formula,
+                    table_name=main_table_name,
+                    column_table_map=column_table_map
+                )
+
+                role_name = _unique_role_name(calc_name, role_names)
+                role_names.add(role_name)
+
+                # Determine which table the filter applies to
+                cross_ref = re.search(r"'([^']+)'\[", dax_filter)
+                perm_table = main_table_name
+                if cross_ref:
+                    ref_table = cross_ref.group(1)
+                    model_table_names = {t.get("name", "") for t in model["model"]["tables"]}
+                    if ref_table in model_table_names and ref_table != main_table_name:
+                        perm_table = ref_table
+                        dax_filter = dax_filter.replace(f"'{ref_table}'[", "[")
+
+                roles.append({
+                    "name": role_name,
+                    "modelPermission": "read",
+                    "tablePermissions": [
+                        {
+                            "name": perm_table,
+                            "filterExpression": dax_filter
+                        }
+                    ],
+                    "_migration_note": (
+                        f"Migrated from Tableau calculated security '{calc_name}'. "
+                        f"Original formula: {formula}"
+                    )
+                })
+
+    if roles:
+        model["model"]["roles"] = roles
+        print(f"    \u2713 {len(roles)} RLS role(s) created")
+
+
+def _unique_role_name(base_name, existing_names):
+    """Generate a unique role name, appending _N if needed."""
+    clean = re.sub(r'[^\w\s-]', '', base_name).strip()
+    if not clean:
+        clean = 'Role'
+
+    if clean not in existing_names:
+        return clean
+
+    counter = 2
+    while f"{clean}_{counter}" in existing_names:
+        counter += 1
+    return f"{clean}_{counter}"
+
+
+def _get_format_string(datatype):
+    """Return the Power BI format string for a given type."""
+    format_map = {
+        'integer': '0',
+        'real': '#,0.00',
+        'currency': '$#,0.00',
+        'percentage': '0.00%',
+        'date': 'Short Date',
+        'datetime': 'General Date',
+        'boolean': 'True/False'
+    }
+    return format_map.get(datatype.lower(), '0')
+
+
+def _convert_tableau_format_to_pbi(tableau_format):
+    """Convert a Tableau number format string to Power BI format string.
+
+    Tableau formats:  #,##0.00  |  0.0%  |  $#,##0  |  0.000  |  #,##0
+    PBI formats:      #,0.00   |  0.0%  |  $#,0    |  0.000  |  #,0
+
+    Args:
+        tableau_format: Tableau format string (from default-format attribute)
+
+    Returns:
+        str: Power BI format string, or empty string if no conversion needed
+    """
+    if not tableau_format:
+        return ''
+
+    fmt = tableau_format.strip()
+
+    # Already a PBI-compatible format
+    if fmt in ('0', '#,0', '#,0.00', '0.00%', '$#,0.00', 'General Date', 'Short Date'):
+        return fmt
+
+    # Percentage formats
+    if '%' in fmt:
+        # Normalize: Tableau uses 0.0% or 0.00% etc.
+        return fmt
+
+    # Currency with symbol
+    for symbol in ('$', '€', '£', '¥'):
+        if symbol in fmt:
+            # Convert Tableau ##0 pattern to PBI #,0 pattern
+            cleaned = fmt.replace('##0', '#0').replace('###', '#').replace(',,', ',')
+            # Ensure at least one digit placeholder
+            if '0' not in cleaned:
+                cleaned = cleaned + '0'
+            return cleaned
+
+    # Numeric formats
+    # Tableau uses #,##0.00 → PBI uses #,0.00
+    result = fmt
+    # Convert Tableau's #,##0 → #,0 pattern
+    result = result.replace('#,##0', '#,0')
+    result = result.replace('#,###', '#,#')
+    # Handle plain 0 patterns
+    if result and result[0] == '0':
+        return result  # Already numeric
+
+    return result if result != fmt else fmt
+
+
+def _deactivate_ambiguous_paths(model):
+    """
+    Detect and deactivate relationships that create ambiguous paths.
+
+    Power BI requires that the graph of active relationships forms a forest
+    (tree per connected component) — i.e., no cycles when treated as undirected.
+    If a cycle is detected, the least-important relationship is deactivated.
+
+    Priority for deactivation (first deactivated):
+      1. Auto-generated Calendar relationships (name starts with 'Calendar_')
+      2. Inferred cross-table relationships (name starts with 'inferred_')
+      3. Original Tableau-extracted relationships (last resort)
+    """
+    relationships = model["model"]["relationships"]
+    if not relationships:
+        return
+
+    # --- Union-Find -------------------------------------------------------
+    parent = {}
+
+    def find(x):
+        while parent.get(x, x) != x:
+            parent[x] = parent.get(parent[x], parent[x])  # path compression
+            x = parent[x]
+        return x
+
+    def union(a, b):
+        ra, rb = find(a), find(b)
+        if ra == rb:
+            return False          # cycle detected
+        parent[ra] = rb
+        return True
+
+    # --- Sort relationships so the most important are added first ----------
+    def _deactivation_priority(rel):
+        """Lower value = more important = added to tree first."""
+        name = rel.get('name', '')
+        if name.startswith('Calendar_'):
+            return 2   # auto-generated → deactivate first
+        if name.startswith('inferred_'):
+            return 1   # inferred → deactivate second
+        return 0       # original Tableau relationships → keep
+
+    sorted_rels = sorted(relationships, key=_deactivation_priority)
+
+    deactivated = []
+    for rel in sorted_rels:
+        if rel.get('isActive') == False:
+            continue  # already inactive, skip
+        from_t = rel.get('fromTable', '')
+        to_t = rel.get('toTable', '')
+        if not from_t or not to_t:
+            continue
+        if not union(from_t, to_t):
+            # This edge creates a cycle → deactivate it
+            rel['isActive'] = False
+            deactivated.append(f"{from_t}.{rel.get('fromColumn','')} → "
+                               f"{to_t}.{rel.get('toColumn','')}")
+
+    for d in deactivated:
+        print(f"  ⚠ Deactivated relationship (ambiguous path): {d}")
+
+
+def _create_quick_table_calc_measures(model, worksheets, main_table_name, column_table_map):
+    """Auto-generate DAX measures for Tableau quick table calculations.
+    
+    Detects fields with table_calc metadata (pcto, pctd, running_sum, rank, etc.)
+    and creates corresponding DAX measures:
+    - pcto (% of Total): DIVIDE(SUM([Field]), CALCULATE(SUM([Field]), ALL('Table')))
+    - pctd (% Difference): DIVIDE(SUM([Field]) - CALCULATE(SUM([Field]), PREVIOUSDAY(...)), ...)
+    - running_sum: CALCULATE(SUM([Field]), FILTER(ALL('Calendar'[Date]), ...))
+    - running_avg, running_count, running_min, running_max: similar pattern
+    - rank / rank_unique / rank_dense: RANKX(ALL('Table'), SUM([Field]))
+    """
+    if not worksheets:
+        return
+    
+    # Find the main table to add measures to
+    target_table = None
+    for t in model["model"]["tables"]:
+        if t.get("name") == main_table_name:
+            target_table = t
+            break
+    if not target_table:
+        return
+    
+    existing_measures = {m.get("name", "") for m in target_table.get("measures", [])}
+    added = 0
+    
+    _AGG_MAP = {
+        'sum': 'SUM', 'avg': 'AVERAGE', 'count': 'COUNT',
+        'min': 'MIN', 'max': 'MAX', 'countd': 'DISTINCTCOUNT',
+    }
+    
+    for ws in worksheets:
+        for field in ws.get('fields', []):
+            tc_type = field.get('table_calc')
+            if not tc_type:
+                continue
+            
+            field_name = field.get('name', '')
+            tc_agg = field.get('table_calc_agg', 'sum')
+            agg_func = _AGG_MAP.get(tc_agg, 'SUM')
+            tbl = column_table_map.get(field_name, main_table_name)
+            
+            if tc_type == 'pcto':
+                measure_name = f"% of Total {field_name}"
+                if measure_name not in existing_measures:
+                    expr = f"DIVIDE({agg_func}('{tbl}'[{field_name}]), CALCULATE({agg_func}('{tbl}'[{field_name}]), ALL('{tbl}')))"
+                    target_table.setdefault("measures", []).append({
+                        "name": measure_name,
+                        "expression": expr,
+                        "formatString": "0.00%",
+                        "displayFolder": "Table Calculations"
+                    })
+                    existing_measures.add(measure_name)
+                    added += 1
+            
+            elif tc_type == 'pctd':
+                measure_name = f"% Difference {field_name}"
+                if measure_name not in existing_measures:
+                    base = f"{agg_func}('{tbl}'[{field_name}])"
+                    prev = f"CALCULATE({base}, PREVIOUSDAY('Calendar'[Date]))"
+                    expr = f"VAR _Current = {base} VAR _Previous = {prev} RETURN DIVIDE(_Current - _Previous, _Previous)"
+                    target_table.setdefault("measures", []).append({
+                        "name": measure_name,
+                        "expression": expr,
+                        "formatString": "0.00%",
+                        "displayFolder": "Table Calculations"
+                    })
+                    existing_measures.add(measure_name)
+                    added += 1
+            
+            elif tc_type.startswith('running_'):
+                running_agg = tc_type.replace('running_', '')
+                running_func = _AGG_MAP.get(running_agg, 'SUM')
+                measure_name = f"Running {running_agg.title()} {field_name}"
+                if measure_name not in existing_measures:
+                    expr = (f"CALCULATE({running_func}('{tbl}'[{field_name}]), "
+                            f"FILTER(ALL('Calendar'[Date]), 'Calendar'[Date] <= MAX('Calendar'[Date])))")
+                    target_table.setdefault("measures", []).append({
+                        "name": measure_name,
+                        "expression": expr,
+                        "formatString": "#,0.00",
+                        "displayFolder": "Table Calculations"
+                    })
+                    existing_measures.add(measure_name)
+                    added += 1
+            
+            elif tc_type in ('rank', 'rank_unique', 'rank_dense'):
+                dense = ", DENSE" if tc_type == 'rank_dense' else ""
+                measure_name = f"Rank {field_name}"
+                if measure_name not in existing_measures:
+                    expr = f"RANKX(ALL('{tbl}'), {agg_func}('{tbl}'[{field_name}]){dense})"
+                    target_table.setdefault("measures", []).append({
+                        "name": measure_name,
+                        "expression": expr,
+                        "formatString": "#,0",
+                        "displayFolder": "Table Calculations"
+                    })
+                    existing_measures.add(measure_name)
+                    added += 1
+            
+            elif tc_type == 'diff':
+                measure_name = f"Difference {field_name}"
+                if measure_name not in existing_measures:
+                    base = f"{agg_func}('{tbl}'[{field_name}])"
+                    prev = f"CALCULATE({base}, PREVIOUSDAY('Calendar'[Date]))"
+                    expr = f"{base} - {prev}"
+                    target_table.setdefault("measures", []).append({
+                        "name": measure_name,
+                        "expression": expr,
+                        "formatString": "#,0.00",
+                        "displayFolder": "Table Calculations"
+                    })
+                    existing_measures.add(measure_name)
+                    added += 1
+    
+    if added:
+        print(f"  ✓ {added} quick table calc measures generated")
+
+
+def _add_date_table(model):
+    """
+    Add an automatic date table using Power Query M.
+
+    Uses an M partition (not DAX calculated) to avoid "invalid column ID"
+    errors when TMDL relationships reference columns inside
+    calculated-table partitions.
+
+    Links Calendar to ALL fact tables that have date columns
+    (not just the first one).
+
+    Supports customizable date range via model['_calendar_start'] and
+    model['_calendar_end'] (default: 2020–2030).
+    """
+    cal_start = model.get('_calendar_start') or 2020
+    cal_end = model.get('_calendar_end') or 2030
+
+    calendar_m = (
+        'let\n'
+        f'    StartDate = #date({cal_start}, 1, 1),\n'
+        f'    EndDate = #date({cal_end}, 12, 31),\n'
+        '    DayCount = Duration.Days(EndDate - StartDate) + 1,\n'
+        '    DateList = List.Dates(StartDate, DayCount, #duration(1, 0, 0, 0)),\n'
+        '    #"Date Table" = Table.FromList(DateList, Splitter.SplitByNothing(), {"Date"}, null, ExtraValues.Error),\n'
+        '    #"Changed Type" = Table.TransformColumnTypes(#"Date Table", {{"Date", type date}}),\n'
+        '    #"Added Year" = Table.AddColumn(#"Changed Type", "Year", each Date.Year([Date]), Int64.Type),\n'
+        '    #"Added Quarter" = Table.AddColumn(#"Added Year", "Quarter", each "Q" & Text.From(Date.QuarterOfYear([Date]))),\n'
+        '    #"Added Month" = Table.AddColumn(#"Added Quarter", "Month", each Date.Month([Date]), Int64.Type),\n'
+        '    #"Added MonthName" = Table.AddColumn(#"Added Month", "MonthName", each Date.MonthName([Date])),\n'
+        '    #"Added Day" = Table.AddColumn(#"Added MonthName", "Day", each Date.Day([Date]), Int64.Type),\n'
+        '    #"Added DayOfWeek" = Table.AddColumn(#"Added Day", "DayOfWeek", each Date.DayOfWeek([Date], Day.Monday) + 1, Int64.Type),\n'
+        '    #"Added DayName" = Table.AddColumn(#"Added DayOfWeek", "DayName", each Date.DayOfWeekName([Date]))\n'
+        'in\n'
+        '    #"Added DayName"'
+    )
+
+    date_table = {
+        "name": "Calendar",
+        "isHidden": False,
+        "columns": [
+            {
+                "name": "Date",
+                "dataType": "DateTime",
+                "isKey": True,
+                "dataCategory": "DateTime",
+                "formatString": "dd/mm/yyyy",
+                "sourceColumn": "Date",
+                "summarizeBy": "none"
+            },
+            {
+                "name": "Year",
+                "dataType": "int64",
+                "dataCategory": "Years",
+                "sourceColumn": "Year",
+                "summarizeBy": "none"
+            },
+            {
+                "name": "Quarter",
+                "dataType": "string",
+                "sourceColumn": "Quarter",
+                "summarizeBy": "none"
+            },
+            {
+                "name": "Month",
+                "dataType": "int64",
+                "dataCategory": "Months",
+                "sourceColumn": "Month",
+                "summarizeBy": "none"
+            },
+            {
+                "name": "MonthName",
+                "dataType": "string",
+                "sourceColumn": "MonthName",
+                "sortByColumn": "Month",
+                "summarizeBy": "none"
+            },
+            {
+                "name": "Day",
+                "dataType": "int64",
+                "dataCategory": "Days",
+                "sourceColumn": "Day",
+                "summarizeBy": "none"
+            },
+            {
+                "name": "DayOfWeek",
+                "dataType": "int64",
+                "sourceColumn": "DayOfWeek",
+                "summarizeBy": "none"
+            },
+            {
+                "name": "DayName",
+                "dataType": "string",
+                "sourceColumn": "DayName",
+                "sortByColumn": "DayOfWeek",
+                "summarizeBy": "none"
+            }
+        ],
+        "partitions": [
+            {
+                "name": "Calendar-Partition",
+                "mode": "import",
+                "source": {
+                    "type": "m",
+                    "expression": calendar_m
+                }
+            }
+        ],
+        "measures": []
+    }
+
+    value_expr = None
+    # Find a SUM-based measure in any table for time intelligence
+    for t in model["model"]["tables"]:
+        if t["name"] == "Calendar":
+            continue
+        for ms in t.get("measures", []):
+            expr = ms.get("expression", "")
+            if re.match(r'^SUM\b', expr, re.IGNORECASE):
+                value_expr = f'[{ms["name"]}]'
+                break
+        if value_expr:
+            break
+
+    time_intelligence_measures = []
+    if value_expr:
+        time_intelligence_measures = [
+            {
+                "name": "Year To Date",
+                "expression": f"TOTALYTD({value_expr}, 'Calendar'[Date])",
+                "formatString": "#,0.00",
+                "displayFolder": "Time Intelligence"
+            },
+            {
+                "name": "Previous Year",
+                "expression": f"CALCULATE({value_expr}, SAMEPERIODLASTYEAR('Calendar'[Date]))",
+                "formatString": "#,0.00",
+                "displayFolder": "Time Intelligence"
+            },
+            {
+                "name": "Year Over Year %",
+                "expression": "DIVIDE([Year To Date] - [Previous Year], [Previous Year], 0)",
+                "formatString": "0.00%",
+                "displayFolder": "Time Intelligence"
+            }
+        ]
+
+    date_table["measures"].extend(time_intelligence_measures)
+
+    # Add Date hierarchy (Year → Quarter → Month → Day)
+    date_table["hierarchies"] = [
+        {
+            "name": "Date Hierarchy",
+            "levels": [
+                {"name": "Year", "column": "Year", "ordinal": 0},
+                {"name": "Quarter", "column": "Quarter", "ordinal": 1},
+                {"name": "Month", "column": "MonthName", "ordinal": 2},
+                {"name": "Day", "column": "Day", "ordinal": 3},
+            ]
+        }
+    ]
+
+    model["model"]["tables"].append(date_table)
+
+    # Add relationships: Calendar[Date] -> each table's first date column
+    for t in model["model"]["tables"]:
+        tname = t.get("name", "")
+        if tname == "Calendar":
+            continue
+        for col in t.get("columns", []):
+            if col.get("dataType") == "DateTime" or col.get("dataCategory") == "DateTime":
+                date_col_name = col.get("name", "")
+                if date_col_name and not col.get("isCalculated", False):
+                    model["model"]["relationships"].append({
+                        "name": f"Calendar_{tname}_{date_col_name}",
+                        "fromTable": tname,
+                        "fromColumn": date_col_name,
+                        "toTable": "Calendar",
+                        "toColumn": "Date",
+                        "crossFilteringBehavior": "oneDirection"
+                    })
+                    break  # one date column per table is enough
+
+
+# ════════════════════════════════════════════════════════════════════
+#  TMDL FILE WRITERS
+# ════════════════════════════════════════════════════════════════════
+
+def _quote_name(name):
+    """Quote a TMDL name if needed (spaces, special characters).
+    Internal apostrophes are escaped by doubling them ('')."""
+    if re.search(r'[^a-zA-Z0-9_]', name):
+        escaped = name.replace("'", "''")
+        return f"'{escaped}'"
+    return name
+
+
+def _tmdl_datatype(bim_type):
+    """Convert a type to TMDL type."""
+    mapping = {
+        'int64': 'int64', 'string': 'string', 'double': 'double',
+        'decimal': 'decimal', 'boolean': 'boolean', 'datetime': 'dateTime',
+        'binary': 'binary',
+    }
+    return mapping.get(bim_type.lower() if bim_type else '', 'string')
+
+
+def _tmdl_summarize(summarize_by):
+    """Convert summarizeBy to TMDL."""
+    mapping = {
+        'sum': 'sum',
+        'none': 'none',
+        'count': 'count',
+        'average': 'average',
+        'min': 'min',
+        'max': 'max',
+    }
+    return mapping.get(str(summarize_by).lower(), 'none')
+
+
+def _safe_filename(name):
+    """Create a safe filename for a table."""
+    safe = re.sub(r'[<>:"/\\|?*]', '_', name)
+    return safe
+
+
+# ════════════════════════════════════════════════════════════════════
+#  THEME GENERATION
+# ════════════════════════════════════════════════════════════════════
+
+# Default Power BI color palette (used when Tableau has no theme)
+_DEFAULT_PBI_COLORS = [
+    "#4E79A7", "#F28E2B", "#E15759", "#76B7B2",
+    "#59A14F", "#EDC948", "#B07AA1", "#FF9DA7",
+    "#9C755F", "#BAB0AC", "#86BCB6", "#8CD17D"
+]
+
+
+def generate_theme_json(theme_data=None):
+    """
+    Generate a Power BI theme.json from extracted Tableau dashboard theme data.
+
+    Args:
+        theme_data: dict with 'colors' (list of hex), 'font_family', 'styles'
+                    from extract_theme() in extract_tableau_data.py
+
+    Returns:
+        dict: Power BI theme definition
+    """
+    colors = _DEFAULT_PBI_COLORS
+    font_family = "Segoe UI"
+
+    if theme_data:
+        t_colors = theme_data.get('colors', [])
+        if t_colors:
+            # Filter valid hex colors
+            valid = [c for c in t_colors if isinstance(c, str) and c.startswith('#')]
+            if valid:
+                colors = valid[:12]
+                # Pad to 12 if fewer
+                while len(colors) < 12:
+                    colors.append(_DEFAULT_PBI_COLORS[len(colors) % len(_DEFAULT_PBI_COLORS)])
+        t_font = theme_data.get('font_family', '')
+        if t_font:
+            font_family = t_font
+
+    theme = {
+        "name": "Tableau Migration Theme",
+        "dataColors": colors,
+        "background": "#FFFFFF",
+        "foreground": "#252423",
+        "tableAccent": colors[0] if colors else "#4E79A7",
+        "textClasses": {
+            "callout": {
+                "fontSize": 28,
+                "fontFace": font_family,
+                "color": "#252423"
+            },
+            "title": {
+                "fontSize": 12,
+                "fontFace": font_family,
+                "color": "#252423"
+            },
+            "header": {
+                "fontSize": 12,
+                "fontFace": font_family,
+                "color": "#252423"
+            },
+            "label": {
+                "fontSize": 10,
+                "fontFace": font_family,
+                "color": "#666666"
+            }
+        },
+        "visualStyles": {
+            "*": {
+                "*": {
+                    "*": [{
+                        "fontFamily": font_family,
+                        "wordWrap": True
+                    }]
+                }
+            }
+        }
+    }
+
+    return theme
+
+
+def _write_tmdl_files(model_data, output_dir):
+    """
+    Write the complete TMDL file structure from a semantic model.
+
+    Args:
+        model_data: dict -- the full model (with 'model' key)
+        output_dir: str -- path to the SemanticModel folder
+
+    Returns:
+        str -- path to the created definition/ folder
+    """
+    model = model_data.get('model', model_data)
+
+    def_dir = os.path.join(output_dir, 'definition')
+    os.makedirs(def_dir, exist_ok=True)
+
+    tables = model.get('tables', [])
+    relationships = model.get('relationships', [])
+    roles = model.get('roles', [])
+    culture = model.get('culture', 'en-US')
+
+    # 1. database.tmdl
+    _write_database_tmdl(def_dir, model)
+
+    # 2. model.tmdl
+    _write_model_tmdl(def_dir, model, tables, roles)
+
+    # 3. relationships.tmdl
+    _write_relationships_tmdl(def_dir, relationships)
+
+    # 4. expressions.tmdl
+    _write_expressions_tmdl(def_dir, tables)
+
+    # 5. roles.tmdl
+    if roles:
+        _write_roles_tmdl(def_dir, roles)
+
+    # 6. tables/*.tmdl
+    tables_dir = os.path.join(def_dir, 'tables')
+    os.makedirs(tables_dir, exist_ok=True)
+
+    # Clean stale table files from previous runs
+    expected_files = set()
+    for table in tables:
+        tname = table.get('name', 'Table')
+        expected_files.add(tname + '.tmdl')
+    for existing in os.listdir(tables_dir):
+        if existing.endswith('.tmdl') and existing not in expected_files:
+            os.remove(os.path.join(tables_dir, existing))
+
+    for table in tables:
+        _write_table_tmdl(tables_dir, table)
+
+    # 7. diagramLayout.json (empty — Power BI Desktop fills it on first open)
+    diagram_path = os.path.join(def_dir, 'diagramLayout.json')
+    with open(diagram_path, 'w', encoding='utf-8') as f:
+        json.dump({}, f)
+
+    # 8. perspectives.tmdl (auto-generated from table groupings)
+    perspectives = model.get('perspectives', [])
+    if not perspectives and len(tables) > 2:
+        # Auto-generate a "Full Model" perspective referencing all tables
+        perspectives = [{
+            "name": "Full Model",
+            "tables": [t.get('name', '') for t in tables]
+        }]
+    if perspectives:
+        _write_perspectives_tmdl(def_dir, perspectives)
+
+    # 9. cultures/*.tmdl (model culture)
+    if culture and culture != 'en-US':
+        cultures_dir = os.path.join(def_dir, 'cultures')
+        os.makedirs(cultures_dir, exist_ok=True)
+        _write_culture_tmdl(cultures_dir, culture, tables)
+
+    return def_dir
+
+
+def _write_perspectives_tmdl(def_dir, perspectives):
+    """
+    Write perspectives.tmdl for multi-audience model views.
+
+    Each perspective lists the tables visible from that viewpoint,
+    allowing different user groups to see relevant subsets.
+
+    Args:
+        def_dir: Path to the definition/ folder
+        perspectives: List of dicts with 'name' and 'tables' keys
+    """
+    lines = []
+    for persp in perspectives:
+        p_name = persp.get('name', 'Default')
+        lines.append(f"perspective {_quote_name(p_name)}")
+        for table_ref in persp.get('tables', []):
+            tbl_name = table_ref if isinstance(table_ref, str) else table_ref.get('name', '')
+            if tbl_name:
+                lines.append(f"\tperspectiveTable {_quote_name(tbl_name)}")
+        lines.append("")
+
+    filepath = os.path.join(def_dir, 'perspectives.tmdl')
+    with open(filepath, 'w', encoding='utf-8') as f:
+        f.write('\n'.join(lines))
+
+
+def _write_culture_tmdl(cultures_dir, culture_name, tables):
+    """
+    Write a culture TMDL file with linguistic metadata.
+
+    Generates translation entries for all table and column names
+    in the model for the specified culture/locale.
+
+    Args:
+        cultures_dir: Path to the cultures/ folder
+        culture_name: Locale string (e.g. 'fr-FR')
+        tables: List of table definitions (for generating metadata entries)
+    """
+    lines = [f"culture {_quote_name(culture_name)}"]
+
+    # Generate linguistic metadata entries for tables and columns
+    lines.append("\tlinguisticMetadata =")
+    lines.append('\t\t```')
+    metadata = {
+        "Version": "1.0.0",
+        "Language": culture_name,
+        "DynamicImprovement": "HighConfidence"
+    }
+    lines.append(f'\t\t\t{json.dumps(metadata, ensure_ascii=False)}')
+    lines.append('\t\t\t```')
+    lines.append("")
+
+    filepath = os.path.join(cultures_dir, f'{culture_name}.tmdl')
+    with open(filepath, 'w', encoding='utf-8') as f:
+        f.write('\n'.join(lines))
+
+
+def _write_database_tmdl(def_dir, model):
+    """Generate database.tmdl."""
+    compat = model.get('compatibilityLevel', 1567)
+    if compat < 1600:
+        compat = 1600
+
+    content = f"database\n\tcompatibilityLevel: {compat}\n\n"
+
+    filepath = os.path.join(def_dir, 'database.tmdl')
+    with open(filepath, 'w', encoding='utf-8') as f:
+        f.write(content)
+
+
+def _write_model_tmdl(def_dir, model, tables, roles=None):
+    """Generate model.tmdl."""
+    culture = model.get('culture', 'en-US')
+    perspectives = model.get('perspectives', [])
+
+    lines = []
+    lines.append("model Model")
+    lines.append(f"\tculture: {culture}")
+    lines.append("\tdefaultPowerBIDataSourceVersion: powerBI_V3")
+    lines.append("\tsourceQueryCulture: en-US")
+    lines.append("\tdataAccessOptions")
+    lines.append("\t\tlegacyRedirects")
+    lines.append("\t\treturnErrorValuesAsNull")
+    lines.append("")
+
+    # Table order annotation
+    table_names = [t.get('name', '') for t in tables]
+    table_names_json = '["' + '","'.join(table_names) + '"]'
+    lines.append(f"annotation PBI_QueryOrder = {table_names_json}")
+    lines.append("")
+
+    # Ref tables
+    for table in tables:
+        tname = _quote_name(table.get('name', ''))
+        lines.append(f"ref table {tname}")
+
+    lines.append("")
+
+    # Ref expression for the DataFolder parameter
+    lines.append("ref expression DataFolder")
+    lines.append("")
+
+    # Ref roles (RLS)
+    if roles:
+        for role in roles:
+            rname = _quote_name(role.get('name', ''))
+            lines.append(f"ref role {rname}")
+        lines.append("")
+
+    # Ref perspectives
+    if perspectives:
+        for persp in perspectives:
+            pname = _quote_name(persp.get('name', 'Default'))
+            lines.append(f"ref perspective {pname}")
+        lines.append("")
+
+    # Ref culture
+    if culture and culture != 'en-US':
+        lines.append(f"ref culture {_quote_name(culture)}")
+        lines.append("")
+
+    content = '\n'.join(lines) + '\n'
+
+    filepath = os.path.join(def_dir, 'model.tmdl')
+    with open(filepath, 'w', encoding='utf-8') as f:
+        f.write(content)
+
+
+def _write_expressions_tmdl(def_dir, tables):
+    """Generate expressions.tmdl with a DataFolder parameter."""
+    file_paths = []
+    for table in tables:
+        for partition in table.get('partitions', []):
+            source = partition.get('source', {})
+            if isinstance(source, dict):
+                expr = source.get('expression', '')
+            elif isinstance(source, str):
+                expr = source
+            else:
+                continue
+
+            for m in re.finditer(r'DataFolder\s*&\s*"\\([^"]+)"', expr):
+                file_paths.append(m.group(1))
+            for m in re.finditer(r'File\.Contents\("([^"]+)"\)', expr):
+                file_paths.append(m.group(1))
+
+    default_folder = "C:\\\\Data"
+
+    if file_paths:
+        normalized = [p.replace('\\', '/') for p in file_paths]
+
+        if len(normalized) == 1:
+            parts = normalized[0].rsplit('/', 1)
+            common_dir = parts[0] if len(parts) > 1 else ''
+        else:
+            common = os.path.commonprefix(normalized)
+            if '/' in common:
+                common_dir = common[:common.rfind('/')]
+            else:
+                common_dir = ''
+
+        if common_dir:
+            default_folder = "C:\\\\" + common_dir.replace('/', '\\\\')
+
+    lines = []
+    lines.append(f'expression DataFolder = "{default_folder}" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]')
+    lines.append("")
+
+    content = '\n'.join(lines) + '\n'
+
+    filepath = os.path.join(def_dir, 'expressions.tmdl')
+    with open(filepath, 'w', encoding='utf-8') as f:
+        f.write(content)
+
+
+def _write_roles_tmdl(def_dir, roles):
+    """Generate roles.tmdl with RLS role definitions."""
+    if not roles:
+        return
+
+    lines = []
+
+    for role in roles:
+        role_name = _quote_name(role.get('name', 'DefaultRole'))
+        model_permission = role.get('modelPermission', 'read')
+
+        lines.append(f"role {role_name}")
+        lines.append(f"\tmodelPermission: {model_permission}")
+
+        migration_note = role.get('_migration_note', '')
+        if migration_note:
+            note_escaped = migration_note.replace('"', '\\"')
+            lines.append(f'\tannotation MigrationNote = "{note_escaped}"')
+
+        lines.append("")
+
+        for tp in role.get('tablePermissions', []):
+            tp_name = tp.get('name', '') or ''
+            if not tp_name:
+                continue
+            table_name = _quote_name(tp_name)
+            filter_expr = tp.get('filterExpression', '')
+
+            lines.append(f"\ttablePermission {table_name}")
+
+            if filter_expr:
+                filter_clean = filter_expr.replace('\n', ' ').replace('\r', ' ').strip()
+                lines.append(f"\t\tfilterExpression = {filter_clean}")
+
+            lines.append("")
+
+    content = '\n'.join(lines) + '\n'
+
+    filepath = os.path.join(def_dir, 'roles.tmdl')
+    with open(filepath, 'w', encoding='utf-8') as f:
+        f.write(content)
+
+
+def _write_relationships_tmdl(def_dir, relationships):
+    """Generate relationships.tmdl."""
+    if not relationships:
+        filepath = os.path.join(def_dir, 'relationships.tmdl')
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write("")
+        return
+
+    lines = []
+
+    for rel in relationships:
+        rel_id = rel.get('name', str(uuid.uuid4()))
+        try:
+            uuid.UUID(rel_id)
+        except ValueError:
+            rel_id = str(uuid.uuid4())
+
+        from_table = _quote_name(rel.get('fromTable', ''))
+        from_col = _quote_name(rel.get('fromColumn', ''))
+        to_table = _quote_name(rel.get('toTable', ''))
+        to_col = _quote_name(rel.get('toColumn', ''))
+
+        lines.append(f"relationship {rel_id}")
+        lines.append(f"\tfromColumn: {from_table}.{from_col}")
+        lines.append(f"\ttoColumn: {to_table}.{to_col}")
+
+        from_card = rel.get('fromCardinality', '')
+        to_card = rel.get('toCardinality', '')
+        if from_card == 'many' and to_card == 'many':
+            lines.append("\tfromCardinality: many")
+            lines.append("\ttoCardinality: many")
+        elif from_card == 'many' and to_card == 'one':
+            pass
+
+        cfb = rel.get('crossFilteringBehavior', 'oneDirection')
+        lines.append(f"\tcrossFilteringBehavior: {cfb}")
+
+        if rel.get('isActive') == False:
+            lines.append("\tisActive: false")
+
+        lines.append("")
+
+    content = '\n'.join(lines) + '\n'
+
+    filepath = os.path.join(def_dir, 'relationships.tmdl')
+    with open(filepath, 'w', encoding='utf-8') as f:
+        f.write(content)
+
+
+def _write_table_tmdl(tables_dir, table):
+    """Generate a {table_name}.tmdl file."""
+    table_name = table.get('name', 'Table')
+    tname_quoted = _quote_name(table_name)
+
+    lines = []
+    lines.append(f"table {tname_quoted}")
+    lines.append(f"\tlineageTag: {uuid.uuid4()}")
+    lines.append("")
+
+    # Measures (before columns, as in PBI Hero reference)
+    for measure in table.get('measures', []):
+        _write_measure(lines, measure)
+
+    # Columns
+    for column in table.get('columns', []):
+        _write_column(lines, column)
+
+    # Hierarchies
+    for hierarchy in table.get('hierarchies', []):
+        _write_hierarchy(lines, hierarchy)
+
+    # Partition
+    for partition in table.get('partitions', []):
+        _write_partition(lines, table_name, partition)
+
+    # Annotations
+    lines.append("\tannotation PBI_ResultType = Table")
+    lines.append("")
+
+    content = '\n'.join(lines) + '\n'
+
+    filename = _safe_filename(table_name) + '.tmdl'
+    filepath = os.path.join(tables_dir, filename)
+    with open(filepath, 'w', encoding='utf-8') as f:
+        f.write(content)
+
+
+def _write_measure(lines, measure):
+    """Write a measure in TMDL."""
+    mname = _quote_name(measure.get('name', 'Measure'))
+    expression = measure.get('expression', '0')
+
+    if '\n' in expression:
+        lines.append(f"\tmeasure {mname} = ```")
+        for expr_line in expression.split('\n'):
+            lines.append(f"\t\t\t{expr_line}")
+        lines.append("\t\t\t```")
+    else:
+        lines.append(f"\tmeasure {mname} = {expression}")
+
+    fmt = measure.get('formatString', '')
+    if fmt and fmt != '0':
+        lines.append(f"\t\tformatString: {fmt}")
+
+    folder = measure.get('displayFolder', '')
+    if folder:
+        lines.append(f"\t\tdisplayFolder: {folder}")
+
+    desc = measure.get('description', '')
+    if desc:
+        lines.append(f"\t\tdescription: {desc}")
+
+    if measure.get('isHidden', False):
+        lines.append("\t\tisHidden")
+
+    lines.append(f"\t\tlineageTag: {uuid.uuid4()}")
+    lines.append("")
+
+
+def _write_column_properties(lines, column):
+    """Write shared column properties (formatString, lineageTag, summarizeBy, etc.)."""
+    fmt = column.get('formatString', '')
+    if fmt:
+        lines.append(f"\t\tformatString: {fmt}")
+
+    lines.append(f"\t\tlineageTag: {uuid.uuid4()}")
+
+    summarize = _tmdl_summarize(column.get('summarizeBy', 'none'))
+    lines.append(f"\t\tsummarizeBy: {summarize}")
+
+
+def _write_column_flags(lines, column):
+    """Write optional column flags (isHidden, isKey, dataCategory, etc.)."""
+    if column.get('isHidden', False):
+        lines.append("\t\tisHidden")
+    if column.get('isKey', False):
+        lines.append("\t\tisKey")
+    data_category = column.get('dataCategory', '')
+    if data_category:
+        lines.append(f"\t\tdataCategory: {data_category}")
+    description = column.get('description', '')
+    if description:
+        lines.append(f"\t\tdescription: {description}")
+    display_folder = column.get('displayFolder', '')
+    if display_folder:
+        lines.append(f"\t\tdisplayFolder: {display_folder}")
+    sort_by = column.get('sortByColumn', '')
+    if sort_by:
+        lines.append(f"\t\tsortByColumn: {_quote_name(sort_by)}")
+
+    lines.append("")
+    lines.append("\t\tannotation SummarizationSetBy = Automatic")
+    lines.append("")
+
+
+def _write_column(lines, column):
+    """Write a column in TMDL (physical or calculated)."""
+    col_name = column.get('name', 'Column')
+    cname_quoted = _quote_name(col_name)
+    data_type = _tmdl_datatype(column.get('dataType', 'string'))
+    expression = column.get('expression', '')
+    is_calculated = column.get('isCalculated', False)
+
+    if is_calculated and expression:
+        if '\n' in expression:
+            lines.append(f"\tcolumn {cname_quoted} = ```")
+            for expr_line in expression.split('\n'):
+                lines.append(f"\t\t\t{expr_line}")
+            lines.append("\t\t\t```")
+        else:
+            lines.append(f"\tcolumn {cname_quoted} = {expression}")
+        lines.append(f"\t\tdataType: {data_type}")
+        _write_column_properties(lines, column)
+        _write_column_flags(lines, column)
+    else:
+        lines.append(f"\tcolumn {cname_quoted}")
+        lines.append(f"\t\tdataType: {data_type}")
+        _write_column_properties(lines, column)
+
+        source_col = column.get('sourceColumn', col_name)
+        source_col_quoted = _quote_name(source_col) if re.search(r'[^a-zA-Z0-9_]', source_col) else source_col
+        lines.append(f"\t\tsourceColumn: {source_col_quoted}")
+        _write_column_flags(lines, column)
+
+
+def _write_hierarchy(lines, hierarchy):
+    """Write a hierarchy in TMDL."""
+    h_name = _quote_name(hierarchy.get('name', 'Hierarchy'))
+    levels = hierarchy.get('levels', [])
+
+    lines.append(f"\thierarchy {h_name}")
+    lines.append(f"\t\tlineageTag: {uuid.uuid4()}")
+    lines.append("")
+
+    for level in levels:
+        level_name = _quote_name(level.get('name', 'Level'))
+        col_name = _quote_name(level.get('column', level.get('name', '')))
+        ordinal = level.get('ordinal', 0)
+
+        lines.append(f"\t\tlevel {level_name}")
+        lines.append(f"\t\t\tordinal: {ordinal}")
+        lines.append(f"\t\t\tcolumn: {col_name}")
+        lines.append(f"\t\t\tlineageTag: {uuid.uuid4()}")
+        lines.append("")
+
+    lines.append("")
+
+
+def _write_partition(lines, table_name, partition):
+    """Write a partition in TMDL."""
+    part_name = f"{table_name}-{uuid.uuid4()}"
+    mode = partition.get('mode', 'import')
+    source = partition.get('source', {})
+    source_type = source.get('type', 'm')
+    expression = source.get('expression', '')
+
+    lines.append(f"\tpartition {_quote_name(part_name)} = {source_type}")
+    lines.append(f"\t\tmode: {mode}")
+
+    if expression:
+        if source_type == 'calculated':
+            expr_clean = expression.replace('\r\n', '\n').replace('\r', '\n')
+            if '\n' in expr_clean:
+                lines.append("\t\tsource = ```")
+                for expr_line in expr_clean.split('\n'):
+                    lines.append(f"\t\t\t\t{expr_line}")
+                lines.append("\t\t\t\t```")
+            else:
+                lines.append(f"\t\tsource = {expr_clean}")
+        else:
+            lines.append(f"\t\tsource =")
+            for expr_line in expression.split('\n'):
+                lines.append(f"\t\t\t\t{expr_line}")
+    else:
+        lines.append(f"\t\tsource =")
+        lines.append("\t\t\t\tlet")
+        lines.append("\t\t\t\t\tSource = null // TODO: Configure data source")
+        lines.append("\t\t\t\tin")
+        lines.append("\t\t\t\t\tSource")
+
+    lines.append("")

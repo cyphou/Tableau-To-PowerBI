@@ -1,0 +1,561 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<workbook source-build='2024.1.0' source-platform='win' version='18.1' xmlns:user='http://www.tableausoftware.com/xml/user'>
+  <preferences>
+    <preference name='ui.encoding.shelf.height' value='24' />
+  </preferences>
+  <datasources>
+    <!-- ── Primary datasource: Campaign data (MySQL) ────── -->
+    <datasource caption='Marketing Campaigns' inline='true' name='federated.marketing' version='18.1'>
+      <connection class='federated'>
+        <named-connections>
+          <named-connection caption='MarketingMySQL' name='mysql.mktg'>
+            <connection class='mysql' server='analytics-mysql.corp.local' port='3306' dbname='marketing_db' />
+          </named-connection>
+        </named-connections>
+        <!-- Two-table join: Campaigns + Leads (left join → manyToOne) -->
+        <relation join='left' type='join'>
+          <clause type='join'>
+            <expression op='='>
+              <expression op='[campaign_id]' />
+              <expression op='[Leads].[campaign_id]' />
+            </expression>
+          </clause>
+          <relation connection='mysql.mktg' name='Campaigns' table='[marketing_db].[campaigns]' type='table'>
+            <columns>
+              <column datatype='integer' name='campaign_id' ordinal='0' />
+              <column datatype='string' name='campaign_name' ordinal='1' />
+              <column datatype='string' name='channel' ordinal='2' />
+              <column datatype='date' name='start_date' ordinal='3' />
+              <column datatype='date' name='end_date' ordinal='4' />
+              <column datatype='real' name='budget' ordinal='5' />
+              <column datatype='real' name='spend' ordinal='6' />
+              <column datatype='string' name='target_audience' ordinal='7' />
+              <column datatype='string' name='creative_url' ordinal='8' />
+              <column datatype='string' name='utm_source' ordinal='9' />
+              <column datatype='string' name='utm_medium' ordinal='10' />
+              <column datatype='string' name='utm_campaign' ordinal='11' />
+              <column datatype='string' name='region' ordinal='12' />
+              <column datatype='string' name='status' ordinal='13' />
+            </columns>
+          </relation>
+          <relation connection='mysql.mktg' name='Leads' table='[marketing_db].[leads]' type='table'>
+            <columns>
+              <column datatype='integer' name='lead_id' ordinal='0' />
+              <column datatype='integer' name='campaign_id' ordinal='1' />
+              <column datatype='string' name='lead_name' ordinal='2' />
+              <column datatype='string' name='email' ordinal='3' />
+              <column datatype='string' name='phone' ordinal='4' />
+              <column datatype='string' name='company' ordinal='5' />
+              <column datatype='string' name='job_title' ordinal='6' />
+              <column datatype='date' name='created_date' ordinal='7' />
+              <column datatype='real' name='deal_value' ordinal='8' />
+              <column datatype='string' name='lead_source' ordinal='9' />
+              <column datatype='string' name='lead_status' ordinal='10' />
+              <column datatype='real' name='engagement_score' ordinal='11' />
+            </columns>
+          </relation>
+        </relation>
+        <cols>
+          <!-- Campaign columns -->
+          <map key='[campaign_id]' value='[Campaigns].[campaign_id]' />
+          <map key='[campaign_name]' value='[Campaigns].[campaign_name]' />
+          <map key='[channel]' value='[Campaigns].[channel]' />
+          <map key='[start_date]' value='[Campaigns].[start_date]' />
+          <map key='[end_date]' value='[Campaigns].[end_date]' />
+          <map key='[budget]' value='[Campaigns].[budget]' />
+          <map key='[spend]' value='[Campaigns].[spend]' />
+          <map key='[target_audience]' value='[Campaigns].[target_audience]' />
+          <map key='[creative_url]' value='[Campaigns].[creative_url]' />
+          <map key='[utm_source]' value='[Campaigns].[utm_source]' />
+          <map key='[utm_medium]' value='[Campaigns].[utm_medium]' />
+          <map key='[utm_campaign]' value='[Campaigns].[utm_campaign]' />
+          <map key='[region]' value='[Campaigns].[region]' />
+          <map key='[status]' value='[Campaigns].[status]' />
+          <!-- Lead columns -->
+          <map key='[lead_id]' value='[Leads].[lead_id]' />
+          <map key='[lead_name]' value='[Leads].[lead_name]' />
+          <map key='[email]' value='[Leads].[email]' />
+          <map key='[phone]' value='[Leads].[phone]' />
+          <map key='[company]' value='[Leads].[company]' />
+          <map key='[job_title]' value='[Leads].[job_title]' />
+          <map key='[created_date]' value='[Leads].[created_date]' />
+          <map key='[deal_value]' value='[Leads].[deal_value]' />
+          <map key='[lead_source]' value='[Leads].[lead_source]' />
+          <map key='[lead_status]' value='[Leads].[lead_status]' />
+          <map key='[engagement_score]' value='[Leads].[engagement_score]' />
+        </cols>
+      </connection>
+
+      <!-- Physical columns -->
+      <column caption='Campaign ID' datatype='integer' name='[campaign_id]' role='dimension' type='ordinal' />
+      <column caption='Campaign Name' datatype='string' name='[campaign_name]' role='dimension' type='nominal' />
+      <column caption='Channel' datatype='string' name='[channel]' role='dimension' type='nominal' />
+      <column caption='Start Date' datatype='date' name='[start_date]' role='dimension' type='ordinal' />
+      <column caption='End Date' datatype='date' name='[end_date]' role='dimension' type='ordinal' />
+      <column caption='Budget' datatype='real' name='[budget]' role='measure' type='quantitative' />
+      <column caption='Spend' datatype='real' name='[spend]' role='measure' type='quantitative' />
+      <column caption='Target Audience' datatype='string' name='[target_audience]' role='dimension' type='nominal' />
+      <column caption='Creative URL' datatype='string' name='[creative_url]' role='dimension' type='nominal' />
+      <column caption='UTM Source' datatype='string' name='[utm_source]' role='dimension' type='nominal' />
+      <column caption='UTM Medium' datatype='string' name='[utm_medium]' role='dimension' type='nominal' />
+      <column caption='UTM Campaign' datatype='string' name='[utm_campaign]' role='dimension' type='nominal' />
+      <column caption='Region' datatype='string' name='[region]' role='dimension' type='nominal' />
+      <column caption='Status' datatype='string' name='[status]' role='dimension' type='nominal' />
+      <column caption='Lead ID' datatype='integer' name='[lead_id]' role='dimension' type='ordinal' />
+      <column caption='Lead Name' datatype='string' name='[lead_name]' role='dimension' type='nominal' />
+      <column caption='Email' datatype='string' name='[email]' role='dimension' type='nominal' />
+      <column caption='Phone' datatype='string' name='[phone]' role='dimension' type='nominal' />
+      <column caption='Company' datatype='string' name='[company]' role='dimension' type='nominal' />
+      <column caption='Job Title' datatype='string' name='[job_title]' role='dimension' type='nominal' />
+      <column caption='Created Date' datatype='date' name='[created_date]' role='dimension' type='ordinal' />
+      <column caption='Deal Value' datatype='real' name='[deal_value]' role='measure' type='quantitative' />
+      <column caption='Lead Source' datatype='string' name='[lead_source]' role='dimension' type='nominal' />
+      <column caption='Lead Status' datatype='string' name='[lead_status]' role='dimension' type='nominal' />
+      <column caption='Engagement Score' datatype='real' name='[engagement_score]' role='measure' type='quantitative' />
+
+      <!-- Column aliases (display name overrides) -->
+      <aliases enabled='yes'>
+        <alias key='&quot;Email&quot;' value='&quot;Email Marketing&quot;' />
+        <alias key='&quot;SEM&quot;' value='&quot;Search Engine Marketing&quot;' />
+        <alias key='&quot;SEO&quot;' value='&quot;Search Engine Optimization&quot;' />
+        <alias key='&quot;Social&quot;' value='&quot;Social Media&quot;' />
+        <alias key='&quot;Display&quot;' value='&quot;Display Advertising&quot;' />
+        <alias key='&quot;Referral&quot;' value='&quot;Partner Referral&quot;' />
+      </aliases>
+
+      <!-- Sort orders -->
+      <sort-orders>
+        <sort column='[lead_status]' direction='manual'>
+          <dictionary>
+            <bucket>&quot;New&quot;</bucket>
+            <bucket>&quot;Contacted&quot;</bucket>
+            <bucket>&quot;Qualified&quot;</bucket>
+            <bucket>&quot;Proposal&quot;</bucket>
+            <bucket>&quot;Won&quot;</bucket>
+            <bucket>&quot;Lost&quot;</bucket>
+          </dictionary>
+        </sort>
+        <sort column='[channel]' direction='ascending' />
+      </sort-orders>
+
+      <!-- ── CALCULATIONS (25) ───────────────────────────────── -->
+
+      <!-- 1. String: Extract domain from email — LEFT + FIND -->
+      <column caption='Email Domain' datatype='string' name='[Calc_EmailDomain]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='MID([email], FIND([email], &quot;@&quot;) + 1, LEN([email]))' />
+      </column>
+
+      <!-- 2. String: First name extraction — LEFT -->
+      <column caption='First Name' datatype='string' name='[Calc_FirstName]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='LEFT([lead_name], FIND([lead_name], &quot; &quot;) - 1)' />
+      </column>
+
+      <!-- 3. String: Last name extraction — MID -->
+      <column caption='Last Name' datatype='string' name='[Calc_LastName]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='MID([lead_name], FIND([lead_name], &quot; &quot;) + 1, LEN([lead_name]))' />
+      </column>
+
+      <!-- 4. String: Name length — LEN -->
+      <column caption='Name Length' datatype='integer' name='[Calc_NameLen]' role='dimension' type='ordinal'>
+        <calculation class='tableau' formula='LEN([lead_name])' />
+      </column>
+
+      <!-- 5. String: Clean phone number — REPLACE + TRIM -->
+      <column caption='Clean Phone' datatype='string' name='[Calc_CleanPhone]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='TRIM(REPLACE(REPLACE([phone], &quot;-&quot;, &quot;&quot;), &quot; &quot;, &quot;&quot;))' />
+      </column>
+
+      <!-- 6. String: RIGHT — last 4 chars of phone -->
+      <column caption='Phone Last 4' datatype='string' name='[Calc_PhoneLast4]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='RIGHT([phone], 4)' />
+      </column>
+
+      <!-- 7. String: Formatted campaign code — SPACE -->
+      <column caption='Campaign Code' datatype='string' name='[Calc_CampaignCode]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='UPPER(LEFT([channel], 3)) + &quot;-&quot; + STR([campaign_id]) + SPACE(5 - LEN(STR([campaign_id])))' />
+      </column>
+
+      <!-- 8. String: CONTAINS check -->
+      <column caption='Is Enterprise' datatype='boolean' name='[Calc_IsEnterprise]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='CONTAINS([target_audience], &quot;Enterprise&quot;)' />
+      </column>
+
+      <!-- 9. REGEXP: Extract UTM parameter pattern -->
+      <column caption='Has Valid UTM' datatype='boolean' name='[Calc_HasValidUTM]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='REGEXP_MATCH([utm_campaign], &quot;^[a-z0-9_-]+$&quot;)' />
+      </column>
+
+      <!-- 10. REGEXP: Clean creative URL -->
+      <column caption='Clean URL' datatype='string' name='[Calc_CleanURL]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='REGEXP_REPLACE([creative_url], &quot;https?://&quot;, &quot;&quot;)' />
+      </column>
+
+      <!-- 11. Date: DATETRUNC to year -->
+      <column caption='Campaign Year' datatype='date' name='[Calc_CampaignYear]' role='dimension' type='ordinal'>
+        <calculation class='tableau' formula='DATETRUNC("year", [start_date])' />
+      </column>
+
+      <!-- 12. Date: DATEPART month -->
+      <column caption='Start Month' datatype='integer' name='[Calc_StartMonth]' role='dimension' type='ordinal'>
+        <calculation class='tableau' formula='DATEPART("month", [start_date])' />
+      </column>
+
+      <!-- 13. Date: DATENAME month — FORMAT -->
+      <column caption='Month Name' datatype='string' name='[Calc_MonthName]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='DATENAME("month", [start_date])' />
+      </column>
+
+      <!-- 14. Date: Campaign duration in days -->
+      <column caption='Campaign Days' datatype='integer' name='[Calc_CampaignDays]' role='dimension' type='ordinal'>
+        <calculation class='tableau' formula='DATEDIFF(&quot;day&quot;, [start_date], [end_date])' />
+      </column>
+
+      <!-- 15. Aggregation: COUNTA (non-blank lead count) -->
+      <column caption='Non-Blank Leads' datatype='integer' name='[Calc_NonBlankLeads]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='COUNTA([lead_name])' />
+      </column>
+
+      <!-- 16. Stats: CORR — budget vs deal_value correlation -->
+      <column caption='Budget Deal Correlation' datatype='real' name='[Calc_Correlation]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='CORR([budget], [deal_value])' />
+      </column>
+
+      <!-- 17. Stats: COVAR — spend vs engagement covariance -->
+      <column caption='Spend Engagement Covar' datatype='real' name='[Calc_Covariance]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='COVAR([spend], [engagement_score])' />
+      </column>
+
+      <!-- 18. LOD INCLUDE: Avg deal value including channel -->
+      <column caption='Avg Deal by Channel' datatype='real' name='[Calc_AvgDealByChannel]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='{INCLUDE [channel] : AVG([deal_value])}' />
+      </column>
+
+      <!-- 19. ROI calculation: (deal_value - spend) / spend -->
+      <column caption='Campaign ROI' datatype='real' name='[Calc_ROI]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='(SUM([deal_value]) - SUM([spend])) / SUM([spend])' />
+      </column>
+
+      <!-- 20. Cost Per Lead -->
+      <column caption='Cost Per Lead' datatype='real' name='[Calc_CPL]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='SUM([spend]) / COUNTD([lead_id])' />
+      </column>
+
+      <!-- 21. WINDOW_MAX: Best campaign in window -->
+      <column caption='Window Best ROI' datatype='real' name='[Calc_WinBestROI]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='WINDOW_MAX((SUM([deal_value]) - SUM([spend])) / SUM([spend]))' />
+      </column>
+
+      <!-- 22. WINDOW_MIN: Worst campaign in window -->
+      <column caption='Window Worst ROI' datatype='real' name='[Calc_WinWorstROI]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='WINDOW_MIN((SUM([deal_value]) - SUM([spend])) / SUM([spend]))' />
+      </column>
+
+      <!-- 23. RUNNING_COUNT: Cumulative lead count -->
+      <column caption='Cumulative Leads' datatype='integer' name='[Calc_CumLeads]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='RUNNING_COUNT(COUNTD([lead_id]))' />
+      </column>
+
+      <!-- 24. Type: INT conversion for budget bands -->
+      <column caption='Budget Band' datatype='integer' name='[Calc_BudgetBand]' role='dimension' type='ordinal'>
+        <calculation class='tableau' formula='INT([budget] / 1000) * 1000' />
+      </column>
+
+      <!-- 25. Conversion rate: leads won / total leads -->
+      <column caption='Conversion Rate' datatype='real' name='[Calc_ConvRate]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='SUM(IF [lead_status] = &quot;Won&quot; THEN 1 ELSE 0 END) / COUNT([lead_id])' />
+      </column>
+
+      <layout dim-ordering='alphabetic' dim-percentage='0.5' measure-ordering='alphabetic' measure-percentage='0.4' show-structure='true' />
+    </datasource>
+  </datasources>
+
+  <parameters>
+    <parameter name='[Parameters].[Min Budget]' caption='Min Budget' datatype='real' value='5000'>
+      <range max='100000' min='0' granularity='1000' />
+    </parameter>
+    <parameter name='[Parameters].[Target Channel]' caption='Target Channel' datatype='string' value='&quot;Email&quot;'>
+      <allowable-values>
+        <enum>&quot;Email&quot;</enum>
+        <enum>&quot;SEM&quot;</enum>
+        <enum>&quot;SEO&quot;</enum>
+        <enum>&quot;Social&quot;</enum>
+        <enum>&quot;Display&quot;</enum>
+        <enum>&quot;Referral&quot;</enum>
+      </allowable-values>
+    </parameter>
+  </parameters>
+
+  <!-- ── Hierarchies ────────────────────────────────────────── -->
+  <drill-paths>
+    <drill-path name='Campaign Funnel'>
+      <field>[channel]</field>
+      <field>[campaign_name]</field>
+      <field>[lead_status]</field>
+    </drill-path>
+    <drill-path name='Lead Timeline'>
+      <field>[Calc_CampaignYear]</field>
+      <field>[Calc_StartMonth]</field>
+      <field>[created_date]</field>
+    </drill-path>
+  </drill-paths>
+
+  <!-- ── Sets ───────────────────────────────────────────────── -->
+  <sets>
+    <set name='High Value Leads' datasource='federated.marketing'>
+      <condition>
+        <formula>[company]</formula>
+        <values>
+          <value>"Microsoft"</value>
+          <value>"Google"</value>
+          <value>"Amazon"</value>
+          <value>"Salesforce"</value>
+        </values>
+      </condition>
+    </set>
+  </sets>
+
+  <!-- ── Groups ──────────────────────────────────────────────── -->
+  <groups>
+    <group name='Lead Stage' column='[lead_status]' datasource='federated.marketing'>
+      <members>
+        <member key='"New"' value='"Top of Funnel"' />
+        <member key='"Contacted"' value='"Top of Funnel"' />
+        <member key='"Qualified"' value='"Middle of Funnel"' />
+        <member key='"Proposal"' value='"Middle of Funnel"' />
+        <member key='"Won"' value='"Bottom of Funnel"' />
+        <member key='"Lost"' value='"Bottom of Funnel"' />
+      </members>
+    </group>
+  </groups>
+
+  <!-- ── Bins ────────────────────────────────────────────────── -->
+  <bins>
+    <bin name='Deal Bin' column='[deal_value]' datasource='federated.marketing' size='5000' />
+    <bin name='Engagement Bin' column='[engagement_score]' datasource='federated.marketing' size='10' />
+  </bins>
+
+  <worksheets>
+    <!-- Sheet 1: Campaign Performance Overview -->
+    <worksheet name='Campaign Performance'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Marketing Campaigns' name='federated.marketing' />
+          </datasources>
+          <datasource-dependencies datasource='federated.marketing'>
+            <column caption='Campaign ROI' datatype='real' name='[Calc_ROI]' role='measure' type='quantitative' />
+            <column caption='Cost Per Lead' datatype='real' name='[Calc_CPL]' role='measure' type='quantitative' />
+            <column datatype='string' name='[campaign_name]' role='dimension' type='nominal' />
+            <column datatype='string' name='[channel]' role='dimension' type='nominal' />
+            <column-instance column='[campaign_name]' derivation='None' name='[none:campaign_name:nk]' pivot='key' type='nominal' />
+            <column-instance column='[channel]' derivation='None' name='[none:channel:nk]' pivot='key' type='nominal' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style>
+          <style-rule element='mark'>
+            <format attr='mark-labels-show' value='true' />
+            <format attr='mark-labels-cull' value='true' />
+          </style-rule>
+        </style>
+        <panes>
+          <pane>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Bar' />
+            <encodings>
+              <color column='[federated.marketing].[none:channel:nk]' />
+              <text column='[federated.marketing].[usr:Calc_ROI:qk]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[federated.marketing].[usr:Calc_ROI:qk]</rows>
+        <cols>[federated.marketing].[none:campaign_name:nk]</cols>
+      </table>
+    </worksheet>
+
+    <!-- Sheet 2: Lead Funnel -->
+    <worksheet name='Lead Funnel'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Marketing Campaigns' name='federated.marketing' />
+          </datasources>
+          <datasource-dependencies datasource='federated.marketing'>
+            <column caption='Non-Blank Leads' datatype='integer' name='[Calc_NonBlankLeads]' role='measure' type='quantitative' />
+            <column datatype='string' name='[lead_status]' role='dimension' type='nominal' />
+            <column datatype='string' name='[channel]' role='dimension' type='nominal' />
+            <column-instance column='[lead_status]' derivation='None' name='[none:lead_status:nk]' pivot='key' type='nominal' />
+            <column-instance column='[channel]' derivation='None' name='[none:channel:nk]' pivot='key' type='nominal' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Bar' />
+            <encodings>
+              <color column='[federated.marketing].[none:channel:nk]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[federated.marketing].[usr:Calc_NonBlankLeads:qk]</rows>
+        <cols>[federated.marketing].[none:lead_status:nk]</cols>
+      </table>
+    </worksheet>
+
+    <!-- Sheet 3: Conversion Trend (line over time) -->
+    <worksheet name='Conversion Trend'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Marketing Campaigns' name='federated.marketing' />
+          </datasources>
+          <datasource-dependencies datasource='federated.marketing'>
+            <column caption='Conversion Rate' datatype='real' name='[Calc_ConvRate]' role='measure' type='quantitative' />
+            <column caption='Cumulative Leads' datatype='integer' name='[Calc_CumLeads]' role='measure' type='quantitative' />
+            <column datatype='date' name='[created_date]' role='dimension' type='ordinal' />
+            <column-instance column='[created_date]' derivation='Month' name='[mn:created_date:ok]' pivot='key' type='ordinal' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Line' />
+          </pane>
+        </panes>
+        <rows>[federated.marketing].[usr:Calc_ConvRate:qk]</rows>
+        <cols>[federated.marketing].[mn:created_date:ok]</cols>
+      </table>
+    </worksheet>
+
+    <!-- Sheet 4: Budget vs Deal Scatter -->
+    <worksheet name='Budget Analysis'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Marketing Campaigns' name='federated.marketing' />
+          </datasources>
+          <datasource-dependencies datasource='federated.marketing'>
+            <column caption='Budget' datatype='real' name='[budget]' role='measure' type='quantitative' />
+            <column caption='Deal Value' datatype='real' name='[deal_value]' role='measure' type='quantitative' />
+            <column caption='Spend' datatype='real' name='[spend]' role='measure' type='quantitative' />
+            <column datatype='string' name='[channel]' role='dimension' type='nominal' />
+            <column-instance column='[channel]' derivation='None' name='[none:channel:nk]' pivot='key' type='nominal' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Circle' />
+            <encodings>
+              <color column='[federated.marketing].[none:channel:nk]' />
+              <size column='[federated.marketing].[usr:spend:qk]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[federated.marketing].[usr:deal_value:qk]</rows>
+        <cols>[federated.marketing].[usr:budget:qk]</cols>
+      </table>
+    </worksheet>
+
+    <!-- Sheet 5: String Analysis (Company + Email) -->
+    <worksheet name='Lead Details'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Marketing Campaigns' name='federated.marketing' />
+          </datasources>
+          <datasource-dependencies datasource='federated.marketing'>
+            <column caption='First Name' datatype='string' name='[Calc_FirstName]' role='dimension' type='nominal' />
+            <column caption='Last Name' datatype='string' name='[Calc_LastName]' role='dimension' type='nominal' />
+            <column caption='Email Domain' datatype='string' name='[Calc_EmailDomain]' role='dimension' type='nominal' />
+            <column caption='Deal Value' datatype='real' name='[deal_value]' role='measure' type='quantitative' />
+            <column datatype='string' name='[company]' role='dimension' type='nominal' />
+            <column-instance column='[company]' derivation='None' name='[none:company:nk]' pivot='key' type='nominal' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style>
+          <style-rule element='mark'>
+            <format attr='mark-labels-show' value='true' />
+          </style-rule>
+        </style>
+        <panes>
+          <pane>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Text' />
+          </pane>
+        </panes>
+        <rows>[federated.marketing].[none:company:nk]</rows>
+        <cols>[federated.marketing].[Measure Names]</cols>
+      </table>
+    </worksheet>
+  </worksheets>
+
+  <dashboards>
+    <dashboard name='Marketing Dashboard'>
+      <style />
+      <size maxheight='1080' maxwidth='1920' minheight='1080' minwidth='1920' />
+      <zones>
+        <zone h='100000' id='1' name='Marketing Dashboard' type='text' w='100000' x='0' y='0'>
+          <formatted-text>
+            <run bold='true' fontheight='24'>Marketing Campaign Analytics</run>
+          </formatted-text>
+        </zone>
+        <zone h='45000' id='2' name='Campaign Performance' type='worksheet-ref' w='60000' x='0' y='10000'>
+        </zone>
+        <zone h='45000' id='3' name='Lead Funnel' type='worksheet-ref' w='40000' x='60000' y='10000'>
+        </zone>
+        <zone h='20000' id='4' name='channel' type='filter_control' w='20000' x='0' y='55000'>
+        </zone>
+        <zone h='40000' id='5' name='Conversion Trend' type='worksheet-ref' w='40000' x='20000' y='55000'>
+        </zone>
+        <zone h='40000' id='6' name='Budget Analysis' type='worksheet-ref' w='40000' x='60000' y='55000'>
+        </zone>
+      </zones>
+    </dashboard>
+  </dashboards>
+
+  <stories>
+    <story name='Campaign Review'>
+      <story-points>
+        <story-point caption='Performance Overview' dashboard='Marketing Dashboard'>
+          <description>Campaign ROI and cost per lead across all channels</description>
+        </story-point>
+        <story-point caption='Lead Quality' dashboard='Marketing Dashboard'>
+          <description>Funnel analysis and conversion rates by channel</description>
+        </story-point>
+        <story-point caption='Budget Optimization' dashboard='Marketing Dashboard'>
+          <description>Budget allocation vs deal value with correlation analysis</description>
+        </story-point>
+      </story-points>
+    </story>
+  </stories>
+
+  <actions>
+    <action name='Channel Filter' type='filter' source='Campaign Performance' target='Lead Funnel'>
+      <field>[channel]</field>
+    </action>
+    <action name='Status Filter' type='filter' source='Lead Funnel' target='Conversion Trend'>
+      <field>[lead_status]</field>
+    </action>
+    <action name='Campaign Highlight' type='highlight' source='Campaign Performance' target='Budget Analysis'>
+      <field>[campaign_name]</field>
+    </action>
+  </actions>
+</workbook>

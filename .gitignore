@@ -1,0 +1,74 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Artifacts (conserver la structure mais ignorer les contenus)
+artifacts/powerbi_objects/*.json
+artifacts/powerbi_reports/*
+artifacts/conversion_logs/*.json
+artifacts/test_results/*.json
+artifacts/migration_reports/*.txt
+tableau_export/*.json
+tableau_export/*.twb
+tableau_export/*.twbx
+tableau_export/*.tds
+tableau_export/*.tdsx
+
+# Logs
+*.log
+
+# Real-world Tableau files (binary / private — only SOURCES.md is tracked)
+examples/real_world/*.twb
+examples/real_world/*.twbx
+examples/real_world/*.tfl
+examples/real_world/*.tflx
+examples/real_world/*.tds
+examples/real_world/*.tdsx
+
+# Generated real-world migration output
+artifacts/powerbi_projects/RealWorld_*
+
+# Temporary files
+*.tmp
+*.temp
+
+# Test outputs
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment
+.env
+.env.local

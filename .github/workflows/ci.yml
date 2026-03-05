@@ -1,0 +1,164 @@
+name: CI – TableauToPowerBI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ───────────────────── Stage 1: Lint ─────────────────────
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-lint-${{ hashFiles('requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-lint-
+
+      - name: Install linters
+        run: pip install flake8 ruff
+
+      - name: Run flake8 (errors only)
+        run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Run ruff (additional checks)
+        run: ruff check --select=E,F,W,I --ignore=E501,E402 --exit-zero .
+
+  # ───────────────────── Stage 2: Test ─────────────────────
+  test:
+    needs: lint
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~\AppData\Local\pip\Cache
+          key: ${{ runner.os }}-pip-test-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-test-${{ matrix.python-version }}-
+
+      - name: Install coverage
+        run: pip install coverage
+
+      - name: Run unit tests with coverage
+        run: |
+          coverage run -m unittest discover tests/ -v
+          coverage report --fail-under=60
+          coverage xml -o coverage.xml
+
+      - name: Upload coverage artifact
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
+
+  # ───────────────────── Stage 3: Validate ─────────────────
+  validate:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-validate-${{ hashFiles('requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-validate-
+
+      - name: Validate sample migrations (.twb)
+        run: |
+          FAILED=0
+          TOTAL=0
+          for twb in examples/tableau_samples/*.twb; do
+            TOTAL=$((TOTAL + 1))
+            echo "=== Migrating $(basename $twb) ==="
+            if ! python migrate.py "$twb" --output-dir /tmp/pbi_validate; then
+              echo "FAIL: Migration failed for $(basename $twb)"
+              FAILED=$((FAILED + 1))
+            fi
+          done
+          echo "Migration (.twb): $((TOTAL - FAILED))/$TOTAL succeeded"
+          if [ "$FAILED" -gt 0 ]; then
+            echo "ERROR: $FAILED migration(s) failed"
+            exit 1
+          fi
+
+      - name: Validate sample migrations (.twbx)
+        run: |
+          FAILED=0
+          TOTAL=0
+          for twbx in examples/tableau_samples/*.twbx; do
+            [ -f "$twbx" ] || continue
+            TOTAL=$((TOTAL + 1))
+            echo "=== Migrating $(basename $twbx) ==="
+            if ! python migrate.py "$twbx" --output-dir /tmp/pbi_validate; then
+              echo "WARN: Migration failed for $(basename $twbx)"
+              FAILED=$((FAILED + 1))
+            fi
+          done
+          if [ "$TOTAL" -gt 0 ]; then
+            echo "Migration (.twbx): $((TOTAL - FAILED))/$TOTAL succeeded"
+          else
+            echo "No .twbx samples found — skipping"
+          fi
+
+      - name: Validate generated artifacts
+        run: |
+          python -c "
+          import sys
+          from powerbi_import.validator import ArtifactValidator
+          results = ArtifactValidator.validate_directory('/tmp/pbi_validate')
+          passed = sum(1 for r in results.values() if r.get('valid'))
+          total = len(results)
+          print(f'Validation: {passed}/{total} projects valid')
+          for name, r in results.items():
+              status = 'OK' if r.get('valid') else 'FAIL'
+              print(f'  [{status}] {name}')
+              for e in r.get('errors', []):
+                  print(f'    ERROR: {e}')
+          if total > 0 and passed < total * 0.75:
+              print(f'ERROR: Only {passed}/{total} projects valid (threshold: 75%)')
+              sys.exit(1)
+          "
+
+      - name: Upload validated projects
+        uses: actions/upload-artifact@v4
+        with:
+          name: validated-pbip-projects
+          path: /tmp/pbi_validate/
+
+  # ───────────────────── Stage 4 & 5: Deploy ────────────────
+  # Deploy jobs are disabled until GitHub Environments and Secrets are configured.
+  # To enable, create 'staging' and 'production' environments in GitHub Settings,
+  # add FABRIC_WORKSPACE_ID, FABRIC_TENANT_ID, FABRIC_CLIENT_ID, FABRIC_CLIENT_SECRET
+  # as repository secrets, then uncomment the deploy jobs in this file.
+  # See docs/DEPLOYMENT_GUIDE.md for full setup instructions.

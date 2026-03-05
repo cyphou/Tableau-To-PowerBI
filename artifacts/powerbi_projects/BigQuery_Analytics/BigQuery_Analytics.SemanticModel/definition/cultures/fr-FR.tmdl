@@ -1,0 +1,5 @@
+culture 'fr-FR'
+	linguisticMetadata =
+		```
+			{"Version": "1.0.0", "Language": "fr-FR", "DynamicImprovement": "HighConfidence"}
+			```

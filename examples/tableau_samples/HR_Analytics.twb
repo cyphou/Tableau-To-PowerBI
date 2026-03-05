@@ -1,0 +1,226 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<workbook source-build='2024.1.0' source-platform='win' version='18.1' xmlns:user='http://www.tableausoftware.com/xml/user'>
+  <preferences>
+    <preference name='ui.encoding.shelf.height' value='24' />
+  </preferences>
+  <datasources>
+    <datasource caption='HR Data' inline='true' name='federated.1' version='18.1'>
+      <connection class='federated'>
+        <named-connections>
+          <named-connection caption='HR Database' name='sqlserver'>
+            <connection class='sqlserver' dbname='HRDatabase' server='localhost' username='' />
+          </named-connection>
+        </named-connections>
+        <relation connection='sqlserver' name='Employees' table='[dbo].[Employees]' type='table'>
+          <columns>
+            <column datatype='integer' name='EmployeeID' ordinal='0' />
+            <column datatype='string' name='FirstName' ordinal='1' />
+            <column datatype='string' name='LastName' ordinal='2' />
+            <column datatype='date' name='HireDate' ordinal='3' />
+            <column datatype='string' name='Department' ordinal='4' />
+            <column datatype='string' name='JobTitle' ordinal='5' />
+            <column datatype='real' name='Salary' ordinal='6' />
+            <column datatype='string' name='Location' ordinal='7' />
+            <column datatype='integer' name='Age' ordinal='8' />
+            <column datatype='integer' name='YearsOfService' ordinal='9' />
+            <column datatype='string' name='PerformanceRating' ordinal='10' />
+          </columns>
+        </relation>
+      </connection>
+      <column caption='Average Salary' datatype='real' name='[AVG_Salary]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='AVG([Salary])' />
+      </column>
+      <column caption='Employee Count' datatype='integer' name='[Employee_Count]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='COUNT([EmployeeID])' />
+      </column>
+      <column caption='Tenure Category' datatype='string' name='[Tenure_Category]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='IF [YearsOfService] &lt; 2 THEN &quot;New&quot;&#10;ELSEIF [YearsOfService] &lt; 5 THEN &quot;Mid&quot;&#10;ELSE &quot;Senior&quot;&#10;END' />
+      </column>
+      <column caption='Total Compensation' datatype='real' name='[Total_Comp]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='SUM([Salary]) * 1.25' />
+      </column>
+      <layout dim-ordering='alphabetic' dim-percentage='0.5' measure-ordering='alphabetic' measure-percentage='0.4' show-structure='true' />
+    </datasource>
+  </datasources>
+  <worksheets>
+    <worksheet name='Headcount by Department'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='HR Data' name='federated.1' />
+          </datasources>
+          <datasource-dependencies datasource='federated.1'>
+            <column datatype='string' name='[Department]' role='dimension' type='nominal' />
+            <column caption='Employee Count' datatype='integer' name='[Employee_Count]' role='measure' type='quantitative'>
+              <calculation class='tableau' formula='COUNT([EmployeeID])' />
+            </column>
+            <column-instance column='[Department]' derivation='None' name='[none:Department:nk]' pivot='key' type='nominal' />
+            <column-instance column='[Employee_Count]' derivation='User' name='[usr:Employee_Count:qk]' pivot='key' type='quantitative' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Pie' />
+            <encodings>
+              <color column='[federated.1].[none:Department:nk]' />
+              <size column='[federated.1].[usr:Employee_Count:qk]' />
+              <text column='[federated.1].[usr:Employee_Count:qk]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows />
+        <cols />
+      </table>
+    </worksheet>
+    <worksheet name='Salary Analysis'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='HR Data' name='federated.1' />
+          </datasources>
+          <datasource-dependencies datasource='federated.1'>
+            <column caption='Average Salary' datatype='real' name='[AVG_Salary]' role='measure' type='quantitative'>
+              <calculation class='tableau' formula='AVG([Salary])' />
+            </column>
+            <column datatype='string' name='[Department]' role='dimension' type='nominal' />
+            <column-instance column='[Department]' derivation='None' name='[none:Department:nk]' pivot='key' type='nominal' />
+            <column-instance column='[AVG_Salary]' derivation='User' name='[usr:AVG_Salary:qk]' pivot='key' type='quantitative' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Bar' />
+            <encodings>
+              <color column='[federated.1].[usr:AVG_Salary:qk]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[federated.1].[none:Department:nk]</rows>
+        <cols>[federated.1].[usr:AVG_Salary:qk]</cols>
+      </table>
+    </worksheet>
+    <worksheet name='Hiring Trend'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='HR Data' name='federated.1' />
+          </datasources>
+          <datasource-dependencies datasource='federated.1'>
+            <column caption='Employee Count' datatype='integer' name='[Employee_Count]' role='measure' type='quantitative'>
+              <calculation class='tableau' formula='COUNT([EmployeeID])' />
+            </column>
+            <column datatype='date' name='[HireDate]' role='dimension' type='ordinal' />
+            <column-instance column='[HireDate]' derivation='Year' name='[yr:HireDate:ok]' pivot='key' type='ordinal' />
+            <column-instance column='[Employee_Count]' derivation='User' name='[usr:Employee_Count:qk]' pivot='key' type='quantitative' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Area' />
+            <encodings>
+              <color value='#4E79A7' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[federated.1].[usr:Employee_Count:qk]</rows>
+        <cols>[federated.1].[yr:HireDate:ok]</cols>
+      </table>
+    </worksheet>
+    <worksheet name='Performance Matrix'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='HR Data' name='federated.1' />
+          </datasources>
+          <datasource-dependencies datasource='federated.1'>
+            <column caption='Employee Count' datatype='integer' name='[Employee_Count]' role='measure' type='quantitative'>
+              <calculation class='tableau' formula='COUNT([EmployeeID])' />
+            </column>
+            <column datatype='string' name='[PerformanceRating]' role='dimension' type='nominal' />
+            <column caption='Tenure Category' datatype='string' name='[Tenure_Category]' role='dimension' type='nominal'>
+              <calculation class='tableau' formula='IF [YearsOfService] &lt; 2 THEN &quot;New&quot;&#10;ELSEIF [YearsOfService] &lt; 5 THEN &quot;Mid&quot;&#10;ELSE &quot;Senior&quot;&#10;END' />
+            </column>
+            <column-instance column='[PerformanceRating]' derivation='None' name='[none:PerformanceRating:nk]' pivot='key' type='nominal' />
+            <column-instance column='[Tenure_Category]' derivation='User' name='[usr:Tenure_Category:nk]' pivot='key' type='nominal' />
+            <column-instance column='[Employee_Count]' derivation='User' name='[usr:Employee_Count:qk]' pivot='key' type='quantitative' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Square' />
+            <encodings>
+              <color column='[federated.1].[usr:Employee_Count:qk]' />
+              <text column='[federated.1].[usr:Employee_Count:qk]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[federated.1].[none:PerformanceRating:nk]</rows>
+        <cols>[federated.1].[usr:Tenure_Category:nk]</cols>
+      </table>
+    </worksheet>
+  </worksheets>
+  <dashboards>
+    <dashboard name='HR Executive Dashboard'>
+      <style />
+      <size maxheight='1000' maxwidth='1400' minheight='1000' minwidth='1400' />
+      <zones>
+        <zone h='100' id='1' type='layout-basic' w='100' x='0' y='0'>
+          <zone h='10' id='2' mode='horz' type='title' w='100' x='0' y='0'>
+            <format attr='border-color' value='#2C5F77' />
+            <format attr='height' value='50' />
+          </zone>
+          <zone h='90' id='3' type='layout-flow' w='100' x='0' y='10'>
+            <zone h='45' id='4' name='Headcount by Department' w='40' x='0' y='0'>
+              <zone-contains>Worksheet: Headcount by Department</zone-contains>
+            </zone>
+            <zone h='45' id='5' name='Salary Analysis' w='60' x='40' y='0'>
+              <zone-contains>Worksheet: Salary Analysis</zone-contains>
+            </zone>
+            <zone h='45' id='6' name='Hiring Trend' w='60' x='0' y='45'>
+              <zone-contains>Worksheet: Hiring Trend</zone-contains>
+            </zone>
+            <zone h='45' id='7' name='Performance Matrix' w='40' x='60' y='45'>
+              <zone-contains>Worksheet: Performance Matrix</zone-contains>
+            </zone>
+          </zone>
+        </zone>
+      </zones>
+    </dashboard>
+  </dashboards>
+  <windows source-height='30'>
+    <window class='worksheet' name='Headcount by Department'>
+      <cards>
+        <edge name='left'>
+          <strip size='160'>
+            <card type='pages' />
+            <card type='filters' />
+            <card type='marks' />
+          </strip>
+        </edge>
+      </cards>
+    </window>
+    <window class='dashboard' name='HR Executive Dashboard'>
+      <viewpoints />
+    </window>
+  </windows>
+</workbook>

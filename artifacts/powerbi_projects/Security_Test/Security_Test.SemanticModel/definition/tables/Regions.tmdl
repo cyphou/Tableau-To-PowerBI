@@ -1,0 +1,35 @@
+table Regions
+	lineageTag: 38ee9edc-bda4-416c-bdd5-e9414148fc4d
+
+	column RegionName
+		dataType: string
+		lineageTag: 377a85b6-40ab-4098-848b-65bd3ca74122
+		summarizeBy: none
+		sourceColumn: RegionName
+		dataCategory: StateOrProvince
+
+		annotation SummarizationSetBy = Automatic
+
+	column RegionManager
+		dataType: string
+		lineageTag: 80ecbf13-6ca8-433c-8d26-734810499806
+		summarizeBy: none
+		sourceColumn: RegionManager
+		dataCategory: StateOrProvince
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Regions-19841fbe-7492-49ee-bbcf-2bba877b9b0d' = m
+		mode: import
+		source =
+				let
+				    // Source SQL Server
+				    Source = Sql.Database("localhost", "SalesDB"),
+				    #"Regions Table" = Source{[Schema="dbo", Item="Regions"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(#"Regions Table", {{"RegionName", "Region Name"}, {"RegionManager", "Region Manager"}}),
+				    Result = #"Renamed Columns"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+

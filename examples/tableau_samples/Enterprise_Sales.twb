@@ -1,0 +1,512 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<workbook source-build='2024.1.0' source-platform='win' version='18.1' xmlns:user='http://www.tableausoftware.com/xml/user'>
+  <preferences>
+    <preference name='ui.encoding.shelf.height' value='24' />
+  </preferences>
+  <datasources>
+    <!-- ── Primary datasource: Sales fact table (Snowflake) ────── -->
+    <datasource caption='Enterprise Sales' inline='true' name='federated.enterprise' version='18.1'>
+      <connection class='federated'>
+        <named-connections>
+          <named-connection caption='SnowflakeWarehouse' name='snowflake.sales'>
+            <connection class='snowflake' server='acme.snowflakecomputing.com' dbname='ANALYTICS' schema='PUBLIC' warehouse='COMPUTE_WH' />
+          </named-connection>
+        </named-connections>
+        <!-- Multi-table model with joins -->
+        <relation join='inner' type='join'>
+          <clause type='join'>
+            <expression op='='>
+              <expression op='[customer_id]' />
+              <expression op='[Customers].[customer_id]' />
+            </expression>
+          </clause>
+          <relation connection='snowflake.sales' name='Orders' table='[PUBLIC].[ORDERS]' type='table'>
+            <columns>
+              <column datatype='integer' name='order_id' ordinal='0' />
+              <column datatype='date' name='order_date' ordinal='1' />
+              <column datatype='integer' name='customer_id' ordinal='2' />
+              <column datatype='integer' name='product_id' ordinal='3' />
+              <column datatype='string' name='region' ordinal='4' />
+              <column datatype='string' name='channel' ordinal='5' />
+              <column datatype='real' name='quantity' ordinal='6' />
+              <column datatype='real' name='unit_price' ordinal='7' />
+              <column datatype='real' name='discount' ordinal='8' />
+              <column datatype='real' name='shipping_cost' ordinal='9' />
+              <column datatype='string' name='order_status' ordinal='10' />
+              <column datatype='string' name='sales_rep' ordinal='11' />
+              <column datatype='string' name='territory' ordinal='12' />
+            </columns>
+          </relation>
+          <relation connection='snowflake.sales' name='Customers' table='[PUBLIC].[CUSTOMERS]' type='table'>
+            <columns>
+              <column datatype='integer' name='customer_id' ordinal='0' />
+              <column datatype='string' name='customer_name' ordinal='1' />
+              <column datatype='string' name='segment' ordinal='2' />
+              <column datatype='string' name='city' ordinal='3' />
+              <column datatype='string' name='state' ordinal='4' />
+              <column datatype='string' name='country' ordinal='5' />
+              <column datatype='string' name='postal_code' ordinal='6' />
+              <column datatype='real' name='latitude' ordinal='7' />
+              <column datatype='real' name='longitude' ordinal='8' />
+              <column datatype='string' name='customer_email' ordinal='9' />
+              <column datatype='date' name='first_purchase_date' ordinal='10' />
+            </columns>
+          </relation>
+        </relation>
+        <cols>
+          <!-- Orders columns -->
+          <map key='[order_id]' value='[Orders].[order_id]' />
+          <map key='[order_date]' value='[Orders].[order_date]' />
+          <map key='[customer_id]' value='[Orders].[customer_id]' />
+          <map key='[product_id]' value='[Orders].[product_id]' />
+          <map key='[region]' value='[Orders].[region]' />
+          <map key='[channel]' value='[Orders].[channel]' />
+          <map key='[quantity]' value='[Orders].[quantity]' />
+          <map key='[unit_price]' value='[Orders].[unit_price]' />
+          <map key='[discount]' value='[Orders].[discount]' />
+          <map key='[shipping_cost]' value='[Orders].[shipping_cost]' />
+          <map key='[order_status]' value='[Orders].[order_status]' />
+          <map key='[sales_rep]' value='[Orders].[sales_rep]' />
+          <map key='[territory]' value='[Orders].[territory]' />
+          <!-- Customer columns -->
+          <map key='[customer_name]' value='[Customers].[customer_name]' />
+          <map key='[segment]' value='[Customers].[segment]' />
+          <map key='[city]' value='[Customers].[city]' />
+          <map key='[state]' value='[Customers].[state]' />
+          <map key='[country]' value='[Customers].[country]' />
+          <map key='[postal_code]' value='[Customers].[postal_code]' />
+          <map key='[latitude]' value='[Customers].[latitude]' />
+          <map key='[longitude]' value='[Customers].[longitude]' />
+          <map key='[customer_email]' value='[Customers].[customer_email]' />
+          <map key='[first_purchase_date]' value='[Customers].[first_purchase_date]' />
+        </cols>
+      </connection>
+      <!-- Physical columns -->
+      <column caption='Order ID' datatype='integer' name='[order_id]' role='dimension' type='ordinal' />
+      <column caption='Order Date' datatype='date' name='[order_date]' role='dimension' type='ordinal' />
+      <column caption='Customer ID' datatype='integer' name='[customer_id]' role='dimension' type='ordinal' />
+      <column caption='Product ID' datatype='integer' name='[product_id]' role='dimension' type='ordinal' />
+      <column caption='Region' datatype='string' name='[region]' role='dimension' type='nominal' semantic-role='[State].[Name]' />
+      <column caption='Channel' datatype='string' name='[channel]' role='dimension' type='nominal' />
+      <column caption='Quantity' datatype='real' name='[quantity]' role='measure' type='quantitative' />
+      <column caption='Unit Price' datatype='real' name='[unit_price]' role='measure' type='quantitative' />
+      <column caption='Discount' datatype='real' name='[discount]' role='measure' type='quantitative' />
+      <column caption='Shipping Cost' datatype='real' name='[shipping_cost]' role='measure' type='quantitative' />
+      <column caption='Order Status' datatype='string' name='[order_status]' role='dimension' type='nominal' />
+      <column caption='Sales Rep' datatype='string' name='[sales_rep]' role='dimension' type='nominal' />
+      <column caption='Territory' datatype='string' name='[territory]' role='dimension' type='nominal' />
+      <column caption='Customer Name' datatype='string' name='[customer_name]' role='dimension' type='nominal' />
+      <column caption='Segment' datatype='string' name='[segment]' role='dimension' type='nominal' />
+      <column caption='City' datatype='string' name='[city]' role='dimension' type='nominal' semantic-role='[City].[Name]' />
+      <column caption='State' datatype='string' name='[state]' role='dimension' type='nominal' semantic-role='[State].[Name]' />
+      <column caption='Country' datatype='string' name='[country]' role='dimension' type='nominal' semantic-role='[Country].[Name]' />
+      <column caption='Postal Code' datatype='string' name='[postal_code]' role='dimension' type='nominal' semantic-role='[ZipCode].[Name]' />
+      <column caption='Latitude' datatype='real' name='[latitude]' role='measure' type='quantitative' semantic-role='[Geographical].[Latitude]' />
+      <column caption='Longitude' datatype='real' name='[longitude]' role='measure' type='quantitative' semantic-role='[Geographical].[Longitude]' />
+      <column caption='Customer Email' datatype='string' name='[customer_email]' role='dimension' type='nominal' />
+      <column caption='First Purchase Date' datatype='date' name='[first_purchase_date]' role='dimension' type='ordinal' />
+
+      <!-- ── CALCULATIONS ───────────────────────────────────── -->
+
+      <!-- 1. Gross Revenue: SUM with calculation -->
+      <column caption='Gross Revenue' datatype='real' name='[Calc_GrossRevenue]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='SUM([quantity] * [unit_price])' />
+      </column>
+
+      <!-- 2. Net Revenue: SUM(IF) → SUMX iterator -->
+      <column caption='Net Revenue' datatype='real' name='[Calc_NetRevenue]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='SUM(IF [order_status] != &quot;Cancelled&quot; THEN [quantity] * [unit_price] * (1 - [discount]) ELSE 0 END)' />
+      </column>
+
+      <!-- 3. Total Discount Amount -->
+      <column caption='Total Discount' datatype='real' name='[Calc_TotalDiscount]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='SUM([quantity] * [unit_price] * [discount])' />
+      </column>
+
+      <!-- 4. Profit: complex conditional + multiple references -->
+      <column caption='Profit' datatype='real' name='[Calc_Profit]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='SUM(IF [order_status] != &quot;Cancelled&quot; THEN ([quantity] * [unit_price] * (1 - [discount])) - [shipping_cost] ELSE 0 END)' />
+      </column>
+
+      <!-- 5. Profit Margin %: measure referencing measures -->
+      <column caption='Profit Margin %' datatype='real' name='[Calc_ProfitMargin]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='[Calc_Profit] / [Calc_NetRevenue]' />
+      </column>
+
+      <!-- 6. LOD FIXED: Revenue per Customer (grand-level) -->
+      <column caption='Revenue per Customer' datatype='real' name='[Calc_RevPerCustomer]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='{FIXED [customer_id] : SUM([quantity] * [unit_price])}' />
+      </column>
+
+      <!-- 7. LOD FIXED multi-dim: Regional Revenue by Channel -->
+      <column caption='Regional Channel Revenue' datatype='real' name='[Calc_RegionalChannelRev]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='{FIXED [region], [channel] : SUM([quantity] * [unit_price])}' />
+      </column>
+
+      <!-- 8. LOD EXCLUDE: Revenue excluding Category -->
+      <column caption='Revenue Excl Category' datatype='real' name='[Calc_RevExclCategory]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='{EXCLUDE [channel] : SUM([quantity] * [unit_price])}' />
+      </column>
+
+      <!-- 9. WINDOW function: Moving Average Revenue -->
+      <column caption='Moving Avg Revenue' datatype='real' name='[Calc_MovAvgRev]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='WINDOW_AVG(SUM([quantity] * [unit_price]))' />
+      </column>
+
+      <!-- 10. Table calc: Running Total -->
+      <column caption='Running Total Revenue' datatype='real' name='[Calc_RunTotal]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='RUNNING_SUM(SUM([quantity] * [unit_price]))' />
+      </column>
+
+      <!-- 11. Table calc: Rank by Revenue -->
+      <column caption='Revenue Rank' datatype='integer' name='[Calc_RevenueRank]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='RANK(SUM([quantity] * [unit_price]))' />
+      </column>
+
+      <!-- 12. Date: YTD Revenue with FIXED + YEAR + TODAY -->
+      <column caption='YTD Revenue' datatype='real' name='[Calc_YTDRevenue]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='{FIXED : SUM(IF YEAR([order_date]) = YEAR(TODAY()) THEN [quantity] * [unit_price] ELSE 0 END)}' />
+      </column>
+
+      <!-- 13. Date diff: Customer Tenure in Days -->
+      <column caption='Customer Tenure Days' datatype='integer' name='[Calc_TenureDays]' role='dimension' type='ordinal'>
+        <calculation class='tableau' formula='DATEDIFF(&quot;day&quot;, [first_purchase_date], TODAY())' />
+      </column>
+
+      <!-- 14. Nested IF/ELSEIF: Customer Tier classification -->
+      <column caption='Customer Tier' datatype='string' name='[Calc_CustomerTier]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='IF [Calc_RevPerCustomer] > 10000 THEN &quot;Platinum&quot; ELSEIF [Calc_RevPerCustomer] > 5000 THEN &quot;Gold&quot; ELSEIF [Calc_RevPerCustomer] > 1000 THEN &quot;Silver&quot; ELSE &quot;Bronze&quot; END' />
+      </column>
+
+      <!-- 15. ZN + ISNULL: Safe Discount Rate -->
+      <column caption='Safe Discount Rate' datatype='real' name='[Calc_SafeDiscount]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='IF ISNULL([discount]) THEN 0 ELSE ZN([discount]) END' />
+      </column>
+
+      <!-- 16. String concat + UPPER + CONTAINS -->
+      <column caption='Full Location' datatype='string' name='[Calc_FullLocation]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='UPPER([city]) + &quot;, &quot; + [state] + &quot; (&quot; + [country] + &quot;)&quot;' />
+      </column>
+
+      <!-- 17. COUNTD: Unique Customers -->
+      <column caption='Unique Customers' datatype='integer' name='[Calc_UniqueCustomers]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='COUNTD([customer_id])' />
+      </column>
+
+      <!-- 18. AVG(IF): Average Order Value for completed orders -->
+      <column caption='AOV Completed' datatype='real' name='[Calc_AOVCompleted]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='AVG(IF [order_status] = &quot;Completed&quot; THEN [quantity] * [unit_price] ELSE 0 END)' />
+      </column>
+
+      <!-- 19. Cross-table reference: Customer Segment from lookup -->
+      <column caption='Customer Segment Label' datatype='string' name='[Calc_SegmentLabel]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='&quot;Segment: &quot; + [segment]' />
+      </column>
+
+      <!-- 20. Complex: Discount Category (nested logic + null handling) -->
+      <column caption='Discount Category' datatype='string' name='[Calc_DiscountCategory]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='IF ISNULL([discount]) THEN &quot;No Discount&quot; ELSEIF [discount] = 0 THEN &quot;No Discount&quot; ELSEIF [discount] &lt; 0.1 THEN &quot;Low (&lt;10%)&quot; ELSEIF [discount] &lt; 0.25 THEN &quot;Medium (10-25%)&quot; ELSE &quot;High (&gt;25%)&quot; END' />
+      </column>
+
+      <!-- 21. Stats: Revenue Standard Deviation -->
+      <column caption='Revenue StdDev' datatype='real' name='[Calc_RevStdDev]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='STDEV(SUM([quantity] * [unit_price]))' />
+      </column>
+
+      <!-- 22. Security: Current user check -->
+      <column caption='Is My Account' datatype='boolean' name='[Calc_IsMyAccount]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='[customer_email] = USERNAME()' />
+      </column>
+
+      <!-- User filter: territory-based RLS -->
+      <user-filter name='[Territory Access]' column='[territory]'>
+        <member user='john@acme.com' value='North' />
+        <member user='john@acme.com' value='South' />
+        <member user='jane@acme.com' value='East' />
+        <member user='jane@acme.com' value='West' />
+        <member user='mike@acme.com' value='North' />
+      </user-filter>
+
+      <layout dim-ordering='alphabetic' dim-percentage='0.5' measure-ordering='alphabetic' measure-percentage='0.4' show-structure='true' />
+    </datasource>
+  </datasources>
+
+  <parameters>
+    <parameter name='[Parameters].[Target Margin]' caption='Target Margin' datatype='real' value='0.2'>
+      <range max='0.5' min='0' granularity='0.01' />
+    </parameter>
+    <parameter name='[Parameters].[Date Range Start]' caption='Date Range Start' datatype='date' value='#2024-01-01#'>
+    </parameter>
+    <parameter name='[Parameters].[Top N]' caption='Top N' datatype='integer' value='10'>
+      <range max='50' min='1' granularity='1' />
+    </parameter>
+  </parameters>
+
+  <!-- ── Hierarchies ────────────────────────────────────────── -->
+  <drill-paths>
+    <drill-path name='Geography'>
+      <field>[country]</field>
+      <field>[state]</field>
+      <field>[city]</field>
+      <field>[postal_code]</field>
+    </drill-path>
+    <drill-path name='Time'>
+      <field>[order_date]</field>
+    </drill-path>
+  </drill-paths>
+
+  <!-- ── Sets ───────────────────────────────────────────────── -->
+  <sets>
+    <set name='Top Customers' datasource='federated.enterprise'>
+      <condition>
+        <formula>[customer_name]</formula>
+        <values>
+          <value>"Acme Corp"</value>
+          <value>"GlobalTech"</value>
+          <value>"MegaStore Inc"</value>
+          <value>"Prime Solutions"</value>
+          <value>"TechVentures"</value>
+        </values>
+      </condition>
+    </set>
+  </sets>
+
+  <!-- ── Groups ──────────────────────────────────────────────── -->
+  <groups>
+    <group name='Channel Group' column='[channel]' datasource='federated.enterprise'>
+      <members>
+        <member key='"Online"' value='"Digital"' />
+        <member key='"Website"' value='"Digital"' />
+        <member key='"Store"' value='"Physical"' />
+        <member key='"Partner"' value='"Indirect"' />
+      </members>
+    </group>
+  </groups>
+
+  <!-- ── Bins ────────────────────────────────────────────────── -->
+  <bins>
+    <bin name='Revenue Bin' column='[quantity]' datasource='federated.enterprise' size='10' />
+  </bins>
+
+  <worksheets>
+    <!-- Sheet 1: Executive KPI Dashboard -->
+    <worksheet name='Executive KPIs'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Enterprise Sales' name='federated.enterprise' />
+          </datasources>
+          <datasource-dependencies datasource='federated.enterprise'>
+            <column caption='Net Revenue' datatype='real' name='[Calc_NetRevenue]' role='measure' type='quantitative'>
+              <calculation class='tableau' formula='SUM(IF [order_status] != &quot;Cancelled&quot; THEN [quantity] * [unit_price] * (1 - [discount]) ELSE 0 END)' />
+            </column>
+            <column caption='Profit' datatype='real' name='[Calc_Profit]' role='measure' type='quantitative'>
+              <calculation class='tableau' formula='SUM(IF [order_status] != &quot;Cancelled&quot; THEN ([quantity] * [unit_price] * (1 - [discount])) - [shipping_cost] ELSE 0 END)' />
+            </column>
+            <column caption='Unique Customers' datatype='integer' name='[Calc_UniqueCustomers]' role='measure' type='quantitative'>
+              <calculation class='tableau' formula='COUNTD([customer_id])' />
+            </column>
+            <column-instance column='[Calc_NetRevenue]' derivation='User' name='[usr:Calc_NetRevenue:qk]' pivot='key' type='quantitative' />
+            <column-instance column='[Calc_Profit]' derivation='User' name='[usr:Calc_Profit:qk]' pivot='key' type='quantitative' />
+            <column-instance column='[Calc_UniqueCustomers]' derivation='User' name='[usr:Calc_UniqueCustomers:qk]' pivot='key' type='quantitative' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Text' />
+          </pane>
+        </panes>
+        <rows>[federated.enterprise].[Measure Values]</rows>
+        <cols>[federated.enterprise].[Measure Names]</cols>
+      </table>
+    </worksheet>
+
+    <!-- Sheet 2: Revenue by Region & Channel (stacked bar) -->
+    <worksheet name='Revenue by Region'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Enterprise Sales' name='federated.enterprise' />
+          </datasources>
+          <datasource-dependencies datasource='federated.enterprise'>
+            <column caption='Net Revenue' datatype='real' name='[Calc_NetRevenue]' role='measure' type='quantitative' />
+            <column datatype='string' name='[region]' role='dimension' type='nominal' />
+            <column datatype='string' name='[channel]' role='dimension' type='nominal' />
+            <column-instance column='[region]' derivation='None' name='[none:region:nk]' pivot='key' type='nominal' />
+            <column-instance column='[channel]' derivation='None' name='[none:channel:nk]' pivot='key' type='nominal' />
+            <column-instance column='[Calc_NetRevenue]' derivation='User' name='[usr:Calc_NetRevenue:qk]' pivot='key' type='quantitative' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Bar' />
+            <encodings>
+              <color column='[federated.enterprise].[none:channel:nk]' />
+              <text column='[federated.enterprise].[usr:Calc_NetRevenue:qk]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[federated.enterprise].[usr:Calc_NetRevenue:qk]</rows>
+        <cols>[federated.enterprise].[none:region:nk]</cols>
+      </table>
+    </worksheet>
+
+    <!-- Sheet 3: Profit Trend (dual-axis line) -->
+    <worksheet name='Profit Trend'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Enterprise Sales' name='federated.enterprise' />
+          </datasources>
+          <datasource-dependencies datasource='federated.enterprise'>
+            <column caption='Net Revenue' datatype='real' name='[Calc_NetRevenue]' role='measure' type='quantitative' />
+            <column caption='Profit' datatype='real' name='[Calc_Profit]' role='measure' type='quantitative' />
+            <column caption='Moving Avg Revenue' datatype='real' name='[Calc_MovAvgRev]' role='measure' type='quantitative' />
+            <column datatype='date' name='[order_date]' role='dimension' type='ordinal' />
+            <column-instance column='[order_date]' derivation='Month' name='[mn:order_date:ok]' pivot='key' type='ordinal' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Line' />
+            <encodings>
+              <color column='[federated.enterprise].[Measure Names]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[federated.enterprise].[Measure Values]</rows>
+        <cols>[federated.enterprise].[mn:order_date:ok]</cols>
+      </table>
+    </worksheet>
+
+    <!-- Sheet 4: Customer Segment Scatter (bubble) -->
+    <worksheet name='Customer Analysis'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Enterprise Sales' name='federated.enterprise' />
+          </datasources>
+          <datasource-dependencies datasource='federated.enterprise'>
+            <column caption='Net Revenue' datatype='real' name='[Calc_NetRevenue]' role='measure' type='quantitative' />
+            <column caption='Profit Margin %' datatype='real' name='[Calc_ProfitMargin]' role='measure' type='quantitative' />
+            <column caption='Unique Customers' datatype='integer' name='[Calc_UniqueCustomers]' role='measure' type='quantitative' />
+            <column datatype='string' name='[segment]' role='dimension' type='nominal' />
+            <column-instance column='[segment]' derivation='None' name='[none:segment:nk]' pivot='key' type='nominal' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Circle' />
+            <encodings>
+              <color column='[federated.enterprise].[none:segment:nk]' />
+              <size column='[federated.enterprise].[usr:Calc_UniqueCustomers:qk]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[federated.enterprise].[usr:Calc_ProfitMargin:qk]</rows>
+        <cols>[federated.enterprise].[usr:Calc_NetRevenue:qk]</cols>
+      </table>
+    </worksheet>
+
+    <!-- Sheet 5: Geographic Map -->
+    <worksheet name='Sales Map'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Enterprise Sales' name='federated.enterprise' />
+          </datasources>
+          <datasource-dependencies datasource='federated.enterprise'>
+            <column caption='Net Revenue' datatype='real' name='[Calc_NetRevenue]' role='measure' type='quantitative' />
+            <column datatype='string' name='[state]' role='dimension' type='nominal' semantic-role='[State].[Name]' />
+            <column datatype='real' name='[latitude]' role='measure' type='quantitative' semantic-role='[Geographical].[Latitude]' />
+            <column datatype='real' name='[longitude]' role='measure' type='quantitative' semantic-role='[Geographical].[Longitude]' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Map' />
+            <encodings>
+              <color column='[federated.enterprise].[usr:Calc_NetRevenue:qk]' />
+              <size column='[federated.enterprise].[usr:Calc_NetRevenue:qk]' />
+            </encodings>
+          </pane>
+        </panes>
+      </table>
+    </worksheet>
+  </worksheets>
+
+  <dashboards>
+    <dashboard name='Enterprise Sales Dashboard'>
+      <style />
+      <size maxheight='1080' maxwidth='1920' minheight='1080' minwidth='1920' />
+      <zones>
+        <zone h='100000' id='1' name='Executive KPIs' type='text' w='100000' x='0' y='0'>
+          <formatted-text>
+            <run bold='true' fontheight='24'>Enterprise Sales Dashboard</run>
+          </formatted-text>
+        </zone>
+        <zone h='50000' id='2' name='Executive KPIs' type='worksheet-ref' w='50000' x='0' y='10000'>
+        </zone>
+        <zone h='50000' id='3' name='Revenue by Region' type='worksheet-ref' w='50000' x='50000' y='10000'>
+        </zone>
+        <zone h='40000' id='4' name='Profit Trend' type='worksheet-ref' w='60000' x='0' y='60000'>
+        </zone>
+        <zone h='40000' id='5' name='Customer Analysis' type='worksheet-ref' w='40000' x='60000' y='60000'>
+        </zone>
+      </zones>
+    </dashboard>
+  </dashboards>
+
+  <stories>
+    <story name='Quarterly Review'>
+      <story-points>
+        <story-point caption='Q1 Performance' dashboard='Enterprise Sales Dashboard'>
+          <description>Overview of Q1 sales performance across all regions</description>
+        </story-point>
+        <story-point caption='Customer Deep Dive' dashboard='Enterprise Sales Dashboard'>
+          <description>Analysis of customer segments and profitability</description>
+        </story-point>
+        <story-point caption='Geographic Insights' dashboard='Enterprise Sales Dashboard'>
+          <description>Sales distribution by geography with trend analysis</description>
+        </story-point>
+      </story-points>
+    </story>
+  </stories>
+
+  <actions>
+    <action name='Region Filter' type='filter' source='Revenue by Region' target='Profit Trend'>
+      <field>[region]</field>
+    </action>
+    <action name='Customer Highlight' type='highlight' source='Customer Analysis' target='Revenue by Region'>
+      <field>[segment]</field>
+    </action>
+    <action name='Company Website' type='url'>
+      <url>https://acme.com/customer/&lt;customer_id&gt;</url>
+    </action>
+  </actions>
+</workbook>

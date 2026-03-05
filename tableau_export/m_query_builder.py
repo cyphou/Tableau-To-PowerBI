@@ -1,0 +1,986 @@
+"""
+Power Query M Query Builder — Generates M queries from Tableau connections.
+
+Extracted from datasource_extractor.py for maintainability.
+Each connector type has its own generator function dispatched via _M_GENERATORS.
+"""
+
+
+# ── Type mapping ──────────────────────────────────────────────────────────────
+
+_M_TYPE_MAP = {
+    'integer': 'Int64.Type',
+    'int64': 'Int64.Type',
+    'real': 'type number',
+    'double': 'type number',
+    'decimal': 'type number',
+    'number': 'type number',
+    'string': 'type text',
+    'boolean': 'type logical',
+    'date': 'type date',
+    'datetime': 'type datetime',
+    'time': 'type time',
+    'spatial': 'type text',
+    'binary': 'type binary',
+    'currency': 'Currency.Type',
+    'percentage': 'Percentage.Type',
+}
+
+
+def map_tableau_to_m_type(datatype):
+    """Maps Tableau/BIM types to Power Query M types."""
+    return _M_TYPE_MAP.get(datatype.lower(), 'type text')
+
+
+def _m_escape_col_name(name):
+    """Escape column names for M queries (double-quote any internal quotes)."""
+    return name.replace('"', '""')
+
+
+# ── Column type change step (shared helper) ──────────────────────────────────
+
+def _build_type_changes(columns):
+    """Build a list of M type-change entries for a set of columns."""
+    entries = []
+    for col in columns:
+        m_type = map_tableau_to_m_type(col['datatype'])
+        col_name = _m_escape_col_name(col['name'])
+        entries.append('{"' + col_name + '", ' + m_type + '}')
+    return entries
+
+
+def _append_type_step(m_query, columns, prev_step='#"Promoted Headers"'):
+    """Append a #"Changed Types" step to an M query."""
+    type_changes = _build_type_changes(columns)
+    if type_changes:
+        m_query += f'    #"Changed Types" = Table.TransformColumnTypes({prev_step}, {{\n        '
+        m_query += ',\n        '.join(type_changes)
+        m_query += '\n    }),\n'
+        m_query += '    Result = #"Changed Types"\n'
+    else:
+        m_query += f'    Result = {prev_step}\n'
+    m_query += 'in\n    Result'
+    return m_query
+
+
+# ── Per-connector generators ─────────────────────────────────────────────────
+
+def _gen_m_excel(details, table_name, columns):
+    filename = details.get('filename', 'File.xlsx')
+    file_path_bs = filename.replace('/', '\\')
+    safe_step = '#"' + table_name + ' Sheet"'
+
+    m_query = 'let\n'
+    m_query += f'    // Source Excel: {filename}\n'
+    m_query += f'    Source = Excel.Workbook(File.Contents(DataFolder & "\\{file_path_bs}"), null, true),\n'
+    m_query += f'    {safe_step} = Source{{[Item="{table_name}",Kind="Sheet"]}}[Data],\n'
+    m_query += f'    #"Promoted Headers" = Table.PromoteHeaders({safe_step}, [PromoteAllScalars=true]),\n'
+    return _append_type_step(m_query, columns)
+
+
+def _gen_m_schema_item(details, table_name, columns,
+                      comment, pq_func, server_arg, db_arg, schema='dbo'):
+    """Generic M generator for connectors using Schema+Item navigation."""
+    safe = '#"' + table_name + ' Table"'
+    m_query = 'let\n'
+    m_query += f'    // Source {comment}\n'
+    m_query += f'    Source = {pq_func}("{server_arg}", "{db_arg}"),\n'
+    m_query += f'    {safe} = Source{{[Schema="{schema}", Item="{table_name}"]}}[Data],\n'
+    m_query += f'    Result = {safe}\nin\n    Result'
+    return m_query
+
+
+def _gen_m_sql_server(details, table_name, columns):
+    server = details.get('server', 'localhost')
+    database = details.get('database', 'MyDatabase')
+    return _gen_m_schema_item(details, table_name, columns,
+                              'SQL Server', 'Sql.Database', server, database, 'dbo')
+
+
+def _gen_m_postgresql(details, table_name, columns):
+    server = details.get('server', 'localhost')
+    port = details.get('port', '5432')
+    database = details.get('database', 'postgres')
+    return _gen_m_schema_item(details, table_name, columns,
+                              'PostgreSQL', 'PostgreSQL.Database',
+                              f'{server}:{port}', database, 'public')
+
+
+def _gen_m_csv(details, table_name, columns):
+    filename = details.get('filename', 'file.csv')
+    directory = details.get('directory', '')
+    full_path = f"{directory}/{filename}" if directory else filename
+    delimiter = details.get('delimiter', ',')
+    encoding = details.get('encoding', 'utf-8').upper()
+    encoding_code = {'UTF-8': '65001', 'UTF8': '65001'}.get(encoding, '65001')
+    file_path_bs = full_path.replace('/', '\\')
+
+    m_query = f'''let
+    // Source CSV: {full_path}
+    Source = Csv.Document(File.Contents(DataFolder & "\\{file_path_bs}"), [
+        Delimiter="{delimiter}",
+        Columns={len(columns)},
+        Encoding={encoding_code},
+        QuoteStyle=QuoteStyle.None
+    ]),
+    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+'''
+    if columns:
+        return _append_type_step(m_query, columns)
+    else:
+        m_query += '    Result = #"Promoted Headers"\nin\n    Result'
+        return m_query
+
+
+def _gen_m_bigquery(details, table_name, columns):
+    project = details.get('project', 'my-project')
+    dataset = details.get('dataset', 'my_dataset')
+    safe = '#"' + table_name + ' Table"'
+
+    m_query = 'let\n'
+    m_query += f'    // Source Google BigQuery: {project}.{dataset}\n'
+    m_query += f'    Source = GoogleBigQuery.Database([BillingProject="{project}"]),\n'
+    m_query += f'    #"{dataset}" = Source{{[Name="{dataset}"]}}[Data],\n'
+    m_query += f'    {safe} = #"{dataset}"{{[Name="{table_name}"]}}[Data],\n'
+    m_query += f'    Result = {safe}\nin\n    Result'
+    return m_query
+
+
+def _gen_m_mysql(details, table_name, columns):
+    server = details.get('server', 'localhost')
+    port = details.get('port', '3306')
+    database = details.get('database', 'mydb')
+    return _gen_m_schema_item(details, table_name, columns,
+                              f'MySQL: {server}:{port}', 'MySQL.Database',
+                              f'{server}:{port}', database, database)
+
+
+def _gen_m_oracle(details, table_name, columns):
+    server = details.get('server', 'localhost')
+    service = details.get('service', 'ORCL')
+    port = details.get('port', '1521')
+    safe = '#"' + table_name + ' Table"'
+
+    m_query = 'let\n'
+    m_query += f'    // Source Oracle: {server}:{port}/{service}\n'
+    m_query += f'    Source = Oracle.Database("{server}:{port}/{service}"),\n'
+    m_query += f'    {safe} = Source{{[Schema="DBO", Item="{table_name}"]}}[Data],\n'
+    m_query += f'    Result = {safe}\nin\n    Result'
+    return m_query
+
+
+def _gen_m_snowflake(details, table_name, columns):
+    server = details.get('server', 'account.snowflakecomputing.com')
+    database = details.get('database', 'MY_DB')
+    warehouse = details.get('warehouse', 'MY_WH')
+    schema = details.get('schema', 'PUBLIC')
+    safe = '#"' + table_name + ' Table"'
+
+    m_query = 'let\n'
+    m_query += f'    // Source Snowflake: {server}\n'
+    m_query += f'    Source = Snowflake.Databases("{server}", "{warehouse}"),\n'
+    m_query += f'    #"{database}" = Source{{[Name="{database}"]}}[Data],\n'
+    m_query += f'    #"{schema}" = #"{database}"{{[Name="{schema}"]}}[Data],\n'
+    m_query += f'    {safe} = #"{schema}"{{[Name="{table_name}"]}}[Data],\n'
+    m_query += f'    Result = {safe}\nin\n    Result'
+    return m_query
+
+
+def _gen_m_geojson(details, table_name, columns):
+    filename = details.get('filename', 'file.geojson')
+    directory = details.get('directory', '')
+    full_path = f"{directory}/{filename}" if directory else filename
+    full_path_bs = full_path.replace('/', '\\')
+
+    prop_cols = [col for col in columns if col.get('name', '') != 'Geometry']
+    prop_names = ", ".join([f'"{_m_escape_col_name(col["name"])}"' for col in prop_cols])
+
+    type_changes = []
+    for col in columns:
+        cname = col.get('name', '')
+        if cname.lower() == 'geometry':
+            continue
+        m_type = map_tableau_to_m_type(col.get('datatype', 'string'))
+        type_changes.append(f'{{"{_m_escape_col_name(cname)}", {m_type}}}')
+    type_step = ',\n        '.join(type_changes)
+
+    has_geometry = any(col.get('name', '').lower() == 'geometry' for col in columns)
+
+    m_query = f'''let
+    // Source GeoJSON: {filename}
+    Source = Json.Document(File.Contents(DataFolder & "\\{full_path_bs}")),
+    features = Source[features],
+    #"Converted to Table" = Table.FromList(features, Splitter.SplitByNothing(), null, null, ExtraValues.Error),
+    #"Expanded Column1" = Table.ExpandRecordColumn(#"Converted to Table", "Column1", {{"properties", "geometry"}}),
+    #"Expanded properties" = Table.ExpandRecordColumn(#"Expanded Column1", "properties", {{{prop_names}}}),'''
+
+    if has_geometry:
+        m_query += '''
+    #"Geometry to Text" = Table.TransformColumns(#"Expanded properties", {{"geometry", each Text.FromBinary(Json.FromValue(_)), type text}}),
+    #"Renamed Geometry" = Table.RenameColumns(#"Geometry to Text", {{"geometry", "Geometry"}}),'''
+        last_step = '#"Renamed Geometry"'
+    else:
+        last_step = '#"Expanded properties"'
+
+    if type_changes:
+        m_query += f'''
+    #"Changed Types" = Table.TransformColumnTypes({last_step}, {{
+        {type_step}
+    }})
+in
+    #"Changed Types"'''
+    else:
+        m_query += f'''
+in
+    {last_step}'''
+
+    return m_query
+
+
+def _gen_m_fallback(details, table_name, columns):
+    conn_type = details.get('_conn_type', 'Unknown')
+    return f'''let
+    // TODO: Configure the source for {conn_type}
+    // Connection type not automatically supported
+    Source = #table(
+        {{{", ".join([f'"{col["name"]}"' for col in columns if 'name' in col])}}},
+        {{
+            {{{", ".join([f'"Sample {i+1}"' if col.get('datatype') == 'string' else str(i+1) for i, col in enumerate(columns)])}}},
+            {{{", ".join([f'"Sample {i+2}"' if col.get('datatype') == 'string' else str(i+2) for i, col in enumerate(columns)])}}}
+        }}
+    )
+in
+    Source'''
+
+
+# ── Additional connectors ────────────────────────────────────────────────────
+
+def _gen_m_teradata(details, table_name, columns):
+    server = details.get('server', 'localhost')
+    database = details.get('database', 'MyDB')
+    safe = '#"' + table_name + ' Table"'
+
+    m_query = 'let\n'
+    m_query += f'    // Source Teradata: {server}\n'
+    m_query += f'    Source = Teradata.Database("{server}"),\n'
+    m_query += f'    #"{database}" = Source{{[Name="{database}"]}}[Data],\n'
+    m_query += f'    {safe} = #"{database}"{{[Name="{table_name}"]}}[Data],\n'
+    m_query += f'    Result = {safe}\nin\n    Result'
+    return m_query
+
+
+def _gen_m_sap_hana(details, table_name, columns):
+    server = details.get('server', 'localhost')
+    port = details.get('port', '30015')
+    safe = '#"' + table_name + ' Table"'
+
+    m_query = 'let\n'
+    m_query += f'    // Source SAP HANA: {server}:{port}\n'
+    m_query += f'    Source = SapHana.Database("{server}:{port}"),\n'
+    m_query += f'    {safe} = Source{{[Schema="PUBLIC", Name="{table_name}"]}}[Data],\n'
+    m_query += f'    Result = {safe}\nin\n    Result'
+    return m_query
+
+
+def _gen_m_sap_bw(details, table_name, columns):
+    server = details.get('server', 'sap-bw-server')
+    system_number = details.get('system_number', '00')
+    client_id = details.get('client_id', '')
+    language = details.get('language', 'EN')
+    cube = details.get('cube', table_name)
+    catalog = details.get('catalog', '$INFOCUBE')
+
+    m_query = 'let\n'
+    m_query += f'    // Source SAP BW: {server} (System {system_number})\n'
+    m_query += f'    Source = SapBusinessWarehouse.Cubes("{server}", "{system_number}", "{client_id}", [Language="{language}"]),\n'
+    m_query += f'    #"{catalog}" = Source{{[Name="{catalog}"]}}[Data],\n'
+    m_query += f'    #"{cube}" = #"{catalog}"{{[Name="{cube}"]}}[Data],\n'
+    m_query += f'    Result = #"{cube}"\nin\n    Result'
+    return m_query
+
+
+def _gen_m_redshift(details, table_name, columns):
+    server = details.get('server', 'cluster.redshift.amazonaws.com')
+    port = details.get('port', '5439')
+    database = details.get('database', 'mydb')
+    return _gen_m_schema_item(details, table_name, columns,
+                              f'Amazon Redshift: {server}:{port}',
+                              'AmazonRedshift.Database',
+                              f'{server}:{port}', database, 'public')
+
+
+def _gen_m_databricks(details, table_name, columns):
+    server = details.get('server', 'adb-xxxxx.azuredatabricks.net')
+    http_path = details.get('http_path', '/sql/1.0/warehouses/xxxxx')
+    catalog = details.get('catalog', 'main')
+    schema = details.get('schema', 'default')
+    safe = '#"' + table_name + ' Table"'
+
+    m_query = 'let\n'
+    m_query += f'    // Source Databricks: {server}\n'
+    m_query += f'    Source = Databricks.Catalogs("{server}", "{http_path}"),\n'
+    m_query += f'    #"{catalog}" = Source{{[Name="{catalog}"]}}[Data],\n'
+    m_query += f'    #"{schema}" = #"{catalog}"{{[Name="{schema}"]}}[Data],\n'
+    m_query += f'    {safe} = #"{schema}"{{[Name="{table_name}"]}}[Data],\n'
+    m_query += f'    Result = {safe}\nin\n    Result'
+    return m_query
+
+
+def _gen_m_spark(details, table_name, columns):
+    server = details.get('server', 'localhost')
+    port = details.get('port', '10000')
+    safe = '#"' + table_name + ' Table"'
+
+    m_query = 'let\n'
+    m_query += f'    // Source Spark SQL: {server}:{port}\n'
+    m_query += f'    Source = SparkSql.Database("{server}", "{port}"),\n'
+    m_query += f'    {safe} = Source{{[Name="{table_name}"]}}[Data],\n'
+    m_query += f'    Result = {safe}\nin\n    Result'
+    return m_query
+
+
+def _gen_m_azure_sql(details, table_name, columns):
+    server = details.get('server', 'myserver.database.windows.net')
+    database = details.get('database', 'MyDatabase')
+    return _gen_m_schema_item(details, table_name, columns,
+                              'Azure SQL Database', 'AzureSQL.Database', server, database, 'dbo')
+
+
+def _gen_m_synapse(details, table_name, columns):
+    server = details.get('server', 'myworkspace.sql.azuresynapse.net')
+    database = details.get('database', 'MyPool')
+    return _gen_m_schema_item(details, table_name, columns,
+                              'Azure Synapse Analytics', 'AzureSQL.Database', server, database, 'dbo')
+
+
+def _gen_m_google_sheets(details, table_name, columns):
+    spreadsheet_id = details.get('spreadsheet_id', 'SPREADSHEET_ID')
+    sheet_name = details.get('sheet_name', table_name)
+
+    m_query = 'let\n'
+    m_query += f'    // Source Google Sheets: {spreadsheet_id}\n'
+    m_query += f'    Source = Web.Contents("https://docs.google.com/spreadsheets/d/{spreadsheet_id}/gviz/tq?tqx=out:csv&sheet={sheet_name}"),\n'
+    m_query += '    Parsed = Csv.Document(Source, [Delimiter=",", Encoding=65001]),\n'
+    m_query += '    #"Promoted Headers" = Table.PromoteHeaders(Parsed, [PromoteAllScalars=true]),\n'
+    return _append_type_step(m_query, columns)
+
+
+def _gen_m_sharepoint(details, table_name, columns):
+    site_url = details.get('site_url', 'https://contoso.sharepoint.com/sites/mysite')
+    filename = details.get('filename', table_name + '.xlsx')
+
+    m_query = 'let\n'
+    m_query += f'    // Source SharePoint: {site_url}\n'
+    m_query += f'    Source = SharePoint.Files("{site_url}", [ApiVersion = 15]),\n'
+    m_query += f'    FileRow = Table.SelectRows(Source, each [Name] = "{filename}"),\n'
+    m_query += '    FileContent = FileRow{{0}}[Content],\n'
+    m_query += '    Workbook = Excel.Workbook(FileContent, null, true),\n'
+    m_query += f'    Sheet = Workbook{{[Item="{table_name}",Kind="Sheet"]}}[Data],\n'
+    m_query += '    #"Promoted Headers" = Table.PromoteHeaders(Sheet, [PromoteAllScalars=true]),\n'
+    return _append_type_step(m_query, columns)
+
+
+def _gen_m_json(details, table_name, columns):
+    filename = details.get('filename', table_name + '.json')
+    directory = details.get('directory', '')
+    full_path = f"{directory}/{filename}" if directory else filename
+    full_path_bs = full_path.replace('/', '\\')
+
+    m_query = 'let\n'
+    m_query += f'    // Source JSON: {filename}\n'
+    m_query += f'    Source = Json.Document(File.Contents(DataFolder & "\\{full_path_bs}")),\n'
+    m_query += '    #"Converted to Table" = if Value.Is(Source, type list) then Table.FromRecords(Source) else Table.FromRecords({Source}),\n'
+    m_query += '    #"Promoted Headers" = #"Converted to Table",\n'
+    return _append_type_step(m_query, columns)
+
+
+def _gen_m_xml(details, table_name, columns):
+    filename = details.get('filename', table_name + '.xml')
+    directory = details.get('directory', '')
+    full_path = f"{directory}/{filename}" if directory else filename
+    full_path_bs = full_path.replace('/', '\\')
+
+    m_query = 'let\n'
+    m_query += f'    // Source XML: {filename}\n'
+    m_query += f'    Source = Xml.Tables(File.Contents(DataFolder & "\\{full_path_bs}")),\n'
+    m_query += '    #"Promoted Headers" = Source,\n'
+    return _append_type_step(m_query, columns)
+
+
+def _gen_m_pdf(details, table_name, columns):
+    filename = details.get('filename', table_name + '.pdf')
+    directory = details.get('directory', '')
+    full_path = f"{directory}/{filename}" if directory else filename
+    full_path_bs = full_path.replace('/', '\\')
+
+    m_query = 'let\n'
+    m_query += f'    // Source PDF: {filename}\n'
+    m_query += f'    Source = Pdf.Tables(File.Contents(DataFolder & "\\{full_path_bs}")),\n'
+    m_query += '    Table1 = Source{{0}}[Data],\n'
+    m_query += '    #"Promoted Headers" = Table.PromoteHeaders(Table1, [PromoteAllScalars=true]),\n'
+    return _append_type_step(m_query, columns)
+
+
+def _gen_m_salesforce(details, table_name, columns):
+    safe = '#"' + table_name + ' Table"'
+
+    m_query = 'let\n'
+    m_query += '    // Source Salesforce\n'
+    m_query += '    Source = Salesforce.Data(),\n'
+    m_query += f'    {safe} = Source{{[Name="{table_name}"]}}[Data],\n'
+    m_query += f'    Result = {safe}\nin\n    Result'
+    return m_query
+
+
+def _gen_m_web(details, table_name, columns):
+    url = details.get('url', 'https://api.example.com/data')
+
+    m_query = 'let\n'
+    m_query += f'    // Source Web: {url}\n'
+    m_query += f'    Source = Web.Contents("{url}"),\n'
+    m_query += '    Json = Json.Document(Source),\n'
+    m_query += '    #"Converted to Table" = Table.FromRecords(if Value.Is(Json, type list) then Json else {Json}),\n'
+    m_query += '    #"Promoted Headers" = #"Converted to Table",\n'
+    return _append_type_step(m_query, columns)
+
+
+def _gen_m_custom_sql(details, table_name, columns):
+    """Generate M query using native SQL query (for Tableau custom SQL sources)."""
+    server = details.get('server', 'localhost')
+    database = details.get('database', 'MyDatabase')
+    sql_query = details.get('sql_query', f'SELECT * FROM {table_name}')
+    # Escape quotes in SQL for M string
+    sql_escaped = sql_query.replace('"', '""')
+
+    m_query = 'let\n'
+    m_query += '    // Source: Custom SQL Query\n'
+    m_query += f'    Source = Sql.Database("{server}", "{database}", [Query="'
+    m_query += sql_escaped
+    m_query += '"]),\n'
+    m_query += '    Result = Source\nin\n    Result'
+    return m_query
+
+
+# ── Dispatch table ────────────────────────────────────────────────────────────
+
+_M_GENERATORS = {
+    'Excel':            _gen_m_excel,
+    'SQL Server':       _gen_m_sql_server,
+    'PostgreSQL':       _gen_m_postgresql,
+    'CSV':              _gen_m_csv,
+    'BigQuery':         _gen_m_bigquery,
+    'MySQL':            _gen_m_mysql,
+    'Oracle':           _gen_m_oracle,
+    'Snowflake':        _gen_m_snowflake,
+    'GeoJSON':          _gen_m_geojson,
+    'Teradata':         _gen_m_teradata,
+    'SAP HANA':         _gen_m_sap_hana,
+    'SAP BW':           _gen_m_sap_bw,
+    'Amazon Redshift':  _gen_m_redshift,
+    'Redshift':         _gen_m_redshift,
+    'Databricks':       _gen_m_databricks,
+    'Spark SQL':        _gen_m_spark,
+    'Spark':            _gen_m_spark,
+    'Azure SQL':        _gen_m_azure_sql,
+    'Azure Synapse':    _gen_m_synapse,
+    'Synapse':          _gen_m_synapse,
+    'Google Sheets':    _gen_m_google_sheets,
+    'SharePoint':       _gen_m_sharepoint,
+    'JSON':             _gen_m_json,
+    'XML':              _gen_m_xml,
+    'PDF':              _gen_m_pdf,
+    'Salesforce':       _gen_m_salesforce,
+    'Web':              _gen_m_web,
+    'Custom SQL':       _gen_m_custom_sql,
+}
+
+
+# ── Public API ────────────────────────────────────────────────────────────────
+
+def generate_power_query_m(connection, table):
+    """
+    Generates a Power Query M query from a Tableau connection.
+
+    Args:
+        connection: Dict with connection type and details
+        table: Dict with table name and columns
+
+    Returns:
+        str: Complete M query
+    """
+    conn_type = connection.get('type', 'Unknown')
+    details = connection.get('details', {})
+    table_name = table.get('name', 'Table1')
+    columns = table.get('columns', [])
+
+    generator = _M_GENERATORS.get(conn_type)
+    if generator:
+        return generator(details, table_name, columns)
+
+    # Fallback — pass conn_type through details for the message
+    details_copy = dict(details)
+    details_copy['_conn_type'] = conn_type
+    return _gen_m_fallback(details_copy, table_name, columns)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Tableau Prep Transformation Helpers — Power Query M Step Generators
+# ══════════════════════════════════════════════════════════════════════════════
+# These functions generate Power Query M transformation steps corresponding
+# to Tableau Prep operations. They return (step_name, step_expression) tuples
+# that can be injected into any source query via inject_m_steps().
+#
+# Usage pattern:
+#   m_query = generate_power_query_m(connection, table)
+#   steps = []
+#   steps.append(m_transform_rename({"old_name": "new_name"}))
+#   steps.append(m_transform_filter_values("Status", ["Active"]))
+#   m_query = inject_m_steps(m_query, steps)
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+def inject_m_steps(m_query, steps):
+    """
+    Inject additional M transformation steps into an existing M query.
+    Inserts steps before the final 'in' clause.
+
+    Can be called multiple times on the same query — previous Result =
+    terminators are stripped and re-created at the new end.
+
+    Args:
+        m_query: str — Complete M query (let ... in ...)
+        steps: list[tuple[str, str]] — (step_name, step_expression) pairs.
+            Use {prev} placeholder in expressions to reference the previous step.
+
+    Returns:
+        str — Modified M query with additional steps injected
+    """
+    if not steps:
+        return m_query
+
+    # Find the last 'in\n' in the query
+    in_idx = m_query.rfind('\nin\n')
+    if in_idx == -1:
+        in_idx = m_query.rfind('\nin ')
+    if in_idx == -1:
+        return m_query  # malformed query, return as-is
+
+    before_in = m_query[:in_idx]
+
+    # Strip any existing "Result = ..." line (from previous inject_m_steps call)
+    lines = before_in.split('\n')
+    while lines and lines[-1].strip().startswith('Result'):
+        lines.pop()
+    # Strip trailing comma from the last real step
+    if lines and lines[-1].rstrip().endswith(','):
+        pass  # keep the comma — we'll add more steps
+    elif lines:
+        lines[-1] = lines[-1].rstrip() + ','
+    before_in = '\n'.join(lines)
+
+    # Find the last step name referenced (skip Result and comments)
+    last_step = None
+    for line in reversed(lines):
+        stripped = line.strip()
+        if stripped.startswith('Result') or stripped.startswith('//') or not stripped:
+            continue
+        if '=' in stripped:
+            last_step = stripped.split('=')[0].strip().rstrip(',')
+            break
+    if not last_step:
+        last_step = 'Source'
+
+    # Build the chain — replace {prev} with actual previous step name
+    prev_step = last_step
+    new_lines = []
+    for step_name, step_expr_template in steps:
+        step_expr = step_expr_template.replace('{prev}', prev_step)
+        new_lines.append(f'    {step_name} = {step_expr},')
+        prev_step = step_name
+
+    injected = '\n'.join(new_lines)
+    return before_in + '\n' + injected + '\n    Result = ' + prev_step + '\nin\n    Result'
+
+
+# ── Column operations ─────────────────────────────────────────────────────────
+
+def m_transform_rename(renames):
+    """Rename columns. renames: dict {old_name: new_name}"""
+    pairs = ', '.join([f'{{"{old}", "{new}"}}' for old, new in renames.items()])
+    return ('#"Renamed Columns"', f'Table.RenameColumns({{prev}}, {{{pairs}}})')
+
+
+def m_transform_remove_columns(columns):
+    """Remove specified columns."""
+    cols = ', '.join([f'"{c}"' for c in columns])
+    return ('#"Removed Columns"', f'Table.RemoveColumns({{prev}}, {{{cols}}})')
+
+
+def m_transform_select_columns(columns):
+    """Keep only specified columns."""
+    cols = ', '.join([f'"{c}"' for c in columns])
+    return ('#"Selected Columns"', f'Table.SelectColumns({{prev}}, {{{cols}}})')
+
+
+def m_transform_duplicate_column(source_col, new_col):
+    """Duplicate a column."""
+    return ('#"Duplicated Column"',
+            f'Table.DuplicateColumn({{prev}}, "{source_col}", "{new_col}")')
+
+
+def m_transform_reorder_columns(column_order):
+    """Reorder columns."""
+    cols = ', '.join([f'"{c}"' for c in column_order])
+    return ('#"Reordered Columns"', f'Table.ReorderColumns({{prev}}, {{{cols}}})')
+
+
+def m_transform_split_by_delimiter(column, delimiter, num_parts=None):
+    """Split column by delimiter."""
+    name = f'#"Split {column}"'
+    if num_parts:
+        return (name,
+                f'Table.SplitColumn({{prev}}, "{column}", '
+                f'Splitter.SplitTextByDelimiter("{delimiter}", QuoteStyle.None), {num_parts})')
+    return (name,
+            f'Table.SplitColumn({{prev}}, "{column}", '
+            f'Splitter.SplitTextByDelimiter("{delimiter}", QuoteStyle.None))')
+
+
+def m_transform_merge_columns(columns, new_name, separator=" "):
+    """Merge multiple columns into one."""
+    cols = ', '.join([f'"{c}"' for c in columns])
+    return ('#"Merged Columns"',
+            f'Table.CombineColumns({{prev}}, {{{cols}}}, '
+            f'Combiner.CombineTextByDelimiter("{separator}", QuoteStyle.None), "{new_name}")')
+
+
+# ── Value operations ──────────────────────────────────────────────────────────
+
+def m_transform_replace_value(column, old_value, new_value, replace_text=True):
+    """Replace values in a column."""
+    replacer = 'Replacer.ReplaceText' if replace_text else 'Replacer.ReplaceValue'
+    old_repr = f'"{old_value}"' if isinstance(old_value, str) else ('null' if old_value is None else str(old_value))
+    new_repr = f'"{new_value}"' if isinstance(new_value, str) else str(new_value)
+    return ('#"Replaced Values"',
+            f'Table.ReplaceValue({{prev}}, {old_repr}, {new_repr}, {replacer}, {{"{column}"}})')
+
+
+def m_transform_replace_nulls(column, default_value):
+    """Replace null values with a default."""
+    val_repr = f'"{default_value}"' if isinstance(default_value, str) else str(default_value)
+    return (f'#"Replaced Nulls in {column}"',
+            f'Table.ReplaceValue({{prev}}, null, {val_repr}, Replacer.ReplaceValue, {{"{column}"}})')
+
+
+def _m_text_transform(columns, m_func, step_label):
+    """Generic text column transform — shared by trim/clean/upper/lower/proper."""
+    transforms = ', '.join([f'{{"{c}", {m_func}}}' for c in columns])
+    return (f'#"{step_label}"', f'Table.TransformColumns({{prev}}, {{{transforms}}})')
+
+
+def m_transform_trim(columns):
+    """Trim whitespace from text columns."""
+    return _m_text_transform(columns, 'Text.Trim', 'Trimmed Text')
+
+
+def m_transform_clean(columns):
+    """Remove non-printable characters from text columns."""
+    return _m_text_transform(columns, 'Text.Clean', 'Cleaned Text')
+
+
+def m_transform_upper(columns):
+    """Convert text columns to uppercase."""
+    return _m_text_transform(columns, 'Text.Upper', 'Uppercased')
+
+
+def m_transform_lower(columns):
+    """Convert text columns to lowercase."""
+    return _m_text_transform(columns, 'Text.Lower', 'Lowercased')
+
+
+def m_transform_proper_case(columns):
+    """Convert text columns to proper case (Title Case)."""
+    return _m_text_transform(columns, 'Text.Proper', 'Proper Cased')
+
+
+def m_transform_fill_down(columns):
+    """Fill down null values in columns."""
+    cols = ', '.join([f'"{c}"' for c in columns])
+    return ('#"Filled Down"', f'Table.FillDown({{prev}}, {{{cols}}})')
+
+
+def m_transform_fill_up(columns):
+    """Fill up null values in columns."""
+    cols = ', '.join([f'"{c}"' for c in columns])
+    return ('#"Filled Up"', f'Table.FillUp({{prev}}, {{{cols}}})')
+
+
+# ── Filter operations ─────────────────────────────────────────────────────────
+
+def m_transform_filter_values(column, keep_values):
+    """Keep only rows where column matches specified values (categorical)."""
+    if len(keep_values) == 1:
+        condition = f'each [#"{column}"] = "{keep_values[0]}"'
+    else:
+        vals = ', '.join([f'"{v}"' for v in keep_values])
+        condition = f'each List.Contains({{{vals}}}, [#"{column}"])'
+    return ('#"Filtered Rows"', f'Table.SelectRows({{prev}}, {condition})')
+
+
+def m_transform_exclude_values(column, exclude_values):
+    """Exclude rows where column matches specified values."""
+    if len(exclude_values) == 1:
+        condition = f'each [#"{column}"] <> "{exclude_values[0]}"'
+    else:
+        vals = ', '.join([f'"{v}"' for v in exclude_values])
+        condition = f'each not List.Contains({{{vals}}}, [#"{column}"])'
+    return ('#"Excluded Rows"', f'Table.SelectRows({{prev}}, {condition})')
+
+
+def m_transform_filter_range(column, min_val=None, max_val=None):
+    """Keep rows in a numeric or date range."""
+    conditions = []
+    if min_val is not None:
+        conditions.append(f'[#"{column}"] >= {min_val}')
+    if max_val is not None:
+        conditions.append(f'[#"{column}"] <= {max_val}')
+    condition = ' and '.join(conditions) if conditions else 'true'
+    return ('#"Filtered Range"', f'Table.SelectRows({{prev}}, each {condition})')
+
+
+def m_transform_filter_nulls(column, keep_nulls=False):
+    """Filter null or non-null values."""
+    op = '=' if keep_nulls else '<>'
+    return ('#"Filtered Nulls"', f'Table.SelectRows({{prev}}, each [#"{column}"] {op} null)')
+
+
+def m_transform_filter_contains(column, text):
+    """Keep rows where column contains text (wildcard match)."""
+    return ('#"Filtered Contains"',
+            f'Table.SelectRows({{prev}}, each Text.Contains([#"{column}"], "{text}"))')
+
+
+def m_transform_distinct(columns=None):
+    """Remove duplicates. If columns specified, deduplicate on those columns only."""
+    if columns:
+        cols = ', '.join([f'"{c}"' for c in columns])
+        return ('#"Removed Duplicates"', f'Table.Distinct({{prev}}, {{{cols}}})')
+    return ('#"Removed Duplicates"', 'Table.Distinct({prev})')
+
+
+def m_transform_top_n(n, sort_column, descending=True):
+    """Keep top N rows by a column."""
+    order = 'Order.Descending' if descending else 'Order.Ascending'
+    return ('#"Top N"',
+            f'Table.FirstN(Table.Sort({{prev}}, {{{{"{sort_column}", {order}}}}}), {n})')
+
+
+# ── Aggregate operations ──────────────────────────────────────────────────────
+
+_M_AGG_MAP = {
+    'sum':     ('List.Sum', 'type number'),
+    'avg':     ('List.Average', 'type number'),
+    'average': ('List.Average', 'type number'),
+    'count':   ('Table.RowCount', 'Int64.Type'),
+    'countd':  (None, 'Int64.Type'),  # special: List.Count(List.Distinct(...))
+    'min':     ('List.Min', 'type number'),
+    'max':     ('List.Max', 'type number'),
+    'median':  ('List.Median', 'type number'),
+    'stdev':   ('List.StandardDeviation', 'type number'),
+}
+
+
+def m_transform_aggregate(group_by_columns, aggregations):
+    """
+    Aggregate / Group By.
+    Args:
+        group_by_columns: list of column names to group by
+        aggregations: list of dicts [{"name": "Total", "column": "Sales", "agg": "sum"}, ...]
+    """
+    group_cols = ', '.join([f'"{c}"' for c in group_by_columns])
+    agg_parts = []
+    for a in aggregations:
+        name = a['name']
+        col = a['column']
+        agg = a['agg'].lower()
+        if agg == 'count':
+            agg_parts.append(f'{{"{name}", each Table.RowCount(_), Int64.Type}}')
+        elif agg == 'countd':
+            agg_parts.append(f'{{"{name}", each List.Count(List.Distinct([{col}])), Int64.Type}}')
+        else:
+            mapping = _M_AGG_MAP.get(agg, ('List.Sum', 'type number'))
+            func, m_type = mapping
+            agg_parts.append(f'{{"{name}", each {func}([{col}]), {m_type}}}')
+
+    aggs = ', '.join(agg_parts)
+    return ('#"Grouped Rows"', f'Table.Group({{prev}}, {{{group_cols}}}, {{{aggs}}})')
+
+
+# ── Pivot / Unpivot operations ────────────────────────────────────────────────
+
+def m_transform_unpivot(columns, attribute_name="Attribute", value_name="Value"):
+    """Unpivot specific columns (columns become rows). Tableau Prep: Pivot Columns to Rows."""
+    cols = ', '.join([f'"{c}"' for c in columns])
+    return ('#"Unpivoted Columns"',
+            f'Table.Unpivot({{prev}}, {{{cols}}}, "{attribute_name}", "{value_name}")')
+
+
+def m_transform_unpivot_other(keep_columns, attribute_name="Attribute", value_name="Value"):
+    """Unpivot all columns except specified ones."""
+    cols = ', '.join([f'"{c}"' for c in keep_columns])
+    return ('#"Unpivoted Other Columns"',
+            f'Table.UnpivotOtherColumns({{prev}}, {{{cols}}}, "{attribute_name}", "{value_name}")')
+
+
+def m_transform_pivot(pivot_column, value_column, agg_function="List.Sum"):
+    """Pivot rows to columns. Tableau Prep: Pivot Rows to Columns."""
+    return ('#"Pivoted Column"',
+            f'Table.Pivot({{prev}}, List.Distinct({{prev}}[{pivot_column}]), '
+            f'"{pivot_column}", "{value_column}", {agg_function})')
+
+
+# ── Join operations ───────────────────────────────────────────────────────────
+
+_M_JOIN_KIND = {
+    'inner':      'JoinKind.Inner',
+    'left':       'JoinKind.LeftOuter',
+    'leftouter':  'JoinKind.LeftOuter',
+    'right':      'JoinKind.RightOuter',
+    'rightouter': 'JoinKind.RightOuter',
+    'full':       'JoinKind.FullOuter',
+    'fullouter':  'JoinKind.FullOuter',
+    'leftanti':   'JoinKind.LeftAnti',
+    'rightanti':  'JoinKind.RightAnti',
+}
+
+
+def m_transform_join(right_table_ref, left_keys, right_keys, join_type='left',
+                     expand_columns=None, joined_name="Joined"):
+    """
+    Join two tables.
+    Args:
+        right_table_ref: str — M reference to the right table
+        left_keys / right_keys: list of str — key columns
+        join_type: str — inner, left, right, full, leftanti, rightanti
+        expand_columns: list of str — columns to expand (None = no expansion step)
+        joined_name: str — name of the joined nested column
+    Returns:
+        list of (step_name, step_expression) tuples (join + optional expand)
+    """
+    kind = _M_JOIN_KIND.get(join_type.lower().replace(' ', ''), 'JoinKind.LeftOuter')
+    if len(left_keys) == 1:
+        lk, rk = f'"{left_keys[0]}"', f'"{right_keys[0]}"'
+    else:
+        lk = '{' + ', '.join([f'"{k}"' for k in left_keys]) + '}'
+        rk = '{' + ', '.join([f'"{k}"' for k in right_keys]) + '}'
+
+    steps = [(f'#"Joined {joined_name}"',
+              f'Table.NestedJoin({{prev}}, {lk}, {right_table_ref}, {rk}, '
+              f'"{joined_name}", {kind})')]
+    if expand_columns:
+        cols = ', '.join([f'"{c}"' for c in expand_columns])
+        steps.append((f'#"Expanded {joined_name}"',
+                       f'Table.ExpandTableColumn({{prev}}, "{joined_name}", {{{cols}}})'))
+    return steps
+
+
+# ── Union operations ──────────────────────────────────────────────────────────
+
+def m_transform_union(table_refs):
+    """Union (append) multiple tables. table_refs: list of M table references."""
+    refs = ', '.join(table_refs)
+    return ('#"Combined Tables"', f'Table.Combine({{{refs}}})')
+
+
+def m_transform_wildcard_union(folder_path, file_extension=".csv", delimiter=","):
+    """Union all matching files in a folder (Wildcard Union). Returns a complete M query."""
+    folder_bs = folder_path.replace('/', '\\')
+    return f'''let
+    // Wildcard Union: all {file_extension} files in folder
+    Source = Folder.Files("{folder_bs}"),
+    #"Filtered Files" = Table.SelectRows(Source, each Text.EndsWith([Name], "{file_extension}")),
+    #"Added Tables" = Table.AddColumn(#"Filtered Files", "ParsedTable",
+        each Csv.Document([Content], [Delimiter="{delimiter}", Encoding=65001])),
+    #"Combined" = Table.Combine(#"Added Tables"[ParsedTable]),
+    #"Promoted Headers" = Table.PromoteHeaders(#"Combined", [PromoteAllScalars=true])
+in
+    #"Promoted Headers"'''
+
+
+# ── Reshape operations ────────────────────────────────────────────────────────
+
+def m_transform_sort(sort_specs):
+    """Sort rows. sort_specs: list of (column, descending_bool) tuples."""
+    sorts = ', '.join([
+        f'{{"{col}", {"Order.Descending" if desc else "Order.Ascending"}}}'
+        for col, desc in sort_specs
+    ])
+    return ('#"Sorted Rows"', f'Table.Sort({{prev}}, {{{sorts}}})')
+
+
+def m_transform_transpose():
+    """Transpose table (rows ↔ columns)."""
+    return ('#"Transposed Table"', 'Table.Transpose({prev})')
+
+
+def m_transform_add_index(column_name="Index", start=1, increment=1):
+    """Add an index column."""
+    return ('#"Added Index"',
+            f'Table.AddIndexColumn({{prev}}, "{column_name}", {start}, {increment})')
+
+
+def m_transform_skip_rows(n):
+    """Remove first N rows."""
+    return ('#"Skipped Rows"', f'Table.Skip({{prev}}, {n})')
+
+
+def m_transform_remove_last_rows(n):
+    """Remove last N rows."""
+    return ('#"Removed Last Rows"', f'Table.RemoveLastN({{prev}}, {n})')
+
+
+def m_transform_remove_errors():
+    """Remove rows with errors."""
+    return ('#"Removed Errors"', 'Table.RemoveRowsWithErrors({prev})')
+
+
+def m_transform_promote_headers():
+    """Promote first row to headers."""
+    return ('#"Promoted Headers"',
+            'Table.PromoteHeaders({prev}, [PromoteAllScalars=true])')
+
+
+def m_transform_demote_headers():
+    """Demote headers to first row."""
+    return ('#"Demoted Headers"', 'Table.DemoteHeaders({prev})')
+
+
+# ── Calculated column ─────────────────────────────────────────────────────────
+
+def m_transform_add_column(new_col_name, expression, col_type=None):
+    """
+    Add a calculated column.
+    Args:
+        new_col_name: str
+        expression: str — M expression (e.g., 'each [Price] * [Qty]')
+        col_type: str — optional M type (e.g., 'type number')
+    """
+    type_arg = f', {col_type}' if col_type else ''
+    return (f'#"Added {new_col_name}"',
+            f'Table.AddColumn({{prev}}, "{new_col_name}", {expression}{type_arg})')
+
+
+def m_transform_conditional_column(new_col_name, conditions, default_value=None):
+    """
+    Add a conditional (IF/THEN/ELSE) column.
+    Args:
+        new_col_name: str
+        conditions: list of (condition_expr, result_value) — e.g., [('[Sales] > 1000', '"High"')]
+        default_value: str — default if no condition matches
+    """
+    expr = ""
+    for cond, val in conditions:
+        expr += f'if {cond} then {val} else '
+    expr += str(default_value) if default_value is not None else 'null'
+    return (f'#"Added {new_col_name}"',
+            f'Table.AddColumn({{prev}}, "{new_col_name}", each {expr})')

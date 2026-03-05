@@ -1,0 +1,5 @@
+# Aucune dépendance externe requise.
+# Le projet utilise uniquement la bibliothèque standard Python 3.8+.
+#
+# Modules utilisés : xml.etree.ElementTree, json, os, sys, zipfile,
+#                    uuid, re, argparse, datetime, copy

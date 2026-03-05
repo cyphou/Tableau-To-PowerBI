@@ -1,0 +1,127 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<workbook source-build='2024.1.0' source-platform='win' version='18.1'>
+  <preferences />
+  <datasources>
+    <datasource caption='Sales Data' inline='true' name='federated.sales' version='18.1'>
+      <connection class='federated'>
+        <named-connections>
+          <named-connection caption='SalesDB' name='sqlserver.sales'>
+            <connection class='sqlserver' server='localhost' dbname='SalesDB' />
+          </named-connection>
+        </named-connections>
+        <relation connection='sqlserver.sales' name='Orders' table='[dbo].[Orders]' type='table' />
+        <relation connection='sqlserver.sales' name='Regions' table='[dbo].[Regions]' type='table' />
+        <cols>
+          <map key='[OrderID]' value='[Orders].[OrderID]' />
+          <map key='[Region]' value='[Orders].[Region]' />
+          <map key='[Sales]' value='[Orders].[Sales]' />
+          <map key='[Profit]' value='[Orders].[Profit]' />
+          <map key='[CustomerEmail]' value='[Orders].[CustomerEmail]' />
+          <map key='[Category]' value='[Orders].[Category]' />
+          <map key='[OrderDate]' value='[Orders].[OrderDate]' />
+          <map key='[RegionName]' value='[Regions].[RegionName]' />
+          <map key='[RegionManager]' value='[Regions].[RegionManager]' />
+        </cols>
+      </connection>
+      <column caption='Order ID' datatype='integer' name='[OrderID]' role='dimension' type='ordinal' />
+      <column caption='Region' datatype='string' name='[Region]' role='dimension' type='nominal' />
+      <column caption='Sales' datatype='real' name='[Sales]' role='measure' type='quantitative' />
+      <column caption='Profit' datatype='real' name='[Profit]' role='measure' type='quantitative' />
+      <column caption='Customer Email' datatype='string' name='[CustomerEmail]' role='dimension' type='nominal' />
+      <column caption='Category' datatype='string' name='[Category]' role='dimension' type='nominal' />
+      <column caption='Order Date' datatype='date' name='[OrderDate]' role='dimension' type='ordinal' />
+      <column caption='Region Name' datatype='string' name='[RegionName]' role='dimension' type='nominal' />
+      <column caption='Region Manager' datatype='string' name='[RegionManager]' role='dimension' type='nominal' />
+
+      <!-- User filter: explicit user-to-region mapping -->
+      <user-filter name='[Region Access]' column='[Region]'>
+        <member user='alice@company.com' value='East' />
+        <member user='alice@company.com' value='West' />
+        <member user='bob@company.com' value='Central' />
+        <member user='carol@company.com' value='South' />
+        <groupfilter function='union' member='all'>
+          <groupfilter function='member' member='East' level='[Region]' />
+          <groupfilter function='member' member='West' level='[Region]' />
+        </groupfilter>
+      </user-filter>
+
+      <!-- Calculated security: USERNAME() based filter -->
+      <column caption='Is Current User' datatype='boolean' name='[Calculation_SecurityUser]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='[CustomerEmail] = USERNAME()' />
+      </column>
+
+      <!-- Calculated security: ISMEMBEROF() based filter -->
+      <column caption='Manager Access' datatype='boolean' name='[Calculation_ManagerAccess]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='ISMEMBEROF("Managers") OR ISMEMBEROF("Executives")' />
+      </column>
+
+      <!-- Calculated security: FULLNAME() based filter -->
+      <column caption='Region Match' datatype='boolean' name='[Calculation_RegionMatch]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='[RegionManager] = FULLNAME()' />
+      </column>
+
+      <!-- Regular calculation (not security-related) -->
+      <column caption='Total Sales' datatype='real' name='[Calculation_TotalSales]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='SUM([Sales])' />
+      </column>
+
+      <!-- Regular calculation (not security-related) -->
+      <column caption='Profit Ratio' datatype='real' name='[Calculation_ProfitRatio]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='SUM([Profit]) / SUM([Sales])' />
+      </column>
+    </datasource>
+  </datasources>
+  <worksheets>
+    <worksheet name='Sales Overview'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Sales Data' name='federated.sales' />
+          </datasources>
+          <datasource-dependencies datasource='federated.sales'>
+            <column datatype='string' name='[Region]' role='dimension' type='nominal' />
+            <column datatype='real' name='[Sales]' role='measure' type='quantitative' />
+            <column datatype='string' name='[Category]' role='dimension' type='nominal' />
+          </datasource-dependencies>
+          <shelf-columns>
+            <field>[federated.sales].[Region]</field>
+          </shelf-columns>
+          <shelf-rows>
+            <field>[federated.sales].[Sales]</field>
+          </shelf-rows>
+          <mark-type>bar</mark-type>
+        </view>
+      </table>
+    </worksheet>
+    <worksheet name='Profit Analysis'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Sales Data' name='federated.sales' />
+          </datasources>
+          <datasource-dependencies datasource='federated.sales'>
+            <column datatype='string' name='[Category]' role='dimension' type='nominal' />
+            <column datatype='real' name='[Profit]' role='measure' type='quantitative' />
+          </datasource-dependencies>
+          <shelf-columns>
+            <field>[federated.sales].[Category]</field>
+          </shelf-columns>
+          <shelf-rows>
+            <field>[federated.sales].[Profit]</field>
+          </shelf-rows>
+          <mark-type>bar</mark-type>
+        </view>
+      </table>
+    </worksheet>
+  </worksheets>
+  <dashboards>
+    <dashboard name='Security Dashboard'>
+      <zones>
+        <zone h='1000' id='1' w='1200' x='0' y='0'>
+          <zone h='500' id='2' name='Sales Overview' w='600' x='0' y='0' type-v2='worksheet' />
+          <zone h='500' id='3' name='Profit Analysis' w='600' x='600' y='0' type-v2='worksheet' />
+        </zone>
+      </zones>
+    </dashboard>
+  </dashboards>
+</workbook>

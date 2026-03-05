@@ -1,0 +1,621 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<workbook source-build='2024.1.0' source-platform='win' version='18.1' xmlns:user='http://www.tableausoftware.com/xml/user'>
+  <preferences>
+    <preference name='ui.encoding.shelf.height' value='24' />
+  </preferences>
+  <datasources>
+    <!-- ── Primary datasource: IoT Sensor Data (Oracle) ────── -->
+    <datasource caption='Manufacturing IoT' inline='true' name='federated.iot' version='18.1'>
+      <connection class='federated'>
+        <named-connections>
+          <named-connection caption='OracleDB' name='oracle.mfg'>
+            <connection class='oracle' server='mfg-oracle.corp.local' service='MFGDB' port='1521' />
+          </named-connection>
+        </named-connections>
+        <!-- Full outer join: Sensors ←→ Maintenance (manyToMany) -->
+        <relation join='full' type='join'>
+          <clause type='join'>
+            <expression op='='>
+              <expression op='[machine_id]' />
+              <expression op='[Maintenance].[machine_id]' />
+            </expression>
+          </clause>
+          <relation join='inner' type='join'>
+            <clause type='join'>
+              <expression op='='>
+                <expression op='[machine_id]' />
+                <expression op='[Machines].[machine_id]' />
+              </expression>
+            </clause>
+            <relation connection='oracle.mfg' name='Sensors' table='[MFG].[SENSOR_READINGS]' type='table'>
+              <columns>
+                <column datatype='integer' name='reading_id' ordinal='0' />
+                <column datatype='date' name='reading_time' ordinal='1' />
+                <column datatype='integer' name='machine_id' ordinal='2' />
+                <column datatype='string' name='sensor_type' ordinal='3' />
+                <column datatype='real' name='value' ordinal='4' />
+                <column datatype='real' name='threshold_min' ordinal='5' />
+                <column datatype='real' name='threshold_max' ordinal='6' />
+                <column datatype='string' name='unit' ordinal='7' />
+                <column datatype='integer' name='quality_score' ordinal='8' />
+                <column datatype='string' name='plant_id' ordinal='9' />
+                <column datatype='real' name='delta_value' ordinal='10' />
+                <column datatype='real' name='angle_degrees' ordinal='11' />
+                <column datatype='real' name='power_watts' ordinal='12' />
+              </columns>
+            </relation>
+            <relation connection='oracle.mfg' name='Machines' table='[MFG].[MACHINES]' type='table'>
+              <columns>
+                <column datatype='integer' name='machine_id' ordinal='0' />
+                <column datatype='string' name='machine_name' ordinal='1' />
+                <column datatype='string' name='machine_type' ordinal='2' />
+                <column datatype='date' name='install_date' ordinal='3' />
+                <column datatype='string' name='location' ordinal='4' />
+                <column datatype='string' name='line_id' ordinal='5' />
+                <column datatype='real' name='rated_capacity' ordinal='6' />
+              </columns>
+            </relation>
+          </relation>
+          <relation connection='oracle.mfg' name='Maintenance' table='[MFG].[MAINTENANCE_LOG]' type='table'>
+            <columns>
+              <column datatype='integer' name='maint_id' ordinal='0' />
+              <column datatype='integer' name='machine_id' ordinal='1' />
+              <column datatype='date' name='maint_date' ordinal='2' />
+              <column datatype='string' name='maint_type' ordinal='3' />
+              <column datatype='real' name='maint_cost' ordinal='4' />
+              <column datatype='real' name='downtime_hours' ordinal='5' />
+              <column datatype='string' name='technician' ordinal='6' />
+              <column datatype='string' name='description' ordinal='7' />
+            </columns>
+          </relation>
+        </relation>
+        <cols>
+          <!-- Sensor columns -->
+          <map key='[reading_id]' value='[Sensors].[reading_id]' />
+          <map key='[reading_time]' value='[Sensors].[reading_time]' />
+          <map key='[machine_id]' value='[Sensors].[machine_id]' />
+          <map key='[sensor_type]' value='[Sensors].[sensor_type]' />
+          <map key='[value]' value='[Sensors].[value]' />
+          <map key='[threshold_min]' value='[Sensors].[threshold_min]' />
+          <map key='[threshold_max]' value='[Sensors].[threshold_max]' />
+          <map key='[unit]' value='[Sensors].[unit]' />
+          <map key='[quality_score]' value='[Sensors].[quality_score]' />
+          <map key='[plant_id]' value='[Sensors].[plant_id]' />
+          <map key='[delta_value]' value='[Sensors].[delta_value]' />
+          <map key='[angle_degrees]' value='[Sensors].[angle_degrees]' />
+          <map key='[power_watts]' value='[Sensors].[power_watts]' />
+          <!-- Machine columns -->
+          <map key='[machine_name]' value='[Machines].[machine_name]' />
+          <map key='[machine_type]' value='[Machines].[machine_type]' />
+          <map key='[install_date]' value='[Machines].[install_date]' />
+          <map key='[location]' value='[Machines].[location]' />
+          <map key='[line_id]' value='[Machines].[line_id]' />
+          <map key='[rated_capacity]' value='[Machines].[rated_capacity]' />
+          <!-- Maintenance columns -->
+          <map key='[maint_id]' value='[Maintenance].[maint_id]' />
+          <map key='[maint_date]' value='[Maintenance].[maint_date]' />
+          <map key='[maint_type]' value='[Maintenance].[maint_type]' />
+          <map key='[maint_cost]' value='[Maintenance].[maint_cost]' />
+          <map key='[downtime_hours]' value='[Maintenance].[downtime_hours]' />
+          <map key='[technician]' value='[Maintenance].[technician]' />
+          <map key='[description]' value='[Maintenance].[description]' />
+        </cols>
+      </connection>
+
+      <!-- Physical columns -->
+      <column caption='Reading ID' datatype='integer' name='[reading_id]' role='dimension' type='ordinal' />
+      <column caption='Reading Time' datatype='date' name='[reading_time]' role='dimension' type='ordinal' />
+      <column caption='Machine ID' datatype='integer' name='[machine_id]' role='dimension' type='ordinal' />
+      <column caption='Sensor Type' datatype='string' name='[sensor_type]' role='dimension' type='nominal' />
+      <column caption='Sensor Value' datatype='real' name='[value]' role='measure' type='quantitative' />
+      <column caption='Min Threshold' datatype='real' name='[threshold_min]' role='measure' type='quantitative' />
+      <column caption='Max Threshold' datatype='real' name='[threshold_max]' role='measure' type='quantitative' />
+      <column caption='Unit' datatype='string' name='[unit]' role='dimension' type='nominal' />
+      <column caption='Quality Score' datatype='integer' name='[quality_score]' role='measure' type='quantitative' />
+      <column caption='Plant ID' datatype='string' name='[plant_id]' role='dimension' type='nominal' />
+      <column caption='Delta Value' datatype='real' name='[delta_value]' role='measure' type='quantitative' />
+      <column caption='Angle (Degrees)' datatype='real' name='[angle_degrees]' role='measure' type='quantitative' />
+      <column caption='Power (Watts)' datatype='real' name='[power_watts]' role='measure' type='quantitative' />
+      <column caption='Machine Name' datatype='string' name='[machine_name]' role='dimension' type='nominal' />
+      <column caption='Machine Type' datatype='string' name='[machine_type]' role='dimension' type='nominal' />
+      <column caption='Install Date' datatype='date' name='[install_date]' role='dimension' type='ordinal' />
+      <column caption='Location' datatype='string' name='[location]' role='dimension' type='nominal' />
+      <column caption='Line ID' datatype='string' name='[line_id]' role='dimension' type='nominal' />
+      <column caption='Rated Capacity' datatype='real' name='[rated_capacity]' role='measure' type='quantitative' />
+      <column caption='Maint ID' datatype='integer' name='[maint_id]' role='dimension' type='ordinal' />
+      <column caption='Maint Date' datatype='date' name='[maint_date]' role='dimension' type='ordinal' />
+      <column caption='Maint Type' datatype='string' name='[maint_type]' role='dimension' type='nominal' />
+      <column caption='Maint Cost' datatype='real' name='[maint_cost]' role='measure' type='quantitative' />
+      <column caption='Downtime Hours' datatype='real' name='[downtime_hours]' role='measure' type='quantitative' />
+      <column caption='Technician' datatype='string' name='[technician]' role='dimension' type='nominal' />
+      <column caption='Description' datatype='string' name='[description]' role='dimension' type='nominal' />
+
+      <!-- ── CALCULATIONS (25) ───────────────────────────────── -->
+
+      <!-- 1. Math: Absolute deviation from midpoint -->
+      <column caption='Abs Deviation' datatype='real' name='[Calc_AbsDev]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='ABS([value] - ([threshold_min] + [threshold_max]) / 2)' />
+      </column>
+
+      <!-- 2. Math: Value clamped to ceiling -->
+      <column caption='Ceiling Value' datatype='real' name='[Calc_CeilVal]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='CEILING([value])' />
+      </column>
+
+      <!-- 3. Math: Value rounded to floor -->
+      <column caption='Floor Value' datatype='real' name='[Calc_FloorVal]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='FLOOR([value])' />
+      </column>
+
+      <!-- 4. Math: Rounded to 2 decimals -->
+      <column caption='Rounded Value' datatype='real' name='[Calc_RoundVal]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='ROUND([value], 2)' />
+      </column>
+
+      <!-- 5. Math: Power / energy calculation — POWER + SQRT -->
+      <column caption='Energy Index' datatype='real' name='[Calc_EnergyIdx]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='SQRT(POWER([power_watts], 2) + POWER([delta_value], 2))' />
+      </column>
+
+      <!-- 6. Math: Logarithmic scaling — LOG + LN + EXP -->
+      <column caption='Log Scale' datatype='real' name='[Calc_LogScale]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='IF [value] > 0 THEN LOG([value]) ELSE LN(EXP(1)) END' />
+      </column>
+
+      <!-- 7. Trig: Angle conversion — SIN, COS, RADIANS -->
+      <column caption='Vibration X' datatype='real' name='[Calc_VibX]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='[value] * COS(RADIANS([angle_degrees]))' />
+      </column>
+
+      <!-- 8. Trig: Angle conversion — SIN, RADIANS -->
+      <column caption='Vibration Y' datatype='real' name='[Calc_VibY]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='[value] * SIN(RADIANS([angle_degrees]))' />
+      </column>
+
+      <!-- 9. Type conversion: INT + FLOAT + STR -->
+      <column caption='Score Label' datatype='string' name='[Calc_ScoreLabel]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='"Score: " + STR(INT([quality_score])) + " / " + STR(FLOAT([value]))' />
+      </column>
+
+      <!-- 10. Stats: MEDIAN sensor value -->
+      <column caption='Median Value' datatype='real' name='[Calc_MedianVal]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='MEDIAN([value])' />
+      </column>
+
+      <!-- 11. Stats: PERCENTILE 95th -->
+      <column caption='P95 Value' datatype='real' name='[Calc_P95]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='PERCENTILE([value], 0.95)' />
+      </column>
+
+      <!-- 12. Stats: VAR (variance) -->
+      <column caption='Value Variance' datatype='real' name='[Calc_Variance]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='VAR([value])' />
+      </column>
+
+      <!-- 13. Stats: VARP (population variance) -->
+      <column caption='Value Variance Pop' datatype='real' name='[Calc_VariancePop]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='VARP([value])' />
+      </column>
+
+      <!-- 14. LOD INCLUDE: Average per sensor type + machine -->
+      <column caption='Avg by Sensor Machine' datatype='real' name='[Calc_AvgBySensorMachine]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='{INCLUDE [sensor_type], [machine_id] : AVG([value])}' />
+      </column>
+
+      <!-- 15. DATETRUNC: Reading month start -->
+      <column caption='Reading Month' datatype='date' name='[Calc_ReadingMonth]' role='dimension' type='ordinal'>
+        <calculation class='tableau' formula='DATETRUNC("month", [reading_time])' />
+      </column>
+
+      <!-- 16. DATETRUNC: Reading quarter start -->
+      <column caption='Reading Quarter' datatype='date' name='[Calc_ReadingQtr]' role='dimension' type='ordinal'>
+        <calculation class='tableau' formula='DATETRUNC("quarter", [reading_time])' />
+      </column>
+
+      <!-- 17. DATEPART: Hour of reading -->
+      <column caption='Reading Hour' datatype='integer' name='[Calc_ReadingHour]' role='dimension' type='ordinal'>
+        <calculation class='tableau' formula='DATEPART("hour", [reading_time])' />
+      </column>
+
+      <!-- 18. DATEPART: Weekday of reading -->
+      <column caption='Weekday' datatype='integer' name='[Calc_Weekday]' role='dimension' type='ordinal'>
+        <calculation class='tableau' formula='DATEPART("weekday", [reading_time])' />
+      </column>
+
+      <!-- 19. Table calc: RUNNING_AVG (average sensor value over time) -->
+      <column caption='Running Avg Value' datatype='real' name='[Calc_RunAvg]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='RUNNING_AVG(AVG([value]))' />
+      </column>
+
+      <!-- 20. Table calc: RUNNING_COUNT -->
+      <column caption='Running Count' datatype='integer' name='[Calc_RunCount]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='RUNNING_COUNT(COUNT([reading_id]))' />
+      </column>
+
+      <!-- 21. Table calc: RUNNING_MAX -->
+      <column caption='Running Max Value' datatype='real' name='[Calc_RunMax]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='RUNNING_MAX(MAX([value]))' />
+      </column>
+
+      <!-- 22. Table calc: RUNNING_MIN -->
+      <column caption='Running Min Value' datatype='real' name='[Calc_RunMin]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='RUNNING_MIN(MIN([value]))' />
+      </column>
+
+      <!-- 23. Table calc: RANK_DENSE (dense rank by value) -->
+      <column caption='Dense Rank' datatype='integer' name='[Calc_DenseRank]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='RANK_DENSE(SUM([value]))' />
+      </column>
+
+      <!-- 24. Table calc: RANK_UNIQUE -->
+      <column caption='Unique Rank' datatype='integer' name='[Calc_UniqueRank]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='RANK_UNIQUE(AVG([value]))' />
+      </column>
+
+      <!-- 25. WINDOW_SUM: Total value in window -->
+      <column caption='Window Total' datatype='real' name='[Calc_WinTotal]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='WINDOW_SUM(SUM([value]))' />
+      </column>
+
+      <!-- Custom SQL -->
+      <custom-sql name='Machine Alerts' connection='oracle.mfg'>
+        <query>
+          SELECT s.machine_id, s.sensor_type, s.value, m.machine_name
+          FROM MFG.SENSOR_READINGS s
+          JOIN MFG.MACHINES m ON s.machine_id = m.machine_id
+          WHERE s.value &gt; s.threshold_max OR s.value &lt; s.threshold_min
+          ORDER BY s.reading_time DESC
+        </query>
+      </custom-sql>
+
+      <layout dim-ordering='alphabetic' dim-percentage='0.5' measure-ordering='alphabetic' measure-percentage='0.4' show-structure='true' />
+    </datasource>
+  </datasources>
+
+  <parameters>
+    <parameter name='[Parameters].[Alert Threshold]' caption='Alert Threshold' datatype='real' value='100'>
+      <range max='500' min='0' granularity='10' />
+    </parameter>
+    <parameter name='[Parameters].[Time Granularity]' caption='Time Granularity' datatype='string' value='&quot;Hour&quot;'>
+      <allowable-values>
+        <enum>&quot;Minute&quot;</enum>
+        <enum>&quot;Hour&quot;</enum>
+        <enum>&quot;Day&quot;</enum>
+        <enum>&quot;Week&quot;</enum>
+      </allowable-values>
+    </parameter>
+  </parameters>
+
+  <!-- ── Hierarchies ────────────────────────────────────────── -->
+  <drill-paths>
+    <drill-path name='Asset Hierarchy'>
+      <field>[plant_id]</field>
+      <field>[line_id]</field>
+      <field>[machine_name]</field>
+    </drill-path>
+    <drill-path name='Time Drill'>
+      <field>[Calc_ReadingQtr]</field>
+      <field>[Calc_ReadingMonth]</field>
+      <field>[reading_time]</field>
+    </drill-path>
+  </drill-paths>
+
+  <!-- ── Sets ───────────────────────────────────────────────── -->
+  <sets>
+    <set name='Critical Machines' datasource='federated.iot'>
+      <condition>
+        <formula>[machine_name]</formula>
+        <values>
+          <value>"Press Alpha"</value>
+          <value>"CNC Omega"</value>
+          <value>"Conveyor Delta"</value>
+        </values>
+      </condition>
+    </set>
+  </sets>
+
+  <!-- ── Groups ──────────────────────────────────────────────── -->
+  <groups>
+    <group name='Sensor Category' column='[sensor_type]' datasource='federated.iot'>
+      <members>
+        <member key='"Temperature"' value='"Thermal"' />
+        <member key='"Humidity"' value='"Thermal"' />
+        <member key='"Vibration"' value='"Mechanical"' />
+        <member key='"Pressure"' value='"Mechanical"' />
+        <member key='"RPM"' value='"Performance"' />
+        <member key='"Power"' value='"Performance"' />
+      </members>
+    </group>
+  </groups>
+
+  <!-- ── Bins ────────────────────────────────────────────────── -->
+  <bins>
+    <bin name='Value Bin' column='[value]' datasource='federated.iot' size='25' />
+    <bin name='Quality Bin' column='[quality_score]' datasource='federated.iot' size='10' />
+  </bins>
+
+  <worksheets>
+    <!-- Sheet 1: Real-Time Sensor Monitor -->
+    <worksheet name='Sensor Monitor'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Manufacturing IoT' name='federated.iot' />
+          </datasources>
+          <datasource-dependencies datasource='federated.iot'>
+            <column caption='Sensor Value' datatype='real' name='[value]' role='measure' type='quantitative' />
+            <column caption='Running Avg Value' datatype='real' name='[Calc_RunAvg]' role='measure' type='quantitative' />
+            <column caption='Running Max Value' datatype='real' name='[Calc_RunMax]' role='measure' type='quantitative' />
+            <column caption='Running Min Value' datatype='real' name='[Calc_RunMin]' role='measure' type='quantitative' />
+            <column datatype='date' name='[reading_time]' role='dimension' type='ordinal' />
+            <column datatype='string' name='[sensor_type]' role='dimension' type='nominal' />
+            <column-instance column='[reading_time]' derivation='Hour' name='[hr:reading_time:ok]' pivot='key' type='ordinal' />
+            <column-instance column='[sensor_type]' derivation='None' name='[none:sensor_type:nk]' pivot='key' type='nominal' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Line' />
+            <encodings>
+              <color column='[federated.iot].[none:sensor_type:nk]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[federated.iot].[usr:value:qk]</rows>
+        <cols>[federated.iot].[hr:reading_time:ok]</cols>
+      </table>
+    </worksheet>
+
+    <!-- Sheet 2: Machine Health Heatmap -->
+    <worksheet name='Machine Health'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Manufacturing IoT' name='federated.iot' />
+          </datasources>
+          <datasource-dependencies datasource='federated.iot'>
+            <column caption='Sensor Value' datatype='real' name='[value]' role='measure' type='quantitative' />
+            <column caption='Quality Score' datatype='integer' name='[quality_score]' role='measure' type='quantitative' />
+            <column datatype='string' name='[machine_name]' role='dimension' type='nominal' />
+            <column datatype='string' name='[sensor_type]' role='dimension' type='nominal' />
+            <column-instance column='[machine_name]' derivation='None' name='[none:machine_name:nk]' pivot='key' type='nominal' />
+            <column-instance column='[sensor_type]' derivation='None' name='[none:sensor_type:nk]' pivot='key' type='nominal' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style>
+          <style-rule element='mark'>
+            <format attr='mark-labels-show' value='true' />
+            <format attr='mark-labels-cull' value='true' />
+          </style-rule>
+        </style>
+        <panes>
+          <pane>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Square' />
+            <encodings>
+              <color column='[federated.iot].[usr:value:qk]' />
+              <text column='[federated.iot].[usr:quality_score:qk]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[federated.iot].[none:sensor_type:nk]</rows>
+        <cols>[federated.iot].[none:machine_name:nk]</cols>
+      </table>
+    </worksheet>
+
+    <!-- Sheet 3: Maintenance Cost Analysis -->
+    <worksheet name='Maintenance Costs'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Manufacturing IoT' name='federated.iot' />
+          </datasources>
+          <datasource-dependencies datasource='federated.iot'>
+            <column caption='Maint Cost' datatype='real' name='[maint_cost]' role='measure' type='quantitative' />
+            <column caption='Downtime Hours' datatype='real' name='[downtime_hours]' role='measure' type='quantitative' />
+            <column datatype='string' name='[maint_type]' role='dimension' type='nominal' />
+            <column datatype='string' name='[machine_name]' role='dimension' type='nominal' />
+            <column-instance column='[maint_type]' derivation='None' name='[none:maint_type:nk]' pivot='key' type='nominal' />
+            <column-instance column='[machine_name]' derivation='None' name='[none:machine_name:nk]' pivot='key' type='nominal' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Bar' />
+            <encodings>
+              <color column='[federated.iot].[none:maint_type:nk]' />
+              <text column='[federated.iot].[usr:maint_cost:qk]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[federated.iot].[usr:maint_cost:qk]</rows>
+        <cols>[federated.iot].[none:machine_name:nk]</cols>
+      </table>
+    </worksheet>
+
+    <!-- Sheet 4: Statistical Distribution -->
+    <worksheet name='Value Distribution'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Manufacturing IoT' name='federated.iot' />
+          </datasources>
+          <datasource-dependencies datasource='federated.iot'>
+            <column caption='Sensor Value' datatype='real' name='[value]' role='measure' type='quantitative' />
+            <column caption='Median Value' datatype='real' name='[Calc_MedianVal]' role='measure' type='quantitative' />
+            <column caption='P95 Value' datatype='real' name='[Calc_P95]' role='measure' type='quantitative' />
+            <column datatype='string' name='[sensor_type]' role='dimension' type='nominal' />
+            <column-instance column='[sensor_type]' derivation='None' name='[none:sensor_type:nk]' pivot='key' type='nominal' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Area' />
+            <encodings>
+              <color column='[federated.iot].[none:sensor_type:nk]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[federated.iot].[usr:value:qk]</rows>
+        <cols>[federated.iot].[none:sensor_type:nk]</cols>
+      </table>
+    </worksheet>
+
+    <!-- Sheet 5: Vibration Analysis (Trig) -->
+    <worksheet name='Vibration Analysis'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Manufacturing IoT' name='federated.iot' />
+          </datasources>
+          <datasource-dependencies datasource='federated.iot'>
+            <column caption='Vibration X' datatype='real' name='[Calc_VibX]' role='measure' type='quantitative' />
+            <column caption='Vibration Y' datatype='real' name='[Calc_VibY]' role='measure' type='quantitative' />
+            <column caption='Energy Index' datatype='real' name='[Calc_EnergyIdx]' role='measure' type='quantitative' />
+            <column datatype='string' name='[machine_name]' role='dimension' type='nominal' />
+            <column-instance column='[machine_name]' derivation='None' name='[none:machine_name:nk]' pivot='key' type='nominal' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Circle' />
+            <encodings>
+              <color column='[federated.iot].[none:machine_name:nk]' />
+              <size column='[federated.iot].[usr:Calc_EnergyIdx:qk]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[federated.iot].[usr:Calc_VibY:qk]</rows>
+        <cols>[federated.iot].[usr:Calc_VibX:qk]</cols>
+      </table>
+    </worksheet>
+
+    <!-- Sheet 6: Ranking Table -->
+    <worksheet name='Machine Rankings'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Manufacturing IoT' name='federated.iot' />
+          </datasources>
+          <datasource-dependencies datasource='federated.iot'>
+            <column caption='Dense Rank' datatype='integer' name='[Calc_DenseRank]' role='measure' type='quantitative' />
+            <column caption='Unique Rank' datatype='integer' name='[Calc_UniqueRank]' role='measure' type='quantitative' />
+            <column caption='Window Total' datatype='real' name='[Calc_WinTotal]' role='measure' type='quantitative' />
+            <column datatype='string' name='[machine_name]' role='dimension' type='nominal' />
+            <column-instance column='[machine_name]' derivation='None' name='[none:machine_name:nk]' pivot='key' type='nominal' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style>
+          <style-rule element='mark'>
+            <format attr='mark-labels-show' value='true' />
+          </style-rule>
+        </style>
+        <panes>
+          <pane>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Bar' />
+            <encodings>
+              <text column='[federated.iot].[usr:Calc_DenseRank:qk]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[federated.iot].[usr:Calc_WinTotal:qk]</rows>
+        <cols>[federated.iot].[none:machine_name:nk]</cols>
+      </table>
+    </worksheet>
+  </worksheets>
+
+  <dashboards>
+    <!-- Dashboard 1: Operations Overview -->
+    <dashboard name='Operations Overview'>
+      <style />
+      <size maxheight='1080' maxwidth='1920' minheight='1080' minwidth='1920' />
+      <zones>
+        <zone h='100000' id='1' name='Operations Overview' type='text' w='100000' x='0' y='0'>
+          <formatted-text>
+            <run bold='true' fontheight='24'>Manufacturing IoT - Operations Overview</run>
+          </formatted-text>
+        </zone>
+        <zone h='45000' id='2' name='Sensor Monitor' type='worksheet-ref' w='60000' x='0' y='10000'>
+        </zone>
+        <zone h='45000' id='3' name='Machine Health' type='worksheet-ref' w='40000' x='60000' y='10000'>
+        </zone>
+        <zone h='45000' id='4' name='Maintenance Costs' type='worksheet-ref' w='100000' x='0' y='55000'>
+        </zone>
+      </zones>
+    </dashboard>
+
+    <!-- Dashboard 2: Analytics Deep Dive -->
+    <dashboard name='Analytics Deep Dive'>
+      <style />
+      <size maxheight='1080' maxwidth='1920' minheight='1080' minwidth='1920' />
+      <zones>
+        <zone h='100000' id='10' name='Analytics Deep Dive' type='text' w='100000' x='0' y='0'>
+          <formatted-text>
+            <run bold='true' fontheight='24'>Manufacturing IoT - Analytics</run>
+          </formatted-text>
+        </zone>
+        <zone h='45000' id='11' name='Value Distribution' type='worksheet-ref' w='50000' x='0' y='10000'>
+        </zone>
+        <zone h='45000' id='12' name='Vibration Analysis' type='worksheet-ref' w='50000' x='50000' y='10000'>
+        </zone>
+        <zone h='45000' id='13' name='Machine Rankings' type='worksheet-ref' w='100000' x='0' y='55000'>
+        </zone>
+      </zones>
+    </dashboard>
+  </dashboards>
+
+  <stories>
+    <story name='Plant Review'>
+      <story-points>
+        <story-point caption='Live Monitoring' dashboard='Operations Overview'>
+          <description>Real-time sensor readings and machine health status</description>
+        </story-point>
+        <story-point caption='Statistical Analysis' dashboard='Analytics Deep Dive'>
+          <description>Distribution, vibration patterns, and ranking analysis</description>
+        </story-point>
+        <story-point caption='Maintenance Review' dashboard='Operations Overview'>
+          <description>Cost analysis and predictive maintenance insights</description>
+        </story-point>
+      </story-points>
+    </story>
+  </stories>
+
+  <actions>
+    <action name='Machine Filter' type='filter' source='Machine Health' target='Sensor Monitor'>
+      <field>[machine_name]</field>
+    </action>
+    <action name='Sensor Type Filter' type='filter' source='Value Distribution' target='Vibration Analysis'>
+      <field>[sensor_type]</field>
+    </action>
+    <action name='Machine Highlight' type='highlight' source='Machine Rankings' target='Maintenance Costs'>
+      <field>[machine_name]</field>
+    </action>
+  </actions>
+</workbook>

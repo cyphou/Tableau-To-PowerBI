@@ -1,0 +1,29 @@
+{
+  "generated_at": "2026-02-27T11:24:44.830375",
+  "source": "Tableau Migration",
+  "report_name": "Manufacturing_IoT",
+  "objects_converted": {
+    "worksheets": 6,
+    "dashboards": 2,
+    "datasources": 1,
+    "calculations": 25,
+    "parameters": 2,
+    "filters": 0,
+    "stories": 1,
+    "sets": 0,
+    "groups": 0,
+    "bins": 0,
+    "hierarchies": 0,
+    "user_filters": 0,
+    "actions": 3,
+    "custom_sql": 0
+  },
+  "generated_output": {
+    "pages": 17,
+    "visuals": 128,
+    "theme_applied": false
+  },
+  "tmdl_stats": {
+    "tables": 5
+  }
+}

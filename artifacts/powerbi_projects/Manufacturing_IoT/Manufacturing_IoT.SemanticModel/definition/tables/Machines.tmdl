@@ -1,0 +1,76 @@
+table Machines
+	lineageTag: 3a7baefe-6701-4af8-8ed4-ee56d7c26467
+
+	column machine_id
+		dataType: int64
+		lineageTag: 919230e9-f2c9-43ca-a942-87547dec860a
+		summarizeBy: sum
+		sourceColumn: machine_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column machine_name
+		dataType: string
+		lineageTag: 83fec106-0f80-4439-ac26-5857cd84eeb3
+		summarizeBy: none
+		sourceColumn: machine_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column machine_type
+		dataType: string
+		lineageTag: b2b18a90-c8dd-4819-aa42-ce63194ae704
+		summarizeBy: none
+		sourceColumn: machine_type
+
+		annotation SummarizationSetBy = Automatic
+
+	column install_date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 02c7fd41-77a2-4529-8ba0-15314f80a4da
+		summarizeBy: none
+		sourceColumn: install_date
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column location
+		dataType: string
+		lineageTag: b3c8e77f-4f45-45e1-a303-462e3a23817f
+		summarizeBy: none
+		sourceColumn: location
+
+		annotation SummarizationSetBy = Automatic
+
+	column line_id
+		dataType: string
+		lineageTag: 8d39bbe9-c975-49de-83a8-2e35bfd1491e
+		summarizeBy: none
+		sourceColumn: line_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column rated_capacity
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 83b48270-ddfe-4219-a702-24d7dcd409a5
+		summarizeBy: sum
+		sourceColumn: rated_capacity
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Machines-517d0e4c-75c9-4f03-bdc1-965919ddcf02' = m
+		mode: import
+		source =
+				let
+				    // Source Oracle: mfg-oracle.corp.local:1521/MFGDB
+				    Source = Oracle.Database("mfg-oracle.corp.local:1521/MFGDB"),
+				    #"Machines Table" = Source{[Schema="DBO", Item="Machines"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(#"Machines Table", {{"machine_id", "Machine ID"}, {"machine_name", "Machine Name"}, {"machine_type", "Machine Type"}, {"install_date", "Install Date"}, {"location", "Location"}, {"line_id", "Line ID"}, {"rated_capacity", "Rated Capacity"}}),
+				    Result = #"Renamed Columns"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+
