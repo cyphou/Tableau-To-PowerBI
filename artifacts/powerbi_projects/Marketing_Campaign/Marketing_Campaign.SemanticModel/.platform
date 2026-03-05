@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "SemanticModel",
+    "displayName": "Marketing_Campaign"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "45112464-00e3-4c1a-9a4a-ebb94e0ed64c"
+  }
+}

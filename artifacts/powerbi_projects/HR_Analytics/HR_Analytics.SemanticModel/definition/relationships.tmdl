@@ -1,0 +1,5 @@
+relationship 1ee7fc86-3518-442e-a435-8b1eb1ab7e74
+	fromColumn: Employees.HireDate
+	toColumn: Calendar.Date
+	crossFilteringBehavior: oneDirection
+

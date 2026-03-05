@@ -1,94 +1,94 @@
 table Orders
-	lineageTag: 8af031ab-f47b-4d5b-852b-fef95e6a897a
+	lineageTag: ba76f27f-fc95-4f58-a4a3-5292801fedb7
 
 	measure 'Gross Revenue' = SUMX('Orders', 'Orders'[quantity] * 'Orders'[unit_price])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 1e79f636-4119-4e4a-83a6-68d0081e8720
+		lineageTag: 22ee2b7d-1183-4d18-a7e5-81f36e36bfef
 
 	measure 'Net Revenue' = SUMX('Orders', IF('Orders'[order_status] <> "Cancelled", 'Orders'[quantity] * 'Orders'[unit_price] * (1 - 'Orders'[discount]), 0))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: dfd9ff67-876c-4c48-afa5-cd03c8f39fb4
+		lineageTag: d317c69d-33bd-4e34-8ced-d3b852ee98d3
 
 	measure 'Total Discount' = SUMX('Orders', 'Orders'[quantity] * 'Orders'[unit_price] * 'Orders'[discount])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 515a211e-e95f-46e3-9c45-b6570230e03e
+		lineageTag: 31f9fb4a-0d43-47a9-aab7-41cf0ca397bb
 
 	measure Profit = SUMX('Orders', IF('Orders'[order_status] <> "Cancelled", ('Orders'[quantity] * 'Orders'[unit_price] * (1 - 'Orders'[discount])) - 'Orders'[shipping_cost], 0))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: cc31d018-36de-4587-bf2f-9cc92faa84e5
+		lineageTag: fe7ca524-89cc-4922-b224-bb5d2722a122
 
 	measure 'Profit Margin %' = [Profit] / [Net Revenue]
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 18178374-0e3a-4c09-88e3-ce4dac5910a4
+		lineageTag: 6c44c233-fd6a-4972-8d0c-14dac2818ec1
 
 	measure 'Revenue per Customer' = CALCULATE(SUMX('Orders', 'Orders'[quantity] * 'Orders'[unit_price]), ALLEXCEPT('Orders', 'Orders'[customer_id]))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: af2facc9-8810-488e-8bc1-a2151a37a33b
+		lineageTag: bff81ce4-094a-4930-a6f0-15b927d369a7
 
 	measure 'Regional Channel Revenue' = CALCULATE(SUMX('Orders', 'Orders'[quantity] * 'Orders'[unit_price]), ALLEXCEPT('Orders', 'Orders'[region], 'Orders'[channel]))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: fa9e8028-011c-4a89-83c8-8ab30cbaab42
+		lineageTag: bea7d1b4-79b9-4ba8-bde9-9628d185453c
 
 	measure 'Revenue Excl Category' = CALCULATE(SUMX('Orders', 'Orders'[quantity] * 'Orders'[unit_price]), REMOVEFILTERS('Orders'[channel]))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: dbeebe9a-b04b-44ec-9515-9ab50d438b17
+		lineageTag: 2a1ab0a4-86fe-4a00-818d-5293ad720cbb
 
 	measure 'Moving Avg Revenue' = CALCULATE(SUMX('Orders', 'Orders'[quantity] * 'Orders'[unit_price]), ALL('Orders'))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: f078de16-10ad-4c39-9290-9168e9b84d95
+		lineageTag: c5cdb8c6-b02f-4341-8fac-9aeca4a7b99a
 
 	measure 'Running Total Revenue' = CALCULATE(SUMX('Orders', 'Orders'[quantity] * 'Orders'[unit_price]))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 36123127-bdf2-40ab-a31e-c308ddedbbe3
+		lineageTag: c51afd4f-e7af-4703-96a9-40d7b3472395
 
 	measure 'Revenue Rank' = RANKX(ALL('Orders'), SUMX('Orders', 'Orders'[quantity] * 'Orders'[unit_price]))
 		displayFolder: Measures
-		lineageTag: 58f80871-54d5-4d53-bd8b-08ae2a652f25
+		lineageTag: f32e4e6a-51aa-4dbf-b1ea-f1dce797e0b1
 
 	measure 'YTD Revenue' = CALCULATE(SUMX('Orders', IF(YEAR('Orders'[order_date]) = YEAR(TODAY()), 'Orders'[quantity] * 'Orders'[unit_price], 0)), ALL('Orders'))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 3326792a-518b-46e3-989e-459a34cc5085
+		lineageTag: 93efd4d9-425f-43ee-b069-54e00675c710
 
 	measure 'Customer Tier' = IF([Revenue per Customer] > 10000, "Platinum", IF([Revenue per Customer] > 5000, "Gold", IF([Revenue per Customer] > 1000, "Silver", "Bronze")))
 		displayFolder: Dimensions
-		lineageTag: 18c232c1-c9e5-4a5a-b745-c389a45ef852
+		lineageTag: ea3ab093-fbfd-4fdd-8796-6388d0a824d1
 
 	measure 'Unique Customers' = DISTINCTCOUNT('Orders'[customer_id])
 		displayFolder: Measures
-		lineageTag: 0c532b80-29f4-4553-acb0-1010d63f1d4a
+		lineageTag: 1fcb8c5a-3672-4a3b-8bc3-5676520c2e04
 
 	measure 'AOV Completed' = AVERAGEX('Orders', IF('Orders'[order_status] = "Completed", 'Orders'[quantity] * 'Orders'[unit_price], 0))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: b3592a43-2d0e-4610-89f2-3f9b2ff9b59e
+		lineageTag: 8e39ca36-c6cf-4ec0-8cab-5adaf95b791b
 
 	measure 'Revenue StdDev' = STDEVX.S('Orders', 'Orders'[quantity] * 'Orders'[unit_price])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 5f4de115-7e0a-402f-a164-379d6b64cb43
+		lineageTag: cb09fe29-b3ce-4012-8217-eccf8e5de3d1
 
 	measure 'Is My Account' = 'Customers'[customer_email] = USERPRINCIPALNAME()
 		formatString: True/False
 		displayFolder: Dimensions
-		lineageTag: dbd3d8b8-5842-4905-a069-3f13c11acfc2
+		lineageTag: dc8667d2-9621-48b7-b778-6d372ddea456
 
 	measure 'Date Range Start' = DATE(2024, 1, 1)
-		lineageTag: 7bb54fd5-2708-4b24-b69d-d0f45a2a24ad
+		lineageTag: 6ab12a33-cc82-49ba-8cee-f34a644fcdc5
 
 	column order_id
 		dataType: int64
-		lineageTag: a00b67d2-e93c-49b8-b643-ea83c7ef1c1e
+		lineageTag: 9e34c27d-acc9-477a-a5cf-7588e1d3af50
 		summarizeBy: sum
 		sourceColumn: order_id
 
@@ -97,7 +97,7 @@ table Orders
 	column order_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: f01b983e-2015-4ac5-b4c0-64e708fed15f
+		lineageTag: 86ca5759-aef2-4253-9e61-2531eb5fc4d1
 		summarizeBy: none
 		sourceColumn: order_date
 		dataCategory: DateTime
@@ -106,7 +106,7 @@ table Orders
 
 	column customer_id
 		dataType: int64
-		lineageTag: d5c63c0d-85e6-4cea-91ff-9f2ba0f7febb
+		lineageTag: d75003c0-5c64-4902-95a2-22e01fd8d4a6
 		summarizeBy: sum
 		sourceColumn: customer_id
 
@@ -114,7 +114,7 @@ table Orders
 
 	column product_id
 		dataType: int64
-		lineageTag: a05dd26a-d027-4453-a9ca-80c2a3b6aff9
+		lineageTag: 9cd08eba-67e0-4c5a-8e72-8909724278c4
 		summarizeBy: sum
 		sourceColumn: product_id
 
@@ -122,7 +122,7 @@ table Orders
 
 	column region
 		dataType: string
-		lineageTag: b74ebd2d-b07d-4399-9168-ba8e4b2d6bf6
+		lineageTag: 9920ed75-9889-45a4-bc4c-ffb8a21f898c
 		summarizeBy: none
 		sourceColumn: region
 		dataCategory: StateOrProvince
@@ -131,7 +131,7 @@ table Orders
 
 	column channel
 		dataType: string
-		lineageTag: 6ca386f4-286c-42ed-824b-ace6d2a31b5c
+		lineageTag: 46932062-d031-4b44-b40f-3c5a7d2adf2d
 		summarizeBy: none
 		sourceColumn: channel
 
@@ -140,7 +140,7 @@ table Orders
 	column quantity
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 3036898f-a677-47f7-b886-dd64a5743139
+		lineageTag: f116fb0a-978d-422b-833c-ecdf8844bdbc
 		summarizeBy: sum
 		sourceColumn: quantity
 
@@ -149,7 +149,7 @@ table Orders
 	column unit_price
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 55a95262-0803-42d9-95c3-285fda21293c
+		lineageTag: c4b7ec0c-eef1-46ee-9b7b-9baf84f849df
 		summarizeBy: sum
 		sourceColumn: unit_price
 
@@ -158,7 +158,7 @@ table Orders
 	column discount
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 5fc3492a-a75b-40e6-8d02-3e1e26034a4d
+		lineageTag: 4a29223f-4b77-43bc-a1f0-883ff54ba775
 		summarizeBy: sum
 		sourceColumn: discount
 
@@ -167,7 +167,7 @@ table Orders
 	column shipping_cost
 		dataType: double
 		formatString: #,0.00
-		lineageTag: c8b09664-24d2-45a3-abc8-c0f682dc7b38
+		lineageTag: 8db20307-62b6-4038-b3fc-964740d27e9b
 		summarizeBy: sum
 		sourceColumn: shipping_cost
 
@@ -175,7 +175,7 @@ table Orders
 
 	column order_status
 		dataType: string
-		lineageTag: bc74bdfd-3cd7-4428-8b75-299630d01b4f
+		lineageTag: 5353a206-7e04-4b57-b3c9-305c66e80a51
 		summarizeBy: none
 		sourceColumn: order_status
 
@@ -183,7 +183,7 @@ table Orders
 
 	column sales_rep
 		dataType: string
-		lineageTag: 5a8f8326-5c1f-4898-b0d1-dac101ef66e4
+		lineageTag: 294c518c-81cc-45df-915e-03aef6d035d4
 		summarizeBy: none
 		sourceColumn: sales_rep
 
@@ -191,7 +191,7 @@ table Orders
 
 	column territory
 		dataType: string
-		lineageTag: 59beb03b-fbf9-4b5c-8d82-1d89f3fdb823
+		lineageTag: 59f5158e-baa2-4236-9bc3-18ef7a87ed7b
 		summarizeBy: none
 		sourceColumn: territory
 
@@ -199,7 +199,7 @@ table Orders
 
 	column 'Customer Tenure Days' = DATEDIFF(RELATED('Customers'[first_purchase_date]), TODAY(), DAY)
 		dataType: int64
-		lineageTag: 99bbbc6a-b137-4f93-be60-5c655910b8fc
+		lineageTag: 39a3904b-f7e7-45e0-a2ee-e244a6ad15a4
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
@@ -207,33 +207,33 @@ table Orders
 	column 'Safe Discount Rate' = IF(ISBLANK('Orders'[discount]), 0, IF(ISBLANK('Orders'[discount]), 0, 'Orders'[discount]))
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 58afd518-325a-4e5a-a44a-4cfdd7f10758
+		lineageTag: f732bb9a-63f1-40ea-bbfb-00b4b3238451
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Full Location' = UPPER(RELATED('Customers'[city])) & ", " & RELATED('Customers'[state]) & " (" & RELATED('Customers'[country]) & ")"
 		dataType: string
-		lineageTag: ddb32074-d49d-46cc-b6ea-3bffc13018e9
+		lineageTag: 824f1ca5-7b1c-430a-ad97-24c5fb2a0a47
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Customer Segment Label' = "Segment: " & RELATED('Customers'[segment])
 		dataType: string
-		lineageTag: 7100cf60-53f9-42ca-ac9b-07abb9599cf8
+		lineageTag: 5ad4cfe6-162c-477b-b295-00fee28b493f
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Discount Category' = IF(ISBLANK('Orders'[discount]), "No Discount", IF('Orders'[discount] = 0, "No Discount", IF('Orders'[discount] < 0.1, "Low (<10%)", IF('Orders'[discount] < 0.25, "Medium (10-25%)", "High (>25%)"))))
 		dataType: string
-		lineageTag: b140a815-3921-45ca-bad7-10ff8fe346da
+		lineageTag: e56ca47d-5766-4964-b534-63b1f9d55e57
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Orders-90fcce0d-ed91-4838-96b0-a0d4117d9c48' = m
+	partition 'Orders-ffca2537-7182-43a3-8288-c9c3c03e56fd' = m
 		mode: import
 		source =
 				let

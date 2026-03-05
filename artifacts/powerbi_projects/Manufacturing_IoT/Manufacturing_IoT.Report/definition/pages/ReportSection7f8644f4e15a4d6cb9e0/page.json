@@ -1,0 +1,8 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.0.0/schema.json",
+  "name": "ReportSection7f8644f4e15a4d6cb9e0",
+  "displayName": "Analytics Deep Dive",
+  "displayOption": "FitToPage",
+  "height": 720,
+  "width": 1280
+}

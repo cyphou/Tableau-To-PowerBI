@@ -1,0 +1,128 @@
+table Employees
+	lineageTag: a925a038-1678-4730-9b76-c20c0af71c54
+
+	measure 'Average Salary' = AVERAGE('Employees'[Salary])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 75dd7bbf-7ad4-40a2-8c0d-d08f259b6888
+
+	measure 'Employee Count' = COUNT('Employees'[EmployeeID])
+		displayFolder: Measures
+		lineageTag: 6c5d9982-7acc-426d-b84a-31cf24e9a2a4
+
+	measure 'Total Compensation' = SUM('Employees'[Salary]) * 1.25
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 97bf9222-5209-41e8-8b30-16a3067bd972
+
+	column EmployeeID
+		dataType: int64
+		lineageTag: 07e4f4ec-da12-47d1-a3d5-cea280fabb87
+		summarizeBy: sum
+		sourceColumn: EmployeeID
+
+		annotation SummarizationSetBy = Automatic
+
+	column FirstName
+		dataType: string
+		lineageTag: 60c84047-dce2-4ece-ad0e-522b58776471
+		summarizeBy: none
+		sourceColumn: FirstName
+
+		annotation SummarizationSetBy = Automatic
+
+	column LastName
+		dataType: string
+		lineageTag: da99f5e9-cc5a-4a5f-8b32-7907b66a9c84
+		summarizeBy: none
+		sourceColumn: LastName
+
+		annotation SummarizationSetBy = Automatic
+
+	column HireDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: c16b7194-100f-4c45-a1aa-fff2a3508061
+		summarizeBy: none
+		sourceColumn: HireDate
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column Department
+		dataType: string
+		lineageTag: 9e76c0ca-7d19-49c5-83b9-5bfd186e7598
+		summarizeBy: none
+		sourceColumn: Department
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobTitle
+		dataType: string
+		lineageTag: 5217bb3c-3ec6-442d-8f6e-ad7f19c68b77
+		summarizeBy: none
+		sourceColumn: JobTitle
+
+		annotation SummarizationSetBy = Automatic
+
+	column Salary
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 1d5ff9fe-068f-4513-bbd8-d82d07d643e3
+		summarizeBy: sum
+		sourceColumn: Salary
+
+		annotation SummarizationSetBy = Automatic
+
+	column Location
+		dataType: string
+		lineageTag: 214709da-4c3c-4c5c-8df1-160896408e32
+		summarizeBy: none
+		sourceColumn: Location
+
+		annotation SummarizationSetBy = Automatic
+
+	column Age
+		dataType: int64
+		lineageTag: 1676fd47-588f-4562-9972-2e3d05bbfee2
+		summarizeBy: sum
+		sourceColumn: Age
+
+		annotation SummarizationSetBy = Automatic
+
+	column YearsOfService
+		dataType: int64
+		lineageTag: 3ca62a30-a08a-48e1-add7-6892096968a2
+		summarizeBy: sum
+		sourceColumn: YearsOfService
+
+		annotation SummarizationSetBy = Automatic
+
+	column PerformanceRating
+		dataType: string
+		lineageTag: 1cd2c1e7-c43c-4ff7-9ef3-830405fb35a7
+		summarizeBy: none
+		sourceColumn: PerformanceRating
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Tenure Category' = IF('Employees'[YearsOfService] < 2, "New", IF('Employees'[YearsOfService] < 5, "Mid", "Senior"))
+		dataType: string
+		lineageTag: ba0a06ef-3df9-4f46-a97a-7181473dcd34
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Employees-7f778974-3bd9-4695-8491-edd8f0ed5795' = m
+		mode: import
+		source =
+				let
+				    // Source SQL Server
+				    Source = Sql.Database("localhost", "HRDatabase"),
+				    #"Employees Table" = Source{[Schema="dbo", Item="Employees"]}[Data],
+				    Result = #"Employees Table"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+

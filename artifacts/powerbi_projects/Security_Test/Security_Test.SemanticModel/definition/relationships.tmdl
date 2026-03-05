@@ -1,0 +1,10 @@
+relationship a714bee9-79fd-443b-b5cc-db53917b647e
+	fromColumn: Orders.OrderDate
+	toColumn: Calendar.Date
+	crossFilteringBehavior: oneDirection
+
+relationship f86cd28d-f49f-479d-a9f8-94591892d751
+	fromColumn: Orders.Region
+	toColumn: Regions.RegionName
+	crossFilteringBehavior: oneDirection
+

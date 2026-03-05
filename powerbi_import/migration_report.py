@@ -207,11 +207,34 @@ class MigrationReport:
                           note=f"Converted to {points} bookmark(s)")
 
     def add_user_filters(self, user_filters):
-        """Add RLS role migration entries."""
+        """Add RLS role migration entries.
+
+        Classification logic:
+        - user_filter with explicit user_mappings → EXACT (full DAX generated)
+        - user_filter without mappings → EXACT (column = USERPRINCIPALNAME())
+        - calculated_security with ISMEMBEROF → APPROXIMATE (needs Azure AD groups)
+        - calculated_security with USERNAME/FULLNAME → EXACT (direct DAX mapping)
+        """
         for uf in user_filters:
             name = uf.get('name') or uf.get('field', 'Unknown')
-            self.add_item('rls_role', name, self.APPROXIMATE,
-                          note='User filter → RLS role (verify Azure AD mappings)')
+            uf_type = uf.get('type', 'user_filter')
+            ismemberof_groups = uf.get('ismemberof_groups', [])
+            functions_used = [f.upper() for f in uf.get('functions_used', [])]
+
+            if uf_type == 'calculated_security' and ismemberof_groups:
+                groups = ', '.join(ismemberof_groups)
+                self.add_item('rls_role', name, self.APPROXIMATE,
+                              note=f'ISMEMBEROF → RLS role (assign Azure AD group members: {groups})')
+            elif uf_type == 'calculated_security':
+                funcs = ', '.join(uf.get('functions_used', []))
+                self.add_item('rls_role', name, self.EXACT,
+                              note=f'Calculated security ({funcs}) → USERPRINCIPALNAME()')
+            elif uf.get('user_mappings'):
+                self.add_item('rls_role', name, self.EXACT,
+                              note='User filter with explicit mappings → RLS role')
+            else:
+                self.add_item('rls_role', name, self.EXACT,
+                              note='User filter → RLS role with USERPRINCIPALNAME()')
 
     def add_datasources(self, datasources):
         """Add datasource migration entries."""

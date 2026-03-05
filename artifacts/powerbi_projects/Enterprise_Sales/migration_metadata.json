@@ -1,0 +1,29 @@
+{
+  "generated_at": "2026-03-05T13:22:10.303133",
+  "source": "Tableau Migration",
+  "report_name": "Enterprise_Sales",
+  "objects_converted": {
+    "worksheets": 5,
+    "dashboards": 1,
+    "datasources": 1,
+    "calculations": 22,
+    "parameters": 3,
+    "filters": 0,
+    "stories": 1,
+    "sets": 0,
+    "groups": 0,
+    "bins": 0,
+    "hierarchies": 0,
+    "user_filters": 2,
+    "actions": 3,
+    "custom_sql": 0
+  },
+  "generated_output": {
+    "pages": 1,
+    "visuals": 6,
+    "theme_applied": false
+  },
+  "tmdl_stats": {
+    "tables": 5
+  }
+}

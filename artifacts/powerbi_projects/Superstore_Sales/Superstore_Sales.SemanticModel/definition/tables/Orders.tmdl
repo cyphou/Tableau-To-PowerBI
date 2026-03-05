@@ -1,0 +1,239 @@
+table Orders
+	lineageTag: dcda2eaf-e67f-444f-97b9-0254c95d62f7
+
+	measure 'Total Sales' = SUM('Orders'[Sales])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 7267514d-af16-47c6-a110-2311d6108fe9
+
+	measure 'Total Profit' = SUM('Orders'[Profit])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 29d016e5-b9e4-45ed-b56a-c5844593ba5c
+
+	measure 'Profit Ratio' = SUM('Orders'[Profit]) / SUM('Orders'[Sales])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 01129f21-b5b6-4bda-b345-20e0c299cfad
+
+	measure 'Number of Orders' = DISTINCTCOUNT('Orders'[Order ID])
+		displayFolder: Measures
+		lineageTag: 90dc11e4-ddea-478d-8d05-d7787dbccc79
+
+	column 'Row ID'
+		dataType: int64
+		lineageTag: 6c5a4af3-4d19-427b-a1c3-a1db2171cb6c
+		summarizeBy: sum
+		sourceColumn: 'Row ID'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Order ID'
+		dataType: string
+		lineageTag: 100bd957-20d1-4a68-886e-34cd6aa07558
+		summarizeBy: none
+		sourceColumn: 'Order ID'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Order Date'
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 567071b3-07e9-4c56-a9ce-237aabb760f4
+		summarizeBy: none
+		sourceColumn: 'Order Date'
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Ship Date'
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: c2908b65-11ac-4e68-b4ba-aa4d6560d287
+		summarizeBy: none
+		sourceColumn: 'Ship Date'
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Ship Mode'
+		dataType: string
+		lineageTag: 252273b2-35a1-4ba5-8efa-79cd981ee0ab
+		summarizeBy: none
+		sourceColumn: 'Ship Mode'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Customer ID'
+		dataType: string
+		lineageTag: 772fe1d7-b349-4351-b8cb-2c8e40f08b77
+		summarizeBy: none
+		sourceColumn: 'Customer ID'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Customer Name'
+		dataType: string
+		lineageTag: 88e2cd4c-9fc2-475a-bc82-4c884ccb5aa2
+		summarizeBy: none
+		sourceColumn: 'Customer Name'
+
+		annotation SummarizationSetBy = Automatic
+
+	column Segment
+		dataType: string
+		lineageTag: 7a1877e9-d948-4859-8543-1d67778cc927
+		summarizeBy: none
+		sourceColumn: Segment
+
+		annotation SummarizationSetBy = Automatic
+
+	column Country
+		dataType: string
+		lineageTag: 95a5ef23-8d36-46b9-92bb-f267ac97ff59
+		summarizeBy: none
+		sourceColumn: Country
+		dataCategory: Country
+
+		annotation SummarizationSetBy = Automatic
+
+	column City
+		dataType: string
+		lineageTag: f6349db4-3e41-4f50-8143-860a223cc663
+		summarizeBy: none
+		sourceColumn: City
+		dataCategory: City
+
+		annotation SummarizationSetBy = Automatic
+
+	column State
+		dataType: string
+		lineageTag: 8b8f80d4-79e0-4f37-a8fb-515c08c54727
+		summarizeBy: none
+		sourceColumn: State
+		dataCategory: StateOrProvince
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Postal Code'
+		dataType: int64
+		lineageTag: 234a7f88-16d7-4333-bbe2-fd98faad2746
+		summarizeBy: sum
+		sourceColumn: 'Postal Code'
+		dataCategory: PostalCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column Region
+		dataType: string
+		lineageTag: 342d1a3b-c7b6-472a-8e77-7ff6a70b64ec
+		summarizeBy: none
+		sourceColumn: Region
+		dataCategory: StateOrProvince
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Product ID'
+		dataType: string
+		lineageTag: a1c40ac2-3830-48fd-b14d-41201925bd9c
+		summarizeBy: none
+		sourceColumn: 'Product ID'
+
+		annotation SummarizationSetBy = Automatic
+
+	column Category
+		dataType: string
+		lineageTag: effe4de7-5967-4518-ad16-6e4762c95434
+		summarizeBy: none
+		sourceColumn: Category
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Sub-Category'
+		dataType: string
+		lineageTag: 43bbcf18-b908-4591-a7f5-b89fb4c2d754
+		summarizeBy: none
+		sourceColumn: 'Sub-Category'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Product Name'
+		dataType: string
+		lineageTag: dc327e41-0f9e-4061-811d-c0bb838335f5
+		summarizeBy: none
+		sourceColumn: 'Product Name'
+
+		annotation SummarizationSetBy = Automatic
+
+	column Sales
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 833869fa-ab23-4a8e-aa65-5603e975aa44
+		summarizeBy: sum
+		sourceColumn: Sales
+
+		annotation SummarizationSetBy = Automatic
+
+	column Quantity
+		dataType: int64
+		lineageTag: aef96351-6c98-450e-a3d2-0ca8f47054a3
+		summarizeBy: sum
+		sourceColumn: Quantity
+
+		annotation SummarizationSetBy = Automatic
+
+	column Discount
+		dataType: double
+		formatString: #,0.00
+		lineageTag: a743b4b2-baf9-426d-ac06-99c7834b586c
+		summarizeBy: sum
+		sourceColumn: Discount
+
+		annotation SummarizationSetBy = Automatic
+
+	column Profit
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 02514c0f-d5d6-4407-b5c7-a6694cc878c7
+		summarizeBy: sum
+		sourceColumn: Profit
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Orders-ccd0aba5-764a-416d-a88c-4eec085476ad' = m
+		mode: import
+		source =
+				let
+				    // Source Excel: Sample - Superstore.xlsx
+				    Source = Excel.Workbook(File.Contents(DataFolder & "\Sample - Superstore.xlsx"), null, true),
+				    #"Orders Sheet" = Source{[Item="Orders",Kind="Sheet"]}[Data],
+				    #"Promoted Headers" = Table.PromoteHeaders(#"Orders Sheet", [PromoteAllScalars=true]),
+				    #"Changed Types" = Table.TransformColumnTypes(#"Promoted Headers", {
+				        {"Row ID", Int64.Type},
+				        {"Order ID", type text},
+				        {"Order Date", type date},
+				        {"Ship Date", type date},
+				        {"Ship Mode", type text},
+				        {"Customer ID", type text},
+				        {"Customer Name", type text},
+				        {"Segment", type text},
+				        {"Country", type text},
+				        {"City", type text},
+				        {"State", type text},
+				        {"Postal Code", Int64.Type},
+				        {"Region", type text},
+				        {"Product ID", type text},
+				        {"Category", type text},
+				        {"Sub-Category", type text},
+				        {"Product Name", type text},
+				        {"Sales", type number},
+				        {"Quantity", Int64.Type},
+				        {"Discount", type number},
+				        {"Profit", type number}
+				    }),
+				    Result = #"Changed Types"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+

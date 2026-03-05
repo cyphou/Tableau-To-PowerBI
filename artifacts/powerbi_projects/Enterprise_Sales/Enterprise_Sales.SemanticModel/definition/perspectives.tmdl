@@ -1,0 +1,6 @@
+perspective 'Full Model'
+	perspectiveTable Orders
+	perspectiveTable Customers
+	perspectiveTable Calendar
+	perspectiveTable 'Target Margin'
+	perspectiveTable 'Top N'

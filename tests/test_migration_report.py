@@ -201,7 +201,39 @@ class TestBulkMethods(unittest.TestCase):
         r = MigrationReport("T")
         r.add_user_filters([{'name': 'Region Filter'}])
         self.assertEqual(r.items[0]['category'], 'rls_role')
+        self.assertEqual(r.items[0]['status'], 'exact')
+
+    def test_add_user_filters_ismemberof_approximate(self):
+        r = MigrationReport("T")
+        r.add_user_filters([{
+            'name': 'Manager Access',
+            'type': 'calculated_security',
+            'ismemberof_groups': ['Managers'],
+            'functions_used': ['ISMEMBEROF']
+        }])
+        self.assertEqual(r.items[0]['category'], 'rls_role')
         self.assertEqual(r.items[0]['status'], 'approximate')
+        self.assertIn('Managers', r.items[0]['note'])
+
+    def test_add_user_filters_username_exact(self):
+        r = MigrationReport("T")
+        r.add_user_filters([{
+            'name': 'Current User',
+            'type': 'calculated_security',
+            'functions_used': ['USERNAME']
+        }])
+        self.assertEqual(r.items[0]['category'], 'rls_role')
+        self.assertEqual(r.items[0]['status'], 'exact')
+
+    def test_add_user_filters_explicit_mappings_exact(self):
+        r = MigrationReport("T")
+        r.add_user_filters([{
+            'name': 'Region Access',
+            'type': 'user_filter',
+            'user_mappings': {'alice@co': ['East']}
+        }])
+        self.assertEqual(r.items[0]['category'], 'rls_role')
+        self.assertEqual(r.items[0]['status'], 'exact')
 
     def test_add_calculations_exact(self):
         r = MigrationReport("T")
