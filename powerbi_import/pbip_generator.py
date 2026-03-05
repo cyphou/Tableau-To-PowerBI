@@ -1012,6 +1012,7 @@ class PowerBIProjectGenerator:
                 main_table = tname
         
         # Phase 3: Map columns of each physical table
+        #   Also track physical measure columns (role='measure' from Tableau)
         for tname, t in best_tables.items():
             for col in t.get('columns', []):
                 cname = col.get('name', '?')
@@ -1020,7 +1021,19 @@ class PowerBIProjectGenerator:
         # Phase 4: Map Tableau calculations (rawID -> caption/friendly name)
         # Measures are on the main table
         measures_table = main_table or 'Table'
-        self._measure_names = set()  # Track which fields are measures (not dimensions)
+        self._measure_names = set()  # Track which fields are measures (not dimensions) — for bucket assignment
+        self._bim_measure_names = set()  # Track only named BIM measures — for Measure vs Column wrapper
+
+        # Phase 4a: Physical columns with role='measure' (from Tableau XML)
+        #   These go into _measure_names for visual bucket classification (Y not Category)
+        #   but NOT into _bim_measure_names (they're physical columns, not DAX measures)
+        for tname, t in best_tables.items():
+            for col in t.get('columns', []):
+                if col.get('role', '') == 'measure':
+                    cname = col.get('name', '?')
+                    self._measure_names.add(cname)
+
+        # Phase 4b: Calculated measures — these are both visual measures AND BIM measures
         for ds in datasources:
             for calc in ds.get('calculations', []):
                 raw_name = calc.get('name', '').replace('[', '').replace(']', '')
@@ -1033,8 +1046,10 @@ class PowerBIProjectGenerator:
                 # Track measure names for Category vs Y assignment
                 if calc.get('role', '') == 'measure':
                     self._measure_names.add(raw_name)
+                    self._bim_measure_names.add(raw_name)
                     if caption:
                         self._measure_names.add(caption)
+                        self._bim_measure_names.add(caption)
         
         # Also gather measure names from top-level calculations
         for calc in converted_objects.get('calculations', []):
@@ -1042,8 +1057,10 @@ class PowerBIProjectGenerator:
                 raw_name = calc.get('name', '').replace('[', '').replace(']', '')
                 caption = calc.get('caption', raw_name)
                 self._measure_names.add(raw_name)
+                self._bim_measure_names.add(raw_name)
                 if caption:
                     self._measure_names.add(caption)
+                    self._bim_measure_names.add(caption)
         
         # Phase 5: Map extracted groups (BIM-generated calculated columns)
         groups = converted_objects.get('groups', [])
@@ -1201,7 +1218,8 @@ class PowerBIProjectGenerator:
     
     def _make_projection_entry(self, field):
         """Creates a projection entry for a field, resolved to the Power BI model.
-        Uses 'Measure' wrapper for measures, 'Column' wrapper for dimensions."""
+        Uses 'Measure' wrapper for named BIM measures, 'Column' wrapper for
+        physical columns (PBI Desktop auto-aggregates numeric columns in value buckets)."""
         raw_name = field.get('name', 'Field')
         
         # Clean all known Tableau prefixes
@@ -1216,9 +1234,12 @@ class PowerBIProjectGenerator:
             entity = field.get('datasource', 'Table')
             prop = clean_name
         
-        # Use Measure wrapper for measures, Column wrapper for dimensions
-        is_measure = self._is_measure_field(clean_name)
-        field_type = "Measure" if is_measure else "Column"
+        # Use Measure wrapper ONLY for named BIM measures (DAX definitions),
+        # Column wrapper for everything else (PBI auto-aggregates numeric columns)
+        is_bim_measure = hasattr(self, '_bim_measure_names') and (
+            clean_name in self._bim_measure_names or prop in self._bim_measure_names
+        )
+        field_type = "Measure" if is_bim_measure else "Column"
         
         return {
             "field": {

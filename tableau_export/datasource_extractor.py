@@ -296,9 +296,11 @@ def extract_tables_with_columns(datasource_elem, connection_map=None):
         columns = []
         for col_elem in relation.findall('./columns/column'):
             raw_name = col_elem.get('name', '')
+            datatype = col_elem.get('datatype', 'string')
             column = {
                 'name': _reverse_tableau_bracket_escape(raw_name),
-                'datatype': col_elem.get('datatype', 'string'),
+                'datatype': datatype,
+                'role': 'measure' if datatype in ('real', 'integer') else 'dimension',
                 'ordinal': int(col_elem.get('ordinal', 0)),
                 'length': col_elem.get('length', None),
                 'nullable': col_elem.get('nullable', 'true') == 'true'
@@ -346,9 +348,20 @@ def extract_tables_with_columns(datasource_elem, connection_map=None):
             # Skip user-filter columns
             if col_elem.get('user:auto-column', '') == 'sheet_link':
                 continue
+            datatype = col_elem.get('datatype', 'string')
+            # Infer role: explicit role attribute takes precedence,
+            # otherwise numeric types default to 'measure' (Tableau convention)
+            explicit_role = col_elem.get('role', '')
+            if explicit_role:
+                role = explicit_role
+            elif datatype in ('real', 'integer'):
+                role = 'measure'
+            else:
+                role = 'dimension'
             ds_columns[col_name] = {
                 'name': col_name.strip('[]'),
-                'datatype': col_elem.get('datatype', 'string'),
+                'datatype': datatype,
+                'role': role,
                 'ordinal': 0,
                 'length': None,
                 'nullable': True
@@ -366,6 +379,23 @@ def extract_tables_with_columns(datasource_elem, connection_map=None):
                     ordinal += 1
                     table['columns'].append(col)
     
+    # Phase 2.5: Override column roles from datasource-level <column> elements.
+    # Users may override Tableau's default role (e.g. set an integer column
+    # like "Row ID" to dimension). These overrides are stored at the
+    # datasource level as explicit role attributes.
+    ds_role_overrides = {}
+    for col_elem in datasource_elem.findall('./column'):
+        col_name = col_elem.get('name', '').strip('[]')
+        explicit_role = col_elem.get('role', '')
+        if col_name and explicit_role:
+            ds_role_overrides[col_name] = explicit_role
+    if ds_role_overrides:
+        for table in raw_tables.values():
+            for col in table.get('columns', []):
+                cname = col.get('name', '')
+                if cname in ds_role_overrides:
+                    col['role'] = ds_role_overrides[cname]
+
     # Phase 3: Filter out 0-column tables when other tables have columns
     # (e.g. Tableau extract artifacts like 'Extract' tables in .twbx files)
     tables = list(raw_tables.values())

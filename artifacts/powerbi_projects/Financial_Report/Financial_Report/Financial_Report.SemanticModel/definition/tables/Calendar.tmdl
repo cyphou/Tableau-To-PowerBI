@@ -1,0 +1,136 @@
+table Calendar
+	lineageTag: 88887a97-d3dd-46f6-8ac5-5a89fcd279d4
+
+	measure 'Year To Date' = TOTALYTD([Budget Variance], 'Calendar'[Date])
+		formatString: #,0.00
+		displayFolder: Time Intelligence
+		lineageTag: 010ca6cd-46c8-4d7a-a8b1-993b89e7b79d
+
+	measure 'Previous Year' = CALCULATE([Budget Variance], SAMEPERIODLASTYEAR('Calendar'[Date]))
+		formatString: #,0.00
+		displayFolder: Time Intelligence
+		lineageTag: f2ccbe32-fc8d-4996-a220-bf9fdbf740d3
+
+	measure 'Year Over Year %' = DIVIDE([Year To Date] - [Previous Year], [Previous Year], 0)
+		formatString: 0.00%
+		displayFolder: Time Intelligence
+		lineageTag: 12b0bc5a-871a-4b74-bf20-92354fca6c58
+
+	column Date
+		dataType: dateTime
+		formatString: dd/mm/yyyy
+		lineageTag: 0fa9dd3c-235a-46bf-9819-f8dbfcec31c4
+		summarizeBy: none
+		sourceColumn: Date
+		isKey
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column Year
+		dataType: int64
+		lineageTag: 054c2d53-d3cf-4f14-b1d2-6da9caad5a83
+		summarizeBy: none
+		sourceColumn: Year
+		dataCategory: Years
+
+		annotation SummarizationSetBy = Automatic
+
+	column Quarter
+		dataType: string
+		lineageTag: cbc246a8-961f-44dd-9b53-65e25552e95b
+		summarizeBy: none
+		sourceColumn: Quarter
+
+		annotation SummarizationSetBy = Automatic
+
+	column Month
+		dataType: int64
+		lineageTag: 31af5837-1a12-4977-b843-40335ed96a1f
+		summarizeBy: none
+		sourceColumn: Month
+		dataCategory: Months
+
+		annotation SummarizationSetBy = Automatic
+
+	column MonthName
+		dataType: string
+		lineageTag: 30151c79-1399-42f6-8bf5-8253cc3034f4
+		summarizeBy: none
+		sourceColumn: MonthName
+		sortByColumn: Month
+
+		annotation SummarizationSetBy = Automatic
+
+	column Day
+		dataType: int64
+		lineageTag: 2a187e6b-e993-4bf5-8d3e-4e2e8cc13cf3
+		summarizeBy: none
+		sourceColumn: Day
+		dataCategory: Days
+
+		annotation SummarizationSetBy = Automatic
+
+	column DayOfWeek
+		dataType: int64
+		lineageTag: 94683084-44fc-476b-a48b-d852b8719ced
+		summarizeBy: none
+		sourceColumn: DayOfWeek
+
+		annotation SummarizationSetBy = Automatic
+
+	column DayName
+		dataType: string
+		lineageTag: dfd69bac-5736-45d9-b332-184f7fe38d3e
+		summarizeBy: none
+		sourceColumn: DayName
+		sortByColumn: DayOfWeek
+
+		annotation SummarizationSetBy = Automatic
+
+	hierarchy 'Date Hierarchy'
+		lineageTag: d2f54fc2-6169-4750-90e3-c5aa593bc83b
+
+		level Year
+			ordinal: 0
+			column: Year
+			lineageTag: 837d4346-efd2-477a-b44a-43cc61c0c771
+
+		level Quarter
+			ordinal: 1
+			column: Quarter
+			lineageTag: afa81504-2e4a-4bca-a2eb-4da3d0e7472c
+
+		level Month
+			ordinal: 2
+			column: MonthName
+			lineageTag: ea3d5207-f597-4d8e-9f73-2ca31be6e5d6
+
+		level Day
+			ordinal: 3
+			column: Day
+			lineageTag: 55753325-94a1-4368-9b0e-9df76b578a91
+
+
+	partition 'Calendar-823c57d2-d879-41db-ad85-bd6288677fa7' = m
+		mode: import
+		source =
+				let
+				    StartDate = #date(2020, 1, 1),
+				    EndDate = #date(2030, 12, 31),
+				    DayCount = Duration.Days(EndDate - StartDate) + 1,
+				    DateList = List.Dates(StartDate, DayCount, #duration(1, 0, 0, 0)),
+				    #"Date Table" = Table.FromList(DateList, Splitter.SplitByNothing(), {"Date"}, null, ExtraValues.Error),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Date Table", {{"Date", type date}}),
+				    #"Added Year" = Table.AddColumn(#"Changed Type", "Year", each Date.Year([Date]), Int64.Type),
+				    #"Added Quarter" = Table.AddColumn(#"Added Year", "Quarter", each "Q" & Text.From(Date.QuarterOfYear([Date]))),
+				    #"Added Month" = Table.AddColumn(#"Added Quarter", "Month", each Date.Month([Date]), Int64.Type),
+				    #"Added MonthName" = Table.AddColumn(#"Added Month", "MonthName", each Date.MonthName([Date])),
+				    #"Added Day" = Table.AddColumn(#"Added MonthName", "Day", each Date.Day([Date]), Int64.Type),
+				    #"Added DayOfWeek" = Table.AddColumn(#"Added Day", "DayOfWeek", each Date.DayOfWeek([Date], Day.Monday) + 1, Int64.Type),
+				    #"Added DayName" = Table.AddColumn(#"Added DayOfWeek", "DayName", each Date.DayOfWeekName([Date]))
+				in
+				    #"Added DayName"
+
+	annotation PBI_ResultType = Table
+

@@ -1,0 +1,16 @@
+relationship a9ebcfda-9218-4b5b-89b2-51e9bdea9606
+	fromColumn: Orders.customer_id
+	toColumn: Customers.customer_id
+	crossFilteringBehavior: oneDirection
+
+relationship 949a1b15-0324-4ddb-bb8c-ed731717816e
+	fromColumn: Orders.order_date
+	toColumn: Calendar.Date
+	crossFilteringBehavior: oneDirection
+
+relationship b5eb1f80-ec0f-49e7-b130-8589f4c23227
+	fromColumn: Customers.first_purchase_date
+	toColumn: Calendar.Date
+	crossFilteringBehavior: oneDirection
+	isActive: false
+

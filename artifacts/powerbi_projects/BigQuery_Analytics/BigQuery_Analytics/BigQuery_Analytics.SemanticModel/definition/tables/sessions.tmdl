@@ -1,0 +1,156 @@
+table sessions
+	lineageTag: 9bd5e324-1ed6-470e-884a-cb96cf657172
+
+	measure 'Total Sessions' = COUNT('sessions'[session_id])
+		displayFolder: Measures
+		lineageTag: 0d66a9cf-344c-4d2d-9d39-e949a455b26e
+
+	measure 'Unique Visitors' = DISTINCTCOUNT('sessions'[user_id])
+		displayFolder: Measures
+		lineageTag: 5aae8c9e-26fc-41fb-8fe6-c9732fdc40fe
+
+	measure 'Conversion Rate' = SUMX('sessions', IF('sessions'[converted], 1, 0)) / COUNT('sessions'[session_id])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 8697543f-d841-4c03-9669-a663bac6812c
+
+	measure 'Avg Session Duration' = AVERAGE('sessions'[session_duration])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 14c150dc-fc6e-4a65-9869-13dd85356d1f
+
+	measure 'Total Revenue' = SUM('sessions'[revenue])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: eacecc53-b4e4-4ab0-9b13-ad8978583de5
+
+	measure 'Revenue per Session' = SUM('sessions'[revenue]) / COUNT('sessions'[session_id])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 1cdfeeb7-775c-4ce1-ad5b-38c454e74fb9
+
+	measure 'Revenue by Channel' = CALCULATE(SUM('sessions'[revenue]), ALLEXCEPT('sessions', 'sessions'[channel]))
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: a69b6b08-5c18-4f56-8e63-e6abcdfb9b87
+
+	column session_id
+		dataType: string
+		lineageTag: 4c6bfbe5-75a8-4cb0-858a-be02315c1eae
+		summarizeBy: none
+		sourceColumn: session_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column session_date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 2437068c-5b76-454d-994f-a84392e0ce29
+		summarizeBy: none
+		sourceColumn: session_date
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column user_id
+		dataType: string
+		lineageTag: 9364d20b-7030-4755-80e2-62a0333d551e
+		summarizeBy: none
+		sourceColumn: user_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column channel
+		dataType: string
+		lineageTag: 1f9ed003-75b1-408d-b681-21d9d76c795b
+		summarizeBy: none
+		sourceColumn: channel
+
+		annotation SummarizationSetBy = Automatic
+
+	column device_type
+		dataType: string
+		lineageTag: 6411e762-39a2-4209-8e3a-df90f44f7ea5
+		summarizeBy: none
+		sourceColumn: device_type
+
+		annotation SummarizationSetBy = Automatic
+
+	column country
+		dataType: string
+		lineageTag: e22d53d8-14eb-412b-876b-87630af659bd
+		summarizeBy: none
+		sourceColumn: country
+		dataCategory: Country
+
+		annotation SummarizationSetBy = Automatic
+
+	column page_views
+		dataType: int64
+		lineageTag: fc6ce9e3-006c-4dff-aecd-a5b545c73ca6
+		summarizeBy: sum
+		sourceColumn: page_views
+
+		annotation SummarizationSetBy = Automatic
+
+	column session_duration
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 6f1a1890-eaf9-4322-8066-fcfea0f35a10
+		summarizeBy: sum
+		sourceColumn: session_duration
+
+		annotation SummarizationSetBy = Automatic
+
+	column converted
+		dataType: boolean
+		lineageTag: e96c93b9-c7f3-4074-98c7-3e0044c2507f
+		summarizeBy: none
+		sourceColumn: converted
+
+		annotation SummarizationSetBy = Automatic
+
+	column revenue
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 6ee30867-247d-4ce4-8119-cc06cf9b943a
+		summarizeBy: sum
+		sourceColumn: revenue
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Channel Category' = IF('sessions'[channel] = "Organic Search" || 'sessions'[channel] = "Paid Search", "Search", IF('sessions'[channel] = "Social" || 'sessions'[channel] = "Referral", "Social/Referral", IF('sessions'[channel] = "Direct", "Direct", "Other")))
+		dataType: string
+		lineageTag: 42163ac0-48e0-4f5e-8864-7ed2639ff520
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Engagement Level' = IF('sessions'[page_views] >= 10, "High", IF('sessions'[page_views] >= 5, "Medium", "Low"))
+		dataType: string
+		lineageTag: e477a531-90d5-486d-9c39-f3284fa2d58a
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Days Since Signup' = DATEDIFF(RELATED('users'[signup_date]), TODAY(), DAY)
+		dataType: int64
+		lineageTag: 8ec01c30-e239-49a5-8f76-2940573f4ba5
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'sessions-a2ee6357-0e8f-4358-8e6b-46be15c85226' = m
+		mode: import
+		source =
+				let
+				    // Source Google BigQuery: my-analytics-project.web_data
+				    Source = GoogleBigQuery.Database([BillingProject="my-analytics-project"]),
+				    #"web_data" = Source{[Name="web_data"]}[Data],
+				    #"sessions Table" = #"web_data"{[Name="sessions"]}[Data],
+				    Result = #"sessions Table"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+

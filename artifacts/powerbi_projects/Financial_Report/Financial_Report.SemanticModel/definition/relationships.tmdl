@@ -1,5 +1,0 @@
-relationship d14b19fa-fd5d-48a4-b7ce-c9f0578b4aff
-	fromColumn: transactions.transaction_date
-	toColumn: Calendar.Date
-	crossFilteringBehavior: oneDirection
-
