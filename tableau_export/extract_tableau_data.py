@@ -298,22 +298,110 @@ class TableauExtractor:
     # Helper methods
     
     def determine_chart_type(self, worksheet):
-        """Determines the chart type from the Tableau mark type"""
+        """Determines the chart type from the Tableau mark type.
+        
+        When the mark class is 'Automatic', infers the visual type from
+        field shelf assignments (columns/rows/color) instead of defaulting
+        to 'table'.
+        """
+        mark_class = None
         # Search for the mark class in panes
         for pane in worksheet.findall('.//pane'):
             mark = pane.find('.//mark')
             if mark is not None and mark.get('class'):
-                return self._map_tableau_mark_to_type(mark.get('class'))
+                mark_class = mark.get('class')
+                break
         
         # Search in style/mark
-        for mark in worksheet.findall('.//style/mark'):
-            if mark.get('class'):
-                return self._map_tableau_mark_to_type(mark.get('class'))
+        if mark_class is None:
+            for mark in worksheet.findall('.//style/mark'):
+                if mark.get('class'):
+                    mark_class = mark.get('class')
+                    break
         
-        # Fallback
+        # Fallback: map encoding
+        if mark_class is None:
+            if worksheet.find('.//encoding/map') is not None:
+                return 'map'
+            return 'bar'
+        
+        # For explicit mark types, use the mapping directly
+        if mark_class != 'Automatic':
+            return self._map_tableau_mark_to_type(mark_class)
+        
+        # Automatic: infer from field shelf assignments
+        return self._infer_automatic_chart_type(worksheet)
+    
+    def _infer_automatic_chart_type(self, worksheet):
+        """Infers the chart type when Tableau uses 'Automatic' mark.
+        
+        Uses field shelf assignments (columns/rows) and field names to
+        determine the most appropriate Power BI visual type.
+        """
+        date_words = {'date', 'time', 'year', 'month', 'day', 'week', 'quarter',
+                      'datetime', 'timestamp', 'period', 'yr', 'mois'}
+        measure_words = {'sales', 'profit', 'revenue', 'amount', 'quantity', 'qty',
+                         'count', 'sum', 'total', 'price', 'cost', 'margin',
+                         'budget', 'forecast', 'actual', 'target', 'value',
+                         'weight', 'height', 'distance', 'rate', 'ratio',
+                         'score', 'index', 'number', 'num', 'avg', 'average'}
+        geo_words = {'latitude', 'longitude', 'lat', 'lon', 'lng',
+                     'zip', 'postal', 'geo', 'geolocation'}
+        # Geographic pairs that strongly indicate a map
+        geo_pairs = {('latitude', 'longitude'), ('lat', 'lon'), ('lat', 'lng')}
+
+        col_fields = []
+        row_fields = []
+
+        # Parse rows/cols shelf text for field references
+        for shelf_tag, target in [('cols', col_fields), ('rows', row_fields)]:
+            shelf = worksheet.find(f'./table/{shelf_tag}')
+            if shelf is not None and shelf.text:
+                refs = re.findall(r'\[([^\]]+)\]\.\[([^\]]+)\]', shelf.text)
+                for _, field_ref in refs:
+                    # Strip derivation/aggregation prefixes
+                    clean = re.sub(r'^(none|sum|avg|count|min|max|usr|yr|mn|dy|qr|wk|attr|md|mdy|hms|hr|mt|sc|thr|trunc):', '', field_ref)
+                    clean = re.sub(r':(nk|qk|ok|fn|tn)$', '', clean)
+                    clean = re.sub(r'^(pcto|pctd|diff|running_sum|running_avg|running_count|running_min|running_max|rank|rank_unique|rank_dense):(sum|avg|count|min|max|countd)?:?', '', clean)
+                    target.append(clean)
+
+        def _is_date(name):
+            return any(w in name.lower().split() for w in date_words)
+
+        def _is_measure(name):
+            return any(w in name.lower().split() for w in measure_words)
+
+        # Check for map encoding
         if worksheet.find('.//encoding/map') is not None:
             return 'map'
-        return 'bar'
+        # Check for geographic field pairs (lat+lon)
+        all_field_words = set()
+        for f in col_fields + row_fields:
+            all_field_words.update(f.lower().split())
+        for w1, w2 in geo_pairs:
+            if w1 in all_field_words and w2 in all_field_words:
+                return 'map'
+
+        all_row_measures = all(_is_measure(f) for f in row_fields) if row_fields else False
+        all_col_measures = all(_is_measure(f) for f in col_fields) if col_fields else False
+        has_date_col = any(_is_date(f) for f in col_fields)
+        has_date_row = any(_is_date(f) for f in row_fields)
+
+        # Two measures on rows + columns → scatter
+        if col_fields and row_fields and all_col_measures and all_row_measures:
+            return 'scatterChart'
+        # Date on columns/rows with a measure → line
+        if has_date_col and row_fields:
+            return 'lineChart'
+        if has_date_row and col_fields:
+            return 'lineChart'
+        # Dimension + measure → bar chart
+        if col_fields and row_fields:
+            return 'clusteredBarChart'
+        # Only has fields on one axis → table
+        if not col_fields and not row_fields:
+            return 'table'
+        return 'clusteredBarChart'
     
     def _map_tableau_mark_to_type(self, mark_class):
         """Maps Tableau mark types to Power BI visual types.
@@ -323,7 +411,7 @@ class TableauExtractor:
         """
         mark_map = {
             # ── Standard mark classes ──────────────────────────────
-            'Automatic': 'table',
+            'Automatic': 'clusteredBarChart',  # fallback; usually handled by _infer_automatic_chart_type
             'Bar': 'clusteredBarChart',
             'Stacked Bar': 'stackedBarChart',
             'Line': 'lineChart',

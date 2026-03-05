@@ -366,7 +366,13 @@ def extract_tables_with_columns(datasource_elem, connection_map=None):
                     ordinal += 1
                     table['columns'].append(col)
     
-    return list(raw_tables.values())
+    # Phase 3: Filter out 0-column tables when other tables have columns
+    # (e.g. Tableau extract artifacts like 'Extract' tables in .twbx files)
+    tables = list(raw_tables.values())
+    has_populated = any(t['columns'] for t in tables)
+    if has_populated:
+        tables = [t for t in tables if t['columns']]
+    return tables
 
 
 def extract_column_metadata(datasource_elem):
