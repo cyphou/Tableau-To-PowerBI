@@ -1348,6 +1348,10 @@ class PowerBIProjectGenerator:
         """Creates visual-level filters from worksheet filters"""
         visual_filters = []
         
+        # Tableau virtual fields that have no PBI equivalent
+        skip_fields = {'Measure Names', 'Measure Values', 'Multiple Values',
+                       ':Measure Names', ':Measure Values'}
+        
         for f in filters:
             field = f.get('field', '')
             if not field:
@@ -1355,6 +1359,10 @@ class PowerBIProjectGenerator:
             
             # Clean field name (remove Tableau brackets)
             clean_field = field.replace('[', '').replace(']', '')
+            
+            # Skip Tableau virtual fields (no PBI column exists)
+            if clean_field in skip_fields or field.replace('[', '').replace(']', '') in skip_fields:
+                continue
             
             # Resolve Entity (table) and Property (column) via mapping
             entity, prop = self._resolve_field_entity(clean_field)
@@ -1397,11 +1405,15 @@ class PowerBIProjectGenerator:
                     })
                 if conditions:
                     pbi_filter["filter"]["Where"] = [{"Condition": c} for c in conditions]
-                visual_filters.append(pbi_filter)
+                    visual_filters.append(pbi_filter)
             else:
                 # Categorical filter
                 values = f.get('values', [])
                 is_exclude = f.get('exclude', False)
+                
+                # Skip categorical filters with no values (empty Where breaks PBI)
+                if not values:
+                    continue
                 
                 pbi_filter = {
                     "name": f"Filter_{uuid.uuid4().hex[:12]}",
@@ -1419,16 +1431,15 @@ class PowerBIProjectGenerator:
                     }
                 }
                 
-                if values:
-                    condition = {
-                        "In": {
-                            "Expressions": [{"Column": {"Expression": {"SourceRef": {"Source": "t"}}, "Property": prop}}],
-                            "Values": [[{"Literal": {"Value": f"'{v}'"}}] for v in values[:100]]
-                        }
+                condition = {
+                    "In": {
+                        "Expressions": [{"Column": {"Expression": {"SourceRef": {"Source": "t"}}, "Property": prop}}],
+                        "Values": [[{"Literal": {"Value": f"'{v}'"}}] for v in values[:100]]
                     }
-                    if is_exclude:
-                        condition = {"Not": {"Expression": condition}}
-                    pbi_filter["filter"]["Where"].append({"Condition": condition})
+                }
+                if is_exclude:
+                    condition = {"Not": {"Expression": condition}}
+                pbi_filter["filter"]["Where"].append({"Condition": condition})
                 
                 visual_filters.append(pbi_filter)
         
