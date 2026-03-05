@@ -260,6 +260,20 @@ class PowerBIProjectGenerator:
         visual_type = ws_data.get('chart_type', 'clusteredBarChart') if ws_data else 'clusteredBarChart'
         ws_name = obj.get('worksheetName', '')
 
+        # Validate scatter chart: needs at least one measure for X/Y axes.
+        # Circle/Shape marks sometimes produce scatterChart but lack measures.
+        if visual_type == 'scatterChart' and ws_data:
+            skip_names = {'Measure Names', 'Measure Values', 'Multiple Values',
+                          ':Measure Names', ':Measure Values'}
+            fields = ws_data.get('fields', [])
+            has_measure = any(
+                self._is_measure_field(self._clean_field_name(f.get('name', '')))
+                for f in fields
+                if self._clean_field_name(f.get('name', '')) not in skip_names
+            )
+            if not has_measure:
+                visual_type = 'table'
+
         visual_json = {
             "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
             "name": visual_id,
@@ -822,6 +836,19 @@ class PowerBIProjectGenerator:
                 
                 visual_type = ws.get('chart_type', 'clusteredBarChart')
                 ws_name = ws.get('name', f'Visual {idx+1}')
+
+                # Validate scatter chart has measures for X/Y
+                if visual_type == 'scatterChart':
+                    skip_names = {'Measure Names', 'Measure Values', 'Multiple Values',
+                                  ':Measure Names', ':Measure Values'}
+                    fields = ws.get('fields', [])
+                    has_measure = any(
+                        self._is_measure_field(self._clean_field_name(f.get('name', '')))
+                        for f in fields
+                        if self._clean_field_name(f.get('name', '')) not in skip_names
+                    )
+                    if not has_measure:
+                        visual_type = 'table'
                 
                 visual_json = {
                     "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
@@ -1144,17 +1171,17 @@ class PowerBIProjectGenerator:
                     "projections": [self._make_projection_entry(f) for f in all_fields[:10]]
                 }
         elif visual_type == 'scatterChart':
-            # Scatter chart: dims → Category (Details), measures → X then Y
+            # Scatter chart: dims → Category (Details), measures → X/Y (aggregated)
             if dim_fields:
                 query_state["Category"] = self._make_projection(dim_fields[0])
             if len(mea_fields) >= 2:
-                query_state["X"] = self._make_projection(mea_fields[0])
-                query_state["Y"] = self._make_projection(mea_fields[1])
+                query_state["X"] = self._make_scatter_axis_projection(mea_fields[0])
+                query_state["Y"] = self._make_scatter_axis_projection(mea_fields[1])
             elif len(mea_fields) == 1:
-                query_state["Y"] = self._make_projection(mea_fields[0])
+                query_state["Y"] = self._make_scatter_axis_projection(mea_fields[0])
             # If 3+ measures, third becomes Size (bubble)
             if len(mea_fields) >= 3:
-                query_state["Size"] = self._make_projection(mea_fields[2])
+                query_state["Size"] = self._make_scatter_axis_projection(mea_fields[2])
         elif visual_type in ('gauge', 'kpi'):
             # Gauge/KPI: first measure → Value, second → Target
             if mea_fields:
@@ -1214,6 +1241,58 @@ class PowerBIProjectGenerator:
         """Creates a simple projection for a field"""
         return {
             "projections": [self._make_projection_entry(field)]
+        }
+
+    def _make_scatter_axis_projection(self, field):
+        """Creates a projection for scatter chart X/Y/Size axes.
+        BIM measures use Measure wrapper; physical columns use Aggregation
+        wrapper (Sum) since scatter axes require explicit aggregation."""
+        return {
+            "projections": [self._make_scatter_axis_entry(field)]
+        }
+
+    def _make_scatter_axis_entry(self, field):
+        """Creates projection entry for scatter chart axes.
+        Named DAX measures → Measure wrapper.
+        Physical columns → Aggregation wrapper with Function 0 (Sum)."""
+        raw_name = field.get('name', 'Field')
+        clean_name = self._clean_field_name(raw_name)
+
+        if hasattr(self, '_field_map') and clean_name in self._field_map:
+            entity, prop = self._field_map[clean_name]
+        else:
+            entity = field.get('datasource', 'Table')
+            prop = clean_name
+
+        is_bim_measure = hasattr(self, '_bim_measure_names') and (
+            clean_name in self._bim_measure_names or prop in self._bim_measure_names
+        )
+
+        if is_bim_measure:
+            field_ref = {
+                "Measure": {
+                    "Expression": {"SourceRef": {"Entity": entity}},
+                    "Property": prop
+                }
+            }
+        else:
+            # Physical column: wrap as Aggregation (Sum) for scatter axes
+            field_ref = {
+                "Aggregation": {
+                    "Expression": {
+                        "Column": {
+                            "Expression": {"SourceRef": {"Entity": entity}},
+                            "Property": prop
+                        }
+                    },
+                    "Function": 0
+                }
+            }
+
+        return {
+            "field": field_ref,
+            "queryRef": f"{entity}.{prop}",
+            "active": True
         }
     
     def _make_projection_entry(self, field):

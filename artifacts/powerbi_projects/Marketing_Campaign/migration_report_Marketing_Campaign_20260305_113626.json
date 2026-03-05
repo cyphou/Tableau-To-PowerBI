@@ -1,0 +1,261 @@
+{
+  "report_name": "Marketing_Campaign",
+  "created_at": "2026-03-05T11:36:26.646808",
+  "summary": {
+    "total_items": 34,
+    "exact": 34,
+    "approximate": 0,
+    "placeholder": 0,
+    "unsupported": 0,
+    "skipped": 0,
+    "fidelity_score": 100.0,
+    "by_category": {
+      "datasource": {
+        "total": 1,
+        "exact": 1
+      },
+      "calculation": {
+        "total": 25,
+        "exact": 25
+      },
+      "visual": {
+        "total": 5,
+        "exact": 5
+      },
+      "parameter": {
+        "total": 2,
+        "exact": 2
+      },
+      "bookmark": {
+        "total": 1,
+        "exact": 1
+      }
+    }
+  },
+  "items": [
+    {
+      "category": "datasource",
+      "name": "federated.marketing",
+      "status": "exact",
+      "note": "MySQL, 2 table(s)"
+    },
+    {
+      "category": "calculation",
+      "name": "Email Domain",
+      "status": "exact",
+      "source_formula": "MID([email], FIND([email], \"@\") + 1, LEN([email]))",
+      "dax": "MID(RELATED('Leads'[email]), FIND(\"@\", RELATED('Leads'[email])) + 1, LEN(RELATED('Leads'[email])))"
+    },
+    {
+      "category": "calculation",
+      "name": "First Name",
+      "status": "exact",
+      "source_formula": "LEFT([lead_name], FIND([lead_name], \" \") - 1)",
+      "dax": "LEFT(RELATED('Leads'[lead_name]), FIND(\" \", RELATED('Leads'[lead_name])) - 1)"
+    },
+    {
+      "category": "calculation",
+      "name": "Last Name",
+      "status": "exact",
+      "source_formula": "MID([lead_name], FIND([lead_name], \" \") + 1, LEN([lead_name]))",
+      "dax": "MID(RELATED('Leads'[lead_name]), FIND(\" \", RELATED('Leads'[lead_name])) + 1, LEN(RELATED('Leads'[lead_name])))"
+    },
+    {
+      "category": "calculation",
+      "name": "Name Length",
+      "status": "exact",
+      "source_formula": "LEN([lead_name])",
+      "dax": "LEN(RELATED('Leads'[lead_name]))"
+    },
+    {
+      "category": "calculation",
+      "name": "Clean Phone",
+      "status": "exact",
+      "source_formula": "TRIM(REPLACE(REPLACE([phone], \"-\", \"\"), \" \", \"\"))",
+      "dax": "TRIM(SUBSTITUTE(SUBSTITUTE(RELATED('Leads'[phone]), \"-\", \"\"), \" \", \"\"))"
+    },
+    {
+      "category": "calculation",
+      "name": "Phone Last 4",
+      "status": "exact",
+      "source_formula": "RIGHT([phone], 4)",
+      "dax": "RIGHT(RELATED('Leads'[phone]), 4)"
+    },
+    {
+      "category": "calculation",
+      "name": "Campaign Code",
+      "status": "exact",
+      "source_formula": "UPPER(LEFT([channel], 3)) + \"-\" + STR([campaign_id]) + SPACE(5 - LEN(STR([campaign_id])))",
+      "dax": "UPPER(LEFT('Campaigns'[channel], 3)) & \"-\" & FORMAT('Campaigns'[campaign_id], \"0\") & REPT(\" \", 5 - LEN(FORMAT('Campaigns'[campaign_id], \"0\")))"
+    },
+    {
+      "category": "calculation",
+      "name": "Is Enterprise",
+      "status": "exact",
+      "source_formula": "CONTAINS([target_audience], \"Enterprise\")",
+      "dax": "CONTAINSSTRING('Campaigns'[target_audience], \"Enterprise\")"
+    },
+    {
+      "category": "calculation",
+      "name": "Has Valid UTM",
+      "status": "exact",
+      "source_formula": "REGEXP_MATCH([utm_campaign], \"^[a-z0-9_-]+$\")",
+      "dax": "CONTAINSSTRING('Campaigns'[utm_campaign], \"^'Campaigns'[a-z0-9_-]+$\")"
+    },
+    {
+      "category": "calculation",
+      "name": "Clean URL",
+      "status": "exact",
+      "source_formula": "REGEXP_REPLACE([creative_url], \"https?://\", \"\")",
+      "dax": "SUBSTITUTE('Campaigns'[creative_url], \"https?://\", \"\")"
+    },
+    {
+      "category": "calculation",
+      "name": "Campaign Year",
+      "status": "exact",
+      "source_formula": "DATETRUNC(\"year\", [start_date])",
+      "dax": "DATE(YEAR('Campaigns'[start_date]), 1, 1)"
+    },
+    {
+      "category": "calculation",
+      "name": "Start Month",
+      "status": "exact",
+      "source_formula": "DATEPART(\"month\", [start_date])",
+      "dax": "MONTH('Campaigns'[start_date])"
+    },
+    {
+      "category": "calculation",
+      "name": "Month Name",
+      "status": "exact",
+      "source_formula": "DATENAME(\"month\", [start_date])",
+      "dax": "FORMAT('Campaigns'[start_date], \"MMMM\")"
+    },
+    {
+      "category": "calculation",
+      "name": "Campaign Days",
+      "status": "exact",
+      "source_formula": "DATEDIFF(\"day\", [start_date], [end_date])",
+      "dax": "DATEDIFF('Campaigns'[start_date], 'Campaigns'[end_date], DAY)"
+    },
+    {
+      "category": "calculation",
+      "name": "Non-Blank Leads",
+      "status": "exact",
+      "source_formula": "COUNTA([lead_name])",
+      "dax": "COUNTA('Leads'[lead_name])"
+    },
+    {
+      "category": "calculation",
+      "name": "Budget Deal Correlation",
+      "status": "exact",
+      "source_formula": "CORR([budget], [deal_value])",
+      "dax": "VAR _MeanX = AVERAGEX(ALL('Table'), 'Campaigns'[budget]) VAR _MeanY = AVERAGEX(ALL('Table'), 'Leads'[deal_value]) VAR _Cov = SUMX(ALL('Table'), ('Campaigns'[budget] - _MeanX) * ('Leads'[deal_value] - _MeanY)) VAR _StdX = SQRT(SUMX(ALL('Table'), ('Campaigns'[budget] - _MeanX) ^ 2)) VAR _StdY = SQRT(SUMX(ALL('Table'), ('Leads'[deal_value] - _MeanY) ^ 2)) RETURN DIVIDE(_Cov, _StdX * _StdY, 0)"
+    },
+    {
+      "category": "calculation",
+      "name": "Spend Engagement Covar",
+      "status": "exact",
+      "source_formula": "COVAR([spend], [engagement_score])",
+      "dax": "VAR _MeanX = AVERAGEX(ALL('Table'), 'Campaigns'[spend]) VAR _MeanY = AVERAGEX(ALL('Table'), 'Leads'[engagement_score]) VAR _N = COUNTROWS(ALL('Table')) RETURN DIVIDE(SUMX(ALL('Table'), ('Campaigns'[spend] - _MeanX) * ('Leads'[engagement_score] - _MeanY)), _N - 1, 0)"
+    },
+    {
+      "category": "calculation",
+      "name": "Avg Deal by Channel",
+      "status": "exact",
+      "source_formula": "{INCLUDE [channel] : AVG([deal_value])}",
+      "dax": "CALCULATE(AVERAGE('Leads'[deal_value]))"
+    },
+    {
+      "category": "calculation",
+      "name": "Campaign ROI",
+      "status": "exact",
+      "source_formula": "(SUM([deal_value]) - SUM([spend])) / SUM([spend])",
+      "dax": "(SUM('Leads'[deal_value]) - SUM('Campaigns'[spend])) / SUM('Campaigns'[spend])"
+    },
+    {
+      "category": "calculation",
+      "name": "Cost Per Lead",
+      "status": "exact",
+      "source_formula": "SUM([spend]) / COUNTD([lead_id])",
+      "dax": "SUM('Campaigns'[spend]) / DISTINCTCOUNT('Leads'[lead_id])"
+    },
+    {
+      "category": "calculation",
+      "name": "Window Best ROI",
+      "status": "exact",
+      "source_formula": "WINDOW_MAX((SUM([deal_value]) - SUM([spend])) / SUM([spend]))",
+      "dax": "CALCULATE((SUM('Leads'[deal_value]) - SUM('Campaigns'[spend])) / SUM('Campaigns'[spend]), ALL('Campaigns'))"
+    },
+    {
+      "category": "calculation",
+      "name": "Window Worst ROI",
+      "status": "exact",
+      "source_formula": "WINDOW_MIN((SUM([deal_value]) - SUM([spend])) / SUM([spend]))",
+      "dax": "CALCULATE((SUM('Leads'[deal_value]) - SUM('Campaigns'[spend])) / SUM('Campaigns'[spend]), ALL('Campaigns'))"
+    },
+    {
+      "category": "calculation",
+      "name": "Cumulative Leads",
+      "status": "exact",
+      "source_formula": "RUNNING_COUNT(COUNTD([lead_id]))",
+      "dax": "CALCULATE(DISTINCTCOUNT('Leads'[lead_id]))"
+    },
+    {
+      "category": "calculation",
+      "name": "Budget Band",
+      "status": "exact",
+      "source_formula": "INT([budget] / 1000) * 1000",
+      "dax": "INT('Campaigns'[budget] / 1000) * 1000"
+    },
+    {
+      "category": "calculation",
+      "name": "Conversion Rate",
+      "status": "exact",
+      "source_formula": "SUM(IF [lead_status] = \"Won\" THEN 1 ELSE 0 END) / COUNT([lead_id])",
+      "dax": "SUMX('Leads', IF('Leads'[lead_status] = \"Won\", 1, 0)) / COUNT('Leads'[lead_id])"
+    },
+    {
+      "category": "visual",
+      "name": "Campaign Performance",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Lead Funnel",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Conversion Trend",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Budget Analysis",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Lead Details",
+      "status": "exact"
+    },
+    {
+      "category": "parameter",
+      "name": "[Parameters].[Min Budget]",
+      "status": "exact",
+      "note": "domain=range"
+    },
+    {
+      "category": "parameter",
+      "name": "[Parameters].[Target Channel]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "bookmark",
+      "name": "Campaign Review",
+      "status": "exact",
+      "note": "Converted to 3 bookmark(s)"
+    }
+  ]
+}

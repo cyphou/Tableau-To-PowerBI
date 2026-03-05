@@ -1,9 +1,9 @@
 table Customers
-	lineageTag: 5784ae2b-7ce2-4cac-9a6c-eba8386d2949
+	lineageTag: ce788419-87cd-4775-87cd-33ed54a359ce
 
 	column customer_id
 		dataType: int64
-		lineageTag: f6a1bcc9-f583-4eb0-9ad1-893a0c606ee0
+		lineageTag: 35c2a78e-db45-4309-9531-95514d94ce01
 		summarizeBy: sum
 		sourceColumn: customer_id
 
@@ -11,7 +11,7 @@ table Customers
 
 	column customer_name
 		dataType: string
-		lineageTag: a58b5d0f-5291-4d8f-afe8-287adca6356c
+		lineageTag: 4a578095-3af8-49b5-9fd7-0d94f1706018
 		summarizeBy: none
 		sourceColumn: customer_name
 
@@ -19,7 +19,7 @@ table Customers
 
 	column segment
 		dataType: string
-		lineageTag: 921edb3f-4d30-418c-a0d0-c523c81d9e18
+		lineageTag: 6c34ad28-f66f-46c5-8004-4926e1f161d5
 		summarizeBy: none
 		sourceColumn: segment
 
@@ -27,7 +27,7 @@ table Customers
 
 	column city
 		dataType: string
-		lineageTag: fcc380dd-65af-432e-a8b2-b3daf510b139
+		lineageTag: c2939cad-bd49-4461-8ee6-1c4d94895cea
 		summarizeBy: none
 		sourceColumn: city
 		dataCategory: City
@@ -36,7 +36,7 @@ table Customers
 
 	column state
 		dataType: string
-		lineageTag: afe44f47-a3dc-4cc8-b018-0d66ae44d60e
+		lineageTag: 2dd414ed-f2d9-4a8b-869c-53c884dbc337
 		summarizeBy: none
 		sourceColumn: state
 		dataCategory: StateOrProvince
@@ -45,7 +45,7 @@ table Customers
 
 	column country
 		dataType: string
-		lineageTag: 3690b32b-7615-4274-88a2-212e2e45df21
+		lineageTag: 1a188710-9c58-44a7-a0e9-6889b50cb89a
 		summarizeBy: none
 		sourceColumn: country
 		dataCategory: Country
@@ -54,7 +54,7 @@ table Customers
 
 	column postal_code
 		dataType: string
-		lineageTag: dfe66e63-49bb-4797-81e7-0e217a32392b
+		lineageTag: 97146527-f1af-4033-a47d-517cb919ceac
 		summarizeBy: none
 		sourceColumn: postal_code
 		dataCategory: PostalCode
@@ -64,7 +64,7 @@ table Customers
 	column latitude
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 186c43d1-0e40-4a1b-bfd7-17829a5ca040
+		lineageTag: b8368ed9-043a-4d04-bc2e-280fe051ddc4
 		summarizeBy: sum
 		sourceColumn: latitude
 		dataCategory: Latitude
@@ -74,7 +74,7 @@ table Customers
 	column longitude
 		dataType: double
 		formatString: #,0.00
-		lineageTag: caf296e0-75a1-48f4-94e9-ca0ff99c4960
+		lineageTag: 5588bfc9-7521-4c1c-a8a9-446f8d0a6e8a
 		summarizeBy: sum
 		sourceColumn: longitude
 		dataCategory: Longitude
@@ -83,7 +83,7 @@ table Customers
 
 	column customer_email
 		dataType: string
-		lineageTag: c891fcf4-6018-45e3-8f7a-86df2aa35b03
+		lineageTag: cba30ace-412c-44af-9716-6922f82de3d7
 		summarizeBy: none
 		sourceColumn: customer_email
 
@@ -92,14 +92,14 @@ table Customers
 	column first_purchase_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: b716b716-d0f8-4e63-a716-b0672eab4b33
+		lineageTag: c0176d2b-086f-48c5-b26a-296d7f5d3d47
 		summarizeBy: none
 		sourceColumn: first_purchase_date
 		dataCategory: DateTime
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Customers-125b1d2a-58bd-405b-a081-4228b4887d7a' = m
+	partition 'Customers-36af4994-392b-4ace-b1c8-c218a61f2c26' = m
 		mode: import
 		source =
 				let
