@@ -429,14 +429,18 @@ class TestMigrateCLI(unittest.TestCase):
     def test_setup_logging_exists(self):
         """Check that setup_logging function exists in migrate.py."""
         spec = importlib.util.spec_from_file_location('migrate', os.path.join(ROOT, 'migrate.py'))
+        assert spec is not None
         mod = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
         spec.loader.exec_module(mod)
         self.assertTrue(hasattr(mod, 'setup_logging'))
 
     def test_run_batch_migration_exists(self):
         """Check that run_batch_migration exists."""
         spec = importlib.util.spec_from_file_location('migrate', os.path.join(ROOT, 'migrate.py'))
+        assert spec is not None
         mod = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
         spec.loader.exec_module(mod)
         self.assertTrue(hasattr(mod, 'run_batch_migration'))
 
