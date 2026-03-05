@@ -35,11 +35,7 @@ wheels/
 Thumbs.db
 
 # Artifacts (conserver la structure mais ignorer les contenus)
-artifacts/powerbi_objects/*.json
-artifacts/powerbi_reports/*
-artifacts/conversion_logs/*.json
 artifacts/test_results/*.json
-artifacts/migration_reports/*.txt
 tableau_export/*.json
 tableau_export/*.twb
 tableau_export/*.twbx

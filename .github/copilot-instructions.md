@@ -26,15 +26,17 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
   - `tmdl_generator.py`: Unified semantic model generator — direct Tableau → TMDL (tables, columns, measures, relationships, hierarchies, sets/groups/bins, parameters, RLS, dataCategory, isHidden)
   - `visual_generator.py`: Visual container generator — 60+ visual type mappings, PBIR-native config templates, data role definitions, query state builder, slicer sync groups, cross-filtering disable, action button navigation, TopN filters, sort state, reference lines, conditional formatting
   - `import_to_powerbi.py`: Generation pipeline orchestrator (supports `--output-dir`)
+  - `m_query_generator.py`: Sample data M query generator
   - `validator.py`: Artifact validator — validates .pbip projects (JSON, TMDL, report structure) before opening in PBI Desktop
-  - `auth.py`: Azure AD authentication — Service Principal + Managed Identity (optional `azure-identity`)
-  - `client.py`: Fabric REST API client — auto-detects `requests` with retry, falls back to `urllib`
-  - `deployer.py`: Fabric deployment orchestrator — deploy datasets, reports, batch directories
-  - `utils.py`: `DeploymentReport` (pass/fail tracking), `ArtifactCache` (incremental deployment metadata)
-  - `config/settings.py`: Centralized config via env vars (FABRIC_WORKSPACE_ID, FABRIC_TENANT_ID, etc.)
-  - `config/environments.py`: Per-environment configs (development/staging/production)
-- **conversion/**: Legacy per-object-type converters (not used in the current pipeline)
-- **tests/**: Unit and integration tests (717 tests)
+  - `migration_report.py`: Per-item fidelity tracking and migration status reporting
+  - `deploy/`: Fabric deployment subpackage
+    - `auth.py`: Azure AD authentication — Service Principal + Managed Identity (optional `azure-identity`)
+    - `client.py`: Fabric REST API client — auto-detects `requests` with retry, falls back to `urllib`
+    - `deployer.py`: Fabric deployment orchestrator — deploy datasets, reports, batch directories
+    - `utils.py`: `DeploymentReport` (pass/fail tracking), `ArtifactCache` (incremental deployment metadata)
+    - `config/settings.py`: Centralized config via env vars (FABRIC_WORKSPACE_ID, FABRIC_TENANT_ID, etc.)
+    - `config/environments.py`: Per-environment configs (development/staging/production)
+- **tests/**: Unit and integration tests (725 tests)
 - **docs/**: FAQ, PBI project guide, mapping reference
 - **.github/workflows/ci.yml**: CI/CD pipeline (lint → test → validate → deploy)
 - **artifacts/**: Migration output (generated .pbip projects)

@@ -2,25 +2,15 @@
 
 Generates complete Power BI projects (`.pbip`) from extracted Tableau data.
 
-## Modules
+## Core Modules
 
 ### `import_to_powerbi.py`
 
-Main orchestrator. Reads `tableau_export/datasources.json` and generates the `.pbip` project.
+Main orchestrator. Reads extracted JSON and generates the `.pbip` project.
 
 ```bash
 python powerbi_import/import_to_powerbi.py
 ```
-
-### `enhanced_bim_generator.py`
-
-Builds the BIM (Business Intelligence Model) JSON:
-
-- **Physical tables**: columns with types, M partitions
-- **Calculated columns**: DAX formulas for `role=dimension` calculations
-- **Measures**: DAX formulas for `role=measure` calculations and parameters
-- **Relationships**: foreign keys between tables
-- **DAX context**: `calc_map`, `param_map`, `column_table_map`, `measure_names`, `param_values`
 
 ### `pbip_generator.py`
 
@@ -33,7 +23,7 @@ Generates the complete `.pbip` file structure:
 
 ### `tmdl_generator.py`
 
-Converts BIM JSON into TMDL (Tabular Model Definition Language) files:
+Converts extracted data into TMDL (Tabular Model Definition Language) files:
 
 - `database.tmdl` — compatibility
 - `model.tmdl` — culture, data source version
@@ -42,15 +32,36 @@ Converts BIM JSON into TMDL (Tabular Model Definition Language) files:
 
 ### `visual_generator.py`
 
-Generates JSON visual definitions for the report. Maps Tableau visual types to Power BI (bar chart, line chart, table, map, etc.).
+Generates JSON visual definitions for the report. Maps 60+ Tableau visual types to Power BI.
 
 ### `m_query_generator.py`
 
 Generates Power Query M queries for the different data source types.
 
-## Format de sortie
+### `validator.py`
 
-**PBIR v4.0** avec schemas :
+Validates `.pbip` projects (JSON, TMDL, report structure) before opening in PBI Desktop.
+
+### `migration_report.py`
+
+Per-item fidelity tracking and migration status reporting.
+
+## Deployment Subpackage (`deploy/`)
+
+Fabric deployment is in the `deploy/` subpackage:
+
+| Module | Responsibility |
+|--------|---------------|
+| `auth.py` | Azure AD authentication (Service Principal + Managed Identity) |
+| `client.py` | Fabric REST API client with retry logic |
+| `deployer.py` | Fabric deployment orchestrator |
+| `utils.py` | DeploymentReport, ArtifactCache |
+| `config/settings.py` | Centralized config via env vars |
+| `config/environments.py` | Per-environment configs (dev/staging/production) |
+
+## Output Format
+
+**PBIR v4.0** with schemas:
 - `report/3.1.0`
 - `page/2.0.0`
 - `visualContainer/2.5.0`

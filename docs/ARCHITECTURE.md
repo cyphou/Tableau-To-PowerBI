@@ -137,16 +137,20 @@ For environments without Mermaid rendering:
 | `pbip_generator.py` | .pbip project generator (PBIR v4.0 report, visuals, filters, bookmarks, slicers) |
 | `tmdl_generator.py` | Unified semantic model generator (TMDL: tables, columns, measures, relationships) |
 | `visual_generator.py` | Visual container generator (60+ visual types, data roles, config templates) |
+| `m_query_generator.py` | Sample data M query generator |
 | `validator.py` | Artifact validator (JSON, TMDL, DAX semantic validation) |
+| `migration_report.py` | Per-item fidelity tracking and migration status reporting |
+
+### `powerbi_import/deploy/` — Fabric Deployment
+
+| Module | Responsibility |
+|--------|---------------|
 | `auth.py` | Azure AD authentication (Service Principal + Managed Identity) |
 | `client.py` | Fabric REST API client with retry logic |
 | `deployer.py` | Fabric deployment orchestrator |
+| `utils.py` | DeploymentReport, ArtifactCache |
 | `config/settings.py` | Centralized config via env vars |
 | `config/environments.py` | Per-environment configs (dev/staging/production) |
-
-### `conversion/` — Legacy (Not Used in Current Pipeline)
-
-Old per-object-type converters from an earlier design. Kept for reference only.
 
 ## Data Flow Detail
 

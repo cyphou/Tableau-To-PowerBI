@@ -62,7 +62,6 @@ def _make_extractor(xml_string=None):
 def _make_generator():
     """Create a PowerBIProjectGenerator with temp dirs."""
     return PowerBIProjectGenerator(
-        converted_dir=tempfile.mkdtemp(),
         output_dir=tempfile.mkdtemp()
     )
 

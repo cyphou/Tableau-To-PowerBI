@@ -14,13 +14,8 @@ from pbip_generator import PowerBIProjectGenerator
 class PowerBIImporter:
     """Power BI object importer"""
     
-    def __init__(self, converted_dir='artifacts/powerbi_objects/', output_dir='artifacts/powerbi_reports/',
-                 source_dir=None):
-        self.converted_dir = converted_dir
-        self.output_dir = output_dir
+    def __init__(self, source_dir=None):
         self.source_dir = source_dir or 'tableau_export/'
-        
-        os.makedirs(self.output_dir, exist_ok=True)
     
     def import_all(self, generate_pbip=True, report_name=None, output_dir=None,
                    calendar_start=None, calendar_end=None, culture=None):
@@ -138,7 +133,6 @@ class PowerBIImporter:
             
             artifacts_dir = os.path.abspath('artifacts')
             generator = PowerBIProjectGenerator(
-                converted_dir=os.path.join(artifacts_dir, 'powerbi_objects'),
                 output_dir=projects_dir
             )
             

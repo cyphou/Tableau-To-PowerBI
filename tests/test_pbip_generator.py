@@ -30,7 +30,6 @@ from pbip_generator import PowerBIProjectGenerator
 def _make_generator():
     """Create a PowerBIProjectGenerator with temp dirs."""
     return PowerBIProjectGenerator(
-        converted_dir=tempfile.mkdtemp(),
         output_dir=tempfile.mkdtemp()
     )
 
@@ -387,7 +386,6 @@ class TestGenerateProject(unittest.TestCase):
     def setUp(self):
         self.output_dir = tempfile.mkdtemp()
         self.gen = PowerBIProjectGenerator(
-            converted_dir=tempfile.mkdtemp(),
             output_dir=self.output_dir
         )
         self.objects = {

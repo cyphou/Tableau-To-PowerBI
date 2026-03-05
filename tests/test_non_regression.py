@@ -61,7 +61,6 @@ def _run_migration(twb_path, output_dir):
     te_dir = os.path.join(output_dir, 'tableau_export')
     os.makedirs(te_dir, exist_ok=True)
     os.makedirs(os.path.join(output_dir, 'artifacts', 'powerbi_projects'), exist_ok=True)
-    os.makedirs(os.path.join(output_dir, 'artifacts', 'powerbi_objects'), exist_ok=True)
 
     old_cwd = os.getcwd()
     old_stdout = sys.stdout

@@ -35,8 +35,7 @@ def _L(v):
 class PowerBIProjectGenerator:
     """Generates Power BI Project (.pbip) files"""
     
-    def __init__(self, converted_dir='artifacts/powerbi_objects/', output_dir='artifacts/powerbi_projects/'):
-        self.converted_dir = os.path.abspath(converted_dir)
+    def __init__(self, output_dir='artifacts/powerbi_projects/'):
         self.output_dir = os.path.abspath(output_dir)
         
         os.makedirs(self.output_dir, exist_ok=True)

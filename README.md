@@ -151,16 +151,18 @@ TableauToPowerBI/
 │   ├── pbip_generator.py                      #   .pbip project + visuals
 │   ├── visual_generator.py                    #   60+ visual types, PBIR-native configs
 │   ├── tmdl_generator.py                      #   Semantic model → TMDL
+│   ├── m_query_generator.py                   #   Sample data M query generator
 │   ├── validator.py                           #   Artifact validation (JSON, TMDL, .pbip)
-│   ├── auth.py                                #   Azure AD auth (Service Principal / MI)
-│   ├── client.py                              #   Fabric REST API client (retry + fallback)
-│   ├── deployer.py                            #   Fabric deployment orchestrator
-│   ├── utils.py                               #   DeploymentReport, ArtifactCache
-│   └── config/                                #   Configuration
-│       ├── settings.py                        #     Env-var based settings
-│       └── environments.py                    #     Dev/staging/production configs
-├── conversion/                                # Legacy per-object converters
-├── tests/                                     # 717 tests (13 test files)
+│   ├── migration_report.py                    #   Per-item fidelity tracking
+│   └── deploy/                                #   Fabric deployment subpackage
+│       ├── auth.py                            #     Azure AD auth (Service Principal / MI)
+│       ├── client.py                          #     Fabric REST API client (retry + fallback)
+│       ├── deployer.py                        #     Fabric deployment orchestrator
+│       ├── utils.py                           #     DeploymentReport, ArtifactCache
+│       └── config/                            #     Configuration
+│           ├── settings.py                    #       Env-var based settings
+│           └── environments.py                #       Dev/staging/production configs
+├── tests/                                     # 725 tests (15 test files)
 ├── docs/                                      # Documentation
 ├── examples/                                  # Sample Tableau files
 ├── .github/workflows/ci.yml                   # CI/CD pipeline

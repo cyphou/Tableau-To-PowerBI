@@ -494,7 +494,7 @@ class TestSettingsValidation(unittest.TestCase):
         os.environ['LOG_LEVEL'] = 'INVALID_LEVEL'
         try:
             import importlib
-            from powerbi_import.config import settings as smod
+            from powerbi_import.deploy.config import settings as smod
             importlib.reload(smod)
             s = smod._FallbackSettings()
             self.assertEqual(s.log_level, 'INFO')  # Should fall back to INFO
@@ -509,7 +509,7 @@ class TestSettingsValidation(unittest.TestCase):
         os.environ['RETRY_ATTEMPTS'] = '-5'
         try:
             import importlib
-            from powerbi_import.config import settings as smod
+            from powerbi_import.deploy.config import settings as smod
             importlib.reload(smod)
             s = smod._FallbackSettings()
             self.assertEqual(s.retry_attempts, 3)  # Should fall back to default
@@ -524,7 +524,7 @@ class TestSettingsValidation(unittest.TestCase):
         os.environ['DEPLOYMENT_TIMEOUT'] = '0.5'
         try:
             import importlib
-            from powerbi_import.config import settings as smod
+            from powerbi_import.deploy.config import settings as smod
             importlib.reload(smod)
             s = smod._FallbackSettings()
             self.assertEqual(s.deployment_timeout, 0.5)
@@ -692,7 +692,7 @@ class TestDeploymentEdgeCases(unittest.TestCase):
     """Test deployment-related edge cases."""
 
     def test_deployment_report_pass_fail(self):
-        from utils import DeploymentReport
+        from powerbi_import.deploy.utils import DeploymentReport
         report = DeploymentReport()
         report.add_result('artifact1', 'report', 'success')
         report.add_result('artifact2', 'dataset', 'failed', error='HTTP 500')
@@ -703,7 +703,7 @@ class TestDeploymentEdgeCases(unittest.TestCase):
         self.assertEqual(len(failed), 1)
 
     def test_artifact_cache_metadata(self):
-        from utils import ArtifactCache
+        from powerbi_import.deploy.utils import ArtifactCache
         tmpdir = tempfile.mkdtemp()
         try:
             cache_file = os.path.join(tmpdir, '.fabric_cache')
@@ -716,7 +716,7 @@ class TestDeploymentEdgeCases(unittest.TestCase):
             shutil.rmtree(tmpdir)
 
     def test_fabric_client_constructor(self):
-        from client import FabricClient
+        from powerbi_import.deploy.client import FabricClient
         # FabricClient takes authenticator=None; may fail due to relative imports
         try:
             client = FabricClient()
@@ -726,7 +726,7 @@ class TestDeploymentEdgeCases(unittest.TestCase):
             pass
 
     def test_deployer_constructor(self):
-        from deployer import FabricDeployer
+        from powerbi_import.deploy.deployer import FabricDeployer
         # FabricDeployer takes client=None
         try:
             deployer = FabricDeployer()
