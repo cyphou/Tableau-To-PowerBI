@@ -29,6 +29,20 @@ Automated migration tool for Tableau workbooks (`.twb`, `.twbx`) and Tableau Pre
 - **Reference lines**: constant lines on value axis
 - **Conditional formatting**: color-by-measure gradients
 
+### Semantic Model Intelligence
+- **Auto date hierarchies**: Automatically creates Year → Quarter → Month → Day hierarchies for every date/dateTime column not already in a hierarchy
+- **Calculation groups**: Tableau parameters that switch between measures → PBI Calculation Group tables with `CALCULATE(SELECTEDMEASURE())`
+- **Field parameters**: Tableau parameters that switch between dimension columns → PBI Field Parameter tables with `NAMEOF()` references
+- **Number format conversion**: Tableau `###,###` / `$#,##0` / `0.0%` patterns → Power BI `formatString`
+- **Context filter promotion**: Worksheet context filters automatically promoted to page-level filters
+- **Pages shelf slicer**: Tableau Pages shelf → Power BI slicer for animation playback
+
+### Pre-Migration Assessment
+- **`--assess` mode**: Run readiness analysis before migration — checks datasources, calculations, visuals, filters, data model, interactivity, and packaging
+- **Scoring**: Overall readiness score (0–100) with per-category severity (pass / info / warning / fail)
+- **Strategy advisor**: Recommends Import, DirectQuery, or Composite connection mode based on 7 signal types (connectors, table/column count, custom SQL, LOD complexity, Prep flows, etc.)
+- **JSON report**: Assessment results saved as structured JSON for CI/CD and audit trails
+
 ### Infrastructure
 - **Batch migration**: `--batch DIR` to migrate all workbooks in a directory
 - **Custom output**: `--output-dir DIR` for output location
@@ -39,7 +53,7 @@ Automated migration tool for Tableau workbooks (`.twb`, `.twbx`) and Tableau Pre
 - **Calendar customization**: `--calendar-start YEAR` and `--calendar-end YEAR` to set date table range
 - **Culture/locale**: `--culture LOCALE` for non-en-US linguistic metadata (e.g., `fr-FR`)
 - **CI/CD pipeline**: GitHub Actions with 5-stage pipeline (lint+ruff, test, strict validate+twbx, staging deploy, production deploy)
-- **717 tests**: 13 test files covering all modules, 0 failures, 2 skipped
+- **866 tests**: 16 test files covering all modules, 0 failures, 2 skipped
 
 ## Quick Start
 
@@ -84,6 +98,7 @@ python migrate.py --batch examples/tableau_samples/ --output-dir /tmp/output
 | `--calendar-start YEAR` | Calendar table start year (default: 2020) |
 | `--calendar-end YEAR` | Calendar table end year (default: 2030) |
 | `--culture LOCALE` | Culture/locale for linguistic metadata (e.g., `fr-FR`) |
+| `--assess` | Run pre-migration assessment and strategy analysis (no generation) |
 
 ### Output
 
@@ -152,6 +167,8 @@ TableauToPowerBI/
 │   ├── visual_generator.py                    #   60+ visual types, PBIR-native configs
 │   ├── tmdl_generator.py                      #   Semantic model → TMDL
 │   ├── m_query_generator.py                   #   Sample data M query generator
+│   ├── assessment.py                          #   Pre-migration readiness assessment
+│   ├── strategy_advisor.py                    #   Import/DirectQuery/Composite advisor
 │   ├── validator.py                           #   Artifact validation (JSON, TMDL, .pbip)
 │   ├── migration_report.py                    #   Per-item fidelity tracking
 │   └── deploy/                                #   Fabric deployment subpackage
@@ -162,7 +179,7 @@ TableauToPowerBI/
 │       └── config/                            #     Configuration
 │           ├── settings.py                    #       Env-var based settings
 │           └── environments.py                #       Dev/staging/production configs
-├── tests/                                     # 725 tests (15 test files)
+├── tests/                                     # 866 tests (16 test files)
 ├── docs/                                      # Documentation
 ├── examples/                                  # Sample Tableau files
 ├── .github/workflows/ci.yml                   # CI/CD pipeline
@@ -512,8 +529,8 @@ The project includes a GitHub Actions pipeline (`.github/workflows/ci.yml`) with
 ## Testing
 
 ```bash
-# Run all 717 tests
-python -m unittest discover tests/ -v
+# Run all 866+ tests
+python -m pytest tests/ -v
 
 # Run specific test file
 python -m unittest tests.test_dax_converter -v
@@ -533,6 +550,9 @@ python -m unittest tests.test_non_regression -v
 | `test_extraction.py` | 20+ | Tableau XML extraction |
 | `test_migration.py` | 20+ | Full pipeline integration |
 | `test_migration_validation.py` | 15+ | Artifact validation post-migration |
+| `test_assessment.py` | 55 | Pre-migration assessment categories and scoring |
+| `test_strategy_advisor.py` | 26 | Strategy advisor Import/DirectQuery/Composite |
+| `test_new_features.py` | 53 | Calculation groups, field parameters, visual config |
 | `test_feature_gaps.py` | 44 | Feature gap coverage (LOD, parameters, RLS, etc.) |
 | `test_gap_implementations.py` | 50 | Gap implementations (DAX fixes, validation, config) |
 | `test_non_regression.py` | 100+ | End-to-end workbook migration regression tests |

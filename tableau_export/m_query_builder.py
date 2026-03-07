@@ -461,6 +461,100 @@ def _gen_m_custom_sql(details, table_name, columns):
     return m_query
 
 
+def _gen_m_odata(details, table_name, columns):
+    """Generate M query for OData feed."""
+    url = details.get('server', details.get('url', 'https://services.odata.org/V4/Northwind/Northwind.svc'))
+    m_query = 'let\n'
+    m_query += f'    // Source OData: {url}\n'
+    m_query += f'    Source = OData.Feed("{url}"),\n'
+    m_query += f'    {table_name}_Table = Source{{[Name="{table_name}",Signature="table"]}}[Data],\n'
+    m_query += f'    #"Promoted Headers" = {table_name}_Table,\n'
+    return _append_type_step(m_query, columns)
+
+
+def _gen_m_google_analytics(details, table_name, columns):
+    """Generate M query for Google Analytics."""
+    view_id = details.get('view_id', details.get('server', 'GA_VIEW_ID'))
+    m_query = 'let\n'
+    m_query += f'    // Source Google Analytics: View {view_id}\n'
+    m_query += '    // Note: Requires Google Analytics connector in Power BI Desktop\n'
+    m_query += f'    Source = GoogleAnalytics.Accounts(),\n'
+    m_query += f'    ViewData = Source{{[Name="{view_id}"]}}[Data],\n'
+    m_query += '    #"Promoted Headers" = ViewData,\n'
+    return _append_type_step(m_query, columns)
+
+
+def _gen_m_azure_blob(details, table_name, columns):
+    """Generate M query for Azure Blob Storage / ADLS Gen2."""
+    account = details.get('server', details.get('account', 'mystorageaccount'))
+    container = details.get('database', details.get('container', 'mycontainer'))
+    # Detect ADLS Gen2 vs Blob by URL pattern
+    is_adls = 'dfs.core.windows.net' in account or 'adls' in account.lower()
+    if is_adls:
+        m_query = 'let\n'
+        m_query += f'    // Source Azure Data Lake Storage Gen2: {account}\n'
+        m_query += f'    Source = AzureStorage.DataLake("https://{account}.dfs.core.windows.net/{container}"),\n'
+    else:
+        m_query = 'let\n'
+        m_query += f'    // Source Azure Blob Storage: {account}\n'
+        m_query += f'    Source = AzureStorage.Blobs("https://{account}.blob.core.windows.net/{container}"),\n'
+    m_query += f'    FileRow = Table.SelectRows(Source, each Text.Contains([Name], "{table_name}")),\n'
+    m_query += '    FileContent = FileRow{{0}}[Content],\n'
+    m_query += '    Parsed = Csv.Document(FileContent, [Delimiter=",", Encoding=65001]),\n'
+    m_query += '    #"Promoted Headers" = Table.PromoteHeaders(Parsed, [PromoteAllScalars=true]),\n'
+    return _append_type_step(m_query, columns)
+
+
+def _gen_m_vertica(details, table_name, columns):
+    """Generate M query for Vertica (via ODBC)."""
+    server = details.get('server', 'vertica-server')
+    database = details.get('database', 'MyDatabase')
+    schema = details.get('schema', 'public')
+    m_query = 'let\n'
+    m_query += f'    // Source Vertica: {server}/{database}\n'
+    m_query += f'    Source = Odbc.DataSource("DSN=Vertica;Server={server};Database={database}"),\n'
+    m_query += f'    SchemaTable = Source{{[Schema="{schema}",Item="{table_name}"]}}[Data],\n'
+    m_query += '    #"Promoted Headers" = SchemaTable,\n'
+    return _append_type_step(m_query, columns)
+
+
+def _gen_m_impala(details, table_name, columns):
+    """Generate M query for Apache Impala."""
+    server = details.get('server', 'impala-server')
+    port = details.get('port', '21050')
+    m_query = 'let\n'
+    m_query += f'    // Source Impala: {server}:{port}\n'
+    m_query += f'    Source = Odbc.DataSource("Driver={{Cloudera ODBC Driver for Impala}};Host={server};Port={port}"),\n'
+    m_query += f'    Table = Source{{[Name="{table_name}"]}}[Data],\n'
+    m_query += '    #"Promoted Headers" = Table,\n'
+    return _append_type_step(m_query, columns)
+
+
+def _gen_m_hadoop_hive(details, table_name, columns):
+    """Generate M query for Hadoop Hive / HDInsight."""
+    server = details.get('server', 'hive-server')
+    port = details.get('port', '443')
+    m_query = 'let\n'
+    m_query += f'    // Source Hadoop Hive: {server}:{port}\n'
+    m_query += f'    Source = Odbc.DataSource("Driver={{Microsoft Hive ODBC Driver}};Host={server};Port={port}"),\n'
+    m_query += f'    Table = Source{{[Name="{table_name}"]}}[Data],\n'
+    m_query += '    #"Promoted Headers" = Table,\n'
+    return _append_type_step(m_query, columns)
+
+
+def _gen_m_presto(details, table_name, columns):
+    """Generate M query for Presto / Trino (via ODBC)."""
+    server = details.get('server', 'presto-server')
+    catalog = details.get('database', details.get('catalog', 'hive'))
+    schema = details.get('schema', 'default')
+    m_query = 'let\n'
+    m_query += f'    // Source Presto/Trino: {server}/{catalog}.{schema}\n'
+    m_query += f'    Source = Odbc.DataSource("Driver={{Starburst Presto ODBC Driver}};Host={server};Catalog={catalog};Schema={schema}"),\n'
+    m_query += f'    Table = Source{{[Name="{table_name}"]}}[Data],\n'
+    m_query += '    #"Promoted Headers" = Table,\n'
+    return _append_type_step(m_query, columns)
+
+
 # ── Dispatch table ────────────────────────────────────────────────────────────
 
 _M_GENERATORS = {
@@ -492,6 +586,19 @@ _M_GENERATORS = {
     'Salesforce':       _gen_m_salesforce,
     'Web':              _gen_m_web,
     'Custom SQL':       _gen_m_custom_sql,
+    'OData':            _gen_m_odata,
+    'Google Analytics': _gen_m_google_analytics,
+    'Azure Blob':       _gen_m_azure_blob,
+    'Azure Blob Storage': _gen_m_azure_blob,
+    'ADLS':             _gen_m_azure_blob,
+    'Azure Data Lake':  _gen_m_azure_blob,
+    'Vertica':          _gen_m_vertica,
+    'Impala':           _gen_m_impala,
+    'Hadoop Hive':      _gen_m_hadoop_hive,
+    'Hive':             _gen_m_hadoop_hive,
+    'HDInsight':        _gen_m_hadoop_hive,
+    'Presto':           _gen_m_presto,
+    'Trino':            _gen_m_presto,
 }
 
 

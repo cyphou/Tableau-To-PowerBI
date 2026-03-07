@@ -1,22 +1,23 @@
 # Comprehensive Gap Analysis — Tableau to Power BI Migration Tool
 
-**Date:** 2026-03-04 — updated after full gap implementation sprint (sessions 1-8)  
-**Scope:** Every source file, test file, CI/CD, docs, and config
-**Status:** 717 tests passing (2 skipped)
+**Date:** 2026-03-06 — updated after Fabric feature port + cross-project gap analysis  
+**Scope:** Every source file, test file, CI/CD, docs, config, and cross-project comparison with TableauToFabric  
+**Status:** 732 tests passing (2 skipped)
 
 ### Implementation Coverage
 
 ```
  EXTRACTION          GENERATION         INFRA / CI         DOCUMENTATION
 +----------------+  +----------------+  +----------------+  +----------------+
-| 16 object types|  | PBIR v4.0      |  | 5-stage CI/CD  |  | 13 doc files   |
-| .twb/.twbx/.tfl|  | TMDL semantic  |  | 717 tests      |  | DAX reference  |
-| 172+ DAX conv  |  | 60+ visuals    |  | Artifact valid |  | M query ref    |
-| 26 connectors  |  | Drill-through  |  | Fabric deploy  |  | Prep ref       |
+| 20 object types|  | PBIR v4.0      |  | 5-stage CI/CD  |  | 13 doc files   |
+| .twb/.twbx/.tfl|  | TMDL semantic  |  | 732 tests      |  | DAX reference  |
+| 180+ DAX conv  |  | 60+ visuals    |  | Artifact valid |  | M query ref    |
+| 33 connectors  |  | Drill-through  |  | Fabric deploy  |  | Prep ref       |
 | 40+ transforms |  | Slicer modes   |  | Env configs    |  | Architecture   |
 | Prep flow DAG  |  | Cond. format   |  | Settings valid |  | Gap analysis   |
 | Ref lines/bands|  | RLS roles      |  | --dry-run      |  | Migration guide|
 | Datasrc filters|  | Calendar/culture|  | --culture      |  | FAQ + more     |
+| 22 new methods |  | Quick table cal|  |                |  |                |
 +-------+--------+  +-------+--------+  +-------+--------+  +-------+--------+
         |                    |                    |                    |
         +--------------------+--------------------+--------------------+
@@ -29,41 +30,43 @@
 ## 1. Extraction Layer (`tableau_export/`)
 
 ### What IS implemented
-- **16 object types extracted**: worksheets, dashboards, datasources, calculations, parameters (old+new XML format), filters, stories, actions (filter/highlight/url/param/set-value), sets, groups (combined+value), bins, hierarchies, sort_orders, aliases, custom_sql, user_filters
+- **20 object types extracted**: worksheets, dashboards, datasources, calculations, parameters (old+new XML format), filters, stories, actions (filter/highlight/url/param/set-value), sets, groups (combined+value), bins, hierarchies, sort_orders, aliases, custom_sql, user_filters, **custom_geocoding**, **published_datasources**, **data_blending**, **hyper_metadata**
 - **File formats**: `.twb`, `.twbx`, `.tds`, `.tdsx` (Tableau Desktop) + `.tfl`/`.tflx` (Tableau Prep)
-- **Connection parsing** (`datasource_extractor.py`): 10 connection types fully parsed (Excel, CSV, GeoJSON, SQL Server, PostgreSQL, BigQuery, Oracle, MySQL, Snowflake, SAP BW) + fallback for unknown types
+- **Connection parsing** (`datasource_extractor.py`): 10 connection types fully parsed (Excel, CSV, GeoJSON, SQL Server, PostgreSQL, BigQuery, Oracle, MySQL, Snowflake, SAP BW) + fallback for unknown types; **metadata-records fallback** for SQL Server connections with self-closing `<relation>` elements; **last-resort column fallback** from datasource-level `<column>` elements; **default_format** extracted per column
 - **Relationship extraction**: Both old `[Table].[Column]` join-clause format and new Object Model relationships; bare `[Column]` refs inferred from child relation order
 - **Table deduplication**: Only physical tables (`type="table"`), deduplicated by name; SQL Server fallback via datasource-level `<cols>` mapping
 - **Mark-to-visual mapping** (`_map_tableau_mark_to_type`): 50+ entries covering standard marks, extended chart types (Tableau 2020+)
-- **Dashboard objects**: worksheetReference, text, image, web, blank, filter_control with floating/tiled/fixed layout modes; **padding, margin, and border** extracted from `<zone-style>` format elements
-- **Mark encoding**: color (quantitative/categorical type detection via `:qk`/`:nk` suffixes, palette colors from `<color-palette>`), size, shape, label (position/font/orientation), tooltips (text + viz-in-tooltip)
+- **Dashboard objects**: worksheetReference, text, image, web, blank, filter_control, **navigation_button**, **download_button**, **extension** with floating/tiled/fixed layout modes; **padding, margin, and border** extracted from `<zone-style>` format elements; **text_runs** with bold/italic/color/font_size/url for rich text
+- **Mark encoding**: color (quantitative/categorical type detection via `:qk`/`:nk` suffixes, palette colors from `<color-palette>`, **stepped color thresholds**), size, shape, label (position/font/orientation), tooltips (text + viz-in-tooltip), **legend_position**
 - **Story points**: Captured with filter state per story point
-- **Actions**: 6 types (filter, highlight, url, navigate, parameter, set-value)
+- **Actions**: 6 types (filter, highlight, url, navigate, parameter, set-value) with **run_on/activation**, **clearing behavior**, **highlight field_mappings**, **set-value target_set/target_field/assign_behavior/set_name/set_field**
 - **User filters**: User-filter XML elements, calculated security (USERNAME/FULLNAME/ISMEMBEROF)
 - **CSV delimiter auto-detection**: Attempts `csv.Sniffer` on embedded CSV from `.twbx` archives
-- **Prep flow parsing** (`prep_flow_parser.py`): Full DAG traversal (Kahn's topological sort), 5 input types, 15+ Clean action types, Aggregate, Join (6 types), Union, Pivot; `merge_prep_with_workbook()` for TWB+Prep integration
-- **Reference lines & annotations**: Reference lines (constant/average/median/trend with style/color/thickness), trend lines with type/degree/confidence/R², and annotations (point/area type with text and position) extracted from worksheet XML
+- **Prep flow parsing** (`prep_flow_parser.py`): Full DAG traversal (Kahn's topological sort), 5 input types, 15+ Clean action types, Aggregate, Join (6 types), Union, Pivot; **new handlers**: ExtractValues (regex/pattern), CustomCalculation (expression→M), Script/RunCommand (warning column), Prediction/TabPy/Einstein (warning column), CrossJoin (Table.Join + FullOuter), PublishedDataSource (external ref); **5 new connection mappings**: odata, google-analytics, azure-blob, adls, wasbs; `merge_prep_with_workbook()` for TWB+Prep integration; **connection/connection_map/is_prep_source** metadata on all datasource emission sites
+- **Reference lines, bands & distributions**: Reference lines (constant/average/median/trend with style/color/thickness and child `<reference-line-value>`/`<reference-line-label>` element parsing), **reference bands** (auto-detected from 2+ `<reference-line-value>` children with `is_band` flag and `value_from`/`value_to`), **reference distributions** (computation/percentile), trend lines with type/degree/confidence/R², and annotations (point/area type with text and position)
 - **Legend extraction**: Position, title, font from `<legend>` element + `legend-title`/`color-legend` style-rule merging
 - **Layout containers**: `<layout-container>` parsed for orientation (horizontal/vertical), position, and child zone names
 - **Device layouts**: `<device-layout>` parsed for device type (phone/tablet), zone visibility/positions, auto-generated flag
 - **Formatting depth**: Table/header formatting attributes (font-size, font-weight, color, align, border, banding) from `<format>` elements with scope; style-rule sub-format collection
 - **Axis detection**: Continuous vs discrete type detection, dual-axis detection (multiple y-axes), `dual_axis_sync` from `synchronized` attribute; axis range (min/max), log scale, reversed orientation
-- **Sort order depth**: Computed sort (sort-by field via `using` attribute), sort type detection (manual/computed/alphabetic)
+- **Sort order depth**: Computed sort (sort-by field via `using` attribute), sort type detection (manual/computed/alphabetic), **manual_values**, **sort_using** field
 - **Table calc field detection**: Regex for `pcto`, `pctd`, `diff`, `running_*`, `rank*` prefixed field names; addressing/partitioning field extraction from `<table-calc>` elements
+- **Tooltips**: Per-run formatting extraction (**bold**, **color**, **font_size**, **field_ref**) with proper runs list structure
+- **Theme extraction**: Dashboard colors, **custom_palettes**, **font_family**, workbook-level palette extraction
+- **22 new extraction methods** (ported from Fabric): `extract_trend_lines`, `extract_pages_shelf`, `extract_table_calcs`, `extract_dashboard_containers`, `extract_forecasting`, `extract_map_options`, `extract_clustering`, `extract_dual_axis_sync`, `extract_custom_shapes`, `extract_embedded_fonts`, `extract_custom_geocoding`, `extract_published_datasources`, `extract_data_blending`, `extract_hyper_metadata`, `extract_totals_subtotals`, `extract_worksheet_description`, `extract_show_hide_headers`, `extract_dynamic_title`, `extract_show_hide_containers`, `extract_dynamic_zone_visibility`, `extract_floating_tiled`, `extract_analytics_pane_stats`
+- **Worksheet enrichment**: 12 new keys per worksheet: `trend_lines`, `pages_shelf`, `table_calcs`, `forecasting`, `map_options`, `clustering`, `dual_axis`, `totals`, `description`, `show_hide_headers`, `dynamic_title`, `analytics_stats`
+- **Dashboard enrichment**: 4 new keys per dashboard: `containers`, `show_hide_containers`, `dynamic_zone_visibility`, `floating_tiled`
+- **Filter enrichment**: `is_context` flag on filters from `context='true'` attribute
 
 ### What is MISSING or INCOMPLETE
 - **Tableau Server/Cloud connection types**: No support for Tableau Server live connections or Extract (.hyper) reconnection — only reads the XML metadata
-- **`.hyper` file parsing**: Prep `LoadHyper` emits an empty `#table` — Hyper file data is not read
+- **`.hyper` file parsing**: Prep `LoadHyper` emits an empty `#table` — Hyper file data is not read (metadata extraction added but not data)
 - **Tableau extensions/LOD filters**: LOD calc extraction relies on text-based `{FIXED ...}` parsing (can miss edge cases with nested LODs or LOD inside LOD)
 - **Dashboard layout containers**: Layout containers are extracted but deeply nested containers may lose relative positioning when mapped to PBI
-- **Tableau 2024.3+ features**: New features (dynamic zone visibility, dynamic parameters with database queries) are not extracted
-- **Data source filters** (extract-level filters baked into the connection): Not extracted as separate objects
-- **Reference bands**: Reference bands are not extracted (reference lines and annotations are)
-- **Custom shapes / images on marks**: Shape encoding is extracted as a field reference only — actual custom shape files are not migrated
+- **Tableau 2024.3+ features**: Dynamic parameters with database queries not fully extracted
 - **Connection credentials/OAuth**: Credential metadata is stripped (by design), but OAuth redirect configs aren't migrated
 - **Multiple data sources per worksheet**: The extractor handles this, but the downstream TMDL generator may place all calculations on the "main" table, losing the datasource context
-- **Number formatting patterns**: Tableau custom number formats are not extracted or converted to PBI format strings
-- **Tooltip formatting**: Rich tooltip formatting (HTML, custom layout) is not preserved
+- **Tooltip formatting**: Rich tooltip formatting (HTML, custom layout) — basic run-level formatting now extracted but complex HTML layouts are not preserved
 
 ### What is APPROXIMATED
 - **Prep VAR/VARP aggregations**: Mapped to `sum` in `_PREP_AGG_MAP` (not mathematically correct)
@@ -138,7 +141,7 @@
 ## 3. Test Coverage
 
 ### What IS implemented
-- **667 tests across 12 test files + 50 new gap implementation tests = 717 tests** (2 skipped):
+- **667 tests across 12 test files + 50 new gap implementation tests + 15 Fabric port validation tests = 732 tests** (2 skipped):
 
 | Test File | Tests | Coverage Focus |
 |-----------|-------|----------------|
@@ -203,8 +206,9 @@
 ## 5. DAX Conversion Gaps
 
 ### What IS implemented
-- **~100+ simple function mappings** via pre-compiled regex (ISNULL→ISBLANK, ZN→IF(ISBLANK), COUNTD→DISTINCTCOUNT, etc.)
-- **20+ dedicated converters** for complex functions (DATEDIFF arg reorder, LOD→CALCULATE, RANK→RANKX, etc.)
+- **~180+ function mappings** via pre-compiled regex and dedicated converters (ISNULL→ISBLANK, ZN→IF(ISBLANK), COUNTD→DISTINCTCOUNT, etc.)
+- **30+ dedicated converters** for complex functions (DATEDIFF arg reorder, LOD→CALCULATE, RANK→RANKX, PREVIOUS_VALUE→OFFSET, LOOKUP→OFFSET, RUNNING_*→CALCULATE+FILTER(ALLSELECTED), TOTAL→CALCULATE+ALL, etc.)
+- **`_extract_balanced_call()`**: Balanced-parenthesis extraction utility for handling nested function calls in ZN, IFNULL, and other wrappers
 - **Operator conversion**: `==`→`=`, `!=`→`<>`, `or`→`||`, `and`→`&&`, `+`→`&` (string concat)
 - **Structure conversion**: CASE/WHEN→SWITCH, IF/THEN/ELSEIF→nested IF
 - **Column resolution**: `[col]`→`'Table'[col]`, cross-table `RELATED()`, `LOOKUPVALUE()` for M2M
@@ -212,6 +216,12 @@
 - **AGG(expr)→AGGX**: SUM(a*b)→SUMX('T', a*b); also STDEV.S→STDEVX.S, MEDIAN→MEDIANX
 - **Date literals**: `#YYYY-MM-DD#`→`DATE(Y, M, D)`
 - **Security functions**: USERNAME()→USERPRINCIPALNAME(), FULLNAME()→USERPRINCIPALNAME()
+- **`compute_using` (partition_fields)**: Backward-compatible parameter supporting ALLEXCEPT per-dimension partitioning with `column_table_map` resolution
+- **`generate_combined_field_dax()`**: Utility for creating combined/concatenated field DAX expressions
+- **PREVIOUS_VALUE(seed)**: Converted to OFFSET-based DAX pattern
+- **LOOKUP(expr, offset)**: Converted to OFFSET-based DAX pattern
+- **RUNNING_SUM/AVG/COUNT/MAX/MIN**: Converted to CALCULATE+FILTER(ALLSELECTED) pattern
+- **TOTAL(expr)**: Converted to CALCULATE(expr, ALL('table')) pattern
 
 ### What is MISSING (no DAX equivalent)
 
@@ -222,7 +232,8 @@
 | **COLLECT** | `0` + comment | No spatial collection |
 | **SCRIPT_BOOL/INT/REAL/STR** | `BLANK()` + comment | R/Python scripting has no direct DAX equivalent |
 | **SPLIT** | `BLANK()` + comment | No string split to array in DAX |
-| **PREVIOUS_VALUE** | Comment suggesting manual rewrite | Requires iterative patterns not available in DAX |
+| **PREVIOUS_VALUE** | OFFSET-based DAX | ✅ IMPLEMENTED — uses OFFSET pattern for iterative seed-based calculations |
+| **LOOKUP** | OFFSET-based DAX | ✅ IMPLEMENTED — uses OFFSET pattern for row-relative lookups |
 
 ### What is APPROXIMATED
 
@@ -236,14 +247,14 @@
 | **RANK_MODIFIED** | `RANKX()` + comment | Standard ranking, not modified competition ranking |
 | **INDEX()** | `RANKX()` | Row number vs rank — different semantics |
 | **SIZE()** | `COUNTROWS()` | Counts all rows, not partition size |
-| **RUNNING_SUM/AVG/COUNT** | `CALCULATE(AGG, ...)` | Simplified — no window frame specification; uses ALL or ALLEXCEPT (when partition_fields are provided) for context |
+| **RUNNING_SUM/AVG/COUNT** | `CALCULATE(AGG, FILTER(ALLSELECTED(...)))` | ✅ IMPROVED — now uses FILTER(ALLSELECTED) pattern with proper window semantics; supports partition fields via `compute_using` with ALLEXCEPT |
 | **WINDOW_SUM/AVG/MAX/MIN** | `CALCULATE(inner, ALL/ALLEXCEPT('table'))` | Loses window frame boundaries (start/end offset); supports **ALLEXCEPT with partition fields** for partitioned calculations |
 | **WINDOW_CORR/COVAR/COVARP** | `0` | Full placeholder |
 | **ATTR()** | `SELECTEDVALUE()` | ✅ FIXED — Returns scalar value; empty string if multiple values |
 | **LTRIM/RTRIM** | `TRIM()` | DAX TRIM removes all leading/trailing spaces, not just left/right |
 | **ATAN2** | `ATAN2()` | Quadrant handling note — DAX ATAN2 uses (y,x) not (x,y) |
 | **LOD with no dimensions** | `CALCULATE(AGG(...))` | ✅ FIXED — Uses balanced brace matching (depth counter) instead of global `}` → `)` replacement |
-| **LOOKUP** | `LOOKUPVALUE()` | Only partial — doesn't handle offset parameter (row-relative lookup) |
+| **LOOKUP** | OFFSET-based DAX | ✅ IMPLEMENTED — handles offset parameter via OFFSET pattern |
 | **String `+` → `&`** | Only at depth 0 | Arithmetic `+` inside string concatenation contexts may be incorrectly preserved |
 
 ---
@@ -251,7 +262,7 @@
 ## 6. M Query Gaps
 
 ### What IS implemented
-- **25 connector types**: Excel, SQL Server, PostgreSQL, CSV, BigQuery, MySQL, Oracle, Snowflake, GeoJSON, Teradata, SAP HANA, SAP BW, Amazon Redshift, Databricks, Spark SQL, Azure SQL, Azure Synapse, Google Sheets, SharePoint, JSON, XML, PDF, Salesforce, Web, Custom SQL
+- **33 connector types**: Excel, SQL Server, PostgreSQL, CSV, BigQuery, MySQL, Oracle, Snowflake, GeoJSON, Teradata, SAP HANA, SAP BW, Amazon Redshift, Databricks, Spark SQL, Azure SQL, Azure Synapse, Google Sheets, SharePoint, JSON, XML, PDF, Salesforce, Web, Custom SQL, **OData**, **Google Analytics**, **Azure Blob Storage**, **ADLS (Azure Data Lake)**, **Vertica**, **Impala**, **Hadoop Hive (+ HDInsight)**, **Presto (+ Trino)**
 - **30+ transform functions**: rename, remove/select columns, duplicate, reorder, split, merge, replace value/nulls, trim/clean/upper/lower/proper, fill up/down, filter (values/exclude/range/nulls/contains), distinct, top_n, aggregate (sum/avg/count/countd/min/max/median/stdev), unpivot/pivot, join (inner/left/right/full/leftanti/rightanti), union, wildcard_union, sort, transpose, add_index, skip_rows, remove_last/errors, promote/demote headers, add_column, conditional_column
 - **Column rename injection**: TWB-embedded column captions auto-detected and injected as M rename steps
 - **`inject_m_steps()` chaining**: Composable step injection with `{prev}` placeholder
@@ -369,12 +380,119 @@
 
 | Area | Implemented | Missing/Incomplete | Approximated | Priority |
 |------|------------|-------------------|-------------|----------|
-| **Extraction** | 16 object types, 10 connectors, annotations, layout containers, device layouts, formatting depth, legend, axes, sort depth, **datasource filters**, **reference bands**, **number formatting** | Hyper parsing, 2024+ features | Prep VAR/VARP, layout nesting depth | Low |
+| **Extraction** | 20 object types (+4), 10+ connectors, 22 new methods, annotations, layout containers, device layouts, formatting depth, legend, axes, sort depth, **datasource filters**, **reference bands/distributions**, **number formatting**, **custom shapes/fonts/geocoding/hyper metadata**, **dynamic zone visibility**, **clustering/forecasting/trend lines** | Hyper data parsing, composite connectors | Prep VAR/VARP, layout nesting depth | Low |
 | **TMDL Generation** | 12+ phases, full model, date hierarchy, quick table calcs, partition addressing, **semantic validation**, **calendar customization**, **culture config** | Incremental, composite model | — | Low |
 | **PBIR Generation** | 60+ visuals, filters, themes, mobile layout, tooltip binding, action buttons, conditional formatting, axis config, legend, sort state, table formatting, padding, **drill-through pages**, **slicer type variety** | Small Multiples | Position scaling | Low |
-| **DAX Conversion** | ~100+ patterns, ALLEXCEPT for partitioned calcs, **CORR/COVAR/COVARP**, **ATTR→SELECTEDVALUE**, **LOD balanced braces** | Spatial (6), SCRIPT (4), SPLIT, PREVIOUS_VALUE | REGEX (4), RUNNING_* frames, WINDOW_* frames | Medium |
-| **M Query** | 25 connectors, 30+ transforms | OAuth, gateway, incremental refresh | Fallback #table, BigQuery/Oracle config | Low |
-| **Test Coverage** | **717 tests across 13 files** | Perf tests, integration tests | — | Low |
-| **CI/CD** | **5-stage pipeline** (lint+ruff, test, **strict validate+twbx**, **staging deploy**, production deploy), **pip caching** | Coverage, Windows CI, schema validation | — | Medium |
+| **DAX Conversion** | ~180+ patterns, ALLEXCEPT for partitioned calcs, **CORR/COVAR/COVARP**, **ATTR→SELECTEDVALUE**, **LOD balanced braces**, **PREVIOUS_VALUE→OFFSET**, **LOOKUP→OFFSET**, **RUNNING_*→CALCULATE+FILTER(ALLSELECTED)**, **TOTAL→CALCULATE+ALL** | Spatial (6), SCRIPT (4), SPLIT | REGEX (4), WINDOW_* frames | Medium |
+| **M Query** | **33 connectors** (+8: OData, Google Analytics, Azure Blob/ADLS, Vertica, Impala, Hadoop Hive, Presto), 30+ transforms | OAuth, gateway, incremental refresh | Fallback #table, BigQuery/Oracle config | Low |
+| **Prep Flow** | DAG traversal, 20+ action types, **ExtractValues**, **CustomCalculation**, **Script/Prediction/CrossJoin/PublishedDataSource** handlers, 5 new connection mappings | Hyper data loading | Prep VAR/VARP joins | Low |
+| **Test Coverage** | **732 tests across 14 files** | Perf tests, integration tests, coverage files (Fabric has 750+ additional) | — | Medium |
+| **CI/CD** | **5-stage pipeline** (lint+ruff, test, **strict validate+twbx**, **staging deploy**, production deploy), **pip caching** | Coverage reporting, Windows CI, schema validation | — | Medium |
 | **Documentation** | **13 docs** + copilot instructions (ARCHITECTURE, KNOWN_LIMITATIONS, MIGRATION_CHECKLIST, DEPLOYMENT_GUIDE, TABLEAU_VERSION_COMPATIBILITY, CONTRIBUTING) | API docs | — | Low |
 | **Config** | 11 env vars, 3 environments, **settings validation**, **dry-run**, **calendar/culture CLI**, **.env.example** | Config file, connection templating | — | Low |
+
+---
+
+## 10. Cross-Project Gap Analysis — TableauToFabric vs TableauToPowerBI
+
+**Date:** 2026-03-06
+
+### Architecture Differences
+
+| Aspect | TableauToFabric | TableauToPowerBI |
+|--------|----------------|------------------|
+| **Storage mode** | DirectLake (compatibility 1604) | Import (compatibility 1550) |
+| **Output artifacts** | 6: Lakehouse, Dataflow Gen2, Notebook, Pipeline, Semantic Model, PBI Report | 1: .pbip project (PBIR + TMDL) |
+| **External dependencies** | `python-dateutil`, `azure-identity`, `requests`, `pydantic-settings`, `tableauserverclient` | None (stdlib only, optional azure-identity/requests) |
+| **Extraction layer** | Shared (`tableau_export/`) — now synced | Shared (`tableau_export/`) — now synced |
+
+### Fabric-Only Components (not applicable to PBI)
+
+| Component | Purpose | Portability |
+|-----------|---------|-------------|
+| `fabric_import/lakehouse_generator.py` | Lakehouse definition | Not applicable — PBI uses Import mode |
+| `fabric_import/dataflow_generator.py` | Dataflow Gen2 JSON | Not applicable — PBI uses M query partitions |
+| `fabric_import/notebook_generator.py` | PySpark Notebook (.ipynb) | Not applicable — PBI has no notebook concept |
+| `fabric_import/pipeline_generator.py` | Data Pipeline JSON | Not applicable — PBI uses Power BI Service |
+| `fabric_import/semantic_model_generator.py` | DirectLake semantic model | Not applicable — PBI uses TMDL directly |
+| `fabric_import/assessment.py` | Pre-migration assessment | **Portable** — could adapt for PBI |
+| `fabric_import/strategy_advisor.py` | Migration strategy advisor | **Portable** — could adapt for PBI |
+| `fabric_import/calc_column_utils.py` | Calc column classification | Partially ported (inline in PBI's tmdl_generator) |
+| `fabric_import/constants.py` | Shared constants (visual IDs, Z-index) | PBI defines these inline |
+| `fabric_import/naming.py` | Naming conventions | PBI uses `_clean_field_name` inline |
+| `conversion/` (8 modules) | Per-object converters (intermediate representation) | **Portable** — modular conversion layer |
+| `scripts/` (8 files) | PowerShell deployment scripts + TaskFlow configs | Fabric-specific deployment |
+
+### Shared File Divergences (Output Generators)
+
+#### `pbip_generator.py` (Fabric: 1843 lines vs PBI: 2115 lines)
+
+| Feature | Fabric | PBI |
+|---------|--------|-----|
+| Slicer mode detection | Always Dropdown | `_detect_slicer_mode()` — Dropdown/List/Between/Basic |
+| Bookmark creation | Inline in `create_report_structure` | Standalone `_create_bookmarks()` method |
+| Report filters | From workbook-scope filters | From parameters via `_create_report_filters()` |
+| Drill-through pages | Not implemented | `_create_drillthrough_pages()` |
+| Action buttons | `_create_visual_nav_button` + `_create_visual_action_button` | `_create_action_visuals()` |
+| Pages shelf | `_create_pages_shelf_slicer()` (animation hint) | Not implemented |
+| Context filter promotion | Worksheet context → page level | Not implemented |
+| Number format conversion | `_convert_number_format()` static helper | Not implemented |
+| Measure classification | Single `is_measure` check | Two-set system (`_bim_measure_names` + `_measure_names`) |
+| Visual object config | Trend lines, forecasting, map options, stepped colors, data bars, dual-axis sync, padding, row banding, reference bands, small multiples, analytics stats | Legend title/font-size, axis range min/max, log scale, reversed, dual-axis combo config, table/matrix grid, gradient min/mid/max |
+
+#### `tmdl_generator.py` (Fabric: ~2100 lines vs PBI: ~2450 lines)
+
+| Feature | Fabric | PBI |
+|---------|--------|-----|
+| Table partitions | DirectLake entity partitions | M query Import partitions |
+| Date hierarchies | `_auto_date_hierarchies()` — auto Year>Quarter>Month>Day | Manual date table with M partition |
+| Calculation groups | `_create_calculation_groups()` from param swap actions | Not implemented |
+| Field parameters | `_create_field_parameters()` with NAMEOF | Not implemented |
+| Expressions TMDL | `DatabaseQuery` + M parameters for connections | `DataFolder` parameter for file sources |
+| Quick table calcs | Not implemented | `_create_quick_table_calc_measures()` |
+| M transform steps | Not applicable (DirectLake) | `_build_m_transform_steps()` |
+
+#### `visual_generator.py` (Fabric: 1087 lines vs PBI: 1053 lines)
+
+| Difference | Detail |
+|-----------|--------|
+| Sankey/Chord mapping | Fabric: `sankeyChart`/`chordChart` (custom visuals) | PBI: `decompositionTree` (fallback) |
+| Custom visual GUIDs | Fabric defines `CUSTOM_VISUAL_GUIDS` dict | PBI relies on PBI Desktop built-in |
+| `_L` import | From `.constants` | From `powerbi_import.pbip_generator` |
+
+#### `validator.py` (Fabric: 584 lines vs PBI: 601 lines)
+
+| Fabric-only validators | PBI-only features |
+|----------------------|------------------|
+| `validate_notebook()` | `REQUIRED_PROJECT_FILES` / `REQUIRED_DIRS` class constants |
+| `validate_lakehouse_definition()` | Explicit expected artifact lists |
+| `validate_dataflow_definition()` | — |
+| `validate_pipeline_definition()` | — |
+
+### Test Coverage Gap
+
+| Metric | Fabric | PBI |
+|--------|--------|-----|
+| Test files | 39 | 16 |
+| Total tests (shared files) | 455 | 449 |
+| Coverage test files | 9 files, 750 tests | None |
+| **Grand total** | **~1,205** | **732** |
+| Coverage ratio | ~2.4× PBI's test count | Baseline |
+
+### Portability Assessment — What Could Be Brought to PBI
+
+| Item | Effort | Value | Recommendation |
+|------|--------|-------|----------------|
+| `assessment.py` (pre-migration assessment) | Medium | High | **Port** — valuable for estimating migration complexity |
+| `strategy_advisor.py` (migration strategy) | Medium | Medium | **Port** — helps users choose migration approach |
+| `conversion/` (8 modular converters) | High | Medium | Consider — PBI already does this inline |
+| Fabric coverage tests (750 tests) | Medium | High | **Port** — significant test coverage improvement |
+| `calc_column_utils.py` (shared calc classification) | Low | Medium | **Port** — cleaner separation of concerns |
+| `constants.py` + `naming.py` (shared utilities) | Low | Low | Optional — PBI inlines these |
+| Pages shelf slicer | Low | Low | Optional — niche feature |
+| Context filter promotion | Low | Medium | **Port** — improves filter fidelity |
+| Number format conversion | Low | Medium | **Port** — `_convert_number_format()` utility |
+| Calculation groups | Medium | Medium | Consider — useful for advanced scenarios |
+| Field parameters | Medium | Medium | Consider — useful for dynamic axis switching |
+| Auto date hierarchies | Low | Medium | **Port** — auto Year>Quarter>Month>Day for all date columns |
+| `conftest.py` (shared test fixtures) | Low | High | **Port** — reduces test boilerplate |

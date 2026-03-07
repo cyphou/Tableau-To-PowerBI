@@ -1,0 +1,20 @@
+table 'Base Salary'
+	lineageTag: e032940a-0484-43c1-a8a5-d604e15ab7d7
+
+	measure 'Base Salary' = SELECTEDVALUE('Base Salary'[Value], 50000)
+		lineageTag: bf62def3-ff10-43be-b6dc-2c2e28ac5355
+
+	column Value
+		dataType: int64
+		lineageTag: dc291414-e8a9-492c-8c3a-94acfbb43d10
+		summarizeBy: none
+		sourceColumn: Value
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Base Salary-04774645-8850-4655-ad3f-f2ccf461c887' = calculated
+		mode: import
+		source = GENERATESERIES(0, , 1000)
+
+	annotation PBI_ResultType = Table
+

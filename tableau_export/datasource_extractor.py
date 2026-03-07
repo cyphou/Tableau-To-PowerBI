@@ -303,7 +303,8 @@ def extract_tables_with_columns(datasource_elem, connection_map=None):
                 'role': 'measure' if datatype in ('real', 'integer') else 'dimension',
                 'ordinal': int(col_elem.get('ordinal', 0)),
                 'length': col_elem.get('length', None),
-                'nullable': col_elem.get('nullable', 'true') == 'true'
+                'nullable': col_elem.get('nullable', 'true') == 'true',
+                'default_format': col_elem.get('default-format', ''),
             }
             columns.append(column)
         
@@ -364,7 +365,8 @@ def extract_tables_with_columns(datasource_elem, connection_map=None):
                 'role': role,
                 'ordinal': 0,
                 'length': None,
-                'nullable': True
+                'nullable': True,
+                'default_format': col_elem.get('default-format', ''),
             }
         
         # Populate columns for each table that needs them
@@ -396,7 +398,78 @@ def extract_tables_with_columns(datasource_elem, connection_map=None):
                 if cname in ds_role_overrides:
                     col['role'] = ds_role_overrides[cname]
 
-    # Phase 3: Filter out 0-column tables when other tables have columns
+    # Phase 3: For tables STILL with no columns, extract from
+    # <metadata-records><metadata-record class='column'>.
+    # This is the primary column source for SQL Server and similar
+    # connections where <relation> elements are self-closing (no nested
+    # <columns>) and no <cols><map> entries exist.
+    still_needing = [t for t in raw_tables.values() if not t['columns']]
+    if still_needing:
+        metadata_table_cols = {}
+        for mr in datasource_elem.findall('.//metadata-record[@class="column"]'):
+            remote_name = (mr.findtext('remote-name') or '').strip()
+            local_name = (mr.findtext('local-name') or '').strip()
+            parent_name = (mr.findtext('parent-name') or '').strip().strip('[]')
+            local_type = (mr.findtext('local-type') or 'string').strip()
+            ordinal_text = (mr.findtext('ordinal') or '0').strip()
+            contains_null = (mr.findtext('contains-null') or 'true').strip()
+
+            col_name = local_name.strip('[]') if local_name else remote_name
+            if not col_name or not parent_name:
+                continue
+
+            try:
+                ordinal_val = int(ordinal_text)
+            except ValueError:
+                ordinal_val = 0
+
+            col = {
+                'name': col_name,
+                'datatype': local_type,
+                'role': 'measure' if local_type in ('real', 'integer') else 'dimension',
+                'ordinal': ordinal_val,
+                'length': None,
+                'nullable': contains_null == 'true',
+            }
+            metadata_table_cols.setdefault(parent_name, []).append(col)
+
+        for table in still_needing:
+            tname = table['name']
+            meta_cols = metadata_table_cols.get(tname, [])
+            if meta_cols:
+                meta_cols.sort(key=lambda c: c['ordinal'])
+                table['columns'] = meta_cols
+
+    # Phase 4: Last-resort fallback — if a table still has no columns,
+    # populate from datasource-level <column> elements that are NOT
+    # calculations (physical columns only).
+    final_needing = [t for t in raw_tables.values() if not t['columns']]
+    if final_needing:
+        ds_phys_cols = []
+        ordinal = 0
+        for col_elem in datasource_elem.findall('./column'):
+            if col_elem.find('.//calculation') is not None:
+                continue
+            if col_elem.get('user:auto-column', '') == 'sheet_link':
+                continue
+            col_name = col_elem.get('name', '').strip('[]')
+            if not col_name:
+                continue
+            ds_phys_cols.append({
+                'name': col_name,
+                'datatype': col_elem.get('datatype', 'string'),
+                'role': 'measure' if col_elem.get('datatype', 'string') in ('real', 'integer') else 'dimension',
+                'ordinal': ordinal,
+                'length': None,
+                'nullable': True,
+            })
+            ordinal += 1
+
+        if ds_phys_cols:
+            for table in final_needing:
+                table['columns'] = list(ds_phys_cols)
+
+    # Filter out 0-column tables when other tables have columns
     # (e.g. Tableau extract artifacts like 'Extract' tables in .twbx files)
     tables = list(raw_tables.values())
     has_populated = any(t['columns'] for t in tables)

@@ -1,0 +1,30 @@
+table Extract
+	lineageTag: 8e2ee969-2ba1-49ed-a6e8-f0ede50eb187
+
+	column 'Sales Target'
+		dataType: int64
+		formatString: c"$"#,#0;("$"#,#0)
+		lineageTag: b282c692-78ee-4330-8881-711e80ace98f
+		summarizeBy: sum
+		sourceColumn: 'Sales Target'
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Extract-18222aa2-1f98-4bc5-b4ca-5374b2818bea' = m
+		mode: import
+		source =
+				let
+				    // TODO: Configure the source for DATAENGINE
+				    // Connection type not automatically supported
+				    Source = #table(
+				        {"Sales Target"},
+				        {
+				            {1},
+				            {2}
+				        }
+				    )
+				in
+				    Source
+
+	annotation PBI_ResultType = Table
+

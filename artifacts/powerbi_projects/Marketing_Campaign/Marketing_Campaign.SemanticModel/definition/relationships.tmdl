@@ -1,14 +1,14 @@
-relationship 40233bea-ce0c-44f3-bfe5-9c3007cbf40c
+relationship 505e4073-7a80-4f83-81d8-9b3717939458
 	fromColumn: Campaigns.campaign_id
 	toColumn: Leads.campaign_id
 	crossFilteringBehavior: oneDirection
 
-relationship b46071c2-343b-4dcb-9a1f-ff05bf22a88f
+relationship ce05e29e-965c-477e-a3da-7b74f05fa705
 	fromColumn: Campaigns.start_date
 	toColumn: Calendar.Date
 	crossFilteringBehavior: oneDirection
 
-relationship 3fcdf02c-d003-4453-a8cb-c7cf0d43da0d
+relationship 3dbfce93-b44c-4115-986e-60aff279160b
 	fromColumn: Leads.created_date
 	toColumn: Calendar.Date
 	crossFilteringBehavior: oneDirection

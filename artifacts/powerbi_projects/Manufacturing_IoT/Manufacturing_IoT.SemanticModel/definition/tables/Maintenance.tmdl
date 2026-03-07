@@ -1,9 +1,9 @@
 table Maintenance
-	lineageTag: 15442cf2-e8b8-491c-891d-8b6326053a49
+	lineageTag: 917514d5-a295-4b60-984a-0fee4fdeef1a
 
 	column maint_id
 		dataType: int64
-		lineageTag: 7a1c926c-ae08-42c5-bb2f-505234d6e285
+		lineageTag: 1d1380f2-e0a9-46e7-b37b-97eb3ce17339
 		summarizeBy: sum
 		sourceColumn: maint_id
 
@@ -11,7 +11,7 @@ table Maintenance
 
 	column machine_id
 		dataType: int64
-		lineageTag: 4b47662f-bb07-4406-8b4b-575804a6a9f4
+		lineageTag: 0cbac4b9-506b-4340-b5f5-7fa3687d19dc
 		summarizeBy: sum
 		sourceColumn: machine_id
 
@@ -20,7 +20,7 @@ table Maintenance
 	column maint_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: e8ba6453-4bbb-4713-bc46-5532fe7afd6c
+		lineageTag: 547d8065-4e91-4535-b256-83dcfdb7c135
 		summarizeBy: none
 		sourceColumn: maint_date
 		dataCategory: DateTime
@@ -29,7 +29,7 @@ table Maintenance
 
 	column maint_type
 		dataType: string
-		lineageTag: 5f9dc048-0f6b-4d46-83eb-2cc58435c1d0
+		lineageTag: 7aceef23-eec9-4c9f-87a1-3b95b44326d7
 		summarizeBy: none
 		sourceColumn: maint_type
 
@@ -38,7 +38,7 @@ table Maintenance
 	column maint_cost
 		dataType: double
 		formatString: #,0.00
-		lineageTag: a596e375-6635-4b39-b1a0-6cc64404529c
+		lineageTag: 79e25681-cbda-4eb6-bb3e-2d186aae2847
 		summarizeBy: sum
 		sourceColumn: maint_cost
 
@@ -47,7 +47,7 @@ table Maintenance
 	column downtime_hours
 		dataType: double
 		formatString: #,0.00
-		lineageTag: ea52c27d-8cbd-42dc-8884-4de40d2b41f2
+		lineageTag: d1d809b3-7d97-4e50-9ee7-48c41bb4b540
 		summarizeBy: sum
 		sourceColumn: downtime_hours
 
@@ -55,7 +55,7 @@ table Maintenance
 
 	column technician
 		dataType: string
-		lineageTag: 2ddcbd01-023f-4047-8cf5-94a93b97232f
+		lineageTag: 8bcc969e-69bd-4ca8-9f27-22ade41f95e6
 		summarizeBy: none
 		sourceColumn: technician
 
@@ -63,13 +63,13 @@ table Maintenance
 
 	column description
 		dataType: string
-		lineageTag: 30f8870a-74a2-42ac-9af3-a1ecdc5b811a
+		lineageTag: f71d4b3e-6e98-40cf-961a-48dfaaeedc6d
 		summarizeBy: none
 		sourceColumn: description
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Maintenance-f3e50b0e-1d03-4109-a098-8dea59660243' = m
+	partition 'Maintenance-80d92146-f47e-41a2-83de-d2a33dceaff8' = m
 		mode: import
 		source =
 				let

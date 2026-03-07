@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-05T13:22:11.397159",
+  "generated_at": "2026-03-05T14:22:49.687419",
   "source": "Tableau Migration",
   "report_name": "HR_Analytics",
   "objects_converted": {
@@ -20,7 +20,7 @@
   },
   "generated_output": {
     "pages": 1,
-    "visuals": 4,
+    "visuals": 8,
     "theme_applied": false
   },
   "tmdl_stats": {

@@ -151,10 +151,10 @@ _SIMPLE_FUNCTION_MAP = [
     (r'\bREGEXP_EXTRACT_NTH\s*\(', '/* REGEXP_EXTRACT_NTH: no DAX regex — manual conversion needed */ CONTAINSSTRING('),
     (r'\bREGEXP_EXTRACT\s*\(', 'CONTAINSSTRING('),
 
-    # Spatial functions (no DAX equivalent)
-    (r'\bMAKEPOINT\s*\(', '/* MAKEPOINT: no DAX spatial equivalent */ BLANK( /*'),
-    (r'\bMAKELINE\s*\(', '/* MAKELINE: no DAX spatial equivalent */ BLANK( /*'),
-    (r'\bDISTANCE\s*\(', '/* DISTANCE: no DAX spatial equivalent */ 0 + ( /*'),
+    # Spatial functions — MAKEPOINT maps to lat/long column pair hint
+    (r'\bMAKEPOINT\s*\(', '/* MAKEPOINT → use Latitude/Longitude columns in map visual */ BLANK( /*'),
+    (r'\bMAKELINE\s*\(', '/* MAKELINE: use line-layer in map visual */ BLANK( /*'),
+    (r'\bDISTANCE\s*\(', '/* DISTANCE: compute via Haversine or external tool */ 0 + ( /*'),
     (r'\bBUFFER\s*\(', '/* BUFFER: no DAX spatial equivalent */ BLANK( /*'),
     (r'\bAREA\s*\(', '/* AREA: no DAX spatial equivalent */ 0 + ( /*'),
     (r'\bINTERSECTION\s*\(', '/* INTERSECTION: no DAX spatial equivalent */ BLANK( /*'),
@@ -172,8 +172,7 @@ _SIMPLE_FUNCTION_MAP = [
     (r'\bFIRST\s*\(\s*\)', '0'),
     (r'\bLAST\s*\(\s*\)', '0'),
     (r'\bTOTAL\s*\(', 'CALCULATE('),
-    (r'\bPREVIOUS_VALUE\s*\(', '/* PREVIOUS_VALUE: manual conversion needed */ ('),
-    (r'\bLOOKUP\s*\(', '/* LOOKUP: use LOOKUPVALUE */ LOOKUPVALUE('),
+    # PREVIOUS_VALUE and LOOKUP handled by dedicated converters below
     (r'\bSIZE\s*\(\s*\)', 'COUNTROWS()'),
 
     # Additional WINDOW_* table calculations
@@ -226,7 +225,8 @@ def convert_tableau_formula_to_dax(formula, column_name='Measure', table_name='T
                                     calc_map=None, param_map=None,
                                     column_table_map=None, measure_names=None,
                                     is_calc_column=False, param_values=None,
-                                    calc_datatype=None, partition_fields=None):
+                                    calc_datatype=None, partition_fields=None,
+                                    compute_using=None):
     """
     Converts a Tableau formula to DAX with context resolution.
     
@@ -242,6 +242,8 @@ def convert_tableau_formula_to_dax(formula, column_name='Measure', table_name='T
         param_values: {parameter_caption: literal_value} to inline in calc columns
         calc_datatype: Tableau type ('string', 'real', etc.) for + → & conversion
         partition_fields: List of field names for table calc partitioning (COMPUTE USING)
+            (deprecated — use compute_using instead)
+        compute_using: list of dimension names for table calc addressing/partitioning
     
     Returns:
         str: Valid DAX formula
@@ -254,6 +256,9 @@ def convert_tableau_formula_to_dax(formula, column_name='Measure', table_name='T
     column_table_map = column_table_map or {}
     measure_names = measure_names or set()
     param_values = param_values or {}
+    # Support both old partition_fields and new compute_using parameter
+    if compute_using is None and partition_fields is not None:
+        compute_using = partition_fields
     
     dax = formula.strip()
     
@@ -274,6 +279,10 @@ def convert_tableau_formula_to_dax(formula, column_name='Measure', table_name='T
     )
     
     # 3b-pre. Dedicated converters (functions needing special arg handling)
+    dax = _convert_previous_value(dax, table_name, compute_using=compute_using,
+                                   column_table_map=column_table_map)
+    dax = _convert_lookup(dax, table_name, compute_using=compute_using,
+                           column_table_map=column_table_map)
     dax = _convert_radians_degrees(dax)
     dax = _convert_find(dax)
     dax = _convert_str_to_format(dax)
@@ -307,10 +316,18 @@ def convert_tableau_formula_to_dax(formula, column_name='Measure', table_name='T
     dax = _convert_lod_expressions(dax, table_name, column_table_map)
     
     # 3e. WINDOW_xxx table calculations
-    dax = _convert_window_functions(dax, table_name, partition_fields)
+    dax = _convert_window_functions(dax, table_name, compute_using=compute_using,
+                                     column_table_map=column_table_map)
     
     # 3f. RANK / RANK_UNIQUE / RANK_DENSE → RANKX
-    dax = _convert_rank_functions(dax, table_name, partition_fields)
+    dax = _convert_rank_functions(dax, table_name, compute_using=compute_using,
+                                   column_table_map=column_table_map)
+    
+    # 3g. RUNNING_SUM/AVG/COUNT/MAX/MIN → table calculations
+    dax = _convert_running_functions(dax, table_name)
+    
+    # 3h. Percent of Total (TOTAL function or pcto: prefix)
+    dax = _convert_total_function(dax, table_name)
     
     # === Phase 4: Convert operators ===
     dax = dax.replace('!=', '<>')   # != before == to avoid partial match
@@ -501,22 +518,134 @@ def _convert_datediff(dax_str):
     return ''.join(result)
 
 
+def _extract_balanced_call(dax, func_name):
+    """Find a balanced-paren function call and return (start, end, inner_text).
+
+    Returns a list of (start, end, inner) tuples for every occurrence.
+    Uses depth-tracking to handle nested parentheses correctly.
+    """
+    results = []
+    pattern = re.compile(r'\b' + re.escape(func_name) + r'\s*\(', re.IGNORECASE)
+    offset = 0
+    while True:
+        match = pattern.search(dax, offset)
+        if not match:
+            break
+        start_pos = match.end()
+        depth = 1
+        i = start_pos
+        while i < len(dax) and depth > 0:
+            if dax[i] == '(':
+                depth += 1
+            elif dax[i] == ')':
+                depth -= 1
+            i += 1
+        if depth != 0:
+            break
+        inner = dax[start_pos:i - 1]
+        results.append((match.start(), i, inner))
+        offset = i
+    return results
+
+
 def _convert_zn(dax):
     """ZN(expr) → IF(ISBLANK(expr), 0, expr)"""
-    def _zn_repl(m):
-        arg = m.group(1)
-        return f'IF(ISBLANK({arg}), 0, {arg})'
-    return re.sub(r'\bZN\s*\(([^)]+)\)', _zn_repl, dax, flags=re.IGNORECASE)
+    for start, end, inner in reversed(_extract_balanced_call(dax, 'ZN')):
+        replacement = f'IF(ISBLANK({inner}), 0, {inner})'
+        dax = dax[:start] + replacement + dax[end:]
+    return dax
 
 
 def _convert_ifnull(dax):
     """IFNULL(a, b) → IF(ISBLANK(a), b, a)"""
-    def _ifnull_repl(m):
-        parts = m.group(1).split(',', 1)
+    for start, end, inner in reversed(_extract_balanced_call(dax, 'IFNULL')):
+        parts = _split_args(inner)
         if len(parts) == 2:
-            return f'IF(ISBLANK({parts[0].strip()}), {parts[1].strip()}, {parts[0].strip()})'
-        return m.group(0)
-    return re.sub(r'\bIFNULL\s*\(([^)]+)\)', _ifnull_repl, dax, flags=re.IGNORECASE)
+            replacement = f'IF(ISBLANK({parts[0].strip()}), {parts[1].strip()}, {parts[0].strip()})'
+        else:
+            replacement = dax[start:end]
+        dax = dax[:start] + replacement + dax[end:]
+    return dax
+
+
+def _convert_previous_value(dax, table_name, compute_using=None, column_table_map=None):
+    """Convert PREVIOUS_VALUE(seed) → OFFSET-based DAX.
+
+    Output:
+        VAR __prev = CALCULATE([inner], OFFSET(-1, ALLSELECTED('Table'), ORDERBY([dim])))
+        RETURN IF(ISBLANK(__prev), <seed>, __prev)
+
+    When compute_using is present, uses those dimensions for ORDERBY.
+    """
+    column_table_map = column_table_map or {}
+    pattern = re.compile(r'\bPREVIOUS_VALUE\s*\(', re.IGNORECASE)
+    match = pattern.search(dax)
+    while match:
+        start_pos = match.end()
+        depth = 1
+        i = start_pos
+        while i < len(dax) and depth > 0:
+            if dax[i] == '(':
+                depth += 1
+            elif dax[i] == ')':
+                depth -= 1
+            i += 1
+        if depth == 0:
+            inner = dax[start_pos:i - 1].strip()
+            seed = inner if inner else '0'
+            if compute_using:
+                order_col = compute_using[0]
+                order_table = column_table_map.get(order_col, table_name)
+                orderby = f"ORDERBY('{order_table}'[{order_col}])"
+            else:
+                orderby = "ORDERBY([Value])"
+            replacement = (
+                f"VAR __prev = CALCULATE({seed}, "
+                f"OFFSET(-1, ALLSELECTED('{table_name}'), {orderby})) "
+                f"RETURN IF(ISBLANK(__prev), {seed}, __prev)"
+            )
+            dax = dax[:match.start()] + replacement + dax[i:]
+        match = pattern.search(dax, match.start() + 1 if depth != 0 else 0)
+    return dax
+
+
+def _convert_lookup(dax, table_name, compute_using=None, column_table_map=None):
+    """Convert LOOKUP(expr, offset) → OFFSET-based DAX.
+
+    Output:
+        CALCULATE(<expr>, OFFSET(<offset>, ALLSELECTED('Table'), ORDERBY([dim])))
+    """
+    column_table_map = column_table_map or {}
+    pattern = re.compile(r'\bLOOKUP\s*\(', re.IGNORECASE)
+    match = pattern.search(dax)
+    while match:
+        start_pos = match.end()
+        depth = 1
+        i = start_pos
+        while i < len(dax) and depth > 0:
+            if dax[i] == '(':
+                depth += 1
+            elif dax[i] == ')':
+                depth -= 1
+            i += 1
+        if depth == 0:
+            inner = dax[start_pos:i - 1].strip()
+            args = _split_args(inner)
+            expr = args[0].strip() if args else 'BLANK()'
+            offset = args[1].strip() if len(args) > 1 else '0'
+            if compute_using:
+                order_col = compute_using[0]
+                order_table = column_table_map.get(order_col, table_name)
+                orderby = f"ORDERBY('{order_table}'[{order_col}])"
+            else:
+                orderby = "ORDERBY([Value])"
+            replacement = (
+                f"CALCULATE({expr}, "
+                f"OFFSET({offset}, ALLSELECTED('{table_name}'), {orderby}))"
+            )
+            dax = dax[:match.start()] + replacement + dax[i:]
+        match = pattern.search(dax, match.start() + 1 if depth != 0 else 0)
+    return dax
 
 
 def _convert_radians_degrees(dax):
@@ -905,19 +1034,13 @@ def _convert_lod_expressions(dax, table_name, column_table_map):
     return dax
 
 
-def _convert_window_functions(dax, table_name, partition_fields=None):
+def _convert_window_functions(dax, table_name, compute_using=None, column_table_map=None):
     """Convert WINDOW_SUM/AVG/MAX/MIN/COUNT → CALCULATE(..., ALL/ALLEXCEPT).
     
-    If partition_fields are provided (from COMPUTE USING addressing),
-    uses ALLEXCEPT('table', partition_columns) to maintain partition context
-    instead of blanket ALL('table').
+    When compute_using dimensions are provided (from table calc addressing),
+    uses ALLEXCEPT to partition by those dimensions instead of blanket ALL.
     """
-    if partition_fields:
-        partition_cols = ", ".join(f"'{table_name}'[{f}]" for f in partition_fields)
-        filter_expr = f"ALLEXCEPT('{table_name}', {partition_cols})"
-    else:
-        filter_expr = f"ALL('{table_name}')"
-    
+    ctm = column_table_map or {}
     for window_func in ['WINDOW_SUM', 'WINDOW_AVG', 'WINDOW_MAX', 'WINDOW_MIN', 'WINDOW_COUNT']:
         pattern = re.compile(rf'\b{window_func}\s*\(', re.IGNORECASE)
         match = pattern.search(dax)
@@ -932,24 +1055,28 @@ def _convert_window_functions(dax, table_name, partition_fields=None):
                     depth -= 1
                 i += 1
             inner = dax[start_pos:i - 1]
-            replacement = f"CALCULATE({inner}, {filter_expr})"
+            if compute_using:
+                # Use ALLEXCEPT to partition by the compute-using dims
+                dim_refs = []
+                for dim in compute_using:
+                    t = ctm.get(dim, table_name)
+                    dim_refs.append(f"'{t}'[{dim}]")
+                replacement = f"CALCULATE({inner}, ALLEXCEPT('{table_name}', {', '.join(dim_refs)}))"
+            else:
+                replacement = f"CALCULATE({inner}, ALL('{table_name}'))"
             dax = dax[:match.start()] + replacement + dax[i:]
             match = pattern.search(dax)
     return dax
 
 
-def _convert_rank_functions(dax, table_name, partition_fields=None):
+def _convert_rank_functions(dax, table_name, compute_using=None, column_table_map=None):
     """Convert RANK(expr), RANK_UNIQUE(expr), RANK_DENSE(expr), RANK_MODIFIED(expr),
     RANK_PERCENTILE(expr) → RANKX(ALL/ALLEXCEPT('table'), expr) variants.
     
-    If partition_fields are provided, uses ALLEXCEPT for partitioned ranking.
+    When compute_using dimensions are provided (from table calc addressing),
+    uses ALLEXCEPT to partition by those dimensions.
     """
-    if partition_fields:
-        partition_cols = ", ".join(f"'{table_name}'[{f}]" for f in partition_fields)
-        all_expr = f"ALLEXCEPT('{table_name}', {partition_cols})"
-    else:
-        all_expr = f"ALL('{table_name}')"
-    
+    ctm = column_table_map or {}
     # Process longer names first to avoid partial matches
     for rank_func in ['RANK_PERCENTILE', 'RANK_MODIFIED', 'RANK_DENSE', 'RANK_UNIQUE', 'RANK']:
         pattern = re.compile(r'\b' + rank_func + r'\s*\(', re.IGNORECASE)
@@ -968,16 +1095,87 @@ def _convert_rank_functions(dax, table_name, partition_fields=None):
                 break
             inner = dax[start_pos:i - 1].strip()
             func_upper = rank_func.upper()
-            if func_upper == 'RANK_DENSE':
-                replacement = f"RANKX({all_expr}, {inner},, ASC, DENSE)"
-            elif func_upper == 'RANK_MODIFIED':
-                replacement = f"RANKX({all_expr}, {inner}) /* RANK_MODIFIED: uses competition ranking, verify */"
-            elif func_upper == 'RANK_PERCENTILE':
-                replacement = f"DIVIDE(RANKX({all_expr}, {inner}) - 1, COUNTROWS({all_expr}) - 1) /* RANK_PERCENTILE: approximate */"
+            if compute_using:
+                dim_refs = []
+                for dim in compute_using:
+                    t = ctm.get(dim, table_name)
+                    dim_refs.append(f"'{t}'[{dim}]")
+                table_expr = f"ALLEXCEPT('{table_name}', {', '.join(dim_refs)})"
             else:
-                replacement = f"RANKX({all_expr}, {inner})"
+                table_expr = f"ALL('{table_name}')"
+            if func_upper == 'RANK_DENSE':
+                replacement = f"RANKX({table_expr}, {inner},, ASC, DENSE)"
+            elif func_upper == 'RANK_MODIFIED':
+                replacement = f"RANKX({table_expr}, {inner}) /* RANK_MODIFIED: uses competition ranking, verify */"
+            elif func_upper == 'RANK_PERCENTILE':
+                replacement = f"DIVIDE(RANKX({table_expr}, {inner}) - 1, COUNTROWS({table_expr}) - 1) /* RANK_PERCENTILE: approximate */"
+            else:
+                replacement = f"RANKX({table_expr}, {inner})"
             dax = dax[:match.start()] + replacement + dax[i:]
             match = pattern.search(dax, match.start() + len(replacement))
+    return dax
+
+
+def _convert_running_functions(dax, table_name):
+    """Convert RUNNING_SUM/AVG/COUNT/MAX/MIN → CALCULATE with window spec.
+    
+    These Tableau table calculations produce running aggregates.
+    In DAX, they map to cumulative patterns using CALCULATE + FILTER + ALLSELECTED.
+    """
+    running_map = {
+        'RUNNING_SUM': 'SUM',
+        'RUNNING_AVG': 'AVERAGE',
+        'RUNNING_COUNT': 'COUNT',
+        'RUNNING_MAX': 'MAX',
+        'RUNNING_MIN': 'MIN',
+    }
+    for tab_func, dax_agg in running_map.items():
+        pattern = re.compile(rf'\b{tab_func}\s*\(', re.IGNORECASE)
+        match = pattern.search(dax)
+        while match:
+            start_pos = match.end()
+            depth = 1
+            i = start_pos
+            while i < len(dax) and depth > 0:
+                if dax[i] == '(':
+                    depth += 1
+                elif dax[i] == ')':
+                    depth -= 1
+                i += 1
+            inner = dax[start_pos:i - 1].strip()
+            # Generate cumulative DAX pattern
+            replacement = (
+                f"CALCULATE({inner}, "
+                f"FILTER(ALLSELECTED('{table_name}'), TRUE())) "
+                f"/* {tab_func}: converted to cumulative — verify window scope */"
+            )
+            dax = dax[:match.start()] + replacement + dax[i:]
+            match = pattern.search(dax)
+    return dax
+
+
+def _convert_total_function(dax, table_name):
+    """Convert TOTAL(expr) → CALCULATE(expr, ALL('table')).
+    
+    TOTAL() in Tableau returns the grand total of an expression,
+    ignoring the current partition. This maps to CALCULATE + ALL.
+    """
+    pattern = re.compile(r'\bTOTAL\s*\(', re.IGNORECASE)
+    match = pattern.search(dax)
+    while match:
+        start_pos = match.end()
+        depth = 1
+        i = start_pos
+        while i < len(dax) and depth > 0:
+            if dax[i] == '(':
+                depth += 1
+            elif dax[i] == ')':
+                depth -= 1
+            i += 1
+        inner = dax[start_pos:i - 1].strip()
+        replacement = f"CALCULATE({inner}, ALL('{table_name}'))"
+        dax = dax[:match.start()] + replacement + dax[i:]
+        match = pattern.search(dax)
     return dax
 
 
@@ -1197,3 +1395,26 @@ def _split_args(inner):
     if current:
         args.append(''.join(current).strip())
     return args
+
+
+def generate_combined_field_dax(source_fields, table_name, separator=' '):
+    """Generate DAX expression for a combined field (CONCATENATE of multiple columns).
+    
+    Args:
+        source_fields: List of source column names
+        table_name: Table containing the columns
+        separator: Separator between values (default: space)
+    
+    Returns:
+        str: DAX calculated column expression
+    """
+    if not source_fields:
+        return '""'
+    if len(source_fields) == 1:
+        return f"'{table_name}'[{source_fields[0]}]"
+    parts = [f"'{table_name}'[{f}]" for f in source_fields]
+    sep_literal = f'"{separator}"'
+    # Use nested CONCATENATE pairs for 2 fields, or & for more
+    if len(parts) == 2:
+        return f"{parts[0]} & {sep_literal} & {parts[1]}"
+    return (' & ' + sep_literal + ' & ').join(parts)

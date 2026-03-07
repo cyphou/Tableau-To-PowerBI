@@ -44,7 +44,231 @@ from m_query_builder import (
     m_transform_remove_columns,
     m_transform_filter_values,
     m_transform_filter_nulls,
+    m_transform_add_column,
 )
+
+
+# ════════════════════════════════════════════════════════════════════
+#  DAX → POWER QUERY M EXPRESSION CONVERTER
+#  Eliminates DAX calculated columns in favour of M Table.AddColumn
+# ════════════════════════════════════════════════════════════════════
+
+# M type strings matching DAX/BIM dataType values
+_DAX_TO_M_TYPE = {
+    'Boolean': 'type logical', 'boolean': 'type logical',
+    'String': 'type text', 'string': 'type text',
+    'Double': 'type number', 'double': 'type number',
+    'Int64': 'Int64.Type', 'int64': 'Int64.Type',
+    'DateTime': 'type datetime', 'dateTime': 'type datetime',
+}
+
+
+def _split_dax_args(s):
+    """Split a string at top-level commas, respecting parentheses and quotes."""
+    parts, depth, current, in_str = [], 0, [], False
+    for ch in s:
+        if in_str:
+            current.append(ch)
+            if ch == '"':
+                in_str = False
+        elif ch == '"':
+            current.append(ch)
+            in_str = True
+        elif ch == '(':
+            depth += 1
+            current.append(ch)
+        elif ch == ')':
+            depth -= 1
+            current.append(ch)
+        elif ch == ',' and depth == 0:
+            parts.append(''.join(current).strip())
+            current = []
+        else:
+            current.append(ch)
+    parts.append(''.join(current).strip())
+    return parts
+
+
+def _extract_function_body(expr, func_name):
+    """Extract the content between balanced parens for a named DAX function.
+
+    Only matches if the function call spans the entire expression.
+    Returns the inner content string, or None.
+    """
+    pattern = re.compile(r'^' + re.escape(func_name) + r'\s*\(', re.IGNORECASE)
+    m = pattern.match(expr)
+    if not m:
+        return None
+    start = m.end() - 1  # opening '('
+    depth, in_str = 0, False
+    for i in range(start, len(expr)):
+        ch = expr[i]
+        if in_str:
+            if ch == '"':
+                in_str = False
+        elif ch == '"':
+            in_str = True
+        elif ch == '(':
+            depth += 1
+        elif ch == ')':
+            depth -= 1
+            if depth == 0:
+                if expr[i + 1:].strip() == '':
+                    return expr[start + 1:i]
+                return None  # function doesn't span full expression
+    return None
+
+
+def _dax_to_m_expression(dax_expr, table_name=''):
+    """Convert a DAX calculated-column expression to Power Query M.
+
+    Handles IF, SWITCH, FLOOR, ISBLANK, IN {}, string/date/math functions,
+    simple arithmetic, column references, and boolean operators.
+
+    Returns the M expression string on success, or *None* if the expression
+    contains cross-table references or DAX constructs with no M equivalent
+    (RELATED, LOOKUPVALUE, CALCULATE, etc.).
+    """
+    if not dax_expr:
+        return dax_expr
+    expr = dax_expr.strip()
+    if not expr:
+        return expr
+
+    # ── Reject unconvertible patterns ───────────────────────────────
+    upper = expr.upper()
+    if 'RELATED(' in upper or 'LOOKUPVALUE(' in upper:
+        return None
+
+    # Remove self-table qualifications: 'TableName'[Col] → [Col]
+    if table_name:
+        expr = re.sub(r"'" + re.escape(table_name) + r"'\[", '[', expr)
+    # Any remaining cross-table refs → bail
+    if re.search(r"'[^']+'\[", expr):
+        return None
+
+    # ── IF(cond, true_val [, false_val]) ────────────────────────────
+    body = _extract_function_body(expr, 'IF')
+    if body is not None:
+        args = _split_dax_args(body)
+        if len(args) >= 2:
+            cond = _dax_to_m_expression(args[0], table_name)
+            true_v = _dax_to_m_expression(args[1], table_name)
+            false_v = _dax_to_m_expression(args[2], table_name) if len(args) >= 3 else 'null'
+            if cond is not None and true_v is not None and false_v is not None:
+                return f'if {cond} then {true_v} else {false_v}'
+        return None
+
+    # ── SWITCH(expr, v1, r1, …, default) ────────────────────────────
+    body = _extract_function_body(expr, 'SWITCH')
+    if body is not None:
+        args = _split_dax_args(body)
+        if len(args) >= 3:
+            sw = _dax_to_m_expression(args[0], table_name)
+            if sw is None:
+                return None
+            parts = []
+            i = 1
+            while i + 1 < len(args):
+                v = _dax_to_m_expression(args[i], table_name)
+                r = _dax_to_m_expression(args[i + 1], table_name)
+                if v is None or r is None:
+                    return None
+                parts.append(f'if {sw} = {v} then {r}')
+                i += 2
+            default_v = (_dax_to_m_expression(args[-1], table_name)
+                         if len(args) % 2 == 0 else '"Other"')
+            if default_v is None:
+                return None
+            return ' else '.join(parts) + f' else {default_v}'
+        return None
+
+    # ── FLOOR(x, n) → Number.RoundDown(x / n) * n ──────────────────
+    body = _extract_function_body(expr, 'FLOOR')
+    if body is not None:
+        args = _split_dax_args(body)
+        if len(args) == 2:
+            x = _dax_to_m_expression(args[0], table_name)
+            if x is None:
+                return None
+            n = args[1].strip()
+            return f'Number.RoundDown({x} / {n}) * {n}'
+        return None
+
+    # ── ISBLANK(x) → (x = null) ────────────────────────────────────
+    body = _extract_function_body(expr, 'ISBLANK')
+    if body is not None:
+        inner = _dax_to_m_expression(body, table_name)
+        return f'({inner} = null)' if inner is not None else None
+
+    # ── NOT(x) → not x ─────────────────────────────────────────────
+    body = _extract_function_body(expr, 'NOT')
+    if body is not None:
+        inner = _dax_to_m_expression(body, table_name)
+        return f'not ({inner})' if inner is not None else None
+
+    # ── Single-argument DAX → M function map ────────────────────────
+    _SINGLE = [
+        ('UPPER', 'Text.Upper'), ('LOWER', 'Text.Lower'),
+        ('TRIM', 'Text.Trim'), ('LEN', 'Text.Length'),
+        ('YEAR', 'Date.Year'), ('MONTH', 'Date.Month'),
+        ('DAY', 'Date.Day'), ('QUARTER', 'Date.QuarterOfYear'),
+        ('ABS', 'Number.Abs'), ('INT', 'Number.RoundDown'),
+        ('SQRT', 'Number.Sqrt'),
+    ]
+    for dax_fn, m_fn in _SINGLE:
+        body = _extract_function_body(expr, dax_fn)
+        if body is not None:
+            inner = _dax_to_m_expression(body, table_name)
+            return f'{m_fn}({inner})' if inner is not None else None
+
+    # ── Multi-argument DAX → M function map ─────────────────────────
+    _MULTI = [
+        ('LEFT', 'Text.Start'), ('RIGHT', 'Text.End'),
+        ('MID', 'Text.Middle'), ('ROUND', 'Number.Round'),
+        ('CONTAINSSTRING', 'Text.Contains'),
+        ('SUBSTITUTE', 'Text.Replace'),
+    ]
+    for dax_fn, m_fn in _MULTI:
+        body = _extract_function_body(expr, dax_fn)
+        if body is not None:
+            args = _split_dax_args(body)
+            converted = [_dax_to_m_expression(a, table_name) for a in args]
+            if any(c is None for c in converted):
+                return None
+            return f'{m_fn}({", ".join(converted)})'
+
+    # ── [expr] IN {val1, val2, …} → List.Contains({…}, expr) ───────
+    in_match = re.match(r'^(.+?)\s+IN\s+(\{.+\})\s*$', expr, re.IGNORECASE)
+    if in_match:
+        col_m = _dax_to_m_expression(in_match.group(1), table_name)
+        if col_m is not None:
+            return f'List.Contains({in_match.group(2)}, {col_m})'
+        return None
+
+    # ── Leaf expression (literals, column refs, operators) ──────────
+    result = expr
+    result = result.replace('&&', ' and ').replace('||', ' or ')
+    result = re.sub(r'\bTRUE\s*\(\s*\)', 'true', result, flags=re.IGNORECASE)
+    result = re.sub(r'\bFALSE\s*\(\s*\)', 'false', result, flags=re.IGNORECASE)
+    result = re.sub(r'\bBLANK\s*\(\s*\)', 'null', result, flags=re.IGNORECASE)
+
+    # Remaining DAX function calls → not convertible
+    if re.search(r'\b[A-Z_]{2,}\s*\(', result):
+        return None
+    return result
+
+
+def _inject_m_steps_into_partition(table, steps):
+    """Inject M transformation steps into a table's M partition."""
+    if not steps:
+        return False
+    for partition in table.get('partitions', []):
+        source = partition.get('source', {})
+        if source.get('type') == 'm' and source.get('expression'):
+            source['expression'] = inject_m_steps(source['expression'], steps)
+            return True
+    return False
 
 
 # ════════════════════════════════════════════════════════════════════
@@ -395,8 +619,18 @@ def _build_semantic_model(datasources, report_name="Report", extra_objects=None,
     # Phase 7: Hierarchies from Tableau drill-paths
     _apply_hierarchies(model, extra_objects.get('hierarchies', []), column_table_map)
 
+    # Phase 7b: Auto-generate date hierarchies for DateTime columns without one
+    _auto_date_hierarchies(model)
+
     # Phase 8: Parameter tables (What-If parameters)
     _create_parameter_tables(model, extra_objects.get('parameters', []), main_table_name)
+
+    # Phase 8b: Calculation groups (measure-switching parameters)
+    _create_calculation_groups(model, extra_objects.get('parameters', []), main_table_name)
+
+    # Phase 8c: Field parameters (dimension-switching parameters with NAMEOF)
+    _create_field_parameters(model, extra_objects.get('parameters', []),
+                             main_table_name, column_table_map)
 
     # Phase 9: RLS roles from Tableau user filters / security
     _create_rls_roles(model, extra_objects.get('user_filters', []),
@@ -636,6 +870,8 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
             prelim_calc_col_captions.add(_pc_caption)
             prelim_calc_col_raws.add(_pc_name)
 
+    m_calc_steps = []  # Accumulated M Table.AddColumn steps (replaces DAX calc cols)
+
     for calc in calculations:
         calc_name = calc.get('name', '').replace('[', '').replace(']', '')
         caption = calc.get('caption', calc_name)
@@ -721,13 +957,28 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
                         dax_formula
                     )
 
-            bim_calc_col = {
-                "name": caption,
-                "dataType": map_tableau_to_powerbi_type(datatype),
-                "expression": dax_formula,
-                "summarizeBy": "none",
-                "isCalculated": True
-            }
+            # ── Try to push the calculated column into Power Query M ──
+            m_expr = _dax_to_m_expression(dax_formula, table_name)
+            if m_expr is not None:
+                m_type = _DAX_TO_M_TYPE.get(
+                    map_tableau_to_powerbi_type(datatype), 'type text')
+                m_calc_steps.append(
+                    m_transform_add_column(caption, f'each {m_expr}', m_type))
+                bim_calc_col = {
+                    "name": caption,
+                    "dataType": map_tableau_to_powerbi_type(datatype),
+                    "sourceColumn": caption,
+                    "summarizeBy": "none",
+                }
+            else:
+                # Fallback: keep as DAX calculated column
+                bim_calc_col = {
+                    "name": caption,
+                    "dataType": map_tableau_to_powerbi_type(datatype),
+                    "expression": dax_formula,
+                    "summarizeBy": "none",
+                    "isCalculated": True,
+                }
             if datatype == 'real':
                 bim_calc_col["formatString"] = "#,0.00"
 
@@ -751,6 +1002,10 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
                 "displayFolder": _get_display_folder(datatype, role)
             }
             result_table["measures"].append(bim_measure)
+
+    # Inject accumulated M steps into the partition (replaces DAX calc cols)
+    if m_calc_steps:
+        _inject_m_steps_into_partition(result_table, m_calc_steps)
 
     return result_table
 
@@ -1115,7 +1370,7 @@ def _get_display_folder(datatype, role):
 
 
 def _process_sets_groups_bins(model, extra_objects, main_table_name, column_table_map):
-    """Add sets, groups and bins as calculated columns."""
+    """Add sets, groups and bins as Power Query M columns (fallback: DAX calc cols)."""
     if not main_table_name:
         return
 
@@ -1128,8 +1383,9 @@ def _process_sets_groups_bins(model, extra_objects, main_table_name, column_tabl
         return
 
     existing_cols = {col.get("name", "") for col in main_table.get("columns", [])}
+    m_steps = []  # Accumulated M steps
 
-    # Sets -> boolean calculated column
+    # Sets -> boolean column
     for s in extra_objects.get('sets', []):
         set_name = s.get('name', '')
         if not set_name or set_name in existing_cols:
@@ -1146,17 +1402,28 @@ def _process_sets_groups_bins(model, extra_objects, main_table_name, column_tabl
         else:
             dax_expr = 'TRUE()'
 
-        main_table["columns"].append({
-            "name": set_name,
-            "dataType": "Boolean",
-            "expression": dax_expr,
-            "summarizeBy": "none",
-            "isCalculated": True,
-            "displayFolder": "Sets"
-        })
+        m_expr = _dax_to_m_expression(dax_expr, main_table_name)
+        if m_expr is not None:
+            m_steps.append(m_transform_add_column(set_name, f'each {m_expr}', 'type logical'))
+            main_table["columns"].append({
+                "name": set_name,
+                "dataType": "Boolean",
+                "sourceColumn": set_name,
+                "summarizeBy": "none",
+                "displayFolder": "Sets"
+            })
+        else:
+            main_table["columns"].append({
+                "name": set_name,
+                "dataType": "Boolean",
+                "expression": dax_expr,
+                "summarizeBy": "none",
+                "isCalculated": True,
+                "displayFolder": "Sets"
+            })
         existing_cols.add(set_name)
 
-    # Groups -> calculated column with SWITCH or concatenation
+    # Groups -> SWITCH / concatenation column
     for g in extra_objects.get('groups', []):
         group_name = g.get('name', '')
         if not group_name or group_name in existing_cols:
@@ -1214,17 +1481,28 @@ def _process_sets_groups_bins(model, extra_objects, main_table_name, column_tabl
         else:
             dax_expr = '""'
 
-        main_table["columns"].append({
-            "name": group_name,
-            "dataType": "String",
-            "expression": dax_expr,
-            "summarizeBy": "none",
-            "isCalculated": True,
-            "displayFolder": "Groups"
-        })
+        m_expr = _dax_to_m_expression(dax_expr, main_table_name)
+        if m_expr is not None:
+            m_steps.append(m_transform_add_column(group_name, f'each {m_expr}', 'type text'))
+            main_table["columns"].append({
+                "name": group_name,
+                "dataType": "String",
+                "sourceColumn": group_name,
+                "summarizeBy": "none",
+                "displayFolder": "Groups"
+            })
+        else:
+            main_table["columns"].append({
+                "name": group_name,
+                "dataType": "String",
+                "expression": dax_expr,
+                "summarizeBy": "none",
+                "isCalculated": True,
+                "displayFolder": "Groups"
+            })
         existing_cols.add(group_name)
 
-    # Bins -> calculated column with FLOOR
+    # Bins -> FLOOR column
     for b in extra_objects.get('bins', []):
         bin_name = b.get('name', '')
         if not bin_name or bin_name in existing_cols:
@@ -1239,15 +1517,30 @@ def _process_sets_groups_bins(model, extra_objects, main_table_name, column_tabl
         else:
             dax_expr = '0'
 
-        main_table["columns"].append({
-            "name": bin_name,
-            "dataType": "Double",
-            "expression": dax_expr,
-            "summarizeBy": "none",
-            "isCalculated": True,
-            "displayFolder": "Bins"
-        })
+        m_expr = _dax_to_m_expression(dax_expr, main_table_name)
+        if m_expr is not None:
+            m_steps.append(m_transform_add_column(bin_name, f'each {m_expr}', 'type number'))
+            main_table["columns"].append({
+                "name": bin_name,
+                "dataType": "Double",
+                "sourceColumn": bin_name,
+                "summarizeBy": "none",
+                "displayFolder": "Bins"
+            })
+        else:
+            main_table["columns"].append({
+                "name": bin_name,
+                "dataType": "Double",
+                "expression": dax_expr,
+                "summarizeBy": "none",
+                "isCalculated": True,
+                "displayFolder": "Bins"
+            })
         existing_cols.add(bin_name)
+
+    # Inject accumulated M steps into the partition
+    if m_steps:
+        _inject_m_steps_into_partition(main_table, m_steps)
 
 
 def _apply_hierarchies(model, hierarchies, column_table_map):
@@ -1284,6 +1577,91 @@ def _apply_hierarchies(model, hierarchies, column_table_map):
                     }
                     table["hierarchies"].append(hierarchy)
                 break
+
+
+def _auto_date_hierarchies(model):
+    """Auto-generate Year > Quarter > Month > Day hierarchies for date columns.
+
+    For every date/dateTime column that does not already belong to a
+    user-defined hierarchy, we create Power Query M columns
+    (Date.Year, Date.QuarterOfYear, Date.Month, Date.Day)
+    and a hierarchy definition on the same table.
+    """
+    DATE_TYPES = {'dateTime', 'date'}
+    # (label, M function, BIM dataType, ordinal)
+    PARTS = [
+        ('Year', 'Date.Year', 'int64', 0),
+        ('Quarter', 'Date.QuarterOfYear', 'int64', 1),
+        ('Month', 'Date.Month', 'int64', 2),
+        ('Day', 'Date.Day', 'int64', 3),
+    ]
+
+    for table in model.get('model', {}).get('tables', []):
+        columns = table.get('columns', [])
+        existing_hierarchies = table.get('hierarchies', [])
+
+        # Collect columns already used in a hierarchy
+        hier_cols = set()
+        for h in existing_hierarchies:
+            for lvl in h.get('levels', []):
+                hier_cols.add(lvl.get('column', ''))
+
+        existing_col_names = {c.get('name', '') for c in columns}
+
+        m_steps = []  # M steps for this table
+
+        for col in list(columns):  # iterate copy — we may append
+            col_type = col.get('dataType', '')
+            col_name = col.get('name', '')
+            if col_type not in DATE_TYPES:
+                continue
+            if col_name in hier_cols:
+                continue  # already in a user-defined hierarchy
+
+            # Build hierarchy name scoped to the column
+            hier_name = f"{col_name} Hierarchy"
+
+            # Skip if we already auto-generated this one (idempotency)
+            if any(h.get('name') == hier_name for h in existing_hierarchies):
+                continue
+
+            # Add M-based columns for the parts (skip if name clashes)
+            calc_col_names = []
+            for part_label, m_fn, dt, _ in PARTS:
+                calc_name = f"{col_name} {part_label}"
+                if calc_name in existing_col_names:
+                    calc_col_names.append(calc_name)
+                    continue  # already exists (e.g. from Tableau extraction)
+
+                m_steps.append(m_transform_add_column(
+                    calc_name,
+                    f'each {m_fn}([{col_name}])',
+                    'Int64.Type'
+                ))
+                columns.append({
+                    'name': calc_name,
+                    'dataType': dt,
+                    'sourceColumn': calc_name,
+                    'isHidden': True,
+                })
+                existing_col_names.add(calc_name)
+                calc_col_names.append(calc_name)
+
+            # Create the hierarchy
+            hierarchy = {
+                'name': hier_name,
+                'levels': [
+                    {'name': PARTS[i][0], 'ordinal': i, 'column': calc_col_names[i]}
+                    for i in range(len(calc_col_names))
+                ],
+            }
+            if 'hierarchies' not in table:
+                table['hierarchies'] = []
+            table['hierarchies'].append(hierarchy)
+
+        # Inject accumulated M steps into the table's partition
+        if m_steps:
+            _inject_m_steps_into_partition(table, m_steps)
 
 
 def _create_parameter_tables(model, parameters, main_table_name):
@@ -1420,6 +1798,165 @@ def _create_parameter_tables(model, parameters, main_table_name):
                     m for m in table["measures"]
                     if m.get("name", "") not in param_table_names
                 ]
+
+
+def _create_calculation_groups(model, parameters, main_table_name):
+    """Create calculation group tables from parameters that switch between measures.
+
+    A Tableau parameter that selects from a list of known measure names maps to
+    a Power BI calculation group: each selectable measure becomes a calculation
+    item that runs ``CALCULATE(SELECTEDMEASURE())``.
+    """
+    if not parameters:
+        return
+
+    existing_tables = {t.get('name', '') for t in model['model']['tables']}
+
+    # Collect all measure names across the model
+    measure_names = set()
+    for table in model['model']['tables']:
+        for m in table.get('measures', []):
+            measure_names.add(m.get('name', ''))
+
+    for param in parameters:
+        caption = param.get('caption', '')
+        domain_type = param.get('domain_type', '')
+        datatype = param.get('datatype', 'string')
+        allowable_values = param.get('allowable_values', [])
+
+        # Only string list parameters are candidates
+        if datatype != 'string' or domain_type != 'list' or not allowable_values:
+            continue
+
+        matching_values = [
+            v for v in allowable_values
+            if v.get('type') != 'range' and v.get('value', '') in measure_names
+        ]
+        if len(matching_values) < 2:
+            continue
+
+        cg_name = f"{caption} CalcGroup"
+        if cg_name in existing_tables:
+            continue
+
+        calc_items = []
+        for idx, val in enumerate(matching_values):
+            measure_ref = val.get('value', '')
+            calc_items.append({
+                "name": measure_ref,
+                "expression": "CALCULATE(SELECTEDMEASURE())",
+                "ordinal": idx,
+            })
+
+        cg_table = {
+            "name": cg_name,
+            "calculationGroup": {
+                "columns": [{"name": caption, "dataType": "string",
+                             "sourceColumn": caption}],
+                "calculationItems": calc_items,
+            },
+            "columns": [{"name": caption, "dataType": "string",
+                         "sourceColumn": caption}],
+            "partitions": [{
+                "name": cg_name,
+                "mode": "import",
+                "source": {"type": "calculationGroup"},
+            }],
+            "annotations": [
+                {"name": "displayFolder", "value": "Calculation Groups"},
+            ],
+        }
+        model['model']['tables'].append(cg_table)
+        existing_tables.add(cg_name)
+
+
+def _create_field_parameters(model, parameters, main_table_name, column_table_map):
+    """Create field parameter tables from parameters that switch between columns.
+
+    Field parameters in Power BI allow users to dynamically choose which column
+    appears on a visual axis or slicer. This converts Tableau parameters whose
+    allowable values match existing column names into PBI field parameter tables
+    with ``NAMEOF()`` references.
+    """
+    if not parameters:
+        return
+
+    existing_tables = {t.get('name', '') for t in model['model']['tables']}
+
+    # Collect all known column names and measure names
+    all_columns = set()
+    measure_names = set()
+    for table in model['model']['tables']:
+        for col in table.get('columns', []):
+            all_columns.add(col.get('name', ''))
+        for m in table.get('measures', []):
+            measure_names.add(m.get('name', ''))
+
+    for param in parameters:
+        caption = param.get('caption', '')
+        domain_type = param.get('domain_type', '')
+        datatype = param.get('datatype', 'string')
+        allowable_values = param.get('allowable_values', [])
+
+        # Only string list parameters with column-like values
+        if datatype != 'string' or domain_type != 'list' or not allowable_values:
+            continue
+
+        matching_cols = [
+            v for v in allowable_values
+            if v.get('type') != 'range' and v.get('value', '') in all_columns
+        ]
+
+        if len(matching_cols) < 2:
+            continue
+        # Skip if all values are measures (those become calc groups instead)
+        if all(v.get('value', '') in measure_names for v in matching_cols):
+            continue
+
+        fp_name = f"{caption} FieldParam"
+        if fp_name in existing_tables:
+            continue
+
+        # Build NAMEOF references for the field parameter DAX expression
+        rows = []
+        for idx, val in enumerate(matching_cols):
+            col_name = val.get('value', '')
+            col_table = column_table_map.get(col_name, main_table_name)
+            rows.append(
+                f"(NAMEOF('{col_table}'[{col_name}]), {idx}, \"{col_name}\")"
+            )
+
+        fp_expr = "{\\n" + ",\\n".join(rows) + "\\n}"
+
+        fp_table = {
+            "name": fp_name,
+            "columns": [
+                {"name": caption, "dataType": "string",
+                 "sourceColumn": caption,
+                 "annotations": [{"name": "displayFolder",
+                                  "value": "Field Parameters"}]},
+                {"name": f"{caption}_Order", "dataType": "int64",
+                 "sourceColumn": f"{caption}_Order", "isHidden": True},
+                {"name": f"{caption}_Fields", "dataType": "string",
+                 "sourceColumn": f"{caption}_Fields", "isHidden": True},
+            ],
+            "partitions": [{
+                "name": fp_name,
+                "mode": "import",
+                "source": {
+                    "type": "calculated",
+                    "expression": fp_expr,
+                },
+            }],
+            "annotations": [
+                {"name": "displayFolder", "value": "Field Parameters"},
+                {"name": "PBI_NavigationStepName", "value": "Navigation"},
+                {"name": "ParameterMetadata",
+                 "value": json.dumps({"version": 3, "kind": 2})},
+            ],
+        }
+        model['model']['tables'].append(fp_table)
+        existing_tables.add(fp_name)
 
 
 def _create_rls_roles(model, user_filters, main_table_name, column_table_map):

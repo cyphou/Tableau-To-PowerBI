@@ -94,6 +94,11 @@ _PREP_CONNECTION_MAP = {
     'google-sheets': 'google-sheets',
     'salesforce': 'salesforce',
     'azure_sql_dw': 'azure_sql_dw',
+    'odata': 'OData',
+    'google-analytics': 'Google Analytics',
+    'azure-blob': 'Azure Blob',
+    'adls': 'ADLS',
+    'wasbs': 'Azure Blob Storage',
 }
 
 # Prep data type → Power Query M type
@@ -542,6 +547,30 @@ def _convert_action_to_m_step(action_type, action, counter):
                 conditions.append((f'each {condition}', str(value)))
             return m_transform_conditional_column(new_col, conditions, str(default))
 
+    elif action_type == 'ExtractValues':
+        # Regex or pattern extraction → Table.TransformColumns with Text.Select / regex
+        col = action.get('columnName', '')
+        pattern = action.get('pattern', '')
+        new_col = action.get('newColumnName', f'{col}_extracted')
+        if col:
+            m_pattern = pattern.replace('\\', '\\\\') if pattern else '.*'
+            n = counter.get('extract', 0)
+            counter['extract'] = n + 1
+            step_name = f'#"Extracted {n}"' if n > 0 else '#"Extracted Values"'
+            # Use Table.AddColumn with a regex-like Text approach
+            return (step_name,
+                    f'Table.AddColumn({{prev}}, "{new_col}", '
+                    f'each Text.Select([{col}], {{"a".."z", "A".."Z", "0".."9"}}), type text)')
+
+    elif action_type == 'CustomCalculation':
+        # Full custom calculation expression in Prep
+        col_name = action.get('columnName', action.get('newColumnName', 'Calc'))
+        expression = action.get('expression', '')
+        m_expr = _convert_prep_expression_to_m(expression)
+        if not m_expr.strip().startswith('each'):
+            m_expr = f'each {m_expr}'
+        return m_transform_add_column(col_name, m_expr)
+
     return None
 
 
@@ -815,6 +844,86 @@ def parse_prep_flow(filepath):
                     }
                     print(f"    ✓ Pivot: {node_name} ({node.get('pivotType', '?')})")
 
+            elif sem_type in ('Script', 'RunScript', 'RunCommand'):
+                # Script step (Python/R) — not directly convertible; pass through with comment
+                if upstream_ids and upstream_ids[0] in node_results:
+                    upstream = node_results[upstream_ids[0]]
+                    script_lang = node.get('scriptLanguage', node.get('language', 'Python'))
+                    comment_step = (
+                        '#"Script Warning"',
+                        f'Table.AddColumn({{prev}}, "__script_warning", '
+                        f'each "/* {script_lang} script step not auto-converted — '
+                        f'manual migration required */", type text)'
+                    )
+                    m_query = inject_m_steps(upstream['m_query'], [comment_step])
+                    node_results[nid] = {
+                        **upstream,
+                        'name': node_name,
+                        'm_query': m_query,
+                    }
+                    print(f"    ⚠ Script step ({script_lang}): {node_name} — manual migration required")
+
+            elif sem_type in ('Prediction', 'TabPy', 'Einstein'):
+                # Prediction / ML step — not convertible; pass through with warning
+                if upstream_ids and upstream_ids[0] in node_results:
+                    upstream = node_results[upstream_ids[0]]
+                    comment_step = (
+                        '#"Prediction Warning"',
+                        f'Table.AddColumn({{prev}}, "__prediction_warning", '
+                        f'each "/* ML/prediction step not auto-converted — '
+                        f'use Power BI AutoML or Python visual */", type text)'
+                    )
+                    m_query = inject_m_steps(upstream['m_query'], [comment_step])
+                    node_results[nid] = {
+                        **upstream,
+                        'name': node_name,
+                        'm_query': m_query,
+                    }
+                    print(f"    ⚠ Prediction step: {node_name} — manual migration required")
+
+            elif sem_type == 'CrossJoin':
+                # Cross join (no key condition) → Table.Join with no key
+                if upstream_ids and len(upstream_ids) >= 2:
+                    left_id = upstream_ids[0]
+                    right_id = upstream_ids[1]
+                    if left_id in node_results and right_id in node_results:
+                        left = node_results[left_id]
+                        right = node_results[right_id]
+                        right_name = _clean_m_table_ref(right.get('name', 'RightTable'))
+                        secondary_branch_ids.add(right_id)
+                        cross_step = (
+                            '#"Cross Join"',
+                            f'Table.Join({{prev}}, {{}}, {right_name}, {{}}, JoinKind.FullOuter)'
+                        )
+                        m_query = inject_m_steps(left['m_query'], [cross_step])
+                        node_results[nid] = {
+                            **left,
+                            'name': node_name,
+                            'm_query': m_query,
+                        }
+                        print(f"    ✓ Cross Join: {node_name}")
+
+            elif sem_type in ('PublishedDataSource', 'LoadPublishedDataSource'):
+                # Published data source input — reference as external table
+                ds_name = node.get('publishedDatasourceName',
+                                   node.get('datasourceName', node_name))
+                table_ref = _clean_m_table_ref(ds_name)
+                m_query = (
+                    f'let\n'
+                    f'    // Published Data Source: {ds_name}\n'
+                    f'    // TODO: Replace with actual Power BI dataset reference\n'
+                    f'    Source = #"{table_ref}"\n'
+                    f'in\n    Source'
+                )
+                node_results[nid] = {
+                    'connection': {'type': 'published', 'details': {}},
+                    'table': {'name': table_ref, 'columns': []},
+                    'name': node_name,
+                    'm_query': m_query,
+                    'fields': node.get('fields', []),
+                }
+                print(f"    ✓ Published DS Input: {node_name} → {ds_name}")
+
             else:
                 # Unknown transform — pass through
                 if upstream_ids and upstream_ids[0] in node_results:
@@ -859,11 +968,14 @@ def parse_prep_flow(filepath):
                     'name': table_name,
                     'columns': columns,
                 }],
+                'connection': result.get('connection', {}),
+                'connection_map': {},
                 'connections': [result.get('connection', {})],
                 'columns_metadata': [],
                 'calculations': [],
                 'relationships': [],
                 'm_query_override': result.get('m_query', ''),
+                'is_prep_source': True,
             }
             datasources.append(datasource)
             print(f"    + Secondary table emitted: {table_name}")
@@ -887,11 +999,14 @@ def parse_prep_flow(filepath):
                     'name': table_name,
                     'columns': columns,
                 }],
+                'connection': result.get('connection', {}),
+                'connection_map': {},
                 'connections': [result.get('connection', {})],
                 'columns_metadata': [],
                 'calculations': [],
                 'relationships': [],
                 'm_query_override': result.get('m_query', ''),
+                'is_prep_source': True,
             }
             datasources.append(datasource)
 
@@ -911,11 +1026,14 @@ def parse_prep_flow(filepath):
                         'columns': [{'name': f.get('name', ''), 'datatype': f.get('type', 'string')}
                                     for f in result.get('fields', [])],
                     }],
+                    'connection': result.get('connection', {}),
+                    'connection_map': {},
                     'connections': [result.get('connection', {})],
                     'columns_metadata': [],
                     'calculations': [],
                     'relationships': [],
                     'm_query_override': result.get('m_query', ''),
+                    'is_prep_source': True,
                 }
                 datasources.append(datasource)
 

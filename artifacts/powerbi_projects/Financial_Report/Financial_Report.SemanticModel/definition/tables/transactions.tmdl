@@ -1,39 +1,39 @@
 table transactions
-	lineageTag: 52272f4e-f2d5-41c5-b0b4-cebcad8210a6
+	lineageTag: cd4ff4d4-bf2a-4c18-aba6-c95f320914f1
 
 	measure Revenue = SUMX('transactions', IF('transactions'[type] = "Revenue", 'transactions'[amount], 0))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: bf01be8d-670b-4ab8-9998-4c6107a54ca1
+		lineageTag: 27c4a37c-fa90-4ee1-8b36-d16b70b79c88
 
 	measure Expenses = SUMX('transactions', IF('transactions'[type] = "Expense", 'transactions'[amount], 0))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 55c3498a-74d6-4961-ad1c-81afcfe51aaa
+		lineageTag: 2f938b2f-b123-4429-ae5c-c6e6c34d61bf
 
 	measure 'Net Income' = SUMX('transactions', IF('transactions'[type] = "Revenue", 'transactions'[amount], -'transactions'[amount]))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 789ed683-626a-4b82-abbd-db57bee3fede
+		lineageTag: 9aaa614c-544f-46b0-87a5-250fac0fdc55
 
 	measure 'Profit Margin %' = ([Revenue] - [Expenses]) / [Revenue]
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 6d6d6a7d-5abc-40f7-87ff-8c6b6957a172
+		lineageTag: 8d9a48ad-5e7b-4c12-9243-fae2fa5cf190
 
 	measure 'YTD Revenue' = CALCULATE(SUMX('transactions', IF(YEAR('transactions'[transaction_date]) = YEAR(TODAY()), 'transactions'[amount], 0)), ALL('transactions'))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 60e1a933-bd8f-46fe-8bee-a7c3f2d7239e
+		lineageTag: d701f67b-9394-436c-bc59-83e12c6fa3e1
 
 	measure 'Budget Variance' = SUM('transactions'[amount]) - CALCULATE(SUM('transactions'[amount]), ALL('transactions'))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: c07ccf52-2d26-4050-8c77-0dfdde3621f1
+		lineageTag: 66f8f452-f869-4788-9e8a-2dd5bb57686d
 
 	column transaction_id
 		dataType: int64
-		lineageTag: cd2d81aa-a871-4fb5-ab8a-6ea881843292
+		lineageTag: 46281ccf-3836-4c38-9773-c65c1ea73128
 		summarizeBy: sum
 		sourceColumn: transaction_id
 
@@ -42,7 +42,7 @@ table transactions
 	column transaction_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: bbbb5505-d3eb-4e6b-8621-1280063d290b
+		lineageTag: 58a11c67-29b0-46cc-b045-696d22868407
 		summarizeBy: none
 		sourceColumn: transaction_date
 		dataCategory: DateTime
@@ -51,7 +51,7 @@ table transactions
 
 	column account
 		dataType: string
-		lineageTag: 83304385-4087-4178-b05f-e5b9c531e43d
+		lineageTag: 19975614-9710-45df-9340-6c90ce359dcc
 		summarizeBy: none
 		sourceColumn: account
 
@@ -59,7 +59,7 @@ table transactions
 
 	column category
 		dataType: string
-		lineageTag: b17e39cc-c0c1-45a5-810d-0592450861b8
+		lineageTag: 3d2a7d58-40e7-4da9-8762-a4d26028e47f
 		summarizeBy: none
 		sourceColumn: category
 
@@ -68,7 +68,7 @@ table transactions
 	column amount
 		dataType: double
 		formatString: #,0.00
-		lineageTag: c206305e-2cb0-469b-8300-c243b30b1574
+		lineageTag: 4d8abebc-64cb-4787-93d7-b60afd250b41
 		summarizeBy: sum
 		sourceColumn: amount
 
@@ -76,7 +76,7 @@ table transactions
 
 	column type
 		dataType: string
-		lineageTag: a7bf526b-5b7c-433c-95dc-1b3b5fd8152f
+		lineageTag: 52221598-c47b-459d-bf2a-ad56ecfada5a
 		summarizeBy: none
 		sourceColumn: type
 
@@ -84,7 +84,7 @@ table transactions
 
 	column business_unit
 		dataType: string
-		lineageTag: dd162366-1bf9-4646-ae0e-4a61c37ba9ec
+		lineageTag: cfe08ca8-cdd0-4afc-af41-33ce3fd8fb07
 		summarizeBy: none
 		sourceColumn: business_unit
 
@@ -92,13 +92,13 @@ table transactions
 
 	column cost_center
 		dataType: string
-		lineageTag: 3537ef41-7c64-4780-9652-d06631966bfe
+		lineageTag: 499de70c-7689-4768-bb40-81b08f8df463
 		summarizeBy: none
 		sourceColumn: cost_center
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'transactions-ee691c3c-1bdc-4249-a2c1-3c3b26248f07' = m
+	partition 'transactions-acdb7bfd-3f72-4861-91d7-5ee7f8c968f3' = m
 		mode: import
 		source =
 				let

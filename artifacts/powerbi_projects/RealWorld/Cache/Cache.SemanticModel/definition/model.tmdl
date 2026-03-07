@@ -1,0 +1,23 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation PBI_QueryOrder = ["Extract","Base Salary","Commission Rate","New Quota","Sort by","New Business Growth","Churn Rate","State"]
+
+ref table Extract
+ref table 'Base Salary'
+ref table 'Commission Rate'
+ref table 'New Quota'
+ref table 'Sort by'
+ref table 'New Business Growth'
+ref table 'Churn Rate'
+ref table State
+
+ref expression DataFolder
+
+ref perspective 'Full Model'
+

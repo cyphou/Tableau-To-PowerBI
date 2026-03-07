@@ -1,0 +1,29 @@
+{
+  "generated_at": "2026-03-05T14:23:37.094836",
+  "source": "Tableau Migration",
+  "report_name": "SampleWB",
+  "objects_converted": {
+    "worksheets": 7,
+    "dashboards": 1,
+    "datasources": 1,
+    "calculations": 4,
+    "parameters": 0,
+    "filters": 16,
+    "stories": 0,
+    "sets": 0,
+    "groups": 5,
+    "bins": 0,
+    "hierarchies": 0,
+    "user_filters": 0,
+    "actions": 6,
+    "custom_sql": 0
+  },
+  "generated_output": {
+    "pages": 1,
+    "visuals": 3,
+    "theme_applied": false
+  },
+  "tmdl_stats": {
+    "tables": 2
+  }
+}

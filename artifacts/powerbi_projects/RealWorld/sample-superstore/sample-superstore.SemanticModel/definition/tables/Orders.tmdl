@@ -1,0 +1,71 @@
+table Orders
+	lineageTag: b20fb927-d35b-4e42-8da1-3b2993bfcccb
+
+	measure '[Number of Records]' = 1
+		displayFolder: Measures
+		lineageTag: 0015425c-272b-4c91-991f-08aa53c33d9a
+
+	column City
+		dataType: string
+		lineageTag: 74979de7-ed97-4868-9e44-db6230b681b0
+		summarizeBy: none
+		sourceColumn: City
+		dataCategory: City
+
+		annotation SummarizationSetBy = Automatic
+
+	column Country
+		dataType: string
+		lineageTag: b72fe8ff-499d-4545-a8fa-93cfa6d45105
+		summarizeBy: none
+		sourceColumn: Country
+		dataCategory: Country
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Postal Code'
+		dataType: double
+		formatString: *00000
+		lineageTag: bfda7c69-8a90-42ff-854d-688ba611f72d
+		summarizeBy: sum
+		sourceColumn: 'Postal Code'
+		dataCategory: PostalCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Row ID'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: f46be882-30c6-4b6d-9f96-841ce002d225
+		summarizeBy: sum
+		sourceColumn: 'Row ID'
+
+		annotation SummarizationSetBy = Automatic
+
+	column State
+		dataType: string
+		lineageTag: 295d0407-2533-4b38-9e48-c23637a8dd1c
+		summarizeBy: none
+		sourceColumn: State
+		dataCategory: StateOrProvince
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Orders-462b8bdb-9a17-4cac-96ce-df2d7a57abdc' = m
+		mode: import
+		source =
+				let
+				    // TODO: Configure the source for Unknown
+				    // Connection type not automatically supported
+				    Source = #table(
+				        {"City", "Country", "Postal Code", "Row ID", "State"},
+				        {
+				            {"Sample 1", "Sample 2", 3, 4, "Sample 5"},
+				            {"Sample 2", "Sample 3", 4, 5, "Sample 6"}
+				        }
+				    )
+				in
+				    Source
+
+	annotation PBI_ResultType = Table
+

@@ -1,0 +1,29 @@
+{
+  "generated_at": "2026-03-05T14:23:42.502276",
+  "source": "Tableau Migration",
+  "report_name": "filtering",
+  "objects_converted": {
+    "worksheets": 2,
+    "dashboards": 1,
+    "datasources": 1,
+    "calculations": 1,
+    "parameters": 0,
+    "filters": 0,
+    "stories": 0,
+    "sets": 0,
+    "groups": 1,
+    "bins": 0,
+    "hierarchies": 0,
+    "user_filters": 0,
+    "actions": 0,
+    "custom_sql": 0
+  },
+  "generated_output": {
+    "pages": 1,
+    "visuals": 2,
+    "theme_applied": false
+  },
+  "tmdl_stats": {
+    "tables": 1
+  }
+}

@@ -763,7 +763,12 @@ class PowerBIProjectGenerator:
                 }
                 
                 # Add page-level filters from dashboard filters
-                db_filters = db.get('filters', [])
+                db_filters = list(db.get('filters', []))
+                # Also promote context filters from worksheets to page level
+                for ws in worksheets:
+                    for f in ws.get('filters', []):
+                        if f.get('is_context', False):
+                            db_filters.append(f)
                 if db_filters:
                     page_filters = self._create_visual_filters(db_filters)
                     if page_filters:
@@ -830,6 +835,14 @@ class PowerBIProjectGenerator:
                                                                scale_x, scale_y, visual_count,
                                                                page_display_name)
                         visual_count += created
+
+                # Create slicer for Pages shelf (Tableau play-axis animation)
+                pages_shelf = db.get('pages_shelf', {})
+                if pages_shelf:
+                    self._create_pages_shelf_slicer(
+                        visuals_dir, pages_shelf, scale_x, scale_y,
+                        visual_count, converted_objects)
+                    visual_count += 1
                 
                 print(f"  📊 Page '{page_display_name}': {visual_count} visuals created")
         
@@ -1838,7 +1851,255 @@ class PowerBIProjectGenerator:
                 if "valueAxis" not in objects:
                     objects["valueAxis"] = [{"properties": {"show": _L("true")}}]
                 objects["valueAxis"][0]["properties"]["referenceLine"] = y_ref_lines
-        
+
+        # ── Extended visual config (ported from Fabric) ──────────────
+
+        # Trend lines (analytics pane)
+        trend_lines = ws_data.get('trend_lines', [])
+        if trend_lines:
+            trend_objs = []
+            for tl in trend_lines:
+                trend_type = tl.get('type', 'linear').capitalize()
+                if trend_type not in ('Linear', 'Exponential', 'Logarithmic',
+                                      'Polynomial', 'Power', 'MovingAverage'):
+                    trend_type = 'Linear'
+                trend_obj = {
+                    "show": _L("true"),
+                    "lineColor": {"solid": {"color": _L(f"'{tl.get('color', '#666666')}'")}}
+                }
+                if tl.get('show_equation'):
+                    trend_obj["displayEquation"] = _L("true")
+                if tl.get('show_r_squared'):
+                    trend_obj["displayRSquared"] = _L("true")
+                trend_objs.append({"properties": trend_obj})
+            objects["trend"] = trend_objs
+
+        # Annotations → subtitle text
+        annotations = ws_data.get('annotations', [])
+        if annotations:
+            anno_texts = [a.get('text', '') for a in annotations if a.get('text')]
+            if anno_texts:
+                subtitle_text = "; ".join(anno_texts[:3])
+                objects.setdefault("subTitle", [{"properties": {}}])
+                objects["subTitle"][0]["properties"]["show"] = _L("true")
+                objects["subTitle"][0]["properties"]["text"] = _L(json.dumps(subtitle_text))
+
+        # Font formatting (family + size from extracted formatting)
+        font_props = formatting.get('font', {})
+        if isinstance(font_props, dict):
+            font_family = font_props.get('family', '')
+            font_size = font_props.get('size', '')
+            if font_family or font_size:
+                if "labels" not in objects:
+                    objects["labels"] = [{"properties": {}}]
+                if font_family:
+                    objects["labels"][0]["properties"]["fontFamily"] = _L(f"'{font_family}'")
+                if font_size:
+                    try:
+                        fs_val = int(float(str(font_size).replace('pt', '').replace('px', '').strip()))
+                        objects["labels"][0]["properties"]["fontSize"] = _L(f"{fs_val}D")
+                    except (ValueError, TypeError):
+                        pass
+
+        # Enhanced axis config (label rotation, show toggles)
+        axes_detail = ws_data.get('axes', {})
+        if axes_detail:
+            for axis_key, axis_obj_key in [('x', 'categoryAxis'), ('y', 'valueAxis')]:
+                ax = axes_detail.get(axis_key, {})
+                if not ax:
+                    continue
+                if axis_obj_key in objects:
+                    props = objects[axis_obj_key][0].get("properties", {})
+                else:
+                    props = {"show": _L("true")}
+                if ax.get('show_title') is False:
+                    props["showAxisTitle"] = _L("false")
+                if ax.get('show_label') is False:
+                    props["show"] = _L("false")
+                if ax.get('label_rotation'):
+                    try:
+                        rot = int(float(ax['label_rotation']))
+                        if rot != 0:
+                            props["labelAngle"] = _L(f"{rot}L")
+                    except (ValueError, TypeError):
+                        pass
+                if ax.get('format'):
+                    props["labelDisplayUnits"] = _L("'0L'")
+                objects[axis_obj_key] = [{"properties": props}]
+
+        # Forecast config (analytics pane)
+        forecasts = ws_data.get('forecasting', [])
+        if forecasts:
+            fc = forecasts[0]
+            forecast_obj = {
+                "show": _L("true"),
+                "forecastLength": _L(f"{fc.get('periods', 5)}L"),
+                "confidenceBandStyle": _L("'fill'"),
+            }
+            ci = fc.get('prediction_interval', '95')
+            forecast_obj["confidenceLevel"] = _L(f"'{ci}'")
+            if fc.get('ignore_last', '0') != '0':
+                forecast_obj["ignoreLast"] = _L(f"{fc['ignore_last']}L")
+            objects["forecast"] = [{"properties": forecast_obj}]
+
+        # Map options (washout/transparency + style)
+        map_opts = ws_data.get('map_options', {})
+        if map_opts and visual_type in ('map', 'filledMap'):
+            map_props = {}
+            washout = map_opts.get('washout', '0.0')
+            try:
+                wo_val = float(washout)
+                if wo_val > 0:
+                    map_props["transparency"] = _L(f"{int(wo_val * 100)}L")
+            except (ValueError, TypeError):
+                pass
+            style = map_opts.get('style', 'road')
+            style_map = {'normal': "'road'", 'light': "'grayscale'",
+                         'dark': "'darkGrayscale'", 'satellite': "'aerial'",
+                         'streets': "'road'"}
+            pbi_style = style_map.get(style.lower(), "'road'")
+            map_props["mapStyle"] = _L(pbi_style)
+            if map_props:
+                objects["mapControl"] = [{"properties": map_props}]
+
+        # Per-value color assignments (categorical color map)
+        if not objects.get("dataPoint"):
+            color_values = color_enc.get('color_values', {})
+            if color_values:
+                dp_rules = []
+                for val, clr in list(color_values.items())[:20]:
+                    dp_rules.append({
+                        "properties": {
+                            "fill": {"solid": {"color": _L(f"'{clr}'")}}
+                        }
+                    })
+                if dp_rules:
+                    objects["dataPoint"] = dp_rules
+
+        # Stepped color thresholds (discrete conditional formatting)
+        if not objects.get("dataPoint"):
+            color_thresholds = color_enc.get('thresholds', [])
+            if color_thresholds and len(color_thresholds) >= 2:
+                rules = []
+                for thresh in color_thresholds:
+                    rule = {"properties": {
+                        "fill": {"solid": {"color": _L(
+                            f"'{thresh.get('color', '#cccccc')}'")}}
+                    }}
+                    if thresh.get('value') is not None:
+                        rule["properties"]["inputValue"] = _L(f"{thresh['value']}D")
+                    rules.append(rule)
+                objects["dataPoint"] = rules
+
+        # Data bars for table/matrix columns
+        if visual_type in ('tableEx', 'matrix', 'pivotTable', 'table'):
+            value_fields = [f for f in ws_data.get('fields', [])
+                            if f.get('role') == 'measure']
+            if value_fields and color_enc.get('type') == 'quantitative':
+                data_bar_props = {
+                    "show": _L("true"),
+                    "positiveColor": {"solid": {"color": _L("'#4472C4'")}},
+                    "negativeColor": {"solid": {"color": _L("'#ED7D31'")}},
+                }
+                objects["dataBar"] = [{"properties": data_bar_props}]
+
+            # Default row banding fallback
+            if "values" not in objects:
+                objects["values"] = [{
+                    "properties": {
+                        "backColor": {"solid": {"color": _L("'#F2F2F2'")}}
+                    }
+                }]
+
+            # Totals and subtotals
+            totals = ws_data.get('totals', {})
+            if totals and (totals.get('grand_totals') or totals.get('subtotals')):
+                objects.setdefault("total", [{"properties": {}}])
+                objects["total"][0]["properties"]["totals"] = _L("true")
+                if totals.get('subtotals'):
+                    objects.setdefault("subTotals", [{"properties": {}}])
+                    objects["subTotals"][0]["properties"]["rowSubtotals"] = _L("true")
+
+        # Continuous vs discrete axis scale
+        for axis_key, axis_obj_key in [('x', 'categoryAxis'), ('y', 'valueAxis')]:
+            ax = axes_detail.get(axis_key, {})
+            if ax.get('is_continuous') is True:
+                if axis_obj_key in objects:
+                    objects[axis_obj_key][0]["properties"]["axisType"] = _L("'Continuous'")
+            elif ax.get('is_continuous') is False and axis_obj_key in objects:
+                objects[axis_obj_key][0]["properties"]["axisType"] = _L("'Categorical'")
+
+        # Dual-axis synchronization (secShow / secAxisLabel)
+        dual_axis = ws_data.get('dual_axis', {})
+        if isinstance(dual_axis, dict) and dual_axis.get('enabled'):
+            if "valueAxis" not in objects:
+                objects["valueAxis"] = [{"properties": {"show": _L("true")}}]
+            if dual_axis.get('synchronized'):
+                objects["valueAxis"][0]["properties"]["secShow"] = _L("true")
+                objects["valueAxis"][0]["properties"]["secAxisLabel"] = _L("true")
+
+        # Per-object padding
+        padding = ws_data.get('padding', {})
+        if isinstance(padding, dict) and padding:
+            pad_props = {}
+            for side in ('top', 'bottom', 'left', 'right'):
+                val = padding.get(f'padding_{side}', padding.get(f'margin_{side}', 0))
+                if val:
+                    pad_props[side] = _L(f"{val}L")
+            if pad_props:
+                objects["visualContainerPadding"] = [{"properties": pad_props}]
+
+        # Reference bands and statistical reference lines (analytics_stats)
+        analytics_stats = ws_data.get('analytics_stats', [])
+        for stat in analytics_stats:
+            if stat.get('type') == 'distribution_band':
+                band_from = stat.get('value_from', '')
+                band_to = stat.get('value_to', '')
+                if band_from and band_to:
+                    if "valueAxis" not in objects:
+                        objects["valueAxis"] = [{"properties": {"show": _L("true")}}]
+                    objects["valueAxis"][0]["properties"].setdefault("referenceLine", [])
+                    objects["valueAxis"][0]["properties"]["referenceLine"].append({
+                        "type": "Band",
+                        "lowerBound": str(band_from),
+                        "upperBound": str(band_to),
+                        "transparency": _L("50L"),
+                        "show": _L("true"),
+                    })
+            elif stat.get('type') in ('stat_line', 'stat_reference'):
+                comp = stat.get('computation', stat.get('stat', ''))
+                stat_map = {'mean': 'Average', 'median': 'Median',
+                            'constant': 'Constant', 'percentile': 'Percentile',
+                            'mode': 'Average'}
+                stat_type = stat_map.get(comp.lower(), 'Average')
+                if "valueAxis" not in objects:
+                    objects["valueAxis"] = [{"properties": {"show": _L("true")}}]
+                objects["valueAxis"][0]["properties"].setdefault("referenceLine", [])
+                objects["valueAxis"][0]["properties"]["referenceLine"].append({
+                    "type": stat_type,
+                    "show": _L("true"),
+                    "style": _L("'dashed'"),
+                })
+
+        # Small multiples formatting
+        sm_field = ws_data.get('small_multiples', '')
+        if not sm_field:
+            pages_shelf = ws_data.get('pages_shelf', {})
+            if isinstance(pages_shelf, dict):
+                sm_field = pages_shelf.get('field', '')
+        if sm_field:
+            objects["smallMultiple"] = [{"properties": {
+                "layoutMode": _L("'Flow'"),
+                "showChartTitle": _L("true"),
+            }}]
+
+        # Number format mapping on labels
+        fmt_info = formatting.get('number_format', formatting.get('format_string', ''))
+        if fmt_info:
+            pbi_fmt = self._convert_number_format(fmt_info)
+            if pbi_fmt and "labels" in objects:
+                objects["labels"][0]["properties"]["labelDisplayUnits"] = _L(f"'{pbi_fmt}'")
+
         return objects
     
     def _create_slicer_visual(self, visual_id, x, y, w, h, field_name, table_name, z_order,
@@ -1940,7 +2201,62 @@ class PowerBIProjectGenerator:
 
         # Default to Dropdown for categorical text fields
         return 'Dropdown'
-    
+
+    def _create_pages_shelf_slicer(self, visuals_dir, pages_shelf, scale_x, scale_y,
+                                    visual_count, converted_objects):
+        """Create an animation-hint slicer from Tableau Pages shelf.
+
+        In Tableau the Pages shelf allows playback through dimension values;
+        Power BI has no direct equivalent.  We create a standard slicer bound
+        to the same field and annotate it with a comment so that the user
+        knows it originated from a Pages shelf.
+        """
+        field = pages_shelf.get('field', '')
+        if not field:
+            return
+        table_name = self._find_column_table(field, converted_objects)
+        visual_id = uuid.uuid4().hex[:20]
+        visual_dir = os.path.join(visuals_dir, visual_id)
+        os.makedirs(visual_dir, exist_ok=True)
+        slicer = self._create_slicer_visual(
+            visual_id, 10, 10, 400, 50, field, table_name, visual_count)
+        slicer.setdefault('visual', {}).setdefault('objects', {})
+        slicer['visual']['objects']['general'] = [{
+            'properties': {
+                'comments': _L("'Pages Shelf / Play Axis: animate through values'")
+            }
+        }]
+        _write_json(os.path.join(visual_dir, 'visual.json'), slicer)
+
+    @staticmethod
+    def _convert_number_format(tableau_format):
+        """Convert Tableau number format string to PBI display units / format.
+
+        Common Tableau patterns::
+
+            ###,###    → #,0
+            $#,#00.00  → $#,0.00
+            0.0%       → 0.0%
+            0.00       → 0.00
+        """
+        if not tableau_format or not isinstance(tableau_format, str):
+            return ''
+        fmt = tableau_format.strip()
+        # Already a PBI-compatible format
+        if fmt in ('0', '0.0', '0.00', '#,0', '#,0.0', '#,0.00',
+                   '0%', '0.0%', '0.00%'):
+            return fmt
+        # Currency
+        if '$' in fmt:
+            return fmt.replace('#,#', '#,0').replace('##', '#0')
+        # Percentage
+        if '%' in fmt:
+            return fmt
+        # Thousands separator
+        if ',' in fmt:
+            return fmt.replace('#,#', '#,0')
+        return fmt
+
     def _create_drillthrough_pages(self, pages_dir, page_names, worksheets,
                                     converted_objects):
         """Create drill-through pages from Tableau filter/set actions.

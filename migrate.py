@@ -690,6 +690,12 @@ def main():
         help='Override culture/locale for the semantic model (e.g., fr-FR, de-DE). Default: en-US'
     )
 
+    parser.add_argument(
+        '--assess',
+        action='store_true',
+        help='Run pre-migration assessment and strategy analysis after extraction (no generation)'
+    )
+
     args = parser.parse_args()
 
     # Setup structured logging
@@ -745,6 +751,49 @@ def main():
         results['prep'] = run_prep_flow(args.prep)
         if not results['prep']:
             print("\n⚠ Prep flow parsing failed — continuing with TWB data only")
+
+    # Step 1c: Assessment (optional)
+    if args.assess and results.get('extraction'):
+        try:
+            from powerbi_import.assessment import run_assessment, print_assessment_report, save_assessment_report
+            from powerbi_import.strategy_advisor import recommend_strategy, print_recommendation
+
+            # Load extracted data
+            extract_dir = os.path.dirname(args.tableau_file) if args.tableau_file else 'tableau_export'
+            extracted = {}
+            json_files = ['datasources', 'worksheets', 'dashboards', 'calculations',
+                          'parameters', 'filters', 'stories', 'actions', 'sets',
+                          'groups', 'bins', 'hierarchies', 'custom_sql', 'user_filters',
+                          'sort_orders', 'aliases']
+            for jf in json_files:
+                fpath = os.path.join('tableau_export', f'{jf}.json')
+                if os.path.exists(fpath):
+                    with open(fpath, 'r', encoding='utf-8') as f:
+                        extracted[jf] = json.load(f)
+
+            # Run assessment
+            report = run_assessment(extracted)
+            print_assessment_report(report)
+
+            # Save assessment report
+            out_dir = args.output_dir or os.path.join('artifacts', 'powerbi_projects')
+            os.makedirs(out_dir, exist_ok=True)
+            source_basename = os.path.splitext(os.path.basename(args.tableau_file))[0]
+            assess_path = os.path.join(out_dir, f'assessment_{source_basename}.json')
+            save_assessment_report(report, assess_path)
+            print(f"\n  Assessment saved to: {assess_path}")
+
+            # Strategy recommendation
+            has_prep = bool(args.prep and results.get('prep'))
+            rec = recommend_strategy(extracted, prep_flow=has_prep)
+            print_recommendation(rec)
+
+            print("\n✓ Assessment complete (no generation performed)")
+            return 0
+        except Exception as e:
+            logger.error(f"Assessment failed: {e}")
+            print(f"\n✗ Assessment failed: {e}")
+            return 1
 
     # Step 2: Generate .pbip project
     # Derive report name from the source filename

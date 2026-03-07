@@ -1,9 +1,9 @@
 table Machines
-	lineageTag: c89fdd13-b532-498f-ad79-348aa8839839
+	lineageTag: 9c1ae3a7-70d8-4832-b6e8-2ec274f37b20
 
 	column machine_id
 		dataType: int64
-		lineageTag: afe1b425-ef28-48d7-8537-586f7b7eab15
+		lineageTag: 02cf2e3c-c148-461c-adfc-23a201325104
 		summarizeBy: sum
 		sourceColumn: machine_id
 
@@ -11,7 +11,7 @@ table Machines
 
 	column machine_name
 		dataType: string
-		lineageTag: 5c1077ec-9a80-4165-b37c-17411537ccd2
+		lineageTag: 9b28938d-e07b-4c77-bb55-0835ab99bc96
 		summarizeBy: none
 		sourceColumn: machine_name
 
@@ -19,7 +19,7 @@ table Machines
 
 	column machine_type
 		dataType: string
-		lineageTag: d945c9f8-3e02-4a04-9ebb-b1fb3a887548
+		lineageTag: dcf6475d-9e7d-4180-86d8-f8f00106aae6
 		summarizeBy: none
 		sourceColumn: machine_type
 
@@ -28,7 +28,7 @@ table Machines
 	column install_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 74e620bf-8ca6-429e-8974-a23eed5fa3ff
+		lineageTag: a34cbd02-8104-4908-a616-a2afb4d38c0e
 		summarizeBy: none
 		sourceColumn: install_date
 		dataCategory: DateTime
@@ -37,7 +37,7 @@ table Machines
 
 	column location
 		dataType: string
-		lineageTag: ad2c686d-1c1b-465a-8c06-b9702dc53b5f
+		lineageTag: 2b303104-d502-4d21-85de-801a1659a66c
 		summarizeBy: none
 		sourceColumn: location
 
@@ -45,7 +45,7 @@ table Machines
 
 	column line_id
 		dataType: string
-		lineageTag: 40c89147-3cac-4e74-8ada-e8d25c9c9a4a
+		lineageTag: 171b21f4-2270-436c-add5-528386a004da
 		summarizeBy: none
 		sourceColumn: line_id
 
@@ -54,13 +54,13 @@ table Machines
 	column rated_capacity
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 57e5d12b-fa76-4359-85b7-7d76638d1ac8
+		lineageTag: c87afe8f-191d-4421-a1e8-2dab1e5f4651
 		summarizeBy: sum
 		sourceColumn: rated_capacity
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Machines-b393aae2-fad4-4af5-992b-e442943d0c41' = m
+	partition 'Machines-529f4d40-97a6-498f-bfff-91c3ce4244a7' = m
 		mode: import
 		source =
 				let

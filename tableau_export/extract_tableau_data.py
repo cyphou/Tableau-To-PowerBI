@@ -8,11 +8,14 @@ and exports them in JSON format for conversion to Power BI.
 import os
 import sys
 import json
+import logging
 import zipfile
 import xml.etree.ElementTree as ET
 from datetime import datetime
 import re
 from datasource_extractor import extract_datasource
+
+logger = logging.getLogger(__name__)
 
 # Ensure Unicode output on Windows consoles (✓, →, ❌, etc.)
 if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
@@ -80,6 +83,10 @@ class TableauExtractor:
         self.extract_custom_sql(root)
         self.extract_user_filters(root)
         self.extract_datasource_filters(root)
+        self.extract_custom_geocoding(root)
+        self.extract_published_datasources(root)
+        self.extract_data_blending(root)
+        self.extract_hyper_metadata()
         
         # Save the exports
         self.save_extractions()
@@ -128,6 +135,18 @@ class TableauExtractor:
                 'axes': self.extract_axes(worksheet),
                 'reference_lines': self.extract_reference_lines(worksheet),
                 'annotations': self.extract_annotations(worksheet),
+                'trend_lines': self.extract_trend_lines(worksheet),
+                'pages_shelf': self.extract_pages_shelf(worksheet),
+                'table_calcs': self.extract_table_calcs(worksheet),
+                'forecasting': self.extract_forecasting(worksheet),
+                'map_options': self.extract_map_options(worksheet),
+                'clustering': self.extract_clustering(worksheet),
+                'dual_axis': self.extract_dual_axis_sync(worksheet),
+                'totals': self.extract_totals_subtotals(worksheet),
+                'description': self.extract_worksheet_description(worksheet),
+                'show_hide_headers': self.extract_show_hide_headers(worksheet),
+                'dynamic_title': self.extract_dynamic_title(worksheet),
+                'analytics_stats': self.extract_analytics_pane_stats(worksheet),
             }
             worksheets.append(ws_data)
         
@@ -153,6 +172,10 @@ class TableauExtractor:
                 'theme': self.extract_theme(dashboard),
                 'layout_containers': self.extract_layout_containers(dashboard),
                 'device_layouts': self.extract_device_layouts(dashboard),
+                'containers': self.extract_dashboard_containers(dashboard),
+                'show_hide_containers': self.extract_show_hide_containers(dashboard),
+                'dynamic_zone_visibility': self.extract_dynamic_zone_visibility(dashboard),
+                'floating_tiled': self.extract_floating_tiled(dashboard),
             }
             dashboards.append(db_data)
         
@@ -599,7 +622,8 @@ class TableauExtractor:
                 'min': filter_min,
                 'max': filter_max,
                 'exclude': exclude_mode,
-                'include_null': include_null
+                'include_null': include_null,
+                'is_context': filt.get('context', '') == 'true'
             })
         return filters
     
@@ -674,20 +698,39 @@ class TableauExtractor:
         return formatting
     
     def extract_tooltips(self, worksheet):
-        """Extracts tooltips (fields and viz-in-tooltip)"""
+        """Extracts tooltips (fields, viz-in-tooltip, and custom formatting per run)"""
         tooltips = []
         
         # Text tooltip from <formatted-text>
         for tooltip_elem in worksheet.findall('.//tooltip'):
             formatted = tooltip_elem.find('.//formatted-text')
             if formatted is not None:
-                # Reconstruct the text
+                # Reconstruct the text with per-run formatting
                 parts = []
+                runs = []
                 for run in formatted.findall('.//run'):
                     if run.text:
                         parts.append(run.text)
+                        run_data = {'text': run.text}
+                        bold = run.get('bold', run.get('fontweight', ''))
+                        if bold and bold.lower() in ('true', 'bold'):
+                            run_data['bold'] = True
+                        color = run.get('fontcolor', run.get('color', ''))
+                        if color:
+                            run_data['color'] = color
+                        font_size = run.get('fontsize', '')
+                        if font_size:
+                            run_data['font_size'] = font_size
+                        # Detect field references <run>[field]</run>
+                        field_match = re.match(r'^\s*\[([^\]]+)\]\s*$', run.text)
+                        if field_match:
+                            run_data['field_ref'] = field_match.group(1)
+                        runs.append(run_data)
                 if parts:
-                    tooltips.append({'type': 'text', 'content': ''.join(parts)})
+                    tt = {'type': 'text', 'content': ''.join(parts)}
+                    if runs:
+                        tt['runs'] = runs
+                    tooltips.append(tt)
             
             # Viz in tooltip (reference to another worksheet)
             viz_ref = tooltip_elem.get('viz', '')
@@ -726,43 +769,37 @@ class TableauExtractor:
             
             layout_mode = 'floating' if is_floating else ('fixed' if is_fixed else 'tiled')
             
-            # Extract padding/margins from zone-style
-            padding = {}
-            zone_style = zone.find('.//zone-style')
-            if zone_style is not None:
-                for fmt in zone_style.findall('.//format'):
-                    attr = fmt.get('attr', '')
-                    val = fmt.get('value', '')
-                    if attr in ('padding-left', 'padding-right', 'padding-top', 'padding-bottom',
-                                'margin-left', 'margin-right', 'margin-top', 'margin-bottom'):
-                        try:
-                            padding[attr] = int(val)
-                        except (ValueError, TypeError):
-                            pass
-                    elif attr == 'border-style':
-                        padding['border_style'] = val
-                    elif attr == 'border-color':
-                        padding['border_color'] = val
-                    elif attr == 'border-width':
-                        try:
-                            padding['border_width'] = int(val)
-                        except (ValueError, TypeError):
-                            pass
-            
             # Texte
             if zone_type == 'text' or zone.get('type-v2') == 'text':
                 text_content = ''
+                text_runs = []
                 formatted = zone.find('.//formatted-text')
                 if formatted is not None:
                     parts = []
                     for run in formatted.findall('.//run'):
                         if run.text:
                             parts.append(run.text)
+                            run_data = {'text': run.text}
+                            if run.get('bold', run.get('fontweight', '')).lower() in ('true', 'bold'):
+                                run_data['bold'] = True
+                            if run.get('italic', run.get('fontstyle', '')).lower() in ('true', 'italic'):
+                                run_data['italic'] = True
+                            color = run.get('fontcolor', run.get('color', ''))
+                            if color:
+                                run_data['color'] = color
+                            font_size = run.get('fontsize', '')
+                            if font_size:
+                                run_data['font_size'] = font_size
+                            url = run.get('href', run.get('url', ''))
+                            if url:
+                                run_data['url'] = url
+                            text_runs.append(run_data)
                     text_content = ''.join(parts)
                 objects.append({
                     'type': 'text',
                     'name': zone_name or f'text_{zone_id}',
                     'content': text_content,
+                    'text_runs': text_runs,
                     'position': pos,
                     'layout': layout_mode
                 })
@@ -805,6 +842,65 @@ class TableauExtractor:
                 })
                 continue
             
+            # Navigation button
+            if zone_type == 'nav' or zone.get('type-v2') == 'nav' or zone.get('type-v2') == 'button':
+                target = zone.get('target-sheet', zone.get('param', ''))
+                objects.append({
+                    'type': 'navigation_button',
+                    'name': zone_name or f'nav_{zone_id}',
+                    'target_sheet': target,
+                    'position': pos,
+                    'layout': layout_mode
+                })
+                continue
+            
+            # Download button (export)
+            if zone_type == 'export' or zone.get('type-v2') == 'export':
+                objects.append({
+                    'type': 'download_button',
+                    'name': zone_name or f'download_{zone_id}',
+                    'position': pos,
+                    'layout': layout_mode
+                })
+                continue
+            
+            # Extension object
+            if zone_type == 'extension' or zone.get('type-v2') == 'extension':
+                ext_id = zone.get('extension-id', '')
+                objects.append({
+                    'type': 'extension',
+                    'name': zone_name or f'ext_{zone_id}',
+                    'extension_id': ext_id,
+                    'position': pos,
+                    'layout': layout_mode
+                })
+                continue
+            
+            # Per-object padding/margins from zone-style format elements
+            obj_padding = {}
+            zone_style = zone.find('zone-style')
+            if zone_style is not None:
+                for fmt in zone_style.findall('format'):
+                    attr_name = fmt.get('attr', '')
+                    attr_val = fmt.get('value', '')
+                    if attr_name.startswith(('padding-', 'margin-')):
+                        try:
+                            obj_padding[attr_name] = int(attr_val)
+                        except (ValueError, TypeError):
+                            pass
+                    elif attr_name.startswith('border-'):
+                        key = attr_name.replace('-', '_')
+                        obj_padding[key] = attr_val
+            # Also check direct zone attributes
+            for pad_attr in ('padding-top', 'padding-bottom', 'padding-left', 'padding-right',
+                             'margin-top', 'margin-bottom', 'margin-left', 'margin-right'):
+                val = zone.get(pad_attr, '')
+                if val and pad_attr not in obj_padding:
+                    try:
+                        obj_padding[pad_attr] = int(val)
+                    except (ValueError, TypeError):
+                        pass
+            
             # Filtre (quick filter / parameter control)
             if zone_type == 'filter' or zone.get('type-v2') == 'filter':
                 param_ref = zone.get('param', '')
@@ -831,14 +927,16 @@ class TableauExtractor:
             # Worksheet reference (the default case)
             if zone_name and zone_name not in seen_names:
                 seen_names.add(zone_name)
-                objects.append({
+                ws_obj = {
                     'type': 'worksheetReference',
                     'name': zone_name,
                     'worksheetName': zone_name,
                     'position': pos,
-                    'layout': layout_mode,
-                    'padding': padding,
-                })
+                    'layout': layout_mode
+                }
+                if obj_padding:
+                    ws_obj['padding'] = obj_padding
+                objects.append(ws_obj)
         
         return objects
     
@@ -941,10 +1039,10 @@ class TableauExtractor:
         return layouts
     
     def extract_theme(self, dashboard):
-        """Extracts the theme (colors, fonts) from the dashboard or workbook"""
+        """Extracts the theme (colors, fonts, custom color palettes) from the dashboard or workbook"""
         theme = {}
         
-        # Palette colors
+        # Palette colors from dashboard preferences
         for prefs in dashboard.findall('.//preferences'):
             colors = []
             for color in prefs.findall('.//color-palette/color'):
@@ -953,14 +1051,46 @@ class TableauExtractor:
             if colors:
                 theme['color_palette'] = colors
         
+        # Custom color palettes (named palettes)
+        custom_palettes = {}
+        for palette in dashboard.findall('.//color-palette'):
+            palette_name = palette.get('name', '')
+            palette_type = palette.get('type', '')
+            palette_colors = []
+            for color in palette.findall('.//color'):
+                if color.text:
+                    palette_colors.append(color.text)
+            if palette_name and palette_colors:
+                custom_palettes[palette_name] = {
+                    'type': palette_type,
+                    'colors': palette_colors,
+                }
+        if custom_palettes:
+            theme['custom_palettes'] = custom_palettes
+        
         # Global formatting style
         for style in dashboard.findall('.//style'):
             for rule in style.findall('.//style-rule'):
                 elem = rule.get('element', '')
-                fmt = rule.find('.//format')
-                if fmt is not None and elem:
+                for fmt in rule.findall('.//format'):
                     attrs = dict(fmt.attrib)
-                    theme.setdefault('styles', {})[elem] = attrs
+                    if attrs:
+                        theme.setdefault('styles', {})[elem] = attrs
+        
+        # Font family from formatting
+        for fmt in dashboard.findall('.//format[@attr="font-family"]'):
+            theme['font_family'] = fmt.get('value', '')
+        
+        # Extract global workbook-level color palette from parent
+        parent = dashboard
+        for color_pal in parent.findall('.//preferences/color-palette'):
+            pal_name = color_pal.get('name', 'default')
+            pal_colors = [c.text for c in color_pal.findall('.//color') if c.text]
+            if pal_colors:
+                theme.setdefault('custom_palettes', {})[pal_name] = {
+                    'type': color_pal.get('type', 'regular'),
+                    'colors': pal_colors,
+                }
         
         return theme
     
@@ -1069,7 +1199,7 @@ class TableauExtractor:
                 elif not color_type and ':nk' in column:
                     color_type = 'categorical'
                 
-                encoding['color'] = {
+                color_data = {
                     'field': _clean_field_ref(col_refs[0][1]) if col_refs else _strip_brackets(column),
                     'palette': palette,
                     'type': color_type,
@@ -1086,7 +1216,29 @@ class TableauExtractor:
                         if cp.text:
                             palette_colors.append(cp.text)
                 if palette_colors:
-                    encoding['color']['palette_colors'] = palette_colors
+                    color_data['palette_colors'] = palette_colors
+                
+                # Stepped color thresholds from <bucket> elements
+                thresholds = []
+                for bucket in color.findall('.//bucket'):
+                    thresh = {'color': bucket.get('color', '')}
+                    val = bucket.get('value', bucket.get('low', ''))
+                    if val:
+                        try:
+                            thresh['value'] = float(val)
+                        except (ValueError, TypeError):
+                            pass
+                    if thresh.get('color'):
+                        thresholds.append(thresh)
+                if thresholds:
+                    color_data['thresholds'] = thresholds
+                
+                # Legend position
+                legend = color.find('.//legend')
+                if legend is not None:
+                    color_data['legend_position'] = legend.get('position', 'right')
+                
+                encoding['color'] = color_data
             
             # Size
             size = enc_elem.find('.//size')
@@ -1160,81 +1312,63 @@ class TableauExtractor:
         return axes
     
     def extract_reference_lines(self, worksheet):
-        """Extracts reference lines, bands, and analytics pane items.
-        
-        Parses <reference-line> elements which contain constant lines,
-        average/median lines, trend lines, and reference bands.
-        """
+        """Extracts reference lines, bands, and distributions"""
         ref_lines = []
-        
-        for ref in worksheet.findall('.//reference-line'):
-            ref_data = {
-                'scope': ref.get('scope', 'per-pane'),  # per-pane, per-cell, per-table
-                'value_column': '',
-                'value': None,
-                'label': '',
-                'label_type': ref.get('label-type', 'value'),  # value, computation, custom, none
-                'line_style': ref.get('line-style', 'dashed'),
-                'line_color': '',
-                'line_thickness': ref.get('line-thickness', '1'),
-                'fill_above': ref.get('fill-above', ''),
-                'fill_below': ref.get('fill-below', ''),
-                'computation': ref.get('computation', 'constant'),  # constant, average, median, sum, min, max, total, percentile, quantile
+        for rl in worksheet.findall('.//reference-line'):
+            # Value may be on the element or in a child <reference-line-value>
+            value = rl.get('value', '')
+            rl_vals = rl.findall('reference-line-value')
+            if not value and rl_vals:
+                value = rl_vals[0].get('value', '')
+            # Label may be on the element or in a child <reference-line-label>
+            label = rl.get('label', '')
+            rl_lbl = rl.find('reference-line-label')
+            if not label and rl_lbl is not None:
+                label = rl_lbl.get('value', '')
+            # Color fallback: element attribute or line-color
+            line_color = rl.get('color', rl.get('line-color', '#666666'))
+            # Detect band (2+ reference-line-value children = band)
+            is_band = len(rl_vals) >= 2
+            entry = {
+                'type': 'band' if is_band else 'line',
+                'value': value,
+                'label': label,
+                'label_type': rl.get('label-type', 'value'),
+                'scope': rl.get('scope', ''),
+                'axis': rl.get('axis', 'y'),
+                'color': line_color,
+                'line_color': line_color,
+                'style': rl.get('style', rl.get('line-style', 'solid')),
+                'computation': rl.get('computation', 'constant'),
+                'field': rl.get('column', ''),
+                'is_band': is_band,
             }
-            
-            # Value (constant or formula)
-            value_elem = ref.find('.//reference-line-value')
-            if value_elem is not None:
-                ref_data['value_column'] = value_elem.get('column', '')
-                ref_data['value'] = value_elem.get('value', value_elem.text)
-            
-            # Second value (for reference bands — range between two values)
-            value_elems = ref.findall('.//reference-line-value')
-            if len(value_elems) >= 2:
-                ref_data['is_band'] = True
-                ref_data['value2_column'] = value_elems[1].get('column', '')
-                ref_data['value2'] = value_elems[1].get('value', value_elems[1].text)
-            else:
-                ref_data['is_band'] = bool(ref_data['fill_above'] or ref_data['fill_below'])
-            
-            # Label
-            label_elem = ref.find('.//reference-line-label')
-            if label_elem is not None:
-                ref_data['label'] = label_elem.get('value', label_elem.text or '')
-            
-            # Style
-            style_elem = ref.find('.//format')
-            if style_elem is not None:
-                ref_data['line_color'] = style_elem.get('color', style_elem.get('stroke-color', ''))
-                ref_data['line_style'] = style_elem.get('stroke-style', ref_data['line_style'])
-            
-            # Also check for color at top level
-            if not ref_data['line_color']:
-                ref_data['line_color'] = ref.get('color', '#666666')
-            
-            ref_lines.append(ref_data)
-        
-        # Also check for trend lines
-        for trend in worksheet.findall('.//trend-line'):
+            if is_band:
+                entry['value_from'] = rl_vals[0].get('value', rl_vals[0].get('column', ''))
+                entry['value_to'] = rl_vals[1].get('value', rl_vals[1].get('column', ''))
+            ref_lines.append(entry)
+        for rb in worksheet.findall('.//reference-band'):
             ref_lines.append({
-                'scope': 'per-pane',
-                'computation': 'trend',
-                'trend_type': trend.get('type', 'linear'),  # linear, logarithmic, exponential, polynomial, power
-                'trend_degree': trend.get('degree', '1'),
-                'show_confidence': trend.get('show-confidence-bands', 'false') == 'true',
-                'show_equation': trend.get('show-equation', 'false') == 'true',
-                'show_r_squared': trend.get('show-r-squared', 'false') == 'true',
-                'line_color': trend.get('color', '#C0504D'),
-                'line_style': 'dashed',
-                'label': 'Trend Line',
-                'value': None,
-                'value_column': '',
-                'label_type': 'custom',
-                'line_thickness': '1',
-                'fill_above': '',
-                'fill_below': '',
+                'type': 'band',
+                'value_from': rb.get('value-from', ''),
+                'value_to': rb.get('value-to', ''),
+                'label': rb.get('label', ''),
+                'scope': rb.get('scope', 'per-pane'),
+                'axis': rb.get('axis', 'y'),
+                'color': rb.get('color', '#E0E0E0'),
+                'fill_above': rb.get('fill-above', ''),
+                'fill_below': rb.get('fill-below', ''),
             })
-        
+        for rd in worksheet.findall('.//reference-distribution'):
+            ref_lines.append({
+                'type': 'distribution',
+                'computation': rd.get('computation', ''),
+                'scope': rd.get('scope', 'per-pane'),
+                'axis': rd.get('axis', 'y'),
+                'color': rd.get('color', '#666666'),
+                'label': rd.get('label', ''),
+                'percentile': rd.get('percentile', ''),
+            })
         return ref_lines
     
     def extract_annotations(self, worksheet):
@@ -1305,6 +1439,14 @@ class TableauExtractor:
             if action_type == 'url':
                 action_data['url'] = action.get('url', '')
             
+            # Clearing behavior (what happens when selection is cleared)
+            clearing = action.get('clearing', '')
+            if clearing:
+                action_data['clearing'] = clearing
+            run_on = action.get('run-on', action.get('activation', ''))
+            if run_on:
+                action_data['run_on'] = run_on
+            
             # Filter action: filtered fields
             if action_type == 'filter':
                 field_mappings = []
@@ -1314,11 +1456,32 @@ class TableauExtractor:
                     field_mappings.append({'source': src, 'target': tgt})
                 action_data['field_mappings'] = field_mappings
             
+            # Highlight action: field mappings
+            if action_type == 'highlight':
+                field_mappings = []
+                for fm in action.findall('.//field-mapping'):
+                    src = _strip_brackets(fm.get('source-field', ''))
+                    tgt = _strip_brackets(fm.get('target-field', ''))
+                    field_mappings.append({'source': src, 'target': tgt})
+                if field_mappings:
+                    action_data['field_mappings'] = field_mappings
+            
             # Parameter action
             if action_type == 'param':
                 action_data['parameter'] = action.get('param', '')
                 action_data['source_field'] = _strip_brackets(action.get('source-field', ''))
             
+            # Set-value action: parse target set details
+            if action_type == 'set-value':
+                set_elem = action.find('.//set')
+                if set_elem is not None:
+                    action_data['target_set'] = set_elem.get('name', '').replace('[', '').replace(']', '')
+                    action_data['target_field'] = set_elem.get('field', '').replace('[', '').replace(']', '')
+                    action_data['assign_behavior'] = set_elem.get('behavior', 'assign')
+                # Also capture from attributes
+                action_data['set_name'] = action.get('set', action.get('set-name', '')).replace('[', '').replace(']', '')
+                action_data['set_field'] = action.get('set-field', '').replace('[', '').replace(']', '')
+
             actions.append(action_data)
         
         self.workbook_data['actions'] = actions
@@ -1494,19 +1657,33 @@ class TableauExtractor:
         print(f"  ✓ {len(hierarchies)} hierarchies extracted")
     
     def extract_sort_orders(self, root):
-        """Extracts global sort orders"""
+        """Extracts global sort orders (datasource-level, manual, and computed sorts)"""
         sorts = []
         
         for ds in root.findall('.//datasource'):
             for sort in ds.findall('.//sort'):
                 col = _strip_brackets(sort.get('column', ''))
                 direction = sort.get('direction', 'ASC')
+                sort_type = sort.get('type', 'data')  # data, manual, field, computed
+                sort_data = {
+                    'field': col,
+                    'direction': direction.upper(),
+                    'key': sort.get('key', ''),
+                    'sort_type': sort_type,
+                }
+                # Manual sort: capture ordered values
+                if sort_type == 'manual':
+                    manual_values = []
+                    for val in sort.findall('.//value'):
+                        if val.text:
+                            manual_values.append(val.text)
+                    if manual_values:
+                        sort_data['manual_values'] = manual_values
+                # Computed sort: capture the expression
+                if sort_type in ('computed', 'field'):
+                    sort_data['sort_using'] = sort.get('sort-using', '')
                 if col:
-                    sorts.append({
-                        'field': col,
-                        'direction': direction.upper(),
-                        'key': sort.get('key', '')
-                    })
+                    sorts.append(sort_data)
         
         self.workbook_data['sort_orders'] = sorts
         print(f"  ✓ {len(sorts)} sort orders extracted")
@@ -1742,6 +1919,520 @@ class TableauExtractor:
             'range_min': range_min,
             'range_max': range_max,
         }
+
+    # ── New extraction methods (ported from Fabric) ──────────────────────
+
+    def extract_trend_lines(self, worksheet):
+        """Extracts trend lines from a worksheet"""
+        trend_lines = []
+        for tl in worksheet.findall('.//trend-line'):
+            trend_lines.append({
+                'type': tl.get('type', 'linear'),
+                'field': tl.get('column', ''),
+                'color': tl.get('color', ''),
+                'show_confidence': tl.get('show-confidence', 'false') == 'true',
+                'show_equation': tl.get('show-equation', 'false') == 'true',
+                'show_r_squared': tl.get('show-r-squared', 'false') == 'true',
+                'per_color': tl.get('per-color', 'false') == 'true',
+            })
+        # Also check <trend-lines><trend-line> nested format
+        for tl_container in worksheet.findall('.//trend-lines'):
+            for tl in tl_container.findall('.//trend-line'):
+                if not any(t.get('type') == tl.get('type', 'linear') for t in trend_lines):
+                    trend_lines.append({
+                        'type': tl.get('type', 'linear'),
+                        'field': tl.get('column', ''),
+                        'color': tl.get('color', ''),
+                        'show_confidence': tl.get('show-confidence', 'false') == 'true',
+                        'show_equation': tl.get('show-equation', 'false') == 'true',
+                        'show_r_squared': tl.get('show-r-squared', 'false') == 'true',
+                        'per_color': tl.get('per-color', 'false') == 'true',
+                    })
+        return trend_lines
+
+    def extract_pages_shelf(self, worksheet):
+        """Extracts the Pages shelf field (animation shelf in Tableau)"""
+        pages = {}
+        pages_elem = worksheet.find('.//pages')
+        if pages_elem is not None and pages_elem.text:
+            refs = re.findall(r'\[([^\]]+)\]\.\[([^\]]+)\]', pages_elem.text)
+            if refs:
+                pages['field'] = refs[0][1]
+                pages['datasource'] = refs[0][0]
+            else:
+                pages['field'] = pages_elem.text.strip().replace('[', '').replace(']', '')
+        return pages
+
+    def extract_table_calcs(self, worksheet):
+        """Extracts table calculation addressing/partitioning from <table-calc> elements"""
+        table_calcs = []
+        for tc in worksheet.findall('.//table-calc'):
+            calc_data = {
+                'field': tc.get('column', '').replace('[', '').replace(']', ''),
+                'type': tc.get('type', ''),
+                'ordering_type': tc.get('ordering-type', 'Rows'),
+                'compute_using': [],
+                'direction': tc.get('direction', ''),
+                'at_level': tc.get('at-level', ''),
+            }
+            # Compute-using dimensions
+            for dim in tc.findall('.//compute-using'):
+                val = dim.text or dim.get('column', '')
+                if val:
+                    clean = val.strip().replace('[', '').replace(']', '')
+                    calc_data['compute_using'].append(clean)
+            # Also check <order-by> for secondary sort
+            for ob in tc.findall('.//order-by'):
+                field = ob.get('column', '').replace('[', '').replace(']', '')
+                direction = ob.get('direction', 'ASC')
+                calc_data.setdefault('order_by', []).append({
+                    'field': field, 'direction': direction
+                })
+            table_calcs.append(calc_data)
+        return table_calcs
+
+    def extract_dashboard_containers(self, dashboard):
+        """Extracts horizontal/vertical layout containers with nesting and padding"""
+        containers = []
+        for lc in dashboard.findall('.//layout-container'):
+            orientation = lc.get('orientation', '')
+            container = {
+                'orientation': orientation,
+                'name': lc.get('name', ''),
+                'position': {
+                    'x': int(lc.get('x', 0)),
+                    'y': int(lc.get('y', 0)),
+                    'w': int(lc.get('w', 0)),
+                    'h': int(lc.get('h', 0)),
+                },
+                'padding': {
+                    'top': int(lc.get('padding-top', lc.get('margin-top', 0))),
+                    'bottom': int(lc.get('padding-bottom', lc.get('margin-bottom', 0))),
+                    'left': int(lc.get('padding-left', lc.get('margin-left', 0))),
+                    'right': int(lc.get('padding-right', lc.get('margin-right', 0))),
+                },
+                'children': [],
+            }
+            for child in lc:
+                if child.tag == 'zone':
+                    container['children'].append({
+                        'type': 'zone',
+                        'name': child.get('name', ''),
+                        'position': {
+                            'x': int(child.get('x', 0)),
+                            'y': int(child.get('y', 0)),
+                            'w': int(child.get('w', 0)),
+                            'h': int(child.get('h', 0)),
+                        }
+                    })
+            containers.append(container)
+        return containers
+
+    def extract_forecasting(self, worksheet):
+        """Extracts forecast configuration from <forecast> elements."""
+        forecasts = []
+        for fc in worksheet.findall('.//forecast'):
+            forecasts.append({
+                'enabled': True,
+                'periods': int(fc.get('forecast-forward', fc.get('periods', 5))),
+                'periods_back': int(fc.get('forecast-backward', 0)),
+                'prediction_interval': fc.get('prediction-interval', '95'),
+                'ignore_last': fc.get('ignore-last', '0'),
+                'model': fc.get('model', 'automatic'),
+                'show_prediction_bands': fc.get('show-prediction-bands', 'true') == 'true',
+                'fill_between': fc.get('fill-between', 'true') == 'true',
+            })
+        # Also check <forecast-model> fallback
+        for fm in worksheet.findall('.//forecast-model'):
+            if not forecasts:
+                forecasts.append({
+                    'enabled': True,
+                    'periods': int(fm.get('periods', 5)),
+                    'periods_back': 0,
+                    'prediction_interval': fm.get('prediction-interval', '95'),
+                    'ignore_last': '0',
+                    'model': fm.get('model', 'automatic'),
+                    'show_prediction_bands': True,
+                    'fill_between': True,
+                })
+        return forecasts
+
+    def extract_map_options(self, worksheet):
+        """Extracts map configuration (washout, style, layers, pan/zoom)."""
+        map_opts = {}
+        mo = worksheet.find('.//map-options')
+        if mo is not None:
+            map_opts = {
+                'washout': mo.get('washout', '0.0'),
+                'style': mo.get('map-style', mo.get('style', 'normal')),
+                'show_map_search': mo.get('show-map-search', 'false') == 'true',
+                'pan_zoom': mo.get('pan-zoom', 'true') == 'true',
+                'unit': mo.get('unit', 'miles'),
+            }
+            # Map layers
+            layers = []
+            for ml in mo.findall('.//map-layer'):
+                layers.append({
+                    'name': ml.get('name', ''),
+                    'enabled': ml.get('enabled', 'true') == 'true',
+                })
+            if layers:
+                map_opts['layers'] = layers
+        # Also check for <mapsources>
+        for ms in worksheet.findall('.//mapsources/mapsource'):
+            if 'provider' not in map_opts:
+                map_opts['provider'] = ms.get('provider', 'mapbox')
+        return map_opts
+
+    def extract_clustering(self, worksheet):
+        """Extracts clustering configuration (no direct PBI equivalent)."""
+        clusters = []
+        for cl in worksheet.findall('.//cluster'):
+            clusters.append({
+                'num_clusters': cl.get('num-clusters', 'auto'),
+                'variables': [v.get('column', '').replace('[', '').replace(']', '')
+                              for v in cl.findall('.//variable') if v.get('column')],
+                'seed': cl.get('seed', ''),
+            })
+        # Also check <cluster-analysis>
+        for ca in worksheet.findall('.//cluster-analysis'):
+            if not clusters:
+                clusters.append({
+                    'num_clusters': ca.get('num-clusters', 'auto'),
+                    'variables': [],
+                    'seed': ca.get('seed', ''),
+                })
+        return clusters
+
+    def extract_dual_axis_sync(self, worksheet):
+        """Detects dual-axis and synchronization settings."""
+        dual_axis = {}
+        axes = list(worksheet.findall('.//axis'))
+        if len(axes) >= 2:
+            dual_axis['enabled'] = True
+            # Check for synchronized axes
+            for axis in axes:
+                if axis.get('synchronized', '') == 'true':
+                    dual_axis['synchronized'] = True
+                    break
+            else:
+                dual_axis['synchronized'] = False
+        return dual_axis
+
+    def extract_custom_shapes(self):
+        """Extracts custom shape references from .twbx package."""
+        shapes = []
+        file_ext = os.path.splitext(self.tableau_file)[1].lower()
+        if file_ext in ['.twbx', '.tdsx']:
+            try:
+                with zipfile.ZipFile(self.tableau_file, 'r') as z:
+                    for name in z.namelist():
+                        if '/Shapes/' in name or '/shapes/' in name:
+                            shapes.append({
+                                'path': name,
+                                'filename': os.path.basename(name),
+                            })
+            except (zipfile.BadZipFile, OSError, KeyError) as exc:
+                logger.debug("Could not read shapes from archive: %s", exc)
+        return shapes
+
+    def extract_embedded_fonts(self):
+        """Extracts embedded font references from .twbx package."""
+        fonts = []
+        file_ext = os.path.splitext(self.tableau_file)[1].lower()
+        if file_ext in ['.twbx', '.tdsx']:
+            try:
+                with zipfile.ZipFile(self.tableau_file, 'r') as z:
+                    for name in z.namelist():
+                        lower_name = name.lower()
+                        if lower_name.endswith(('.ttf', '.otf', '.woff', '.woff2')):
+                            fonts.append({
+                                'path': name,
+                                'filename': os.path.basename(name),
+                                'format': os.path.splitext(name)[1].lstrip('.'),
+                            })
+            except (zipfile.BadZipFile, OSError, KeyError) as exc:
+                logger.debug("Could not read fonts from archive: %s", exc)
+        return fonts
+
+    def extract_custom_geocoding(self, root):
+        """Extracts custom geocoding CSV references."""
+        geocoding = []
+        for geo in root.findall('.//geocoding'):
+            for role in geo.findall('.//geographic-role'):
+                geocoding.append({
+                    'role': role.get('name', ''),
+                    'field': role.get('field', ''),
+                })
+        # Also look for custom geocoding files in .twbx
+        file_ext = os.path.splitext(self.tableau_file)[1].lower()
+        if file_ext in ['.twbx', '.tdsx']:
+            try:
+                with zipfile.ZipFile(self.tableau_file, 'r') as z:
+                    for name in z.namelist():
+                        if 'geocoding' in name.lower() and name.endswith('.csv'):
+                            geocoding.append({
+                                'type': 'custom_file',
+                                'path': name,
+                            })
+            except (zipfile.BadZipFile, OSError, KeyError) as exc:
+                logger.debug("Could not read geocoding from archive: %s", exc)
+        self.workbook_data['custom_geocoding'] = geocoding
+        print(f"  ✓ {len(geocoding)} custom geocoding refs extracted")
+
+    def extract_published_datasources(self, root):
+        """Extracts references to published (server-hosted) datasources."""
+        pub_ds = []
+        for ds in root.findall('.//datasource'):
+            # Published datasources have a repository-location attribute
+            repo = ds.find('.//repository-location')
+            if repo is not None:
+                pub_ds.append({
+                    'name': ds.get('caption', ds.get('name', '')),
+                    'server': repo.get('site', ''),
+                    'path': repo.get('path', ''),
+                    'id': repo.get('id', ''),
+                    'derived_from': repo.get('derived-from', ''),
+                })
+            # Also check for <connection class="sqlproxy"> (published DS indicator)
+            for conn in ds.findall('.//connection[@class="sqlproxy"]'):
+                if not any(p['name'] == ds.get('caption', '') for p in pub_ds):
+                    pub_ds.append({
+                        'name': ds.get('caption', ds.get('name', '')),
+                        'server': conn.get('server', ''),
+                        'path': conn.get('dbname', ''),
+                        'id': '',
+                        'derived_from': '',
+                    })
+        self.workbook_data['published_datasources'] = pub_ds
+        print(f"  ✓ {len(pub_ds)} published datasource refs extracted")
+
+    def extract_data_blending(self, root):
+        """Extracts data blending link fields between primary and secondary datasources."""
+        blending = []
+        for ds in root.findall('.//datasource'):
+            ds_name = ds.get('caption', ds.get('name', ''))
+            # Data blending relationships appear as <relation join="..."> cross-datasource
+            for col in ds.findall('.//column'):
+                link = col.find('.//link')
+                if link is not None:
+                    expression = link.get('expression', '')
+                    key = link.get('key', '')
+                    blending.append({
+                        'datasource': ds_name,
+                        'column': col.get('name', '').replace('[', '').replace(']', ''),
+                        'link_expression': expression,
+                        'link_key': key,
+                    })
+            # Also check <datasource-dependencies> for cross-ds links
+            for dep in ds.findall('.//datasource-dependencies'):
+                dep_ds = dep.get('datasource', '')
+                for col in dep.findall('.//column'):
+                    col_name = col.get('name', '').replace('[', '').replace(']', '')
+                    if dep_ds and col_name:
+                        # Check if this is a blending key
+                        key = col.get('key', '')
+                        if key or dep_ds != ds.get('name', ''):
+                            if not any(b['column'] == col_name and b['datasource'] == ds_name for b in blending):
+                                blending.append({
+                                    'datasource': ds_name,
+                                    'secondary_datasource': dep_ds,
+                                    'column': col_name,
+                                    'link_expression': '',
+                                    'link_key': key,
+                                })
+        self.workbook_data['data_blending'] = blending
+        print(f"  ✓ {len(blending)} data blending links extracted")
+
+    def extract_hyper_metadata(self):
+        """Extracts .hyper file metadata from .twbx packages (file names and sizes)."""
+        hyper_files = []
+        file_ext = os.path.splitext(self.tableau_file)[1].lower()
+        if file_ext in ['.twbx', '.tdsx']:
+            try:
+                with zipfile.ZipFile(self.tableau_file, 'r') as z:
+                    for info in z.infolist():
+                        if info.filename.lower().endswith('.hyper'):
+                            hyper_files.append({
+                                'path': info.filename,
+                                'filename': os.path.basename(info.filename),
+                                'size_bytes': info.file_size,
+                                'compressed_size': info.compress_size,
+                            })
+            except (zipfile.BadZipFile, OSError, KeyError) as exc:
+                logger.debug("Could not read hyper files from archive: %s", exc)
+        self.workbook_data['hyper_files'] = hyper_files
+        if hyper_files:
+            print(f"  ✓ {len(hyper_files)} .hyper extract files detected")
+
+    def extract_totals_subtotals(self, worksheet):
+        """Extracts grand-total and sub-total settings from a worksheet."""
+        totals = {'grand_totals': [], 'subtotals': []}
+        for gt in worksheet.findall('.//grandtotals/grand-total'):
+            totals['grand_totals'].append({
+                'type': gt.get('type', ''),
+                'position': gt.get('position', ''),
+                'enabled': gt.get('enabled', 'true') == 'true',
+            })
+        for st in worksheet.findall('.//subtotals/subtotal'):
+            totals['subtotals'].append({
+                'type': st.get('type', ''),
+                'position': st.get('position', ''),
+                'enabled': st.get('enabled', 'true') == 'true',
+            })
+        # Also check <rows-total> and <cols-total> shorthand
+        for tag in ['rows-total', 'cols-total']:
+            el = worksheet.find(f'.//{tag}')
+            if el is not None:
+                totals['grand_totals'].append({
+                    'type': tag.replace('-total', ''),
+                    'position': el.get('position', 'bottom'),
+                    'enabled': el.get('enabled', 'true') == 'true',
+                })
+        return totals
+
+    def extract_worksheet_description(self, worksheet):
+        """Extracts the description/caption text of a worksheet."""
+        desc = worksheet.get('description', '')
+        if not desc:
+            desc_el = worksheet.find('.//description')
+            if desc_el is not None:
+                desc = desc_el.text or ''
+        return desc
+
+    def extract_show_hide_headers(self, worksheet):
+        """Extracts show/hide header settings for rows and columns."""
+        headers = {'rows': True, 'columns': True}
+        style = worksheet.find('.//style')
+        if style is not None:
+            show_row = style.get('show-row-headers', 'true')
+            show_col = style.get('show-col-headers', 'true')
+            headers['rows'] = show_row == 'true'
+            headers['columns'] = show_col == 'true'
+        # Alternative: table/view element
+        table = worksheet.find('.//table')
+        if table is not None:
+            if table.get('show-header') == 'false':
+                headers['rows'] = False
+                headers['columns'] = False
+        return headers
+
+    def extract_dynamic_title(self, worksheet):
+        """Extracts dynamic title info — detects field references in title text."""
+        title_el = worksheet.find('.//title')
+        if title_el is None:
+            return None
+        runs = title_el.findall('.//run')
+        parts = []
+        is_dynamic = False
+        for run in runs:
+            text = run.text or ''
+            # Check for field reference
+            field_ref = run.find('.//field')
+            if field_ref is not None:
+                ref_name = field_ref.get('name', field_ref.text or '')
+                parts.append({'type': 'field', 'value': ref_name})
+                is_dynamic = True
+            else:
+                # Check for <pageField> or parameter reference in text
+                if '<' in text or '[' in text:
+                    is_dynamic = True
+                parts.append({'type': 'text', 'value': text})
+        if not parts:
+            # Fallback: read raw text
+            title_text = ''.join(title_el.itertext())
+            if title_text:
+                parts.append({'type': 'text', 'value': title_text})
+        return {'is_dynamic': is_dynamic, 'parts': parts} if parts else None
+
+    def extract_show_hide_containers(self, dashboard):
+        """Extracts show/hide button containers from a dashboard."""
+        containers = []
+        for zone in dashboard.findall('.//zone'):
+            btn = zone.find('.//show-hide-button')
+            if btn is not None:
+                containers.append({
+                    'zone_name': zone.get('name', ''),
+                    'zone_id': zone.get('id', ''),
+                    'default_state': btn.get('default-state', 'show'),
+                    'button_style': btn.get('style', ''),
+                })
+        return containers
+
+    def extract_dynamic_zone_visibility(self, dashboard):
+        """Extracts dynamic zone visibility settings (Tableau 2024.3+).
+
+        Dynamic zone visibility allows zones to show/hide based on a parameter
+        or calculated field value. In PBI this maps to bookmark toggle groups.
+        """
+        zones = []
+        for zone in dashboard.findall('.//zone'):
+            dz = zone.find('.//dynamic-zone-visibility')
+            if dz is None:
+                dz = zone.find('dynamic-zone-visibility')
+            if dz is not None:
+                zones.append({
+                    'zone_name': zone.get('name', ''),
+                    'zone_id': zone.get('id', ''),
+                    'field': dz.get('field', dz.get('column', '')),
+                    'value': dz.get('value', ''),
+                    'condition': dz.get('condition', 'equals'),
+                    'default_visible': dz.get('default', 'true') == 'true',
+                })
+        return zones
+
+    def extract_floating_tiled(self, dashboard):
+        """Extracts floating vs tiled layout info for each dashboard zone."""
+        layout_info = []
+        for zone in dashboard.findall('.//zone'):
+            is_floating = zone.get('is-floating', 'false') == 'true'
+            layout_info.append({
+                'zone_name': zone.get('name', ''),
+                'zone_id': zone.get('id', ''),
+                'is_floating': is_floating,
+                'x': int(zone.get('x', 0)),
+                'y': int(zone.get('y', 0)),
+                'w': int(zone.get('w', 0)),
+                'h': int(zone.get('h', 0)),
+            })
+        return layout_info
+
+    def extract_analytics_pane_stats(self, worksheet):
+        """Extracts analytics pane statistics (mean, median, CI, distribution bands)."""
+        stats = []
+        # Analytics pane objects appear as <stat-line>, <distribution-band>, etc.
+        for stat_line in worksheet.findall('.//stat-line'):
+            stats.append({
+                'type': 'stat_line',
+                'stat': stat_line.get('stat', ''),
+                'scope': stat_line.get('scope', 'per-pane'),
+                'value': stat_line.get('value', ''),
+            })
+        for band in worksheet.findall('.//distribution-band'):
+            stats.append({
+                'type': 'distribution_band',
+                'computation': band.get('computation', ''),
+                'value_from': band.get('value-from', ''),
+                'value_to': band.get('value-to', ''),
+                'scope': band.get('scope', 'per-pane'),
+            })
+        for ci in worksheet.findall('.//confidence-interval'):
+            stats.append({
+                'type': 'confidence_interval',
+                'level': ci.get('level', '95'),
+                'scope': ci.get('scope', 'per-pane'),
+            })
+        # Average/median/constant lines from <reference-line>
+        for ref in worksheet.findall('.//reference-line'):
+            comp = ref.get('computation', '')
+            if comp in ('mean', 'median', 'mode', 'constant', 'percentile', 'quantile'):
+                stats.append({
+                    'type': 'stat_reference',
+                    'computation': comp,
+                    'value': ref.get('value', ''),
+                    'scope': ref.get('scope', 'per-pane'),
+                })
+        return stats
 
     def save_extractions(self):
         """Saves extractions to JSON"""

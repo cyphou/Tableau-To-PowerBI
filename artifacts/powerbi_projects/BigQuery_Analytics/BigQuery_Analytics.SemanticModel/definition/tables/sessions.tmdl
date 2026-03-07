@@ -1,42 +1,42 @@
 table sessions
-	lineageTag: 6a6f580f-a587-4de7-b9ee-3f487fd88683
+	lineageTag: 201d9cdb-9765-469b-b9f7-f32aad196058
 
 	measure 'Total Sessions' = COUNT('sessions'[session_id])
 		displayFolder: Measures
-		lineageTag: 1fae6e1b-6b7e-488b-8c8e-25164a359210
+		lineageTag: 9c520d61-9360-46a6-8bef-f9687db7af83
 
 	measure 'Unique Visitors' = DISTINCTCOUNT('sessions'[user_id])
 		displayFolder: Measures
-		lineageTag: c36bc3fe-447f-4434-8821-7a89ea2c9d9d
+		lineageTag: ca41f718-150a-4316-91c8-4bf721576683
 
 	measure 'Conversion Rate' = SUMX('sessions', IF('sessions'[converted], 1, 0)) / COUNT('sessions'[session_id])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: ef9adb28-37bb-4897-9d54-4a61e396ba8c
+		lineageTag: 4498eae6-6873-439f-8d6d-9f234a22506c
 
 	measure 'Avg Session Duration' = AVERAGE('sessions'[session_duration])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 9f8a2ed2-6547-4bf8-96d1-b209c3419aad
+		lineageTag: e20fa073-7eba-424a-9b02-d40ff14f491f
 
 	measure 'Total Revenue' = SUM('sessions'[revenue])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: d81a8335-ef78-416b-8327-501ebc9d09fd
+		lineageTag: eb61555b-1de0-4b93-b4ab-c8e33a6f24d4
 
 	measure 'Revenue per Session' = SUM('sessions'[revenue]) / COUNT('sessions'[session_id])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: ed1ec56b-c102-428d-aec1-eb8853f7be43
+		lineageTag: d915d135-8ee7-455e-ae1e-027e145af3d9
 
 	measure 'Revenue by Channel' = CALCULATE(SUM('sessions'[revenue]), ALLEXCEPT('sessions', 'sessions'[channel]))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 6f1d9617-824a-4033-b8de-e444215cec13
+		lineageTag: ebac7f5f-e79d-416e-a805-c54296c235f4
 
 	column session_id
 		dataType: string
-		lineageTag: 3a315707-2b6c-432e-8dca-13b1406f0cbc
+		lineageTag: 287af403-d842-4ca2-9c02-d92519248904
 		summarizeBy: none
 		sourceColumn: session_id
 
@@ -45,7 +45,7 @@ table sessions
 	column session_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 6826a9c3-8c3f-4612-adfa-befd5a8922e3
+		lineageTag: 3c757971-ee2e-4668-b0d8-71dc10dd1cd2
 		summarizeBy: none
 		sourceColumn: session_date
 		dataCategory: DateTime
@@ -54,7 +54,7 @@ table sessions
 
 	column user_id
 		dataType: string
-		lineageTag: 45b51afd-bfa0-497c-9857-02dd9016a83a
+		lineageTag: c26d5fac-a870-4819-a267-2247c157b832
 		summarizeBy: none
 		sourceColumn: user_id
 
@@ -62,7 +62,7 @@ table sessions
 
 	column channel
 		dataType: string
-		lineageTag: 983788c7-f954-4526-83fe-d8c560e29d0b
+		lineageTag: 8be5210e-f8de-433f-9012-fde1561dd699
 		summarizeBy: none
 		sourceColumn: channel
 
@@ -70,7 +70,7 @@ table sessions
 
 	column device_type
 		dataType: string
-		lineageTag: acecbdff-279f-4abc-ac4c-1c0ab2401c3d
+		lineageTag: e5a828dd-71ce-4215-8452-e4d4bfe9c5de
 		summarizeBy: none
 		sourceColumn: device_type
 
@@ -78,7 +78,7 @@ table sessions
 
 	column country
 		dataType: string
-		lineageTag: 408e5d0b-7dbc-4ceb-956a-f2e9bf100ecd
+		lineageTag: 82e54404-42ca-4542-830c-0e65287a31bd
 		summarizeBy: none
 		sourceColumn: country
 		dataCategory: Country
@@ -87,7 +87,7 @@ table sessions
 
 	column page_views
 		dataType: int64
-		lineageTag: 78fb650c-84b1-4e6b-b468-9b414c9a2837
+		lineageTag: 0282b0a4-4ba4-4771-adf1-061e6a06f83b
 		summarizeBy: sum
 		sourceColumn: page_views
 
@@ -96,7 +96,7 @@ table sessions
 	column session_duration
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 6c23b6a1-4b77-44ac-8fa6-96663f53e111
+		lineageTag: 53f0e3f2-755f-497b-a7ef-d147e08b89c6
 		summarizeBy: sum
 		sourceColumn: session_duration
 
@@ -104,7 +104,7 @@ table sessions
 
 	column converted
 		dataType: boolean
-		lineageTag: a528edea-bcb0-4cb0-af58-6d639d4a19de
+		lineageTag: 7225b260-c1b6-4afb-bcbd-b44fee49416e
 		summarizeBy: none
 		sourceColumn: converted
 
@@ -113,7 +113,7 @@ table sessions
 	column revenue
 		dataType: double
 		formatString: #,0.00
-		lineageTag: cc064007-1bd7-480b-be09-0136e776b825
+		lineageTag: 41c1a190-c428-41be-945e-4c87b8eff925
 		summarizeBy: sum
 		sourceColumn: revenue
 
@@ -121,26 +121,26 @@ table sessions
 
 	column 'Channel Category' = IF('sessions'[channel] = "Organic Search" || 'sessions'[channel] = "Paid Search", "Search", IF('sessions'[channel] = "Social" || 'sessions'[channel] = "Referral", "Social/Referral", IF('sessions'[channel] = "Direct", "Direct", "Other")))
 		dataType: string
-		lineageTag: 073ecb50-9d59-4059-9aef-72308e6b3600
+		lineageTag: 3af952dd-9ea7-4550-bbe4-0be2d26b4d3e
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Engagement Level' = IF('sessions'[page_views] >= 10, "High", IF('sessions'[page_views] >= 5, "Medium", "Low"))
 		dataType: string
-		lineageTag: 4804264b-9bd2-48d9-8493-bfcb2a6b2191
+		lineageTag: a956b113-8ed4-4086-99a4-759ac18d6703
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Days Since Signup' = DATEDIFF(RELATED('users'[signup_date]), TODAY(), DAY)
 		dataType: int64
-		lineageTag: 628f5bc0-9367-41c8-a486-6c35800f9d95
+		lineageTag: 65f328cc-2ca6-4843-a9dc-ebb4ee668f0a
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'sessions-1906eaa2-b65f-4264-85b5-6fb8122de686' = m
+	partition 'sessions-e70dc560-1db7-43d9-af80-f6c8aef6a061' = m
 		mode: import
 		source =
 				let
