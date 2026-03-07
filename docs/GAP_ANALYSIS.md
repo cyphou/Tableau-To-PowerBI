@@ -1,8 +1,8 @@
 # Comprehensive Gap Analysis — Tableau to Power BI Migration Tool
 
-**Date:** 2026-03-06 — updated after Fabric feature port + cross-project gap analysis  
+**Date:** 2026-03-07 — updated after M-based calculated columns refactor, assessment module, and strategy advisor  
 **Scope:** Every source file, test file, CI/CD, docs, config, and cross-project comparison with TableauToFabric  
-**Status:** 732 tests passing (2 skipped)
+**Status:** 887 tests passing (2 skipped) across 18 test files
 
 ### Implementation Coverage
 
@@ -10,19 +10,26 @@
  EXTRACTION          GENERATION         INFRA / CI         DOCUMENTATION
 +----------------+  +----------------+  +----------------+  +----------------+
 | 20 object types|  | PBIR v4.0      |  | 5-stage CI/CD  |  | 13 doc files   |
-| .twb/.twbx/.tfl|  | TMDL semantic  |  | 732 tests      |  | DAX reference  |
+| .twb/.twbx/.tfl|  | TMDL semantic  |  | 887 tests      |  | DAX reference  |
 | 180+ DAX conv  |  | 60+ visuals    |  | Artifact valid |  | M query ref    |
 | 33 connectors  |  | Drill-through  |  | Fabric deploy  |  | Prep ref       |
 | 40+ transforms |  | Slicer modes   |  | Env configs    |  | Architecture   |
 | Prep flow DAG  |  | Cond. format   |  | Settings valid |  | Gap analysis   |
 | Ref lines/bands|  | RLS roles      |  | --dry-run      |  | Migration guide|
 | Datasrc filters|  | Calendar/culture|  | --culture      |  | FAQ + more     |
-| 22 new methods |  | Quick table cal|  |                |  |                |
+| 22 new methods |  | Quick table cal|  | --assess       |  |                |
 +-------+--------+  +-------+--------+  +-------+--------+  +-------+--------+
         |                    |                    |                    |
         +--------------------+--------------------+--------------------+
                                      |
-                              ALL IMPLEMENTED
+                           NEW IN SESSION 6-7
+                     +-------------------------------+
+                     | M-based calc columns (DAX→M)  |
+                     | Pre-migration assessment (8)  |
+                     | Strategy advisor (I/DQ/C)     |
+                     | conftest.py shared fixtures   |
+                     | 155 new tests (732→887)       |
+                     +-------------------------------+
 ```
 
 ---
@@ -80,13 +87,13 @@
 
 ### What IS implemented
 - **Complete .pbip project structure**: `.pbip`, `.gitignore`, SemanticModel (`.platform`, `definition.pbism`, TMDL), Report (PBIR v4.0), migration metadata JSON
-- **12-phase TMDL model** (`tmdl_generator.py`, 2220 lines):
+- **12-phase TMDL model** (`tmdl_generator.py`, 2741 lines):
   1. Table deduplication
   2. Main table identification, column metadata, DAX context
-  3. Tables with columns, M queries, measures, calculated columns
+  3. Tables with columns, M queries, measures, calculated columns — **M-first approach**: calculated columns use Power Query M `Table.AddColumn` steps via `_dax_to_m_expression()` converter with DAX fallback for cross-table references
   4. Relationships (cross-datasource dedup, validation, type mismatch fixing)
-  5. Sets/groups/bins as calculated columns
-  6. Auto date table (M partition, not DAX calculated) **with Date Hierarchy** (Year → Quarter → Month → Day)
+  5. Sets/groups/bins as M-based calculated columns (with DAX fallback)
+  6. Auto date table (M partition, not DAX calculated) **with Date Hierarchy** (Year → Quarter → Month → Day) — date hierarchies also use M-based columns
   7. Hierarchies from drill-paths
   8. What-If parameter tables (range → `GENERATESERIES`, list → `DATATABLE`, any → measure)
   9. RLS roles (user filter → USERPRINCIPALNAME, USERNAME/FULLNAME → DAX, ISMEMBEROF → per-group role)
@@ -96,10 +103,16 @@
   10c. RELATED() → LOOKUPVALUE() conversion for manyToMany
   11. Deactivate ambiguous relationship paths (Union-Find cycle detection)
   12. Auto-generate perspectives
+  13. Calculation groups from param-swap actions
+  14. Field parameters with NAMEOF
+- **DAX-to-M expression converter** (`_dax_to_m_expression()`, `_split_dax_args()`, `_extract_function_body()`): Converts DAX calculated column expressions to Power Query M `Table.AddColumn` steps — supports IF, SWITCH, UPPER/LOWER/TRIM/LEN/LEFT/RIGHT/MID, ISBLANK, INT/VALUE, CONCATENATE, IN, &, arithmetic operators, column references
+- **M step injection** (`_inject_m_steps_into_partition()`, `_build_m_transform_steps()`): Composes multiple M column steps into the table's M partition expression, chaining via `{prev}` placeholder
 - **TMDL file writers**: database.tmdl, model.tmdl, relationships.tmdl, expressions.tmdl, roles.tmdl, tables/*.tmdl, perspectives.tmdl, cultures/*.tmdl, diagramLayout.json
-- **Visual generation** (`visual_generator.py`, 939 lines): 60+ visual type mappings, 30+ PBIR config templates, data role definitions for 30+ types, queryState builder, slicer sync groups, cross-filtering disable, action button navigation (page + URL), TopN/categorical visual-level filters, sort state, reference lines, **axis config** (range min/max, log scale, reversed)
-- **PBIP generator** (`pbip_generator.py`, 1801 lines): Dashboard → pages, worksheet → visuals, text → textbox, image → image, filter_control → slicer, tooltip pages **with binding to parent visuals** (tooltip_page_map), bookmarks from stories, theme generation, **action button visuals** (URL WebUrl + sheet-navigate PageNavigation)
+- **Visual generation** (`visual_generator.py`, 938 lines): 60+ visual type mappings, 30+ PBIR config templates, data role definitions for 30+ types, queryState builder, slicer sync groups, cross-filtering disable, action button navigation (page + URL), TopN/categorical visual-level filters, sort state, reference lines, **axis config** (range min/max, log scale, reversed)
+- **PBIP generator** (`pbip_generator.py`, 2326 lines): Dashboard → pages, worksheet → visuals, text → textbox, image → image, filter_control → slicer, tooltip pages **with binding to parent visuals** (tooltip_page_map), bookmarks from stories, theme generation, **action button visuals** (URL WebUrl + sheet-navigate PageNavigation), **pages shelf slicer**, **number format conversion** (`_convert_number_format()`)
 - **Power Query M generation** (`m_query_builder.py` in extraction layer): 25 connector types + 30+ transform functions
+- **Pre-migration assessment** (`assessment.py`, 912 lines): 8-category readiness assessment (datasource compatibility, calculation readiness, visual coverage, filter complexity, data model complexity, interactivity, extract/packaging, migration scope) with pass/warn/fail severity scoring
+- **Strategy advisor** (`strategy_advisor.py`, 334 lines): Recommends Import/DirectQuery/Composite connection mode based on 7 signals (datasource type, data volume, calculation complexity, real-time needs, cross-source joins, parameter usage, user count); classifies calculations by portability
 - **Theme migration**: Tableau dashboard color palettes → PBI theme JSON (`RegisteredResources/TableauMigrationTheme.json`)
 - **Conditional formatting**: Quantitative color encoding → PBI dataPoint gradient rules with **multi-stop support** (2-color min/max, 3+ color min/mid/max), proper `inputRole` structure
 - **Reference lines**: Tableau reference lines → PBI constant lines on valueAxis
@@ -141,24 +154,28 @@
 ## 3. Test Coverage
 
 ### What IS implemented
-- **667 tests across 12 test files + 50 new gap implementation tests + 15 Fabric port validation tests = 732 tests** (2 skipped):
+- **887 tests across 18 test files** (2 skipped), including shared fixtures in `conftest.py`:
 
-| Test File | Tests | Coverage Focus |
-|-----------|-------|----------------|
-| `test_dax_converter.py` | 86 | Type mapping, bracket escape, empty inputs, simple functions, special functions, operators, structure (CASE/IF), LOD, column resolution, AGG(IF)→AGGX, table calcs, dates, references, math/stats, leakage detection, complex formulas |
-| `test_m_query_builder.py` | 102 | Type mapping, M query generation for 7+ connectors, `inject_m_steps`, column/value/filter/aggregate/pivot/join/union/reshape/calculated transforms |
-| `test_tmdl_generator.py` | 92 | `_quote_name`, `_tmdl_datatype`, `_tmdl_summarize`, `_safe_filename`, format strings, display folders, semantic role mapping, theme generation, `build_semantic_model` (single/multi table, measures, date table, perspectives, relationships, dedup), `_add_date_table` (sortByColumn, isKey, relationship), TMDL file writers (perspectives, culture, database, model, relationships, table, full model) |
-| `test_visual_generator.py` | 65 | Visual type mapping (bar/column/line/pie/scatter/map/table/KPI/treemap/waterfall/combo/slicer/specialty/textbox/unknown), data roles, config templates, container creation, slicer sync groups, cross-filtering disable, action button navigation, visual filters (TopN/categorical), sort state, reference lines, query state builder |
-| `test_pbip_generator.py` | 46 | `_clean_field_name`, `_make_visual_position`, `_is_measure_field`, `_build_visual_objects` (axes from axes_data, legend, labels, mark encoding) |
-| `test_feature_gaps.py` | 44 | Reference lines, annotations, axes (basic/dual/log/reversed), legend (extraction/generation/position/title), mark labels, palette colors, dashboard padding, layout containers, device layouts, sort orders (basic/computed), combo chart roles, sort state, action buttons (URL/navigate/filter-skipped), table formatting, conditional formatting (2-color/3-color gradient), axis generation, formatting depth, padding application, quick table calc detection, table calc addressing (ALLEXCEPT), date hierarchy |
-| `test_infrastructure.py` | 36 | ArtifactValidator (JSON/TMDL/project/directory), DeploymentReport, ArtifactCache, ConfigEnvironments, ConfigSettings, FabricAuthenticator, FabricClient, Deployer, MigrateCLI |
-| `test_migration_report.py` | 36 | MigrationReport (pass/fail tracking, fidelity scoring, category breakdown, unsupported/approximate items, report formatting) |
-| `test_extraction.py` | 29 | TableauExtractor initialization, TWB/TWBX parsing, worksheet/dashboard/datasource/calculation/parameter/filter/story/action/set/group/bin/hierarchy extraction |
-| `test_prep_flow_parser.py` | 58 | Graph traversal (topological sort), step conversion (Clean/Join/Aggregate/Union/Pivot), expression conversion, merge with TWB datasources, edge cases |
-| `test_migration.py` | 10 | Extraction file existence, conversion file existence, worksheets/dashboards/datasources/calculations/parameters/filters/stories conversion, data integrity |
-| `test_non_regression.py` | 63 | Per-sample project tests (Superstore, HR Analytics, Financial Report, BigQuery, Enterprise Sales, Manufacturing IoT, Marketing Campaign, Security Test) + cross-sample consistency (metadata, model.tmdl, empty dirs, schema consistency) |
-| `test_migration_validation.py` | 0 | Disabled — previously tested via non-regression pipeline |
-| `test_gap_implementations.py` | 50 | DAX fixes (CORR/COVAR/LOD/ATTR), datasource filters, semantic validation, slicer modes, drill-through pages, number format conversion, settings validation, calendar customization, CLI args, reference bands, deployment edge cases |
+| Test File | Tests | Lines | Coverage Focus |
+|-----------|-------|-------|----------------|
+| `test_dax_converter.py` | 86 | 464 | Type mapping, bracket escape, empty inputs, simple functions, special functions, operators, structure (CASE/IF), LOD, column resolution, AGG(IF)→AGGX, table calcs, dates, references, math/stats, leakage detection, complex formulas |
+| `test_m_query_builder.py` | 102 | 665 | Type mapping, M query generation for 7+ connectors, `inject_m_steps`, column/value/filter/aggregate/pivot/join/union/reshape/calculated transforms |
+| `test_tmdl_generator.py` | 92 | 678 | `_quote_name`, `_tmdl_datatype`, `_tmdl_summarize`, `_safe_filename`, format strings, display folders, semantic role mapping, theme generation, `build_semantic_model` (single/multi table, measures, date table, perspectives, relationships, dedup), `_add_date_table` (sortByColumn, isKey, relationship), TMDL file writers (perspectives, culture, database, model, relationships, table, full model) |
+| `test_visual_generator.py` | 65 | 397 | Visual type mapping (bar/column/line/pie/scatter/map/table/KPI/treemap/waterfall/combo/slicer/specialty/textbox/unknown), data roles, config templates, container creation, slicer sync groups, cross-filtering disable, action button navigation, visual filters (TopN/categorical), sort state, reference lines, query state builder |
+| `test_pbip_generator.py` | 46 | 390 | `_clean_field_name`, `_make_visual_position`, `_is_measure_field`, `_build_visual_objects` (axes from axes_data, legend, labels, mark encoding) |
+| `test_feature_gaps.py` | 44 | 870 | Reference lines, annotations, axes (basic/dual/log/reversed), legend (extraction/generation/position/title), mark labels, palette colors, dashboard padding, layout containers, device layouts, sort orders (basic/computed), combo chart roles, sort state, action buttons (URL/navigate/filter-skipped), table formatting, conditional formatting (2-color/3-color gradient), axis generation, formatting depth, padding application, quick table calc detection, table calc addressing (ALLEXCEPT), date hierarchy |
+| `test_infrastructure.py` | 36 | 374 | ArtifactValidator (JSON/TMDL/project/directory), DeploymentReport, ArtifactCache, ConfigEnvironments, ConfigSettings, FabricAuthenticator, FabricClient, Deployer, MigrateCLI |
+| `test_migration_report.py` | 36 | 245 | MigrationReport (pass/fail tracking, fidelity scoring, category breakdown, unsupported/approximate items, report formatting) |
+| `test_extraction.py` | 29 | 225 | TableauExtractor initialization, TWB/TWBX parsing, worksheet/dashboard/datasource/calculation/parameter/filter/story/action/set/group/bin/hierarchy extraction |
+| `test_prep_flow_parser.py` | 58 | 621 | Graph traversal (topological sort), step conversion (Clean/Join/Aggregate/Union/Pivot), expression conversion, merge with TWB datasources, edge cases |
+| `test_migration.py` | 10 | 241 | Extraction file existence, conversion file existence, worksheets/dashboards/datasources/calculations/parameters/filters/stories conversion, data integrity |
+| `test_non_regression.py` | 63 | 546 | Per-sample project tests (Superstore, HR Analytics, Financial Report, BigQuery, Enterprise Sales, Manufacturing IoT, Marketing Campaign, Security Test) + cross-sample consistency (metadata, model.tmdl, empty dirs, schema consistency) |
+| `test_migration_validation.py` | 0 | 806 | Disabled — previously tested via non-regression pipeline |
+| `test_gap_implementations.py` | 50 | 632 | DAX fixes (CORR/COVAR/LOD/ATTR), datasource filters, semantic validation, slicer modes, drill-through pages, number format conversion, settings validation, calendar customization, CLI args, reference bands, deployment edge cases |
+| `test_assessment.py` | 55 | 450 | Pre-migration assessment: 8 category checks (datasource, calculation, visual, filter, data model, interactivity, extract, scope), severity scoring, report generation, JSON export |
+| `test_strategy_advisor.py` | 26 | 178 | Strategy advisor: Import/DirectQuery/Composite recommendations, signal-based scoring, calculation classification, print output |
+| `test_new_features.py` | 74 | 689 | Calculation groups, field parameters, pages shelf, number format, context filters, visual config, **DAX-to-M expression conversion** (14 tests: IF, SWITCH, UPPER/LOWER, ISBLANK, LEFT/RIGHT/MID, arithmetic, column refs, IN, concatenation, nested IF), **M-based columns** (7 tests: sets, groups, bins, date hierarchies, fallback for cross-table refs, step injection) |
+| `conftest.py` | — | 132 | Shared test fixtures: `sample_datasources()`, `sample_worksheets()`, `sample_calculations()`, `sample_model()` for reuse across test files |
 
 ### What is MISSING or INCOMPLETE
 - **No mocking of file I/O**: Tests write real files to tempdir — no mocking of file system operations
@@ -381,12 +398,13 @@
 | Area | Implemented | Missing/Incomplete | Approximated | Priority |
 |------|------------|-------------------|-------------|----------|
 | **Extraction** | 20 object types (+4), 10+ connectors, 22 new methods, annotations, layout containers, device layouts, formatting depth, legend, axes, sort depth, **datasource filters**, **reference bands/distributions**, **number formatting**, **custom shapes/fonts/geocoding/hyper metadata**, **dynamic zone visibility**, **clustering/forecasting/trend lines** | Hyper data parsing, composite connectors | Prep VAR/VARP, layout nesting depth | Low |
-| **TMDL Generation** | 12+ phases, full model, date hierarchy, quick table calcs, partition addressing, **semantic validation**, **calendar customization**, **culture config** | Incremental, composite model | — | Low |
-| **PBIR Generation** | 60+ visuals, filters, themes, mobile layout, tooltip binding, action buttons, conditional formatting, axis config, legend, sort state, table formatting, padding, **drill-through pages**, **slicer type variety** | Small Multiples | Position scaling | Low |
+| **TMDL Generation** | 14 phases, full model, date hierarchy, quick table calcs, partition addressing, **semantic validation**, **calendar customization**, **culture config**, **M-based calc columns** (DAX→M converter), **calculation groups**, **field parameters** | Incremental, composite model | — | Low |
+| **PBIR Generation** | 60+ visuals, filters, themes, mobile layout, tooltip binding, action buttons, conditional formatting, axis config, legend, sort state, table formatting, padding, **drill-through pages**, **slicer type variety**, **pages shelf**, **number format conversion** | Small Multiples | Position scaling | Low |
 | **DAX Conversion** | ~180+ patterns, ALLEXCEPT for partitioned calcs, **CORR/COVAR/COVARP**, **ATTR→SELECTEDVALUE**, **LOD balanced braces**, **PREVIOUS_VALUE→OFFSET**, **LOOKUP→OFFSET**, **RUNNING_*→CALCULATE+FILTER(ALLSELECTED)**, **TOTAL→CALCULATE+ALL** | Spatial (6), SCRIPT (4), SPLIT | REGEX (4), WINDOW_* frames | Medium |
-| **M Query** | **33 connectors** (+8: OData, Google Analytics, Azure Blob/ADLS, Vertica, Impala, Hadoop Hive, Presto), 30+ transforms | OAuth, gateway, incremental refresh | Fallback #table, BigQuery/Oracle config | Low |
+| **M Query** | **33 connectors** (+8: OData, Google Analytics, Azure Blob/ADLS, Vertica, Impala, Hadoop Hive, Presto), 30+ transforms, **DAX-to-M expression converter** (calc columns as M steps) | OAuth, gateway, incremental refresh | Fallback #table, BigQuery/Oracle config | Low |
 | **Prep Flow** | DAG traversal, 20+ action types, **ExtractValues**, **CustomCalculation**, **Script/Prediction/CrossJoin/PublishedDataSource** handlers, 5 new connection mappings | Hyper data loading | Prep VAR/VARP joins | Low |
-| **Test Coverage** | **732 tests across 14 files** | Perf tests, integration tests, coverage files (Fabric has 750+ additional) | — | Medium |
+| **Pre-Migration** | **Assessment** (8-category scoring: datasource/calculation/visual/filter/data model/interactivity/extract/scope), **Strategy advisor** (Import/DirectQuery/Composite), JSON report export | — | — | Low |
+| **Test Coverage** | **887 tests across 18 files** (+conftest.py shared fixtures) | Perf tests, integration tests, coverage files (Fabric has 750+ additional) | — | Medium |
 | **CI/CD** | **5-stage pipeline** (lint+ruff, test, **strict validate+twbx**, **staging deploy**, production deploy), **pip caching** | Coverage reporting, Windows CI, schema validation | — | Medium |
 | **Documentation** | **13 docs** + copilot instructions (ARCHITECTURE, KNOWN_LIMITATIONS, MIGRATION_CHECKLIST, DEPLOYMENT_GUIDE, TABLEAU_VERSION_COMPATIBILITY, CONTRIBUTING) | API docs | — | Low |
 | **Config** | 11 env vars, 3 environments, **settings validation**, **dry-run**, **calendar/culture CLI**, **.env.example** | Config file, connection templating | — | Low |
@@ -395,7 +413,7 @@
 
 ## 10. Cross-Project Gap Analysis — TableauToFabric vs TableauToPowerBI
 
-**Date:** 2026-03-06
+**Date:** 2026-03-07
 
 ### Architecture Differences
 
@@ -404,95 +422,110 @@
 | **Storage mode** | DirectLake (compatibility 1604) | Import (compatibility 1550) |
 | **Output artifacts** | 6: Lakehouse, Dataflow Gen2, Notebook, Pipeline, Semantic Model, PBI Report | 1: .pbip project (PBIR + TMDL) |
 | **External dependencies** | `python-dateutil`, `azure-identity`, `requests`, `pydantic-settings`, `tableauserverclient` | None (stdlib only, optional azure-identity/requests) |
-| **Extraction layer** | Shared (`tableau_export/`) — now synced | Shared (`tableau_export/`) — now synced |
+| **Extraction layer** | Shared (`tableau_export/`) — PBI is a **strict superset** (5 extra functions) | PBI has extra: `_infer_automatic_chart_type`, `_is_date`, `_is_measure`, `_strip_brackets`, `extract_layout_containers`, `_build_from_dispatch`, `_build_corr_covar_dax`, `_transform_func_call`, `_gen_m_schema_item`, `_m_text_transform` |
+
+### Source File Comparison
+
+| File | Fabric Lines | PBI Lines | PBI Delta | Notes |
+|------|-------------|-----------|-----------|-------|
+| `extract_tableau_data.py` | 2,263 | 2,403 | **+140** | PBI adds auto chart type inference, layout containers |
+| `datasource_extractor.py` | 649 | 651 | **+2** | Near-identical |
+| `dax_converter.py` | 1,676 | 1,259 | **-417** | PBI refactored into shared helpers (DRY) |
+| `m_query_builder.py` | 1,165 | 865 | **-300** | PBI refactored into shared helpers (DRY) |
+| `prep_flow_parser.py` | 1,106 | 945 | **-161** | Near-equivalent (minor refactoring) |
+| `pbip_generator.py` | 1,842 | 2,326 | **+484** | PBI adds drill-through, slicer modes, bookmarks, pages shelf, number format |
+| `tmdl_generator.py` | 2,280 | 2,741 | **+461** | PBI adds M-based calc columns, M transform steps, quick table calcs |
+| `visual_generator.py` | 1,086 | 938 | **-148** | Near-equivalent; Fabric has `_make_column_proj()` |
+| `validator.py` | 583 | 502 | **-81** | Fabric has notebook/lakehouse/dataflow/pipeline validators |
+| `assessment.py` | 1,051 | 912 | **-139** | Near-identical (same 8 categories + scoring) |
+| `strategy_advisor.py` | 348 | 334 | **-14** | Different focus: Fabric→ETL strategy, PBI→connection mode |
 
 ### Fabric-Only Components (not applicable to PBI)
 
 | Component | Purpose | Portability |
 |-----------|---------|-------------|
-| `fabric_import/lakehouse_generator.py` | Lakehouse definition | Not applicable — PBI uses Import mode |
-| `fabric_import/dataflow_generator.py` | Dataflow Gen2 JSON | Not applicable — PBI uses M query partitions |
-| `fabric_import/notebook_generator.py` | PySpark Notebook (.ipynb) | Not applicable — PBI has no notebook concept |
-| `fabric_import/pipeline_generator.py` | Data Pipeline JSON | Not applicable — PBI uses Power BI Service |
-| `fabric_import/semantic_model_generator.py` | DirectLake semantic model | Not applicable — PBI uses TMDL directly |
-| `fabric_import/assessment.py` | Pre-migration assessment | **Portable** — could adapt for PBI |
-| `fabric_import/strategy_advisor.py` | Migration strategy advisor | **Portable** — could adapt for PBI |
-| `fabric_import/calc_column_utils.py` | Calc column classification | Partially ported (inline in PBI's tmdl_generator) |
-| `fabric_import/constants.py` | Shared constants (visual IDs, Z-index) | PBI defines these inline |
-| `fabric_import/naming.py` | Naming conventions | PBI uses `_clean_field_name` inline |
-| `conversion/` (8 modules) | Per-object converters (intermediate representation) | **Portable** — modular conversion layer |
-| `scripts/` (8 files) | PowerShell deployment scripts + TaskFlow configs | Fabric-specific deployment |
+| `fabric_import/lakehouse_generator.py` (223 lines) | Lakehouse DDL + table metadata | Not applicable — PBI uses Import mode |
+| `fabric_import/dataflow_generator.py` (304 lines) | Dataflow Gen2 M queries | Not applicable — PBI uses M query partitions in TMDL |
+| `fabric_import/notebook_generator.py` (545 lines) | PySpark Notebook (.ipynb) for ETL | Not applicable — PBI has no notebook concept |
+| `fabric_import/pipeline_generator.py` (229 lines) | Fabric Pipeline definitions | Not applicable — PBI uses Power BI Service refresh |
+| `fabric_import/semantic_model_generator.py` (116 lines) | DirectLake semantic model wrapper | Not applicable — PBI creates TMDL directly |
+| `fabric_import/calc_column_utils.py` (182 lines) | Calc column classification + M/PySpark | ✅ Superseded — PBI has `_dax_to_m_expression()` inline (more complete) |
+| `fabric_import/constants.py` (130 lines) | Shared constants, GUIDs, Spark types | PBI inlines these — not needed |
+| `fabric_import/naming.py` (108 lines) | Name sanitization | PBI uses `_clean_field_name` inline |
+| `conversion/` (8 modules) | Per-object converters (intermediate) | Not needed — PBI converts directly from extraction JSON |
+| `scripts/` (8 files) | PowerShell deployment scripts | Fabric-specific |
 
 ### Shared File Divergences (Output Generators)
 
-#### `pbip_generator.py` (Fabric: 1843 lines vs PBI: 2115 lines)
+#### `pbip_generator.py` (Fabric: 1,842 lines vs PBI: 2,326 lines)
 
 | Feature | Fabric | PBI |
 |---------|--------|-----|
-| Slicer mode detection | Always Dropdown | `_detect_slicer_mode()` — Dropdown/List/Between/Basic |
-| Bookmark creation | Inline in `create_report_structure` | Standalone `_create_bookmarks()` method |
-| Report filters | From workbook-scope filters | From parameters via `_create_report_filters()` |
-| Drill-through pages | Not implemented | `_create_drillthrough_pages()` |
-| Action buttons | `_create_visual_nav_button` + `_create_visual_action_button` | `_create_action_visuals()` |
-| Pages shelf | `_create_pages_shelf_slicer()` (animation hint) | Not implemented |
-| Context filter promotion | Worksheet context → page level | Not implemented |
-| Number format conversion | `_convert_number_format()` static helper | Not implemented |
-| Measure classification | Single `is_measure` check | Two-set system (`_bim_measure_names` + `_measure_names`) |
-| Visual object config | Trend lines, forecasting, map options, stepped colors, data bars, dual-axis sync, padding, row banding, reference bands, small multiples, analytics stats | Legend title/font-size, axis range min/max, log scale, reversed, dual-axis combo config, table/matrix grid, gradient min/mid/max |
+| Slicer mode detection | Always Dropdown | ✅ PBI: `_detect_slicer_mode()` — Dropdown/List/Between/Basic |
+| Bookmark creation | Inline in `create_report_structure` | ✅ PBI: Standalone `_create_bookmarks()` method |
+| Report filters | From workbook-scope filters | ✅ PBI: From parameters via `_create_report_filters()` |
+| Drill-through pages | Not implemented | ✅ PBI: `_create_drillthrough_pages()` |
+| Action buttons | `_create_visual_nav_button` + `_create_visual_action_button` | ✅ PBI: `_create_action_visuals()` (unified) |
+| Pages shelf slicer | `_create_pages_shelf_slicer()` | ✅ PBI: `_create_pages_shelf_slicer()` |
+| Number format conversion | `_convert_number_format()` | ✅ PBI: `_convert_number_format()` |
+| Scatter axis projections | Not implemented | ✅ PBI: `_make_scatter_axis_projection()` + `_make_scatter_axis_entry()` |
+| Visual object config | Trend lines, forecasting, map options, stepped colors, data bars, small multiples, analytics stats | Legend title/font-size, axis config (range/log/reversed), dual-axis combo, table/matrix grid, gradient min/mid/max |
 
-#### `tmdl_generator.py` (Fabric: ~2100 lines vs PBI: ~2450 lines)
+#### `tmdl_generator.py` (Fabric: 2,280 lines vs PBI: 2,741 lines)
 
 | Feature | Fabric | PBI |
 |---------|--------|-----|
-| Table partitions | DirectLake entity partitions | M query Import partitions |
-| Date hierarchies | `_auto_date_hierarchies()` — auto Year>Quarter>Month>Day | Manual date table with M partition |
-| Calculation groups | `_create_calculation_groups()` from param swap actions | Not implemented |
-| Field parameters | `_create_field_parameters()` with NAMEOF | Not implemented |
-| Expressions TMDL | `DatabaseQuery` + M parameters for connections | `DataFolder` parameter for file sources |
-| Quick table calcs | Not implemented | `_create_quick_table_calc_measures()` |
-| M transform steps | Not applicable (DirectLake) | `_build_m_transform_steps()` |
+| Table partitions | DirectLake entity partitions | ✅ PBI: M query Import partitions |
+| Date hierarchies | `_auto_date_hierarchies()` — auto Year>Quarter>Month>Day | ✅ PBI: M-based date hierarchies via `_dax_to_m_expression()` |
+| Calculation groups | `_create_calculation_groups()` from param swap actions | ✅ PBI: `_create_calculation_groups()` (ported) |
+| Field parameters | `_create_field_parameters()` with NAMEOF | ✅ PBI: `_create_field_parameters()` (ported) |
+| **M-based calc columns** | Not applicable (DirectLake) | ✅ PBI: `_dax_to_m_expression()` converts DAX → M `Table.AddColumn` steps |
+| **M step injection** | Not applicable | ✅ PBI: `_inject_m_steps_into_partition()` + `_build_m_transform_steps()` |
+| Quick table calcs | Not implemented | ✅ PBI: `_create_quick_table_calc_measures()` |
+| Column writing | Monolithic `_write_column` | ✅ PBI: `_write_column_properties()` + `_write_column_flags()` (refactored) |
 
-#### `visual_generator.py` (Fabric: 1087 lines vs PBI: 1053 lines)
+#### `visual_generator.py` (Fabric: 1,086 lines vs PBI: 938 lines)
 
-| Difference | Detail |
-|-----------|--------|
-| Sankey/Chord mapping | Fabric: `sankeyChart`/`chordChart` (custom visuals) | PBI: `decompositionTree` (fallback) |
-| Custom visual GUIDs | Fabric defines `CUSTOM_VISUAL_GUIDS` dict | PBI relies on PBI Desktop built-in |
-| `_L` import | From `.constants` | From `powerbi_import.pbip_generator` |
+| Difference | Fabric | PBI |
+|-----------|--------|-----|
+| Sankey/Chord mapping | `sankeyChart`/`chordChart` (custom visuals) | `decompositionTree` (fallback) |
+| Custom visual GUIDs | Defines `CUSTOM_VISUAL_GUIDS` dict | Relies on PBI Desktop built-in |
+| `_make_column_proj()` | Extra helper function | Not present (inlined) |
 
-#### `validator.py` (Fabric: 584 lines vs PBI: 601 lines)
+#### `strategy_advisor.py` (Fabric: 348 lines vs PBI: 334 lines)
 
-| Fabric-only validators | PBI-only features |
-|----------------------|------------------|
-| `validate_notebook()` | `REQUIRED_PROJECT_FILES` / `REQUIRED_DIRS` class constants |
-| `validate_lakehouse_definition()` | Explicit expected artifact lists |
-| `validate_dataflow_definition()` | — |
-| `validate_pipeline_definition()` | — |
+| Difference | Fabric | PBI |
+|-----------|--------|-----|
+| Recommendation focus | ETL strategy (Dataflow/Notebook/Pipeline) | ✅ PBI: Connection mode (Import/DirectQuery/Composite) |
+| `artifacts` property | Lists Fabric artifacts to produce | Not applicable |
+| `recommend_etl_strategy()` | Fabric-specific ETL recommendation | Not applicable |
+| `_classify_calculations()` | Not present | ✅ PBI: Classifies calcs by portability |
+| `connection_mode` property | Not present | ✅ PBI: Returns recommended connection mode |
 
 ### Test Coverage Gap
 
 | Metric | Fabric | PBI |
 |--------|--------|-----|
-| Test files | 39 | 16 |
-| Total tests (shared files) | 455 | 449 |
-| Coverage test files | 9 files, 750 tests | None |
-| **Grand total** | **~1,205** | **732** |
-| Coverage ratio | ~2.4× PBI's test count | Baseline |
+| Test files | 40 | 18 (+conftest.py) |
+| Total tests | ~1,205 | **887** |
+| Coverage test files (Fabric-style) | 9 files, ~750 tests (e.g., `test_*_coverage.py`) | None |
+| PBI-only broad-scope tests | None | 5 files (feature_gaps, gap_implementations, new_features, non_regression, migration_validation) |
+| **Coverage ratio** | ~1.36× PBI test count | Baseline |
 
-### Portability Assessment — What Could Be Brought to PBI
+### Portability Assessment — Remaining Items
 
-| Item | Effort | Value | Recommendation |
-|------|--------|-------|----------------|
-| `assessment.py` (pre-migration assessment) | Medium | High | **Port** — valuable for estimating migration complexity |
-| `strategy_advisor.py` (migration strategy) | Medium | Medium | **Port** — helps users choose migration approach |
-| `conversion/` (8 modular converters) | High | Medium | Consider — PBI already does this inline |
-| Fabric coverage tests (750 tests) | Medium | High | **Port** — significant test coverage improvement |
-| `calc_column_utils.py` (shared calc classification) | Low | Medium | **Port** — cleaner separation of concerns |
-| `constants.py` + `naming.py` (shared utilities) | Low | Low | Optional — PBI inlines these |
-| Pages shelf slicer | Low | Low | Optional — niche feature |
-| Context filter promotion | Low | Medium | **Port** — improves filter fidelity |
-| Number format conversion | Low | Medium | **Port** — `_convert_number_format()` utility |
-| Calculation groups | Medium | Medium | Consider — useful for advanced scenarios |
-| Field parameters | Medium | Medium | Consider — useful for dynamic axis switching |
-| Auto date hierarchies | Low | Medium | **Port** — auto Year>Quarter>Month>Day for all date columns |
-| `conftest.py` (shared test fixtures) | Low | High | **Port** — reduces test boilerplate |
+| Item | Effort | Value | Status |
+|------|--------|-------|--------|
+| `assessment.py` (pre-migration assessment) | Medium | High | ✅ **Ported** — `powerbi_import/assessment.py` (912 lines) |
+| `strategy_advisor.py` (migration strategy) | Medium | Medium | ✅ **Ported** — `powerbi_import/strategy_advisor.py` (334 lines, adapted for PBI) |
+| `calc_column_utils.py` (calc classification) | Low | Medium | ✅ **Superseded** — `_dax_to_m_expression()` is more complete |
+| Pages shelf slicer | Low | Low | ✅ **Ported** — `_create_pages_shelf_slicer()` |
+| Number format conversion | Low | Medium | ✅ **Ported** — `_convert_number_format()` |
+| Calculation groups | Medium | Medium | ✅ **Ported** — `_create_calculation_groups()` |
+| Field parameters | Medium | Medium | ✅ **Ported** — `_create_field_parameters()` |
+| Auto date hierarchies | Low | Medium | ✅ **Ported** — M-based date hierarchies |
+| `conftest.py` (shared test fixtures) | Low | High | ✅ **Ported** — `tests/conftest.py` (132 lines) |
+| `conversion/` (8 modular converters) | High | Medium | Skip — PBI converts directly from extraction JSON |
+| `constants.py` + `naming.py` (shared utilities) | Low | Low | Skip — PBI inlines these |
+| Fabric coverage tests (750 tests) | Medium | High | Consider — would significantly boost coverage |
+| Context filter promotion | Low | Medium | Consider — improves filter fidelity |

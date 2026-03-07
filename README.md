@@ -13,6 +13,7 @@ Automated migration tool for Tableau workbooks (`.twb`, `.twbx`) and Tableau Pre
 - **40+ Power Query M transformation generators**: rename, filter, aggregate, pivot/unpivot, join, union, sort, conditional columns — chainable via `inject_m_steps()`
 - **165 Tableau Prep → Power Query M** operation mappings ([reference doc](docs/TABLEAU_PREP_TO_POWERQUERY_REFERENCE.md))
 - **Tableau Prep flow parser** (`.tfl`/`.tflx`): converts Prep steps (Clean, Join, Aggregate, Union, Pivot) into chained Power Query M queries via `--prep` CLI flag
+- **M-based calculated columns**: calculated columns use Power Query M `Table.AddColumn` steps (DAX-to-M converter) with DAX fallback for cross-table references — avoids DAX calculated column limitations
 - **Calculated columns** vs measures: automatic classification based on Tableau role
 - **Cross-table references**: automatic `RELATED()` (manyToOne) or `LOOKUPVALUE()` (manyToMany)
 - **Relationship extraction**: handles both `[Table].[Column]` and bare `[Column]` join clause formats with table inference
@@ -53,7 +54,7 @@ Automated migration tool for Tableau workbooks (`.twb`, `.twbx`) and Tableau Pre
 - **Calendar customization**: `--calendar-start YEAR` and `--calendar-end YEAR` to set date table range
 - **Culture/locale**: `--culture LOCALE` for non-en-US linguistic metadata (e.g., `fr-FR`)
 - **CI/CD pipeline**: GitHub Actions with 5-stage pipeline (lint+ruff, test, strict validate+twbx, staging deploy, production deploy)
-- **866 tests**: 16 test files covering all modules, 0 failures, 2 skipped
+- **887 tests**: 18 test files + conftest.py shared fixtures, 0 failures, 2 skipped
 
 ## Quick Start
 
@@ -179,7 +180,7 @@ TableauToPowerBI/
 │       └── config/                            #     Configuration
 │           ├── settings.py                    #       Env-var based settings
 │           └── environments.py                #       Dev/staging/production configs
-├── tests/                                     # 866 tests (16 test files)
+├── tests/                                     # 887 tests (18 test files + conftest.py)
 ├── docs/                                      # Documentation
 ├── examples/                                  # Sample Tableau files
 ├── .github/workflows/ci.yml                   # CI/CD pipeline
@@ -529,7 +530,7 @@ The project includes a GitHub Actions pipeline (`.github/workflows/ci.yml`) with
 ## Testing
 
 ```bash
-# Run all 866+ tests
+# Run all 887+ tests
 python -m pytest tests/ -v
 
 # Run specific test file
@@ -540,22 +541,23 @@ python -m unittest tests.test_non_regression -v
 
 | Test File | Tests | Coverage |
 |-----------|-------|---------|
-| `test_dax_converter.py` | 80+ | DAX formula conversions, operators, LOD, table calcs |
-| `test_m_query_builder.py` | 80+ | Power Query M generation, 40+ transforms, connectors |
-| `test_tmdl_generator.py` | 60+ | TMDL model building, Calendar table, file writers |
-| `test_pbip_generator.py` | 40+ | Project generation, visual objects, slicers |
-| `test_visual_generator.py` | 67 | 60+ visual types, sync groups, action buttons, filters |
-| `test_infrastructure.py` | 34 | Validator, deployment utils, config, auth, client |
-| `test_non_regression.py` | 100+ | End-to-end migration of all 8 sample workbooks |
-| `test_extraction.py` | 20+ | Tableau XML extraction |
-| `test_migration.py` | 20+ | Full pipeline integration |
-| `test_migration_validation.py` | 15+ | Artifact validation post-migration |
-| `test_assessment.py` | 55 | Pre-migration assessment categories and scoring |
-| `test_strategy_advisor.py` | 26 | Strategy advisor Import/DirectQuery/Composite |
-| `test_new_features.py` | 53 | Calculation groups, field parameters, visual config |
-| `test_feature_gaps.py` | 44 | Feature gap coverage (LOD, parameters, RLS, etc.) |
-| `test_gap_implementations.py` | 50 | Gap implementations (DAX fixes, validation, config) |
-| `test_non_regression.py` | 100+ | End-to-end workbook migration regression tests |
+| `test_dax_converter.py` | 86 | DAX formula conversions, operators, LOD, table calcs |
+| `test_m_query_builder.py` | 102 | Power Query M generation, 40+ transforms, connectors |
+| `test_tmdl_generator.py` | 92 | TMDL model building, Calendar table, file writers |
+| `test_pbip_generator.py` | 46 | Project generation, visual objects, slicers |
+| `test_visual_generator.py` | 65 | 60+ visual types, sync groups, action buttons, filters |
+| `test_infrastructure.py` | 36 | Validator, deployment utils, config, auth, client |
+| `test_non_regression.py` | 63 | End-to-end migration of all 8 sample workbooks |
+| `test_extraction.py` | 29 | Tableau XML extraction |
+| `test_migration.py` | 10 | Full pipeline integration |
+| `test_prep_flow_parser.py` | 58 | Prep flow parsing, DAG traversal, step conversion |
+| `test_migration_report.py` | 36 | Fidelity scoring, migration status reporting |
+| `test_assessment.py` | 55 | Pre-migration assessment (8 categories + scoring) |
+| `test_strategy_advisor.py` | 26 | Import/DirectQuery/Composite recommendations |
+| `test_new_features.py` | 74 | Calc groups, field params, DAX-to-M conversion, M-based columns |
+| `test_feature_gaps.py` | 44 | Reference lines, axes, legend, sort, conditional formatting |
+| `test_gap_implementations.py` | 50 | DAX fixes, validation, slicer modes, drill-through |
+| `conftest.py` | — | Shared fixtures: sample datasources, worksheets, model |
 
 ## Documentation
 
@@ -576,7 +578,7 @@ python -m unittest tests.test_non_regression -v
 ## Known Limitations
 
 - `MAKEPOINT()` (Tableau spatial) has no DAX equivalent -- ignored
-- `PREVIOUS_VALUE()` / `LOOKUP()` require manual conversion
+- `PREVIOUS_VALUE()` / `LOOKUP()` converted via OFFSET-based DAX pattern — may need manual adjustment for complex seed logic
 - Data source paths must be reconfigured in Power Query after migration
 - Some table calculations (`INDEX()`, `SIZE()`) are approximated
 - Fabric deployment requires `azure-identity` and a registered Azure AD application

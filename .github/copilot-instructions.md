@@ -22,11 +22,13 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
   - `m_query_builder.py`: Power Query M generator (26 connector types + 40+ transformation generators: rename, filter, aggregate, pivot/unpivot, join, union, sort, conditional columns — chainable via `inject_m_steps()`)
   - `prep_flow_parser.py`: Tableau Prep flow parser (.tfl/.tflx → Power Query M) — DAG traversal, Clean/Join/Aggregate/Union/Pivot steps, expression converter, merge with TWB datasources
 - **powerbi_import/**: Power BI project generation
-  - `pbip_generator.py`: .pbip generator (PBIR v4.0, visuals, filters, bookmarks, slicers, textbox, image)
-  - `tmdl_generator.py`: Unified semantic model generator — direct Tableau → TMDL (tables, columns, measures, relationships, hierarchies, sets/groups/bins, parameters, RLS, dataCategory, isHidden)
+  - `pbip_generator.py`: .pbip generator (PBIR v4.0, visuals, filters, bookmarks, slicers, textbox, image, pages shelf, number format conversion, drill-through pages)
+  - `tmdl_generator.py`: Unified semantic model generator — direct Tableau → TMDL (tables, columns, measures, relationships, hierarchies, sets/groups/bins, parameters, RLS, dataCategory, isHidden, calculation groups, field parameters, M-based calculated columns)
   - `visual_generator.py`: Visual container generator — 60+ visual type mappings, PBIR-native config templates, data role definitions, query state builder, slicer sync groups, cross-filtering disable, action button navigation, TopN filters, sort state, reference lines, conditional formatting
   - `import_to_powerbi.py`: Generation pipeline orchestrator (supports `--output-dir`)
   - `m_query_generator.py`: Sample data M query generator
+  - `assessment.py`: Pre-migration readiness assessment — 8 categories (datasource, calculation, visual, filter, data model, interactivity, extract, scope), pass/warn/fail scoring
+  - `strategy_advisor.py`: Migration strategy advisor — recommends Import/DirectQuery/Composite based on 7 signals
   - `validator.py`: Artifact validator — validates .pbip projects (JSON, TMDL, report structure) before opening in PBI Desktop
   - `migration_report.py`: Per-item fidelity tracking and migration status reporting
   - `deploy/`: Fabric deployment subpackage
@@ -36,7 +38,7 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
     - `utils.py`: `DeploymentReport` (pass/fail tracking), `ArtifactCache` (incremental deployment metadata)
     - `config/settings.py`: Centralized config via env vars (FABRIC_WORKSPACE_ID, FABRIC_TENANT_ID, etc.)
     - `config/environments.py`: Per-environment configs (development/staging/production)
-- **tests/**: Unit and integration tests (725 tests)
+- **tests/**: Unit and integration tests (887 tests across 18 test files + conftest.py shared fixtures)
 - **docs/**: FAQ, PBI project guide, mapping reference
 - **.github/workflows/ci.yml**: CI/CD pipeline (lint → test → validate → deploy)
 - **artifacts/**: Migration output (generated .pbip projects)
@@ -59,6 +61,7 @@ python migrate.py --batch examples/tableau_samples/ --output-dir /tmp/batch_outp
 python migrate.py path/to/workbook.twbx --dry-run
 python migrate.py path/to/workbook.twbx --calendar-start 2018 --calendar-end 2028
 python migrate.py path/to/workbook.twbx --culture fr-FR
+python migrate.py path/to/workbook.twbx --assess
 ```
 
 ## Extracted Objects (16 types)
@@ -193,9 +196,12 @@ TWB-embedded transforms (column renames from captions) are auto-detected and inj
 - **sortByColumn**: Calendar MonthName→Month, DayName→DayOfWeek (prevents alphabetical month sorting)
 - **isKey**: Calendar Date column marked as table key
 - **Hierarchies**: Tableau drill-paths → BIM hierarchies with levels
-- **Sets**: → boolean calculated columns (IN expression)
-- **Groups**: → SWITCH calculated columns (values→groups mapping)
-- **Bins**: → FLOOR calculated columns (source, size)
+- **Sets**: → M-based boolean calculated columns (IN expression), with DAX fallback for cross-table refs
+- **Groups**: → M-based SWITCH calculated columns (values→groups mapping), with DAX fallback
+- **Bins**: → M-based FLOOR calculated columns (source, size), with DAX fallback
+- **Calculation groups**: Tableau param-swap actions → PBI Calculation Group tables with CALCULATE(SELECTEDMEASURE())
+- **Field parameters**: Tableau dimension-switching params → PBI Field Parameter tables with NAMEOF()
+- **M-based calculated columns**: DAX calc column expressions converted to Power Query M Table.AddColumn steps via `_dax_to_m_expression()` converter — supports IF, SWITCH, UPPER/LOWER/TRIM/LEN/LEFT/RIGHT/MID, ISBLANK, INT/VALUE, CONCATENATE, IN, &, arithmetic; falls back to DAX for cross-table references (RELATED/LOOKUPVALUE)
 - **Perspectives**: auto-generated "Full Model" perspective referencing all tables (`perspectives.tmdl`)
 - **Cultures**: culture TMDL file with linguistic metadata for non-en-US locales (`cultures/{locale}.tmdl`)
 - **diagramLayout.json**: empty layout file — Power BI Desktop auto-fills on first open
