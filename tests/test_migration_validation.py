@@ -14,7 +14,7 @@ import glob
 
 # ── Configuration ──────────────────────────────────────────────────────
 PROJECTS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                            "artifacts", "powerbi_projects")
+                            "artifacts", "powerbi_projects", "migrated")
 
 ALL_PROJECTS = ["Superstore_Sales", "HR_Analytics", "Financial_Report",
                 "BigQuery_Analytics"]

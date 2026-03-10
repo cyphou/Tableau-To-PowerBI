@@ -226,7 +226,7 @@ def run_generation(report_name=None, output_dir=None, calendar_start=None,
                             output_format=output_format)
 
         # Collect generation stats from the output
-        base_dir = output_dir or os.path.join('artifacts', 'powerbi_projects')
+        base_dir = output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
         project_dir = os.path.join(base_dir, report_name or 'Report')
         if os.path.exists(project_dir):
             _stats.pbip_path = project_dir
@@ -358,7 +358,7 @@ def run_migration_report(report_name, output_dir=None):
             report.add_user_filters(user_filters)
 
         # Save report
-        reports_dir = output_dir or os.path.join('artifacts', 'migration_reports')
+        reports_dir = output_dir or os.path.join('artifacts', 'powerbi_projects', 'reports')
         saved_path = report.save(reports_dir)
         logger.info(f"Migration report saved: {saved_path}")
 
@@ -395,7 +395,7 @@ def _build_calc_map_from_tmdl(report_name, output_dir=None):
     import re as _re
 
     calc_map = {}
-    base_dir = output_dir or os.path.join('artifacts', 'powerbi_projects')
+    base_dir = output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
     tables_dir = os.path.join(base_dir, report_name,
                               f'{report_name}.SemanticModel',
                               'definition', 'tables')
@@ -1089,7 +1089,7 @@ def main():
             print_assessment_report(report)
 
             # Save assessment report
-            out_dir = args.output_dir or os.path.join('artifacts', 'powerbi_projects')
+            out_dir = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'assessments')
             os.makedirs(out_dir, exist_ok=True)
             source_basename = os.path.splitext(os.path.basename(args.tableau_file))[0]
             assess_path = os.path.join(out_dir, f'assessment_{source_basename}.json')
@@ -1114,7 +1114,7 @@ def main():
 
     # Rollback: backup existing output if requested
     if args.rollback and not args.dry_run:
-        out_base = args.output_dir or os.path.join('artifacts', 'powerbi_projects')
+        out_base = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
         existing_dir = os.path.join(out_base, source_basename)
         if os.path.exists(existing_dir):
             import shutil
@@ -1127,7 +1127,7 @@ def main():
     if args.dry_run:
         print("\n[DRY RUN] Skipping generation — would produce:")
         print(f"  Report:  {source_basename}")
-        out_dir = args.output_dir or os.path.join('artifacts', 'powerbi_projects')
+        out_dir = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
         print(f"  Output:  {os.path.join(out_dir, source_basename)}")
         results['generation'] = True
     else:
@@ -1146,7 +1146,7 @@ def main():
     if getattr(args, 'incremental', None) and results.get('generation'):
         try:
             from powerbi_import.incremental import IncrementalMerger
-            out_dir = args.output_dir or os.path.join('artifacts', 'powerbi_projects')
+            out_dir = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
             generated_dir = os.path.join(out_dir, source_basename)
             existing_dir = args.incremental
             if os.path.isdir(existing_dir) and os.path.isdir(generated_dir):

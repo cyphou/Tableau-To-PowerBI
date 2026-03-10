@@ -7,13 +7,16 @@ import glob
 import datetime
 
 BASE = "artifacts/powerbi_projects"
+ASSESSMENTS_DIR = os.path.join(BASE, "assessments")
+REPORTS_DIR = os.path.join(BASE, "reports")
+MIGRATED_DIR = os.path.join(BASE, "migrated")
 OUTPUT = os.path.join(BASE, "MIGRATION_ASSESSMENT_REPORT.html")
 
 
 def load_assessments():
     """Load all assessment JSON files."""
     assessments = {}
-    for d in sorted(glob.glob(os.path.join(BASE, "assessment_*.json"))):
+    for d in sorted(glob.glob(os.path.join(ASSESSMENTS_DIR, "assessment_*.json"))):
         if os.path.isdir(d):
             name = os.path.basename(d).replace("assessment_", "").replace(".json", "")
             for f in glob.glob(os.path.join(d, "*.json")):
@@ -26,7 +29,7 @@ def load_assessments():
 def load_migration_reports():
     """Load latest migration report per workbook."""
     reports = {}
-    for f in sorted(glob.glob(os.path.join(BASE, "migration_report_*.json"))):
+    for f in sorted(glob.glob(os.path.join(REPORTS_DIR, "migration_report_*.json"))):
         if os.path.isfile(f):
             with open(f, encoding="utf-8") as fh:
                 data = json.load(fh)
@@ -39,8 +42,8 @@ def load_migration_reports():
 def load_metadata():
     """Load migration_metadata.json from each project directory."""
     metadata = {}
-    for d in sorted(glob.glob(os.path.join(BASE, "*"))):
-        if os.path.isdir(d) and not os.path.basename(d).startswith("assessment_"):
+    for d in sorted(glob.glob(os.path.join(MIGRATED_DIR, "*"))):
+        if os.path.isdir(d):
             meta_file = os.path.join(d, "migration_metadata.json")
             if os.path.isfile(meta_file):
                 with open(meta_file, encoding="utf-8") as fh:

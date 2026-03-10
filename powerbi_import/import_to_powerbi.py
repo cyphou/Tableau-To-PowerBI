@@ -132,7 +132,7 @@ class PowerBIImporter:
                 projects_dir = os.path.abspath(output_dir)
             else:
                 artifacts_dir = os.path.abspath('artifacts')
-                projects_dir = os.path.join(artifacts_dir, 'powerbi_projects')
+                projects_dir = os.path.join(artifacts_dir, 'powerbi_projects', 'migrated')
             
             artifacts_dir = os.path.abspath('artifacts')
             generator = PowerBIProjectGenerator(

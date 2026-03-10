@@ -439,7 +439,7 @@ class TestMigrationOutputIntegrity(unittest.TestCase):
 
     ARTIFACTS_DIR = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        'artifacts', 'powerbi_projects'
+        'artifacts', 'powerbi_projects', 'migrated'
     )
 
     def _find_tmdl_files(self):

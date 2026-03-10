@@ -60,7 +60,7 @@ def _run_migration(twb_path, output_dir):
     # Create workspace subdirs that the pipeline expects
     te_dir = os.path.join(output_dir, 'tableau_export')
     os.makedirs(te_dir, exist_ok=True)
-    os.makedirs(os.path.join(output_dir, 'artifacts', 'powerbi_projects'), exist_ok=True)
+    os.makedirs(os.path.join(output_dir, 'artifacts', 'powerbi_projects', 'migrated'), exist_ok=True)
 
     old_cwd = os.getcwd()
     old_stdout = sys.stdout
@@ -81,7 +81,7 @@ def _run_migration(twb_path, output_dir):
         os.chdir(old_cwd)
         sys.stdout = old_stdout
 
-    project_dir = os.path.join(output_dir, 'artifacts', 'powerbi_projects', report_name)
+    project_dir = os.path.join(output_dir, 'artifacts', 'powerbi_projects', 'migrated', report_name)
     return project_dir
 
 
@@ -595,12 +595,12 @@ class TestSecurityTest(NonRegressionBase):
 class TestCrossSampleConsistency(unittest.TestCase):
     """
     Tests that run across all already-generated projects in
-    artifacts/powerbi_projects/ (no re-migration needed).
+    artifacts/powerbi_projects/migrated/ (no re-migration needed).
     """
 
     def _get_existing_projects(self):
         """Return list of (name, path) for existing generated projects."""
-        projects_dir = os.path.join(ROOT, 'artifacts', 'powerbi_projects')
+        projects_dir = os.path.join(ROOT, 'artifacts', 'powerbi_projects', 'migrated')
         if not os.path.isdir(projects_dir):
             return []
         return [

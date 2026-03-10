@@ -8,7 +8,7 @@ Usage:
     report = MigrationReport("Superstore_Sales")
     report.add_item("calculation", "Profit Ratio", "exact", dax="DIVIDE([Profit],[Sales])")
     report.add_item("calculation", "MAKEPOINT field", "unsupported", note="No DAX spatial equivalent")
-    report.save("artifacts/migration_reports/")
+    report.save("artifacts/powerbi_projects/reports/")
 """
 
 import json

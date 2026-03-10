@@ -107,6 +107,9 @@ def _load_pbip(pbip_dir):
                 )
     # Load migration report if present
     reports = glob.glob(os.path.join(pbip_dir, '..', 'migration_report_*.json'))
+    if not reports:
+        # Check new layout: reports/ sibling directory of migrated/
+        reports = glob.glob(os.path.join(pbip_dir, '..', '..', 'reports', 'migration_report_*.json'))
     if reports:
         result['migration_report'] = _load_json(sorted(reports)[-1])
     return result
