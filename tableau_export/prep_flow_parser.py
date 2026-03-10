@@ -299,6 +299,25 @@ def _parse_input_node(node, connections):
 #  CLEAN STEP (SuperTransform) → M STEPS
 # ═══════════════════════════════════════════════════════════════════════════════
 
+# Pre-compiled patterns for Prep expression → M conversion
+_RE_IF = re.compile(r'\bIF\b', re.IGNORECASE)
+_RE_THEN = re.compile(r'\bTHEN\b', re.IGNORECASE)
+_RE_ELSE = re.compile(r'\bELSE\b', re.IGNORECASE)
+_RE_ELSEIF = re.compile(r'\bELSEIF\b', re.IGNORECASE)
+_RE_END = re.compile(r'\bEND\b', re.IGNORECASE)
+_RE_AND = re.compile(r'\bAND\b', re.IGNORECASE)
+_RE_OR = re.compile(r'\bOR\b', re.IGNORECASE)
+_RE_NOT = re.compile(r'\bNOT\b', re.IGNORECASE)
+_RE_ISNULL = re.compile(r'\bISNULL\s*\(', re.IGNORECASE)
+_RE_CONTAINS = re.compile(r'\bCONTAINS\s*\(', re.IGNORECASE)
+_RE_LEN = re.compile(r'\bLEN\s*\(', re.IGNORECASE)
+_RE_UPPER = re.compile(r'\bUPPER\s*\(', re.IGNORECASE)
+_RE_LOWER = re.compile(r'\bLOWER\s*\(', re.IGNORECASE)
+_RE_TRIM = re.compile(r'\bTRIM\s*\(', re.IGNORECASE)
+_RE_LEFT = re.compile(r'\bLEFT\s*\(', re.IGNORECASE)
+_RE_RIGHT = re.compile(r'\bRIGHT\s*\(', re.IGNORECASE)
+
+
 def _convert_prep_expression_to_m(expression):
     """
     Convert a Tableau Prep calculation expression to a Power Query M expression.
@@ -311,31 +330,31 @@ def _convert_prep_expression_to_m(expression):
     expr = expression.strip()
 
     # Basic column references: [Column] → [Column] (same in M for row context)
-    # Tableau Prep IF/THEN/ELSE → M if/then/else
-    expr = re.sub(r'\bIF\b', 'if', expr, flags=re.IGNORECASE)
-    expr = re.sub(r'\bTHEN\b', 'then', expr, flags=re.IGNORECASE)
-    expr = re.sub(r'\bELSE\b', 'else', expr, flags=re.IGNORECASE)
-    expr = re.sub(r'\bELSEIF\b', 'else if', expr, flags=re.IGNORECASE)
-    expr = re.sub(r'\bEND\b', '', expr, flags=re.IGNORECASE)
-    expr = re.sub(r'\bAND\b', 'and', expr, flags=re.IGNORECASE)
-    expr = re.sub(r'\bOR\b', 'or', expr, flags=re.IGNORECASE)
-    expr = re.sub(r'\bNOT\b', 'not', expr, flags=re.IGNORECASE)
+    # Tableau Prep IF/THEN/ELSE → M if/then/else (pre-compiled patterns)
+    expr = _RE_ELSEIF.sub('else if', expr)  # ELSEIF before ELSE/IF
+    expr = _RE_IF.sub('if', expr)
+    expr = _RE_THEN.sub('then', expr)
+    expr = _RE_ELSE.sub('else', expr)
+    expr = _RE_END.sub('', expr)
+    expr = _RE_AND.sub('and', expr)
+    expr = _RE_OR.sub('or', expr)
+    expr = _RE_NOT.sub('not', expr)
 
     # Comparison operators
     expr = expr.replace('!=', '<>')
     expr = expr.replace('==', '=')
 
     # NULL handling
-    expr = re.sub(r'\bISNULL\s*\(', '(null = ', expr, flags=re.IGNORECASE)
+    expr = _RE_ISNULL.sub('(null = ', expr)
 
     # String functions
-    expr = re.sub(r'\bCONTAINS\s*\(', 'Text.Contains(', expr, flags=re.IGNORECASE)
-    expr = re.sub(r'\bLEN\s*\(', 'Text.Length(', expr, flags=re.IGNORECASE)
-    expr = re.sub(r'\bUPPER\s*\(', 'Text.Upper(', expr, flags=re.IGNORECASE)
-    expr = re.sub(r'\bLOWER\s*\(', 'Text.Lower(', expr, flags=re.IGNORECASE)
-    expr = re.sub(r'\bTRIM\s*\(', 'Text.Trim(', expr, flags=re.IGNORECASE)
-    expr = re.sub(r'\bLEFT\s*\(', 'Text.Start(', expr, flags=re.IGNORECASE)
-    expr = re.sub(r'\bRIGHT\s*\(', 'Text.End(', expr, flags=re.IGNORECASE)
+    expr = _RE_CONTAINS.sub('Text.Contains(', expr)
+    expr = _RE_LEN.sub('Text.Length(', expr)
+    expr = _RE_UPPER.sub('Text.Upper(', expr)
+    expr = _RE_LOWER.sub('Text.Lower(', expr)
+    expr = _RE_TRIM.sub('Text.Trim(', expr)
+    expr = _RE_LEFT.sub('Text.Start(', expr)
+    expr = _RE_RIGHT.sub('Text.End(', expr)
 
     return expr
 

@@ -356,23 +356,23 @@ class ArtifactValidator:
                 if stripped.startswith(prefix):
                     current_object = stripped
             # Collect column names for sortByColumn cross-validation
-            col_def = re.match(r"^\s*column\s+'?([^'=]+?)'?\s*$", stripped)
+            col_def = cls._RE_TMDL_COL_DEF.match(stripped)
             if col_def:
                 known_columns.add(col_def.group(1).strip())
 
             # --- Empty measure/column detection ---
             # Pattern: ``measure 'Name' = `` with no expression after ``=``
-            m_measure = re.match(r"^\s*measure\s+'[^']+'\s*=\s*$", line)
+            m_measure = cls._RE_TMDL_EMPTY_MEASURE.match(line)
             if m_measure:
                 issues.append(f'Empty measure expression in {current_object} ({basename}:{i+1})')
 
             # Pattern: ``column 'Name' = `` with no expression after ``=``
-            m_col_expr = re.match(r"^\s*column\s+'[^']+'\s*=\s*$", line)
+            m_col_expr = cls._RE_TMDL_EMPTY_COL_EXPR.match(line)
             if m_col_expr:
                 issues.append(f'Empty column expression in {current_object} ({basename}:{i+1})')
 
             # --- Single-line measure DAX (``measure 'Name' = <dax>``) ---
-            m_inline = re.match(r"^\s*measure\s+'[^']+'\s*=\s*(.+)$", line)
+            m_inline = cls._RE_TMDL_INLINE_MEASURE.match(line)
             if m_inline:
                 formula = m_inline.group(1).strip()
                 if formula and not formula.endswith('```'):
@@ -386,12 +386,12 @@ class ArtifactValidator:
                         )
 
             # --- lineageTag tracking ---
-            lt_match = re.match(r'^\s*lineageTag:\s*(\S+)', stripped)
+            lt_match = cls._RE_TMDL_LINEAGE_TAG.match(stripped)
             if lt_match:
                 lineage_tags.append((lt_match.group(1), current_object, i + 1))
 
             # --- sortByColumn validation ---
-            sbc_match = re.match(r'^\s*sortByColumn:\s*(.+)', stripped)
+            sbc_match = cls._RE_TMDL_SORT_BY_COL.match(stripped)
             if sbc_match:
                 sort_col = sbc_match.group(1).strip().strip("'")
                 sort_by_columns.append((sort_col, current_object, i + 1))
@@ -465,6 +465,14 @@ class ArtifactValidator:
     _RE_MEASURE_DEF = re.compile(r"^measure\s+'?([^']+?)'?\s*$")
     # Regex to extract DAX column/measure references: 'Table'[Column]
     _RE_DAX_REF = re.compile(r"'([^']+?)'\[([^\]]+)\]")
+
+    # Pre-compiled patterns for validate_tmdl_dax hot loop
+    _RE_TMDL_COL_DEF = re.compile(r"^\s*column\s+'?([^'=]+?)'?\s*$")
+    _RE_TMDL_EMPTY_MEASURE = re.compile(r"^\s*measure\s+'[^']+'\s*=\s*$")
+    _RE_TMDL_EMPTY_COL_EXPR = re.compile(r"^\s*column\s+'[^']+'\s*=\s*$")
+    _RE_TMDL_INLINE_MEASURE = re.compile(r"^\s*measure\s+'[^']+'\s*=\s*(.+)$")
+    _RE_TMDL_LINEAGE_TAG = re.compile(r'^\s*lineageTag:\s*(\S+)')
+    _RE_TMDL_SORT_BY_COL = re.compile(r'^\s*sortByColumn:\s*(.+)')
 
     @classmethod
     def _collect_model_symbols(cls, sm_dir):

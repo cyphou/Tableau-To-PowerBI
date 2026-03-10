@@ -15,6 +15,12 @@ import sys
 
 logger = logging.getLogger(__name__)
 
+# Pre-compiled patterns for field name cleaning
+_RE_DERIVATION_PREFIX = re.compile(
+    r'^(none|sum|avg|count|min|max|usr|yr|mn|dy|qr|wk|attr|md|mdy|hms|hr|mt|sc|thr|trunc|tyr|tqr|tmn|tdy|twk):'
+)
+_RE_TYPE_SUFFIX = re.compile(r':(nk|qk|ok|fn|tn)$')
+
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -1253,11 +1259,8 @@ class PowerBIProjectGenerator:
     
     def _clean_field_name(self, name):
         """Strip all known Tableau derivation prefixes from a field name"""
-        # Remove Tableau derivation prefixes (none:, usr:, yr:, tmn:, etc.)
-        clean = re.sub(r'^(none|sum|avg|count|min|max|usr|yr|mn|dy|qr|wk|attr|md|mdy|hms|hr|mt|sc|thr|trunc|tmn):',
-                        '', name)
-        # Remove type suffixes (:nk, :qk, :ok, :fn, :tn)
-        clean = re.sub(r':(nk|qk|ok|fn|tn)$', '', clean)
+        clean = _RE_DERIVATION_PREFIX.sub('', name)
+        clean = _RE_TYPE_SUFFIX.sub('', clean)
         return clean
 
     def _build_visual_query(self, ws_data):

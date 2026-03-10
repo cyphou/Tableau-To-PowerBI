@@ -1,4 +1,4 @@
-﻿"""
+"""
 Datasource extraction module for Tableau workbooks.
 
 Parses Tableau XML datasource elements, extracting connections,

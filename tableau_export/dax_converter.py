@@ -195,6 +195,43 @@ _SIMPLE_FUNCTION_MAP = [
 _COMPILED_FUNCTION_MAP = [(re.compile(pattern, re.IGNORECASE), replacement)
                            for pattern, replacement in _SIMPLE_FUNCTION_MAP]
 
+# Pre-compiled static patterns used in the main converter and dedicated converters
+_RE_ISMEMBEROF = re.compile(
+    r'\bISMEMBEROF\s*\(\s*["\']([^"\']+)["\']\s*\)',
+    re.IGNORECASE
+)
+_RE_OR = re.compile(r'\bor\b', re.IGNORECASE)
+_RE_AND = re.compile(r'\band\b', re.IGNORECASE)
+_RE_NEWLINES = re.compile(r'[\r\n]+\s*')
+_RE_PARAM_REF = re.compile(r'\[Parameters\]\.\[([^\]]+)\]')
+_RE_CALC_REF = re.compile(r'\[([^\]]+)\]')
+_RE_ELSEIF = re.compile(r'\bELSEIF\b', re.IGNORECASE)
+_RE_FINDNTH = re.compile(r'\bFINDNTH\s*\(', re.IGNORECASE)
+_RE_DATE_LITERAL = re.compile(r'#(\d{4})-(\d{2})-(\d{2})#')
+_RE_COLUMN_RESOLVE = re.compile(r"(?<!')\[([^\]]+)\]")
+_RE_PREVIOUS_VALUE = re.compile(r'\bPREVIOUS_VALUE\s*\(', re.IGNORECASE)
+_RE_LOOKUP = re.compile(r'\bLOOKUP\s*\(', re.IGNORECASE)
+_RE_FIND = re.compile(r'\bFIND\s*\(', re.IGNORECASE)
+_RE_TOTAL = re.compile(r'\bTOTAL\s*\(', re.IGNORECASE)
+_RE_LOD_NO_DIM = re.compile(
+    r'\{\s*(SUM|AVG|AVERAGE|MIN|MAX|COUNT|COUNTD|MEDIAN)\s*\(',
+    re.IGNORECASE
+)
+
+# Pattern cache for dynamic function-name-based patterns
+_func_pattern_cache = {}
+
+
+def _get_func_pattern(func_name, word_boundary=True):
+    """Retrieve or create a compiled regex for matching ``func_name(``."""
+    key = (func_name, word_boundary)
+    pat = _func_pattern_cache.get(key)
+    if pat is None:
+        prefix = r'\b' + re.escape(func_name) if word_boundary else re.escape(func_name)
+        pat = re.compile(prefix + r'\s*\(', re.IGNORECASE)
+        _func_pattern_cache[key] = pat
+    return pat
+
 
 # ── Type mapping ──────────────────────────────────────────────────────────────
 
@@ -267,10 +304,9 @@ def convert_tableau_formula_to_dax(formula, column_name='Measure', table_name='T
     # === Phase 3: Convert Tableau functions → DAX ===
     
     # 3a. ISMEMBEROF (special — captures group name)
-    dax = re.sub(
-        r'\bISMEMBEROF\s*\(\s*["\']([^"\']+)["\']\s*\)',
+    dax = _RE_ISMEMBEROF.sub(
         r'TRUE()  /* ISMEMBEROF("\1"): implement via RLS role */',
-        dax, flags=re.IGNORECASE
+        dax
     )
     
     # 3b-pre. Dedicated converters (functions needing special arg handling)
@@ -331,8 +367,8 @@ def convert_tableau_formula_to_dax(formula, column_name='Measure', table_name='T
     # === Phase 4: Convert operators ===
     dax = dax.replace('!=', '<>')   # != before == to avoid partial match
     dax = dax.replace('==', '=')
-    dax = re.sub(r'\bor\b', '||', dax, flags=re.IGNORECASE)
-    dax = re.sub(r'\band\b', '&&', dax, flags=re.IGNORECASE)
+    dax = _RE_OR.sub('||', dax)
+    dax = _RE_AND.sub('&&', dax)
     
     # === Phase 5: Resolve remaining columns [col] → 'Table'[col] ===
     dax = _resolve_columns(dax, table_name, column_table_map, measure_names,
@@ -356,7 +392,7 @@ def convert_tableau_formula_to_dax(formula, column_name='Measure', table_name='T
 
     # === Phase 6: Final cleanup ===
     dax = _normalize_spaces_outside_identifiers(dax).strip()
-    dax = re.sub(r'[\r\n]+\s*', ' ', dax)
+    dax = _RE_NEWLINES.sub(' ', dax)
 
     # === Phase 6b: Fix date literals ===
     dax = _fix_date_literals(dax)
@@ -376,7 +412,7 @@ def _resolve_references(dax, calc_map, param_map, is_calc_column, param_values):
         if is_calc_column and caption in param_values:
             return param_values[caption]
         return f'[{caption}]'
-    dax = re.sub(r'\[Parameters\]\.\[([^\]]+)\]', resolve_param, dax)
+    dax = _RE_PARAM_REF.sub(resolve_param, dax)
     
     # [Calculation_xxx] → [caption]
     def resolve_calc(m):
@@ -384,7 +420,7 @@ def _resolve_references(dax, calc_map, param_map, is_calc_column, param_values):
         if ref in calc_map:
             return f'[{calc_map[ref]}]'
         return m.group(0)
-    dax = re.sub(r'\[([^\]]+)\]', resolve_calc, dax)
+    dax = _RE_CALC_REF.sub(resolve_calc, dax)
     
     return dax
 
@@ -454,7 +490,7 @@ def _convert_if_structure(text):
     # Pre-processing: ELSEIF → ELSE IF + add corresponding ENDs
     elseif_count = len(re.findall(r'\bELSEIF\b', text, re.IGNORECASE))
     if elseif_count > 0:
-        text = re.sub(r'\bELSEIF\b', 'ELSE IF', text, flags=re.IGNORECASE)
+        text = _RE_ELSEIF.sub('ELSE IF', text)
         text = text.rstrip() + ' END' * elseif_count
     
     max_iter = 30
@@ -524,7 +560,7 @@ def _extract_balanced_call(dax, func_name):
     Uses depth-tracking to handle nested parentheses correctly.
     """
     results = []
-    pattern = re.compile(r'\b' + re.escape(func_name) + r'\s*\(', re.IGNORECASE)
+    pattern = _get_func_pattern(func_name)
     offset = 0
     while True:
         match = pattern.search(dax, offset)
@@ -577,7 +613,7 @@ def _convert_previous_value(dax, table_name, compute_using=None, column_table_ma
     When compute_using is present, uses those dimensions for ORDERBY.
     """
     column_table_map = column_table_map or {}
-    pattern = re.compile(r'\bPREVIOUS_VALUE\s*\(', re.IGNORECASE)
+    pattern = _RE_PREVIOUS_VALUE
     match = pattern.search(dax)
     while match:
         start_pos = match.end()
@@ -615,7 +651,7 @@ def _convert_lookup(dax, table_name, compute_using=None, column_table_map=None):
         CALCULATE(<expr>, OFFSET(<offset>, ALLSELECTED('Table'), ORDERBY([dim])))
     """
     column_table_map = column_table_map or {}
-    pattern = re.compile(r'\bLOOKUP\s*\(', re.IGNORECASE)
+    pattern = _RE_LOOKUP
     match = pattern.search(dax)
     while match:
         start_pos = match.end()
@@ -663,8 +699,8 @@ def _convert_find(dax):
     Tableau: FIND(within_text, find_text[, start])
     DAX:     FIND(find_text, within_text[, start[, not_found]])
     """
-    dax = re.sub(r'\bFINDNTH\s*\(', 'FIND(', dax, flags=re.IGNORECASE)
-    pattern = re.compile(r'\bFIND\s*\(', re.IGNORECASE)
+    dax = _RE_FINDNTH.sub('FIND(', dax)
+    pattern = _RE_FIND
     match = pattern.search(dax)
     while match:
         start_pos = match.end()
@@ -723,7 +759,7 @@ def _convert_corr_covar(dax, table_name='Table'):
     COVARP(x, y) → population covariance using VAR + SUMX pattern
     """
     for tab_func in ['CORR', 'COVARP', 'COVAR']:
-        pattern = re.compile(r'\b' + tab_func + r'\s*\(', re.IGNORECASE)
+        pattern = _get_func_pattern(tab_func)
         match = pattern.search(dax)
         while match:
             start_pos = match.end()
@@ -797,7 +833,7 @@ def _transform_func_call(dax, func_name, transformer_fn):
     the replacement string.  The function handles nested parentheses and
     iterates until no more matches are found.
     """
-    pattern = re.compile(re.escape(func_name) + r'\s*\(', re.IGNORECASE)
+    pattern = _get_func_pattern(func_name, word_boundary=False)
     match = pattern.search(dax)
     while match:
         start_pos = match.end()
@@ -1197,7 +1233,7 @@ def _fix_date_literals(dax):
     def _date_repl(m):
         y, mo, d = int(m.group(1)), int(m.group(2)), int(m.group(3))
         return f'DATE({y}, {mo}, {d})'
-    return re.sub(r'#(\d{4})-(\d{2})-(\d{2})#', _date_repl, dax)
+    return _RE_DATE_LITERAL.sub(_date_repl, dax)
 
 
 def _convert_string_concat(dax):
@@ -1350,11 +1386,7 @@ def _convert_lod_expressions(dax, table_name, column_table_map):
         dax = dax[:start] + replacement + dax[end:]
     
     # LOD without dimension — use balanced brace matching (not global replace)
-    _lod_no_dim_pattern = re.compile(
-        r'\{\s*(SUM|AVG|AVERAGE|MIN|MAX|COUNT|COUNTD|MEDIAN)\s*\(',
-        re.IGNORECASE
-    )
-    match = _lod_no_dim_pattern.search(dax)
+    match = _RE_LOD_NO_DIM.search(dax)
     while match:
         # Find the matching closing brace for this LOD expression
         start = match.start()
@@ -1372,7 +1404,7 @@ def _convert_lod_expressions(dax, table_name, column_table_map):
             # Convert to CALCULATE(inner)
             replacement = f'CALCULATE({inner})'
             dax = dax[:start] + replacement + dax[i:]
-            match = _lod_no_dim_pattern.search(dax, start + len(replacement))
+            match = _RE_LOD_NO_DIM.search(dax, start + len(replacement))
         else:
             break
 
@@ -1435,7 +1467,7 @@ def _convert_window_functions(dax, table_name, compute_using=None, column_table_
     """
     ctm = column_table_map or {}
     for window_func in ['WINDOW_SUM', 'WINDOW_AVG', 'WINDOW_MAX', 'WINDOW_MIN', 'WINDOW_COUNT']:
-        pattern = re.compile(rf'\b{window_func}\s*\(', re.IGNORECASE)
+        pattern = _get_func_pattern(window_func)
         match = pattern.search(dax)
         while match:
             start_pos = match.end()
@@ -1511,7 +1543,7 @@ def _convert_window_functions(dax, table_name, compute_using=None, column_table_
     for window_stat_func, stat_func in [('WINDOW_CORR', 'CORR'),
                                          ('WINDOW_COVAR', 'COVAR'),
                                          ('WINDOW_COVARP', 'COVARP')]:
-        pattern = re.compile(rf'\b{window_stat_func}\s*\(', re.IGNORECASE)
+        pattern = _get_func_pattern(window_stat_func)
         match = pattern.search(dax)
         while match:
             start_pos = match.end()
@@ -1562,7 +1594,7 @@ def _convert_rank_functions(dax, table_name, compute_using=None, column_table_ma
     ctm = column_table_map or {}
     # Process longer names first to avoid partial matches
     for rank_func in ['RANK_PERCENTILE', 'RANK_MODIFIED', 'RANK_DENSE', 'RANK_UNIQUE', 'RANK']:
-        pattern = re.compile(r'\b' + rank_func + r'\s*\(', re.IGNORECASE)
+        pattern = _get_func_pattern(rank_func)
         match = pattern.search(dax)
         while match:
             start_pos = match.end()
@@ -1613,7 +1645,7 @@ def _convert_running_functions(dax, table_name):
         'RUNNING_MIN': 'MIN',
     }
     for tab_func, dax_agg in running_map.items():
-        pattern = re.compile(rf'\b{tab_func}\s*\(', re.IGNORECASE)
+        pattern = _get_func_pattern(tab_func)
         match = pattern.search(dax)
         while match:
             start_pos = match.end()
@@ -1643,7 +1675,7 @@ def _convert_total_function(dax, table_name):
     TOTAL() in Tableau returns the grand total of an expression,
     ignoring the current partition. This maps to CALCULATE + ALL.
     """
-    pattern = re.compile(r'\bTOTAL\s*\(', re.IGNORECASE)
+    pattern = _RE_TOTAL
     match = pattern.search(dax)
     while match:
         start_pos = match.end()
@@ -1691,7 +1723,7 @@ def _resolve_columns(dax, table_name, column_table_map, measure_names,
             return f"'{col_table}'[{_dax_escape_col(col)}]"
         return f"'{table_name}'[{_dax_escape_col(col)}]"
     
-    return re.sub(r"(?<!')\[([^\]]+)\]", resolve_column, dax)
+    return _RE_COLUMN_RESOLVE.sub(resolve_column, dax)
 
 
 # ── Phase 5b: AGG(IF) → AGGX ─────────────────────────────────────────────────
@@ -1776,7 +1808,7 @@ def _convert_agg_expr_to_aggx(dax_text, table_name):
 
     def _process_map(dax, mapping, unwrap_inner_agg=False):
         for agg, aggx in mapping.items():
-            pattern = re.compile(r'\b' + re.escape(agg) + r'\s*\(', re.IGNORECASE)
+            pattern = _get_func_pattern(agg)
             matches = list(pattern.finditer(dax))
             for m in reversed(matches):
                 end_of_word = m.end() - 1  # position of '('

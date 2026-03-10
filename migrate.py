@@ -778,9 +778,10 @@ def run_batch_migration(batch_dir, output_dir=None, prep_file=None, skip_extract
     return ExitCode.SUCCESS if failed == 0 else ExitCode.BATCH_PARTIAL_FAIL
 
 
-def main():
-    """Main entry point"""
+# ── Argument parser ──────────────────────────────────────────────────────────
 
+def _build_argument_parser():
+    """Build and return the CLI argument parser."""
     parser = argparse.ArgumentParser(
         description='Migrate a Tableau workbook to a Power BI project (.pbip)'
     )
@@ -1007,17 +1008,22 @@ def main():
         help='Download and migrate all workbooks from a Tableau Server project (requires --server)'
     )
 
-    args = parser.parse_args()
+    return parser
 
-    # Load configuration file if specified (CLI args take precedence)
-    if args.config:
-        try:
-            sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'powerbi_import'))
-            from config.migration_config import load_config
-            config = load_config(filepath=args.config, args=args)
-            # Apply config values to args where args has defaults
-            if not args.tableau_file and config.tableau_file:
-                args.tableau_file = config.tableau_file
+
+# ── Config file loader ───────────────────────────────────────────────────────
+
+def _apply_config_file(args):
+    """Load a JSON configuration file and apply values where CLI args have defaults."""
+    if not args.config:
+        return
+    try:
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'powerbi_import'))
+        from config.migration_config import load_config
+        config = load_config(filepath=args.config, args=args)
+        # Apply config values to args where args has defaults
+        if not args.tableau_file and config.tableau_file:
+            args.tableau_file = config.tableau_file
             if not args.prep and config.prep_flow:
                 args.prep = config.prep_flow
             if not args.output_dir and config.output_dir:
@@ -1039,8 +1045,254 @@ def main():
             if not args.log_file and config.log_file:
                 args.log_file = config.log_file
             logger.info(f"Configuration loaded from: {args.config}")
-        except Exception as e:
-            print(f"Warning: Failed to load config file: {e}")
+    except Exception as e:
+        print(f"Warning: Failed to load config file: {e}")
+
+
+# ── Tableau Server download ─────────────────────────────────────────────────
+
+def _download_from_server(args):
+    """Download workbooks from Tableau Server/Cloud.
+
+    Returns ExitCode on failure, None on success (caller should continue).
+    Mutates args.tableau_file or args.batch.
+    """
+    try:
+        from tableau_export.server_client import TableauServerClient
+        print_header("TABLEAU SERVER DOWNLOAD")
+        print(f"  Server: {args.server}")
+        print(f"  Site:   {args.site or '(Default)'}")
+
+        ts_client = TableauServerClient(
+            server_url=args.server,
+            token_name=getattr(args, 'token_name', None),
+            token_secret=getattr(args, 'token_secret', None),
+            site_id=getattr(args, 'site', ''),
+        )
+        ts_client.sign_in()
+
+        download_dir = os.path.join(
+            tempfile.gettempdir(), 'tableau_server_downloads'
+        )
+
+        if getattr(args, 'server_batch', None):
+            # Batch: download all workbooks from a project
+            print(f"  Project: {args.server_batch}")
+            dl_results = ts_client.download_all_workbooks(
+                download_dir, project_name=args.server_batch,
+            )
+            ts_client.sign_out()
+            succeeded = [r for r in dl_results if r['status'] == 'success']
+            print(f"  Downloaded: {len(succeeded)}/{len(dl_results)} workbooks")
+            if not succeeded:
+                print("  No workbooks downloaded — aborting")
+                return ExitCode.EXTRACTION_FAILED
+            # Switch to batch mode
+            args.batch = download_dir
+        elif getattr(args, 'workbook', None):
+            # Single workbook download
+            print(f"  Workbook: {args.workbook}")
+            workbooks = ts_client.list_workbooks()
+            match = None
+            for wb in workbooks:
+                if wb.get('id') == args.workbook or wb.get('name') == args.workbook:
+                    match = wb
+                    break
+            if not match:
+                # Try regex search
+                matches = ts_client.search_workbooks(args.workbook)
+                if matches:
+                    match = matches[0]
+
+            if not match:
+                ts_client.sign_out()
+                print(f"  Workbook '{args.workbook}' not found on server")
+                return ExitCode.EXTRACTION_FAILED
+
+            import re as _re
+            safe_name = _re.sub(r'[^\w\-.]', '_', match.get('name', 'workbook'))
+            twbx_path = os.path.join(download_dir, f'{safe_name}.twbx')
+            os.makedirs(download_dir, exist_ok=True)
+            ts_client.download_workbook(match['id'], twbx_path)
+            ts_client.sign_out()
+            print(f"  Downloaded: {twbx_path}")
+            args.tableau_file = twbx_path
+        else:
+            ts_client.sign_out()
+            print("  Specify --workbook NAME or --server-batch PROJECT")
+            return ExitCode.GENERAL_ERROR
+    except Exception as exc:
+        print(f"  Server download failed: {exc}")
+        logger.error(f"Tableau Server error: {exc}", exc_info=True)
+        return ExitCode.EXTRACTION_FAILED
+    return None
+
+
+# ── Migration summary printer ────────────────────────────────────────────────
+
+def _print_migration_summary(results, report_summary, start_time):
+    """Print the final migration summary and return whether all steps succeeded."""
+    duration = datetime.now() - start_time
+    print_header("MIGRATION SUMMARY")
+
+    # Step results
+    print("  Step Results:")
+    for step_name, success in [
+        ("Tableau Extraction", results.get('extraction', False)),
+        ("Prep Flow Parsing", results.get('prep', None)),
+        ("Power BI Generation", results.get('generation', False)),
+        ("Migration Report", report_summary is not None if results.get('generation') else None),
+    ]:
+        if success is None:
+            continue
+        status = "✓ Success" if success else "✗ Failed"
+        print(f"    {step_name:<30} {status}")
+
+    # Extraction summary
+    if results.get('extraction'):
+        print(f"\n  Extraction Summary ({_stats.app_name}):")
+        extraction_items = [
+            ("Datasources", _stats.datasources),
+            ("Worksheets", _stats.worksheets),
+            ("Dashboards", _stats.dashboards),
+            ("Calculations", _stats.calculations),
+            ("Parameters", _stats.parameters),
+            ("Filters", _stats.filters),
+            ("Stories", _stats.stories),
+            ("Actions", _stats.actions),
+            ("Sets", _stats.sets),
+            ("Groups", _stats.groups),
+            ("Bins", _stats.bins),
+            ("Hierarchies", _stats.hierarchies),
+            ("User Filters / RLS", _stats.user_filters),
+            ("Custom SQL", _stats.custom_sql),
+        ]
+        for label, count in extraction_items:
+            if count > 0:
+                print(f"    {label:<30} {count}")
+
+    # Generation summary
+    if results.get('generation'):
+        print(f"\n  Generation Summary:")
+        gen_items = [
+            ("TMDL Tables", _stats.tmdl_tables),
+            ("TMDL Columns", _stats.tmdl_columns),
+            ("DAX Measures", _stats.tmdl_measures),
+            ("Relationships", _stats.tmdl_relationships),
+            ("Hierarchies", _stats.tmdl_hierarchies),
+            ("RLS Roles", _stats.tmdl_roles),
+            ("Report Pages", _stats.pages_generated),
+            ("Visuals", _stats.visuals_generated),
+        ]
+        for label, count in gen_items:
+            if count > 0:
+                print(f"    {label:<30} {count}")
+        if _stats.theme_applied:
+            print(f"    {'Custom Theme':<30} ✓ Applied")
+
+    # Fidelity score from migration report
+    if report_summary:
+        fidelity = report_summary.get('fidelity_score', 0)
+        total = report_summary.get('total_items', 0)
+        exact = report_summary.get('exact', 0)
+        approx = report_summary.get('approximate', 0)
+        unsup = report_summary.get('unsupported', 0)
+        print(f"\n  Migration Fidelity:")
+        print(f"    {'Fidelity Score':<30} {fidelity}%")
+        print(f"    {'Exact Conversions':<30} {exact}/{total}")
+        if approx:
+            print(f"    {'Approximate':<30} {approx}")
+        if unsup:
+            print(f"    {'Unsupported':<30} {unsup}")
+
+    # Warnings
+    if _stats.warnings:
+        print(f"\n  Warnings ({len(_stats.warnings)}):")
+        for w in _stats.warnings[:10]:
+            print(f"    ⚠ {w}")
+        if len(_stats.warnings) > 10:
+            print(f"    ... and {len(_stats.warnings) - 10} more")
+
+    # Skipped items
+    if _stats.skipped:
+        print(f"\n  Skipped ({len(_stats.skipped)}):")
+        for s in _stats.skipped[:5]:
+            print(f"    ⊘ {s}")
+
+    print(f"\n  Duration: {duration}")
+
+    all_success = all(v for v in results.values() if v is not None)
+
+    if all_success:
+        print("\n✓ Migration completed successfully!")
+        if _stats.pbip_path:
+            print(f"\n  Output: {_stats.pbip_path}")
+        print("\n  Next steps:")
+        print("    1. Open the .pbip file in Power BI Desktop (Developer Mode)")
+        print("    2. Configure data sources in Power Query Editor")
+        print("    3. Verify DAX measures and calculated columns")
+        print("    4. Check relationships in the Model view")
+        print("    5. Compare visuals with the original Tableau workbook")
+    else:
+        print("\n✗ Migration completed with errors")
+
+    return all_success
+
+
+# ── Assessment mode ──────────────────────────────────────────────────────────
+
+def _run_assessment_mode(args, results):
+    """Run pre-migration assessment and strategy analysis. Returns ExitCode."""
+    try:
+        from powerbi_import.assessment import run_assessment, print_assessment_report, save_assessment_report
+        from powerbi_import.strategy_advisor import recommend_strategy, print_recommendation
+
+        # Load extracted data
+        extracted = {}
+        json_files = ['datasources', 'worksheets', 'dashboards', 'calculations',
+                      'parameters', 'filters', 'stories', 'actions', 'sets',
+                      'groups', 'bins', 'hierarchies', 'custom_sql', 'user_filters',
+                      'sort_orders', 'aliases']
+        for jf in json_files:
+            fpath = os.path.join('tableau_export', f'{jf}.json')
+            if os.path.exists(fpath):
+                with open(fpath, 'r', encoding='utf-8') as f:
+                    extracted[jf] = json.load(f)
+
+        # Run assessment
+        report = run_assessment(extracted)
+        print_assessment_report(report)
+
+        # Save assessment report
+        out_dir = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'assessments')
+        os.makedirs(out_dir, exist_ok=True)
+        source_basename = os.path.splitext(os.path.basename(args.tableau_file))[0]
+        assess_path = os.path.join(out_dir, f'assessment_{source_basename}.json')
+        save_assessment_report(report, assess_path)
+        print(f"\n  Assessment saved to: {assess_path}")
+
+        # Strategy recommendation
+        has_prep = bool(args.prep and results.get('prep'))
+        rec = recommend_strategy(extracted, prep_flow=has_prep)
+        print_recommendation(rec)
+
+        print("\n✓ Assessment complete (no generation performed)")
+        return ExitCode.SUCCESS
+    except Exception as e:
+        logger.error(f"Assessment failed: {e}")
+        print(f"\n✗ Assessment failed: {e}")
+        return ExitCode.ASSESSMENT_FAILED
+
+
+# ── Main entry point ─────────────────────────────────────────────────────────
+
+def main():
+    """Main entry point — orchestrates the full migration pipeline."""
+    parser = _build_argument_parser()
+    args = parser.parse_args()
+
+    # Load configuration file if specified
+    _apply_config_file(args)
 
     # ── Interactive wizard mode ───────────────────────────────
     if getattr(args, 'wizard', False):
@@ -1060,74 +1312,9 @@ def main():
 
     # ── Tableau Server download ───────────────────────────────
     if getattr(args, 'server', None):
-        try:
-            from tableau_export.server_client import TableauServerClient
-            print_header("TABLEAU SERVER DOWNLOAD")
-            print(f"  Server: {args.server}")
-            print(f"  Site:   {args.site or '(Default)'}")
-
-            ts_client = TableauServerClient(
-                server_url=args.server,
-                token_name=getattr(args, 'token_name', None),
-                token_secret=getattr(args, 'token_secret', None),
-                site_id=getattr(args, 'site', ''),
-            )
-            ts_client.sign_in()
-
-            download_dir = os.path.join(
-                tempfile.gettempdir(), 'tableau_server_downloads'
-            )
-
-            if getattr(args, 'server_batch', None):
-                # Batch: download all workbooks from a project
-                print(f"  Project: {args.server_batch}")
-                dl_results = ts_client.download_all_workbooks(
-                    download_dir, project_name=args.server_batch,
-                )
-                ts_client.sign_out()
-                succeeded = [r for r in dl_results if r['status'] == 'success']
-                print(f"  Downloaded: {len(succeeded)}/{len(dl_results)} workbooks")
-                if not succeeded:
-                    print("  No workbooks downloaded — aborting")
-                    return ExitCode.EXTRACTION_FAILED
-                # Switch to batch mode
-                args.batch = download_dir
-            elif getattr(args, 'workbook', None):
-                # Single workbook download
-                print(f"  Workbook: {args.workbook}")
-                workbooks = ts_client.list_workbooks()
-                match = None
-                for wb in workbooks:
-                    if wb.get('id') == args.workbook or wb.get('name') == args.workbook:
-                        match = wb
-                        break
-                if not match:
-                    # Try regex search
-                    matches = ts_client.search_workbooks(args.workbook)
-                    if matches:
-                        match = matches[0]
-
-                if not match:
-                    ts_client.sign_out()
-                    print(f"  Workbook '{args.workbook}' not found on server")
-                    return ExitCode.EXTRACTION_FAILED
-
-                import re as _re
-                safe_name = _re.sub(r'[^\w\-.]', '_', match.get('name', 'workbook'))
-                twbx_path = os.path.join(download_dir, f'{safe_name}.twbx')
-                os.makedirs(download_dir, exist_ok=True)
-                ts_client.download_workbook(match['id'], twbx_path)
-                ts_client.sign_out()
-                print(f"  Downloaded: {twbx_path}")
-                args.tableau_file = twbx_path
-            else:
-                ts_client.sign_out()
-                print("  Specify --workbook NAME or --server-batch PROJECT")
-                return ExitCode.GENERAL_ERROR
-        except Exception as exc:
-            print(f"  Server download failed: {exc}")
-            logger.error(f"Tableau Server error: {exc}", exc_info=True)
-            return ExitCode.EXTRACTION_FAILED
+        server_result = _download_from_server(args)
+        if server_result is not None:
+            return server_result
 
     # ── Batch migration mode ──────────────────────────────────
     if args.batch:
@@ -1200,46 +1387,7 @@ def main():
 
     # Step 1c: Assessment (optional)
     if args.assess and results.get('extraction'):
-        try:
-            from powerbi_import.assessment import run_assessment, print_assessment_report, save_assessment_report
-            from powerbi_import.strategy_advisor import recommend_strategy, print_recommendation
-
-            # Load extracted data
-            extract_dir = os.path.dirname(args.tableau_file) if args.tableau_file else 'tableau_export'
-            extracted = {}
-            json_files = ['datasources', 'worksheets', 'dashboards', 'calculations',
-                          'parameters', 'filters', 'stories', 'actions', 'sets',
-                          'groups', 'bins', 'hierarchies', 'custom_sql', 'user_filters',
-                          'sort_orders', 'aliases']
-            for jf in json_files:
-                fpath = os.path.join('tableau_export', f'{jf}.json')
-                if os.path.exists(fpath):
-                    with open(fpath, 'r', encoding='utf-8') as f:
-                        extracted[jf] = json.load(f)
-
-            # Run assessment
-            report = run_assessment(extracted)
-            print_assessment_report(report)
-
-            # Save assessment report
-            out_dir = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'assessments')
-            os.makedirs(out_dir, exist_ok=True)
-            source_basename = os.path.splitext(os.path.basename(args.tableau_file))[0]
-            assess_path = os.path.join(out_dir, f'assessment_{source_basename}.json')
-            save_assessment_report(report, assess_path)
-            print(f"\n  Assessment saved to: {assess_path}")
-
-            # Strategy recommendation
-            has_prep = bool(args.prep and results.get('prep'))
-            rec = recommend_strategy(extracted, prep_flow=has_prep)
-            print_recommendation(rec)
-
-            print("\n✓ Assessment complete (no generation performed)")
-            return ExitCode.SUCCESS
-        except Exception as e:
-            logger.error(f"Assessment failed: {e}")
-            print(f"\n✗ Assessment failed: {e}")
-            return ExitCode.ASSESSMENT_FAILED
+        return _run_assessment_mode(args, results)
 
     # Step 2: Generate .pbip project
     # Derive report name from the source filename
@@ -1337,109 +1485,7 @@ def main():
             logger.error(f"Deployment failed: {exc}", exc_info=True)
 
     # Final report
-    duration = datetime.now() - start_time
-    print_header("MIGRATION SUMMARY")
-
-    # Step results
-    print("  Step Results:")
-    for step_name, success in [
-        ("Tableau Extraction", results.get('extraction', False)),
-        ("Prep Flow Parsing", results.get('prep', None)),
-        ("Power BI Generation", results.get('generation', False)),
-        ("Migration Report", report_summary is not None if results.get('generation') else None),
-    ]:
-        if success is None:
-            continue  # Step not executed
-        status = "✓ Success" if success else "✗ Failed"
-        print(f"    {step_name:<30} {status}")
-
-    # Extraction summary
-    if results.get('extraction'):
-        print(f"\n  Extraction Summary ({_stats.app_name}):")
-        extraction_items = [
-            ("Datasources", _stats.datasources),
-            ("Worksheets", _stats.worksheets),
-            ("Dashboards", _stats.dashboards),
-            ("Calculations", _stats.calculations),
-            ("Parameters", _stats.parameters),
-            ("Filters", _stats.filters),
-            ("Stories", _stats.stories),
-            ("Actions", _stats.actions),
-            ("Sets", _stats.sets),
-            ("Groups", _stats.groups),
-            ("Bins", _stats.bins),
-            ("Hierarchies", _stats.hierarchies),
-            ("User Filters / RLS", _stats.user_filters),
-            ("Custom SQL", _stats.custom_sql),
-        ]
-        for label, count in extraction_items:
-            if count > 0:
-                print(f"    {label:<30} {count}")
-
-    # Generation summary
-    if results.get('generation'):
-        print(f"\n  Generation Summary:")
-        gen_items = [
-            ("TMDL Tables", _stats.tmdl_tables),
-            ("TMDL Columns", _stats.tmdl_columns),
-            ("DAX Measures", _stats.tmdl_measures),
-            ("Relationships", _stats.tmdl_relationships),
-            ("Hierarchies", _stats.tmdl_hierarchies),
-            ("RLS Roles", _stats.tmdl_roles),
-            ("Report Pages", _stats.pages_generated),
-            ("Visuals", _stats.visuals_generated),
-        ]
-        for label, count in gen_items:
-            if count > 0:
-                print(f"    {label:<30} {count}")
-        if _stats.theme_applied:
-            print(f"    {'Custom Theme':<30} ✓ Applied")
-
-    # Fidelity score from migration report
-    if report_summary:
-        fidelity = report_summary.get('fidelity_score', 0)
-        total = report_summary.get('total_items', 0)
-        exact = report_summary.get('exact', 0)
-        approx = report_summary.get('approximate', 0)
-        unsup = report_summary.get('unsupported', 0)
-        print(f"\n  Migration Fidelity:")
-        print(f"    {'Fidelity Score':<30} {fidelity}%")
-        print(f"    {'Exact Conversions':<30} {exact}/{total}")
-        if approx:
-            print(f"    {'Approximate':<30} {approx}")
-        if unsup:
-            print(f"    {'Unsupported':<30} {unsup}")
-
-    # Warnings
-    if _stats.warnings:
-        print(f"\n  Warnings ({len(_stats.warnings)}):")
-        for w in _stats.warnings[:10]:
-            print(f"    ⚠ {w}")
-        if len(_stats.warnings) > 10:
-            print(f"    ... and {len(_stats.warnings) - 10} more")
-
-    # Skipped items
-    if _stats.skipped:
-        print(f"\n  Skipped ({len(_stats.skipped)}):")
-        for s in _stats.skipped[:5]:
-            print(f"    ⊘ {s}")
-
-    print(f"\n  Duration: {duration}")
-
-    all_success = all(v for v in results.values() if v is not None)
-
-    if all_success:
-        print("\n✓ Migration completed successfully!")
-        if _stats.pbip_path:
-            print(f"\n  Output: {_stats.pbip_path}")
-        print("\n  Next steps:")
-        print("    1. Open the .pbip file in Power BI Desktop (Developer Mode)")
-        print("    2. Configure data sources in Power Query Editor")
-        print("    3. Verify DAX measures and calculated columns")
-        print("    4. Check relationships in the Model view")
-        print("    5. Compare visuals with the original Tableau workbook")
-    else:
-        print("\n✗ Migration completed with errors")
+    all_success = _print_migration_summary(results, report_summary, start_time)
 
     # Finalize telemetry
     if telemetry:

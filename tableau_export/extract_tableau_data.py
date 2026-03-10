@@ -32,17 +32,23 @@ _RE_FIELD_REF = re.compile(r'\[([^\]]+)\]\.\[([^\]]+)\]')
 _RE_DERIVATION_PREFIX = re.compile(
     r'^(none|sum|avg|count|min|max|usr|yr|mn|dy|qr|wk|attr|md|mdy|hms|hr|mt|sc|thr|trunc|tyr|tqr|tmn|tdy|twk):'
 )
+_RE_TABLE_CALC_PREFIX = re.compile(
+    r'^(pcto|pctd|diff|running_sum|running_avg|running_count|running_min|running_max|rank|rank_unique|rank_dense):(sum|avg|count|min|max|countd)?:?'
+)
 _RE_TYPE_SUFFIX = re.compile(r':(nk|qk|ok|fn|tn)$')
 
 
 def _clean_field_ref(raw):
-    """Strip Tableau derivation prefixes and type suffixes from a field reference.
+    """Strip Tableau derivation prefixes, table calc prefixes, and type suffixes.
 
     Handles patterns like ``yr:Order Date:ok`` → ``Order Date``,
-    ``none:Ship Mode:nk`` → ``Ship Mode``, ``tyr:Date:qk`` → ``Date``.
+    ``none:Ship Mode:nk`` → ``Ship Mode``, ``tyr:Date:qk`` → ``Date``,
+    ``pcto:sum:Sales:nk`` → ``Sales``.
     """
     clean = _RE_DERIVATION_PREFIX.sub('', raw)
-    return _RE_TYPE_SUFFIX.sub('', clean)
+    clean = _RE_TYPE_SUFFIX.sub('', clean)
+    clean = _RE_TABLE_CALC_PREFIX.sub('', clean)
+    return clean
 
 
 def _strip_brackets(s):
@@ -455,9 +461,7 @@ class TableauExtractor:
                 refs = re.findall(r'\[([^\]]+)\]\.\[([^\]]+)\]', shelf.text)
                 for _, field_ref in refs:
                     # Strip derivation/aggregation prefixes
-                    clean = re.sub(r'^(none|sum|avg|count|min|max|usr|yr|mn|dy|qr|wk|attr|md|mdy|hms|hr|mt|sc|thr|trunc):', '', field_ref)
-                    clean = re.sub(r':(nk|qk|ok|fn|tn)$', '', clean)
-                    clean = re.sub(r'^(pcto|pctd|diff|running_sum|running_avg|running_count|running_min|running_max|rank|rank_unique|rank_dense):(sum|avg|count|min|max|countd)?:?', '', clean)
+                    clean = _clean_field_ref(field_ref)
                     target.append(clean)
 
         def _is_date(name):
@@ -636,8 +640,7 @@ class TableauExtractor:
             col_match = re.findall(r'\[([^\]]+)\]\.\[([^\]]+)\]', column_ref)
             if col_match:
                 ds_ref, field_ref = col_match[0]
-                clean_name = re.sub(r'^(none|sum|avg|count|min|max):', '', field_ref)
-                clean_name = re.sub(r':(nk|qk|ok|fn|tn)$', '', clean_name)
+                clean_name = _clean_field_ref(field_ref)
             else:
                 ds_ref = ''
                 clean_name = _strip_brackets(column_ref)
@@ -1020,8 +1023,7 @@ class TableauExtractor:
             col_match = re.findall(r'\[([^\]]+)\]\.\[([^\]]+)\]', column_ref)
             if col_match:
                 ds_ref, field_ref = col_match[0]
-                clean_name = re.sub(r'^(none|sum|avg|count|min|max):', '', field_ref)
-                clean_name = re.sub(r':(nk|qk|ok|fn|tn)$', '', clean_name)
+                clean_name = _clean_field_ref(field_ref)
             else:
                 ds_ref = ''
                 clean_name = _strip_brackets(column_ref)
