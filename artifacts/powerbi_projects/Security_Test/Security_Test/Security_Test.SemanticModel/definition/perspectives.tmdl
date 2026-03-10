@@ -1,4 +1,0 @@
-perspective 'Full Model'
-	perspectiveTable Orders
-	perspectiveTable Regions
-	perspectiveTable Calendar

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-10T10:18:30.798727",
+  "generated_at": "2026-03-10T11:54:15.993089",
   "source": "Tableau Migration",
   "report_name": "superstore_sales_dashboard",
   "objects_converted": {
@@ -20,10 +20,24 @@
   },
   "generated_output": {
     "pages": 1,
-    "visuals": 10,
-    "theme_applied": false
+    "visuals": 5,
+    "theme_applied": false,
+    "theme_detail": {
+      "status": "skipped",
+      "reason": "no dashboard colors detected"
+    }
   },
   "tmdl_stats": {
-    "tables": 3
-  }
+    "tables": 3,
+    "measures": 0,
+    "columns": 56,
+    "relationships": 2
+  },
+  "visual_type_mappings": {
+    "Bar Chart": "Automatic",
+    "Line chart": "Automatic",
+    "Pie chart": "Automatic",
+    "Scatter Plot": "Automatic"
+  },
+  "approximations": []
 }

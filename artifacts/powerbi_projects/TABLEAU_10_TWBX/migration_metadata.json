@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-10T10:17:42.174460",
+  "generated_at": "2026-03-10T11:54:12.434327",
   "source": "Tableau Migration",
   "report_name": "TABLEAU_10_TWBX",
   "objects_converted": {
@@ -21,9 +21,20 @@
   "generated_output": {
     "pages": 1,
     "visuals": 1,
-    "theme_applied": false
+    "theme_applied": false,
+    "theme_detail": {
+      "status": "skipped",
+      "reason": "no dashboard colors detected"
+    }
   },
   "tmdl_stats": {
-    "tables": 2
-  }
+    "tables": 2,
+    "measures": 1,
+    "columns": 7,
+    "relationships": 0
+  },
+  "visual_type_mappings": {
+    "Sheet 1": "Automatic"
+  },
+  "approximations": []
 }

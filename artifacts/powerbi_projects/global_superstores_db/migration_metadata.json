@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-10T10:18:03.640366",
+  "generated_at": "2026-03-10T11:54:13.714739",
   "source": "Tableau Migration",
   "report_name": "global_superstores_db",
   "objects_converted": {
@@ -19,11 +19,41 @@
     "custom_sql": 0
   },
   "generated_output": {
-    "pages": 11,
-    "visuals": 28,
-    "theme_applied": false
+    "pages": 6,
+    "visuals": 14,
+    "theme_applied": false,
+    "theme_detail": {
+      "status": "skipped",
+      "reason": "no dashboard colors detected"
+    }
   },
   "tmdl_stats": {
-    "tables": 2
-  }
+    "tables": 2,
+    "measures": 5,
+    "columns": 38,
+    "relationships": 0
+  },
+  "visual_type_mappings": {
+    "AnalyticsBasic": "Automatic",
+    "Bar 1": "Automatic",
+    "Bar2": "Automatic",
+    "Heat Map": "Automatic",
+    "Histogram": "Automatic",
+    "Line-Area": "Automatic",
+    "Line-Forecast": "Automatic",
+    "Product Sales": "Automatic",
+    "Profit": "Automatic",
+    "Profit Map": "Automatic",
+    "Profit and Sales": "Automatic",
+    "Profit and Sales Relationship": "Automatic",
+    "Profit and Sales by Sub Categories": "Automatic",
+    "ScatterPlot": "Automatic",
+    "ShelvesCard": "Automatic",
+    "Shipping Cost": "Automatic",
+    "ShippingCostToMarkets": "Automatic",
+    "South Map": "Automatic",
+    "World's Profit and Sales Reln": "Automatic",
+    "YOY Profit": "Automatic"
+  },
+  "approximations": []
 }

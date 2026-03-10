@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-10T10:18:08.913603",
+  "generated_at": "2026-03-10T11:54:14.017122",
   "source": "Tableau Migration",
   "report_name": "multiple_connections",
   "objects_converted": {
@@ -21,9 +21,18 @@
   "generated_output": {
     "pages": 1,
     "visuals": 0,
-    "theme_applied": false
+    "theme_applied": false,
+    "theme_detail": {
+      "status": "skipped",
+      "reason": "no dashboard colors detected"
+    }
   },
   "tmdl_stats": {
-    "tables": 3
-  }
+    "tables": 3,
+    "measures": 0,
+    "columns": 0,
+    "relationships": 0
+  },
+  "visual_type_mappings": {},
+  "approximations": []
 }

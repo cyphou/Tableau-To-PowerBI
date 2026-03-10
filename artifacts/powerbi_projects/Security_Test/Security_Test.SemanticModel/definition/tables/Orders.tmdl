@@ -1,34 +1,34 @@
 table Orders
-	lineageTag: af2f10d8-1625-4e6a-ab56-3028df431b71
+	lineageTag: 1a535def-8b64-48b6-b83f-9d2becd9a2a2
 
 	measure 'Is Current User' = 'Orders'[CustomerEmail] = USERPRINCIPALNAME()
 		formatString: True/False
 		displayFolder: Dimensions
-		lineageTag: daa507e0-4e6c-41e1-a78e-a964e60506c6
+		lineageTag: 1c11396a-e74e-4fdf-a8d0-3907b83c1918
 
 	measure 'Manager Access' = TRUE() /* ISMEMBEROF("Managers"): implement via RLS role */ || TRUE() /* ISMEMBEROF("Executives"): implement via RLS role */
 		formatString: True/False
 		displayFolder: Dimensions
-		lineageTag: a87eb5d3-0673-45c9-970b-2c454faad0f7
+		lineageTag: e3064f09-f8b3-4a54-bfb9-2c43de7fdbc1
 
 	measure 'Region Match' = 'Regions'[RegionManager] = USERPRINCIPALNAME()
 		formatString: True/False
 		displayFolder: Dimensions
-		lineageTag: 74ea03a5-8f33-4510-9f66-e039eec54213
+		lineageTag: d7726a9b-5129-4126-a958-291eaa481531
 
 	measure 'Total Sales' = SUM('Orders'[Sales])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 055e3d73-2300-443a-a70c-d096e994fdd7
+		lineageTag: 5c3a3685-6b8d-4e40-b90c-0cf9f6efa3b4
 
 	measure 'Profit Ratio' = SUM('Orders'[Profit]) / SUM('Orders'[Sales])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: c0d48ef8-3f67-41f3-a1c4-2e30c3b0b35b
+		lineageTag: 2c6b23ac-69d6-42f4-9083-41fe8a8cf8a8
 
 	column OrderID
 		dataType: int64
-		lineageTag: 4be0bb02-3e44-41ec-b89d-c23d538fe446
+		lineageTag: 56fe25de-595c-4623-b8bf-9ca404796ab9
 		summarizeBy: sum
 		sourceColumn: OrderID
 
@@ -36,7 +36,7 @@ table Orders
 
 	column Region
 		dataType: string
-		lineageTag: ac302f4a-21f9-42aa-b4ce-bbc2f23c1f92
+		lineageTag: ecde4904-3be6-49d3-9fed-b9c7a8812105
 		summarizeBy: none
 		sourceColumn: Region
 		dataCategory: StateOrProvince
@@ -46,7 +46,7 @@ table Orders
 	column Sales
 		dataType: double
 		formatString: #,0.00
-		lineageTag: c669c8c7-a15d-4abe-a1d4-e5ca35602802
+		lineageTag: c96b2a58-fd24-41ae-95a4-00aecaa005e8
 		summarizeBy: sum
 		sourceColumn: Sales
 
@@ -55,7 +55,7 @@ table Orders
 	column Profit
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 459a2055-f0f4-4cdb-9616-8e1630676bda
+		lineageTag: de7e794a-eeb3-4fe6-8dc2-55525c50cef4
 		summarizeBy: sum
 		sourceColumn: Profit
 
@@ -63,7 +63,7 @@ table Orders
 
 	column CustomerEmail
 		dataType: string
-		lineageTag: 3604aad2-02e9-4ff7-bd95-8a154564a6fc
+		lineageTag: c6716812-2630-47ca-b0dc-b49a1662dad2
 		summarizeBy: none
 		sourceColumn: CustomerEmail
 
@@ -71,7 +71,7 @@ table Orders
 
 	column Category
 		dataType: string
-		lineageTag: c59a41d9-2919-40b6-9b0a-4defd1fdcd1e
+		lineageTag: cabf8228-dca4-49b0-b010-358de79fca03
 		summarizeBy: none
 		sourceColumn: Category
 
@@ -80,14 +80,14 @@ table Orders
 	column OrderDate
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 790fcd4a-b45f-4b25-94af-30cf5c65169d
+		lineageTag: 9cc9ecb6-91f5-4093-9518-cfccea4e2f39
 		summarizeBy: none
 		sourceColumn: OrderDate
 		dataCategory: DateTime
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Orders-de6ef609-f46d-4a81-881a-f56f443d0c24' = m
+	partition 'Orders-aa316bd7-f8d9-4084-a8cb-7ae06992add6' = m
 		mode: import
 		source =
 				let

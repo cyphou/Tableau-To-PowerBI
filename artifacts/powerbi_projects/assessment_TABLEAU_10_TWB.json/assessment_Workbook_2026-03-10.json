@@ -1,0 +1,195 @@
+{
+  "workbook_name": "Workbook",
+  "timestamp": "2026-03-10T10:53:39Z",
+  "overall_score": "YELLOW",
+  "summary": {
+    "workbook": "Workbook",
+    "overall_score": "YELLOW",
+    "total_checks": 21,
+    "passed": 9,
+    "warnings": 1,
+    "failures": 0
+  },
+  "totals": {
+    "checks": 21,
+    "pass": 9,
+    "warn": 1,
+    "fail": 0
+  },
+  "categories": [
+    {
+      "name": "Datasource Compatibility",
+      "worst_severity": "warn",
+      "checks": [
+        {
+          "name": "No datasources found",
+          "severity": "warn",
+          "detail": "No datasource definitions were extracted.",
+          "recommendation": "Verify the Tableau file contains at least one datasource."
+        }
+      ]
+    },
+    {
+      "name": "Calculation Readiness",
+      "worst_severity": "pass",
+      "checks": [
+        {
+          "name": "No calculations",
+          "severity": "pass",
+          "detail": "No calculated fields detected.",
+          "recommendation": ""
+        }
+      ]
+    },
+    {
+      "name": "Visual & Dashboard Coverage",
+      "worst_severity": "info",
+      "checks": [
+        {
+          "name": "Worksheet count",
+          "severity": "info",
+          "detail": "0 worksheet(s) detected.",
+          "recommendation": ""
+        },
+        {
+          "name": "Dashboard count",
+          "severity": "info",
+          "detail": "0 dashboard(s) detected.",
+          "recommendation": ""
+        },
+        {
+          "name": "Chart type coverage",
+          "severity": "pass",
+          "detail": "All 0 chart type(s) have Power BI equivalents.",
+          "recommendation": ""
+        }
+      ]
+    },
+    {
+      "name": "Filter & Parameter Complexity",
+      "worst_severity": "info",
+      "checks": [
+        {
+          "name": "Filter count",
+          "severity": "info",
+          "detail": "0 top-level filter(s) detected.",
+          "recommendation": ""
+        },
+        {
+          "name": "Parameter count",
+          "severity": "info",
+          "detail": "0 parameter(s) detected.",
+          "recommendation": ""
+        },
+        {
+          "name": "User filters (RLS)",
+          "severity": "pass",
+          "detail": "No user filters — no RLS configuration needed.",
+          "recommendation": ""
+        }
+      ]
+    },
+    {
+      "name": "Data Model Complexity",
+      "worst_severity": "info",
+      "checks": [
+        {
+          "name": "Table count",
+          "severity": "info",
+          "detail": "0 table(s) across all datasources.",
+          "recommendation": ""
+        },
+        {
+          "name": "Column count",
+          "severity": "info",
+          "detail": "0 column(s) total.",
+          "recommendation": ""
+        },
+        {
+          "name": "Relationship count",
+          "severity": "info",
+          "detail": "0 relationship(s) detected.",
+          "recommendation": ""
+        },
+        {
+          "name": "Hierarchies",
+          "severity": "info",
+          "detail": "No hierarchies.",
+          "recommendation": ""
+        },
+        {
+          "name": "Sets / Groups / Bins",
+          "severity": "pass",
+          "detail": "No sets, groups, or bins.",
+          "recommendation": ""
+        }
+      ]
+    },
+    {
+      "name": "Interactivity & Actions",
+      "worst_severity": "pass",
+      "checks": [
+        {
+          "name": "No actions or stories",
+          "severity": "pass",
+          "detail": "No interactivity features detected.",
+          "recommendation": ""
+        }
+      ]
+    },
+    {
+      "name": "Data Extracts & Packaging",
+      "worst_severity": "pass",
+      "checks": [
+        {
+          "name": "Hyper extract files",
+          "severity": "pass",
+          "detail": "No .hyper extract files (live connection or datasource files).",
+          "recommendation": ""
+        },
+        {
+          "name": "Custom shapes",
+          "severity": "pass",
+          "detail": "No custom shapes.",
+          "recommendation": ""
+        },
+        {
+          "name": "Embedded fonts",
+          "severity": "pass",
+          "detail": "No embedded fonts.",
+          "recommendation": ""
+        }
+      ]
+    },
+    {
+      "name": "Migration Scope & Effort",
+      "worst_severity": "info",
+      "checks": [
+        {
+          "name": "Complexity score",
+          "severity": "info",
+          "detail": "Complexity score: 0 (Low).",
+          "recommendation": ""
+        },
+        {
+          "name": "Estimated effort",
+          "severity": "info",
+          "detail": "Estimated post-migration review effort: < 1 hour of post-migration review.",
+          "recommendation": ""
+        },
+        {
+          "name": "Object inventory",
+          "severity": "info",
+          "detail": "Empty workbook.",
+          "recommendation": ""
+        },
+        {
+          "name": "Modern Tableau features",
+          "severity": "pass",
+          "detail": "No Tableau 2024.3+ specific features detected.",
+          "recommendation": ""
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,2486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tableau to Power BI — Migration &amp; Assessment Report</title>
+<style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; color: #333; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    h1 { color: #0078d4; border-bottom: 3px solid #0078d4; padding-bottom: 10px; }
+    h2 { color: #323130; margin-top: 30px; }
+    h3 { color: #605e5c; }
+    .card { background: #fff; border-radius: 8px; padding: 20px; margin: 15px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
+    .stat { background: #fff; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .stat .number { font-size: 2.2em; font-weight: bold; color: #0078d4; }
+    .stat .label { font-size: 0.9em; color: #605e5c; margin-top: 5px; }
+    table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+    th { background: #0078d4; color: #fff; padding: 10px 12px; text-align: left; font-size: 0.9em; }
+    td { padding: 8px 12px; border-bottom: 1px solid #e1dfdd; font-size: 0.9em; }
+    tr:hover { background: #f3f2f1; }
+    .detail-table th { background: #605e5c; }
+    .footer { text-align: center; color: #a19f9d; font-size: 0.85em; margin-top: 40px; padding: 20px; }
+    .section-icon { font-size: 1.3em; margin-right: 6px; }
+    .connector-tag { background: #e8f0fe; color: #1a73e8; padding: 2px 6px; border-radius: 3px; font-size: 0.85em; }
+    .warn-tag { background: #fff3cd; color: #856404; padding: 2px 6px; border-radius: 3px; font-size: 0.85em; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>&#128202; Tableau to Power BI — Migration &amp; Assessment Report</h1>
+<p style="color:#605e5c">Generated: 2026-03-10 11:57 &nbsp;|&nbsp; Tool version: v5.5.0 &nbsp;|&nbsp; Workbooks processed: 22</p>
+
+<h2><span class="section-icon">&#128200;</span>Executive Summary</h2>
+<div class="stats">
+    <div class="stat"><div class="number">22</div><div class="label">Workbooks</div></div>
+    <div class="stat"><div class="number" style="color:#28a745">15</div><div class="label">GREEN readiness</div></div>
+    <div class="stat"><div class="number" style="color:#ffc107">7</div><div class="label">YELLOW readiness</div></div>
+    <div class="stat"><div class="number" style="color:#dc3545">0</div><div class="label">RED readiness</div></div>
+    <div class="stat"><div class="number">99.8%</div><div class="label">Avg. fidelity</div></div>
+    <div class="stat"><div class="number">294</div><div class="label">Items converted</div></div>
+</div>
+
+<h2><span class="section-icon">&#128736;</span>Generated Artifacts</h2>
+<div class="stats">
+    <div class="stat"><div class="number">66</div><div class="label">TMDL Tables</div></div>
+    <div class="stat"><div class="number">566</div><div class="label">Columns</div></div>
+    <div class="stat"><div class="number">129</div><div class="label">DAX Measures</div></div>
+    <div class="stat"><div class="number">17</div><div class="label">Relationships</div></div>
+    <div class="stat"><div class="number">27</div><div class="label">Report Pages</div></div>
+    <div class="stat"><div class="number">77</div><div class="label">Visuals</div></div>
+</div>
+
+<h2><span class="section-icon">&#9989;</span>Assessment Results</h2>
+<div class="card">
+<table>
+<tr>
+    <th>Workbook</th>
+    <th>Readiness</th>
+    <th>Checks</th>
+    <th>Passed</th>
+    <th>Warnings</th>
+    <th>Failures</th>
+    <th>Complexity</th>
+    <th>Connectors</th>
+</tr>
+<tr>
+    <td><strong>BigQuery_Analytics</strong></td>
+    <td><span style="background:#ffc107;color:#000;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">YELLOW</span></td>
+    <td>29</td>
+    <td>14</td>
+    <td><span class="warn-tag">1</span></td>
+    <td>0</td>
+    <td>19 (Low).</td>
+    <td><span class="connector-tag">BigQuery</span></td>
+</tr>
+<tr>
+    <td><strong>Cache</strong></td>
+    <td><span style="background:#28a745;color:#fff;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">GREEN</span></td>
+    <td>30</td>
+    <td>16</td>
+    <td>0</td>
+    <td>0</td>
+    <td>19 (Low).</td>
+    <td><span class="connector-tag">DATAENGINE</span></td>
+</tr>
+<tr>
+    <td><strong>Enterprise_Sales</strong></td>
+    <td><span style="background:#ffc107;color:#000;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">YELLOW</span></td>
+    <td>32</td>
+    <td>12</td>
+    <td><span class="warn-tag">2</span></td>
+    <td>0</td>
+    <td>53 (Medium).</td>
+    <td><span class="connector-tag">Snowflake</span></td>
+</tr>
+<tr>
+    <td><strong>Financial_Report</strong></td>
+    <td><span style="background:#28a745;color:#fff;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">GREEN</span></td>
+    <td>29</td>
+    <td>13</td>
+    <td>0</td>
+    <td>0</td>
+    <td>22 (Medium).</td>
+    <td><span class="connector-tag">PostgreSQL</span></td>
+</tr>
+<tr>
+    <td><strong>HR_Analytics</strong></td>
+    <td><span style="background:#28a745;color:#fff;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">GREEN</span></td>
+    <td>29</td>
+    <td>16</td>
+    <td>0</td>
+    <td>0</td>
+    <td>12 (Low).</td>
+    <td><span class="connector-tag">SQL Server</span></td>
+</tr>
+<tr>
+    <td><strong>Manufacturing_IoT</strong></td>
+    <td><span style="background:#ffc107;color:#000;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">YELLOW</span></td>
+    <td>31</td>
+    <td>13</td>
+    <td><span class="warn-tag">2</span></td>
+    <td>0</td>
+    <td>54 (Medium).</td>
+    <td><span class="connector-tag">Oracle</span></td>
+</tr>
+<tr>
+    <td><strong>Marketing_Campaign</strong></td>
+    <td><span style="background:#ffc107;color:#000;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">YELLOW</span></td>
+    <td>31</td>
+    <td>14</td>
+    <td><span class="warn-tag">1</span></td>
+    <td>0</td>
+    <td>49 (Medium).</td>
+    <td><span class="connector-tag">MySQL</span></td>
+</tr>
+<tr>
+    <td><strong>RESTAPISample</strong></td>
+    <td><span style="background:#28a745;color:#fff;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">GREEN</span></td>
+    <td>29</td>
+    <td>15</td>
+    <td>0</td>
+    <td>0</td>
+    <td>34 (Medium).</td>
+    <td><span class="connector-tag">DATAENGINE</span></td>
+</tr>
+<tr>
+    <td><strong>SampleWB</strong></td>
+    <td><span style="background:#28a745;color:#fff;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">GREEN</span></td>
+    <td>29</td>
+    <td>15</td>
+    <td>0</td>
+    <td>0</td>
+    <td>34 (Medium).</td>
+    <td><span class="connector-tag">DATAENGINE</span></td>
+</tr>
+<tr>
+    <td><strong>Security_Test</strong></td>
+    <td><span style="background:#28a745;color:#fff;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">GREEN</span></td>
+    <td>29</td>
+    <td>15</td>
+    <td>0</td>
+    <td>0</td>
+    <td>23 (Medium).</td>
+    <td><span class="connector-tag">SQL Server</span></td>
+</tr>
+<tr>
+    <td><strong>Superstore_Sales</strong></td>
+    <td><span style="background:#28a745;color:#fff;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">GREEN</span></td>
+    <td>29</td>
+    <td>16</td>
+    <td>0</td>
+    <td>0</td>
+    <td>11 (Low).</td>
+    <td><span class="connector-tag">Excel</span></td>
+</tr>
+<tr>
+    <td><strong>TABLEAU_10_TWB</strong></td>
+    <td><span style="background:#ffc107;color:#000;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">YELLOW</span></td>
+    <td>21</td>
+    <td>9</td>
+    <td><span class="warn-tag">1</span></td>
+    <td>0</td>
+    <td>0 (Low).</td>
+    <td>—</td>
+</tr>
+<tr>
+    <td><strong>TABLEAU_10_TWBX</strong></td>
+    <td><span style="background:#28a745;color:#fff;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">GREEN</span></td>
+    <td>29</td>
+    <td>16</td>
+    <td>0</td>
+    <td>0</td>
+    <td>4 (Low).</td>
+    <td><span class="connector-tag">SQL Server</span></td>
+</tr>
+<tr>
+    <td><strong>datasource_test</strong></td>
+    <td><span style="background:#ffc107;color:#000;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">YELLOW</span></td>
+    <td>29</td>
+    <td>15</td>
+    <td><span class="warn-tag">1</span></td>
+    <td>0</td>
+    <td>5 (Low).</td>
+    <td><span class="connector-tag">Unknown</span></td>
+</tr>
+<tr>
+    <td><strong>ephemeral_field</strong></td>
+    <td><span style="background:#ffc107;color:#000;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">YELLOW</span></td>
+    <td>29</td>
+    <td>15</td>
+    <td><span class="warn-tag">1</span></td>
+    <td>0</td>
+    <td>5 (Low).</td>
+    <td><span class="connector-tag">Unknown</span></td>
+</tr>
+<tr>
+    <td><strong>filtering</strong></td>
+    <td><span style="background:#28a745;color:#fff;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">GREEN</span></td>
+    <td>29</td>
+    <td>15</td>
+    <td>0</td>
+    <td>0</td>
+    <td>8 (Low).</td>
+    <td><span class="connector-tag">SQL Server</span></td>
+</tr>
+<tr>
+    <td><strong>global_superstores_db</strong></td>
+    <td><span style="background:#28a745;color:#fff;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">GREEN</span></td>
+    <td>29</td>
+    <td>15</td>
+    <td>0</td>
+    <td>0</td>
+    <td>54 (Medium).</td>
+    <td><span class="connector-tag">Excel</span></td>
+</tr>
+<tr>
+    <td><strong>multiple_connections</strong></td>
+    <td><span style="background:#28a745;color:#fff;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">GREEN</span></td>
+    <td>26</td>
+    <td>14</td>
+    <td>0</td>
+    <td>0</td>
+    <td>4 (Low).</td>
+    <td><span class="connector-tag">sqlproxy (Tableau Bridge)</span> <span class="connector-tag">MySQL</span></td>
+</tr>
+<tr>
+    <td><strong>nba_player_stats</strong></td>
+    <td><span style="background:#28a745;color:#fff;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">GREEN</span></td>
+    <td>29</td>
+    <td>15</td>
+    <td>0</td>
+    <td>0</td>
+    <td>21 (Medium).</td>
+    <td><span class="connector-tag">Excel</span></td>
+</tr>
+<tr>
+    <td><strong>sample-superstore</strong></td>
+    <td><span style="background:#28a745;color:#fff;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">GREEN</span></td>
+    <td>29</td>
+    <td>16</td>
+    <td>0</td>
+    <td>0</td>
+    <td>4 (Low).</td>
+    <td><span class="connector-tag">sqlserver</span></td>
+</tr>
+<tr>
+    <td><strong>shapes_test</strong></td>
+    <td><span style="background:#28a745;color:#fff;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">GREEN</span></td>
+    <td>29</td>
+    <td>15</td>
+    <td>0</td>
+    <td>0</td>
+    <td>16 (Low).</td>
+    <td><span class="connector-tag">Excel</span></td>
+</tr>
+<tr>
+    <td><strong>superstore_sales_dashboard</strong></td>
+    <td><span style="background:#28a745;color:#fff;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">GREEN</span></td>
+    <td>29</td>
+    <td>15</td>
+    <td>0</td>
+    <td>0</td>
+    <td>16 (Low).</td>
+    <td><span class="connector-tag">Excel</span></td>
+</tr>
+</table>
+</div>
+
+<h2><span class="section-icon">&#128640;</span>Migration Results</h2>
+<div class="card">
+<table>
+<tr>
+    <th>Workbook</th>
+    <th>Fidelity</th>
+    <th>Total Items</th>
+    <th>Exact</th>
+    <th>Approximate</th>
+    <th>Unsupported</th>
+    <th>Tables</th>
+    <th>Measures</th>
+    <th>Visuals</th>
+</tr>
+<tr>
+    <td><strong>BigQuery_Analytics</strong></td>
+    <td><div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></td>
+    <td>15</td>
+    <td>15</td>
+    <td>—</td>
+    <td>—</td>
+    <td>3</td>
+    <td>10</td>
+    <td>4</td>
+</tr>
+<tr>
+    <td><strong>Cache</strong></td>
+    <td><div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></td>
+    <td>17</td>
+    <td>17</td>
+    <td>—</td>
+    <td>—</td>
+    <td>9</td>
+    <td>7</td>
+    <td>1</td>
+</tr>
+<tr>
+    <td><strong>Enterprise_Sales</strong></td>
+    <td><div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></td>
+    <td>34</td>
+    <td>34</td>
+    <td>—</td>
+    <td>—</td>
+    <td>5</td>
+    <td>20</td>
+    <td>6</td>
+</tr>
+<tr>
+    <td><strong>Financial_Report</strong></td>
+    <td><div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></td>
+    <td>14</td>
+    <td>14</td>
+    <td>—</td>
+    <td>—</td>
+    <td>4</td>
+    <td>11</td>
+    <td>4</td>
+</tr>
+<tr>
+    <td><strong>HR_Analytics</strong></td>
+    <td><div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></td>
+    <td>9</td>
+    <td>9</td>
+    <td>—</td>
+    <td>—</td>
+    <td>2</td>
+    <td>6</td>
+    <td>4</td>
+</tr>
+<tr>
+    <td><strong>Manufacturing_IoT</strong></td>
+    <td><div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></td>
+    <td>35</td>
+    <td>35</td>
+    <td>—</td>
+    <td>—</td>
+    <td>5</td>
+    <td>14</td>
+    <td>8</td>
+</tr>
+<tr>
+    <td><strong>Marketing_Campaign</strong></td>
+    <td><div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></td>
+    <td>34</td>
+    <td>34</td>
+    <td>—</td>
+    <td>—</td>
+    <td>4</td>
+    <td>15</td>
+    <td>6</td>
+</tr>
+<tr>
+    <td><strong>RESTAPISample</strong></td>
+    <td><div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></td>
+    <td>17</td>
+    <td>17</td>
+    <td>—</td>
+    <td>—</td>
+    <td>2</td>
+    <td>7</td>
+    <td>3</td>
+</tr>
+<tr>
+    <td><strong>SampleWB</strong></td>
+    <td><div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></td>
+    <td>17</td>
+    <td>17</td>
+    <td>—</td>
+    <td>—</td>
+    <td>2</td>
+    <td>7</td>
+    <td>3</td>
+</tr>
+<tr>
+    <td><strong>Security_Test</strong></td>
+    <td><div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:96%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">95.8%</div>
+    </div></td>
+    <td>12</td>
+    <td>11</td>
+    <td>1</td>
+    <td>—</td>
+    <td>3</td>
+    <td>8</td>
+    <td>2</td>
+</tr>
+<tr>
+    <td><strong>Superstore_Sales</strong></td>
+    <td><div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></td>
+    <td>8</td>
+    <td>8</td>
+    <td>—</td>
+    <td>—</td>
+    <td>4</td>
+    <td>7</td>
+    <td>3</td>
+</tr>
+<tr>
+    <td><strong>TABLEAU_10_TWB</strong></td>
+    <td><div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></td>
+    <td>0</td>
+    <td>0</td>
+    <td>—</td>
+    <td>—</td>
+    <td>—</td>
+    <td>—</td>
+    <td>—</td>
+</tr>
+<tr>
+    <td><strong>TABLEAU_10_TWBX</strong></td>
+    <td><div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></td>
+    <td>3</td>
+    <td>3</td>
+    <td>—</td>
+    <td>—</td>
+    <td>2</td>
+    <td>1</td>
+    <td>1</td>
+</tr>
+<tr>
+    <td><strong>datasource_test</strong></td>
+    <td><div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></td>
+    <td>4</td>
+    <td>4</td>
+    <td>—</td>
+    <td>—</td>
+    <td>1</td>
+    <td>1</td>
+    <td>2</td>
+</tr>
+<tr>
+    <td><strong>ephemeral_field</strong></td>
+    <td><div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></td>
+    <td>4</td>
+    <td>4</td>
+    <td>—</td>
+    <td>—</td>
+    <td>1</td>
+    <td>1</td>
+    <td>2</td>
+</tr>
+<tr>
+    <td><strong>filtering</strong></td>
+    <td><div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></td>
+    <td>5</td>
+    <td>5</td>
+    <td>—</td>
+    <td>—</td>
+    <td>1</td>
+    <td>0</td>
+    <td>2</td>
+</tr>
+<tr>
+    <td><strong>global_superstores_db</strong></td>
+    <td><div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></td>
+    <td>29</td>
+    <td>29</td>
+    <td>—</td>
+    <td>—</td>
+    <td>2</td>
+    <td>5</td>
+    <td>14</td>
+</tr>
+<tr>
+    <td><strong>multiple_connections</strong></td>
+    <td><div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></td>
+    <td>2</td>
+    <td>2</td>
+    <td>—</td>
+    <td>—</td>
+    <td>3</td>
+    <td>0</td>
+    <td>0</td>
+</tr>
+<tr>
+    <td><strong>nba_player_stats</strong></td>
+    <td><div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></td>
+    <td>12</td>
+    <td>12</td>
+    <td>—</td>
+    <td>—</td>
+    <td>2</td>
+    <td>2</td>
+    <td>5</td>
+</tr>
+<tr>
+    <td><strong>sample-superstore</strong></td>
+    <td><div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></td>
+    <td>3</td>
+    <td>3</td>
+    <td>—</td>
+    <td>—</td>
+    <td>2</td>
+    <td>1</td>
+    <td>1</td>
+</tr>
+<tr>
+    <td><strong>shapes_test</strong></td>
+    <td><div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></td>
+    <td>13</td>
+    <td>13</td>
+    <td>—</td>
+    <td>—</td>
+    <td>6</td>
+    <td>6</td>
+    <td>1</td>
+</tr>
+<tr>
+    <td><strong>superstore_sales_dashboard</strong></td>
+    <td><div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></td>
+    <td>7</td>
+    <td>7</td>
+    <td>—</td>
+    <td>—</td>
+    <td>3</td>
+    <td>0</td>
+    <td>5</td>
+</tr>
+</table>
+</div>
+<h2><span class="section-icon">&#128221;</span>Per-Workbook Details</h2>
+<div class="card">
+<h3>BigQuery_Analytics &nbsp; <span style="background:#ffc107;color:#000;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">YELLOW</span> &nbsp; <div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></h3><p style="color:#605e5c;font-size:0.9em"><strong>worksheets</strong>:&nbsp;4 &nbsp; <strong>dashboards</strong>:&nbsp;1 &nbsp; <strong>datasources</strong>:&nbsp;1 &nbsp; <strong>calculations</strong>:&nbsp;10</p><p style="font-size:0.85em;color:#605e5c"><strong>Visual mappings:</strong> Sessions by Channel→<em>Automatic</em> &nbsp; Revenue Trend→<em>Automatic</em> &nbsp; Conversion by Device→<em>Automatic</em> &nbsp; User Engagement→<em>Automatic</em></p><p style="font-size:0.85em;color:#856404"><strong>&#9888; Assessment warnings:</strong></p><ul style="font-size:0.85em"><li style="color:#856404">[WARN] Connector: BigQuery: Partially supported (may require a Power BI gateway or custom connector). Used by: federated.1. → <em>Configure an on-premises data gateway or use a certified Power BI connector for this data source.</em></li></ul><table class="detail-table">
+<tr><th>Category</th><th>Name</th><th>Status</th><th>Source Formula</th><th>DAX</th></tr><tr>
+    <td>datasource</td>
+    <td>federated.1</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">BigQuery, 2 table(s)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Total Sessions</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">COUNT([session_id])</td>
+    <td style="font-family:monospace;font-size:0.8em">COUNT('sessions'[session_id])</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Unique Visitors</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">COUNTD([user_id])</td>
+    <td style="font-family:monospace;font-size:0.8em">DISTINCTCOUNT('sessions'[user_id])</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Conversion Rate</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM(IF [converted] THEN 1 ELSE 0 END) / COUNT([session_id])</td>
+    <td style="font-family:monospace;font-size:0.8em">SUMX('sessions', IF('sessions'[converted], 1, 0)) / COUNT('sessions'[session_id]</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Avg Session Duration</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">AVG([session_duration])</td>
+    <td style="font-family:monospace;font-size:0.8em">AVERAGE('sessions'[session_duration])</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Total Revenue</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM([revenue])</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM('sessions'[revenue])</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Revenue per Session</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM([revenue]) / COUNT([session_id])</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM('sessions'[revenue]) / COUNT('sessions'[session_id])</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Channel Category</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">IF [channel] = "Organic Search" OR [channel] = "Paid Search" THEN "Search"
+ELSEI</td>
+    <td style="font-family:monospace;font-size:0.8em">[M-based column]</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Engagement Level</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">IF [page_views] &gt;= 10 THEN "High"
+ELSEIF [page_views] &gt;= 5 THEN "Medium"
+E</td>
+    <td style="font-family:monospace;font-size:0.8em">[M-based column]</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Revenue by Channel</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">{FIXED [channel] : SUM([revenue])}</td>
+    <td style="font-family:monospace;font-size:0.8em">CALCULATE(SUM('sessions'[revenue]), ALLEXCEPT('sessions', 'sessions'[channel]))</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Days Since Signup</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">DATEDIFF("day", [signup_date], TODAY())</td>
+    <td style="font-family:monospace;font-size:0.8em">DATEDIFF(RELATED('users'[signup_date]), TODAY(), DAY)</td>
+</tr><tr>
+    <td>visual</td>
+    <td>Sessions by Channel</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Revenue Trend</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Conversion by Device</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>User Engagement</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr></table></div>
+<div class="card">
+<h3>Cache &nbsp; <span style="background:#28a745;color:#fff;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">GREEN</span> &nbsp; <div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></h3><p style="color:#605e5c;font-size:0.9em"><strong>worksheets</strong>:&nbsp;1 &nbsp; <strong>datasources</strong>:&nbsp;2 &nbsp; <strong>calculations</strong>:&nbsp;7 &nbsp; <strong>parameters</strong>:&nbsp;7</p><p style="font-size:0.85em;color:#605e5c"><strong>Visual mappings:</strong> Sheet 21→<em>Automatic</em></p><table class="detail-table">
+<tr><th>Category</th><th>Name</th><th>Status</th><th>Source Formula</th><th>DAX</th></tr><tr>
+    <td>datasource</td>
+    <td>Parameters</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">Unknown, 0 table(s)</td>
+</tr><tr>
+    <td>datasource</td>
+    <td>dataengine.42019.622799629629</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">DATAENGINE, 1 table(s)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Base Salary</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">50000</td>
+    <td style="font-family:monospace;font-size:0.8em">SELECTEDVALUE('Base Salary'[Value], 50000)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Commission Rate</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">18.400000000000002</td>
+    <td style="font-family:monospace;font-size:0.8em">SELECTEDVALUE('Commission Rate'[Value], 18.400000000000002)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>New Quota</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">500000</td>
+    <td style="font-family:monospace;font-size:0.8em">SELECTEDVALUE('New Quota'[Value], 500000)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Sort by</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">"Names"</td>
+    <td style="font-family:monospace;font-size:0.8em">SELECTEDVALUE('Sort by'[Value], "Names")</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>New Business Growth</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">0.59999999999999998</td>
+    <td style="font-family:monospace;font-size:0.8em">SELECTEDVALUE('New Business Growth'[Value], 0.59999999999999998)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Churn Rate</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">0.064000000000000001</td>
+    <td style="font-family:monospace;font-size:0.8em">SELECTEDVALUE('Churn Rate'[Value], 0.064000000000000001)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>State</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">"Alabama"</td>
+    <td style="font-family:monospace;font-size:0.8em">SELECTEDVALUE('State'[Value], "Alabama")</td>
+</tr><tr>
+    <td>visual</td>
+    <td>Sheet 21</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>parameter</td>
+    <td>[Base Salary]</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">domain=range</td>
+</tr><tr>
+    <td>parameter</td>
+    <td>[Commission Rate]</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">domain=range</td>
+</tr><tr>
+    <td>parameter</td>
+    <td>[New Quota]</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">domain=range</td>
+</tr><tr>
+    <td>parameter</td>
+    <td>[Parameter 1 1]</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">domain=list</td>
+</tr><tr>
+    <td>parameter</td>
+    <td>[Parameter 1]</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">domain=range</td>
+</tr><tr>
+    <td>parameter</td>
+    <td>[Parameter 2]</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">domain=range</td>
+</tr><tr>
+    <td>parameter</td>
+    <td>[Parameter 3]</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">domain=list</td>
+</tr></table></div>
+<div class="card">
+<h3>Enterprise_Sales &nbsp; <span style="background:#ffc107;color:#000;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">YELLOW</span> &nbsp; <div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></h3><p style="color:#605e5c;font-size:0.9em"><strong>worksheets</strong>:&nbsp;5 &nbsp; <strong>dashboards</strong>:&nbsp;1 &nbsp; <strong>datasources</strong>:&nbsp;1 &nbsp; <strong>calculations</strong>:&nbsp;22 &nbsp; <strong>parameters</strong>:&nbsp;3 &nbsp; <strong>stories</strong>:&nbsp;1 &nbsp; <strong>user_filters</strong>:&nbsp;2 &nbsp; <strong>actions</strong>:&nbsp;3</p><p style="font-size:0.85em;color:#605e5c"><strong>Visual mappings:</strong> Executive KPIs→<em>Automatic</em> &nbsp; Revenue by Region→<em>Automatic</em> &nbsp; Profit Trend→<em>Automatic</em> &nbsp; Customer Analysis→<em>Automatic</em> &nbsp; Sales Map→<em>Automatic</em></p><p style="font-size:0.85em;color:#856404"><strong>&#9888; Assessment warnings:</strong></p><ul style="font-size:0.85em"><li style="color:#856404">[WARN] Connector: Snowflake: Partially supported (may require a Power BI gateway or custom connector). Used by: federated.enterprise. → <em>Configure an on-premises data gateway or use a certified Power BI connector for this data source.</em></li><li style="color:#856404">[WARN] Partially-supported functions: 1 calculation(s) use partially-supported functions: Revenue Rank. → <em>REGEXP, RAWSQL, LOOKUP, PREVIOUS_VALUE, and statistical window functions may require manual DAX conversion review.</em></li></ul><table class="detail-table">
+<tr><th>Category</th><th>Name</th><th>Status</th><th>Source Formula</th><th>DAX</th></tr><tr>
+    <td>datasource</td>
+    <td>federated.enterprise</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">Snowflake, 2 table(s)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Gross Revenue</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM([quantity] * [unit_price])</td>
+    <td style="font-family:monospace;font-size:0.8em">SUMX('Orders', 'Orders'[quantity] * 'Orders'[unit_price])</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Net Revenue</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM(IF [order_status] != "Cancelled" THEN [quantity] * [unit_price] * (1 - [disc</td>
+    <td style="font-family:monospace;font-size:0.8em">SUMX('Orders', IF('Orders'[order_status] &lt;&gt; "Cancelled", 'Orders'[quantity</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Total Discount</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM([quantity] * [unit_price] * [discount])</td>
+    <td style="font-family:monospace;font-size:0.8em">SUMX('Orders', 'Orders'[quantity] * 'Orders'[unit_price] * 'Orders'[discount])</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Profit</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM(IF [order_status] != "Cancelled" THEN ([quantity] * [unit_price] * (1 - [dis</td>
+    <td style="font-family:monospace;font-size:0.8em">SUMX('Orders', IF('Orders'[order_status] &lt;&gt; "Cancelled", ('Orders'[quantit</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Profit Margin %</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">[Calc_Profit] / [Calc_NetRevenue]</td>
+    <td style="font-family:monospace;font-size:0.8em">[Profit] / [Net Revenue]</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Revenue per Customer</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">{FIXED [customer_id] : SUM([quantity] * [unit_price])}</td>
+    <td style="font-family:monospace;font-size:0.8em">CALCULATE(SUMX('Orders', 'Orders'[quantity] * 'Orders'[unit_price]), ALLEXCEPT('</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Regional Channel Revenue</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">{FIXED [region], [channel] : SUM([quantity] * [unit_price])}</td>
+    <td style="font-family:monospace;font-size:0.8em">CALCULATE(SUMX('Orders', 'Orders'[quantity] * 'Orders'[unit_price]), ALLEXCEPT('</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Revenue Excl Category</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">{EXCLUDE [channel] : SUM([quantity] * [unit_price])}</td>
+    <td style="font-family:monospace;font-size:0.8em">CALCULATE(SUMX('Orders', 'Orders'[quantity] * 'Orders'[unit_price]), REMOVEFILTE</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Moving Avg Revenue</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">WINDOW_AVG(SUM([quantity] * [unit_price]))</td>
+    <td style="font-family:monospace;font-size:0.8em">CALCULATE(SUMX('Orders', 'Orders'[quantity] * 'Orders'[unit_price]), ALL('Orders</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Running Total Revenue</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">RUNNING_SUM(SUM([quantity] * [unit_price]))</td>
+    <td style="font-family:monospace;font-size:0.8em">CALCULATE(SUMX('Orders', 'Orders'[quantity] * 'Orders'[unit_price]))</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Revenue Rank</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">RANK(SUM([quantity] * [unit_price]))</td>
+    <td style="font-family:monospace;font-size:0.8em">RANKX(ALL('Orders'), SUMX('Orders', 'Orders'[quantity] * 'Orders'[unit_price]))</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>YTD Revenue</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">{FIXED : SUM(IF YEAR([order_date]) = YEAR(TODAY()) THEN [quantity] * [unit_price</td>
+    <td style="font-family:monospace;font-size:0.8em">CALCULATE(SUMX('Orders', IF(YEAR('Orders'[order_date]) = YEAR(TODAY()), 'Orders'</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Customer Tenure Days</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">DATEDIFF("day", [first_purchase_date], TODAY())</td>
+    <td style="font-family:monospace;font-size:0.8em">DATEDIFF(RELATED('Customers'[first_purchase_date]), TODAY(), DAY)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Customer Tier</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">IF [Calc_RevPerCustomer] &gt; 10000 THEN "Platinum" ELSEIF [Calc_RevPerCustomer]</td>
+    <td style="font-family:monospace;font-size:0.8em">IF([Revenue per Customer] &gt; 10000, "Platinum", IF([Revenue per Customer] &gt;</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Safe Discount Rate</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">IF ISNULL([discount]) THEN 0 ELSE ZN([discount]) END</td>
+    <td style="font-family:monospace;font-size:0.8em">[M-based column]</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Full Location</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">UPPER([city]) + ", " + [state] + " (" + [country] + ")"</td>
+    <td style="font-family:monospace;font-size:0.8em">UPPER(RELATED('Customers'[city])) & ", " & RELATED('Customers'[state]) & " (" & </td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Unique Customers</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">COUNTD([customer_id])</td>
+    <td style="font-family:monospace;font-size:0.8em">DISTINCTCOUNT('Orders'[customer_id])</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>AOV Completed</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">AVG(IF [order_status] = "Completed" THEN [quantity] * [unit_price] ELSE 0 END)</td>
+    <td style="font-family:monospace;font-size:0.8em">AVERAGEX('Orders', IF('Orders'[order_status] = "Completed", 'Orders'[quantity] *</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Customer Segment Label</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">"Segment: " + [segment]</td>
+    <td style="font-family:monospace;font-size:0.8em">"Segment: " & RELATED('Customers'[segment])</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Discount Category</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">IF ISNULL([discount]) THEN "No Discount" ELSEIF [discount] = 0 THEN "No Discount</td>
+    <td style="font-family:monospace;font-size:0.8em">[M-based column]</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Revenue StdDev</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">STDEV(SUM([quantity] * [unit_price]))</td>
+    <td style="font-family:monospace;font-size:0.8em">STDEVX.S('Orders', 'Orders'[quantity] * 'Orders'[unit_price])</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Is My Account</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">[customer_email] = USERNAME()</td>
+    <td style="font-family:monospace;font-size:0.8em">'Customers'[customer_email] = USERPRINCIPALNAME()</td>
+</tr><tr>
+    <td>visual</td>
+    <td>Executive KPIs</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Revenue by Region</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Profit Trend</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Customer Analysis</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Sales Map</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>parameter</td>
+    <td>[Parameters].[Target Margin]</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">domain=range</td>
+</tr><tr>
+    <td>parameter</td>
+    <td>[Parameters].[Date Range Start]</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">domain=any</td>
+</tr><tr>
+    <td>parameter</td>
+    <td>[Parameters].[Top N]</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">domain=range</td>
+</tr><tr>
+    <td>bookmark</td>
+    <td>Quarterly Review</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">Converted to 3 bookmark(s)</td>
+</tr><tr>
+    <td>rls_role</td>
+    <td>Territory Access</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">User filter with explicit mappings → RLS role</td>
+</tr><tr>
+    <td>rls_role</td>
+    <td>Is My Account</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">Calculated security (USERNAME) → USERPRINCIPALNAME()</td>
+</tr></table></div>
+<div class="card">
+<h3>Financial_Report &nbsp; <span style="background:#28a745;color:#fff;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">GREEN</span> &nbsp; <div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></h3><p style="color:#605e5c;font-size:0.9em"><strong>worksheets</strong>:&nbsp;4 &nbsp; <strong>dashboards</strong>:&nbsp;1 &nbsp; <strong>datasources</strong>:&nbsp;1 &nbsp; <strong>calculations</strong>:&nbsp;6 &nbsp; <strong>parameters</strong>:&nbsp;2 &nbsp; <strong>filters</strong>:&nbsp;4 &nbsp; <strong>stories</strong>:&nbsp;1</p><p style="font-size:0.85em;color:#605e5c"><strong>Visual mappings:</strong> Revenue vs Expenses→<em>Automatic</em> &nbsp; Category Breakdown→<em>Automatic</em> &nbsp; Business Unit Performance→<em>Automatic</em> &nbsp; Top 10 Accounts→<em>Automatic</em></p><table class="detail-table">
+<tr><th>Category</th><th>Name</th><th>Status</th><th>Source Formula</th><th>DAX</th></tr><tr>
+    <td>datasource</td>
+    <td>federated.1</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">PostgreSQL, 1 table(s)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Revenue</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM(IF [type] = "Revenue" THEN [amount] ELSE 0 END)</td>
+    <td style="font-family:monospace;font-size:0.8em">SUMX('transactions', IF('transactions'[type] = "Revenue", 'transactions'[amount]</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Expenses</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM(IF [type] = "Expense" THEN [amount] ELSE 0 END)</td>
+    <td style="font-family:monospace;font-size:0.8em">SUMX('transactions', IF('transactions'[type] = "Expense", 'transactions'[amount]</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Net Income</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM(IF [type] = "Revenue" THEN [amount] ELSE -[amount] END)</td>
+    <td style="font-family:monospace;font-size:0.8em">SUMX('transactions', IF('transactions'[type] = "Revenue", 'transactions'[amount]</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Profit Margin %</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">([Revenue] - [Expenses]) / [Revenue]</td>
+    <td style="font-family:monospace;font-size:0.8em">([Revenue] - [Expenses]) / [Revenue]</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>YTD Revenue</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">{FIXED : SUM(IF YEAR([transaction_date]) = YEAR(TODAY()) THEN [amount] ELSE 0 EN</td>
+    <td style="font-family:monospace;font-size:0.8em">CALCULATE(SUMX('transactions', IF(YEAR('transactions'[transaction_date]) = YEAR(</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Budget Variance</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM([amount]) - WINDOW_AVG(SUM([amount]))</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM('transactions'[amount]) - CALCULATE(SUM('transactions'[amount]), ALL('transa</td>
+</tr><tr>
+    <td>visual</td>
+    <td>Revenue vs Expenses</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Category Breakdown</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Business Unit Performance</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Top 10 Accounts</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>parameter</td>
+    <td>[Parameters].[Fiscal Year]</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">domain=range</td>
+</tr><tr>
+    <td>parameter</td>
+    <td>[Parameters].[Business Unit Filter]</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">domain=list</td>
+</tr><tr>
+    <td>bookmark</td>
+    <td>Financial Story</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">Converted to 2 bookmark(s)</td>
+</tr></table></div>
+<div class="card">
+<h3>HR_Analytics &nbsp; <span style="background:#28a745;color:#fff;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">GREEN</span> &nbsp; <div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></h3><p style="color:#605e5c;font-size:0.9em"><strong>worksheets</strong>:&nbsp;4 &nbsp; <strong>dashboards</strong>:&nbsp;1 &nbsp; <strong>datasources</strong>:&nbsp;1 &nbsp; <strong>calculations</strong>:&nbsp;4</p><p style="font-size:0.85em;color:#605e5c"><strong>Visual mappings:</strong> Headcount by Department→<em>Automatic</em> &nbsp; Salary Analysis→<em>Automatic</em> &nbsp; Hiring Trend→<em>Automatic</em> &nbsp; Performance Matrix→<em>Automatic</em></p><table class="detail-table">
+<tr><th>Category</th><th>Name</th><th>Status</th><th>Source Formula</th><th>DAX</th></tr><tr>
+    <td>datasource</td>
+    <td>federated.1</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">SQL Server, 1 table(s)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Average Salary</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">AVG([Salary])</td>
+    <td style="font-family:monospace;font-size:0.8em">AVERAGE('Employees'[Salary])</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Employee Count</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">COUNT([EmployeeID])</td>
+    <td style="font-family:monospace;font-size:0.8em">COUNT('Employees'[EmployeeID])</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Tenure Category</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">IF [YearsOfService] &lt; 2 THEN "New"
+ELSEIF [YearsOfService] &lt; 5 THEN "Mid"
+</td>
+    <td style="font-family:monospace;font-size:0.8em">[M-based column]</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Total Compensation</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM([Salary]) * 1.25</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM('Employees'[Salary]) * 1.25</td>
+</tr><tr>
+    <td>visual</td>
+    <td>Headcount by Department</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Salary Analysis</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Hiring Trend</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Performance Matrix</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr></table></div>
+<div class="card">
+<h3>Manufacturing_IoT &nbsp; <span style="background:#ffc107;color:#000;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">YELLOW</span> &nbsp; <div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></h3><p style="color:#605e5c;font-size:0.9em"><strong>worksheets</strong>:&nbsp;6 &nbsp; <strong>dashboards</strong>:&nbsp;2 &nbsp; <strong>datasources</strong>:&nbsp;1 &nbsp; <strong>calculations</strong>:&nbsp;25 &nbsp; <strong>parameters</strong>:&nbsp;2 &nbsp; <strong>stories</strong>:&nbsp;1 &nbsp; <strong>actions</strong>:&nbsp;3</p><p style="font-size:0.85em;color:#605e5c"><strong>Visual mappings:</strong> Sensor Monitor→<em>Automatic</em> &nbsp; Machine Health→<em>Automatic</em> &nbsp; Maintenance Costs→<em>Automatic</em> &nbsp; Value Distribution→<em>Automatic</em> &nbsp; Vibration Analysis→<em>Automatic</em> &nbsp; Machine Rankings→<em>Automatic</em></p><p style="font-size:0.85em;color:#856404"><strong>&#9888; Assessment warnings:</strong></p><ul style="font-size:0.85em"><li style="color:#856404">[WARN] Connector: Oracle: Partially supported (may require a Power BI gateway or custom connector). Used by: federated.iot. → <em>Configure an on-premises data gateway or use a certified Power BI connector for this data source.</em></li><li style="color:#856404">[WARN] Partially-supported functions: 2 calculation(s) use partially-supported functions: Dense Rank, Unique Rank. → <em>REGEXP, RAWSQL, LOOKUP, PREVIOUS_VALUE, and statistical window functions may require manual DAX conversion review.</em></li></ul><table class="detail-table">
+<tr><th>Category</th><th>Name</th><th>Status</th><th>Source Formula</th><th>DAX</th></tr><tr>
+    <td>datasource</td>
+    <td>federated.iot</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">Oracle, 3 table(s)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Abs Deviation</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">ABS([value] - ([threshold_min] + [threshold_max]) / 2)</td>
+    <td style="font-family:monospace;font-size:0.8em">[M-based column]</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Ceiling Value</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">CEILING([value])</td>
+    <td style="font-family:monospace;font-size:0.8em">CEILING('Sensors'[value], 1)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Floor Value</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">FLOOR([value])</td>
+    <td style="font-family:monospace;font-size:0.8em">[M-based column]</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Rounded Value</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">ROUND([value], 2)</td>
+    <td style="font-family:monospace;font-size:0.8em">[M-based column]</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Energy Index</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">SQRT(POWER([power_watts], 2) + POWER([delta_value], 2))</td>
+    <td style="font-family:monospace;font-size:0.8em">SQRT(POWER('Sensors'[power_watts], 2) + POWER('Sensors'[delta_value], 2))</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Log Scale</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">IF [value] &gt; 0 THEN LOG([value]) ELSE LN(EXP(1)) END</td>
+    <td style="font-family:monospace;font-size:0.8em">IF('Sensors'[value] &gt; 0, LOG('Sensors'[value]), LN(EXP(1)))</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Vibration X</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">[value] * COS(RADIANS([angle_degrees]))</td>
+    <td style="font-family:monospace;font-size:0.8em">'Sensors'[value] * COS((('Sensors'[angle_degrees])*PI()/180))</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Vibration Y</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">[value] * SIN(RADIANS([angle_degrees]))</td>
+    <td style="font-family:monospace;font-size:0.8em">'Sensors'[value] * SIN((('Sensors'[angle_degrees])*PI()/180))</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Score Label</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">"Score: " + STR(INT([quality_score])) + " / " + STR(FLOAT([value]))</td>
+    <td style="font-family:monospace;font-size:0.8em">"Score: " & FORMAT(INT('Sensors'[quality_score]), "0") & " / " & FORMAT(CONVERT(</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Median Value</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">MEDIAN([value])</td>
+    <td style="font-family:monospace;font-size:0.8em">MEDIAN('Sensors'[value])</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>P95 Value</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">PERCENTILE([value], 0.95)</td>
+    <td style="font-family:monospace;font-size:0.8em">PERCENTILE.INC('Sensors'[value], 0.95)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Value Variance</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">VAR([value])</td>
+    <td style="font-family:monospace;font-size:0.8em">VAR.S('Sensors'[value])</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Value Variance Pop</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">VARP([value])</td>
+    <td style="font-family:monospace;font-size:0.8em">VAR.P('Sensors'[value])</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Avg by Sensor Machine</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">{INCLUDE [sensor_type], [machine_id] : AVG([value])}</td>
+    <td style="font-family:monospace;font-size:0.8em">CALCULATE(AVERAGE('Sensors'[value]))</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Reading Month</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">DATETRUNC("month", [reading_time])</td>
+    <td style="font-family:monospace;font-size:0.8em">DATE(YEAR('Sensors'[reading_time]), MONTH('Sensors'[reading_time]), 1)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Reading Quarter</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">DATETRUNC("quarter", [reading_time])</td>
+    <td style="font-family:monospace;font-size:0.8em">DATE(YEAR('Sensors'[reading_time]), 3 * INT((MONTH('Sensors'[reading_time]) - 1)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Reading Hour</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">DATEPART("hour", [reading_time])</td>
+    <td style="font-family:monospace;font-size:0.8em">HOUR('Sensors'[reading_time])</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Weekday</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">DATEPART("weekday", [reading_time])</td>
+    <td style="font-family:monospace;font-size:0.8em">WEEKDAY('Sensors'[reading_time])</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Running Avg Value</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">RUNNING_AVG(AVG([value]))</td>
+    <td style="font-family:monospace;font-size:0.8em">CALCULATE(AVERAGE('Sensors'[value]))</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Running Count</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">RUNNING_COUNT(COUNT([reading_id]))</td>
+    <td style="font-family:monospace;font-size:0.8em">CALCULATE(COUNT('Sensors'[reading_id]))</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Running Max Value</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">RUNNING_MAX(MAX([value]))</td>
+    <td style="font-family:monospace;font-size:0.8em">CALCULATE(MAX('Sensors'[value]))</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Running Min Value</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">RUNNING_MIN(MIN([value]))</td>
+    <td style="font-family:monospace;font-size:0.8em">CALCULATE(MIN('Sensors'[value]))</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Dense Rank</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">RANK_DENSE(SUM([value]))</td>
+    <td style="font-family:monospace;font-size:0.8em">RANKX(ALL('Sensors'), SUM('Sensors'[value]),, ASC, DENSE)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Unique Rank</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">RANK_UNIQUE(AVG([value]))</td>
+    <td style="font-family:monospace;font-size:0.8em">RANKX(ALL('Sensors'), AVERAGE('Sensors'[value]))</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Window Total</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">WINDOW_SUM(SUM([value]))</td>
+    <td style="font-family:monospace;font-size:0.8em">CALCULATE(SUM('Sensors'[value]), ALL('Sensors'))</td>
+</tr><tr>
+    <td>visual</td>
+    <td>Sensor Monitor</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Machine Health</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Maintenance Costs</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Value Distribution</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Vibration Analysis</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Machine Rankings</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>parameter</td>
+    <td>[Parameters].[Alert Threshold]</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">domain=range</td>
+</tr><tr>
+    <td>parameter</td>
+    <td>[Parameters].[Time Granularity]</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">domain=any</td>
+</tr><tr>
+    <td>bookmark</td>
+    <td>Plant Review</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">Converted to 3 bookmark(s)</td>
+</tr></table></div>
+<div class="card">
+<h3>Marketing_Campaign &nbsp; <span style="background:#ffc107;color:#000;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">YELLOW</span> &nbsp; <div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></h3><p style="color:#605e5c;font-size:0.9em"><strong>worksheets</strong>:&nbsp;5 &nbsp; <strong>dashboards</strong>:&nbsp;1 &nbsp; <strong>datasources</strong>:&nbsp;1 &nbsp; <strong>calculations</strong>:&nbsp;25 &nbsp; <strong>parameters</strong>:&nbsp;2 &nbsp; <strong>stories</strong>:&nbsp;1 &nbsp; <strong>actions</strong>:&nbsp;3</p><p style="font-size:0.85em;color:#605e5c"><strong>Visual mappings:</strong> Campaign Performance→<em>Automatic</em> &nbsp; Lead Funnel→<em>Automatic</em> &nbsp; Conversion Trend→<em>Automatic</em> &nbsp; Budget Analysis→<em>Automatic</em> &nbsp; Lead Details→<em>Automatic</em></p><p style="font-size:0.85em;color:#856404"><strong>&#9888; Assessment warnings:</strong></p><ul style="font-size:0.85em"><li style="color:#856404">[WARN] Partially-supported functions: 2 calculation(s) use partially-supported functions: Has Valid UTM, Clean URL. → <em>REGEXP, RAWSQL, LOOKUP, PREVIOUS_VALUE, and statistical window functions may require manual DAX conversion review.</em></li></ul><table class="detail-table">
+<tr><th>Category</th><th>Name</th><th>Status</th><th>Source Formula</th><th>DAX</th></tr><tr>
+    <td>datasource</td>
+    <td>federated.marketing</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">MySQL, 2 table(s)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Email Domain</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">MID([email], FIND([email], "@") + 1, LEN([email]))</td>
+    <td style="font-family:monospace;font-size:0.8em">MID(RELATED('Leads'[email]), FIND("@", RELATED('Leads'[email])) + 1, LEN(RELATED</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>First Name</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">LEFT([lead_name], FIND([lead_name], " ") - 1)</td>
+    <td style="font-family:monospace;font-size:0.8em">LEFT(RELATED('Leads'[lead_name]), FIND(" ", RELATED('Leads'[lead_name])) - 1)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Last Name</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">MID([lead_name], FIND([lead_name], " ") + 1, LEN([lead_name]))</td>
+    <td style="font-family:monospace;font-size:0.8em">MID(RELATED('Leads'[lead_name]), FIND(" ", RELATED('Leads'[lead_name])) + 1, LEN</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Name Length</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">LEN([lead_name])</td>
+    <td style="font-family:monospace;font-size:0.8em">LEN(RELATED('Leads'[lead_name]))</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Clean Phone</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">TRIM(REPLACE(REPLACE([phone], "-", ""), " ", ""))</td>
+    <td style="font-family:monospace;font-size:0.8em">TRIM(SUBSTITUTE(SUBSTITUTE(RELATED('Leads'[phone]), "-", ""), " ", ""))</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Phone Last 4</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">RIGHT([phone], 4)</td>
+    <td style="font-family:monospace;font-size:0.8em">RIGHT(RELATED('Leads'[phone]), 4)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Campaign Code</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">UPPER(LEFT([channel], 3)) + "-" + STR([campaign_id]) + SPACE(5 - LEN(STR([campai</td>
+    <td style="font-family:monospace;font-size:0.8em">UPPER(LEFT('Campaigns'[channel], 3)) & "-" & FORMAT('Campaigns'[campaign_id], "0</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Is Enterprise</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">CONTAINS([target_audience], "Enterprise")</td>
+    <td style="font-family:monospace;font-size:0.8em">[M-based column]</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Has Valid UTM</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">REGEXP_MATCH([utm_campaign], "^[a-z0-9_-]+$")</td>
+    <td style="font-family:monospace;font-size:0.8em">/* REGEXP_MATCH: complex regex "^'Campaigns'[a-z0-9_-]+$" — verify manually */ C</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Clean URL</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">REGEXP_REPLACE([creative_url], "https?://", "")</td>
+    <td style="font-family:monospace;font-size:0.8em">/* REGEXP_REPLACE("https?://"): complex regex — verify manually */ SUBSTITUTE('C</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Campaign Year</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">DATETRUNC("year", [start_date])</td>
+    <td style="font-family:monospace;font-size:0.8em">DATE(YEAR('Campaigns'[start_date]), 1, 1)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Start Month</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">DATEPART("month", [start_date])</td>
+    <td style="font-family:monospace;font-size:0.8em">[M-based column]</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Month Name</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">DATENAME("month", [start_date])</td>
+    <td style="font-family:monospace;font-size:0.8em">FORMAT('Campaigns'[start_date], "MMMM")</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Campaign Days</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">DATEDIFF("day", [start_date], [end_date])</td>
+    <td style="font-family:monospace;font-size:0.8em">DATEDIFF('Campaigns'[start_date], 'Campaigns'[end_date], DAY)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Non-Blank Leads</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">COUNTA([lead_name])</td>
+    <td style="font-family:monospace;font-size:0.8em">COUNTA('Leads'[lead_name])</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Budget Deal Correlation</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">CORR([budget], [deal_value])</td>
+    <td style="font-family:monospace;font-size:0.8em">VAR _MeanX = AVERAGEX(ALL('Campaigns'), 'Campaigns'[budget]) VAR _MeanY = AVERAG</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Spend Engagement Covar</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">COVAR([spend], [engagement_score])</td>
+    <td style="font-family:monospace;font-size:0.8em">VAR _MeanX = AVERAGEX(ALL('Campaigns'), 'Campaigns'[spend]) VAR _MeanY = AVERAGE</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Avg Deal by Channel</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">{INCLUDE [channel] : AVG([deal_value])}</td>
+    <td style="font-family:monospace;font-size:0.8em">CALCULATE(AVERAGE('Leads'[deal_value]))</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Campaign ROI</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">(SUM([deal_value]) - SUM([spend])) / SUM([spend])</td>
+    <td style="font-family:monospace;font-size:0.8em">(SUM('Leads'[deal_value]) - SUM('Campaigns'[spend])) / SUM('Campaigns'[spend])</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Cost Per Lead</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM([spend]) / COUNTD([lead_id])</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM('Campaigns'[spend]) / DISTINCTCOUNT('Leads'[lead_id])</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Window Best ROI</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">WINDOW_MAX((SUM([deal_value]) - SUM([spend])) / SUM([spend]))</td>
+    <td style="font-family:monospace;font-size:0.8em">CALCULATE((SUM('Leads'[deal_value]) - SUM('Campaigns'[spend])) / SUM('Campaigns'</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Window Worst ROI</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">WINDOW_MIN((SUM([deal_value]) - SUM([spend])) / SUM([spend]))</td>
+    <td style="font-family:monospace;font-size:0.8em">CALCULATE((SUM('Leads'[deal_value]) - SUM('Campaigns'[spend])) / SUM('Campaigns'</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Cumulative Leads</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">RUNNING_COUNT(COUNTD([lead_id]))</td>
+    <td style="font-family:monospace;font-size:0.8em">CALCULATE(DISTINCTCOUNT('Leads'[lead_id]))</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Budget Band</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">INT([budget] / 1000) * 1000</td>
+    <td style="font-family:monospace;font-size:0.8em">INT('Campaigns'[budget] / 1000) * 1000</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Conversion Rate</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM(IF [lead_status] = "Won" THEN 1 ELSE 0 END) / COUNT([lead_id])</td>
+    <td style="font-family:monospace;font-size:0.8em">SUMX('Leads', IF('Leads'[lead_status] = "Won", 1, 0)) / COUNT('Leads'[lead_id])</td>
+</tr><tr>
+    <td>visual</td>
+    <td>Campaign Performance</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Lead Funnel</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Conversion Trend</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Budget Analysis</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Lead Details</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>parameter</td>
+    <td>[Parameters].[Min Budget]</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">domain=range</td>
+</tr><tr>
+    <td>parameter</td>
+    <td>[Parameters].[Target Channel]</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">domain=any</td>
+</tr><tr>
+    <td>bookmark</td>
+    <td>Campaign Review</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">Converted to 3 bookmark(s)</td>
+</tr></table></div>
+<div class="card">
+<h3>RESTAPISample &nbsp; <span style="background:#28a745;color:#fff;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">GREEN</span> &nbsp; <div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></h3><p style="color:#605e5c;font-size:0.9em"><strong>worksheets</strong>:&nbsp;7 &nbsp; <strong>dashboards</strong>:&nbsp;1 &nbsp; <strong>datasources</strong>:&nbsp;1 &nbsp; <strong>calculations</strong>:&nbsp;4 &nbsp; <strong>filters</strong>:&nbsp;16 &nbsp; <strong>groups</strong>:&nbsp;5 &nbsp; <strong>actions</strong>:&nbsp;6</p><p style="font-size:0.85em;color:#605e5c"><strong>Visual mappings:</strong> Country ranks→<em>Automatic</em> &nbsp; GDP per capita→<em>Automatic</em> &nbsp; GDP per capita by region→<em>Automatic</em> &nbsp; GDP per capita map→<em>Automatic</em> &nbsp; Health spending vs life expectancy→<em>Automatic</em> &nbsp; Interest rates→<em>Automatic</em> &nbsp; Share of World GDP→<em>Automatic</em></p><table class="detail-table">
+<tr><th>Category</th><th>Name</th><th>Status</th><th>Source Formula</th><th>DAX</th></tr><tr>
+    <td>datasource</td>
+    <td>World Indicators new</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">DATAENGINE, 1 table(s)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>GDP % of Total</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">AVG([F: GDP per capita (curr $)]) / TOTAL(AVG([F: GDP per capita (curr $)]))</td>
+    <td style="font-family:monospace;font-size:0.8em">AVERAGE('Extract'[F: GDP per capita (curr $)]) / CALCULATE(AVERAGE('Extract'[F: </td>
+</tr><tr>
+    <td>calculation</td>
+    <td>GDP per capita (weighted)</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM([F: GDP (curr $)])
+/
+SUM([P: Population (count)])</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM('Extract'[F: GDP (curr $)]) / SUM('Extract'[P: Population (count)])</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Rate spread (difference)</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">AVG([F: Lending interest rate (%)])-AVG([F: Deposit interest rate (%)])</td>
+    <td style="font-family:monospace;font-size:0.8em">AVERAGE('Extract'[F: Lending interest rate (%)])-AVERAGE('Extract'[F: Deposit in</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>[Number of Records]</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">1</td>
+    <td style="font-family:monospace;font-size:0.8em">1</td>
+</tr><tr>
+    <td>visual</td>
+    <td>Country ranks</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>GDP per capita</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>GDP per capita by region</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>GDP per capita map</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Health spending vs life expectancy</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Interest rates</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Share of World GDP</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>group</td>
+    <td>Action (Country Name)</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">SWITCH calculated column</td>
+</tr><tr>
+    <td>group</td>
+    <td>Action (Date (year))</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">SWITCH calculated column</td>
+</tr><tr>
+    <td>group</td>
+    <td>Action (Region)</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">SWITCH calculated column</td>
+</tr><tr>
+    <td>group</td>
+    <td>Action (YEAR(Date (year)))</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">SWITCH calculated column</td>
+</tr><tr>
+    <td>group</td>
+    <td>Exclusions (Country Name,YEAR(Date (year)))</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">SWITCH calculated column</td>
+</tr></table></div>
+<div class="card">
+<h3>SampleWB &nbsp; <span style="background:#28a745;color:#fff;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">GREEN</span> &nbsp; <div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></h3><p style="color:#605e5c;font-size:0.9em"><strong>worksheets</strong>:&nbsp;7 &nbsp; <strong>dashboards</strong>:&nbsp;1 &nbsp; <strong>datasources</strong>:&nbsp;1 &nbsp; <strong>calculations</strong>:&nbsp;4 &nbsp; <strong>filters</strong>:&nbsp;16 &nbsp; <strong>groups</strong>:&nbsp;5 &nbsp; <strong>actions</strong>:&nbsp;6</p><p style="font-size:0.85em;color:#605e5c"><strong>Visual mappings:</strong> Country ranks→<em>Automatic</em> &nbsp; GDP per capita→<em>Automatic</em> &nbsp; GDP per capita by region→<em>Automatic</em> &nbsp; GDP per capita map→<em>Automatic</em> &nbsp; Health spending vs life expectancy→<em>Automatic</em> &nbsp; Interest rates→<em>Automatic</em> &nbsp; Share of World GDP→<em>Automatic</em></p><table class="detail-table">
+<tr><th>Category</th><th>Name</th><th>Status</th><th>Source Formula</th><th>DAX</th></tr><tr>
+    <td>datasource</td>
+    <td>World Indicators new</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">DATAENGINE, 1 table(s)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>GDP % of Total</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">AVG([F: GDP per capita (curr $)]) / TOTAL(AVG([F: GDP per capita (curr $)]))</td>
+    <td style="font-family:monospace;font-size:0.8em">AVERAGE('Extract'[F: GDP per capita (curr $)]) / CALCULATE(AVERAGE('Extract'[F: </td>
+</tr><tr>
+    <td>calculation</td>
+    <td>GDP per capita (weighted)</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM([F: GDP (curr $)])
+/
+SUM([P: Population (count)])</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM('Extract'[F: GDP (curr $)]) / SUM('Extract'[P: Population (count)])</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Rate spread (difference)</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">AVG([F: Lending interest rate (%)])-AVG([F: Deposit interest rate (%)])</td>
+    <td style="font-family:monospace;font-size:0.8em">AVERAGE('Extract'[F: Lending interest rate (%)])-AVERAGE('Extract'[F: Deposit in</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>[Number of Records]</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">1</td>
+    <td style="font-family:monospace;font-size:0.8em">1</td>
+</tr><tr>
+    <td>visual</td>
+    <td>Country ranks</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>GDP per capita</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>GDP per capita by region</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>GDP per capita map</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Health spending vs life expectancy</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Interest rates</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Share of World GDP</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>group</td>
+    <td>Action (Country Name)</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">SWITCH calculated column</td>
+</tr><tr>
+    <td>group</td>
+    <td>Action (Date (year))</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">SWITCH calculated column</td>
+</tr><tr>
+    <td>group</td>
+    <td>Action (Region)</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">SWITCH calculated column</td>
+</tr><tr>
+    <td>group</td>
+    <td>Action (YEAR(Date (year)))</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">SWITCH calculated column</td>
+</tr><tr>
+    <td>group</td>
+    <td>Exclusions (Country Name,YEAR(Date (year)))</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">SWITCH calculated column</td>
+</tr></table></div>
+<div class="card">
+<h3>Security_Test &nbsp; <span style="background:#28a745;color:#fff;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">GREEN</span> &nbsp; <div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:96%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">95.8%</div>
+    </div></h3><p style="color:#605e5c;font-size:0.9em"><strong>worksheets</strong>:&nbsp;2 &nbsp; <strong>dashboards</strong>:&nbsp;1 &nbsp; <strong>datasources</strong>:&nbsp;1 &nbsp; <strong>calculations</strong>:&nbsp;5 &nbsp; <strong>user_filters</strong>:&nbsp;4</p><p style="font-size:0.85em;color:#605e5c"><strong>Visual mappings:</strong> Sales Overview→<em>Automatic</em> &nbsp; Profit Analysis→<em>Automatic</em></p><table class="detail-table">
+<tr><th>Category</th><th>Name</th><th>Status</th><th>Source Formula</th><th>DAX</th></tr><tr>
+    <td>datasource</td>
+    <td>federated.sales</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">SQL Server, 2 table(s)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Is Current User</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">[CustomerEmail] = USERNAME()</td>
+    <td style="font-family:monospace;font-size:0.8em">'Orders'[CustomerEmail] = USERPRINCIPALNAME()</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Manager Access</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">ISMEMBEROF("Managers") OR ISMEMBEROF("Executives")</td>
+    <td style="font-family:monospace;font-size:0.8em">TRUE() /* ISMEMBEROF("Managers"): implement via RLS role */ || TRUE() /* ISMEMBE</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Region Match</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">[RegionManager] = FULLNAME()</td>
+    <td style="font-family:monospace;font-size:0.8em">'Regions'[RegionManager] = USERPRINCIPALNAME()</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Total Sales</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM([Sales])</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM('Orders'[Sales])</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Profit Ratio</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM([Profit]) / SUM([Sales])</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM('Orders'[Profit]) / SUM('Orders'[Sales])</td>
+</tr><tr>
+    <td>visual</td>
+    <td>Sales Overview</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Profit Analysis</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>rls_role</td>
+    <td>Region Access</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">User filter with explicit mappings → RLS role</td>
+</tr><tr>
+    <td>rls_role</td>
+    <td>Is Current User</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">Calculated security (USERNAME) → USERPRINCIPALNAME()</td>
+</tr><tr>
+    <td>rls_role</td>
+    <td>Manager Access</td>
+    <td style="color:#ffc107;font-weight:bold">approximate</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">ISMEMBEROF → RLS role (assign Azure AD group members: Managers, Executives)</td>
+</tr><tr>
+    <td>rls_role</td>
+    <td>Region Match</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">Calculated security (FULLNAME) → USERPRINCIPALNAME()</td>
+</tr></table></div>
+<div class="card">
+<h3>Superstore_Sales &nbsp; <span style="background:#28a745;color:#fff;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">GREEN</span> &nbsp; <div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></h3><p style="color:#605e5c;font-size:0.9em"><strong>worksheets</strong>:&nbsp;3 &nbsp; <strong>dashboards</strong>:&nbsp;1 &nbsp; <strong>datasources</strong>:&nbsp;1 &nbsp; <strong>calculations</strong>:&nbsp;4</p><p style="font-size:0.85em;color:#605e5c"><strong>Visual mappings:</strong> Sales by Region→<em>Automatic</em> &nbsp; Profit by Category→<em>Automatic</em> &nbsp; Sales Trend→<em>Automatic</em></p><table class="detail-table">
+<tr><th>Category</th><th>Name</th><th>Status</th><th>Source Formula</th><th>DAX</th></tr><tr>
+    <td>datasource</td>
+    <td>federated.1</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">Excel, 3 table(s)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Total Sales</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM([Sales])</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM('Orders'[Sales])</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Total Profit</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM([Profit])</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM('Orders'[Profit])</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Profit Ratio</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM([Profit]) / SUM([Sales])</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM('Orders'[Profit]) / SUM('Orders'[Sales])</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Number of Orders</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">COUNTD([Order ID])</td>
+    <td style="font-family:monospace;font-size:0.8em">DISTINCTCOUNT('Orders'[Order ID])</td>
+</tr><tr>
+    <td>visual</td>
+    <td>Sales by Region</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Profit by Category</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Sales Trend</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr></table></div>
+<div class="card">
+<h3>TABLEAU_10_TWB &nbsp; <span style="background:#ffc107;color:#000;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">YELLOW</span> &nbsp; <div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></h3><p style="font-size:0.85em;color:#856404"><strong>&#9888; Assessment warnings:</strong></p><ul style="font-size:0.85em"><li style="color:#856404">[WARN] No datasources found: No datasource definitions were extracted. → <em>Verify the Tableau file contains at least one datasource.</em></li></ul></div>
+<div class="card">
+<h3>TABLEAU_10_TWBX &nbsp; <span style="background:#28a745;color:#fff;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">GREEN</span> &nbsp; <div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></h3><p style="color:#605e5c;font-size:0.9em"><strong>worksheets</strong>:&nbsp;1 &nbsp; <strong>datasources</strong>:&nbsp;1 &nbsp; <strong>calculations</strong>:&nbsp;1</p><p style="font-size:0.85em;color:#605e5c"><strong>Visual mappings:</strong> Sheet 1→<em>Automatic</em></p><table class="detail-table">
+<tr><th>Category</th><th>Name</th><th>Status</th><th>Source Formula</th><th>DAX</th></tr><tr>
+    <td>datasource</td>
+    <td>federated.0bbjp8g02k4ss51anjdyj1s0vmrj</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">SQL Server, 2 table(s)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>[Number of Records]</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">1</td>
+    <td style="font-family:monospace;font-size:0.8em">1</td>
+</tr><tr>
+    <td>visual</td>
+    <td>Sheet 1</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr></table></div>
+<div class="card">
+<h3>datasource_test &nbsp; <span style="background:#ffc107;color:#000;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">YELLOW</span> &nbsp; <div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></h3><p style="color:#605e5c;font-size:0.9em"><strong>worksheets</strong>:&nbsp;2 &nbsp; <strong>datasources</strong>:&nbsp;1 &nbsp; <strong>calculations</strong>:&nbsp;1</p><p style="font-size:0.85em;color:#605e5c"><strong>Visual mappings:</strong> Sheet 1→<em>Automatic</em> &nbsp; Sheet 2→<em>Automatic</em></p><p style="font-size:0.85em;color:#856404"><strong>&#9888; Assessment warnings:</strong></p><ul style="font-size:0.85em"><li style="color:#856404">[WARN] Connector: Unknown: Could not detect connection type for: datasource_test. → <em>Review datasource connections manually.</em></li></ul><table class="detail-table">
+<tr><th>Category</th><th>Name</th><th>Status</th><th>Source Formula</th><th>DAX</th></tr><tr>
+    <td>datasource</td>
+    <td>datasource_test</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">Unknown, 1 table(s)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>[Number of Records]</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">1</td>
+    <td style="font-family:monospace;font-size:0.8em">1</td>
+</tr><tr>
+    <td>visual</td>
+    <td>Sheet 1</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Sheet 2</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr></table></div>
+<div class="card">
+<h3>ephemeral_field &nbsp; <span style="background:#ffc107;color:#000;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">YELLOW</span> &nbsp; <div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></h3><p style="color:#605e5c;font-size:0.9em"><strong>worksheets</strong>:&nbsp;2 &nbsp; <strong>datasources</strong>:&nbsp;1 &nbsp; <strong>calculations</strong>:&nbsp;1</p><p style="font-size:0.85em;color:#605e5c"><strong>Visual mappings:</strong> Sheet 1→<em>Automatic</em> &nbsp; Sheet 2→<em>Automatic</em></p><p style="font-size:0.85em;color:#856404"><strong>&#9888; Assessment warnings:</strong></p><ul style="font-size:0.85em"><li style="color:#856404">[WARN] Connector: Unknown: Could not detect connection type for: datasource_test. → <em>Review datasource connections manually.</em></li></ul><table class="detail-table">
+<tr><th>Category</th><th>Name</th><th>Status</th><th>Source Formula</th><th>DAX</th></tr><tr>
+    <td>datasource</td>
+    <td>datasource_test</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">Unknown, 1 table(s)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>[Number of Records]</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">1</td>
+    <td style="font-family:monospace;font-size:0.8em">1</td>
+</tr><tr>
+    <td>visual</td>
+    <td>Sheet 1</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Sheet 2</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr></table></div>
+<div class="card">
+<h3>filtering &nbsp; <span style="background:#28a745;color:#fff;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">GREEN</span> &nbsp; <div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></h3><p style="color:#605e5c;font-size:0.9em"><strong>worksheets</strong>:&nbsp;2 &nbsp; <strong>dashboards</strong>:&nbsp;1 &nbsp; <strong>datasources</strong>:&nbsp;1 &nbsp; <strong>calculations</strong>:&nbsp;1 &nbsp; <strong>groups</strong>:&nbsp;1</p><p style="font-size:0.85em;color:#605e5c"><strong>Visual mappings:</strong> Sheet 1→<em>Automatic</em> &nbsp; Sheet 2→<em>Automatic</em></p><table class="detail-table">
+<tr><th>Category</th><th>Name</th><th>Status</th><th>Source Formula</th><th>DAX</th></tr><tr>
+    <td>datasource</td>
+    <td>federated.1df63xu0j2dvhd1e3sooz18pbrcc</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">SQL Server, 1 table(s)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>SHOW</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">IF [BurstoutSet] THEN "Selected" ELSE "Not Selected" END</td>
+    <td style="font-family:monospace;font-size:0.8em">[M-based column]</td>
+</tr><tr>
+    <td>visual</td>
+    <td>Sheet 1</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Sheet 2</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>group</td>
+    <td>BurstoutSet</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">SWITCH calculated column</td>
+</tr></table></div>
+<div class="card">
+<h3>global_superstores_db &nbsp; <span style="background:#28a745;color:#fff;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">GREEN</span> &nbsp; <div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></h3><p style="color:#605e5c;font-size:0.9em"><strong>worksheets</strong>:&nbsp;20 &nbsp; <strong>dashboards</strong>:&nbsp;6 &nbsp; <strong>datasources</strong>:&nbsp;1 &nbsp; <strong>calculations</strong>:&nbsp;3 &nbsp; <strong>filters</strong>:&nbsp;17 &nbsp; <strong>groups</strong>:&nbsp;4 &nbsp; <strong>bins</strong>:&nbsp;1 &nbsp; <strong>actions</strong>:&nbsp;4</p><p style="font-size:0.85em;color:#605e5c"><strong>Visual mappings:</strong> AnalyticsBasic→<em>Automatic</em> &nbsp; Bar 1→<em>Automatic</em> &nbsp; Bar2→<em>Automatic</em> &nbsp; Heat Map→<em>Automatic</em> &nbsp; Histogram→<em>Automatic</em> &nbsp; Line-Area→<em>Automatic</em> &nbsp; Line-Forecast→<em>Automatic</em> &nbsp; Product Sales→<em>Automatic</em> &nbsp; Profit→<em>Automatic</em> &nbsp; Profit Map→<em>Automatic</em> &nbsp; Profit and Sales→<em>Automatic</em> &nbsp; Profit and Sales Relationship→<em>Automatic</em> &nbsp; Profit and Sales by Sub Categories→<em>Automatic</em> &nbsp; ScatterPlot→<em>Automatic</em> &nbsp; ShelvesCard→<em>Automatic</em> &nbsp; Shipping Cost→<em>Automatic</em> &nbsp; ShippingCostToMarkets→<em>Automatic</em> &nbsp; South Map→<em>Automatic</em> &nbsp; World's Profit and Sales Reln→<em>Automatic</em> &nbsp; YOY Profit→<em>Automatic</em></p><table class="detail-table">
+<tr><th>Category</th><th>Name</th><th>Status</th><th>Source Formula</th><th>DAX</th></tr><tr>
+    <td>datasource</td>
+    <td>federated.0xaw05p0aczkh61d2uegk0aqxozm</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">Excel, 1 table(s)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Margin</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM([Profit])/SUM([Sales])</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM('Orders'[Profit])/SUM('Orders'[Sales])</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>[Discount (bin)]</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">[Discount]</td>
+    <td style="font-family:monospace;font-size:0.8em">[M-based column]</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>[Number of Records]</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">1</td>
+    <td style="font-family:monospace;font-size:0.8em">1</td>
+</tr><tr>
+    <td>visual</td>
+    <td>AnalyticsBasic</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Bar 1</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Bar2</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Heat Map</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Histogram</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Line-Area</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Line-Forecast</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Product Sales</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Profit</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Profit Map</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Profit and Sales</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Profit and Sales Relationship</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Profit and Sales by Sub Categories</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>ScatterPlot</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>ShelvesCard</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Shipping Cost</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>ShippingCostToMarkets</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>South Map</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>World's Profit and Sales Reln</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>YOY Profit</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>group</td>
+    <td>Action (Discount (bin))</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">SWITCH calculated column</td>
+</tr><tr>
+    <td>group</td>
+    <td>Action (Segment)</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">SWITCH calculated column</td>
+</tr><tr>
+    <td>group</td>
+    <td>Action (State)</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">SWITCH calculated column</td>
+</tr><tr>
+    <td>group</td>
+    <td>Action (YEAR(Order Date))</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">SWITCH calculated column</td>
+</tr><tr>
+    <td>bin</td>
+    <td>Sub-Category (group)</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">FLOOR calculated column</td>
+</tr></table></div>
+<div class="card">
+<h3>multiple_connections &nbsp; <span style="background:#28a745;color:#fff;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">GREEN</span> &nbsp; <div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></h3><p style="color:#605e5c;font-size:0.9em"><strong>datasources</strong>:&nbsp;2</p><table class="detail-table">
+<tr><th>Category</th><th>Name</th><th>Status</th><th>Source Formula</th><th>DAX</th></tr><tr>
+    <td>datasource</td>
+    <td>sqlproxy.0uczajf02b02kv16u6atd08pslj5</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">Unknown, 1 table(s)</td>
+</tr><tr>
+    <td>datasource</td>
+    <td>federated.1bw8gel1hkm5ms1c8jgrm0zixmde</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">MySQL, 2 table(s)</td>
+</tr></table></div>
+<div class="card">
+<h3>nba_player_stats &nbsp; <span style="background:#28a745;color:#fff;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">GREEN</span> &nbsp; <div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></h3><p style="color:#605e5c;font-size:0.9em"><strong>worksheets</strong>:&nbsp;5 &nbsp; <strong>dashboards</strong>:&nbsp;1 &nbsp; <strong>datasources</strong>:&nbsp;2 &nbsp; <strong>calculations</strong>:&nbsp;3 &nbsp; <strong>parameters</strong>:&nbsp;1 &nbsp; <strong>filters</strong>:&nbsp;6 &nbsp; <strong>groups</strong>:&nbsp;1 &nbsp; <strong>actions</strong>:&nbsp;2</p><p style="font-size:0.85em;color:#605e5c"><strong>Visual mappings:</strong> Average Points per Game→<em>Automatic</em> &nbsp; Player Stats→<em>Automatic</em> &nbsp; Players Headshot→<em>Automatic</em> &nbsp; Rebounds per Game→<em>Automatic</em> &nbsp; Teams→<em>Automatic</em></p><table class="detail-table">
+<tr><th>Category</th><th>Name</th><th>Status</th><th>Source Formula</th><th>DAX</th></tr><tr>
+    <td>datasource</td>
+    <td>Parameters</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">Unknown, 0 table(s)</td>
+</tr><tr>
+    <td>datasource</td>
+    <td>federated.10vks1203pgcxf1bkw5yk1bwzy2f</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">Excel, 1 table(s)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Rebounds</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">1.</td>
+    <td style="font-family:monospace;font-size:0.8em">SELECTEDVALUE('Rebounds'[Value], 1.0)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>p. Rebounds</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">CASE [Parameters].[Parameter 1]
+When 1 then avg([DEF])
+When 2 then AVG([OFF])
+Wh</td>
+    <td style="font-family:monospace;font-size:0.8em">SWITCH([Rebounds], 1, AVERAGE('Sheet1'[DEF]), 2, AVERAGE('Sheet1'[OFF]), 3, AVER</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Rebounds</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">1.</td>
+    <td style="font-family:monospace;font-size:0.8em">SELECTEDVALUE('Rebounds'[Value], 1.0)</td>
+</tr><tr>
+    <td>visual</td>
+    <td>Average Points per Game</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Player Stats</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Players Headshot</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Rebounds per Game</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Teams</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>parameter</td>
+    <td>[Parameter 1]</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">domain=list</td>
+</tr><tr>
+    <td>group</td>
+    <td>Action (Player)</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">SWITCH calculated column</td>
+</tr></table></div>
+<div class="card">
+<h3>sample-superstore &nbsp; <span style="background:#28a745;color:#fff;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">GREEN</span> &nbsp; <div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></h3><p style="color:#605e5c;font-size:0.9em"><strong>worksheets</strong>:&nbsp;1 &nbsp; <strong>datasources</strong>:&nbsp;1 &nbsp; <strong>calculations</strong>:&nbsp;1</p><p style="font-size:0.85em;color:#605e5c"><strong>Visual mappings:</strong> Sheet 1→<em>Automatic</em></p><table class="detail-table">
+<tr><th>Category</th><th>Name</th><th>Status</th><th>Source Formula</th><th>DAX</th></tr><tr>
+    <td>datasource</td>
+    <td>sqlserver.187oiqw1ls5tey1df9op71phda18</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">Unknown, 1 table(s)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>[Number of Records]</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">1</td>
+    <td style="font-family:monospace;font-size:0.8em">1</td>
+</tr><tr>
+    <td>visual</td>
+    <td>Sheet 1</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr></table></div>
+<div class="card">
+<h3>shapes_test &nbsp; <span style="background:#28a745;color:#fff;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">GREEN</span> &nbsp; <div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></h3><p style="color:#605e5c;font-size:0.9em"><strong>worksheets</strong>:&nbsp;1 &nbsp; <strong>datasources</strong>:&nbsp;2 &nbsp; <strong>calculations</strong>:&nbsp;6 &nbsp; <strong>parameters</strong>:&nbsp;2 &nbsp; <strong>groups</strong>:&nbsp;1 &nbsp; <strong>bins</strong>:&nbsp;1 &nbsp; <strong>actions</strong>:&nbsp;1</p><p style="font-size:0.85em;color:#605e5c"><strong>Visual mappings:</strong> Sheet 1→<em>Automatic</em></p><table class="detail-table">
+<tr><th>Category</th><th>Name</th><th>Status</th><th>Source Formula</th><th>DAX</th></tr><tr>
+    <td>datasource</td>
+    <td>Parameters</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">Unknown, 0 table(s)</td>
+</tr><tr>
+    <td>datasource</td>
+    <td>Sample - Superstore</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">Excel, 3 table(s)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Top Customers</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">5</td>
+    <td style="font-family:monospace;font-size:0.8em">SELECTEDVALUE('Top Customers'[Value], 5)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Profit Bin Size</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">200</td>
+    <td style="font-family:monospace;font-size:0.8em">SELECTEDVALUE('Profit Bin Size'[Value], 200)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Profit Ratio</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM([Profit])/SUM([Sales])</td>
+    <td style="font-family:monospace;font-size:0.8em">SUM('Orders'[Profit])/SUM('Orders'[Sales])</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Profit (bin)</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">[Profit]</td>
+    <td style="font-family:monospace;font-size:0.8em">[M-based column]</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Top Customers</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">5</td>
+    <td style="font-family:monospace;font-size:0.8em">SELECTEDVALUE('Top Customers'[Value], 5)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Profit Bin Size</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">200</td>
+    <td style="font-family:monospace;font-size:0.8em">SELECTEDVALUE('Profit Bin Size'[Value], 200)</td>
+</tr><tr>
+    <td>visual</td>
+    <td>Sheet 1</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>parameter</td>
+    <td>[Parameter 1]</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">domain=range</td>
+</tr><tr>
+    <td>parameter</td>
+    <td>[Parameter 2]</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">domain=range</td>
+</tr><tr>
+    <td>group</td>
+    <td>Top Customers by Profit</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">SWITCH calculated column</td>
+</tr><tr>
+    <td>bin</td>
+    <td>Manufacturer</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">FLOOR calculated column</td>
+</tr></table></div>
+<div class="card">
+<h3>superstore_sales_dashboard &nbsp; <span style="background:#28a745;color:#fff;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">GREEN</span> &nbsp; <div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
+        <div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100.0%</div>
+    </div></h3><p style="color:#605e5c;font-size:0.9em"><strong>worksheets</strong>:&nbsp;4 &nbsp; <strong>dashboards</strong>:&nbsp;1 &nbsp; <strong>datasources</strong>:&nbsp;1 &nbsp; <strong>calculations</strong>:&nbsp;1 &nbsp; <strong>filters</strong>:&nbsp;4 &nbsp; <strong>groups</strong>:&nbsp;1 &nbsp; <strong>actions</strong>:&nbsp;4</p><p style="font-size:0.85em;color:#605e5c"><strong>Visual mappings:</strong> Bar Chart→<em>Automatic</em> &nbsp; Line chart→<em>Automatic</em> &nbsp; Pie chart→<em>Automatic</em> &nbsp; Scatter Plot→<em>Automatic</em></p><table class="detail-table">
+<tr><th>Category</th><th>Name</th><th>Status</th><th>Source Formula</th><th>DAX</th></tr><tr>
+    <td>datasource</td>
+    <td>federated.1oojzyi1k8irfh101qtoq07jz0mm</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">Excel, 2 table(s)</td>
+</tr><tr>
+    <td>calculation</td>
+    <td>Grouping Based on Unit Price</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em">IF [Unit Price] &lt;= 2500 then 'A'
+ELSEIF [Unit Price] &lt;=5000 then 'B'
+ELS</td>
+    <td style="font-family:monospace;font-size:0.8em">[M-based column]</td>
+</tr><tr>
+    <td>visual</td>
+    <td>Bar Chart</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Line chart</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Pie chart</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>visual</td>
+    <td>Scatter Plot</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+</tr><tr>
+    <td>group</td>
+    <td>Action (Region)</td>
+    <td style="color:#28a745;font-weight:bold">exact</td>
+    <td style="font-family:monospace;font-size:0.8em"></td>
+    <td style="font-family:monospace;font-size:0.8em">SWITCH calculated column</td>
+</tr></table></div>
+<div class="footer">
+    <p>Tableau to Power BI Migration Tool v5.5.0 — Report generated 2026-03-10 11:57</p>
+    <p>Open .pbip files in Power BI Desktop (Developer Mode) to validate</p>
+</div>
+</div>
+</body>
+</html>

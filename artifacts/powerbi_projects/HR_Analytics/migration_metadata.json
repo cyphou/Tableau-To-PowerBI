@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-10T10:12:59.456661",
+  "generated_at": "2026-03-10T11:53:48.013529",
   "source": "Tableau Migration",
   "report_name": "HR_Analytics",
   "objects_converted": {
@@ -20,10 +20,24 @@
   },
   "generated_output": {
     "pages": 1,
-    "visuals": 16,
-    "theme_applied": false
+    "visuals": 4,
+    "theme_applied": false,
+    "theme_detail": {
+      "status": "skipped",
+      "reason": "no dashboard colors detected"
+    }
   },
   "tmdl_stats": {
-    "tables": 2
-  }
+    "tables": 2,
+    "measures": 6,
+    "columns": 20,
+    "relationships": 0
+  },
+  "visual_type_mappings": {
+    "Headcount by Department": "Automatic",
+    "Salary Analysis": "Automatic",
+    "Hiring Trend": "Automatic",
+    "Performance Matrix": "Automatic"
+  },
+  "approximations": []
 }

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-10T10:13:21.986714",
+  "generated_at": "2026-03-10T11:53:49.953628",
   "source": "Tableau Migration",
   "report_name": "Superstore_Sales",
   "objects_converted": {
@@ -20,10 +20,23 @@
   },
   "generated_output": {
     "pages": 1,
-    "visuals": 12,
-    "theme_applied": false
+    "visuals": 3,
+    "theme_applied": false,
+    "theme_detail": {
+      "status": "skipped",
+      "reason": "no dashboard colors detected"
+    }
   },
   "tmdl_stats": {
-    "tables": 4
-  }
+    "tables": 4,
+    "measures": 7,
+    "columns": 33,
+    "relationships": 2
+  },
+  "visual_type_mappings": {
+    "Sales by Region": "Automatic",
+    "Profit by Category": "Automatic",
+    "Sales Trend": "Automatic"
+  },
+  "approximations": []
 }

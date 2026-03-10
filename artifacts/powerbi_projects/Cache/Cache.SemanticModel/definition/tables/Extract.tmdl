@@ -1,9 +1,9 @@
 table Extract
-	lineageTag: b1e4a6fa-247e-4fe6-b694-512c35dc83e6
+	lineageTag: 6503c3f9-238f-457c-acf1-d9aba4584550
 
 	column Category
 		dataType: string
-		lineageTag: ae077644-9345-4af4-9c08-499fc874a347
+		lineageTag: b38e6c7e-525f-4c24-bd63-f8bd29dbddfc
 		summarizeBy: none
 		sourceColumn: Category
 
@@ -11,7 +11,7 @@ table Extract
 
 	column 'Number of Records'
 		dataType: int64
-		lineageTag: cd89b3ff-6f5c-4288-9a1a-400eeb91b719
+		lineageTag: 039ed95c-82e2-446a-b29f-370dc60c9ecc
 		summarizeBy: sum
 		sourceColumn: 'Number of Records'
 
@@ -20,7 +20,7 @@ table Extract
 	column 'Order Date'
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 5ce5f7a8-daca-4687-a33a-093d04f7ed8d
+		lineageTag: 2e18ff0a-5d10-47ab-8b8e-d2b3ce868c3f
 		summarizeBy: none
 		sourceColumn: 'Order Date'
 		dataCategory: DateTime
@@ -30,7 +30,7 @@ table Extract
 	column 'Sales Target'
 		dataType: int64
 		formatString: c"$"#,#0;("$"#,#0)
-		lineageTag: cadffa91-5fbc-4194-830f-3fee72d95c31
+		lineageTag: 2eabec1f-424e-4c71-b73e-8470e106dab1
 		summarizeBy: sum
 		sourceColumn: 'Sales Target'
 
@@ -38,13 +38,13 @@ table Extract
 
 	column Segment
 		dataType: string
-		lineageTag: 32bec529-ebdc-486f-bc77-42240c9cc19d
+		lineageTag: 55364b58-7d62-4001-8554-2740593d688e
 		summarizeBy: none
 		sourceColumn: Segment
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Extract-5887f052-6f09-49e4-8d77-7a9a371e3d13' = m
+	partition 'Extract-ed4bf8d1-8c17-4e36-a307-3f0ecd66eb23' = m
 		mode: import
 		source =
 				let

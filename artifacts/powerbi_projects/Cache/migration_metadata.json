@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-10T10:17:30.891877",
+  "generated_at": "2026-03-10T11:54:10.934747",
   "source": "Tableau Migration",
   "report_name": "Cache",
   "objects_converted": {
@@ -20,10 +20,21 @@
   },
   "generated_output": {
     "pages": 1,
-    "visuals": 2,
-    "theme_applied": false
+    "visuals": 1,
+    "theme_applied": false,
+    "theme_detail": {
+      "status": "skipped",
+      "reason": "no dashboard colors detected"
+    }
   },
   "tmdl_stats": {
-    "tables": 9
-  }
+    "tables": 9,
+    "measures": 7,
+    "columns": 20,
+    "relationships": 0
+  },
+  "visual_type_mappings": {
+    "Sheet 21": "Automatic"
+  },
+  "approximations": []
 }

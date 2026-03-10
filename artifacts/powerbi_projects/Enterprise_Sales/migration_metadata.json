@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-10T10:12:48.531161",
+  "generated_at": "2026-03-10T11:53:46.520248",
   "source": "Tableau Migration",
   "report_name": "Enterprise_Sales",
   "objects_converted": {
@@ -20,10 +20,25 @@
   },
   "generated_output": {
     "pages": 1,
-    "visuals": 24,
-    "theme_applied": false
+    "visuals": 6,
+    "theme_applied": false,
+    "theme_detail": {
+      "status": "skipped",
+      "reason": "no dashboard colors detected"
+    }
   },
   "tmdl_stats": {
-    "tables": 5
-  }
+    "tables": 5,
+    "measures": 20,
+    "columns": 39,
+    "relationships": 2
+  },
+  "visual_type_mappings": {
+    "Executive KPIs": "Automatic",
+    "Revenue by Region": "Automatic",
+    "Profit Trend": "Automatic",
+    "Customer Analysis": "Automatic",
+    "Sales Map": "Automatic"
+  },
+  "approximations": []
 }

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-10T10:17:41.826692",
+  "generated_at": "2026-03-10T11:54:12.117471",
   "source": "Tableau Migration",
   "report_name": "SampleWB",
   "objects_converted": {
@@ -20,10 +20,27 @@
   },
   "generated_output": {
     "pages": 1,
-    "visuals": 6,
-    "theme_applied": false
+    "visuals": 3,
+    "theme_applied": false,
+    "theme_detail": {
+      "status": "skipped",
+      "reason": "no dashboard colors detected"
+    }
   },
   "tmdl_stats": {
-    "tables": 2
-  }
+    "tables": 2,
+    "measures": 7,
+    "columns": 26,
+    "relationships": 0
+  },
+  "visual_type_mappings": {
+    "Country ranks": "Automatic",
+    "GDP per capita": "Automatic",
+    "GDP per capita by region": "Automatic",
+    "GDP per capita map": "Automatic",
+    "Health spending vs life expectancy": "Automatic",
+    "Interest rates": "Automatic",
+    "Share of World GDP": "Automatic"
+  },
+  "approximations": []
 }

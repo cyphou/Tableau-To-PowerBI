@@ -1,0 +1,261 @@
+{
+  "workbook_name": "Workbook",
+  "timestamp": "2026-03-10T10:53:19Z",
+  "overall_score": "YELLOW",
+  "summary": {
+    "workbook": "Workbook",
+    "overall_score": "YELLOW",
+    "total_checks": 32,
+    "passed": 12,
+    "warnings": 2,
+    "failures": 0
+  },
+  "totals": {
+    "checks": 32,
+    "pass": 12,
+    "warn": 2,
+    "fail": 0
+  },
+  "categories": [
+    {
+      "name": "Datasource Compatibility",
+      "worst_severity": "warn",
+      "checks": [
+        {
+          "name": "Datasource count",
+          "severity": "info",
+          "detail": "1 datasource(s) detected.",
+          "recommendation": ""
+        },
+        {
+          "name": "Connector: Snowflake",
+          "severity": "warn",
+          "detail": "Partially supported (may require a Power BI gateway or custom connector). Used by: federated.enterprise.",
+          "recommendation": "Configure an on-premises data gateway or use a certified Power BI connector for this data source."
+        },
+        {
+          "name": "Data blending",
+          "severity": "pass",
+          "detail": "No cross-datasource data blending detected.",
+          "recommendation": ""
+        },
+        {
+          "name": "Published datasources",
+          "severity": "pass",
+          "detail": "No published datasource references.",
+          "recommendation": ""
+        },
+        {
+          "name": "Custom SQL",
+          "severity": "pass",
+          "detail": "No custom SQL queries.",
+          "recommendation": ""
+        }
+      ]
+    },
+    {
+      "name": "Calculation Readiness",
+      "worst_severity": "warn",
+      "checks": [
+        {
+          "name": "Calculation count",
+          "severity": "info",
+          "detail": "22 calculated field(s) detected.",
+          "recommendation": ""
+        },
+        {
+          "name": "Unsupported functions",
+          "severity": "pass",
+          "detail": "No calculations use unsupported functions.",
+          "recommendation": ""
+        },
+        {
+          "name": "Partially-supported functions",
+          "severity": "warn",
+          "detail": "1 calculation(s) use partially-supported functions: Revenue Rank.",
+          "recommendation": "REGEXP, RAWSQL, LOOKUP, PREVIOUS_VALUE, and statistical window functions may require manual DAX conversion review."
+        },
+        {
+          "name": "LOD expressions",
+          "severity": "info",
+          "detail": "4 LOD expression(s) (FIXED/INCLUDE/EXCLUDE): Revenue per Customer, Regional Channel Revenue, Revenue Excl Category, YTD Revenue. Auto-converted to DAX CALCULATE + ALLEXCEPT/REMOVEFILTERS.",
+          "recommendation": "Review generated DAX measures for correctness — FIXED→ALLEXCEPT, INCLUDE→CALCULATE, EXCLUDE→REMOVEFILTERS."
+        },
+        {
+          "name": "Table calculations",
+          "severity": "info",
+          "detail": "2 table calculation(s) (RUNNING/WINDOW): Moving Avg Revenue, Running Total Revenue. Auto-converted to DAX CALCULATE / window functions.",
+          "recommendation": "Verify sort order and partitioning match Tableau behavior."
+        }
+      ]
+    },
+    {
+      "name": "Visual & Dashboard Coverage",
+      "worst_severity": "info",
+      "checks": [
+        {
+          "name": "Worksheet count",
+          "severity": "info",
+          "detail": "5 worksheet(s) detected.",
+          "recommendation": ""
+        },
+        {
+          "name": "Dashboard count",
+          "severity": "info",
+          "detail": "1 dashboard(s) detected.",
+          "recommendation": ""
+        },
+        {
+          "name": "Chart type coverage",
+          "severity": "pass",
+          "detail": "All 5 chart type(s) have Power BI equivalents.",
+          "recommendation": ""
+        }
+      ]
+    },
+    {
+      "name": "Filter & Parameter Complexity",
+      "worst_severity": "info",
+      "checks": [
+        {
+          "name": "Filter count",
+          "severity": "info",
+          "detail": "0 top-level filter(s) detected.",
+          "recommendation": ""
+        },
+        {
+          "name": "Parameter count",
+          "severity": "info",
+          "detail": "3 parameter(s) detected.",
+          "recommendation": ""
+        },
+        {
+          "name": "User filters (RLS)",
+          "severity": "info",
+          "detail": "2 user filter(s) / security calculation(s) detected. Auto-converted to TMDL RLS roles in roles.tmdl.",
+          "recommendation": "Assign users/groups to the generated RLS roles in Power BI workspace security settings."
+        }
+      ]
+    },
+    {
+      "name": "Data Model Complexity",
+      "worst_severity": "info",
+      "checks": [
+        {
+          "name": "Table count",
+          "severity": "info",
+          "detail": "2 table(s) across all datasources.",
+          "recommendation": ""
+        },
+        {
+          "name": "Column count",
+          "severity": "info",
+          "detail": "93 column(s) total.",
+          "recommendation": ""
+        },
+        {
+          "name": "Relationship count",
+          "severity": "info",
+          "detail": "1 relationship(s) detected.",
+          "recommendation": ""
+        },
+        {
+          "name": "Hierarchies",
+          "severity": "info",
+          "detail": "No hierarchies.",
+          "recommendation": ""
+        },
+        {
+          "name": "Sets / Groups / Bins",
+          "severity": "pass",
+          "detail": "No sets, groups, or bins.",
+          "recommendation": ""
+        }
+      ]
+    },
+    {
+      "name": "Interactivity & Actions",
+      "worst_severity": "info",
+      "checks": [
+        {
+          "name": "Action: filter",
+          "severity": "pass",
+          "detail": "1 filter action(s) — natively supported in Power BI.",
+          "recommendation": ""
+        },
+        {
+          "name": "Action: highlight",
+          "severity": "pass",
+          "detail": "1 highlight action(s) — natively supported in Power BI.",
+          "recommendation": ""
+        },
+        {
+          "name": "Action: URL",
+          "severity": "info",
+          "detail": "1 URL action(s) — auto-mapped to Power BI action buttons.",
+          "recommendation": "Verify URL patterns and parameterization after migration."
+        },
+        {
+          "name": "Stories",
+          "severity": "info",
+          "detail": "1 story/stories with 3 story point(s) → bookmarks.",
+          "recommendation": "Stories are converted to bookmarks. Review bookmark state and navigator after migration."
+        }
+      ]
+    },
+    {
+      "name": "Data Extracts & Packaging",
+      "worst_severity": "pass",
+      "checks": [
+        {
+          "name": "Hyper extract files",
+          "severity": "pass",
+          "detail": "No .hyper extract files (live connection or datasource files).",
+          "recommendation": ""
+        },
+        {
+          "name": "Custom shapes",
+          "severity": "pass",
+          "detail": "No custom shapes.",
+          "recommendation": ""
+        },
+        {
+          "name": "Embedded fonts",
+          "severity": "pass",
+          "detail": "No embedded fonts.",
+          "recommendation": ""
+        }
+      ]
+    },
+    {
+      "name": "Migration Scope & Effort",
+      "worst_severity": "info",
+      "checks": [
+        {
+          "name": "Complexity score",
+          "severity": "info",
+          "detail": "Complexity score: 53 (Medium).",
+          "recommendation": ""
+        },
+        {
+          "name": "Estimated effort",
+          "severity": "info",
+          "detail": "Estimated post-migration review effort: 1-4 hours of post-migration review.",
+          "recommendation": ""
+        },
+        {
+          "name": "Object inventory",
+          "severity": "info",
+          "detail": "Objects: Datasources: 1 | Worksheets: 5 | Dashboards: 1 | Calculations: 22 | Parameters: 3 | User Filters / RLS: 2 | Actions: 3 | Stories: 1",
+          "recommendation": ""
+        },
+        {
+          "name": "Modern Tableau features",
+          "severity": "pass",
+          "detail": "No Tableau 2024.3+ specific features detected.",
+          "recommendation": ""
+        }
+      ]
+    }
+  ]
+}
