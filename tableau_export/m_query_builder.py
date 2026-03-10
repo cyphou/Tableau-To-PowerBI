@@ -1219,3 +1219,96 @@ def m_transform_conditional_column(new_col_name, conditions, default_value=None)
     expr += str(default_value) if default_value is not None else 'null'
     return (f'#"Added {new_col_name}"',
             f'Table.AddColumn({{prev}}, "{new_col_name}", each {expr})')
+
+
+# ── Error handling transforms ─────────────────────────────────────────────────
+
+def m_transform_remove_errors(columns=None):
+    """
+    Remove rows containing errors.
+    Args:
+        columns: optional list of column names to check for errors.
+                 If None, removes errors across all columns.
+    """
+    if columns:
+        cols = ', '.join([f'"{c}"' for c in columns])
+        return ('#"Removed Errors"',
+                f'Table.RemoveRowsWithErrors({{prev}}, {{{cols}}})')
+    return ('#"Removed Errors"', 'Table.RemoveRowsWithErrors({prev})')
+
+
+def m_transform_replace_errors(columns, replacement=None):
+    """
+    Replace error values in specified columns with a replacement value.
+    Args:
+        columns: list of column names to process
+        replacement: replacement value (default: null)
+    """
+    repl = str(replacement) if replacement is not None else 'null'
+    transforms = ', '.join([f'{{"{c}", each {repl}}}' for c in columns])
+    return ('#"Replaced Errors"',
+            f'Table.ReplaceErrorValues({{prev}}, {{{transforms}}})')
+
+
+def m_transform_try_otherwise(step_name, expression, fallback_expression):
+    """
+    Wrap a step expression in a try...otherwise block for graceful error handling.
+    Args:
+        step_name: the step name (e.g., '#"Connected Source"')
+        expression: the primary M expression to attempt
+        fallback_expression: the expression to use if the primary fails
+    Returns:
+        (step_name, wrapped_expression) tuple
+    """
+    return (step_name, f'try {expression} otherwise {fallback_expression}')
+
+
+def wrap_source_with_try_otherwise(m_query, empty_table_columns=None):
+    """
+    Wrap the Source step of an M query with try...otherwise for graceful error handling.
+
+    If the data source is unavailable, returns an empty table with the expected schema
+    instead of failing with an error.
+
+    Args:
+        m_query: str — Complete M query (let ... in ...)
+        empty_table_columns: optional list of column name strings for the fallback table
+    Returns:
+        str — Modified M query with Source wrapped in try...otherwise
+    """
+    import re as _re
+
+    # Find "Source = ..." line
+    match = _re.search(r'(\n\s*)(Source\s*=\s*)', m_query)
+    if not match:
+        return m_query
+
+    indent = match.group(1)
+    source_assign = match.group(2)
+    after_assign = m_query[match.end():]
+
+    # Find the end of the Source expression (next line starting with a step name or 'in')
+    lines = after_assign.split('\n')
+    # Find how many lines belong to the Source expression
+    source_lines = []
+    for idx, line in enumerate(lines):
+        stripped = line.strip()
+        if idx > 0 and (stripped.startswith('#"') or stripped.startswith('Result')
+                        or stripped == 'in' or _re.match(r'\w+\s*=', stripped)):
+            break
+        source_lines.append(line)
+
+    source_expr = '\n'.join(source_lines).rstrip().rstrip(',')
+    remaining_start = len('\n'.join(source_lines))
+
+    # Build fallback table
+    if empty_table_columns:
+        col_list = ', '.join([f'"{c}"' for c in empty_table_columns])
+        fallback = f'#table({{{col_list}}}, {{}})'
+    else:
+        fallback = '#table({}, {})'
+
+    # Wrap with try...otherwise
+    new_source = f'{indent}{source_assign}try\n{indent}    {source_expr.strip()}\n{indent}otherwise\n{indent}    {fallback},'
+
+    return m_query[:match.start()] + new_source + after_assign[remaining_start:]

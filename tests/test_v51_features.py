@@ -86,23 +86,31 @@ class TestSizeConversion(unittest.TestCase):
 
 
 class TestWindowCorrCovar(unittest.TestCase):
-    """WINDOW_CORR/COVAR/COVARP → CALCULATE(CORREL/COVARIANCE)."""
+    """WINDOW_CORR/COVAR/COVARP → CALCULATE(VAR/SUMX iterator pattern)."""
 
     def test_window_corr(self):
         result = convert_tableau_formula_to_dax('WINDOW_CORR(SUM([Sales]), SUM([Profit]))')
         self.assertIn('CALCULATE', result)
-        self.assertIn('CORREL', result)
+        # Now uses proper VAR/SUMX iterator pattern (not fake CORREL)
+        self.assertIn('VAR _MeanX', result)
+        self.assertIn('SUMX', result)
+        self.assertIn('DIVIDE(', result)
         self.assertNotIn('0 +', result)
 
     def test_window_covar(self):
         result = convert_tableau_formula_to_dax('WINDOW_COVAR(SUM([A]), SUM([B]))')
         self.assertIn('CALCULATE', result)
-        self.assertIn('COVARIANCE.S', result)
+        # Sample covariance: divides by N-1
+        self.assertIn('VAR _MeanX', result)
+        self.assertIn('_N - 1', result)
 
     def test_window_covarp(self):
         result = convert_tableau_formula_to_dax('WINDOW_COVARP(SUM([X]), SUM([Y]))')
         self.assertIn('CALCULATE', result)
-        self.assertIn('COVARIANCE.P', result)
+        # Population covariance: divides by N (not N-1)
+        self.assertIn('VAR _MeanX', result)
+        self.assertIn('VAR _N', result)
+        self.assertNotIn('_N - 1', result)
 
     def test_window_corr_no_placeholder(self):
         result = convert_tableau_formula_to_dax('WINDOW_CORR(SUM([A]), SUM([B]))')
@@ -152,16 +160,19 @@ class TestAtan2Conversion(unittest.TestCase):
 
 
 class TestRegexpExtractNth(unittest.TestCase):
-    """REGEXP_EXTRACT_NTH improved approximation."""
+    """REGEXP_EXTRACT_NTH dedicated converter with smart pattern detection."""
 
-    def test_regexp_extract_nth_uses_mid(self):
+    def test_regexp_extract_nth_complex_pattern_fallback(self):
+        """Complex regex patterns (like \\d+) properly fall back to BLANK()."""
         result = convert_tableau_formula_to_dax('REGEXP_EXTRACT_NTH([Text], "\\d+", 1)')
-        self.assertIn('MID(', result)
-        self.assertNotIn('CONTAINSSTRING(', result)
+        self.assertIn('BLANK()', result)
+        self.assertIn('manual conversion needed', result)
 
-    def test_regexp_extract_nth_has_comment(self):
-        result = convert_tableau_formula_to_dax('REGEXP_EXTRACT_NTH([X], "pat", 2)')
-        self.assertIn('PATHITEM', result.upper() if '/*' in result else '')
+    def test_regexp_extract_nth_delimiter_pattern(self):
+        """Delimiter-based patterns use PATHITEM(SUBSTITUTE(...))."""
+        result = convert_tableau_formula_to_dax('REGEXP_EXTRACT_NTH([X], "([^-]*)", 2)')
+        self.assertIn('PATHITEM', result)
+        self.assertIn('SUBSTITUTE', result)
 
 
 # ════════════════════════════════════════════════════════════════════

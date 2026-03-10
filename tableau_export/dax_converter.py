@@ -145,10 +145,8 @@ _SIMPLE_FUNCTION_MAP = [
     (r'\bCOUNT\s*\(', 'COUNT('),
     (r'\bCOUNTA\s*\(', 'COUNTA('),
 
-    # Regex — REGEXP_MATCH, REGEXP_EXTRACT, and REGEXP_REPLACE are handled by
-    # dedicated converters called in Phase 3b-pre.
-    ## REGEXP_REPLACE is now a dedicated converter (_convert_regexp_replace)
-    (r'\bREGEXP_EXTRACT_NTH\s*\(', '/* REGEXP_EXTRACT_NTH: use PATHITEM(SUBSTITUTE()) for delimited extraction */ MID('),
+    # Regex — REGEXP_MATCH, REGEXP_EXTRACT, REGEXP_EXTRACT_NTH, and REGEXP_REPLACE
+    # are handled by dedicated converters called in Phase 3b-pre.
 
     # Spatial functions — MAKEPOINT maps to lat/long column pair hint
     (r'\bMAKEPOINT\s*\(', '/* MAKEPOINT → use Latitude/Longitude columns in map visual */ BLANK( /*'),
@@ -180,9 +178,7 @@ _SIMPLE_FUNCTION_MAP = [
     (r'\bWINDOW_STDEV\s*\(', 'CALCULATE(STDEV.S('),
     (r'\bWINDOW_VARP\s*\(', 'CALCULATE(VAR.P('),
     (r'\bWINDOW_VAR\s*\(', 'CALCULATE(VAR.S('),
-    (r'\bWINDOW_CORR\s*\(', 'CALCULATE(CORREL('),
-    (r'\bWINDOW_COVAR\s*\(', 'CALCULATE(COVARIANCE.S('),
-    (r'\bWINDOW_COVARP\s*\(', 'CALCULATE(COVARIANCE.P('),
+    # WINDOW_CORR/COVAR/COVARP handled by dedicated converter in _convert_window_functions
     (r'\bWINDOW_PERCENTILE\s*\(', 'CALCULATE(PERCENTILE.INC('),
 
     # Script/Analytics Extensions (no DAX equivalent)
@@ -289,7 +285,7 @@ def convert_tableau_formula_to_dax(formula, column_name='Measure', table_name='T
     dax = _convert_datename(dax)
     dax = _convert_dateparse(dax)
     dax = _convert_isdate(dax)
-    dax = _convert_corr_covar(dax)
+    dax = _convert_corr_covar(dax, table_name)
     dax = _convert_endswith(dax)
     dax = _convert_startswith(dax)
     dax = _convert_proper(dax)
@@ -300,6 +296,7 @@ def convert_tableau_formula_to_dax(formula, column_name='Measure', table_name='T
     dax = _convert_iif(dax)
     dax = _convert_regexp_match(dax)
     dax = _convert_regexp_extract(dax)
+    dax = _convert_regexp_extract_nth(dax)
     dax = _convert_regexp_replace(dax)
 
     # 3b. Apply all simple function mappings (table-driven)
@@ -718,7 +715,7 @@ def _convert_datename(dax):
     return _transform_func_call(dax, 'DATENAME', _xf)
 
 
-def _convert_corr_covar(dax):
+def _convert_corr_covar(dax, table_name='Table'):
     """Convert CORR/COVAR/COVARP to proper DAX using VAR/iterator patterns.
 
     CORR(x, y) → Pearson correlation using VAR + SUMX pattern
@@ -745,7 +742,7 @@ def _convert_corr_covar(dax):
                 if len(args) >= 2:
                     x_expr = args[0].strip()
                     y_expr = args[1].strip()
-                    replacement = _build_corr_covar_dax(tab_func.upper(), x_expr, y_expr)
+                    replacement = _build_corr_covar_dax(tab_func.upper(), x_expr, y_expr, table_name)
                 else:
                     # Fallback if can't parse args
                     replacement = f'0 /* {tab_func}({inner}): could not parse arguments */'
@@ -756,36 +753,38 @@ def _convert_corr_covar(dax):
     return dax
 
 
-def _build_corr_covar_dax(func_name, x_expr, y_expr):
+def _build_corr_covar_dax(func_name, x_expr, y_expr, table_name='Table'):
     """Build DAX expression for correlation/covariance using VAR/iterator pattern.
 
     Uses SUMX over ALL() rows with deviation-from-mean calculations.
+    The table_name parameter specifies which table to iterate over.
     """
+    tbl = table_name.replace("'", "''")
     if func_name == 'CORR':
         # Pearson correlation: Σ((x-μx)(y-μy)) / √(Σ(x-μx)² × Σ(y-μy)²)
         return (
-            f'VAR _MeanX = AVERAGEX(ALL(\'Table\'), {x_expr}) '
-            f'VAR _MeanY = AVERAGEX(ALL(\'Table\'), {y_expr}) '
-            f'VAR _Cov = SUMX(ALL(\'Table\'), ({x_expr} - _MeanX) * ({y_expr} - _MeanY)) '
-            f'VAR _StdX = SQRT(SUMX(ALL(\'Table\'), ({x_expr} - _MeanX) ^ 2)) '
-            f'VAR _StdY = SQRT(SUMX(ALL(\'Table\'), ({y_expr} - _MeanY) ^ 2)) '
+            f"VAR _MeanX = AVERAGEX(ALL('{tbl}'), {x_expr}) "
+            f"VAR _MeanY = AVERAGEX(ALL('{tbl}'), {y_expr}) "
+            f"VAR _Cov = SUMX(ALL('{tbl}'), ({x_expr} - _MeanX) * ({y_expr} - _MeanY)) "
+            f"VAR _StdX = SQRT(SUMX(ALL('{tbl}'), ({x_expr} - _MeanX) ^ 2)) "
+            f"VAR _StdY = SQRT(SUMX(ALL('{tbl}'), ({y_expr} - _MeanY) ^ 2)) "
             f'RETURN DIVIDE(_Cov, _StdX * _StdY, 0)'
         )
     elif func_name == 'COVARP':
         # Population covariance: Σ((x-μx)(y-μy)) / N
         return (
-            f'VAR _MeanX = AVERAGEX(ALL(\'Table\'), {x_expr}) '
-            f'VAR _MeanY = AVERAGEX(ALL(\'Table\'), {y_expr}) '
-            f'VAR _N = COUNTROWS(ALL(\'Table\')) '
-            f'RETURN DIVIDE(SUMX(ALL(\'Table\'), ({x_expr} - _MeanX) * ({y_expr} - _MeanY)), _N, 0)'
+            f"VAR _MeanX = AVERAGEX(ALL('{tbl}'), {x_expr}) "
+            f"VAR _MeanY = AVERAGEX(ALL('{tbl}'), {y_expr}) "
+            f"VAR _N = COUNTROWS(ALL('{tbl}')) "
+            f"RETURN DIVIDE(SUMX(ALL('{tbl}'), ({x_expr} - _MeanX) * ({y_expr} - _MeanY)), _N, 0)"
         )
     else:  # COVAR — sample covariance
         # Sample covariance: Σ((x-μx)(y-μy)) / (N-1)
         return (
-            f'VAR _MeanX = AVERAGEX(ALL(\'Table\'), {x_expr}) '
-            f'VAR _MeanY = AVERAGEX(ALL(\'Table\'), {y_expr}) '
-            f'VAR _N = COUNTROWS(ALL(\'Table\')) '
-            f'RETURN DIVIDE(SUMX(ALL(\'Table\'), ({x_expr} - _MeanX) * ({y_expr} - _MeanY)), _N - 1, 0)'
+            f"VAR _MeanX = AVERAGEX(ALL('{tbl}'), {x_expr}) "
+            f"VAR _MeanY = AVERAGEX(ALL('{tbl}'), {y_expr}) "
+            f"VAR _N = COUNTROWS(ALL('{tbl}')) "
+            f"RETURN DIVIDE(SUMX(ALL('{tbl}'), ({x_expr} - _MeanX) * ({y_expr} - _MeanY)), _N - 1, 0)"
         )
 
 
@@ -1016,6 +1015,89 @@ def _convert_regexp_extract(dax):
     return _transform_func_call(dax, 'REGEXP_EXTRACT', _xf)
 
 
+def _convert_regexp_extract_nth(dax):
+    """Convert REGEXP_EXTRACT_NTH(field, "pattern", index) to DAX equivalents.
+
+    Tableau REGEXP_EXTRACT_NTH extracts the Nth capture group from a regex match.
+    Since DAX has no regex support, we convert common patterns:
+
+    - Delimiter-based: "([^-]*)" with delimiter char → PATHITEM(SUBSTITUTE(field, delim, "|"), index)
+    - Fixed-prefix capture: "prefix(.*)suffix" → MID(field, SEARCH("prefix",...)+len, ...)
+    - Simple alternation capture: "(a|b|c)" → IF chain
+    - Fallback → BLANK() with migration comment
+    """
+    _REGEX_META = set(r'.+?*[](){}\^$')
+
+    def _is_simple_literal(pattern):
+        return not any(ch in _REGEX_META for ch in pattern)
+
+    def _xf(args, inner):
+        if len(args) < 3:
+            if len(args) == 2:
+                # REGEXP_EXTRACT_NTH(field, pattern) — assume index 1
+                field = args[0].strip()
+                raw_pat = args[1].strip()
+                index_str = '1'
+            else:
+                return f'/* REGEXP_EXTRACT_NTH({inner}): insufficient arguments */ BLANK()'
+        else:
+            field = args[0].strip()
+            raw_pat = args[1].strip()
+            index_str = args[2].strip()
+
+        # Strip surrounding quotes from pattern
+        if (raw_pat.startswith('"') and raw_pat.endswith('"')) or \
+           (raw_pat.startswith("'") and raw_pat.endswith("'")):
+            pat = raw_pat[1:-1]
+        else:
+            pat = raw_pat
+
+        # --- Delimiter-based extraction ---
+        # Pattern like ([^X]*) where X is a delimiter character
+        # Common: REGEXP_EXTRACT_NTH("a-b-c", "([^-]*)", 2) → 2nd token split by "-"
+        delim_match = re.match(r'^\(\[\^([^\]]+)\]\*\)$', pat)
+        if delim_match:
+            delim_char = delim_match.group(1)
+            if len(delim_char) == 1:
+                return f'PATHITEM(SUBSTITUTE({field}, "{delim_char}", "|"), {index_str})'
+            # Multi-char delimiter class — use first char as approximation
+            return f'/* REGEXP_EXTRACT_NTH: delimiter class [{delim_char}] approximated */ PATHITEM(SUBSTITUTE({field}, "{delim_char[0]}", "|"), {index_str})'
+
+        # --- Multiple capture groups with literal separators ---
+        # Pattern like "^(\\w+)\\s*-\\s*(\\w+)$" or similar with literal separators
+        # Simplified: detect delimiter between capture groups
+        multi_group = re.match(r'^\(?\\w[\+\*]?\)?([^()\\\w]+)\(?\\w[\+\*]?\)?$', pat)
+        if multi_group:
+            delim = multi_group.group(1).strip().replace('\\s*', '').replace('\\s+', ' ')
+            if delim:
+                return f'PATHITEM(SUBSTITUTE({field}, "{delim}", "|"), {index_str})'
+
+        # --- Fixed-prefix capture ---
+        # Pattern like "prefix(.*)" → MID extraction
+        prefix_match = re.match(r'^([A-Za-z0-9_=:;/&@#%!, -]+)\(\.\*\)$', pat)
+        if prefix_match:
+            prefix = prefix_match.group(1)
+            prefix_len = len(prefix)
+            return f'MID({field}, SEARCH("{prefix}", {field}) + {prefix_len}, LEN({field}))'
+
+        # --- Simple alternation capture ---
+        # Pattern like "(cat|dog|fish)" → just a CONTAINSSTRING check
+        alt_match = re.match(r'^\(([A-Za-z0-9_|]+)\)$', pat)
+        if alt_match:
+            alternatives = alt_match.group(1).split('|')
+            if len(alternatives) >= 2:
+                # Build an IF chain that returns the first match
+                result = f'BLANK()'
+                for alt in reversed(alternatives):
+                    result = f'IF(CONTAINSSTRING({field}, "{alt}"), "{alt}", {result})'
+                return f'/* REGEXP_EXTRACT_NTH: alternation match */ {result}'
+
+        # --- Fallback ---
+        return f'/* REGEXP_EXTRACT_NTH("{pat}", {index_str}): no DAX regex \u2014 manual conversion needed */ BLANK()'
+
+    return _transform_func_call(dax, 'REGEXP_EXTRACT_NTH', _xf)
+
+
 def _convert_regexp_replace(dax):
     """Convert REGEXP_REPLACE(field, "pattern", "replacement") to DAX equivalents.
 
@@ -1218,15 +1300,20 @@ def _convert_lod_expressions(dax, table_name, column_table_map):
                         if not nested_lod:
                             kw = kw_match.group(1).upper()
                             rest = inner.lstrip()[len(kw):]
-                            # Split on the first ':' that is not inside nested braces
+                            # Split on the first ':' that is not inside nested braces or parens
                             colon_depth = 0
+                            paren_depth = 0
                             colon_pos = None
                             for ci, cc in enumerate(rest):
                                 if cc == '{':
                                     colon_depth += 1
                                 elif cc == '}':
                                     colon_depth -= 1
-                                elif cc == ':' and colon_depth == 0:
+                                elif cc == '(':
+                                    paren_depth += 1
+                                elif cc == ')':
+                                    paren_depth -= 1
+                                elif cc == ':' and colon_depth == 0 and paren_depth == 0:
                                     colon_pos = ci
                                     break
                             if colon_pos is not None:
@@ -1376,6 +1463,51 @@ def _convert_window_functions(dax, table_name, compute_using=None, column_table_
 
             dax = dax[:match.start()] + replacement + dax[i:]
             match = pattern.search(dax)
+
+    # --- WINDOW_CORR / WINDOW_COVAR / WINDOW_COVARP ---
+    # These take 2 expression arguments (x, y) rather than 1, so they need
+    # special handling separate from the main WINDOW_SUM/AVG loop above.
+    for window_stat_func, stat_func in [('WINDOW_CORR', 'CORR'),
+                                         ('WINDOW_COVAR', 'COVAR'),
+                                         ('WINDOW_COVARP', 'COVARP')]:
+        pattern = re.compile(rf'\b{window_stat_func}\s*\(', re.IGNORECASE)
+        match = pattern.search(dax)
+        while match:
+            start_pos = match.end()
+            depth = 1
+            i = start_pos
+            while i < len(dax) and depth > 0:
+                if dax[i] == '(':
+                    depth += 1
+                elif dax[i] == ')':
+                    depth -= 1
+                i += 1
+            inner = dax[start_pos:i - 1]
+            args = _split_args(inner)
+
+            if len(args) >= 2:
+                x_expr = args[0].strip()
+                y_expr = args[1].strip()
+                # Build the core correlation/covariance DAX
+                core_dax = _build_corr_covar_dax(stat_func, x_expr, y_expr, table_name)
+
+                # Wrap in CALCULATE with windowing context
+                if compute_using:
+                    dim_refs = []
+                    for dim in compute_using:
+                        t = ctm.get(dim, table_name)
+                        dim_refs.append(f"'{t}'[{dim}]")
+                    replacement = f"CALCULATE({core_dax}, ALLEXCEPT('{table_name}', {', '.join(dim_refs)}))"
+                else:
+                    replacement = f"CALCULATE({core_dax}, ALL('{table_name}'))"
+            else:
+                # Fallback — insufficient arguments
+                tag = window_stat_func.replace('_', '.')
+                replacement = f"/* {tag}({inner}): insufficient arguments */ 0"
+
+            dax = dax[:match.start()] + replacement + dax[i:]
+            match = pattern.search(dax)
+
     return dax
 
 

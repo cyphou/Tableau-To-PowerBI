@@ -1,5 +1,54 @@
 # Changelog
 
+## v5.3.0 — Phase C: DAX & M Conversion Hardening
+
+### DAX Conversion Improvements
+
+#### WINDOW_CORR/COVAR/COVARP — Proper VAR/SUMX Pattern (`dax_converter.py`)
+- **Previous**: Naive prefix swap to `CALCULATE(CORREL(` / `CALCULATE(COVARIANCE.S(` / `CALCULATE(COVARIANCE.P(` — **these are not real DAX functions** and would fail in PBI Desktop
+- **New**: Dedicated converter inside `_convert_window_functions()` producing full `VAR _MeanX / _MeanY / SUMX / DIVIDE` iterator pattern wrapped in `CALCULATE(..., ALL/ALLEXCEPT)` for windowing context
+- Reuses `_build_corr_covar_dax()` (Pearson correlation / sample covariance / population covariance)
+- Supports `compute_using` dimensions for ALLEXCEPT partitioning
+
+#### CORR/COVAR/COVARP — Table Name Parameter (`dax_converter.py`)
+- **Previous**: Hardcoded `ALL('Table')` in all VAR/SUMX patterns
+- **New**: `_build_corr_covar_dax()` accepts `table_name` parameter, properly escaping apostrophes
+- `_convert_corr_covar()` now passes `table_name` through the conversion pipeline
+
+#### REGEXP_EXTRACT_NTH — Dedicated Converter (`dax_converter.py`)
+- **Previous**: Broken prefix swap `/* REGEXP_EXTRACT_NTH: ... */ MID(` — wrong semantics, no argument parsing
+- **New**: `_convert_regexp_extract_nth()` using `_transform_func_call` with balanced-paren extraction:
+  - Delimiter-based patterns `([^-]*)` → `PATHITEM(SUBSTITUTE(field, "-", "|"), index)`
+  - Fixed-prefix capture `prefix(.*)` → `MID(field, SEARCH("prefix", field) + len, LEN(field))`
+  - Alternation capture `(cat|dog|fish)` → IF chain with CONTAINSSTRING
+  - Complex patterns → `BLANK()` with migration comment
+  - 2-arg form defaults to index 1
+
+#### Nested LOD — Parenthesis Depth Tracking (`dax_converter.py`)
+- **Previous**: Colon-split in LOD parsing tracked brace depth only — colons inside function calls like `FORMAT(date, "HH:mm")` could be mis-split
+- **New**: Added `paren_depth` tracking alongside `colon_depth` in `_find_lod_braces()` colon-split loop
+
+### M Query Error Handling (`m_query_builder.py`)
+- **New functions** for robust M queries:
+  - `m_transform_remove_errors(columns)` — `Table.RemoveRowsWithErrors`
+  - `m_transform_replace_errors(columns, replacement)` — `Table.ReplaceErrorValues`
+  - `m_transform_try_otherwise(step_name, expr, fallback)` — `try ... otherwise` wrapper
+  - `wrap_source_with_try_otherwise(m_query, columns)` — wraps Source step with fallback to empty table
+
+### New Test Suite (`tests/test_phase_c_dax_m_hardening.py`)
+- 47 new tests across 8 test classes:
+  - `TestWindowCorrelationCovariance` (7 tests): VAR pattern output, compute_using, case-insensitivity, fallback, no infinite loop
+  - `TestCorrCovarTableName` (4 tests): table_name parameter, apostrophe escaping
+  - `TestRegexpExtractNth` (8 tests): delimiter, prefix, alternation, fallback, 2-arg, 1-arg
+  - `TestNestedLODEdgeCases` (6 tests): paren depth, nested FIXED/INCLUDE, no-dim, EXCLUDE
+  - `TestMQueryErrorHandling` (10 tests): remove/replace errors, try/otherwise, inject steps, wrap source
+  - `TestWindowFunctionsNonRegression` (5 tests): WINDOW_SUM/AVG/MAX/MIN/COUNT
+  - `TestRegexpNonRegression` (6 tests): REGEXP_MATCH/EXTRACT/REPLACE
+  - `TestSplitNonRegression` (2 tests): SPLIT 2-arg and 3-arg
+
+### Test Summary
+- **1,676 tests** (1,676 passed, 3 skipped, 0 failures)
+
 ## v5.2.0 — PBI Desktop Validation & Bug Fixes
 
 ### Critical Bug Fixes (PBI Desktop Load Failures)
