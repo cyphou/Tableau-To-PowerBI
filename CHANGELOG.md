@@ -1,5 +1,84 @@
 # Changelog
 
+## v5.4.0 — Phases D-H: Visual Fidelity, Coverage, CI/CD, Config & Docs
+
+### Phase D — Visual Fidelity
+
+#### New Config Templates (`visual_generator.py`)
+- Added PBIR config templates for 4 visual types that previously fell back to empty configs:
+  - `hundredPercentStackedAreaChart` (categoryAxis + valueAxis + legend)
+  - `sunburst` (group + legend)
+  - `decompositionTree` (tree)
+  - `shapeMap` (legend + dataPoint)
+
+#### Approximation Migration Notes (`visual_generator.py`)
+- **New**: `APPROXIMATION_MAP` dict (12 entries) mapping Tableau types to `(pbi_type, migration_note)` tuples
+- **New**: `get_approximation_note()` function returns human-readable migration notes for approximated visuals
+- Approximation-mapped visuals now have `annotations: [{"name": "MigrationNote", "value": "..."}]` in their PBIR JSON
+- Covers: mekko, sankey, chord, network, ganttbar, bumpchart, slopechart, timeline, butterfly, waffle, pareto, dualaxis
+
+#### Fallback Partition Fix (`tmdl_generator.py`)
+- Changed fallback M partition from `Source = null` (invalid M) to `Source = #table(type table [], {})` (valid empty table)
+
+### Phase E — Test Coverage
+
+#### New Test Suite (`tests/test_phase_d_e_coverage.py`)
+- 46 new tests across 15 test classes covering previously untested functions:
+  - `TestVisualConfigTemplates` (6): all 4 new templates + all-have-templates + existing unchanged
+  - `TestApproximationMap` (6): known entries, tuples, note lookup, exact match, None, case insensitive
+  - `TestMigrationNoteOnVisuals` (3): annotation presence/absence for approximated vs standard visuals
+  - `TestFallbackPartition` (2): valid #table expression, TODO comment
+  - `TestDeactivateAmbiguousPaths` (6): no rels, no cycle, cycle deactivates one, Calendar priority
+  - `TestDetectManyToMany` (4): full→M2M, left/inner→M2O, default join type
+  - `TestReplaceRelatedWithLookupvalue` (4): M2M replacement, non-M2M keep, multiple calls, empty
+  - `TestFixRelatedForManyToMany` (2): replaces in measures, no M2M no change
+  - `TestInferCrossTableRelationships` (2): infers from cross-ref, no inference when exists
+  - `TestCreateReportFilters` (4): parameter-based filters, edge cases
+  - `TestCreateVisualTextbox` (1), `TestCreateVisualImage` (1), `TestCreatePaginatedReport` (1)
+  - `TestVisualTypeNonRegression` (4): bar, line, None, unknown
+
+### Phase F — CI/CD Hardening
+
+#### Lint & Type Checking (`.github/workflows/ci.yml`)
+- **Removed `--exit-zero`** from ruff — lint violations now fail the build
+- **Added pyright** type checking step after ruff (warnings-only initially)
+
+#### Python Version Matrix
+- **Dropped Python 3.8** (EOL October 2024)
+- Matrix now covers Python 3.9, 3.10, 3.11, 3.12, 3.13, 3.14
+
+#### Performance Check Fix
+- Fixed function name: `convert_tableau_to_dax` → `convert_tableau_formula_to_dax` (correct public API)
+
+### Phase G — Config & UX
+
+#### Quiet Mode (`migrate.py`)
+- **New**: `--quiet` / `-q` CLI flag suppresses all output except errors
+- Useful for scripted/CI usage where only failures should be visible
+
+#### Config Example File
+- **New**: `config.example.json` — annotated template documenting the `--config` JSON schema
+- Documents all keys: `tableau_file`, `prep_flow`, `output_dir`, `model_mode`, `culture`, `calendar_start`, `calendar_end`, `output_format`, `rollback`, `verbose`, `log_file`
+
+### Phase H — Documentation
+
+#### GAP_ANALYSIS.md Updates
+- Updated version header to v5.4.0
+- Updated test count: 1,725+ tests across 33 test files
+- Marked WINDOW_CORR/COVAR/COVARP as ✅ IMPLEMENTED (v5.3.0 VAR/SUMX patterns)
+- Marked config file support, output format selection, dry-run mode as ✅ IMPLEMENTED
+- Updated CLI arguments list with `--quiet`, `--config`, `--dry-run`
+
+#### KNOWN_LIMITATIONS.md Updates
+- Updated version to v5.4.0
+- Added REGEXP_EXTRACT_NTH approximation entry (v5.3.0)
+
+#### Copilot Instructions Updates
+- Updated test count from 887 to 1,725 across 33 test files
+
+### Test Summary
+- **1,722 tests** (1,722 passed, 3 skipped, 0 failures)
+
 ## v5.3.0 — Phase C: DAX & M Conversion Hardening
 
 ### DAX Conversion Improvements

@@ -574,6 +574,30 @@ def _get_config_template(visual_type):
                 "data": [{"properties": {"mode": _L("'Basic'")}}],
             },
         },
+        "hundredPercentStackedAreaChart": {
+            "objects": {
+                "categoryAxis": [{"properties": {"show": _L("true")}}],
+                "valueAxis": [{"properties": {"show": _L("true")}}],
+                "legend": [{"properties": {"show": _L("true")}}],
+            },
+        },
+        "sunburst": {
+            "objects": {
+                "group": [{"properties": {"fontSize": _L("10D")}}],
+                "legend": [{"properties": {"show": _L("true")}}],
+            },
+        },
+        "decompositionTree": {
+            "objects": {
+                "tree": [{"properties": {"fontSize": _L("12D")}}],
+            },
+        },
+        "shapeMap": {
+            "objects": {
+                "legend": [{"properties": {"show": _L("true")}}],
+                "dataPoint": [{"properties": {"showAllDataPoints": _L("true")}}],
+            },
+        },
     }
 
     return templates.get(visual_type, {})
@@ -591,11 +615,42 @@ _AGG_FUNC_MAP = {
 # Visual Container Generation
 # ═══════════════════════════════════════════════════════════════════
 
+# ═══════════════════════════════════════════════════════════════════
+# Approximation Map — Tableau visuals mapped to approximate PBI types
+# ═══════════════════════════════════════════════════════════════════
+# When a Tableau visual has no exact PBI equivalent, the closest native type
+# is used.  This map records the approximation so that a migration note
+# can be attached to the generated visual.
+
+APPROXIMATION_MAP = {
+    "mekko":       ("stackedBarChart",                   "Mekko chart mapped to Stacked Bar — variable-width bars are not supported"),
+    "sankey":      ("decompositionTree",                 "Sankey diagram mapped to Decomposition Tree — flow semantics differ"),
+    "chord":       ("decompositionTree",                 "Chord diagram mapped to Decomposition Tree — circular layout not available"),
+    "network":     ("decompositionTree",                 "Network graph mapped to Decomposition Tree — node/edge semantics differ"),
+    "ganttbar":    ("clusteredBarChart",                 "Gantt bar mapped to Clustered Bar — time-axis semantics lost"),
+    "bumpchart":   ("lineChart",                         "Bump chart mapped to Line Chart — ranking semantics lost"),
+    "slopechart":  ("lineChart",                         "Slope chart mapped to Line Chart — period comparison semantics lost"),
+    "timeline":    ("lineChart",                         "Timeline mapped to Line Chart — event markers not supported"),
+    "butterfly":   ("hundredPercentStackedBarChart",     "Butterfly chart mapped to 100% Stacked Bar — symmetry lost"),
+    "waffle":      ("hundredPercentStackedBarChart",     "Waffle chart mapped to 100% Stacked Bar — grid layout lost"),
+    "pareto":      ("lineClusteredColumnComboChart",     "Pareto mapped to Line+Column Combo — cumulative line may need adjustment"),
+    "dualaxis":    ("lineClusteredColumnComboChart",     "Dual axis mapped to Line+Column Combo"),
+}
+
+
 def resolve_visual_type(source_type):
     """Resolve a source visualization type to a Power BI visual type."""
     if not source_type:
         return "tableEx"
     return VISUAL_TYPE_MAP.get(source_type.lower(), "tableEx")
+
+
+def get_approximation_note(source_type):
+    """Return a migration note if the visual type is an approximation, else None."""
+    if not source_type:
+        return None
+    entry = APPROXIMATION_MAP.get(source_type.lower())
+    return entry[1] if entry else None
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -895,6 +950,9 @@ def create_visual_container(worksheet, visual_id=None, x=10, y=10,
     # Resolve visual type through the map
     pbi_type = resolve_visual_type(visual_type)
 
+    # Check for approximation note
+    approx_note = get_approximation_note(visual_type)
+
     # Generate a unique GUID for the visual
     vid = visual_id or _new_guid()
 
@@ -903,6 +961,12 @@ def create_visual_container(worksheet, visual_id=None, x=10, y=10,
         "visualType": pbi_type,
         "drillFilterOtherVisuals": True,
     }
+
+    # Attach migration note for approximation-mapped visuals
+    if approx_note:
+        visual_obj["annotations"] = [
+            {"name": "MigrationNote", "value": approx_note}
+        ]
 
     # Apply PBIR-native config template
     config = _get_config_template(pbi_type)

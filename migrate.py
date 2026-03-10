@@ -52,14 +52,20 @@ if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
 logger = logging.getLogger('tableau_to_powerbi')
 
 
-def setup_logging(verbose=False, log_file=None):
+def setup_logging(verbose=False, log_file=None, quiet=False):
     """Configure structured logging.
 
     Args:
         verbose: If True, set DEBUG level; otherwise INFO.
         log_file: Optional path to a log file.
+        quiet: If True, suppress all output except ERROR level.
     """
-    level = logging.DEBUG if verbose else logging.INFO
+    if quiet:
+        level = logging.ERROR
+    elif verbose:
+        level = logging.DEBUG
+    else:
+        level = logging.INFO
     fmt = '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
     datefmt = '%Y-%m-%d %H:%M:%S'
 
@@ -824,6 +830,12 @@ def main():
     )
 
     parser.add_argument(
+        '--quiet', '-q',
+        action='store_true',
+        help='Suppress all output except errors (useful for scripted/CI usage)'
+    )
+
+    parser.add_argument(
         '--log-file',
         metavar='FILE',
         default=None,
@@ -977,7 +989,8 @@ def main():
         args = wizard_to_args(config)
 
     # Setup structured logging
-    setup_logging(verbose=args.verbose, log_file=args.log_file)
+    setup_logging(verbose=args.verbose, log_file=args.log_file,
+                  quiet=getattr(args, 'quiet', False))
 
     # ── Batch-config migration mode ───────────────────────────
     if args.batch_config:

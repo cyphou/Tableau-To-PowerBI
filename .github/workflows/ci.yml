@@ -32,7 +32,12 @@ jobs:
         run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 
       - name: Run ruff (additional checks)
-        run: ruff check --select=E,F,W,I --ignore=E501,E402 --exit-zero .
+        run: ruff check --select=E,F,W,I --ignore=E501,E402 .
+
+      - name: Run pyright (type checking)
+        run: |
+          pip install pyright
+          pyright --warnings tableau_export/ powerbi_import/ || true
 
   # ───────────────────── Stage 2: Test ─────────────────────
   test:
@@ -41,11 +46,11 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
         exclude:
-          # macos-latest may not have 3.8 easily; skip to avoid CI flakes
+          # macos-latest may not have 3.9 easily; skip to avoid CI flakes
           - os: macos-latest
-            python-version: "3.8"
+            python-version: "3.9"
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -102,15 +107,15 @@ jobs:
           python -c "
           import time, sys
           sys.path.insert(0, '.')
-          from tableau_export.dax_converter import convert_tableau_to_dax
+          from tableau_export.dax_converter import convert_tableau_formula_to_dax
 
           formulas = [
-              'SUM([Sales])', 'IF [Profit] > 0 THEN \"Yes\" ELSE \"No\" END',
-              'DATETRUNC(\"month\", [Order Date])',
+              'SUM([Sales])', 'IF [Profit] > 0 THEN "Yes" ELSE "No" END',
+              'DATETRUNC("month", [Order Date])',
               '{FIXED [Region] : SUM([Sales])}',
               'RUNNING_SUM(SUM([Sales]))', 'RANK(SUM([Profit]))',
-              'CONTAINS(\"hello world\", \"hello\")',
-              'REGEXP_REPLACE([Name], \"[abc]\", \"X\")',
+              'CONTAINS("hello world", "hello")',
+              'REGEXP_REPLACE([Name], "[abc]", "X")',
               'WINDOW_SUM(SUM([Sales]), -2, 0)',
               'ZN([Discount])',
           ]
@@ -119,7 +124,7 @@ jobs:
           iterations = 500
           for _ in range(iterations):
               for f in formulas:
-                  convert_tableau_to_dax(f)
+                  convert_tableau_formula_to_dax(f)
           elapsed = time.time() - start
 
           per_op = (elapsed / (iterations * len(formulas))) * 1000

@@ -1,8 +1,8 @@
 # Comprehensive Gap Analysis — Tableau to Power BI Migration Tool
 
-**Date:** 2026-03-07 — updated through v5.0.0 (Sprints 5-8)  
+**Date:** 2026-03-07 — updated through v5.4.0 (Phases C-H)  
 **Scope:** Every source file, test file, CI/CD, docs, config, and cross-project comparison with TableauToFabric  
-**Status:** 1,500+ tests passing across 24+ test files
+**Status:** 1,725+ tests passing across 33 test files
 
 ### Implementation Coverage
 
@@ -10,7 +10,7 @@
  EXTRACTION          GENERATION         INFRA / CI         DOCUMENTATION
 +----------------+  +----------------+  +----------------+  +----------------+
 | 20 object types|  | PBIR v4.0      |  | 5-stage CI/CD  |  | 13 doc files   |
-| .twb/.twbx/.tfl|  | TMDL semantic  |  | 1,500+ tests   |  | DAX reference  |
+| .twb/.twbx/.tfl|  | TMDL semantic  |  | 1,725+ tests   |  | DAX reference  |
 | 180+ DAX conv  |  | 60+ visuals    |  | Artifact valid |  | M query ref    |
 | 33 connectors  |  | Drill-through  |  | Fabric deploy  |  | Prep ref       |
 | 40+ transforms |  | Slicer modes   |  | Env configs    |  | Architecture   |
@@ -161,7 +161,7 @@
 ## 3. Test Coverage
 
 ### What IS implemented
-- **887 tests across 18 test files** (2 skipped) + **557 additional tests in v3.6–v5.0**, totaling **1,500+ tests across 24+ test files** including shared fixtures in `conftest.py`:
+- **887 tests across 18 test files** (original) + **838 additional tests in v3.6–v5.4.0**, totaling **1,725+ tests across 33 test files** including shared fixtures in `conftest.py`:
 
 | Test File | Tests | Lines | Coverage Focus |
 |-----------|-------|-------|----------------|
@@ -273,7 +273,7 @@
 | **SIZE()** | `COUNTROWS()` | Counts all rows, not partition size |
 | **RUNNING_SUM/AVG/COUNT** | `CALCULATE(AGG, FILTER(ALLSELECTED(...)))` | ✅ IMPROVED — now uses FILTER(ALLSELECTED) pattern with proper window semantics; supports partition fields via `compute_using` with ALLEXCEPT |
 | **WINDOW_SUM/AVG/MAX/MIN** | `CALCULATE(inner, ALL/ALLEXCEPT('table'))` with OFFSET frame boundaries | ✅ IMPROVED — frame start/end positions generate OFFSET-based patterns; supports ALLEXCEPT with partition fields |
-| **WINDOW_CORR/COVAR/COVARP** | `0` | Full placeholder |
+| **WINDOW_CORR/COVAR/COVARP** | VAR/iterator DAX patterns | ✅ IMPLEMENTED — proper VAR/SUMX patterns with CALCULATE windowing context (v5.3.0) |
 | **ATTR()** | `SELECTEDVALUE()` | ✅ FIXED — Returns scalar value; empty string if multiple values |
 | **LTRIM/RTRIM** | `TRIM()` | DAX TRIM removes all leading/trailing spaces, not just left/right |
 | **ATAN2** | `ATAN2()` | Quadrant handling note — DAX ATAN2 uses (y,x) not (x,y) |
@@ -381,21 +381,21 @@
 - **Environment configs** (`environments.py`): Development/staging/production with different timeouts, retries, log levels, approval requirements
 - **Singleton pattern**: `get_settings()` returns cached instance
 - **Structured logging** (`migrate.py`): `setup_logging()` with verbose/file options
-- **CLI arguments**: `--output-dir`, `--verbose`, `--batch`, `--prep`, `--no-pbip`
+- **CLI arguments**: `--output-dir`, `--verbose`, `--quiet`, `--batch`, `--prep`, `--no-pbip`, `--config`, `--dry-run`
 
 ### What is MISSING or INCOMPLETE
 
 | Gap | Details |
 |-----|---------|
-| **No config file support** | No YAML/TOML/JSON config file for project-level settings (e.g., custom visual mappings, DAX overrides) |
-| **No output format selection** | Cannot choose between TMDL-only, PBIR-only, or full .pbip output |
+| **No config file support** | ✅ IMPLEMENTED — `--config config.json` CLI flag with `config.example.json` template |
+| **No output format selection** | ✅ IMPLEMENTED — `--output-format` CLI flag (pbip/tmdl/pbir) |
 | **No source path parameterization** | `import_to_powerbi.py` hardcodes `tableau_export/*.json` paths — not configurable |
 | **No calendar table customization** | Date range (2020–2030), fiscal year start, included columns are all hardcoded |
 | **No locale/culture override** | Culture defaults to `en-US` unless the Tableau model specifies otherwise — no CLI flag to override |
 | **No connection string templating** | M queries embed hardcoded server/database — no config for dev/staging/prod data sources |
 | **No `.env.example` file** | No template for required environment variables |
 | **No validation of settings values** | `_FallbackSettings` doesn't validate (e.g., invalid LOG_LEVEL or negative RETRY_ATTEMPTS) |
-| **No dry-run mode** | Cannot preview what the migration would produce without writing files |
+| **No dry-run mode** | ✅ IMPLEMENTED — `--dry-run` CLI flag previews migration without writing files |
 | **`DEPLOYMENT_TIMEOUT` and `RETRY_DELAY` are int-only** | Cannot specify sub-second delays or fractional timeouts |
 
 ---
@@ -411,7 +411,7 @@
 | **M Query** | **33 connectors** (+8: OData, Google Analytics, Azure Blob/ADLS, Vertica, Impala, Hadoop Hive, Presto), 30+ transforms, **DAX-to-M expression converter** (calc columns as M steps) | OAuth, gateway, incremental refresh | Fallback #table, BigQuery/Oracle config | Low |
 | **Prep Flow** | DAG traversal, 20+ action types, **ExtractValues**, **CustomCalculation**, **Script/Prediction/CrossJoin/PublishedDataSource** handlers, 5 new connection mappings | Hyper data loading | Prep VAR/VARP joins | Low |
 | **Pre-Migration** | **Assessment** (8-category scoring: datasource/calculation/visual/filter/data model/interactivity/extract/scope), **Strategy advisor** (Import/DirectQuery/Composite), JSON report export | — | — | Low |
-| **Test Coverage** | **887 tests across 18 files** (+conftest.py shared fixtures) | Perf tests, integration tests, coverage files (Fabric has 750+ additional) | — | Medium |
+| **Test Coverage** | **1,725+ tests across 33 files** (+conftest.py shared fixtures) | Perf tests, integration tests | — | Low |
 | **CI/CD** | **5-stage pipeline** (lint+ruff, test, **strict validate+twbx**, **staging deploy**, production deploy), **pip caching** | Coverage reporting, Windows CI, schema validation | — | Medium |
 | **Documentation** | **13 docs** + copilot instructions (ARCHITECTURE, KNOWN_LIMITATIONS, MIGRATION_CHECKLIST, DEPLOYMENT_GUIDE, TABLEAU_VERSION_COMPATIBILITY, CONTRIBUTING) | API docs | — | Low |
 | **Config** | 11 env vars, 3 environments, **settings validation**, **dry-run**, **calendar/culture CLI**, **.env.example** | Config file, connection templating | — | Low |

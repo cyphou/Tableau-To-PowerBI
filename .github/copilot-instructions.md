@@ -38,7 +38,7 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
     - `utils.py`: `DeploymentReport` (pass/fail tracking), `ArtifactCache` (incremental deployment metadata)
     - `config/settings.py`: Centralized config via env vars (FABRIC_WORKSPACE_ID, FABRIC_TENANT_ID, etc.)
     - `config/environments.py`: Per-environment configs (development/staging/production)
-- **tests/**: Unit and integration tests (887 tests across 18 test files + conftest.py shared fixtures)
+- **tests/**: Unit and integration tests (1,725 tests across 33 test files + conftest.py shared fixtures)
 - **docs/**: FAQ, PBI project guide, mapping reference
 - **.github/workflows/ci.yml**: CI/CD pipeline (lint → test → validate → deploy)
 - **artifacts/**: Migration output (generated .pbip projects)

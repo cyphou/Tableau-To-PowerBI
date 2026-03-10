@@ -3460,7 +3460,8 @@ def _write_partition(lines, table_name, partition):
     else:
         lines.append(f"\t\tsource =")
         lines.append("\t\t\t\tlet")
-        lines.append("\t\t\t\t\tSource = null // TODO: Configure data source")
+        lines.append("\t\t\t\t\tSource = #table(type table [], {})")
+        lines.append("\t\t\t\t\t// TODO: Configure data source — replace with actual connection")
         lines.append("\t\t\t\tin")
         lines.append("\t\t\t\t\tSource")
 
