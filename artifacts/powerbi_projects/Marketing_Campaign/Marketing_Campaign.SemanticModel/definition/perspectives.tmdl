@@ -1,0 +1,5 @@
+perspective 'Full Model'
+	perspectiveTable Campaigns
+	perspectiveTable Leads
+	perspectiveTable Calendar
+	perspectiveTable 'Min Budget'

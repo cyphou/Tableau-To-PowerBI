@@ -1,0 +1,68 @@
+table users
+	lineageTag: 8f9c8e37-b3a6-44ac-a309-a2b8206ac37e
+
+	column user_id
+		dataType: string
+		lineageTag: aeef07da-711e-453d-a538-bebd24338c47
+		summarizeBy: none
+		sourceColumn: user_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column user_name
+		dataType: string
+		lineageTag: ccee1eac-99f6-4146-91d1-8208db259b7b
+		summarizeBy: none
+		sourceColumn: user_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column email
+		dataType: string
+		lineageTag: 7fc8a8ef-67ae-4083-98eb-1166fae04a0d
+		summarizeBy: none
+		sourceColumn: email
+
+		annotation SummarizationSetBy = Automatic
+
+	column signup_date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 28906457-744e-4a00-a0f3-1b424efd8289
+		summarizeBy: none
+		sourceColumn: signup_date
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column plan
+		dataType: string
+		lineageTag: 7f1487f6-9e2f-4190-bcfe-5be7c23903b3
+		summarizeBy: none
+		sourceColumn: plan
+
+		annotation SummarizationSetBy = Automatic
+
+	column region
+		dataType: string
+		lineageTag: 39429076-a38a-4630-93bd-cd250addf486
+		summarizeBy: none
+		sourceColumn: region
+		dataCategory: StateOrProvince
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'users-f8f18ed6-a9f0-41e9-b4cd-9652036ecdc5' = m
+		mode: import
+		source =
+				let
+				    // Source Google BigQuery: my-analytics-project.web_data
+				    Source = GoogleBigQuery.Database([BillingProject="my-analytics-project"]),
+				    #"web_data" = Source{[Name="web_data"]}[Data],
+				    #"users Table" = #"web_data"{[Name="users"]}[Data],
+				    Result = #"users Table"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+

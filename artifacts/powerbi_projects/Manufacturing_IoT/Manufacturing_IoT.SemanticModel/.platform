@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "SemanticModel",
+    "displayName": "Manufacturing_IoT"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "44dc2bb9-fd41-4d3a-8e97-04892e60d2c2"
+  }
+}

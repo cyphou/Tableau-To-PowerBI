@@ -1,0 +1,20 @@
+table 'Alert Threshold'
+	lineageTag: 2349bd0d-2f76-4246-b0e7-fc2457569bec
+
+	measure 'Alert Threshold' = SELECTEDVALUE('Alert Threshold'[Value], 100)
+		lineageTag: 1e937ab7-2e83-4bd1-ba9a-fa2a55219d1c
+
+	column Value
+		dataType: double
+		lineageTag: 3ef933b6-3455-4009-b627-56552278c7ba
+		summarizeBy: none
+		sourceColumn: Value
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Alert Threshold-a2c7eb5a-bcfe-4f15-a7c6-71882840c12b' = calculated
+		mode: import
+		source = GENERATESERIES(0, 500, 10)
+
+	annotation PBI_ResultType = Table
+

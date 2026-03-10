@@ -1,0 +1,37 @@
+table Returns
+	lineageTag: 3be184fb-6d9b-47e8-88a3-d8026cd0475d
+
+	column Returned
+		dataType: string
+		lineageTag: 8e1573ff-27b8-49b4-b148-18b6f7091853
+		summarizeBy: none
+		sourceColumn: Returned
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Order ID'
+		dataType: string
+		lineageTag: 7ccc2c0d-bc54-4db1-8a6d-a70d73ae9d55
+		summarizeBy: none
+		sourceColumn: 'Order ID'
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Returns-04b121ad-2678-4cc6-a089-a297022eb5fc' = m
+		mode: import
+		source =
+				let
+				    // Source Excel: Sample - Superstore.xlsx
+				    Source = Excel.Workbook(File.Contents(DataFolder & "\Sample - Superstore.xlsx"), null, true),
+				    #"Returns Sheet" = Source{[Item="Returns",Kind="Sheet"]}[Data],
+				    #"Promoted Headers" = Table.PromoteHeaders(#"Returns Sheet", [PromoteAllScalars=true]),
+				    #"Changed Types" = Table.TransformColumnTypes(#"Promoted Headers", {
+				        {"Returned", type text},
+				        {"Order ID", type text}
+				    }),
+				    Result = #"Changed Types"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+

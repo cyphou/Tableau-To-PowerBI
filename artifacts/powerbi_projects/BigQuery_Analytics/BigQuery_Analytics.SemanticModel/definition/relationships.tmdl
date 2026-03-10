@@ -1,0 +1,16 @@
+relationship 7804c2ca-9ccf-4929-8c08-a08167c1458f
+	fromColumn: sessions.user_id
+	toColumn: users.user_id
+	crossFilteringBehavior: oneDirection
+
+relationship 97d02ed2-91fe-4ca9-8783-32b9bcb3ae30
+	fromColumn: sessions.session_date
+	toColumn: Calendar.Date
+	crossFilteringBehavior: oneDirection
+
+relationship 67d2b16d-3c06-47d5-aa6d-2c17d9da1a55
+	fromColumn: users.signup_date
+	toColumn: Calendar.Date
+	crossFilteringBehavior: oneDirection
+	isActive: false
+

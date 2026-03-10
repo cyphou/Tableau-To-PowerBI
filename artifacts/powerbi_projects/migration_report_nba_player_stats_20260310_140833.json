@@ -1,0 +1,107 @@
+{
+  "report_name": "nba_player_stats",
+  "created_at": "2026-03-10T14:08:33.196584",
+  "summary": {
+    "total_items": 12,
+    "exact": 12,
+    "approximate": 0,
+    "placeholder": 0,
+    "unsupported": 0,
+    "skipped": 0,
+    "fidelity_score": 100.0,
+    "by_category": {
+      "datasource": {
+        "total": 2,
+        "exact": 2
+      },
+      "calculation": {
+        "total": 3,
+        "exact": 3
+      },
+      "visual": {
+        "total": 5,
+        "exact": 5
+      },
+      "parameter": {
+        "total": 1,
+        "exact": 1
+      },
+      "group": {
+        "total": 1,
+        "exact": 1
+      }
+    }
+  },
+  "items": [
+    {
+      "category": "datasource",
+      "name": "Parameters",
+      "status": "exact",
+      "note": "Unknown, 0 table(s)"
+    },
+    {
+      "category": "datasource",
+      "name": "federated.10vks1203pgcxf1bkw5yk1bwzy2f",
+      "status": "exact",
+      "note": "Excel, 1 table(s)"
+    },
+    {
+      "category": "calculation",
+      "name": "Rebounds",
+      "status": "exact",
+      "source_formula": "1.",
+      "dax": "SELECTEDVALUE('Rebounds'[Value], 1.0)"
+    },
+    {
+      "category": "calculation",
+      "name": "p. Rebounds",
+      "status": "exact",
+      "source_formula": "CASE [Parameters].[Parameter 1]\nWhen 1 then avg([DEF])\nWhen 2 then AVG([OFF])\nWhen 3 then avg([REB])\nEND",
+      "dax": "SWITCH([Rebounds], 1, AVERAGE('Sheet1'[DEF]), 2, AVERAGE('Sheet1'[OFF]), 3, AVERAGE('Sheet1'[REB]))"
+    },
+    {
+      "category": "calculation",
+      "name": "Rebounds",
+      "status": "exact",
+      "source_formula": "1.",
+      "dax": "SELECTEDVALUE('Rebounds'[Value], 1.0)"
+    },
+    {
+      "category": "visual",
+      "name": "Average Points per Game",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Player Stats",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Players Headshot",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Rebounds per Game",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Teams",
+      "status": "exact"
+    },
+    {
+      "category": "parameter",
+      "name": "[Parameter 1]",
+      "status": "exact",
+      "note": "domain=list"
+    },
+    {
+      "category": "group",
+      "name": "Action (Player)",
+      "status": "exact",
+      "note": "SWITCH calculated column"
+    }
+  ]
+}

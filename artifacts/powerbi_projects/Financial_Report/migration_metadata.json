@@ -1,0 +1,43 @@
+{
+  "generated_at": "2026-03-10T14:08:11.868439",
+  "source": "Tableau Migration",
+  "report_name": "Financial_Report",
+  "objects_converted": {
+    "worksheets": 4,
+    "dashboards": 1,
+    "datasources": 1,
+    "calculations": 6,
+    "parameters": 2,
+    "filters": 4,
+    "stories": 1,
+    "sets": 0,
+    "groups": 0,
+    "bins": 0,
+    "hierarchies": 0,
+    "user_filters": 0,
+    "actions": 0,
+    "custom_sql": 0
+  },
+  "generated_output": {
+    "pages": 1,
+    "visuals": 4,
+    "theme_applied": false,
+    "theme_detail": {
+      "status": "skipped",
+      "reason": "no dashboard colors detected"
+    }
+  },
+  "tmdl_stats": {
+    "tables": 4,
+    "measures": 11,
+    "columns": 18,
+    "relationships": 0
+  },
+  "visual_type_mappings": {
+    "Revenue vs Expenses": "Automatic",
+    "Category Breakdown": "Automatic",
+    "Business Unit Performance": "Automatic",
+    "Top 10 Accounts": "Automatic"
+  },
+  "approximations": []
+}

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Report",
+    "displayName": "nba_player_stats"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "6d590e65-f2f7-42ce-a594-9b70fc653b3c"
+  }
+}

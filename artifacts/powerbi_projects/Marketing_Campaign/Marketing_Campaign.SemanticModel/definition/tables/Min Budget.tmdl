@@ -1,0 +1,20 @@
+table 'Min Budget'
+	lineageTag: 269122c1-b695-417e-bf7b-a2d51be7631e
+
+	measure 'Min Budget' = SELECTEDVALUE('Min Budget'[Value], 5000)
+		lineageTag: 6c8db117-2523-4d41-9d5c-3631198873e2
+
+	column Value
+		dataType: double
+		lineageTag: a434e5b1-468a-4552-a198-2dc949bed71a
+		summarizeBy: none
+		sourceColumn: Value
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Min Budget-3b1ad6b0-0851-4fa4-a478-555513d5b880' = calculated
+		mode: import
+		source = GENERATESERIES(0, 100000, 1000)
+
+	annotation PBI_ResultType = Table
+

@@ -1,0 +1,45 @@
+{
+  "generated_at": "2026-03-10T14:08:13.627915",
+  "source": "Tableau Migration",
+  "report_name": "Manufacturing_IoT",
+  "objects_converted": {
+    "worksheets": 6,
+    "dashboards": 2,
+    "datasources": 1,
+    "calculations": 25,
+    "parameters": 2,
+    "filters": 0,
+    "stories": 1,
+    "sets": 0,
+    "groups": 0,
+    "bins": 0,
+    "hierarchies": 0,
+    "user_filters": 0,
+    "actions": 3,
+    "custom_sql": 0
+  },
+  "generated_output": {
+    "pages": 2,
+    "visuals": 8,
+    "theme_applied": false,
+    "theme_detail": {
+      "status": "skipped",
+      "reason": "no dashboard colors detected"
+    }
+  },
+  "tmdl_stats": {
+    "tables": 5,
+    "measures": 14,
+    "columns": 50,
+    "relationships": 5
+  },
+  "visual_type_mappings": {
+    "Sensor Monitor": "Automatic",
+    "Machine Health": "Automatic",
+    "Maintenance Costs": "Automatic",
+    "Value Distribution": "Automatic",
+    "Vibration Analysis": "Automatic",
+    "Machine Rankings": "Automatic"
+  },
+  "approximations": []
+}

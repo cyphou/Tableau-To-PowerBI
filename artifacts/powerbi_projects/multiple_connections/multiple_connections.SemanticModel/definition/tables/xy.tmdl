@@ -1,0 +1,16 @@
+table xy
+	lineageTag: 6a235bcc-d2e9-4307-bc5b-ce9a32e9a7d6
+
+	partition 'xy-beebbe74-d83e-415b-9ae2-c2917ef5e8f3' = m
+		mode: import
+		source =
+				let
+				    // Source MySQL: mysql55:
+				    Source = MySQL.Database("mysql55:", "testv1"),
+				    #"xy Table" = Source{[Schema="testv1", Item="xy"]}[Data],
+				    Result = #"xy Table"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+

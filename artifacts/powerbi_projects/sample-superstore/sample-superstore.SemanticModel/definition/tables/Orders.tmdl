@@ -1,0 +1,236 @@
+table Orders
+	lineageTag: 936b0272-b958-422b-9743-6cf71c1641b5
+
+	measure '[Number of Records]' = 1
+		displayFolder: Measures
+		lineageTag: db69e1a9-2a22-4458-96e4-705a22e869dd
+
+	column 'Row ID'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 35643a59-bf2c-444a-a435-dc417a0ec48e
+		summarizeBy: sum
+		sourceColumn: 'Row ID'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Order ID'
+		dataType: string
+		lineageTag: 03654e06-677e-44f5-b7a1-4a0a7442ceb4
+		summarizeBy: none
+		sourceColumn: 'Order ID'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Order Date'
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 4cbdc5b4-6f71-4610-aee0-cc79052e8150
+		summarizeBy: none
+		sourceColumn: 'Order Date'
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Ship Date'
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: a642fee6-65af-4249-8985-10aabd8b01f0
+		summarizeBy: none
+		sourceColumn: 'Ship Date'
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Ship Mode'
+		dataType: string
+		lineageTag: ce08519b-2ae8-40b9-b3b0-427de1d5f5a7
+		summarizeBy: none
+		sourceColumn: 'Ship Mode'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Customer ID'
+		dataType: string
+		lineageTag: 379fd1f7-e6a9-4567-ab01-41f2d99e8ff9
+		summarizeBy: none
+		sourceColumn: 'Customer ID'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Customer Name'
+		dataType: string
+		lineageTag: 1c7f48ad-ce6c-42d0-b257-573b71fbc9e3
+		summarizeBy: none
+		sourceColumn: 'Customer Name'
+
+		annotation SummarizationSetBy = Automatic
+
+	column Segment
+		dataType: string
+		lineageTag: 165e5a54-374d-4ca9-b766-f32033d7c3ef
+		summarizeBy: none
+		sourceColumn: Segment
+
+		annotation SummarizationSetBy = Automatic
+
+	column City
+		dataType: string
+		lineageTag: 1585fd15-157e-40fc-a173-473c60ad7c42
+		summarizeBy: none
+		sourceColumn: City
+		dataCategory: City
+
+		annotation SummarizationSetBy = Automatic
+
+	column State
+		dataType: string
+		lineageTag: 88fcc2e8-d29b-4531-8d7e-0a06e7c336a4
+		summarizeBy: none
+		sourceColumn: State
+		dataCategory: StateOrProvince
+
+		annotation SummarizationSetBy = Automatic
+
+	column Country
+		dataType: string
+		lineageTag: 01869818-71f0-4d96-9cac-e6d661594f13
+		summarizeBy: none
+		sourceColumn: Country
+		dataCategory: Country
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Postal Code'
+		dataType: double
+		formatString: *00000
+		lineageTag: c526d6a0-7970-43ae-ac4f-7dc04fa0cdfc
+		summarizeBy: sum
+		sourceColumn: 'Postal Code'
+		dataCategory: PostalCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column Market
+		dataType: string
+		lineageTag: 97973ac1-7148-4d45-bc35-f548015bbe9d
+		summarizeBy: none
+		sourceColumn: Market
+
+		annotation SummarizationSetBy = Automatic
+
+	column Region
+		dataType: string
+		lineageTag: 90d5ca28-9fc8-49c0-9637-193a9e8a37da
+		summarizeBy: none
+		sourceColumn: Region
+		dataCategory: StateOrProvince
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Product ID'
+		dataType: string
+		lineageTag: 00c31253-1eec-4935-a248-db626a0ecf44
+		summarizeBy: none
+		sourceColumn: 'Product ID'
+
+		annotation SummarizationSetBy = Automatic
+
+	column Category
+		dataType: string
+		lineageTag: 32c312a8-0e6e-42dd-80d7-f443a0bf4fd3
+		summarizeBy: none
+		sourceColumn: Category
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Sub-Category'
+		dataType: string
+		lineageTag: 474d7dc3-b9d9-4c6a-80b0-5fcc280c6eb2
+		summarizeBy: none
+		sourceColumn: 'Sub-Category'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Product Name'
+		dataType: string
+		lineageTag: f69f8e68-5261-49b5-907e-5ee739a6c66a
+		summarizeBy: none
+		sourceColumn: 'Product Name'
+
+		annotation SummarizationSetBy = Automatic
+
+	column Sales
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 2dea8e95-0c80-40fc-9ff4-1504f8472818
+		summarizeBy: sum
+		sourceColumn: Sales
+
+		annotation SummarizationSetBy = Automatic
+
+	column Quantity
+		dataType: double
+		formatString: #,0.00
+		lineageTag: ca62d71c-73f0-436a-985e-a171fb71b61c
+		summarizeBy: sum
+		sourceColumn: Quantity
+
+		annotation SummarizationSetBy = Automatic
+
+	column Discount
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 48027b0c-1fa8-421d-9081-fbf4fadd4877
+		summarizeBy: sum
+		sourceColumn: Discount
+
+		annotation SummarizationSetBy = Automatic
+
+	column Profit
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 0e4b6015-e898-4c4f-8ed3-21ee33ba3ce9
+		summarizeBy: sum
+		sourceColumn: Profit
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Shipping Cost'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 224e519f-312d-4a02-9c12-2f6ce6a0752c
+		summarizeBy: sum
+		sourceColumn: 'Shipping Cost'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Order Priority'
+		dataType: string
+		lineageTag: 49c2131b-5372-40de-8c85-325d8bbf0644
+		summarizeBy: none
+		sourceColumn: 'Order Priority'
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Orders-0ea31f9d-ad75-455d-bf16-6fd48816403b' = m
+		mode: import
+		source =
+				let
+				    // TODO: Configure the data source for connector type: Unknown
+				    // Replace the sample table below with the actual source expression.
+				    Source = try
+				        #table(
+				            {"Row ID", "Order ID", "Order Date", "Ship Date", "Ship Mode", "Customer ID", "Customer Name", "Segment", "City", "State", "Country", "Postal Code", "Market", "Region", "Product ID", "Category", "Sub-Category", "Product Name", "Sales", "Quantity", "Discount", "Profit", "Shipping Cost", "Order Priority"},
+				            {
+				                {1, "Sample 2", 3, 4, "Sample 5", "Sample 6", "Sample 7", "Sample 8", "Sample 9", "Sample 10", "Sample 11", 12, "Sample 13", "Sample 14", "Sample 15", "Sample 16", "Sample 17", "Sample 18", 19, 20, 21, 22, 23, "Sample 24"},
+				                {2, "Sample 3", 4, 5, "Sample 6", "Sample 7", "Sample 8", "Sample 9", "Sample 10", "Sample 11", "Sample 12", 13, "Sample 14", "Sample 15", "Sample 16", "Sample 17", "Sample 18", "Sample 19", 20, 21, 22, 23, 24, "Sample 25"}
+				            }
+				        )
+				    otherwise
+				        #table({"Row ID", "Order ID", "Order Date", "Ship Date", "Ship Mode", "Customer ID", "Customer Name", "Segment", "City", "State", "Country", "Postal Code", "Market", "Region", "Product ID", "Category", "Sub-Category", "Product Name", "Sales", "Quantity", "Discount", "Profit", "Shipping Cost", "Order Priority"}, {})  // Empty table on error
+				in
+				    Source
+
+	annotation PBI_ResultType = Table
+

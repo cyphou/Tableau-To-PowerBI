@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "SemanticModel",
+    "displayName": "ephemeral_field"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "9c735699-e890-4b41-b0bf-8c7cfaffe91d"
+  }
+}

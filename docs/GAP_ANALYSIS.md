@@ -1,8 +1,8 @@
 # Comprehensive Gap Analysis — Tableau to Power BI Migration Tool
 
-**Date:** 2026-03-10 — updated through v5.5.0 (Phases I-M)  
+**Date:** 2026-03-10 — updated through v6.0.0 (Sprints 13-16)  
 **Scope:** Every source file, test file, CI/CD, docs, config, and cross-project comparison with TableauToFabric  
-**Status:** 1,777 tests passing across 34 test files
+**Status:** 1,889 tests passing across 37 test files
 
 ### Implementation Coverage
 
@@ -10,7 +10,7 @@
  EXTRACTION          GENERATION         INFRA / CI         DOCUMENTATION
 +----------------+  +----------------+  +----------------+  +----------------+
 | 20 object types|  | PBIR v4.0      |  | 5-stage CI/CD  |  | 13 doc files   |
-| .twb/.twbx/.tfl|  | TMDL semantic  |  | 1,777 tests    |  | DAX reference  |
+| .twb/.twbx/.tfl|  | TMDL semantic  |  | 1,889 tests    |  | DAX reference  |
 | 180+ DAX conv  |  | 60+ visuals    |  | Artifact valid |  | M query ref    |
 | 33 connectors  |  | Drill-through  |  | Fabric deploy  |  | Prep ref       |
 | 40+ transforms |  | Slicer modes   |  | Env configs    |  | Architecture   |
@@ -73,7 +73,7 @@
 - **Filter enrichment**: `is_context` flag on filters from `context='true'` attribute
 
 ### What is MISSING or INCOMPLETE
-- **Tableau Server/Cloud connection types**: No support for Tableau Server live connections or Extract (.hyper) reconnection — only reads the XML metadata
+- **Tableau Server/Cloud connection types**: ✅ IMPLEMENTED — `TableauServerClient` in `server_client.py` provides PAT/password auth, workbook download, datasource listing, batch download, regex search via `--server` CLI flag
 - **`.hyper` file parsing**: Prep `LoadHyper` emits an empty `#table` — Hyper file data is not read (metadata extraction added but not data)
 - **Tableau extensions/LOD filters**: LOD calc extraction relies on text-based `{FIXED ...}` parsing (can miss edge cases with nested LODs or LOD inside LOD)
 - **Dashboard layout containers**: Layout containers are extracted but deeply nested containers may lose relative positioning when mapped to PBI
@@ -122,7 +122,7 @@
 - **Strategy advisor** (`strategy_advisor.py`, 334 lines): Recommends Import/DirectQuery/Composite connection mode based on 7 signals (datasource type, data volume, calculation complexity, real-time needs, cross-source joins, parameter usage, user count); classifies calculations by portability
 - **Theme migration**: Tableau dashboard color palettes → PBI theme JSON (`RegisteredResources/TableauMigrationTheme.json`)
 - **Conditional formatting**: Quantitative color encoding → PBI dataPoint gradient rules with **multi-stop support** (2-color min/max, 3+ color min/mid/max), proper `inputRole` structure
-- **Reference lines**: Tableau reference lines → PBI constant lines on valueAxis
+- **Reference lines**: Constant value lines AND dynamic reference lines (average/median/percentile/min/max) are migrated via `_build_dynamic_reference_line()`; distribution and trend-line reference lines are approximated
 - **Legend config**: Dynamic position mapping (8 positions: right/top/bottom/left/topRight/topLeft/bottomRight/bottomLeft), title/showTitle, fontSize from formatting
 - **Axis config**: Range (min/max), log scale, reversed axis; **dual-axis secondary axis** for combo charts with sync detection
 - **Combo chart roles**: Proper `ColumnY`/`LineY` role names (not generic `Y`/`Y2`)
@@ -148,7 +148,6 @@
 - **`import_to_powerbi.py` loads JSON from hardcoded paths**: ✅ IMPLEMENTED — `source_dir` parameter allows configurable JSON source directory
 - **No composite model support**: ✅ IMPLEMENTED — `--mode composite` enables DirectQuery + Import hybrid
 - **No Small Multiples**: ✅ IMPLEMENTED — `_build_small_multiples_config()` auto-detects suitable fields
-
 ### What is APPROXIMATED
 - **Visual positioning**: Dashboard objects are scaled proportionally from Tableau canvas to PBI page size. Not pixel-perfect; overlapping is possible
 - **Slicer bindings**: ✅ IMPROVED — `_detect_slicer_mode()` auto-selects Dropdown/List/Between/Basic based on parameter domain_type and column datatype (date→Basic, numeric→Between, list→List, default→Dropdown)
@@ -161,7 +160,7 @@
 ## 3. Test Coverage
 
 ### What IS implemented
-- **887 tests across 18 test files** (original) + **890 additional tests in v3.6–v5.5.0**, totaling **1,777 tests across 34 test files** including shared fixtures in `conftest.py`:
+- **887 tests across 18 test files** (original) + **1,002 additional tests in v3.6–v6.0.0**, totaling **1,889 tests across 37 test files** including shared fixtures in `conftest.py`:
 
 | Test File | Tests | Lines | Coverage Focus |
 |-----------|-------|-------|----------------|
@@ -183,14 +182,17 @@
 | `test_strategy_advisor.py` | 26 | 178 | Strategy advisor: Import/DirectQuery/Composite recommendations, signal-based scoring, calculation classification, print output |
 | `test_new_features.py` | 74 | 689 | Calculation groups, field parameters, pages shelf, number format, context filters, visual config, **DAX-to-M expression conversion** (14 tests: IF, SWITCH, UPPER/LOWER, ISBLANK, LEFT/RIGHT/MID, arithmetic, column refs, IN, concatenation, nested IF), **M-based columns** (7 tests: sets, groups, bins, date hierarchies, fallback for cross-table refs, step injection) |
 | `conftest.py` | — | 132 | Shared test fixtures: `sample_datasources()`, `sample_worksheets()`, `sample_calculations()`, `sample_model()` for reuse across test files |
+| `test_sprint_13.py` | 53 | ~450 | Sprint 13: custom visual GUIDs, stepped colors, dynamic reference lines, multi-DS routing, sortByColumn validation, nested LOD cleanup |
+| `test_pbi_service.py` | 33 | ~350 | Sprint 14: PBIServiceClient, PBIXPackager, PBIWorkspaceDeployer — structural + integration tests |
+| `test_server_client.py` | 26 | ~280 | Sprint 15: TableauServerClient — auth, list, download, batch, error handling (mock-based) |
 
 ### What is MISSING or INCOMPLETE
 - **No mocking of file I/O**: Tests write real files to tempdir — no mocking of file system operations
-- **No negative/edge-case tests for deployment**: `deployer.py` tested only for constructor/types, not for error handling, retry logic, or HTTP 429 handling
-- **No performance/stress tests**: No tests for large workbooks (100+ worksheets, 1000+ calculations)
-- **No test for `--batch` mode**: Batch migration is tested only via CI/CD `validate` step
-- **DAX conversion coverage**: 86 tests covering common formula patterns out of 172 documented conversions. LOD with multiple dimensions, nested LODs, WINDOW_CORR/COVAR are not unit-tested
-- **No property-based or fuzzy testing**: All tests are example-based; no generative testing for formula conversion robustness
+- **No negative/edge-case tests for deployment**: ✅ PARTIALLY ADDRESSED — `test_pbi_service.py` tests PBIServiceClient/PBIXPackager/PBIWorkspaceDeployer structure and error paths; real HTTP 429 retry not tested
+- **No performance/stress tests**: ✅ IMPLEMENTED — `test_performance.py` with 9 benchmarks for large workbooks
+- **No test for `--batch` mode**: ✅ IMPLEMENTED — Batch mode test in `test_integration.py`
+- **DAX conversion coverage**: 86 tests covering common formula patterns out of 180+ documented conversions. LOD with multiple dimensions, nested LODs partially tested in v6.0.0 (Sprint 13 N.6)
+- **No property-based or fuzzy testing**: ✅ IMPLEMENTED — `test_property_based.py` with 10+ fuzz tests (200 iterations each)
 
 ---
 
@@ -208,8 +210,8 @@
 
 | Tableau Visual | Current Mapping | Gap |
 |---------------|----------------|-----|
-| **Sankey / Chord / Network** | `decompositionTree` | Structurally different — decomposition tree is hierarchical, not a flow diagram |
-| **Gantt Bar / Lollipop** | `clusteredBarChart` | Loses time-axis semantics; no timeline visual in standard PBI |
+| **Sankey / Chord / Network** | ✅ `sankeyDiagram` / `chordChart` / `networkNavigator` (custom visual GUIDs) | Custom visuals require AppSource installation in PBI Desktop |
+| **Gantt Bar / Lollipop** | ✅ `ganttChart` (custom visual GUID) | Custom visual; time-axis semantics preserved |
 | **Butterfly Chart / Waffle** | `hundredPercentStackedBarChart` | Loses symmetry of butterfly layout |
 | **Calendar Heat Map** | `matrix` | PBI matrix can show colors but lacks calendar grid structure |
 | **Packed Bubble / Strip Plot** | `scatterChart` | Size encoding may not transfer correctly |
@@ -217,12 +219,12 @@
 | **Motion chart (animated)** | Not handled | No PBI equivalent for play-axis animation |
 | **Violin plot** | Not handled | No standard PBI visual |
 | **Parallel coordinates** | Not handled | No standard PBI visual |
-| **Small multiples (Tableau grid)** | Not handled | PBI has Small Multiples feature but it's not auto-generated |
+| **Small multiples (Tableau grid)** | ✅ IMPLEMENTED | `_build_small_multiples_config()` auto-detects and generates PBI Small Multiples |
 
 ### What is APPROXIMATED
-- **Conditional formatting migration**: Quantitative color scales (gradient) are migrated with multi-stop support (2-color and 3-color gradients). Discrete/stepped color scales, shape-based formatting, and custom color palettes per value are not replicated
+- **Conditional formatting migration**: Quantitative color scales (gradient) are migrated with multi-stop support (2-color and 3-color gradients). ✅ **Discrete/stepped color scales** now implemented with sorted thresholds and `LessThanOrEqual`/`GreaterThan` operators. Shape-based formatting and custom color palettes per value are not replicated
 - **Dual axis**: Both axes mapped to one combo chart with proper ColumnY/LineY roles; axis sync is detected and applied. Complex independent axis scale configurations may require manual adjustment
-- **Reference lines**: Only constant value lines are migrated; dynamic (percentile, trend, distribution) reference lines are not migrated
+- **Reference lines**: ✅ **Constant AND dynamic reference lines** (average/median/percentile/min/max) are migrated. Distribution and trend-line reference lines are approximated
 - **Tooltips**: Viz-in-tooltip creates separate tooltip pages and **binds them** to the parent visual via tooltip_page_map — functional but may need layout adjustments in PBI Desktop
 
 ---
@@ -338,7 +340,7 @@
 | **No staging deployment** | ✅ IMPLEMENTED — `deploy-staging` job on `develop` branch push |
 | **No artifact caching** | ✅ IMPLEMENTED — `actions/cache@v4` for pip packages |
 | **No code coverage reporting** | ✅ IMPLEMENTED — `.coveragerc` with 80% threshold, `coverage run` in CI |
-| **No integration tests** | ✅ PARTIALLY — `test_fabric_integration.py` added (opt-in `@pytest.mark.integration`) |
+| **No integration tests** | ✅ PARTIALLY — `test_fabric_integration.py` + `test_pbi_service.py` added (opt-in `@pytest.mark.integration`) |
 | **No rollback mechanism** | ✅ IMPLEMENTED — `--rollback` flag backs up previous output before overwriting |
 | **No PBIR schema validation** | ✅ IMPLEMENTED — `validate_pbir_structure()` checks required/optional keys and `$schema` URLs |
 | **No `.twbx` sample in CI** | ✅ IMPLEMENTED — CI validate step processes both `.twb` and `.twbx` files |
@@ -411,7 +413,7 @@
 | **M Query** | **33 connectors** (+8: OData, Google Analytics, Azure Blob/ADLS, Vertica, Impala, Hadoop Hive, Presto), 30+ transforms, **DAX-to-M expression converter** (calc columns as M steps) | OAuth, gateway, incremental refresh | Fallback #table, BigQuery/Oracle config | Low |
 | **Prep Flow** | DAG traversal, 20+ action types, **ExtractValues**, **CustomCalculation**, **Script/Prediction/CrossJoin/PublishedDataSource** handlers, 5 new connection mappings | Hyper data loading | Prep VAR/VARP joins | Low |
 | **Pre-Migration** | **Assessment** (8-category scoring: datasource/calculation/visual/filter/data model/interactivity/extract/scope), **Strategy advisor** (Import/DirectQuery/Composite), JSON report export | — | — | Low |
-| **Test Coverage** | **1,777 tests across 34 files** (+conftest.py shared fixtures) | Perf tests, integration tests | — | Low |
+| **Test Coverage** | **1,889 tests across 37 files** (+conftest.py shared fixtures) | Perf tests, integration tests | — | Low |
 | **CI/CD** | **5-stage pipeline** (lint+ruff, test, **strict validate+twbx**, **staging deploy**, production deploy), **pip caching** | Coverage reporting, Windows CI, schema validation | — | Medium |
 | **Documentation** | **13 docs** + copilot instructions (ARCHITECTURE, KNOWN_LIMITATIONS, MIGRATION_CHECKLIST, DEPLOYMENT_GUIDE, TABLEAU_VERSION_COMPATIBILITY, CONTRIBUTING) | API docs | — | Low |
 | **Config** | 11 env vars, 3 environments, **settings validation**, **dry-run**, **calendar/culture CLI**, **.env.example** | Config file, connection templating | — | Low |
@@ -513,11 +515,11 @@
 
 | Metric | Fabric | PBI |
 |--------|--------|-----|
-| Test files | 40 | 18 (+conftest.py) |
-| Total tests | ~1,205 | **887** |
+| Test files | 40 | 37 (+conftest.py) |
+| Total tests | ~1,205 | **1,889** |
 | Coverage test files (Fabric-style) | 9 files, ~750 tests (e.g., `test_*_coverage.py`) | None |
 | PBI-only broad-scope tests | None | 5 files (feature_gaps, gap_implementations, new_features, non_regression, migration_validation) |
-| **Coverage ratio** | ~1.36× PBI test count | Baseline |
+| **Coverage ratio** | ~0.64× PBI test count | Baseline (PBI now has more tests than Fabric) |
 
 ### Portability Assessment — Remaining Items
 

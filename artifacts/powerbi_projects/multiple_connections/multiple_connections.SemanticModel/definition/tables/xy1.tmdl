@@ -1,0 +1,16 @@
+table xy1
+	lineageTag: 1bfb3bec-1ee6-4022-9fa6-0b4cb26fec50
+
+	partition 'xy1-f6186e41-e4cd-485e-b54e-490c75ee6397' = m
+		mode: import
+		source =
+				let
+				    // Source SQL Server
+				    Source = Sql.Database("mssql2012", "TestV1"),
+				    #"xy1 Table" = Source{[Schema="dbo", Item="xy1"]}[Data],
+				    Result = #"xy1 Table"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+

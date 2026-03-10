@@ -2,7 +2,7 @@
 
 This document lists known limitations and approximations in the Tableau to Power BI migration tool.
 
-> **Last updated:** v5.4.0 — many previous limitations have been addressed.
+> **Last updated:** v6.0.0 — many previous limitations have been addressed.
 
 ---
 
@@ -11,7 +11,7 @@ This document lists known limitations and approximations in the Tableau to Power
 | Area | Limitation | Impact |
 |------|-----------|--------|
 | **Hyper files** | `.hyper` file headers and table structure are extracted (column names/types), but row-level data is not loaded | Tables from Hyper extracts will have structure but no inline data preview |
-| **Tableau Server/Cloud** | Live connections to Tableau Server are not reconnected | Connection strings reference the original server; must be reconfigured in PBI |
+| **Tableau Server/Cloud** | ✅ `--server` CLI flag enables direct extraction from Tableau Server/Cloud via REST API (PAT or password auth). Live connections still need reconfiguration in PBI |
 | **Tableau 2024.3+** | Dynamic zone visibility and database-query parameters not fully extracted | These newer features may be ignored during migration |
 | **Custom shapes** | Shape encoding extracts the field reference only — actual image files are not migrated | Custom shape visuals will show default markers |
 | **OAuth credentials** | Credential metadata is stripped by design | Data source connections need re-authentication in Power BI |
@@ -55,8 +55,8 @@ This document lists known limitations and approximations in the Tableau to Power
 
 | Tableau Visual | PBI Mapping | Gap |
 |---------------|------------|-----|
-| Sankey / Chord / Network | Custom visual GUID (if available) or decompositionTree | Custom visuals provide better fidelity when AppSource GUIDs are registered |
-| Gantt Bar / Lollipop | clusteredBarChart | Loses time-axis semantics |
+| Sankey / Chord / Network | ✅ Custom visual GUID (`sankeyDiagram`, `chordChart`, `networkNavigator`) or `decompositionTree` fallback | Custom visuals require AppSource installation in PBI Desktop |
+| Gantt Bar / Lollipop | ✅ `ganttChart` (custom visual GUID) | Custom visual; time-axis semantics preserved |
 | Butterfly / Waffle | hundredPercentStackedBarChart | Loses symmetry |
 | Calendar Heat Map | matrix | Lacks calendar grid structure |
 | Packed Bubble / Strip Plot | scatterChart | Size encoding may not transfer |
@@ -77,7 +77,8 @@ This document lists known limitations and approximations in the Tableau to Power
 
 | Area | Limitation |
 |------|-----------|
-| **No real integration tests** | Deployment code is structurally tested but not against a real Fabric workspace |
+| **PBI Service deployment** | ✅ `--deploy WORKSPACE_ID` deploys via REST API (Azure AD auth required). Integration tests are opt-in (`@pytest.mark.integration`) — not run in standard CI |
+| **Fabric deployment** | Fabric deployment is structurally tested but not against a real workspace |
 | **Windows paths** | OneDrive file locks may leave stale artifacts (handled via try/except) |
 
 ## Workarounds
@@ -92,3 +93,5 @@ For most limitations, the recommended workflow is:
 6. Validate measures and relationships in Model view
 7. Use `--assess` flag for pre-migration readiness analysis
 8. Use `--incremental` for iterative refinement without losing manual edits
+9. Use `--deploy WORKSPACE_ID` to publish directly to Power BI Service
+10. Use `--server` to extract workbooks directly from Tableau Server/Cloud

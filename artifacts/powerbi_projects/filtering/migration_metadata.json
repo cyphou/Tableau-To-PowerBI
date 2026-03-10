@@ -1,0 +1,41 @@
+{
+  "generated_at": "2026-03-10T14:08:30.882341",
+  "source": "Tableau Migration",
+  "report_name": "filtering",
+  "objects_converted": {
+    "worksheets": 2,
+    "dashboards": 1,
+    "datasources": 1,
+    "calculations": 1,
+    "parameters": 0,
+    "filters": 0,
+    "stories": 0,
+    "sets": 0,
+    "groups": 1,
+    "bins": 0,
+    "hierarchies": 0,
+    "user_filters": 0,
+    "actions": 0,
+    "custom_sql": 0
+  },
+  "generated_output": {
+    "pages": 1,
+    "visuals": 2,
+    "theme_applied": false,
+    "theme_detail": {
+      "status": "skipped",
+      "reason": "no dashboard colors detected"
+    }
+  },
+  "tmdl_stats": {
+    "tables": 1,
+    "measures": 0,
+    "columns": 42,
+    "relationships": 0
+  },
+  "visual_type_mappings": {
+    "Sheet 1": "Automatic",
+    "Sheet 2": "Automatic"
+  },
+  "approximations": []
+}

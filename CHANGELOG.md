@@ -32,7 +32,7 @@
 - **Updated CHANGELOG, copilot-instructions, docs**.
 
 ### Stats
-- **1,942 tests passing** (53 Sprint 13 + 33 Sprint 14 + 26 Sprint 15 new tests)
+- **1,889 tests passing** (53 Sprint 13 + 33 Sprint 14 + 26 Sprint 15 new tests)
 - 3 new source files, 3 new test files
 - All phases non-breaking (additive changes only)
 
