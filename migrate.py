@@ -384,6 +384,48 @@ def _load_json(filepath):
     return []
 
 
+def run_html_dashboard(report_name, output_dir):
+    """Generate an HTML migration dashboard for a completed migration.
+
+    Args:
+        report_name: Name of the migrated report.
+        output_dir: Directory containing the .pbip project and report JSON.
+
+    Returns:
+        str or None: Path to the generated HTML file.
+    """
+    try:
+        from generate_report import generate_dashboard
+        html_path = generate_dashboard(report_name, output_dir)
+        if html_path:
+            print(f"\n📊 HTML dashboard: {html_path}")
+        return html_path
+    except Exception as e:
+        logger.warning(f"HTML dashboard generation failed: {e}")
+        return None
+
+
+def run_batch_html_dashboard(output_dir, workbook_results):
+    """Generate a consolidated HTML dashboard for a batch migration.
+
+    Args:
+        output_dir: Root output directory.
+        workbook_results: dict mapping workbook name → paths dict.
+
+    Returns:
+        str or None: Path to the generated HTML file.
+    """
+    try:
+        from generate_report import generate_batch_dashboard
+        html_path = generate_batch_dashboard(output_dir, workbook_results)
+        if html_path:
+            print(f"\n📊 Batch HTML dashboard: {html_path}")
+        return html_path
+    except Exception as e:
+        logger.warning(f"Batch HTML dashboard generation failed: {e}")
+        return None
+
+
 def _build_calc_map_from_tmdl(report_name, output_dir=None):
     """Scan generated TMDL table files to build a calculation→DAX map.
 
@@ -414,10 +456,12 @@ def _build_calc_map_from_tmdl(report_name, output_dir=None):
     m_add_col_pattern = _re.compile(r'Table\.AddColumn\([^,]+,\s*"([^"]+)"')
 
     def _strip_quotes(name):
-        """Remove surrounding TMDL single-quotes."""
+        """Remove surrounding TMDL single-quotes and unescape doubled quotes."""
         name = name.strip()
         if name.startswith("'") and name.endswith("'"):
             name = name[1:-1]
+        # TMDL escapes apostrophes as '' — unescape to match extraction names
+        name = name.replace("''", "'")
         return name
 
     for tmdl_file in os.listdir(tables_dir):
@@ -640,16 +684,37 @@ def _run_batch_config(args):
             report_summary = run_migration_report(report_name=basename, output_dir=out_dir)
 
         all_ok = all(v for v in file_results.values() if v is not None)
+        dashboard_dir = out_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
         results[basename] = {
             'success': all_ok,
             'stats': _stats.to_dict(),
             'fidelity': report_summary.get('fidelity_score') if report_summary else None,
+            'metadata_path': os.path.join(dashboard_dir, basename, 'migration_metadata.json'),
         }
+
+        # Per-workbook HTML dashboard
+        if file_results.get('generation'):
+            run_html_dashboard(basename, dashboard_dir)
 
     # Summary
     batch_duration = datetime.now() - batch_start
     succeeded = sum(1 for r in results.values() if r.get('success'))
     failed = len(results) - succeeded
+
+    # Consolidated batch HTML dashboard
+    effective_output = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
+    wb_paths = {}
+    for name, res in results.items():
+        if res.get('success'):
+            wb_paths[name] = {
+                'metadata_path': res.get('metadata_path'),
+            }
+            pattern = os.path.join(effective_output, f'migration_report_{name}_*.json')
+            candidates = sorted(glob.glob(pattern))
+            if candidates:
+                wb_paths[name]['migration_report_path'] = candidates[-1]
+    if wb_paths:
+        run_batch_html_dashboard(effective_output, wb_paths)
 
     print_header("BATCH-CONFIG MIGRATION SUMMARY")
     print(f"  Total entries: {len(results)}")
@@ -668,11 +733,18 @@ def _run_batch_config(args):
 
 def run_batch_migration(batch_dir, output_dir=None, prep_file=None, skip_extraction=False,
                         calendar_start=None, calendar_end=None, culture=None):
-    """Batch migrate all .twb/.twbx files in a directory.
+    """Batch migrate all .twb/.twbx files in a directory (recursive).
+
+    Searches the directory tree recursively for Tableau workbooks and
+    preserves the relative subfolder structure in the output.  A single
+    consolidated HTML migration dashboard is generated at the root of
+    the output directory.
 
     Args:
-        batch_dir: Directory containing Tableau workbooks
-        output_dir: Custom output directory for .pbip projects
+        batch_dir: Root directory containing Tableau workbooks (searched recursively)
+        output_dir: Custom output directory for .pbip projects.
+            A ``migrated/`` subfolder is created inside it.
+            Defaults to ``<batch_dir>/migrated``.
         prep_file: Optional Prep flow to merge into each workbook
         skip_extraction: Skip extraction step
         calendar_start: Start year for Calendar table
@@ -686,11 +758,14 @@ def run_batch_migration(batch_dir, output_dir=None, prep_file=None, skip_extract
         print(f"Error: Batch directory not found: {batch_dir}")
         return 1
 
-    # Find all Tableau workbooks
-    patterns = ['*.twb', '*.twbx']
+    batch_dir = os.path.abspath(batch_dir)
+
+    # Find all Tableau workbooks recursively
     tableau_files = []
-    for pattern in patterns:
-        tableau_files.extend(glob.glob(os.path.join(batch_dir, pattern)))
+    for root, _dirs, files in os.walk(batch_dir):
+        for f in files:
+            if f.lower().endswith(('.twb', '.twbx')) and not f.startswith('~'):
+                tableau_files.append(os.path.join(root, f))
 
     if not tableau_files:
         print(f"Error: No .twb/.twbx files found in {batch_dir}")
@@ -698,11 +773,14 @@ def run_batch_migration(batch_dir, output_dir=None, prep_file=None, skip_extract
 
     tableau_files.sort()
 
+    # Output root: honour --output-dir or default to <batch_dir>/migrated
+    migrated_root = output_dir if output_dir else os.path.join(batch_dir, 'migrated')
+    os.makedirs(migrated_root, exist_ok=True)
+
     print_header("TABLEAU TO POWER BI BATCH MIGRATION")
-    print(f"  Directory: {batch_dir}")
-    print(f"  Workbooks found: {len(tableau_files)}")
-    if output_dir:
-        print(f"  Output dir: {output_dir}")
+    print(f"  Source:     {batch_dir}")
+    print(f"  Workbooks:  {len(tableau_files)}")
+    print(f"  Output:     {migrated_root}")
     print()
 
     batch_start = datetime.now()
@@ -710,8 +788,17 @@ def run_batch_migration(batch_dir, output_dir=None, prep_file=None, skip_extract
 
     for i, tableau_file in enumerate(tableau_files, 1):
         basename = os.path.splitext(os.path.basename(tableau_file))[0]
+
+        # Compute relative path from batch_dir to preserve folder structure
+        rel_dir = os.path.relpath(os.path.dirname(tableau_file), batch_dir)
+        workbook_output_dir = os.path.join(migrated_root, rel_dir) if rel_dir != '.' else migrated_root
+        os.makedirs(workbook_output_dir, exist_ok=True)
+
+        # Use rel_dir/basename as the unique key (avoids collisions)
+        display_name = os.path.join(rel_dir, basename) if rel_dir != '.' else basename
+
         print(f"\n{'=' * 80}")
-        print(f"  [{i}/{len(tableau_files)}] Migrating: {basename}")
+        print(f"  [{i}/{len(tableau_files)}] Migrating: {display_name}")
         print(f"{'=' * 80}")
 
         global _stats
@@ -723,8 +810,8 @@ def run_batch_migration(batch_dir, output_dir=None, prep_file=None, skip_extract
         if not skip_extraction:
             file_results['extraction'] = run_extraction(tableau_file)
             if not file_results['extraction']:
-                logger.warning(f"Extraction failed for {basename}, skipping")
-                batch_results[basename] = {'success': False, 'error': 'extraction'}
+                logger.warning(f"Extraction failed for {display_name}, skipping")
+                batch_results[display_name] = {'success': False, 'error': 'extraction'}
                 continue
         else:
             file_results['extraction'] = True
@@ -736,7 +823,7 @@ def run_batch_migration(batch_dir, output_dir=None, prep_file=None, skip_extract
         # Step 2: Generate
         file_results['generation'] = run_generation(
             report_name=basename,
-            output_dir=output_dir,
+            output_dir=workbook_output_dir,
             calendar_start=calendar_start,
             calendar_end=calendar_end,
             culture=culture,
@@ -747,20 +834,40 @@ def run_batch_migration(batch_dir, output_dir=None, prep_file=None, skip_extract
         if file_results.get('generation'):
             report_summary = run_migration_report(
                 report_name=basename,
-                output_dir=output_dir,
+                output_dir=workbook_output_dir,
             )
 
         all_ok = all(v for v in file_results.values() if v is not None)
-        batch_results[basename] = {
+        batch_results[display_name] = {
             'success': all_ok,
             'stats': _stats.to_dict(),
             'fidelity': report_summary.get('fidelity_score') if report_summary else None,
+            'report_name': basename,
+            'output_dir': workbook_output_dir,
+            'metadata_path': os.path.join(workbook_output_dir, basename, 'migration_metadata.json'),
         }
 
     # Batch summary
     batch_duration = datetime.now() - batch_start
     succeeded = sum(1 for r in batch_results.values() if r['success'])
     failed = len(batch_results) - succeeded
+
+    # Single consolidated HTML dashboard at root output level
+    wb_paths = {}
+    for display_name, res in batch_results.items():
+        if res.get('success'):
+            name = res.get('report_name', display_name)
+            out = res.get('output_dir', migrated_root)
+            wb_paths[name] = {
+                'metadata_path': res.get('metadata_path'),
+            }
+            # Auto-discover migration report JSON in the workbook's output dir
+            pattern = os.path.join(out, f'migration_report_{name}_*.json')
+            candidates = sorted(glob.glob(pattern))
+            if candidates:
+                wb_paths[name]['migration_report_path'] = candidates[-1]
+    if wb_paths:
+        run_batch_html_dashboard(migrated_root, wb_paths)
 
     print_header("BATCH MIGRATION SUMMARY")
     print(f"  Total workbooks: {len(batch_results)}")
@@ -1457,6 +1564,11 @@ def main():
             report_name=source_basename,
             output_dir=args.output_dir,
         )
+
+    # Step 4b: HTML migration dashboard
+    if results.get('generation') and not args.dry_run:
+        dashboard_dir = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
+        run_html_dashboard(source_basename, dashboard_dir)
 
     # Step 5: Deploy to Power BI Service (optional)
     deploy_result = None

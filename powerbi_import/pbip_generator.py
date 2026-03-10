@@ -41,6 +41,33 @@ def _L(v):
     return {"expr": {"Literal": {"Value": v}}}
 
 
+def _pbi_literal(v):
+    """Convert a filter value to a PBI literal string.
+
+    PBI PBIR filter JSON uses different formats for different types:
+    - Strings:  ``"'some text'"`` (single-quoted)
+    - Booleans: ``"true"`` / ``"false"`` (unquoted)
+    - Numbers:  ``"123"`` or ``"1.5"`` (unquoted)
+
+    Without this, boolean filter values like ``true``/``false`` are
+    wrapped as strings ``'true'``/``'false'`` causing a type mismatch
+    with boolean columns (``Broken_Filters`` error in PBI Desktop).
+    """
+    v_str = str(v)
+    v_lower = v_str.lower().strip()
+    # Boolean
+    if v_lower in ('true', 'false', 'vrai', 'faux'):
+        return v_lower.replace('vrai', 'true').replace('faux', 'false')
+    # Numeric
+    try:
+        float(v_str)
+        return v_str
+    except (ValueError, TypeError):
+        pass
+    # String (default)
+    return f"'{v_str}'"
+
+
 class PowerBIProjectGenerator:
     """Generates Power BI Project (.pbip) files"""
     
@@ -216,6 +243,13 @@ class PowerBIProjectGenerator:
                 print(f"    - {stats['hierarchies']} hierarchies")
             if stats['roles']:
                 print(f"    - {stats['roles']} RLS roles")
+
+            # Store actual BIM measure names for report visual generation.
+            # This set reflects the TMDL generator's 3-factor classification
+            # (aggregation, column refs, role) and may differ from Tableau's
+            # role='measure' metadata — a calculated column like DATEDIFF()
+            # has role='measure' in Tableau but is a column in the BIM model.
+            self._actual_bim_measure_names = stats.get('actual_bim_measures', set())
             
         except Exception as e:
             print(f"  \u26a0 Error during TMDL generation: {e}")
@@ -1179,6 +1213,8 @@ class PowerBIProjectGenerator:
             if ncols > max_cols:
                 max_cols = ncols
                 main_table = tname
+        self._main_table = main_table or 'Table'
+        self._datasources_ref = datasources
         
         # Phase 3: Map columns of each physical table
         #   Also track physical measure columns (role='measure' from Tableau)
@@ -1195,7 +1231,16 @@ class PowerBIProjectGenerator:
         # Measures are on the main table
         measures_table = main_table or 'Table'
         self._measure_names = set()  # Track which fields are measures (not dimensions) — for bucket assignment
-        self._bim_measure_names = set()  # Track only named BIM measures — for Measure vs Column wrapper
+
+        # _bim_measure_names: authoritative set of DAX measures in the BIM
+        # model.  If the TMDL generator populated _actual_bim_measure_names
+        # (the real model output), we use that; otherwise we fall back to
+        # Tableau metadata (role='measure') which is less accurate because
+        # Tableau can label a calculated column (e.g. DATEDIFF) as a measure.
+        if hasattr(self, '_actual_bim_measure_names') and self._actual_bim_measure_names:
+            self._bim_measure_names = set(self._actual_bim_measure_names)
+        else:
+            self._bim_measure_names = set()
 
         # Phase 4a: Physical columns with role='measure' (from Tableau XML)
         #   These go into _measure_names for visual bucket classification (Y not Category)
@@ -1206,7 +1251,7 @@ class PowerBIProjectGenerator:
                     cname = col.get('name', '?')
                     self._measure_names.add(cname)
 
-        # Phase 4b: Calculated measures — these are both visual measures AND BIM measures
+        # Phase 4b: Calculated measures — index in _field_map and _measure_names
         for ds in datasources:
             for calc in ds.get('calculations', []):
                 raw_name = calc.get('name', '').replace('[', '').replace(']', '')
@@ -1219,10 +1264,8 @@ class PowerBIProjectGenerator:
                 # Track measure names for Category vs Y assignment
                 if calc.get('role', '') == 'measure':
                     self._measure_names.add(raw_name)
-                    self._bim_measure_names.add(raw_name)
                     if caption:
                         self._measure_names.add(caption)
-                        self._bim_measure_names.add(caption)
         
         # Also gather measure names from top-level calculations
         for calc in converted_objects.get('calculations', []):
@@ -1230,10 +1273,8 @@ class PowerBIProjectGenerator:
                 raw_name = calc.get('name', '').replace('[', '').replace(']', '')
                 caption = calc.get('caption', raw_name)
                 self._measure_names.add(raw_name)
-                self._bim_measure_names.add(raw_name)
                 if caption:
                     self._measure_names.add(caption)
-                    self._bim_measure_names.add(caption)
         
         # Phase 5: Map extracted groups (BIM-generated calculated columns)
         groups = converted_objects.get('groups', [])
@@ -1279,6 +1320,9 @@ class PowerBIProjectGenerator:
             raw_name = f.get('name', '')
             clean = self._clean_field_name(raw_name)
             if clean in skip_names or raw_name in skip_names:
+                continue
+            # Skip Tableau internal fields (e.g. __tableau_internal_object_id__)
+            if clean.startswith('__tableau_internal') or raw_name.startswith('__tableau_internal'):
                 continue
             # Deduplicate: same field from different shelves
             if clean in seen_names:
@@ -1405,8 +1449,15 @@ class PowerBIProjectGenerator:
         if hasattr(self, '_field_map') and clean_name in self._field_map:
             entity, prop = self._field_map[clean_name]
         else:
-            entity = field.get('datasource', 'Table')
+            entity = getattr(self, '_main_table', 'Table')
             prop = clean_name
+            for ds in getattr(self, '_datasources_ref', []):
+                for calc in ds.get('calculations', []):
+                    calc_id = calc.get('name', '').replace('[', '').replace(']', '')
+                    if calc_id == clean_name:
+                        prop = calc.get('caption', clean_name)
+                        self._field_map[clean_name] = (entity, prop)
+                        break
 
         is_bim_measure = hasattr(self, '_bim_measure_names') and (
             clean_name in self._bim_measure_names or prop in self._bim_measure_names
@@ -1452,10 +1503,17 @@ class PowerBIProjectGenerator:
         if hasattr(self, '_field_map') and clean_name in self._field_map:
             entity, prop = self._field_map[clean_name]
         else:
-            # Fallback: use field name as property
-            # and search across all tables
-            entity = field.get('datasource', 'Table')
+            # Fallback: use main table (not raw Tableau datasource name) as Entity
+            entity = getattr(self, '_main_table', 'Table')
             prop = clean_name
+            # Try to resolve Tableau calculation IDs to captions
+            for ds in getattr(self, '_datasources_ref', []):
+                for calc in ds.get('calculations', []):
+                    calc_id = calc.get('name', '').replace('[', '').replace(']', '')
+                    if calc_id == clean_name:
+                        prop = calc.get('caption', clean_name)
+                        self._field_map[clean_name] = (entity, prop)
+                        break
         
         # Use Measure wrapper ONLY for named BIM measures (DAX definitions),
         # Column wrapper for everything else (PBI auto-aggregates numeric columns)
@@ -1538,7 +1596,7 @@ class PowerBIProjectGenerator:
                         "Condition": {
                             "In": {
                                 "Expressions": [{"Column": {"Expression": {"SourceRef": {"Source": "p"}}, "Property": prop}}],
-                                "Values": [[{"Literal": {"Value": f"'{current_value}'"}}]]
+                                "Values": [[{"Literal": {"Value": _pbi_literal(current_value)}}]]
                             }
                         }
                     }]
@@ -1585,6 +1643,11 @@ class PowerBIProjectGenerator:
             
             # Skip Tableau virtual fields (no PBI column exists)
             if clean_field in skip_fields or field.replace('[', '').replace(']', '') in skip_fields:
+                continue
+
+            # Skip date-part filters (yr:, qr:, etc.) — PBI cannot filter
+            # a DateTime column with categorical date-part string values
+            if f.get('date_part'):
                 continue
             
             # Resolve Entity (table) and Property (column) via mapping
@@ -1657,7 +1720,7 @@ class PowerBIProjectGenerator:
                 condition = {
                     "In": {
                         "Expressions": [{"Column": {"Expression": {"SourceRef": {"Source": "t"}}, "Property": prop}}],
-                        "Values": [[{"Literal": {"Value": f"'{v}'"}}] for v in values[:100]]
+                        "Values": [[{"Literal": {"Value": _pbi_literal(v)}}] for v in values[:100]]
                     }
                 }
                 if is_exclude:

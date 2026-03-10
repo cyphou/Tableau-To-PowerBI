@@ -327,6 +327,118 @@ def generate_html(assessments, reports, metadata):
     return html
 
 
+def generate_dashboard(report_name, output_dir, migration_report_path=None, metadata_path=None):
+    """Generate an HTML migration dashboard for a single migration run.
+
+    This is called automatically at the end of each migration.  It reads the
+    migration report JSON and metadata JSON from the output directory,
+    then produces a self-contained HTML dashboard next to the .pbip project.
+
+    Args:
+        report_name: Name of the migrated report.
+        output_dir: Directory containing the generated .pbip project.
+        migration_report_path: Explicit path to the migration report JSON.
+            If None, the latest ``migration_report_*.json`` in *output_dir*
+            is used.
+        metadata_path: Explicit path to ``migration_metadata.json``.
+            If None, it is looked up inside
+            ``<output_dir>/<report_name>/migration_metadata.json``.
+
+    Returns:
+        str or None: Path to the generated HTML file, or None on failure.
+    """
+    # ── Locate migration report JSON ──────────────────────────────────
+    reports = {}
+    if migration_report_path and os.path.isfile(migration_report_path):
+        try:
+            with open(migration_report_path, encoding="utf-8") as fh:
+                data = json.load(fh)
+            reports[data.get("report_name", report_name)] = data
+        except Exception:
+            pass
+    else:
+        # Auto-discover latest migration report in output_dir
+        pattern = os.path.join(output_dir, f"migration_report_{report_name}_*.json")
+        candidates = sorted(glob.glob(pattern))
+        if candidates:
+            try:
+                with open(candidates[-1], encoding="utf-8") as fh:
+                    data = json.load(fh)
+                reports[data.get("report_name", report_name)] = data
+            except Exception:
+                pass
+
+    # ── Locate metadata JSON ─────────────────────────────────────────
+    metadata = {}
+    if metadata_path and os.path.isfile(metadata_path):
+        try:
+            with open(metadata_path, encoding="utf-8") as fh:
+                metadata[report_name] = json.load(fh)
+        except Exception:
+            pass
+    else:
+        candidate = os.path.join(output_dir, report_name, "migration_metadata.json")
+        if os.path.isfile(candidate):
+            try:
+                with open(candidate, encoding="utf-8") as fh:
+                    metadata[report_name] = json.load(fh)
+            except Exception:
+                pass
+
+    if not reports and not metadata:
+        return None
+
+    html = generate_html({}, reports, metadata)
+
+    html_path = os.path.join(output_dir, f"MIGRATION_DASHBOARD_{report_name}.html")
+    with open(html_path, "w", encoding="utf-8") as f:
+        f.write(html)
+
+    return html_path
+
+
+def generate_batch_dashboard(output_dir, workbook_results):
+    """Generate a consolidated HTML dashboard for a batch migration.
+
+    Args:
+        output_dir: Root output directory.
+        workbook_results: dict mapping workbook names to dicts with keys
+            ``migration_report_path`` and ``metadata_path`` (both optional).
+
+    Returns:
+        str or None: Path to the generated HTML file.
+    """
+    reports = {}
+    metadata = {}
+
+    for name, paths in workbook_results.items():
+        rp = paths.get("migration_report_path")
+        if rp and os.path.isfile(rp):
+            try:
+                with open(rp, encoding="utf-8") as fh:
+                    reports[name] = json.load(fh)
+            except Exception:
+                pass
+        mp = paths.get("metadata_path")
+        if mp and os.path.isfile(mp):
+            try:
+                with open(mp, encoding="utf-8") as fh:
+                    metadata[name] = json.load(fh)
+            except Exception:
+                pass
+
+    if not reports and not metadata:
+        return None
+
+    html = generate_html({}, reports, metadata)
+
+    html_path = os.path.join(output_dir, "MIGRATION_DASHBOARD.html")
+    with open(html_path, "w", encoding="utf-8") as f:
+        f.write(html)
+
+    return html_path
+
+
 def main():
     assessments = load_assessments()
     reports = load_migration_reports()

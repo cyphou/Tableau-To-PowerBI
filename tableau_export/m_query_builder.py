@@ -66,7 +66,7 @@ def _append_type_step(m_query, columns, prev_step='#"Promoted Headers"'):
 # ── Per-connector generators ─────────────────────────────────────────────────
 
 def _gen_m_excel(details, table_name, columns):
-    filename = details.get('filename', 'File.xlsx')
+    filename = details.get('filename') or (table_name + '.xlsx')
     file_path_bs = filename.replace('/', '\\')
     safe_step = '#"' + table_name + ' Sheet"'
 
@@ -107,7 +107,7 @@ def _gen_m_postgresql(details, table_name, columns):
 
 
 def _gen_m_csv(details, table_name, columns):
-    filename = details.get('filename', 'file.csv')
+    filename = details.get('filename') or (table_name + '.csv')
     directory = details.get('directory', '')
     full_path = f"{directory}/{filename}" if directory else filename
     delimiter = details.get('delimiter', ',')
@@ -806,11 +806,19 @@ def inject_m_steps(m_query, steps):
     lines = before_in.split('\n')
     while lines and lines[-1].strip().startswith('Result'):
         lines.pop()
-    # Strip trailing comma from the last real step
-    if lines and lines[-1].rstrip().endswith(','):
-        pass  # keep the comma — we'll add more steps
-    elif lines:
-        lines[-1] = lines[-1].rstrip() + ','
+    # Strip trailing comma from the last real step.
+    # Must account for // line comments — a comma inside a comment is NOT actual M syntax.
+    if lines:
+        last_line = lines[-1].rstrip()
+        comment_idx = last_line.find('//')
+        if comment_idx > 0:
+            # Strip the comment; check if the code portion already has a trailing comma
+            code_part = last_line[:comment_idx].rstrip()
+            if not code_part.endswith(','):
+                code_part += ','
+            lines[-1] = code_part
+        elif not last_line.endswith(','):
+            lines[-1] = last_line + ','
     before_in = '\n'.join(lines)
 
     # Find the last step name referenced (skip Result and comments)

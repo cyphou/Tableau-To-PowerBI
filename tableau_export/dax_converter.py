@@ -53,7 +53,7 @@ _SIMPLE_FUNCTION_MAP = [
     (r'\bCONTAINS\s*\(', 'CONTAINSSTRING('),
     (r'\bASCII\s*\(', 'UNICODE('),
     (r'\bCHAR\s*\(', 'UNICHAR('),
-    (r'\bATTR\s*\(', 'SELECTEDVALUE('),
+    # ATTR is handled separately in _convert_attr() — context-aware (measure vs column)
 
     # Date functions — DATETRUNC
     (r'\bDATETRUNC\s*\(\s*[\'"]?year[\'"]?\s*,', 'STARTOFYEAR('),
@@ -258,7 +258,7 @@ def convert_tableau_formula_to_dax(formula, column_name='Measure', table_name='T
                                     column_table_map=None, measure_names=None,
                                     is_calc_column=False, param_values=None,
                                     calc_datatype=None, partition_fields=None,
-                                    compute_using=None):
+                                    compute_using=None, table_columns=None):
     """
     Converts a Tableau formula to DAX with context resolution.
     
@@ -293,6 +293,11 @@ def convert_tableau_formula_to_dax(formula, column_name='Measure', table_name='T
         compute_using = partition_fields
     
     dax = formula.strip()
+    
+    # === Phase 0: Strip federated datasource prefixes ===
+    # Tableau data blends use [federated.xxxID].[Column] references.
+    # Strip the federated prefix so the column resolves normally.
+    dax = re.sub(r'\[federated\.[^\]]*\]\.', '', dax)
     
     # === Phase 1: Resolve Tableau references ===
     dax = _resolve_references(dax, calc_map, param_map, is_calc_column, param_values)
@@ -334,6 +339,7 @@ def convert_tableau_formula_to_dax(formula, column_name='Measure', table_name='T
     dax = _convert_regexp_extract(dax)
     dax = _convert_regexp_extract_nth(dax)
     dax = _convert_regexp_replace(dax)
+    dax = _convert_attr(dax, measure_names)
 
     # 3b. Apply all simple function mappings (table-driven)
     for compiled_pattern, replacement in _COMPILED_FUNCTION_MAP:
@@ -372,7 +378,7 @@ def convert_tableau_formula_to_dax(formula, column_name='Measure', table_name='T
     
     # === Phase 5: Resolve remaining columns [col] → 'Table'[col] ===
     dax = _resolve_columns(dax, table_name, column_table_map, measure_names,
-                           is_calc_column, param_values)
+                           is_calc_column, param_values, table_columns=table_columns)
 
     # === Phase 5a: Fix STARTOF* for calculated columns ===
     if is_calc_column:
@@ -950,6 +956,31 @@ def _convert_dateparse(dax):
 def _convert_isdate(dax):
     """ISDATE(string) → NOT(ISERROR(DATEVALUE(string)))"""
     return _transform_func_call(dax, 'ISDATE', lambda args, inner: f'NOT(ISERROR(DATEVALUE({inner.strip()})))')
+
+
+def _convert_attr(dax, measure_names=None):
+    """Convert ATTR(x) → SELECTEDVALUE(x) for columns, or just x for measures.
+    
+    Tableau ATTR() returns a single value when the context has exactly one distinct
+    value.  For columns, DAX SELECTEDVALUE() is the equivalent.  But when the argument
+    is a measure (already scalar), wrapping it in SELECTEDVALUE is invalid — simply
+    reference the measure directly.
+    """
+    measure_names = measure_names or set()
+
+    def _replacer(match):
+        inner = match.group(1).strip()
+        # Extract field name from brackets: [FieldName]
+        field_match = re.match(r'^\[([^\]]+)\]$', inner)
+        if field_match:
+            field_name = field_match.group(1)
+            if field_name in measure_names:
+                # ATTR of a measure → just the measure reference (already scalar)
+                return inner
+        # Column reference → SELECTEDVALUE
+        return f'SELECTEDVALUE({inner})'
+
+    return re.sub(r'\bATTR\s*\(([^)]+)\)', _replacer, dax)
 
 
 def _convert_iif(dax):
@@ -1697,9 +1728,17 @@ def _convert_total_function(dax, table_name):
 # ── Phase 5: Column resolution ───────────────────────────────────────────────
 
 def _resolve_columns(dax, table_name, column_table_map, measure_names,
-                     is_calc_column, param_values):
-    """Resolve [col] → 'Table'[col] with cross-table RELATED() support."""
-    
+                     is_calc_column, param_values, table_columns=None):
+    """Resolve [col] → 'Table'[col] with cross-table RELATED() support.
+
+    When *table_columns* is provided (set of column names belonging to the
+    current table), a column that exists in the current table is always
+    treated as a same-table reference — even if ``column_table_map`` maps
+    it to a different table (which can happen when multiple datasources
+    share table names and their columns are merged).
+    """
+    _local_cols = table_columns or set()
+
     def _dax_escape_col(col_name):
         return col_name.replace(']', ']]')
     
@@ -1718,6 +1757,10 @@ def _resolve_columns(dax, table_name, column_table_map, measure_names,
             return f'[{_dax_escape_col(col)}]'
         if col in column_table_map:
             col_table = column_table_map[col]
+            # If the column also belongs to the current table, prefer
+            # same-table reference to avoid spurious RELATED/LOOKUPVALUE.
+            if col in _local_cols:
+                col_table = table_name
             if is_calc_column and col_table != table_name:
                 return f"RELATED('{col_table}'[{_dax_escape_col(col)}])"
             return f"'{col_table}'[{_dax_escape_col(col)}]"

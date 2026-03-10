@@ -140,6 +140,37 @@ def _extract_function_body(expr, func_name):
     return None
 
 
+# Characters that are NOT valid in M generalized identifiers inside [...].
+# Letters (incl. accented), digits, spaces, underscores, and dots are OK;
+# everything else (/ ( ) ' " + @ # $ % ^ & * ! ~ ` < > ? ; : { } | \) needs quoting.
+_M_SPECIAL_CHARS = set('/()\'"+@#$%^&*!~`<>?;:{}|\\,')
+
+
+def _quote_m_identifiers(m_expr):
+    """Quote [field] references containing chars invalid in M generalized identifiers.
+
+    Converts [Pays/Région] → [#"Pays/Région"], leaves [Normal Col] unchanged.
+    Skips already-quoted [#"..."] and record literals (contain '=').
+    """
+    if not m_expr:
+        return m_expr
+
+    def _replacer(match):
+        name = match.group(1)
+        # Skip already-quoted identifiers
+        if name.startswith('#"'):
+            return match.group(0)
+        # Skip record literals (contain '=')
+        if '=' in name:
+            return match.group(0)
+        # Check if quoting is needed
+        if any(ch in _M_SPECIAL_CHARS for ch in name):
+            return f'[#"{name}"]'
+        return match.group(0)
+
+    return re.sub(r'\[([^\]]+)\]', _replacer, m_expr)
+
+
 def _dax_to_m_expression(dax_expr, table_name=''):
     """Convert a DAX calculated-column expression to Power Query M.
 
@@ -277,7 +308,7 @@ def _dax_to_m_expression(dax_expr, table_name=''):
     # Remaining DAX function calls → not convertible
     if re.search(r'\b[A-Z_]{2,}\s*\(', result):
         return None
-    return result
+    return _quote_m_identifiers(result)
 
 
 def _inject_m_steps_into_partition(table, steps):
@@ -391,13 +422,25 @@ def generate_tmdl(datasources, report_name, extra_objects, output_dir,
     # Step 3: Compute and return stats
     tables = model.get('model', {}).get('tables', [])
     rels = model.get('model', {}).get('relationships', [])
+
+    # Collect actual BIM measure names (captions) from the generated model
+    # so that the report generator can distinguish real DAX measures from
+    # calculated columns that Tableau marks as role='measure'.
+    actual_bim_measures = set()
+    for t in tables:
+        for m in t.get('measures', []):
+            mname = m.get('name', '')
+            if mname:
+                actual_bim_measures.add(mname)
+
     stats = {
         'tables': len(tables),
         'columns': sum(len(t.get('columns', [])) for t in tables),
         'measures': sum(len(t.get('measures', [])) for t in tables),
         'relationships': len(rels),
         'hierarchies': sum(len(t.get('hierarchies', [])) for t in tables),
-        'roles': len(model.get('model', {}).get('roles', []))
+        'roles': len(model.get('model', {}).get('roles', [])),
+        'actual_bim_measures': actual_bim_measures,
     }
     return stats
 
@@ -509,9 +552,20 @@ def _build_semantic_model(datasources, report_name="Report", extra_objects=None,
                 conn_ref = table.get('connection', '')
                 table_conn = connection_map.get(conn_ref, ds_connection)
 
-            # Deduplicate: keep the version with the most columns
-            if table_name not in best_tables or col_count > len(best_tables[table_name][0].get('columns', [])):
+            # Deduplicate: merge columns from all datasources sharing the same table name
+            if table_name not in best_tables:
                 best_tables[table_name] = (table, table_conn)
+            else:
+                # Merge columns: add any new columns not already present
+                existing_cols = best_tables[table_name][0].get('columns', [])
+                existing_names = {c.get('name', '') for c in existing_cols}
+                for col in table.get('columns', []):
+                    if col.get('name', '') not in existing_names:
+                        existing_cols.append(col)
+                        existing_names.add(col.get('name', ''))
+                # Keep the connection from the table with more columns originally
+                if col_count > len(existing_cols) - len(table.get('columns', [])):
+                    best_tables[table_name] = (best_tables[table_name][0], table_conn)
 
         # Collect Prep flow M query overrides
         ds_m_overrides = ds.get('m_query_overrides', {})
@@ -621,7 +675,8 @@ def _build_semantic_model(datasources, report_name="Report", extra_objects=None,
     # Phase 2c: Build per-datasource column → table map for multi-source routing
     # Maps datasource_name → {column_name → table_name}
     ds_column_table_map = {}
-    datasource_table_map = {}  # table_name → datasource_name
+    datasource_table_map = {}  # table_name → datasource_name (last wins for conn)
+    table_datasource_set = {}  # table_name → set of ALL datasource names that own it
     for ds in datasources:
         ds_name = ds.get('name', '')
         ds_col_map = {}
@@ -629,6 +684,10 @@ def _build_semantic_model(datasources, report_name="Report", extra_objects=None,
             tname = table.get('name', 'Table1')
             if tname in best_tables:
                 datasource_table_map[tname] = ds_name
+                # Track ALL datasources that own this table (for calculation routing)
+                if tname not in table_datasource_set:
+                    table_datasource_set[tname] = set()
+                table_datasource_set[tname].add(ds_name)
                 for col in table.get('columns', []):
                     cname = col.get('name', '')
                     if cname:
@@ -648,26 +707,38 @@ def _build_semantic_model(datasources, report_name="Report", extra_objects=None,
 
     # Phase 3: Create tables
     # Build reverse map: datasource_name → best table name within that datasource
+    # Use table_datasource_set (collision-safe) instead of datasource_table_map
     ds_main_table = {}  # datasource_name → table_name (the table with the most columns in that DS)
-    for tname, ds_name in datasource_table_map.items():
-        if ds_name not in ds_main_table:
-            ds_main_table[ds_name] = tname
-        else:
-            # Pick the table with more columns within the same datasource
-            existing = ds_main_table[ds_name]
-            existing_cols = len(best_tables.get(existing, ({}, {}))[0].get('columns', []))
-            current_cols = len(best_tables.get(tname, ({}, {}))[0].get('columns', []))
-            if current_cols > existing_cols:
+    for tname, ds_names in table_datasource_set.items():
+        if tname not in best_tables:
+            continue
+        for ds_name in ds_names:
+            if ds_name not in ds_main_table:
                 ds_main_table[ds_name] = tname
+            else:
+                # Pick the table with more columns within the same datasource
+                existing = ds_main_table[ds_name]
+                existing_cols = len(best_tables.get(existing, ({}, {}))[0].get('columns', []))
+                current_cols = len(best_tables.get(tname, ({}, {}))[0].get('columns', []))
+                if current_cols > existing_cols:
+                    ds_main_table[ds_name] = tname
 
     for table_name, (table, table_conn) in best_tables.items():
         # Route calculations to their source datasource's main table
-        ds_for_table = datasource_table_map.get(table_name)
-        if ds_for_table and ds_main_table.get(ds_for_table) == table_name:
-            # This table is the main table for its datasource — give it that DS's calcs
+        # Use table_datasource_set to handle multiple datasources sharing the same table name
+        ds_names_for_table = table_datasource_set.get(table_name, set())
+        is_main_for_any_ds = any(
+            ds_main_table.get(dsn) == table_name for dsn in ds_names_for_table
+        )
+        if is_main_for_any_ds:
+            # This table is the main table for one or more datasources — collect all their calcs
+            owning_ds_names = {
+                dsn for dsn in ds_names_for_table
+                if ds_main_table.get(dsn) == table_name
+            }
             table_calculations = [
                 c for c in all_calculations
-                if c.get('datasource_name', '') == ds_for_table
+                if c.get('datasource_name', '') in owning_ds_names
             ]
             # Also add calcs with no datasource_name (legacy) if this is the global main table
             if table_name == main_table_name:
@@ -1035,6 +1106,10 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
 
     m_calc_steps = []  # Accumulated M Table.AddColumn steps (replaces DAX calc cols)
 
+    # Build set of column names belonging to *this* table so that
+    # _resolve_columns prefers same-table refs over cross-table RELATED().
+    _this_table_columns = {c.get('name', '') for c in columns if c.get('name', '')}
+
     for calc in calculations:
         calc_name = calc.get('name', '').replace('[', '').replace(']', '')
         caption = calc.get('caption', calc_name)
@@ -1110,7 +1185,8 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
             is_calc_column=is_calc_col,
             param_values=param_values,
             calc_datatype=datatype,
-            partition_fields=calc.get('table_calc_partitioning')
+            partition_fields=calc.get('table_calc_partitioning'),
+            table_columns=_this_table_columns
         )
 
         if is_calc_col:
@@ -1392,21 +1468,26 @@ def _detect_many_to_many(model, datasources):
     """
     Determine cardinality for each relationship.
 
-    Strategy — based on Tableau join type:
+    Strategy — based on Tableau join type + column-count ratio heuristic:
     - Full joins → manyToMany (ambiguous direction)
-    - Left/Inner/Right joins → manyToOne (default PBI behavior)
-      The 'to' side is the dimension/lookup table (one side).
+    - Left/Inner/Right joins:
+      - If to-table column count ≥ 70% of from-table → manyToMany (peer/fact tables)
+      - If to-table column count < 70% of from-table → manyToOne (lookup table)
 
-    For left/inner joins the Tableau left table (fromTable) is typically
-    the fact table (many rows) and the right table (toTable) is the
-    lookup (unique keys).  We default to manyToOne which is safe — Power BI
-    will raise an error at refresh if the 'one' side has duplicates,
-    prompting the user to review.  Getting manyToMany wrong (when it
-    should be manyToOne) silently duplicates data, which is worse.
+    The 70% threshold detects when two tables have similar schemas (both are
+    fact tables, e.g. Tableau data blend artifacts) and a manyToOne assumption
+    would fail because the 'one' side has duplicates.
     """
+    # Build table column count map
+    table_col_counts = {}
+    for table in model['model'].get('tables', []):
+        tname = table.get('name', '')
+        table_col_counts[tname] = len(table.get('columns', []))
+
     for rel in model['model']['relationships']:
         to_table = rel.get('toTable', '')
         to_col = rel.get('toColumn', '')
+        from_table = rel.get('fromTable', '')
         join_type = rel.get('joinType', 'left')
 
         if join_type == 'full':
@@ -1415,11 +1496,22 @@ def _detect_many_to_many(model, datasources):
             rel['crossFilteringBehavior'] = 'bothDirections'
             print(f"  ⚠️  Relation → '{to_table}.{to_col}' set to manyToMany (full join).")
         else:
-            # left, inner, right → manyToOne
-            rel['fromCardinality'] = 'many'
-            rel['toCardinality'] = 'one'
-            rel['crossFilteringBehavior'] = 'oneDirection'
-            print(f"  ✓  Relation → '{to_table}.{to_col}' set to manyToOne (lookup table).")
+            # Column-count ratio heuristic: peer tables → manyToMany
+            from_cols = table_col_counts.get(from_table, 0)
+            to_cols = table_col_counts.get(to_table, 0)
+
+            if from_cols > 0 and to_cols >= 0.7 * from_cols:
+                # Both tables have similar column counts → peer/fact tables
+                rel['fromCardinality'] = 'many'
+                rel['toCardinality'] = 'many'
+                rel['crossFilteringBehavior'] = 'bothDirections'
+                print(f"  ⚠️  Relation → '{to_table}.{to_col}' set to manyToMany (peer table, {to_cols}/{from_cols} cols ≥ 70%).")
+            else:
+                # to-table has fewer columns → lookup/dimension table
+                rel['fromCardinality'] = 'many'
+                rel['toCardinality'] = 'one'
+                rel['crossFilteringBehavior'] = 'oneDirection'
+                print(f"  ✓  Relation → '{to_table}.{to_col}' set to manyToOne (lookup table, {to_cols}/{from_cols} cols < 70%).")
 
 
 def _fix_related_for_many_to_many(model):
@@ -1857,9 +1949,10 @@ def _auto_date_hierarchies(model):
                     calc_col_names.append(calc_name)
                     continue  # already exists (e.g. from Tableau extraction)
 
+                col_ref = f'[{col_name}]' if not any(c in _M_SPECIAL_CHARS for c in col_name) else f'[#"{col_name}"]'
                 m_steps.append(m_transform_add_column(
                     calc_name,
-                    f'each {m_fn}([{col_name}])',
+                    f'each {m_fn}({col_ref})',
                     'Int64.Type'
                 ))
                 columns.append({
