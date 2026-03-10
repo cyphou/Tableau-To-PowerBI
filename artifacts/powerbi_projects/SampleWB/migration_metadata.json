@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-10T09:39:54.217423",
+  "generated_at": "2026-03-10T10:17:41.826692",
   "source": "Tableau Migration",
   "report_name": "SampleWB",
   "objects_converted": {
@@ -20,7 +20,7 @@
   },
   "generated_output": {
     "pages": 1,
-    "visuals": 3,
+    "visuals": 6,
     "theme_applied": false
   },
   "tmdl_stats": {

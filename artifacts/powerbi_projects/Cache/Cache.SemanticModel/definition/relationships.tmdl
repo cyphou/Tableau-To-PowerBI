@@ -1,4 +1,4 @@
-relationship 6d196ecd-9ce2-4414-86f1-9938a8791c31
+relationship 97e8c3a2-7925-41bb-8319-5c1b706b2502
 	fromColumn: Extract.'Order Date'
 	toColumn: Calendar.Date
 	crossFilteringBehavior: oneDirection

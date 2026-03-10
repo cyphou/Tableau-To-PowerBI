@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-10T09:39:55.229187",
+  "generated_at": "2026-03-10T10:17:47.498743",
   "source": "Tableau Migration",
   "report_name": "datasource_test",
   "objects_converted": {
@@ -20,7 +20,7 @@
   },
   "generated_output": {
     "pages": 1,
-    "visuals": 2,
+    "visuals": 4,
     "theme_applied": false
   },
   "tmdl_stats": {

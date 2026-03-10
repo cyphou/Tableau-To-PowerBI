@@ -1,9 +1,9 @@
-relationship c91c8f0d-629a-4c81-a569-55381d45e5fe
+relationship ef656da9-66e4-4ae8-a31e-03d25069bdad
 	fromColumn: Orders.'Order Date'
 	toColumn: Calendar.Date
 	crossFilteringBehavior: oneDirection
 
-relationship 4e8eb65a-bf71-45f2-a585-5178b050b045
+relationship 4807f504-c70e-4208-a372-1a027d7f710e
 	fromColumn: Extract.'Order Date'
 	toColumn: Calendar.Date
 	crossFilteringBehavior: oneDirection

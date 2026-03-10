@@ -49,6 +49,27 @@ from m_query_builder import (
 
 
 # ════════════════════════════════════════════════════════════════════
+#  TABLEAU DERIVATION PREFIX CLEANING
+#  Secondary defense against Tableau internal field names leaking
+# ════════════════════════════════════════════════════════════════════
+
+_RE_TMDL_DERIVATION_PREFIX = re.compile(
+    r'^(none|sum|avg|count|min|max|usr|yr|mn|dy|qr|wk|attr|md|mdy|hms|hr|mt|sc|thr|trunc|tyr|tqr|tmn|tdy|twk):'
+)
+_RE_TMDL_TYPE_SUFFIX = re.compile(r':(nk|qk|ok|fn|tn)$')
+
+
+def _clean_tableau_field_ref(raw):
+    """Strip Tableau derivation prefixes and type suffixes from a field name.
+
+    Defensive secondary filter applied in the TMDL generator to catch any
+    Tableau internal names that leaked through extraction.
+    """
+    clean = _RE_TMDL_DERIVATION_PREFIX.sub('', raw)
+    return _RE_TMDL_TYPE_SUFFIX.sub('', clean)
+
+
+# ════════════════════════════════════════════════════════════════════
 #  DAX → POWER QUERY M EXPRESSION CONVERTER
 #  Eliminates DAX calculated columns in favour of M Table.AddColumn
 # ════════════════════════════════════════════════════════════════════
@@ -955,6 +976,11 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
         role = calc.get('role', 'measure')
         datatype = calc.get('datatype', 'string')
 
+        # Skip calculations with no formula (e.g. categorical-bin groups)
+        # to avoid generating measures with empty expressions.
+        if not formula:
+            continue
+
         # Determine if it's a simple literal (parameter) -> measure
         is_literal = formula and '[' not in formula
 
@@ -1530,7 +1556,10 @@ def _process_sets_groups_bins(model, extra_objects, main_table_name, column_tabl
 
             parts = []
             for sf in source_fields:
+                # Clean any Tableau derivation prefixes (yr:, tyr:, etc.)
+                sf = _clean_tableau_field_ref(sf)
                 resolved = calc_map_lookup.get(sf, sf)
+                resolved = _clean_tableau_field_ref(resolved)
                 table_ref = column_table_map.get(resolved, column_table_map.get(sf, main_table_name))
                 escaped_col = resolved.replace(']', ']]')
                 ref = f"'{table_ref}'[{escaped_col}]"
@@ -3197,7 +3226,7 @@ def _write_table_tmdl(tables_dir, table):
 def _write_measure(lines, measure):
     """Write a measure in TMDL."""
     mname = _quote_name(measure.get('name', 'Measure'))
-    expression = measure.get('expression', '0')
+    expression = measure.get('expression') or '0'
 
     if '\n' in expression:
         lines.append(f"\tmeasure {mname} = ```")

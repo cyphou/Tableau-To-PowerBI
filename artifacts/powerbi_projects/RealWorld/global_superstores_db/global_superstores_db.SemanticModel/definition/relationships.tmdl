@@ -1,5 +1,0 @@
-relationship 39a62d46-2c69-4848-80aa-5fd3bdf772f4
-	fromColumn: Orders.'Order Date'
-	toColumn: Calendar.Date
-	crossFilteringBehavior: oneDirection
-

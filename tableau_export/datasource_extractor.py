@@ -521,11 +521,20 @@ def extract_calculations(datasource_elem):
     for col_elem in datasource_elem.findall('.//column'):
         calc_elem = col_elem.find('.//calculation')
         if calc_elem is not None:
+            calc_class = calc_elem.get('class', 'tableau')
+            # Skip categorical-bin calculations — they are handled by group
+            # extraction and have no formula, which would produce empty measures.
+            if calc_class == 'categorical-bin':
+                continue
+            calc_formula = calc_elem.get('formula', '')
+            # Skip calculations with no formula to avoid empty measures
+            if not calc_formula.strip():
+                continue
             calculation = {
                 'name': col_elem.get('name', ''),
                 'caption': col_elem.get('caption', col_elem.get('name', '')),
-                'formula': calc_elem.get('formula', ''),
-                'class': calc_elem.get('class', 'tableau'),
+                'formula': calc_formula,
+                'class': calc_class,
                 'datatype': col_elem.get('datatype', 'real'),
                 'role': col_elem.get('role', 'measure'),
                 'type': col_elem.get('type', 'quantitative')

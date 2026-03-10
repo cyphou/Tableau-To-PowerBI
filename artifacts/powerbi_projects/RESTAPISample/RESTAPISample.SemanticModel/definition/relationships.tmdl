@@ -1,4 +1,4 @@
-relationship 27c122b1-1a7d-4f37-b99c-bcd1edc6ec41
+relationship 22b9fd04-2bfb-4b30-84e4-6d9110173aa1
 	fromColumn: Extract.Date
 	toColumn: Calendar.Date
 	crossFilteringBehavior: oneDirection

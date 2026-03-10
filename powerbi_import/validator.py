@@ -247,6 +247,14 @@ class ArtifactValidator:
         except Exception as e:
             return False, [f'Error reading {filepath}: {e}']
 
+    # ── Tableau derivation field reference pattern ────────────────
+    # Matches patterns like [yr:Order Date:ok], [tyr:Date:qk], [none:Ship Mode:nk]
+    _RE_TABLEAU_DERIVATION_REF = re.compile(
+        r'\[(?:none|sum|avg|count|min|max|usr|yr|mn|dy|qr|wk|attr|md|mdy|hms|hr|mt|sc|thr|trunc|tyr|tqr|tmn|tdy|twk):'
+        r'[^\]]+?'
+        r'(?::(?:nk|qk|ok|fn|tn))?\]'
+    )
+
     # ── Semantic DAX validation ────────────────────────────────────
 
     # Tableau functions that should never appear in valid DAX
@@ -334,6 +342,7 @@ class ArtifactValidator:
 
         basename = os.path.basename(filepath)
         current_object = basename
+        lineage_tags = []  # (tag, object_context, line_number)
 
         i = 0
         while i < len(lines):
@@ -345,12 +354,58 @@ class ArtifactValidator:
                 if stripped.startswith(prefix):
                     current_object = stripped
 
+            # --- Empty measure/column detection ---
+            # Pattern: ``measure 'Name' = `` with no expression after ``=``
+            m_measure = re.match(r"^\s*measure\s+'[^']+'\s*=\s*$", line)
+            if m_measure:
+                issues.append(f'Empty measure expression in {current_object} ({basename}:{i+1})')
+
+            # Pattern: ``column 'Name' = `` with no expression after ``=``
+            m_col_expr = re.match(r"^\s*column\s+'[^']+'\s*=\s*$", line)
+            if m_col_expr:
+                issues.append(f'Empty column expression in {current_object} ({basename}:{i+1})')
+
+            # --- Single-line measure DAX (``measure 'Name' = <dax>``) ---
+            m_inline = re.match(r"^\s*measure\s+'[^']+'\s*=\s*(.+)$", line)
+            if m_inline:
+                formula = m_inline.group(1).strip()
+                if formula and not formula.endswith('```'):
+                    issues.extend(cls.validate_dax_formula(formula, current_object))
+                    # Check for Tableau derivation references
+                    derivation_matches = cls._RE_TABLEAU_DERIVATION_REF.findall(formula)
+                    if derivation_matches:
+                        issues.append(
+                            f'Tableau derivation field reference {derivation_matches[0]} '
+                            f'in {current_object} ({basename}:{i+1})'
+                        )
+
+            # --- lineageTag tracking ---
+            lt_match = re.match(r'^\s*lineageTag:\s*(\S+)', stripped)
+            if lt_match:
+                lineage_tags.append((lt_match.group(1), current_object, i + 1))
+
+            # --- sortByColumn validation ---
+            sbc_match = re.match(r'^\s*sortByColumn:\s*(.+)', stripped)
+            if sbc_match:
+                sort_col = sbc_match.group(1).strip()
+                # We'll collect for cross-validation later in validate_tmdl_advanced
+                pass
+
             # Single-line expression
             if stripped.startswith('expression =') and not stripped.endswith('```'):
                 formula = stripped[len('expression ='):].strip()
+                if not formula:
+                    issues.append(f'Empty expression in {current_object} ({basename}:{i+1})')
                 # Skip M expressions (Power Query)
-                if not formula.lstrip().startswith('let') and not formula.lstrip().startswith('//'):
+                elif not formula.lstrip().startswith('let') and not formula.lstrip().startswith('//'):
                     issues.extend(cls.validate_dax_formula(formula, current_object))
+                    # Check for Tableau derivation references in DAX
+                    derivation_matches = cls._RE_TABLEAU_DERIVATION_REF.findall(formula)
+                    if derivation_matches:
+                        issues.append(
+                            f'Tableau derivation field reference {derivation_matches[0]} '
+                            f'in {current_object} ({basename}:{i+1})'
+                        )
 
             # Multi-line expression block (``` delimited)
             if stripped.startswith('expression =') and stripped.endswith('```'):
@@ -360,11 +415,30 @@ class ArtifactValidator:
                     formula_lines.append(lines[i])
                     i += 1
                 formula = '\n'.join(formula_lines)
+                # Check for Tableau derivation references in any expression (DAX or M)
+                derivation_matches = cls._RE_TABLEAU_DERIVATION_REF.findall(formula)
+                if derivation_matches:
+                    issues.append(
+                        f'Tableau derivation field reference {derivation_matches[0]} '
+                        f'in {current_object} ({basename})'
+                    )
                 # Skip M expressions
                 if not formula.lstrip().startswith('let') and not formula.lstrip().startswith('//'):
                     issues.extend(cls.validate_dax_formula(formula, current_object))
 
             i += 1
+
+        # --- lineageTag uniqueness ---
+        seen_tags = {}
+        for tag, obj, lineno in lineage_tags:
+            if tag in seen_tags:
+                prev_obj, prev_line = seen_tags[tag]
+                issues.append(
+                    f'Duplicate lineageTag {tag} in {obj} (line {lineno}) '
+                    f'and {prev_obj} (line {prev_line}) in {basename}'
+                )
+            else:
+                seen_tags[tag] = (obj, lineno)
 
         return issues
 

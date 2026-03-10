@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-10T09:39:08.578688",
+  "generated_at": "2026-03-10T10:12:48.531161",
   "source": "Tableau Migration",
   "report_name": "Enterprise_Sales",
   "objects_converted": {
@@ -20,7 +20,7 @@
   },
   "generated_output": {
     "pages": 1,
-    "visuals": 18,
+    "visuals": 24,
     "theme_applied": false
   },
   "tmdl_stats": {

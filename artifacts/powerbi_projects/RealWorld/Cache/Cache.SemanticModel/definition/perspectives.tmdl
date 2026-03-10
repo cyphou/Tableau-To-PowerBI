@@ -1,9 +1,0 @@
-perspective 'Full Model'
-	perspectiveTable Extract
-	perspectiveTable 'Base Salary'
-	perspectiveTable 'Commission Rate'
-	perspectiveTable 'New Quota'
-	perspectiveTable 'Sort by'
-	perspectiveTable 'New Business Growth'
-	perspectiveTable 'Churn Rate'
-	perspectiveTable State

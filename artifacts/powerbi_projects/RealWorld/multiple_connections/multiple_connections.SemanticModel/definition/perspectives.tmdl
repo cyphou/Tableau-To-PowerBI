@@ -1,4 +1,0 @@
-perspective 'Full Model'
-	perspectiveTable sqlproxy
-	perspectiveTable xy
-	perspectiveTable xy1

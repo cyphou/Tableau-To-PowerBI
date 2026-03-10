@@ -1,5 +1,45 @@
 # Changelog
 
+## v5.2.0 — PBI Desktop Validation & Bug Fixes
+
+### Critical Bug Fixes (PBI Desktop Load Failures)
+
+#### Empty Measure Expressions (Bug #1)
+- **Root cause**: `categorical-bin` group calculations have no formula in Tableau XML → empty string propagated through classification → became measures with `expression: ""` → TMDL output `measure 'X' = ` with no body → **PBI Desktop refuses to load the entire model**
+- **Fix (3 layers)**:
+  - `datasource_extractor.py`: Skip `categorical-bin` calculations and empty formulas during extraction
+  - `tmdl_generator.py`: Guard in calc loop — `if not formula: continue`
+  - `tmdl_generator.py`: Defensive fallback in `_write_measure` — `measure.get('expression') or '0'`
+
+#### Tableau Ephemeral Field References (Bug #2)
+- **Root cause**: Tableau derivation names like `[yr:Order Date:ok]`, `[tyr:Date:qk]` leaked into DAX/M expressions — group extraction only cleaned `none:` prefix, not `yr:`, `mn:`, `tyr:`, etc.
+- **Fix (3 layers)**:
+  - `extract_tableau_data.py`: Promoted `_clean_field_ref()` to module-level function, applied during all group extraction (combined fields + value groups)
+  - `extract_tableau_data.py`: Extended `_RE_DERIVATION_PREFIX` regex with truncated date prefixes (`tyr`, `tqr`, `tmn`, `tdy`, `twk`)
+  - `tmdl_generator.py`: Added secondary defense `_clean_tableau_field_ref()` in `_process_sets_groups_bins` to catch any leaks
+
+### Validator Enhancements (`powerbi_import/validator.py`)
+- **Empty expression detection**: Catches `measure 'X' = ` and `expression =` with no body
+- **Tableau derivation reference detection**: Flags `[yr:Field:ok]` patterns in DAX and M expressions
+- **Inline measure DAX validation**: Now validates single-line `measure 'X' = <dax>` patterns (previously only checked `expression =` lines)
+- **lineageTag uniqueness check**: Detects duplicate lineageTags within a TMDL file
+- **Multi-line expression derivation check**: Scans ``` delimited blocks for Tableau field references
+
+### New Test Suite (`tests/test_pbi_desktop_validation.py`)
+- 34 new tests covering:
+  - Empty measure prevention (extraction filter, TMDL guard, `_write_measure` fallback)
+  - Ephemeral field reference cleaning (12 prefix variants)
+  - Validator empty expression detection
+  - Validator derivation reference detection
+  - Validator lineageTag uniqueness
+  - Validator inline measure DAX validation
+  - E2E migration output integrity (no empty measures, no derivation refs, no empty expressions)
+
+### Test Summary
+- **1,629 tests** (1,629 passed, 3 skipped, 0 failures)
+- All 22 sample workbooks migrate successfully (8 tableau_samples + 14 real_world)
+- All projects pass enhanced validation
+
 ## v5.1.0 — Sprints 9-12: DAX Accuracy, Generation Quality & Assessment
 
 ### Sprint 9 — DAX Conversion Accuracy

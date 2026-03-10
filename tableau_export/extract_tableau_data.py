@@ -30,9 +30,19 @@ if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
 
 _RE_FIELD_REF = re.compile(r'\[([^\]]+)\]\.\[([^\]]+)\]')
 _RE_DERIVATION_PREFIX = re.compile(
-    r'^(none|sum|avg|count|min|max|usr|yr|mn|dy|qr|wk|attr|md|mdy|hms|hr|mt|sc|thr|trunc):'
+    r'^(none|sum|avg|count|min|max|usr|yr|mn|dy|qr|wk|attr|md|mdy|hms|hr|mt|sc|thr|trunc|tyr|tqr|tmn|tdy|twk):'
 )
 _RE_TYPE_SUFFIX = re.compile(r':(nk|qk|ok|fn|tn)$')
+
+
+def _clean_field_ref(raw):
+    """Strip Tableau derivation prefixes and type suffixes from a field reference.
+
+    Handles patterns like ``yr:Order Date:ok`` → ``Order Date``,
+    ``none:Ship Mode:nk`` → ``Ship Mode``, ``tyr:Date:qk`` → ``Date``.
+    """
+    clean = _RE_DERIVATION_PREFIX.sub('', raw)
+    return _RE_TYPE_SUFFIX.sub('', clean)
 
 
 def _strip_brackets(s):
@@ -1241,10 +1251,7 @@ class TableauExtractor:
         encoding = {}
         
         for enc_elem in worksheet.findall('.//encodings'):
-            # Helper to clean Tableau derivation prefixes from field refs
-            def _clean_field_ref(raw):
-                clean = re.sub(r'^(none|sum|avg|count|min|max|usr|yr|mn|dy|qr|wk|attr|md|mdy|hms|hr|mt|sc|thr|trunc):', '', raw)
-                return re.sub(r':(nk|qk|ok|fn|tn)$', '', clean)
+            # Use module-level _clean_field_ref for derivation prefix cleaning
             
             # Color
             color = enc_elem.find('.//color')
@@ -1612,9 +1619,8 @@ class TableauExtractor:
                     levels = []
                     for lm in group_elem.findall('.//groupfilter[@function="level-members"]'):
                         level = _strip_brackets(lm.get('level', ''))
-                        # Clean the prefixes none:xxx:nk/qk
-                        if level.startswith('none:') and ':' in level[5:]:
-                            level = level[5:level.rfind(':')]
+                        # Clean all Tableau derivation prefixes (yr:, mn:, none:, etc.)
+                        level = _clean_field_ref(level)
                         levels.append(level)
                     
                     groups.append({
@@ -1631,7 +1637,7 @@ class TableauExtractor:
                     first_member = group_elem.find('.//groupfilter[@function="member"]')
                     if first_member is not None:
                         level = first_member.get('level', '')
-                        source_field = _strip_brackets(level)
+                        source_field = _clean_field_ref(_strip_brackets(level))
                     
                     members = {}
                     for child_gf in top_gf.findall('./groupfilter'):
