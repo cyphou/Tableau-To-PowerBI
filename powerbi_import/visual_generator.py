@@ -166,10 +166,10 @@ VISUAL_TYPE_MAP = {
     "ribbonchart": "ribbonChart",
     "ribbon": "ribbonChart",
     "mekko": "stackedBarChart",
-    "sankey": "decompositionTree",
-    "chord": "decompositionTree",
-    "network": "decompositionTree",
-    "ganttbar": "clusteredBarChart",
+    "sankey": "sankeyDiagram",
+    "chord": "chordChart",
+    "network": "networkNavigator",
+    "ganttbar": "ganttChart",
     "bumpchart": "lineChart",
     "slopechart": "lineChart",
     "timeline": "lineChart",
@@ -624,10 +624,10 @@ _AGG_FUNC_MAP = {
 
 APPROXIMATION_MAP = {
     "mekko":       ("stackedBarChart",                   "Mekko chart mapped to Stacked Bar — variable-width bars are not supported"),
-    "sankey":      ("decompositionTree",                 "Sankey diagram mapped to Decomposition Tree — flow semantics differ"),
-    "chord":       ("decompositionTree",                 "Chord diagram mapped to Decomposition Tree — circular layout not available"),
-    "network":     ("decompositionTree",                 "Network graph mapped to Decomposition Tree — node/edge semantics differ"),
-    "ganttbar":    ("clusteredBarChart",                 "Gantt bar mapped to Clustered Bar — time-axis semantics lost"),
+    "sankey":      ("sankeyDiagram",                     "Sankey diagram mapped to custom visual (ChicagoITSankey1.1.0) — install from AppSource"),
+    "chord":       ("chordChart",                        "Chord diagram mapped to custom visual (ChicagoITChord1.0.0) — install from AppSource"),
+    "network":     ("networkNavigator",                  "Network graph mapped to custom visual (NetworkNavigator1.0.0) — install from AppSource"),
+    "ganttbar":    ("ganttChart",                         "Gantt bar mapped to custom visual (GanttByMAQSoftware1.0.0) — install from AppSource"),
     "bumpchart":   ("lineChart",                         "Bump chart mapped to Line Chart — ranking semantics lost"),
     "slopechart":  ("lineChart",                         "Slope chart mapped to Line Chart — period comparison semantics lost"),
     "timeline":    ("lineChart",                         "Timeline mapped to Line Chart — event markers not supported"),
@@ -639,10 +639,20 @@ APPROXIMATION_MAP = {
 
 
 def resolve_visual_type(source_type):
-    """Resolve a source visualization type to a Power BI visual type."""
+    """Resolve a source visualization type to a Power BI visual type.
+
+    Checks ``VISUAL_TYPE_MAP`` first, then ``APPROXIMATION_MAP`` so that
+    approximate types (e.g. Sankey → custom visual) are resolved correctly.
+    """
     if not source_type:
         return "tableEx"
-    return VISUAL_TYPE_MAP.get(source_type.lower(), "tableEx")
+    key = source_type.lower()
+    if key in VISUAL_TYPE_MAP:
+        return VISUAL_TYPE_MAP[key]
+    approx = APPROXIMATION_MAP.get(key)
+    if approx:
+        return approx[0]
+    return "tableEx"
 
 
 def get_approximation_note(source_type):
@@ -651,6 +661,25 @@ def get_approximation_note(source_type):
         return None
     entry = APPROXIMATION_MAP.get(source_type.lower())
     return entry[1] if entry else None
+
+
+def get_custom_visual_guid_for_approx(source_type):
+    """Return the GUID info dict if an approximation maps to a custom visual.
+
+    Returns None if the approximation uses a built-in PBI visual type.
+    """
+    if not source_type:
+        return None
+    key = source_type.lower()
+    approx = APPROXIMATION_MAP.get(key)
+    if not approx:
+        return None
+    pbi_class = approx[0]
+    # Check if the approximation target matches any custom visual class
+    for cv_key, cv_info in CUSTOM_VISUAL_GUIDS.items():
+        if cv_info.get('class') == pbi_class:
+            return cv_info
+    return None
 
 
 # ═══════════════════════════════════════════════════════════════════

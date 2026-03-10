@@ -1,5 +1,43 @@
 # Changelog
 
+## v6.0.0 — Sprints 13-16: Conversion Depth, PBI Service Deploy, Tableau Server, Polish
+
+### Sprint 13 — Conversion Depth (Phase N)
+
+- **N.1: Custom Visual Mapping** — Updated `VISUAL_TYPE_MAP` to use AppSource custom visual class names (`sankeyDiagram`, `chordChart`, `networkNavigator`, `ganttChart`) instead of fallback standard types. Added `get_custom_visual_guid_for_approx()` function.
+- **N.2: Stepped Color Scales** — Enhanced stepped color threshold handling with sorted thresholds, `LessThanOrEqual`/`GreaterThan` operators, and `conditionalFormatting` array in PBIR output.
+- **N.3: Dynamic Reference Lines** — Integrated `_build_dynamic_reference_line()` for average, median, percentile, min, max computation types alongside constant reference lines.
+- **N.4: Multi-DS Formula Routing** — Added `resolve_table_for_formula()` in `tmdl_generator.py` for formula-based table routing by column reference density.
+- **N.5: sortByColumn Validation** — Implemented cross-validation in `validator.py` — collects sort targets and validates they exist as defined columns.
+- **N.6: Nested LOD Cleanup** — Added `AGG(CALCULATE(...))` redundancy cleanup in `dax_converter.py` for LOD-inside-aggregation patterns.
+
+### Sprint 14 — Power BI Service Deployment (Phase O)
+
+- **O.1: `deploy/pbi_client.py`** (NEW) — `PBIServiceClient` with Azure AD auth (Service Principal / Managed Identity / env token), REST API for import, refresh, list, delete operations.
+- **O.2: `deploy/pbix_packager.py`** (NEW) — `PBIXPackager`: packages `.pbip` project directories into `.pbix` ZIP files with OPC content types.
+- **O.3: `deploy/pbi_deployer.py`** (NEW) — `PBIWorkspaceDeployer`: orchestrates package → upload → poll → refresh → validate end-to-end deployment.
+- **O.4: `--deploy` CLI flag** — Added `--deploy WORKSPACE_ID` and `--deploy-refresh` arguments to `migrate.py`.
+- **O.5: Post-deploy validation** — `validate_deployment()` checks dataset existence and refresh history after import.
+- **Updated `deploy/__init__.py`** — Exports `PBIServiceClient`, `PBIXPackager`, `PBIWorkspaceDeployer`, `DeploymentResult`.
+
+### Sprint 15 — Tableau Server Extraction (Phase P)
+
+- **P.1: `tableau_export/server_client.py`** (NEW) — `TableauServerClient` with PAT or username/password auth, REST API for workbooks, datasources, projects. Includes batch download, regex search, context manager.
+- **P.2: CLI flags** — Added `--server`, `--site`, `--workbook`, `--token-name`, `--token-secret`, `--server-batch` arguments to `migrate.py`.
+- **P.3: Server download flow** — Integrated server download before extraction: single workbook by name/ID or batch by project.
+
+### Sprint 16 — Polish & Release
+
+- **Version consistency** — Aligned `pyproject.toml` and `powerbi_import/__init__.py` to `6.0.0`.
+- **Updated CHANGELOG, copilot-instructions, docs**.
+
+### Stats
+- **1,942 tests passing** (53 Sprint 13 + 33 Sprint 14 + 26 Sprint 15 new tests)
+- 3 new source files, 3 new test files
+- All phases non-breaking (additive changes only)
+
+---
+
 ## v5.5.0 — Phases I-M: Multi-DS Routing, Windows CI, Inference, DAX Coverage, Metadata
 
 ### Phase I — Multi-Datasource Calculation Routing

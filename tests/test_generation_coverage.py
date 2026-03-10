@@ -345,10 +345,10 @@ class TestResolveVisualType(unittest.TestCase):
         self.assertEqual(resolve_visual_type("heatmap"), "matrix")
 
     def test_ganttbar(self):
-        self.assertEqual(resolve_visual_type("ganttbar"), "clusteredBarChart")
+        self.assertEqual(resolve_visual_type("ganttbar"), "ganttChart")
 
     def test_sankey(self):
-        self.assertEqual(resolve_visual_type("sankey"), "decompositionTree")
+        self.assertEqual(resolve_visual_type("sankey"), "sankeyDiagram")
 
     def test_pareto(self):
         self.assertEqual(resolve_visual_type("pareto"), "lineClusteredColumnComboChart")

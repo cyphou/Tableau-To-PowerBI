@@ -110,7 +110,7 @@ class TestVisualTypeMapping(unittest.TestCase):
     def test_specialty(self):
         self.assertEqual(resolve_visual_type("wordcloud"), "wordCloud")
         self.assertEqual(resolve_visual_type("ribbon"), "ribbonChart")
-        self.assertEqual(resolve_visual_type("sankey"), "decompositionTree")
+        self.assertEqual(resolve_visual_type("sankey"), "sankeyDiagram")
 
     def test_textbox_image_button(self):
         self.assertEqual(resolve_visual_type("textbox"), "textbox")

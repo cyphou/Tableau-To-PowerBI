@@ -1375,7 +1375,48 @@ def _convert_lod_expressions(dax, table_name, column_table_map):
             match = _lod_no_dim_pattern.search(dax, start + len(replacement))
         else:
             break
-    
+
+    # Clean up redundant AGG(CALCULATE(...)) patterns produced when an LOD
+    # is used inside an aggregation like SUM({FIXED …}).
+    # E.g. SUM(CALCULATE(MAX([X]), ALLEXCEPT(…))) → CALCULATE(MAX([X]), ALLEXCEPT(…))
+    for agg_func in ('SUM', 'AVERAGE', 'MIN', 'MAX', 'COUNT', 'DISTINCTCOUNT', 'MEDIAN'):
+        pattern = re.compile(rf'\b{agg_func}\s*\(\s*CALCULATE\s*\(', re.IGNORECASE)
+        m = pattern.search(dax)
+        while m:
+            # Find balanced parens for the outer AGG(
+            outer_start = m.start()
+            paren_start = dax.index('(', outer_start)
+            depth = 1
+            j = paren_start + 1
+            while j < len(dax) and depth > 0:
+                if dax[j] == '(':
+                    depth += 1
+                elif dax[j] == ')':
+                    depth -= 1
+                j += 1
+            if depth == 0:
+                inner_content = dax[paren_start + 1:j - 1].strip()
+                # Only collapse if the inner content is a single CALCULATE call
+                if inner_content.startswith('CALCULATE(') and inner_content.endswith(')'):
+                    # Check balanced — ensure it's just one CALCULATE
+                    calc_depth = 0
+                    is_single = True
+                    for ci, cc in enumerate(inner_content):
+                        if cc == '(':
+                            calc_depth += 1
+                        elif cc == ')':
+                            calc_depth -= 1
+                        if calc_depth == 0 and ci < len(inner_content) - 1:
+                            rest = inner_content[ci + 1:].strip()
+                            if rest:
+                                is_single = False
+                            break
+                    if is_single:
+                        dax = dax[:outer_start] + inner_content + dax[j:]
+                        m = pattern.search(dax, outer_start)
+                        continue
+            m = pattern.search(dax, m.end())
+
     return dax
 
 

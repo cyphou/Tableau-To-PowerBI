@@ -21,6 +21,7 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
   - `dax_converter.py`: 172 Tableau → DAX formula conversions (LOD, table calcs, security, etc.)
   - `m_query_builder.py`: Power Query M generator (26 connector types + 40+ transformation generators: rename, filter, aggregate, pivot/unpivot, join, union, sort, conditional columns — chainable via `inject_m_steps()`)
   - `prep_flow_parser.py`: Tableau Prep flow parser (.tfl/.tflx → Power Query M) — DAG traversal, Clean/Join/Aggregate/Union/Pivot steps, expression converter, merge with TWB datasources
+  - `server_client.py`: Tableau Server/Cloud REST API client — PAT/password auth, workbook download, datasource listing, batch download, regex search, context manager
 - **powerbi_import/**: Power BI project generation
   - `pbip_generator.py`: .pbip generator (PBIR v4.0, visuals, filters, bookmarks, slicers, textbox, image, pages shelf, number format conversion, drill-through pages)
   - `tmdl_generator.py`: Unified semantic model generator — direct Tableau → TMDL (tables, columns, measures, relationships, hierarchies, sets/groups/bins, parameters, RLS, dataCategory, isHidden, calculation groups, field parameters, M-based calculated columns)
@@ -38,7 +39,10 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
     - `utils.py`: `DeploymentReport` (pass/fail tracking), `ArtifactCache` (incremental deployment metadata)
     - `config/settings.py`: Centralized config via env vars (FABRIC_WORKSPACE_ID, FABRIC_TENANT_ID, etc.)
     - `config/environments.py`: Per-environment configs (development/staging/production)
-- **tests/**: Unit and integration tests (1,725 tests across 33 test files + conftest.py shared fixtures)
+    - `pbi_client.py`: Power BI Service REST API client — Azure AD auth (SP/MI/token), import .pbix, refresh, list/delete datasets/reports
+    - `pbix_packager.py`: .pbip → .pbix ZIP packager with OPC content types
+    - `pbi_deployer.py`: PBI Service deployment orchestrator — package, upload, poll, refresh, validate
+- **tests/**: Unit and integration tests (1,942 tests across 36 test files + conftest.py shared fixtures)
 - **docs/**: FAQ, PBI project guide, mapping reference
 - **.github/workflows/ci.yml**: CI/CD pipeline (lint → test → validate → deploy)
 - **artifacts/**: Migration output (generated .pbip projects)
@@ -62,6 +66,9 @@ python migrate.py path/to/workbook.twbx --dry-run
 python migrate.py path/to/workbook.twbx --calendar-start 2018 --calendar-end 2028
 python migrate.py path/to/workbook.twbx --culture fr-FR
 python migrate.py path/to/workbook.twbx --assess
+python migrate.py path/to/workbook.twbx --deploy WORKSPACE_ID --deploy-refresh
+python migrate.py --server https://tableau.company.com --workbook "Sales Dashboard" --token-name my-pat --token-secret secret
+python migrate.py --server https://tableau.company.com --server-batch Marketing --output-dir /tmp/batch
 ```
 
 ## Extracted Objects (16 types)

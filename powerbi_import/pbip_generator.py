@@ -1912,27 +1912,48 @@ class PowerBIProjectGenerator:
                     }
                 }]
         
-        # Reference lines (Tableau reference lines/bands → PBI constant lines)
+        # Reference lines (Tableau reference lines/bands → PBI constant + dynamic lines)
         ref_lines = ws_data.get('reference_lines', [])
         if ref_lines:
             y_ref_lines = []
+            dynamic_ref_lines = []
             for ref in ref_lines:
                 ref_value = ref.get('value', 0)
                 ref_label = ref.get('label', '')
                 ref_color = ref.get('color', '#666666')
-                line_def = {
-                    "type": "Constant",
-                    "value": str(ref_value),
-                    "show": _L("true"),
-                    "displayName": _L(f"'{ref_label}'"),
-                    "color": {"solid": {"color": _L(f"'{ref_color}'")}},
-                    "style": _L("'dashed'")
-                }
-                y_ref_lines.append(line_def)
-            if y_ref_lines:
+                ref_style = ref.get('style', 'dashed')
+                ref_type = ref.get('computation', ref.get('type', 'constant')).lower()
+
+                if ref_type in ('average', 'median', 'percentile', 'min', 'max'):
+                    # Dynamic reference line (analytics pane)
+                    from visual_generator import _build_dynamic_reference_line
+                    dyn_line = _build_dynamic_reference_line(
+                        ref_type=ref_type,
+                        field_name=ref.get('field'),
+                        table_name=table_name,
+                        label=ref_label,
+                        color=ref_color,
+                        style=ref_style,
+                    )
+                    if dyn_line:
+                        dynamic_ref_lines.append(dyn_line)
+                else:
+                    # Constant reference line
+                    line_def = {
+                        "type": "Constant",
+                        "value": str(ref_value),
+                        "show": _L("true"),
+                        "displayName": _L(f"'{ref_label}'"),
+                        "color": {"solid": {"color": _L(f"'{ref_color}'")}},
+                        "style": _L(f"'{ref_style}'") if ref_style in ('solid', 'dashed', 'dotted') else _L("'dashed'"),
+                    }
+                    y_ref_lines.append(line_def)
+
+            if y_ref_lines or dynamic_ref_lines:
                 if "valueAxis" not in objects:
                     objects["valueAxis"] = [{"properties": {"show": _L("true")}}]
-                objects["valueAxis"][0]["properties"]["referenceLine"] = y_ref_lines
+                all_lines = y_ref_lines + dynamic_ref_lines
+                objects["valueAxis"][0]["properties"]["referenceLine"] = all_lines
 
         # ── Extended visual config (ported from Fabric) ──────────────
 
@@ -2059,19 +2080,48 @@ class PowerBIProjectGenerator:
                     objects["dataPoint"] = dp_rules
 
         # Stepped color thresholds (discrete conditional formatting)
+        # Produces PBI rules-based conditional formatting with numeric thresholds
         if not objects.get("dataPoint"):
             color_thresholds = color_enc.get('thresholds', [])
             if color_thresholds and len(color_thresholds) >= 2:
-                rules = []
-                for thresh in color_thresholds:
-                    rule = {"properties": {
-                        "fill": {"solid": {"color": _L(
-                            f"'{thresh.get('color', '#cccccc')}'")}}
-                    }}
+                # Sort thresholds by value for proper rule ordering
+                sorted_thresh = sorted(
+                    [t for t in color_thresholds if t.get('value') is not None],
+                    key=lambda t: float(t['value']),
+                )
+                # Add thresholds without values (catch-all) at end
+                no_value = [t for t in color_thresholds if t.get('value') is None]
+                all_thresh = sorted_thresh + no_value
+
+                # Build rules-based conditional formatting
+                cf_rules = []
+                for idx, thresh in enumerate(all_thresh):
+                    color = thresh.get('color', '#cccccc')
+                    rule = {
+                        "properties": {
+                            "fill": {"solid": {"color": _L(f"'{color}'")}}
+                        }
+                    }
                     if thresh.get('value') is not None:
                         rule["properties"]["inputValue"] = _L(f"{thresh['value']}D")
-                    rules.append(rule)
-                objects["dataPoint"] = rules
+                        # Add comparison operator for stepped ranges
+                        if idx < len(sorted_thresh) - 1:
+                            rule["properties"]["operator"] = _L("'LessThanOrEqual'")
+                        else:
+                            rule["properties"]["operator"] = _L("'GreaterThan'")
+                    cf_rules.append(rule)
+                objects["dataPoint"] = cf_rules
+
+                # Also set up the conditionalFormatting array for the visual
+                color_field = color_enc.get('field', '')
+                if color_field and cf_rules:
+                    cf_table = column_table_map.get(color_field, table_name)
+                    objects["conditionalFormatting"] = [{
+                        "properties": {
+                            "show": _L("true"),
+                            "colorStyle": _L("'rulesGradient'"),
+                        }
+                    }]
 
         # Data bars for table/matrix columns
         if visual_type in ('tableEx', 'matrix', 'pivotTable', 'table'):

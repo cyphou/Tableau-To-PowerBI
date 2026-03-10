@@ -343,6 +343,8 @@ class ArtifactValidator:
         basename = os.path.basename(filepath)
         current_object = basename
         lineage_tags = []  # (tag, object_context, line_number)
+        sort_by_columns = []  # (sort_col, object_context, line_number)
+        known_columns = set()  # Column names found in this TMDL file
 
         i = 0
         while i < len(lines):
@@ -353,6 +355,10 @@ class ArtifactValidator:
             for prefix in ('measure ', 'column ', 'table '):
                 if stripped.startswith(prefix):
                     current_object = stripped
+            # Collect column names for sortByColumn cross-validation
+            col_def = re.match(r"^\s*column\s+'?([^'=]+?)'?\s*$", stripped)
+            if col_def:
+                known_columns.add(col_def.group(1).strip())
 
             # --- Empty measure/column detection ---
             # Pattern: ``measure 'Name' = `` with no expression after ``=``
@@ -387,9 +393,8 @@ class ArtifactValidator:
             # --- sortByColumn validation ---
             sbc_match = re.match(r'^\s*sortByColumn:\s*(.+)', stripped)
             if sbc_match:
-                sort_col = sbc_match.group(1).strip()
-                # We'll collect for cross-validation later in validate_tmdl_advanced
-                pass
+                sort_col = sbc_match.group(1).strip().strip("'")
+                sort_by_columns.append((sort_col, current_object, i + 1))
 
             # Single-line expression
             if stripped.startswith('expression =') and not stripped.endswith('```'):
@@ -439,6 +444,14 @@ class ArtifactValidator:
                 )
             else:
                 seen_tags[tag] = (obj, lineno)
+
+        # --- sortByColumn cross-validation ---
+        for sort_col, obj, lineno in sort_by_columns:
+            if known_columns and sort_col not in known_columns:
+                issues.append(
+                    f'sortByColumn target \'{sort_col}\' not found as a column '
+                    f'in {obj} ({basename}:{lineno})'
+                )
 
         return issues
 

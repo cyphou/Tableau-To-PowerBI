@@ -20,6 +20,7 @@ import glob
 import json
 import logging
 import argparse
+import tempfile
 from datetime import datetime
 from enum import IntEnum
 
@@ -945,6 +946,67 @@ def main():
         )
     )
 
+    parser.add_argument(
+        '--deploy',
+        metavar='WORKSPACE_ID',
+        default=None,
+        help=(
+            'Deploy the generated .pbip project to a Power BI Service workspace. '
+            'Requires PBI_TENANT_ID, PBI_CLIENT_ID, PBI_CLIENT_SECRET env vars '
+            '(or PBI_ACCESS_TOKEN). Pass the target workspace/group ID.'
+        )
+    )
+
+    parser.add_argument(
+        '--deploy-refresh',
+        action='store_true',
+        default=False,
+        help='Trigger a dataset refresh after deploying to Power BI Service (requires --deploy)'
+    )
+
+    # ── Tableau Server extraction arguments ───────────────────
+    parser.add_argument(
+        '--server',
+        metavar='URL',
+        default=None,
+        help='Tableau Server/Cloud URL (e.g., https://tableau.company.com)'
+    )
+
+    parser.add_argument(
+        '--site',
+        metavar='SITE_ID',
+        default='',
+        help='Tableau site content URL (empty for Default site)'
+    )
+
+    parser.add_argument(
+        '--workbook',
+        metavar='NAME_OR_ID',
+        default=None,
+        help='Workbook name or LUID to download from Tableau Server (requires --server)'
+    )
+
+    parser.add_argument(
+        '--token-name',
+        metavar='NAME',
+        default=None,
+        help='Personal Access Token name for Tableau Server auth'
+    )
+
+    parser.add_argument(
+        '--token-secret',
+        metavar='SECRET',
+        default=None,
+        help='Personal Access Token secret for Tableau Server auth'
+    )
+
+    parser.add_argument(
+        '--server-batch',
+        metavar='PROJECT',
+        default=None,
+        help='Download and migrate all workbooks from a Tableau Server project (requires --server)'
+    )
+
     args = parser.parse_args()
 
     # Load configuration file if specified (CLI args take precedence)
@@ -995,6 +1057,77 @@ def main():
     # ── Batch-config migration mode ───────────────────────────
     if args.batch_config:
         return _run_batch_config(args)
+
+    # ── Tableau Server download ───────────────────────────────
+    if getattr(args, 'server', None):
+        try:
+            from tableau_export.server_client import TableauServerClient
+            print_header("TABLEAU SERVER DOWNLOAD")
+            print(f"  Server: {args.server}")
+            print(f"  Site:   {args.site or '(Default)'}")
+
+            ts_client = TableauServerClient(
+                server_url=args.server,
+                token_name=getattr(args, 'token_name', None),
+                token_secret=getattr(args, 'token_secret', None),
+                site_id=getattr(args, 'site', ''),
+            )
+            ts_client.sign_in()
+
+            download_dir = os.path.join(
+                tempfile.gettempdir(), 'tableau_server_downloads'
+            )
+
+            if getattr(args, 'server_batch', None):
+                # Batch: download all workbooks from a project
+                print(f"  Project: {args.server_batch}")
+                dl_results = ts_client.download_all_workbooks(
+                    download_dir, project_name=args.server_batch,
+                )
+                ts_client.sign_out()
+                succeeded = [r for r in dl_results if r['status'] == 'success']
+                print(f"  Downloaded: {len(succeeded)}/{len(dl_results)} workbooks")
+                if not succeeded:
+                    print("  No workbooks downloaded — aborting")
+                    return ExitCode.EXTRACTION_FAILED
+                # Switch to batch mode
+                args.batch = download_dir
+            elif getattr(args, 'workbook', None):
+                # Single workbook download
+                print(f"  Workbook: {args.workbook}")
+                workbooks = ts_client.list_workbooks()
+                match = None
+                for wb in workbooks:
+                    if wb.get('id') == args.workbook or wb.get('name') == args.workbook:
+                        match = wb
+                        break
+                if not match:
+                    # Try regex search
+                    matches = ts_client.search_workbooks(args.workbook)
+                    if matches:
+                        match = matches[0]
+
+                if not match:
+                    ts_client.sign_out()
+                    print(f"  Workbook '{args.workbook}' not found on server")
+                    return ExitCode.EXTRACTION_FAILED
+
+                import re as _re
+                safe_name = _re.sub(r'[^\w\-.]', '_', match.get('name', 'workbook'))
+                twbx_path = os.path.join(download_dir, f'{safe_name}.twbx')
+                os.makedirs(download_dir, exist_ok=True)
+                ts_client.download_workbook(match['id'], twbx_path)
+                ts_client.sign_out()
+                print(f"  Downloaded: {twbx_path}")
+                args.tableau_file = twbx_path
+            else:
+                ts_client.sign_out()
+                print("  Specify --workbook NAME or --server-batch PROJECT")
+                return ExitCode.GENERAL_ERROR
+        except Exception as exc:
+            print(f"  Server download failed: {exc}")
+            logger.error(f"Tableau Server error: {exc}", exc_info=True)
+            return ExitCode.EXTRACTION_FAILED
 
     # ── Batch migration mode ──────────────────────────────────
     if args.batch:
@@ -1176,6 +1309,32 @@ def main():
             report_name=source_basename,
             output_dir=args.output_dir,
         )
+
+    # Step 5: Deploy to Power BI Service (optional)
+    deploy_result = None
+    if getattr(args, 'deploy', None) and results.get('generation') and not args.dry_run:
+        try:
+            from powerbi_import.deploy.pbi_deployer import PBIWorkspaceDeployer
+            print_header("DEPLOYING TO POWER BI SERVICE")
+            deployer = PBIWorkspaceDeployer(workspace_id=args.deploy)
+            out_dir = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
+            project_dir = os.path.join(out_dir, source_basename)
+            print(f"  Workspace: {args.deploy}")
+            print(f"  Project:   {project_dir}")
+            deploy_result = deployer.deploy_project(
+                project_dir,
+                dataset_name=source_basename,
+                refresh=getattr(args, 'deploy_refresh', False),
+            )
+            if deploy_result.status == 'succeeded':
+                print(f"  ✓ Deployed — dataset={deploy_result.dataset_id}")
+                if deploy_result.report_id:
+                    print(f"  ✓ Report  — id={deploy_result.report_id}")
+            else:
+                print(f"  ✗ Deploy failed: {deploy_result.error}")
+        except Exception as exc:
+            print(f"  ✗ Deployment error: {exc}")
+            logger.error(f"Deployment failed: {exc}", exc_info=True)
 
     # Final report
     duration = datetime.now() - start_time

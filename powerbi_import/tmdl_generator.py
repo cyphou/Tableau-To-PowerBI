@@ -320,6 +320,36 @@ def resolve_table_for_column(column_name, datasource_name=None, dax_context=None
     return dax_context.get('column_table_map', {}).get(column_name)
 
 
+def resolve_table_for_formula(formula, datasource_name=None, dax_context=None):
+    """Resolve the best target table for a DAX formula based on column references.
+
+    Analyses ``[ColumnName]`` references in the formula and determines which
+    table is referenced most frequently.  Useful for routing calculations that
+    reference columns from multiple datasources.
+
+    Args:
+        formula: DAX formula string.
+        datasource_name: Optional datasource name to scope the lookup.
+        dax_context: DAX context dict.
+
+    Returns:
+        str or None: Best-fit table name, or *None* if unresolved.
+    """
+    if not formula or not dax_context:
+        return None
+    col_refs = re.findall(r'\[([^\]]+)\]', formula)
+    if not col_refs:
+        return None
+    table_counts = {}
+    for col in col_refs:
+        tbl = resolve_table_for_column(col, datasource_name, dax_context)
+        if tbl:
+            table_counts[tbl] = table_counts.get(tbl, 0) + 1
+    if not table_counts:
+        return None
+    return max(table_counts, key=lambda k: table_counts[k])
+
+
 # ════════════════════════════════════════════════════════════════════
 #  PUBLIC ENTRY POINT
 # ════════════════════════════════════════════════════════════════════
