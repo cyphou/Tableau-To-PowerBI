@@ -1,9 +1,131 @@
 # Development Plan — Tableau to Power BI Migration Tool
 
-**Version:** v5.1.0  
+**Version:** v6.0.0  
 **Date:** 2026-03-10  
-**Current state:** v5.1.0 — **1,595 tests**, 0 failures, ~19,000 lines of Python  
-**Previous baseline:** v3.5.0 — 887 tests → v3.6.0 — 1,278 tests → v4.0.0 — 1,387 tests → v4.1.0 — 1,444 tests → v5.0.0 — 1,543 tests → **v5.1.0 — 1,595 tests**
+**Current state:** v5.5.0 — **1,777 tests** across 34 test files, 0 failures, ~22,000 lines of Python  
+**Previous baseline:** v3.5.0 — 887 → v4.0.0 — 1,387 → v5.0.0 — 1,543 → v5.1.0 — 1,595 → v5.5.0 — **1,777 tests**
+
+---
+
+## v6.0.0 — Next: Production Readiness, Conversion Depth & Ecosystem
+
+### Current State Assessment
+
+The codebase is **mature and clean**:
+- Zero TODO/FIXME/HACK markers in source code
+- Zero stub functions (one `sortByColumn` cross-validation placeholder in validator.py)
+- 22 demo workbooks migrated: 20 GREEN, 2 YELLOW assessments, 99.8% avg fidelity
+- Organized artifact structure: `assessments/`, `migrated/`, `reports/`
+- All v5.x sprints (1-12) + Phases A-M complete
+
+### Focus Areas for v6.0.0
+
+| Area | Goal | Business Value |
+|------|------|----------------|
+| **A. Conversion Depth** | Close remaining DAX/visual gaps that affect real workbooks | Higher migration fidelity — fewer manual fixes |
+| **B. Power BI Service Integration** | Deploy directly to PBI workspace via REST API | End-to-end automation for enterprise customers |
+| **C. Tableau Server/Cloud Extraction** | Extract workbooks from Tableau Server via REST API | No manual .twbx download needed |
+| **D. Output Quality Hardening** | Validate output with PBI Desktop automation | Guarantee zero-error load in PBI Desktop |
+| **E. Docs, Packaging & Polish** | PyPI package, version consistency, updated docs | Easy adoption, clean onboarding |
+
+---
+
+### Sprint 13 — Conversion Depth & Fidelity (Phase N)
+
+**Goal:** Close the highest-impact remaining conversion gaps.
+
+| # | Item | File(s) | Priority | Details |
+|---|------|---------|----------|---------|
+| N.1 | **Custom visual GUID registry** | `visual_generator.py` | High | Add AppSource GUID mapping for Sankey (`CharticulatorCustomChart`), Chord, Timeline, Gantt → real custom visual references instead of `decompositionTree` fallback |
+| N.2 | **Discrete/stepped color scales** | `pbip_generator.py`, `visual_generator.py` | Medium | Map Tableau categorical color encoding (stepped thresholds) to PBI rules-based conditional formatting |
+| N.3 | **Dynamic reference lines** | `visual_generator.py` | Medium | Extend existing constant-line migration to support average/median/percentile/trend analytics pane items sourced from Tableau reference lines |
+| N.4 | **Multi-datasource calc placement** | `tmdl_generator.py` | Medium | When a worksheet uses >1 datasource, route measures to the correct table instead of global main table (extend Phase I routing) |
+| N.5 | **sortByColumn cross-validation** | `validator.py` | Low | Implement the placeholder at L392 — validate that `sortByColumn` targets exist as real columns in the same table |
+| N.6 | **Nested LOD edge cases** | `dax_converter.py` | Low | LOD inside LOD (`{FIXED a : SUM({FIXED b : COUNT(c)})}`), LOD with ATTR wrapper |
+| N.7 | **Sprint 13 tests** | `tests/test_sprint_13.py` | High | 40+ tests covering N.1–N.6 |
+
+### Sprint 14 — Power BI Service Deployment (Phase O)
+
+**Goal:** Enable direct publishing to Power BI Service workspaces.
+
+| # | Item | File(s) | Priority | Details |
+|---|------|---------|----------|---------|
+| O.1 | **PBI Service REST API client** | `deploy/pbi_client.py` (NEW) | High | `PBIServiceClient` — authenticate via Azure AD (SP/MI), call Power BI REST APIs (`/v1.0/myorg/groups/{workspace}/imports`) |
+| O.2 | **PBIP → .pbix conversion** | `deploy/pbix_packager.py` (NEW) | High | Package .pbip directory into uploadable .pbix (ZIP with DataModelSchema, Report/Layout) for REST API upload |
+| O.3 | **Workspace deployment** | `deploy/pbi_deployer.py` (NEW) | High | Deploy semantic model + report to a PBI workspace, handle overwrite/create logic, return deployment status |
+| O.4 | **`--deploy` CLI flag** | `migrate.py` | Medium | `--deploy WORKSPACE_ID` — migrate + deploy in one command; requires `PBI_TENANT_ID`/`PBI_CLIENT_ID`/`PBI_CLIENT_SECRET` env vars |
+| O.5 | **Deployment validation** | `deploy/pbi_deployer.py` | Medium | Post-deploy refresh + status check; validate dataset loads successfully |
+| O.6 | **Sprint 14 tests** | `tests/test_pbi_service.py` (NEW) | High | Structural tests for client/packager/deployer; integration tests behind `@pytest.mark.integration` |
+
+### Sprint 15 — Tableau Server/Cloud Extraction (Phase P)
+
+**Goal:** Extract workbooks directly from Tableau Server/Cloud via REST API.
+
+| # | Item | File(s) | Priority | Details |
+|---|------|---------|----------|---------|
+| P.1 | **Tableau REST API client** | `tableau_export/server_client.py` (NEW) | High | `TableauServerClient` — auth (PAT/username+password), list sites/projects/workbooks, download .twbx |
+| P.2 | **`--server` CLI flag** | `migrate.py` | High | `--server https://tableau.company.com --site default --workbook "Sales" --token TOKEN` |
+| P.3 | **Batch server extraction** | `tableau_export/server_client.py` | Medium | `--server-batch` — list all workbooks in a project, download and migrate each |
+| P.4 | **Published datasource resolution** | `tableau_export/server_client.py` | Medium | When `.twb` references a published datasource, download and inline it before extraction |
+| P.5 | **Sprint 15 tests** | `tests/test_server_client.py` (NEW) | High | Mock-based tests for auth, list, download, batch, error handling |
+
+### Sprint 16 — Output Quality & Polish (Phase Q)
+
+**Goal:** Guarantee output quality, fix version drift, prepare for public release.
+
+| # | Item | File(s) | Priority | Details |
+|---|------|---------|----------|---------|
+| Q.1 | **PBI Desktop automated validation** | `tests/test_pbi_desktop_validation.py` | Medium | If PBI Desktop is installed, open each migrated .pbip and verify zero errors (via `pbidesktop.exe` CLI or COM) |
+| Q.2 | **Version consistency** | `pyproject.toml`, `powerbi_import/__init__.py`, `migrate.py` | High | Single source of truth: `pyproject.toml` version → imported by `__init__.py`; `migrate.py --version` flag |
+| Q.3 | **PyPI packaging** | `pyproject.toml`, `setup.cfg` | Medium | `pip install tableau-to-powerbi` with console_scripts entry point `t2pbi` |
+| Q.4 | **Update DEVELOPMENT_PLAN.md** | `docs/DEVELOPMENT_PLAN.md` | High | This plan — reflect v6.0.0 state, close old sprints, new metrics |
+| Q.5 | **Update GAP_ANALYSIS.md** | `docs/GAP_ANALYSIS.md` | High | Bump to v5.5.0, update test count (1,777), mark completed items, add new priorities |
+| Q.6 | **Update KNOWN_LIMITATIONS.md** | `docs/KNOWN_LIMITATIONS.md` | Medium | Reflect new capabilities from v5.2–v5.5 |
+| Q.7 | **Update copilot-instructions.md** | `.github/copilot-instructions.md` | Medium | Update test count, add new modules (telemetry, wizard, plugins, gateway, progress, incremental, comparison_report) |
+| Q.8 | **CHANGELOG.md v6.0.0** | `CHANGELOG.md` | High | Document all Sprint 13-16 changes |
+| Q.9 | **Sprint 16 tests** | Various | Medium | 20+ tests for packaging, versioning, CLI --version |
+
+---
+
+### Sprint Sequencing
+
+```
+Sprint 13 (Conversion Depth)    ──→  Sprint 14 (PBI Service Deploy)
+         ↓                                      ↓
+Sprint 15 (Tableau Server)      ──→  Sprint 16 (Polish & Release)
+```
+
+- Sprints 13 & 15 are **independent** (can run in parallel)
+- Sprint 14 depends on Sprint 13 (conversion quality must be high before deploying)
+- Sprint 16 is **last** (documentation and packaging after all features are stable)
+
+### Success Criteria for v6.0.0
+
+| Metric | Target |
+|--------|--------|
+| Tests | 1,900+ |
+| Zero PBI Desktop load errors | All 22 sample workbooks |
+| Conversion fidelity | ≥ 99.5% average |
+| New CLI flags | `--deploy`, `--server`, `--version` |
+| PyPI installable | `pip install tableau-to-powerbi` |
+| Doc freshness | All docs reflect v6.0.0 |
+
+---
+
+## v5.5.0 — Phases I-M: Multi-DS Routing, Windows CI, Inference, DAX Coverage, Metadata (COMPLETED)
+
+- **Phase I**: Multi-datasource calculation routing
+- **Phase J**: Windows CI + batch validation
+- **Phase K**: Relationship inference improvement (key-column matching)
+- **Phase L**: DAX conversion coverage hardening (55 tests)
+- **Phase M**: Migration metadata enrichment (measures/columns/relationships/visual_type_mappings/approximations)
+- **1,777 tests passing**
+
+---
+
+## v5.4.0 — Phases D-H (COMPLETED)
+
+See CHANGELOG.md for details.
 
 ---
 
