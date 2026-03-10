@@ -1,0 +1,17 @@
+let
+    // Source CSV: data.csv
+    Source = Csv.Document(File.Contents(DataFolder & "\data.csv"), [
+        Delimiter=",",
+        Columns=3,
+        Encoding=65001,
+        QuoteStyle=QuoteStyle.None
+    ]),
+    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+    #"Changed Types" = Table.TransformColumnTypes(#"Promoted Headers", {
+        {"id", Int64.Type},
+        {"name", type text},
+        {"value", type number}
+    }),
+    Result = #"Changed Types"
+in
+    Result

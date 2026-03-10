@@ -80,9 +80,8 @@ _PARTIAL_FUNCTIONS = re.compile(
     r'\b('
     r'REGEXP_EXTRACT|REGEXP_EXTRACT_NTH|REGEXP_MATCH|REGEXP_REPLACE'
     r'|RAWSQL_BOOL|RAWSQL_INT|RAWSQL_REAL|RAWSQL_STR|RAWSQL_DATE|RAWSQL_DATETIME|RAWSQL_SPATIAL'
-    r'|PREVIOUS_VALUE|LOOKUP|INDEX'
+    r'|PREVIOUS_VALUE|LOOKUP'
     r'|RANK\b|RANK_UNIQUE|RANK_DENSE|RANK_MODIFIED|RANK_PERCENTILE'
-    r'|WINDOW_CORR|WINDOW_COVAR|WINDOW_COVARP'
     r')\s*\(',
     re.IGNORECASE,
 )
@@ -900,6 +899,50 @@ def _check_migration_scope(extracted: Dict) -> CategoryResult:
         cat.name, "Object inventory", INFO,
         "Objects: " + " | ".join(inventory_lines) if inventory_lines else "Empty workbook.",
     ))
+
+    # ── Tableau 2024.3+ feature detection ──
+    _modern_features = []
+
+    # Dynamic zone visibility (worksheets with visibility rules)
+    for ws in worksheets:
+        if ws.get('dynamic_visibility') or ws.get('zone_visibility'):
+            _modern_features.append('Dynamic Zone Visibility')
+            break
+
+    # Dynamic parameters with DB queries
+    for param in parameters:
+        if param.get('query') or param.get('domain_type') == 'database':
+            _modern_features.append('Dynamic Parameters (DB query)')
+            break
+
+    # Dynamic axis formatting / combined axis
+    for ws in worksheets:
+        axes = ws.get('axes', {})
+        if isinstance(axes, dict):
+            for ax in axes.values():
+                if isinstance(ax, dict) and (ax.get('combined_axis') or ax.get('synchronized')):
+                    _modern_features.append('Combined/Synchronized Axes')
+                    break
+
+    # Data-driven alert calculations
+    for calc in calculations:
+        formula = calc.get('formula', '')
+        if 'RAWSQL_' in formula.upper():
+            _modern_features.append('RAWSQL Functions')
+            break
+
+    if _modern_features:
+        cat.checks.append(CheckItem(
+            cat.name, "Modern Tableau features", WARN,
+            f"Detected Tableau 2024.3+ features: {', '.join(_modern_features)}. "
+            "These require manual review after migration.",
+            recommendation="Review each modern feature and map to Power BI equivalents manually.",
+        ))
+    else:
+        cat.checks.append(CheckItem(
+            cat.name, "Modern Tableau features", PASS,
+            "No Tableau 2024.3+ specific features detected.",
+        ))
 
     return cat
 

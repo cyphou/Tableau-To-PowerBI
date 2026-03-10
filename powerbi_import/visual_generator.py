@@ -193,6 +193,139 @@ VISUAL_TYPE_MAP = {
 
 
 # ═══════════════════════════════════════════════════════════════════
+# Custom Visual GUID Registry — AppSource custom visual package IDs
+# ═══════════════════════════════════════════════════════════════════
+# Maps Tableau visual types that have no built-in PBI equivalent to
+# AppSource custom visual GUIDs.  When a GUID is available, the
+# generator produces a ``customVisual`` visualType referencing the
+# GUID instead of the generic PBI fallback above.
+
+CUSTOM_VISUAL_GUIDS = {
+    "sankey": {
+        "guid": "ChicagoITSankey1.1.0",
+        "name": "Sankey Diagram",
+        "class": "sankeyDiagram",
+        "roles": {"Source": "dimension", "Destination": "dimension", "Weight": "measure"},
+    },
+    "chord": {
+        "guid": "ChicagoITChord1.0.0",
+        "name": "Chord Diagram",
+        "class": "chordChart",
+        "roles": {"From": "dimension", "To": "dimension", "Values": "measure"},
+    },
+    "network": {
+        "guid": "NetworkNavigator1.0.0",
+        "name": "Network Navigator",
+        "class": "networkNavigator",
+        "roles": {"Source": "dimension", "Target": "dimension", "Weight": "measure"},
+    },
+    "wordcloud": {
+        "guid": "WordCloud1633006498960",
+        "name": "Word Cloud",
+        "class": "wordCloud",
+        "roles": {"Category": "dimension", "Values": "measure"},
+    },
+    "ganttbar": {
+        "guid": "GanttByMAQSoftware1.0.0",
+        "name": "Gantt Chart",
+        "class": "ganttChart",
+        "roles": {"Task": "dimension", "Start": "measure", "Duration": "measure"},
+    },
+    "histogram": {
+        "guid": "Histogram1.0.0",
+        "name": "Histogram Chart",
+        "class": "histogram",
+        "roles": {"Values": "measure"},
+    },
+    "boxplot": {
+        "guid": "BoxAndWhisker1.0.0",
+        "name": "Box and Whisker",
+        "class": "boxAndWhisker",
+        "roles": {"Category": "dimension", "Value": "measure"},
+    },
+    "radial": {
+        "guid": "RadialGauge1.0.0",
+        "name": "Radial Gauge",
+        "class": "radialGauge",
+        "roles": {"Value": "measure", "Target": "measure"},
+    },
+    "bullet": {
+        "guid": "BulletChart1.0.0",
+        "name": "Bullet Chart",
+        "class": "bulletChart",
+        "roles": {"Value": "measure", "Target": "measure", "Category": "dimension"},
+    },
+}
+
+
+def resolve_custom_visual_type(tableau_mark, use_custom_visuals=True):
+    """Resolve a Tableau mark type to a PBI visual type with custom visual support.
+
+    If *use_custom_visuals* is True and a custom visual GUID is
+    available, returns a tuple ``(visual_type, guid_info)`` where
+    ``guid_info`` is a dict from ``CUSTOM_VISUAL_GUIDS``; otherwise
+    ``guid_info`` is ``None``.
+    """
+    key = (tableau_mark or '').lower().replace(' ', '').replace('_', '')
+    if use_custom_visuals and key in CUSTOM_VISUAL_GUIDS:
+        guid_info = CUSTOM_VISUAL_GUIDS[key]
+        return guid_info.get('class', key), guid_info
+    pbi_type = VISUAL_TYPE_MAP.get(key, 'tableEx')
+    return pbi_type, None
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Sparkline Configuration Builder
+# ═══════════════════════════════════════════════════════════════════
+
+def _build_sparkline_config(measure_name, table_name, date_column='Date',
+                            sparkline_type='line', color='#4472C4'):
+    """Build a sparkline conditional formatting config for table/matrix cells.
+
+    Power BI supports inline sparklines in table/matrix visuals via
+    the ``sparkline`` property in ``conditionalFormatting``.
+
+    Args:
+        measure_name: Name of the measure column to sparkline.
+        table_name: Source table name.
+        date_column: X-axis date/category column.
+        sparkline_type: 'line' or 'column'.
+        color: Sparkline line/fill color.
+
+    Returns:
+        dict: PBIR-compatible sparkline configuration.
+    """
+    return {
+        "id": f"sparkline_{measure_name}",
+        "type": "sparkline",
+        "sparklineType": sparkline_type,
+        "field": {
+            "Column": {
+                "Expression": {
+                    "SourceRef": {"Entity": table_name}
+                },
+                "Property": measure_name,
+            }
+        },
+        "dateAxis": {
+            "Column": {
+                "Expression": {
+                    "SourceRef": {"Entity": table_name}
+                },
+                "Property": date_column,
+            }
+        },
+        "lineColor": {"solid": {"color": color}},
+        "markerColor": {"solid": {"color": color}},
+        "showHighPoint": True,
+        "showLowPoint": True,
+        "showLastPoint": False,
+        "showFirstPoint": False,
+        "lineWidth": 2,
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════
 # Data Role Definitions per Visual Type
 # ═══════════════════════════════════════════════════════════════════
 
@@ -465,9 +598,227 @@ def resolve_visual_type(source_type):
     return VISUAL_TYPE_MAP.get(source_type.lower(), "tableEx")
 
 
+# ═══════════════════════════════════════════════════════════════════
+# Small Multiples support — visual types that support this feature
+# ═══════════════════════════════════════════════════════════════════
+
+SMALL_MULTIPLES_TYPES = {
+    'clusteredBarChart', 'stackedBarChart', 'hundredPercentStackedBarChart',
+    'clusteredColumnChart', 'stackedColumnChart', 'hundredPercentStackedColumnChart',
+    'lineChart', 'areaChart', 'stackedAreaChart', 'hundredPercentStackedAreaChart',
+    'lineStackedColumnComboChart', 'lineClusteredColumnComboChart',
+}
+
+
+def _build_small_multiples_config(field_name, table_name, layout_mode='flow',
+                                   max_items_per_row=3, show_empty=False):
+    """Build Small Multiples configuration for a visual.
+
+    Args:
+        field_name: Dimension field to split by
+        table_name: Table containing the field
+        layout_mode: 'flow' (auto-wrap) or 'fixed' (grid)
+        max_items_per_row: Max panels per row (default 3)
+        show_empty: Whether to show empty panels
+
+    Returns:
+        dict: Small Multiples config for PBIR visual
+    """
+    sm_config = {
+        "showMultiplesCard": {
+            "properties": {
+                "show": _L("true"),
+            }
+        },
+        "smallMultiple": [{
+            "properties": {
+                "show": _L("true"),
+                "layoutMode": _L(f"'{layout_mode}'"),
+                "maxItemsPerRow": _L(f"{max_items_per_row}L"),
+                "showEmptyItems": _L("true" if show_empty else "false"),
+            }
+        }],
+    }
+    sm_projection = {
+        "field": {
+            "Column": {
+                "Expression": {"SourceRef": {"Entity": table_name}},
+                "Property": field_name,
+            },
+        },
+        "queryRef": f"{table_name}.{field_name}",
+        "nativeQueryRef": field_name,
+        "active": True,
+    }
+    return sm_config, sm_projection
+
+
+def _calculate_proportional_layout(worksheets, page_width=1280, page_height=720,
+                                    source_positions=None, padding=10):
+    """Calculate proportional visual positions from Tableau dashboard layout.
+
+    Improves on simple grid layout by using source positions when available,
+    with overlap detection and padding adjustments.
+
+    Args:
+        worksheets: List of worksheet dicts
+        page_width: Target page width in px
+        page_height: Target page height in px
+        source_positions: List of {x, y, w, h} from Tableau dashboard zones
+        padding: Minimum padding between visuals
+
+    Returns:
+        List of (x, y, width, height) tuples
+    """
+    n = len(worksheets)
+    if not n:
+        return []
+
+    # If source positions are available, scale proportionally
+    if source_positions and len(source_positions) >= n:
+        # Find bounding box of all source positions
+        src_positions = source_positions[:n]
+        min_x = min(p.get('x', 0) for p in src_positions)
+        min_y = min(p.get('y', 0) for p in src_positions)
+        max_r = max(p.get('x', 0) + p.get('w', 100) for p in src_positions)
+        max_b = max(p.get('y', 0) + p.get('h', 100) for p in src_positions)
+        src_w = max(max_r - min_x, 1)
+        src_h = max(max_b - min_y, 1)
+
+        scale_x = (page_width - 2 * padding) / src_w
+        scale_y = (page_height - 2 * padding) / src_h
+
+        positions = []
+        for p in src_positions:
+            x = padding + (p.get('x', 0) - min_x) * scale_x
+            y = padding + (p.get('y', 0) - min_y) * scale_y
+            w = max(p.get('w', 100) * scale_x, 60)
+            h = max(p.get('h', 100) * scale_y, 40)
+            positions.append((int(x), int(y), int(w), int(h)))
+
+        # Overlap detection and correction
+        for i in range(len(positions)):
+            for j in range(i + 1, len(positions)):
+                xi, yi, wi, hi = positions[i]
+                xj, yj, wj, hj = positions[j]
+                # Check horizontal overlap
+                if (xi < xj + wj and xi + wi > xj and
+                        yi < yj + hj and yi + hi > yj):
+                    # Shift j to the right of i
+                    positions[j] = (xi + wi + padding, yj, wj, hj)
+
+        return positions
+
+    # Fallback: smart grid layout based on visual count
+    if n <= 2:
+        cols = n
+    elif n <= 4:
+        cols = 2
+    elif n <= 9:
+        cols = 3
+    else:
+        cols = 4
+
+    rows = (n + cols - 1) // cols
+    cell_w = (page_width - padding * (cols + 1)) // cols
+    cell_h = (page_height - padding * (rows + 1)) // rows
+    # Enforce minimum size
+    cell_w = max(cell_w, 150)
+    cell_h = max(cell_h, 120)
+
+    positions = []
+    for idx in range(n):
+        r, c = divmod(idx, cols)
+        x = padding + c * (cell_w + padding)
+        y = padding + r * (cell_h + padding)
+        positions.append((x, y, cell_w, cell_h))
+
+    return positions
+
+
+def _build_dynamic_reference_line(ref_type, field_name=None, table_name=None,
+                                   label='', color='#FF0000', style='dashed'):
+    """Build a dynamic reference line (percentile, median, average, trend).
+
+    Args:
+        ref_type: 'average', 'median', 'percentile', 'min', 'max'
+        field_name: Measure or column name
+        table_name: Table containing the field
+        label: Display label for the line
+        color: Line color (hex)
+        style: 'solid', 'dashed', 'dotted'
+
+    Returns:
+        dict: Reference line config for PBIR visual objects
+    """
+    style_map = {'solid': "'solid'", 'dashed': "'dashed'", 'dotted': "'dotted'"}
+    pbi_style = style_map.get(style, "'dashed'")
+
+    if ref_type == 'constant':
+        return None  # Handled by existing constant line logic
+
+    ref_config = {
+        "properties": {
+            "show": _L("true"),
+            "displayName": _L(json.dumps(label or ref_type.capitalize())),
+            "color": {"solid": {"color": color}},
+            "style": _L(pbi_style),
+        }
+    }
+
+    # Dynamic reference lines use analytics pane patterns
+    if ref_type == 'average':
+        ref_config["properties"]["type"] = _L("'Average'")
+    elif ref_type == 'median':
+        ref_config["properties"]["type"] = _L("'Median'")
+    elif ref_type == 'percentile':
+        ref_config["properties"]["type"] = _L("'Percentile'")
+        ref_config["properties"]["percentile"] = _L("50D")
+    elif ref_type == 'min':
+        ref_config["properties"]["type"] = _L("'Min'")
+    elif ref_type == 'max':
+        ref_config["properties"]["type"] = _L("'Max'")
+    elif ref_type == 'trend':
+        ref_config["properties"]["type"] = _L("'Trend'")
+
+    return ref_config
+
+
+def _build_data_bar_config(column_name, table_name, min_color='#FFFFFF',
+                            max_color='#4472C4', show_bar_only=False):
+    """Build data bar conditional formatting for table/matrix columns.
+
+    Args:
+        column_name: Column to apply data bars to
+        table_name: Table containing the column
+        min_color: Color for minimum value (default white)
+        max_color: Color for maximum value (default blue)
+        show_bar_only: If True, hide the value and only show the bar
+
+    Returns:
+        dict: Data bar rule for conditional formatting
+    """
+    return {
+        "id": f"dataBar_{column_name}",
+        "field": {
+            "Column": {
+                "Expression": {"SourceRef": {"Entity": table_name}},
+                "Property": column_name,
+            },
+        },
+        "positiveColor": {"solid": {"color": max_color}},
+        "negativeColor": {"solid": {"color": "#FF4444"}},
+        "axisColor": {"solid": {"color": "#CCCCCC"}},
+        "showBarOnly": show_bar_only,
+        "minimumValue": None,
+        "maximumValue": None,
+    }
+
+
 def generate_visual_containers(converted_worksheets, report_name="Report",
                                col_table_map=None, measure_lookup=None,
-                               page_width=1280, page_height=720):
+                               page_width=1280, page_height=720,
+                               source_positions=None):
     """
     Generate visualContainers for definition.pbir
 
@@ -478,6 +829,7 @@ def generate_visual_containers(converted_worksheets, report_name="Report",
         measure_lookup: {measure_name: (table, dax_expr)} lookup
         page_width: Page width in pixels
         page_height: Page height in pixels
+        source_positions: Optional list of {x, y, w, h} from Tableau dashboard
 
     Returns:
         List of visualContainers in Power BI Report Definition format
@@ -486,15 +838,18 @@ def generate_visual_containers(converted_worksheets, report_name="Report",
     ctm = col_table_map or {}
     ml = measure_lookup or {}
 
-    # Initial position (x, y) and dimensions
-    x_pos = 10
-    y_pos = 10
-    width = 300
-    height = 200
-    spacing = 20
+    worksheets = converted_worksheets[:20]
+    positions = _calculate_proportional_layout(
+        worksheets, page_width, page_height, source_positions,
+    )
 
-    for idx, worksheet in enumerate(converted_worksheets[:20]):
+    for idx, worksheet in enumerate(worksheets):
         visual_id = _short_id(f"viz_{idx}_{report_name}")
+
+        if idx < len(positions):
+            x_pos, y_pos, width, height = positions[idx]
+        else:
+            x_pos, y_pos, width, height = 10, 10, 300, 200
 
         # Create a visual container for each worksheet
         visual_container = create_visual_container(
@@ -510,12 +865,6 @@ def generate_visual_containers(converted_worksheets, report_name="Report",
         )
 
         visual_containers.append(visual_container)
-
-        # Calculate position for the next visual (grid layout)
-        x_pos += width + spacing
-        if x_pos > 1000:  # Wrap after 3 visuals
-            x_pos = 10
-            y_pos += height + spacing
 
     return visual_containers
 
@@ -649,23 +998,81 @@ def create_visual_container(worksheet, visual_id=None, x=10, y=10,
             visual_obj.setdefault("query", {})
             visual_obj["query"]["sortDefinition"] = {"sort": sort_state}
 
-    # ── Reference lines ───────────────────────────────────────
+    # ── Reference lines (constant + dynamic) ──────────────────
     ref_lines = worksheet.get('referenceLines', worksheet.get('reference_lines', []))
     if ref_lines:
         constant_lines = []
+        dynamic_lines = []
         for rl in ref_lines:
-            constant_lines.append({
-                "show": _L("true"),
-                "value": _L(f"{rl.get('value', 0)}D"),
-                "displayName": _L(json.dumps(rl.get('label', ''))),
-                "color": {"solid": {"color": rl.get('color', rl.get('line_color', '#FF0000'))}},
-                "style": _L("'dashed'"),
-            })
+            ref_type = rl.get('type', 'constant')
+            if ref_type in ('average', 'median', 'percentile', 'min', 'max', 'trend'):
+                drl = _build_dynamic_reference_line(
+                    ref_type=ref_type,
+                    field_name=rl.get('field', ''),
+                    table_name=ctm.get(rl.get('field', ''), 'Table'),
+                    label=rl.get('label', ''),
+                    color=rl.get('color', rl.get('line_color', '#FF0000')),
+                    style=rl.get('style', 'dashed'),
+                )
+                if drl:
+                    dynamic_lines.append(drl)
+            else:
+                constant_lines.append({
+                    "show": _L("true"),
+                    "value": _L(f"{rl.get('value', 0)}D"),
+                    "displayName": _L(json.dumps(rl.get('label', ''))),
+                    "color": {"solid": {"color": rl.get('color', rl.get('line_color', '#FF0000'))}},
+                    "style": _L("'dashed'"),
+                })
         if constant_lines:
             visual_obj.setdefault("objects", {})
             visual_obj["objects"]["constantLine"] = [
                 {"properties": cl} for cl in constant_lines
             ]
+        if dynamic_lines:
+            visual_obj.setdefault("objects", {})
+            visual_obj["objects"]["referenceLine"] = dynamic_lines
+
+    # ── Data bars for table/matrix columns ─────────────────────
+    if pbi_type in ('tableEx', 'matrix'):
+        data_bars = worksheet.get('dataBars', worksheet.get('data_bars', []))
+        if data_bars:
+            bar_rules = []
+            for db in data_bars:
+                col_name = db.get('column', db.get('field', ''))
+                tbl_name = ctm.get(col_name, 'Table')
+                bar_rules.append(_build_data_bar_config(
+                    col_name, tbl_name,
+                    min_color=db.get('minColor', '#FFFFFF'),
+                    max_color=db.get('maxColor', '#4472C4'),
+                    show_bar_only=db.get('showBarOnly', False),
+                ))
+            if bar_rules:
+                visual_obj.setdefault("objects", {})
+                visual_obj["objects"]["values"] = [{
+                    "properties": {
+                        "dataBar": bar_rules,
+                    }
+                }]
+
+    # ── Small Multiples ───────────────────────────────────────
+    sm_field = worksheet.get('smallMultiples', worksheet.get('small_multiples', {}))
+    if isinstance(sm_field, dict) and sm_field.get('field') and pbi_type in SMALL_MULTIPLES_TYPES:
+        sm_config, sm_proj = _build_small_multiples_config(
+            field_name=sm_field['field'],
+            table_name=ctm.get(sm_field['field'], 'Table'),
+            layout_mode=sm_field.get('layout', 'flow'),
+            max_items_per_row=sm_field.get('maxPerRow', 3),
+            show_empty=sm_field.get('showEmpty', False),
+        )
+        visual_obj.setdefault("objects", {})
+        visual_obj["objects"].update(sm_config)
+        # Add SmallMultiple role to query state
+        visual_obj.setdefault("query", {})
+        visual_obj["query"].setdefault("queryState", {})
+        visual_obj["query"]["queryState"]["SmallMultiple"] = {
+            "projections": [sm_proj]
+        }
 
     # ── Axis config (min/max, log, reversed) ──────────────────
     axes_data = worksheet.get('axes', {})
@@ -999,25 +1406,27 @@ def build_query_state(pbi_type, dimensions, measures, col_table_map,
     return query_state if query_state else None
 
 
-def create_filters_config(filters):
+def create_filters_config(filters, table_name=None):
     """
     Create the filter configuration for a visual
     """
     filters_config = []
+    # Resolve table name from context; fall back to 'Table1'
+    entity_name = table_name if table_name else 'Table1'
 
     for filt in filters:
         filter_config = {
             "expression": {
                 "Column": {
                     "Expression": {
-                        "SourceRef": {"Entity": "Table1"}
+                        "SourceRef": {"Entity": entity_name}
                     },
                     "Property": filt.get('field', 'Field')
                 }
             },
             "filter": {
                 "Version": 2,
-                "From": [{"Name": "t", "Entity": "Table1", "Type": 0}],
+                "From": [{"Name": "t", "Entity": entity_name, "Type": 0}],
                 "Where": [{
                     "Condition": {
                         "In": {

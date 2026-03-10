@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-05T14:22:27.305670",
+  "generated_at": "2026-03-10T09:39:02.355171",
   "source": "Tableau Migration",
   "report_name": "BigQuery_Analytics",
   "objects_converted": {
@@ -20,7 +20,7 @@
   },
   "generated_output": {
     "pages": 1,
-    "visuals": 8,
+    "visuals": 12,
     "theme_applied": false
   },
   "tmdl_stats": {

@@ -271,12 +271,41 @@ def _inject_m_steps_into_partition(table, steps):
     return False
 
 
+def resolve_table_for_column(column_name, datasource_name=None, dax_context=None):
+    """Resolve which table a column belongs to, with optional datasource scoping.
+
+    When a worksheet uses multiple datasources, ``datasource_name`` narrows
+    the lookup to the tables that belong to that particular datasource.
+    Falls back to the global ``column_table_map`` if no datasource-specific
+    match is found.
+
+    Args:
+        column_name: Column name to resolve.
+        datasource_name: Optional datasource name to scope the lookup.
+        dax_context: DAX context dict containing ``column_table_map`` and
+            ``ds_column_table_map``.
+
+    Returns:
+        str or None: Resolved table name, or *None* if unresolved.
+    """
+    if not dax_context:
+        return None
+    # Try datasource-specific lookup first
+    if datasource_name:
+        ds_map = dax_context.get('ds_column_table_map', {}).get(datasource_name, {})
+        if column_name in ds_map:
+            return ds_map[column_name]
+    # Fallback to global map
+    return dax_context.get('column_table_map', {}).get(column_name)
+
+
 # ════════════════════════════════════════════════════════════════════
 #  PUBLIC ENTRY POINT
 # ════════════════════════════════════════════════════════════════════
 
 def generate_tmdl(datasources, report_name, extra_objects, output_dir,
-                  calendar_start=None, calendar_end=None, culture=None):
+                  calendar_start=None, calendar_end=None, culture=None,
+                  model_mode='import'):
     """
     Main entry point: directly convert extracted Tableau data to TMDL files.
 
@@ -289,6 +318,8 @@ def generate_tmdl(datasources, report_name, extra_objects, output_dir,
         calendar_start: Start year for Calendar table (default: 2020)
         calendar_end: End year for Calendar table (default: 2030)
         culture: Override culture/locale (default: en-US)
+        model_mode: 'import', 'directquery', or 'composite'
+                    Controls partition mode for all tables
 
     Returns:
         dict: Statistics about the generated model
@@ -300,7 +331,8 @@ def generate_tmdl(datasources, report_name, extra_objects, output_dir,
     model = _build_semantic_model(datasources, report_name, extra_objects,
                                   calendar_start=calendar_start,
                                   calendar_end=calendar_end,
-                                  culture=culture)
+                                  culture=culture,
+                                  model_mode=model_mode)
 
     # Step 2: Write TMDL files
     _write_tmdl_files(model, output_dir)
@@ -324,7 +356,8 @@ def generate_tmdl(datasources, report_name, extra_objects, output_dir,
 # ════════════════════════════════════════════════════════════════════
 
 def _build_semantic_model(datasources, report_name="Report", extra_objects=None,
-                          calendar_start=None, calendar_end=None, culture=None):
+                          calendar_start=None, calendar_end=None, culture=None,
+                          model_mode='import'):
     """
     Build a complete semantic model from extracted Tableau datasources.
 
@@ -338,6 +371,8 @@ def _build_semantic_model(datasources, report_name="Report", extra_objects=None,
         extra_objects: Optional dict with hierarchies, sets, groups, bins, aliases
         calendar_start: Start year for Calendar table (default: 2020)
         calendar_end: End year for Calendar table (default: 2030)
+        culture: Override culture/locale (default: en-US)
+        model_mode: 'import', 'directquery', or 'composite'
         culture: Override culture/locale (default: en-US)
 
     Returns:
@@ -363,6 +398,12 @@ def _build_semantic_model(datasources, report_name="Report", extra_objects=None,
     # Store calendar options for _add_date_table
     model['_calendar_start'] = calendar_start
     model['_calendar_end'] = calendar_end
+
+    # Store model mode for partition generation
+    model['_model_mode'] = model_mode or 'import'
+
+    # Store raw datasources for M parameter generation (server/database)
+    model['_datasources'] = datasources
 
     # Phase 1: Collect all physical tables and deduplicate
     best_tables = {}  # name -> (table_dict, connection_details)
@@ -526,12 +567,32 @@ def _build_semantic_model(datasources, report_name="Report", extra_objects=None,
         if caption:
             measure_names.add(caption)
 
+    # Phase 2c: Build per-datasource column → table map for multi-source routing
+    # Maps datasource_name → {column_name → table_name}
+    ds_column_table_map = {}
+    datasource_table_map = {}  # table_name → datasource_name
+    for ds in datasources:
+        ds_name = ds.get('name', '')
+        ds_col_map = {}
+        for table in ds.get('tables', []):
+            tname = table.get('name', 'Table1')
+            if tname in best_tables:
+                datasource_table_map[tname] = ds_name
+                for col in table.get('columns', []):
+                    cname = col.get('name', '')
+                    if cname:
+                        ds_col_map[cname] = tname
+        if ds_name:
+            ds_column_table_map[ds_name] = ds_col_map
+
     dax_context = {
         'calc_map': calc_map,
         'param_map': param_map,
         'column_table_map': column_table_map,
         'measure_names': measure_names,
-        'param_values': param_values
+        'param_values': param_values,
+        'ds_column_table_map': ds_column_table_map,
+        'datasource_table_map': datasource_table_map,
     }
 
     # Phase 3: Create tables
@@ -546,7 +607,8 @@ def _build_semantic_model(datasources, report_name="Report", extra_objects=None,
             dax_context=dax_context,
             col_metadata_map=col_metadata_map,
             extra_objects=extra_objects,
-            m_query_override=m_query_overrides.get(table_name, '')
+            m_query_override=m_query_overrides.get(table_name, ''),
+            model_mode=model.get('_model_mode', 'import'),
         )
         model["model"]["tables"].append(tbl)
 
@@ -708,7 +770,8 @@ def _build_m_transform_steps(columns, col_metadata_map):
 
 
 def _build_table(table, connection, calculations, columns_metadata, dax_context=None,
-                 col_metadata_map=None, extra_objects=None, m_query_override=''):
+                 col_metadata_map=None, extra_objects=None, m_query_override='',
+                 model_mode='import'):
     """
     Create a semantic model table with columns, partitions and measures.
 
@@ -720,6 +783,7 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
         dax_context: Dict with calc_map, param_map, column_table_map, measure_names
         col_metadata_map: Dict {col_name: {hidden, semantic_role, description, ...}}
         extra_objects: Dict with sets, groups, bins, aliases
+        model_mode: 'import', 'directquery', or 'composite'
 
     Returns:
         dict: Complete table definition
@@ -745,13 +809,25 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
     if m_steps:
         m_query = inject_m_steps(m_query, m_steps)
 
+    # Determine partition mode based on model_mode
+    # For composite: large tables use directQuery, small/lookup use import
+    partition_mode = model_mode if model_mode in ('import', 'directQuery') else 'import'
+    if model_mode == 'composite':
+        # Heuristic: tables with many columns are likely fact tables → directQuery
+        # Small tables with few columns are likely dimension/lookup → import
+        col_count = len(columns)
+        if col_count > 10:
+            partition_mode = 'directQuery'
+        else:
+            partition_mode = 'import'
+
     result_table = {
         "name": table_name,
         "columns": [],
         "partitions": [
             {
                 "name": f"Partition-{table_name}",
-                "mode": "import",
+                "mode": partition_mode,
                 "source": {
                     "type": "m",
                     "expression": m_query
@@ -2720,8 +2796,8 @@ def _write_tmdl_files(model_data, output_dir):
     # 3. relationships.tmdl
     _write_relationships_tmdl(def_dir, relationships)
 
-    # 4. expressions.tmdl
-    _write_expressions_tmdl(def_dir, tables)
+    # 4. expressions.tmdl (with datasource parameters)
+    _write_expressions_tmdl(def_dir, tables, datasources=model.get('_datasources'))
 
     # 5. roles.tmdl
     if roles:
@@ -2896,9 +2972,20 @@ def _write_model_tmdl(def_dir, model, tables, roles=None):
         f.write(content)
 
 
-def _write_expressions_tmdl(def_dir, tables):
-    """Generate expressions.tmdl with a DataFolder parameter."""
+def _write_expressions_tmdl(def_dir, tables, datasources=None):
+    """Generate expressions.tmdl with M parameters.
+
+    Creates parameterized data source expressions:
+    - DataFolder: for file-based data sources
+    - ServerName: for server-based connections (SQL, Oracle, PostgreSQL, etc.)
+    - DatabaseName: for database-based connections
+
+    These M parameters allow easy switching between dev/staging/prod environments.
+    """
     file_paths = []
+    server_names = set()
+    database_names = set()
+
     for table in tables:
         for partition in table.get('partitions', []):
             source = partition.get('source', {})
@@ -2913,6 +3000,24 @@ def _write_expressions_tmdl(def_dir, tables):
                 file_paths.append(m.group(1))
             for m in re.finditer(r'File\.Contents\("([^"]+)"\)', expr):
                 file_paths.append(m.group(1))
+
+            # Detect server/database references from M queries
+            for m in re.finditer(r'(?:Sql\.Database|PostgreSQL\.Database|Oracle\.Database|Mysql\.Database)\s*\(\s*"([^"]+)"\s*,\s*"([^"]+)"', expr):
+                server_names.add(m.group(1))
+                database_names.add(m.group(2))
+            for m in re.finditer(r'(?:Snowflake\.Databases|AmazonRedshift\.Database|GoogleBigQuery\.Database)\s*\(\s*"([^"]+)"', expr):
+                server_names.add(m.group(1))
+
+    # Also extract from datasource connection metadata
+    if datasources:
+        for ds in (datasources if isinstance(datasources, list) else [datasources]):
+            conn = ds.get('connection', {})
+            server = conn.get('server', conn.get('host', ''))
+            db = conn.get('dbname', conn.get('database', ''))
+            if server:
+                server_names.add(server)
+            if db:
+                database_names.add(db)
 
     default_folder = "C:\\\\Data"
 
@@ -2935,6 +3040,17 @@ def _write_expressions_tmdl(def_dir, tables):
     lines = []
     lines.append(f'expression DataFolder = "{default_folder}" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]')
     lines.append("")
+
+    # Add server/database M parameters for easy environment switching
+    if server_names:
+        default_server = sorted(server_names)[0]
+        lines.append(f'expression ServerName = "{default_server}" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]')
+        lines.append("")
+
+    if database_names:
+        default_db = sorted(database_names)[0]
+        lines.append(f'expression DatabaseName = "{default_db}" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]')
+        lines.append("")
 
     content = '\n'.join(lines) + '\n'
 
@@ -3060,6 +3176,11 @@ def _write_table_tmdl(tables_dir, table):
     # Partition
     for partition in table.get('partitions', []):
         _write_partition(lines, table_name, partition)
+
+    # Incremental refresh policy (if configured)
+    refresh_policy = table.get('refreshPolicy')
+    if refresh_policy:
+        _write_refresh_policy(lines, refresh_policy)
 
     # Annotations
     lines.append("\tannotation PBI_ResultType = Table")
@@ -3192,6 +3313,94 @@ def _write_hierarchy(lines, hierarchy):
         lines.append("")
 
     lines.append("")
+
+
+def _write_refresh_policy(lines, policy):
+    """Write an incremental refresh policy in TMDL format.
+
+    The policy dict should contain:
+      - incrementalGranularity: 'Day' | 'Month' | 'Quarter' | 'Year'
+      - incrementalPeriods: int (number of periods to refresh)
+      - rollingWindowGranularity: 'Day' | 'Month' | 'Quarter' | 'Year'
+      - rollingWindowPeriods: int (total window size)
+      - pollingExpression: M expression for the date column (optional)
+      - sourceExpression: M source expression (optional)
+    """
+    lines.append("\trefreshPolicy")
+    gran = policy.get('incrementalGranularity', 'Day')
+    inc_periods = policy.get('incrementalPeriods', 1)
+    rw_gran = policy.get('rollingWindowGranularity', 'Month')
+    rw_periods = policy.get('rollingWindowPeriods', 12)
+
+    lines.append(f"\t\tincrementalGranularity: {gran}")
+    lines.append(f"\t\tincrementalPeriods: {inc_periods}")
+    lines.append(f"\t\trollingWindowGranularity: {rw_gran}")
+    lines.append(f"\t\trollingWindowPeriods: {rw_periods}")
+
+    # Polling expression (the date column to filter on)
+    polling = policy.get('pollingExpression', '')
+    if polling:
+        lines.append(f"\t\tpollingExpression =")
+        for pl in polling.split('\n'):
+            lines.append(f"\t\t\t\t{pl}")
+
+    # Source expression (the M query with RangeStart/RangeEnd parameters)
+    source_expr = policy.get('sourceExpression', '')
+    if source_expr:
+        lines.append(f"\t\tsourceExpression =")
+        for sl in source_expr.split('\n'):
+            lines.append(f"\t\t\t\t{sl}")
+
+    lines.append("")
+
+
+def detect_refresh_policy(table, datasources=None):
+    """Auto-detect an incremental refresh policy for a table.
+
+    If the table has a DateTime column and comes from a relational data source,
+    generate default policy settings. Users should refine these.
+
+    Args:
+        table: Table dict with 'columns' list.
+        datasources: Optional list of datasource dicts for connection type detection.
+
+    Returns:
+        dict with policy settings, or None if not applicable.
+    """
+    date_cols = []
+    for col in table.get('columns', []):
+        dt = (col.get('dataType') or col.get('type') or '').lower()
+        name = (col.get('name') or '').lower()
+        if 'date' in dt or 'datetime' in dt or 'timestamp' in dt:
+            date_cols.append(col)
+        elif any(kw in name for kw in ('date', 'datetime', 'timestamp', 'created_at', 'updated_at')):
+            date_cols.append(col)
+
+    if not date_cols:
+        return None
+
+    # Pick the best candidate date column
+    best = date_cols[0]
+    for c in date_cols:
+        cn = (c.get('name') or '').lower()
+        if any(kw in cn for kw in ('updated', 'modified', 'last_')):
+            best = c
+            break
+
+    col_name = best.get('name', 'Date')
+
+    # Build M polling expression
+    polling = f'let\n    currentDate = DateTime.LocalNow(),\n    #"MaxDate" = Sql.Database("server", "db"){{[Schema="dbo",Item="{table.get("name", "Table")}"]}}[{col_name}],\n    maxVal = List.Max(#"MaxDate")\nin\n    maxVal'
+
+    return {
+        'incrementalGranularity': 'Day',
+        'incrementalPeriods': 3,
+        'rollingWindowGranularity': 'Month',
+        'rollingWindowPeriods': 12,
+        'pollingExpression': polling,
+        'sourceExpression': '',
+        'dateColumn': col_name,
+    }
 
 
 def _write_partition(lines, table_name, partition):

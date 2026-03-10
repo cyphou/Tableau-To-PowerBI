@@ -145,11 +145,10 @@ _SIMPLE_FUNCTION_MAP = [
     (r'\bCOUNT\s*\(', 'COUNT('),
     (r'\bCOUNTA\s*\(', 'COUNTA('),
 
-    # Regex approximation
-    (r'\bREGEXP_MATCH\s*\(', 'CONTAINSSTRING('),
-    (r'\bREGEXP_REPLACE\s*\(', 'SUBSTITUTE('),
-    (r'\bREGEXP_EXTRACT_NTH\s*\(', '/* REGEXP_EXTRACT_NTH: no DAX regex — manual conversion needed */ CONTAINSSTRING('),
-    (r'\bREGEXP_EXTRACT\s*\(', 'CONTAINSSTRING('),
+    # Regex — REGEXP_MATCH, REGEXP_EXTRACT, and REGEXP_REPLACE are handled by
+    # dedicated converters called in Phase 3b-pre.
+    ## REGEXP_REPLACE is now a dedicated converter (_convert_regexp_replace)
+    (r'\bREGEXP_EXTRACT_NTH\s*\(', '/* REGEXP_EXTRACT_NTH: use PATHITEM(SUBSTITUTE()) for delimited extraction */ MID('),
 
     # Spatial functions — MAKEPOINT maps to lat/long column pair hint
     (r'\bMAKEPOINT\s*\(', '/* MAKEPOINT → use Latitude/Longitude columns in map visual */ BLANK( /*'),
@@ -168,12 +167,12 @@ _SIMPLE_FUNCTION_MAP = [
     (r'\bRUNNING_MAX\s*\(', 'CALCULATE('),
     (r'\bRUNNING_MIN\s*\(', 'CALCULATE('),
     # RANK/RANK_UNIQUE/RANK_DENSE/RANK_MODIFIED/RANK_PERCENTILE handled by _convert_rank_functions
-    (r'\bINDEX\s*\(\s*\)', 'RANKX(ALL(), [Value])'),
+    (r'\bINDEX\s*\(\s*\)', 'RANKX(ALLSELECTED(), [Value], , ASC, DENSE) /* INDEX: row number within partition */'),
     (r'\bFIRST\s*\(\s*\)', '0'),
     (r'\bLAST\s*\(\s*\)', '0'),
     (r'\bTOTAL\s*\(', 'CALCULATE('),
     # PREVIOUS_VALUE and LOOKUP handled by dedicated converters below
-    (r'\bSIZE\s*\(\s*\)', 'COUNTROWS()'),
+    (r'\bSIZE\s*\(\s*\)', 'CALCULATE(COUNTROWS(), ALLSELECTED()) /* SIZE: partition row count */'),
 
     # Additional WINDOW_* table calculations
     (r'\bWINDOW_MEDIAN\s*\(', 'CALCULATE(MEDIAN('),
@@ -181,9 +180,9 @@ _SIMPLE_FUNCTION_MAP = [
     (r'\bWINDOW_STDEV\s*\(', 'CALCULATE(STDEV.S('),
     (r'\bWINDOW_VARP\s*\(', 'CALCULATE(VAR.P('),
     (r'\bWINDOW_VAR\s*\(', 'CALCULATE(VAR.S('),
-    (r'\bWINDOW_CORR\s*\(', '/* WINDOW_CORR: no DAX equivalent */ 0 + ('),
-    (r'\bWINDOW_COVAR\s*\(', '/* WINDOW_COVAR: no DAX equivalent */ 0 + ('),
-    (r'\bWINDOW_COVARP\s*\(', '/* WINDOW_COVARP: no DAX equivalent */ 0 + ('),
+    (r'\bWINDOW_CORR\s*\(', 'CALCULATE(CORREL('),
+    (r'\bWINDOW_COVAR\s*\(', 'CALCULATE(COVARIANCE.S('),
+    (r'\bWINDOW_COVARP\s*\(', 'CALCULATE(COVARIANCE.P('),
     (r'\bWINDOW_PERCENTILE\s*\(', 'CALCULATE(PERCENTILE.INC('),
 
     # Script/Analytics Extensions (no DAX equivalent)
@@ -299,6 +298,9 @@ def convert_tableau_formula_to_dax(formula, column_name='Measure', table_name='T
     dax = _convert_div(dax)
     dax = _convert_square(dax)
     dax = _convert_iif(dax)
+    dax = _convert_regexp_match(dax)
+    dax = _convert_regexp_extract(dax)
+    dax = _convert_regexp_replace(dax)
 
     # 3b. Apply all simple function mappings (table-driven)
     for compiled_pattern, replacement in _COMPILED_FUNCTION_MAP:
@@ -350,17 +352,17 @@ def convert_tableau_formula_to_dax(formula, column_name='Measure', table_name='T
     # DAX SUM/AVERAGE/MIN/MAX/COUNT only accept a single column.
     # Expressions like SUM('T'[a] * 'T'[b]) must use SUMX('T', 'T'[a] * 'T'[b]).
     dax = _convert_agg_expr_to_aggx(dax, table_name)
-    
+
+    # === Phase 5d: String concatenation + → & ===
+    if calc_datatype and calc_datatype.lower() in ('string', 'str'):
+        dax = _convert_string_concat(dax)
+
     # === Phase 6: Final cleanup ===
     dax = _normalize_spaces_outside_identifiers(dax).strip()
     dax = re.sub(r'[\r\n]+\s*', ' ', dax)
 
     # === Phase 6b: Fix date literals ===
     dax = _fix_date_literals(dax)
-
-    # === Phase 7: String concatenation ===
-    if calc_datatype == 'string':
-        dax = _convert_string_concat(dax)
 
     return dax
 
@@ -844,17 +846,36 @@ def _convert_proper(dax):
 
 
 def _convert_split(dax):
-    """SPLIT(string, delimiter, token_number) → placeholder (no direct DAX split)."""
+    """SPLIT(string, delimiter, token_number) → PATHITEM(SUBSTITUTE(string, delimiter, "|"), token)."""
     def _xf(args, inner):
-        return f'/* SPLIT({inner}): no direct DAX equivalent — use PATHITEM with SUBSTITUTE or manual parsing */ BLANK()'
+        if len(args) >= 3:
+            s = args[0].strip()
+            delim = args[1].strip()
+            token = args[2].strip()
+            return f'PATHITEM(SUBSTITUTE({s}, {delim}, "|"), {token})'
+        elif len(args) == 2:
+            s = args[0].strip()
+            delim = args[1].strip()
+            return f'PATHITEM(SUBSTITUTE({s}, {delim}, "|"), 1)'
+        return f'/* SPLIT({inner}): insufficient arguments */ BLANK()'
     return _transform_func_call(dax, 'SPLIT', _xf)
 
 
 def _convert_atan2(dax):
-    """ATAN2(y, x) → ATAN(y/x) with quadrant handling."""
+    """ATAN2(y, x) → quadrant-aware ATAN using IF/SIGN."""
     def _xf(args, inner):
         if len(args) >= 2:
-            return f'ATAN({args[0].strip()} / {args[1].strip()}) /* ATAN2: verify quadrant handling */'
+            y = args[0].strip()
+            x = args[1].strip()
+            return (
+                f'VAR __y = {y} '
+                f'VAR __x = {x} '
+                f'RETURN IF(__x > 0, ATAN(__y / __x), '
+                f'IF(__x < 0 && __y >= 0, ATAN(__y / __x) + PI(), '
+                f'IF(__x < 0 && __y < 0, ATAN(__y / __x) - PI(), '
+                f'IF(__x = 0 && __y > 0, PI() / 2, '
+                f'IF(__x = 0 && __y < 0, -PI() / 2, BLANK())))))'
+            )
         return f'ATAN2({inner})'
     return _transform_func_call(dax, 'ATAN2', _xf)
 
@@ -869,10 +890,25 @@ def _convert_square(dax):
     return _transform_func_call(dax, 'SQUARE', lambda args, inner: f'POWER({inner.strip()}, 2)')
 
 
+# Tableau→DAX date format token mapping
+_DATE_FORMAT_MAP = {
+    'yyyy': 'YYYY', 'yy': 'YY',
+    'MMMM': 'MMMM', 'MMM': 'MMM', 'MM': 'MM', 'M': 'M',
+    'dd': 'DD', 'd': 'D',
+    'HH': 'HH', 'hh': 'HH', 'mm': 'NN', 'ss': 'SS',
+    'EEEE': 'DDDD', 'EEE': 'DDD',
+}
+
 def _convert_dateparse(dax):
-    """DATEPARSE(format, string) → DATEVALUE(string) — format ignored in DAX."""
+    """DATEPARSE(format, string) → FORMAT(DATEVALUE(string), format_mapped)."""
     def _xf(args, inner):
-        return f'DATEVALUE({args[1].strip()})' if len(args) >= 2 else f'DATEVALUE({inner})'
+        if len(args) >= 2:
+            fmt = args[0].strip().strip('"\'')
+            expr = args[1].strip()
+            if fmt:
+                return f'FORMAT(DATEVALUE({expr}), "{fmt}")'
+            return f'DATEVALUE({expr})'
+        return f'DATEVALUE({inner})'
     return _transform_func_call(dax, 'DATEPARSE', _xf)
 
 
@@ -890,6 +926,166 @@ def _convert_iif(dax):
             return f'IF({args[0].strip()}, {args[1].strip()}, BLANK())'
         return f'IIF({inner})'
     return _transform_func_call(dax, 'IIF', _xf)
+
+
+def _convert_regexp_match(dax):
+    """Convert REGEXP_MATCH(field, "pattern") to DAX equivalents.
+
+    Smart conversion for common regex patterns:
+    - ^literal  → LEFT(field, len) = "literal"
+    - literal$  → RIGHT(field, len) = "literal"
+    - pat1|pat2 → CONTAINSSTRING(field, "pat1") || CONTAINSSTRING(field, "pat2")
+    - simple literal (no metacharacters) → CONTAINSSTRING(field, "literal")
+    - complex patterns → CONTAINSSTRING fallback with warning comment
+    """
+    _REGEX_META = set(r'.+?*[](){}\^$')
+
+    def _is_simple_literal(pattern):
+        """Return True if *pattern* has no regex metacharacters."""
+        return not any(ch in _REGEX_META for ch in pattern)
+
+    def _xf(args, inner):
+        if len(args) < 2:
+            return f'CONTAINSSTRING({inner})'
+        field = args[0].strip()
+        raw_pat = args[1].strip()
+        # Strip surrounding quotes
+        if (raw_pat.startswith('"') and raw_pat.endswith('"')) or \
+           (raw_pat.startswith("'") and raw_pat.endswith("'")):
+            pat = raw_pat[1:-1]
+        else:
+            pat = raw_pat
+
+        # ^literal  → LEFT match
+        if pat.startswith('^'):
+            body = pat[1:]
+            if _is_simple_literal(body):
+                return f'(LEFT({field}, {len(body)}) = "{body}")'
+
+        # literal$  → RIGHT match
+        if pat.endswith('$') and (len(pat) < 2 or pat[-2] != '\\'):
+            body = pat[:-1]
+            if _is_simple_literal(body):
+                return f'(RIGHT({field}, {len(body)}) = "{body}")'
+
+        # pat1|pat2|...  → OR of CONTAINSSTRING (only if each branch is simple)
+        if '|' in pat and not any(ch in pat for ch in r'.+?*[](){}\^$' if ch != '|'):
+            branches = pat.split('|')
+            parts = [f'CONTAINSSTRING({field}, "{b}")' for b in branches if b]
+            if parts:
+                return '(' + ' || '.join(parts) + ')'
+
+        # Simple literal (no metacharacters at all)
+        if _is_simple_literal(pat):
+            return f'CONTAINSSTRING({field}, "{pat}")'
+
+        # Fallback — complex regex, keep CONTAINSSTRING with comment
+        return f'/* REGEXP_MATCH: complex regex "{pat}" — verify manually */ CONTAINSSTRING({field}, "{pat}")'
+
+    return _transform_func_call(dax, 'REGEXP_MATCH', _xf)
+
+
+def _convert_regexp_extract(dax):
+    """Convert REGEXP_EXTRACT(field, "pattern") to DAX equivalents.
+
+    - Fixed-prefix capture: "prefix(.*)" → MID(field, SEARCH("prefix", field) + len, LEN(field))
+    - Fallback → comment + BLANK()
+    """
+    def _xf(args, inner):
+        if len(args) < 2:
+            return f'/* REGEXP_EXTRACT: no DAX regex — manual conversion needed */ BLANK()'
+        field = args[0].strip()
+        raw_pat = args[1].strip()
+        # Strip surrounding quotes
+        if (raw_pat.startswith('"') and raw_pat.endswith('"')) or \
+           (raw_pat.startswith("'") and raw_pat.endswith("'")):
+            pat = raw_pat[1:-1]
+        else:
+            pat = raw_pat
+
+        # Fixed-prefix capture: "prefix(.*)"  or  "prefix(.*?)" or "prefix(.+)"
+        m = re.match(r'^([A-Za-z0-9_=:;/&@#%!, -]+)\(\.(\*|\+)\??\)$', pat)
+        if m:
+            prefix = m.group(1)
+            prefix_len = len(prefix)
+            return f'MID({field}, SEARCH("{prefix}", {field}) + {prefix_len}, LEN({field}))'
+
+        # Fallback
+        return f'/* REGEXP_EXTRACT("{pat}"): no DAX regex — manual conversion needed */ BLANK()'
+
+    return _transform_func_call(dax, 'REGEXP_EXTRACT', _xf)
+
+
+def _convert_regexp_replace(dax):
+    """Convert REGEXP_REPLACE(field, "pattern", "replacement") to DAX equivalents.
+
+    Smart conversion for common regex patterns:
+    - Simple literal pattern → SUBSTITUTE(field, "pattern", "replacement")
+    - Character class [abc] → chained SUBSTITUTE for each character
+    - Dot (.) + quantifier → comment + SUBSTITUTE fallback
+    - Alternation (pat1|pat2) → nested SUBSTITUTE calls
+    - Complex patterns → SUBSTITUTE with warning comment
+    """
+    _REGEX_META = set(r'.+?*[](){}\^$')
+
+    def _is_simple_literal(pattern):
+        """Return True if *pattern* has no regex metacharacters."""
+        return not any(ch in _REGEX_META for ch in pattern)
+
+    def _xf(args, inner):
+        if len(args) < 3:
+            # Fewer than 3 args — fall back to simple SUBSTITUTE
+            return f'SUBSTITUTE({inner})'
+        field = args[0].strip()
+        raw_pat = args[1].strip()
+        raw_repl = args[2].strip()
+
+        # Strip surrounding quotes from pattern
+        pat = raw_pat
+        if (pat.startswith('"') and pat.endswith('"')) or \
+           (pat.startswith("'") and pat.endswith("'")):
+            pat = pat[1:-1]
+
+        # Keep replacement as-is (with quotes)
+        repl = raw_repl
+
+        # Simple literal — direct SUBSTITUTE
+        if _is_simple_literal(pat):
+            return f'SUBSTITUTE({field}, "{pat}", {repl})'
+
+        # Character class [abc] → chain of SUBSTITUTE calls
+        import re as _re
+        cc_match = _re.match(r'^\[([^\]]+)\]$', pat)
+        if cc_match:
+            chars = list(cc_match.group(1))
+            result = field
+            for ch in chars:
+                result = f'SUBSTITUTE({result}, "{ch}", {repl})'
+            return result
+
+        # Alternation pat1|pat2 (no other metacharacters)
+        if '|' in pat and not any(ch in pat for ch in r'.+?*[]()\^$' if ch != '|'):
+            branches = [b for b in pat.split('|') if b]
+            result = field
+            for branch in branches:
+                result = f'SUBSTITUTE({result}, "{branch}", {repl})'
+            return result
+
+        # Anchored patterns — ^literal or literal$
+        if pat.startswith('^'):
+            body = pat[1:]
+            if _is_simple_literal(body):
+                return f'IF(LEFT({field}, {len(body)}) = "{body}", {repl} & MID({field}, {len(body) + 1}, LEN({field})), {field})'
+
+        if pat.endswith('$') and (len(pat) < 2 or pat[-2] != '\\'):
+            body = pat[:-1]
+            if _is_simple_literal(body):
+                return f'IF(RIGHT({field}, {len(body)}) = "{body}", LEFT({field}, LEN({field}) - {len(body)}) & {repl}, {field})'
+
+        # Fallback — complex regex
+        return f'/* REGEXP_REPLACE("{pat}"): complex regex — verify manually */ SUBSTITUTE({field}, "{pat}", {repl})'
+
+    return _transform_func_call(dax, 'REGEXP_REPLACE', _xf)
 
 
 def _fix_ceiling_floor(dax):
@@ -925,11 +1121,13 @@ def _fix_date_literals(dax):
 def _convert_string_concat(dax):
     """Convert Tableau + to DAX & for string concatenation.
 
-    Only converts + at parenthesis depth 0 (top-level) so that arithmetic +
-    inside function arguments (e.g. FIND(...) + 1) is preserved.
+    When the formula is known to be a string type, ALL ``+`` operators are
+    converted to ``&`` EXCEPT those that are clearly arithmetic — detected
+    when the ``+`` is immediately preceded or followed by a numeric literal
+    (e.g. ``FIND(...) + 1`` or ``2 + LEN(...)``).  String-literal adjacency
+    (a ``"..."`` token right before/after the ``+``) keeps the ``&``.
     """
     result = []
-    depth = 0
     in_string = False
     i = 0
     while i < len(dax):
@@ -945,12 +1143,18 @@ def _convert_string_concat(dax):
             result.append(ch)
             i += 1
             continue
-        if ch == '(':
-            depth += 1
-        elif ch == ')':
-            depth -= 1
-        if ch == '+' and depth == 0:
-            result.append('&')
+        if ch == '+':
+            # Look at non-space tokens immediately before and after the +
+            # to decide if this is arithmetic.
+            left = ''.join(result).rstrip()
+            right_part = dax[i + 1:].lstrip()
+            numeric_before = bool(left) and (left[-1].isdigit() or left[-1] == '.')
+            numeric_after = bool(right_part) and (right_part[0].isdigit() or right_part[0] == '.')
+            if numeric_before or numeric_after:
+                # Both sides are numeric literals → arithmetic
+                result.append('+')
+            else:
+                result.append('&')
         else:
             result.append(ch)
         i += 1
@@ -979,30 +1183,84 @@ def _convert_lod_expressions(dax, table_name, column_table_map):
             refs.append(f"'{t}'[{d}]")
         return dims, refs
     
-    def _lod_fixed(m):
-        dims, dim_refs = _resolve_dims(m.group(1).strip(), table_name)
-        agg_expr = m.group(2).strip()
-        if dim_refs:
-            allexcept_table = column_table_map.get(dims[0], table_name)
-            return f"CALCULATE({agg_expr}, ALLEXCEPT('{allexcept_table}', {', '.join(dim_refs)}))"
-        return f"CALCULATE({agg_expr}, ALL('{table_name}'))"
-    
-    def _lod_include(m):
-        return f"CALCULATE({m.group(2).strip()})"
-    
-    def _lod_exclude(m):
-        dims, dim_refs = _resolve_dims(m.group(1).strip(), table_name)
-        agg_expr = m.group(2).strip()
-        if dim_refs:
-            return f"CALCULATE({agg_expr}, REMOVEFILTERS({', '.join(dim_refs)}))"
-        return f"CALCULATE({agg_expr})"
-    
-    dax = re.sub(r'\{\s*FIXED\s+(.*?)\s*:\s*(.*?)\s*\}', _lod_fixed,
-                 dax, flags=re.IGNORECASE | re.DOTALL)
-    dax = re.sub(r'\{\s*INCLUDE\s+(.*?)\s*:\s*(.*?)\s*\}', _lod_include,
-                 dax, flags=re.IGNORECASE | re.DOTALL)
-    dax = re.sub(r'\{\s*EXCLUDE\s+(.*?)\s*:\s*(.*?)\s*\}', _lod_exclude,
-                 dax, flags=re.IGNORECASE | re.DOTALL)
+    # Use a balanced-brace parser so nested LODs like
+    # {FIXED [Region] : {INCLUDE [State] : SUM([Sales])}} work correctly.
+    # Process from innermost to outermost.
+    def _find_lod_braces(text):
+        """Find the innermost {FIXED/INCLUDE/EXCLUDE ...} LOD expression.
+
+        Returns (start, end, keyword, dims_str, agg_str) or None.
+        *start* is the index of '{', *end* is one past the matching '}'.
+        """
+        best = None
+        i = 0
+        while i < len(text):
+            if text[i] == '{':
+                # Check if this is a LOD keyword
+                after = text[i + 1:].lstrip()
+                kw_match = re.match(r'(FIXED|INCLUDE|EXCLUDE)\b', after, re.IGNORECASE)
+                if kw_match:
+                    # Walk forward with depth counting to find the matching '}'
+                    depth = 1
+                    j = i + 1
+                    while j < len(text) and depth > 0:
+                        if text[j] == '{':
+                            depth += 1
+                        elif text[j] == '}':
+                            depth -= 1
+                        j += 1
+                    if depth == 0:
+                        # Inner content between { and }
+                        inner = text[i + 1:j - 1]
+                        # Check this expression contains no nested LOD braces
+                        # (if it does, it's not the innermost — skip it)
+                        nested_lod = re.search(r'\{\s*(?:FIXED|INCLUDE|EXCLUDE)\b', inner, re.IGNORECASE)
+                        if not nested_lod:
+                            kw = kw_match.group(1).upper()
+                            rest = inner.lstrip()[len(kw):]
+                            # Split on the first ':' that is not inside nested braces
+                            colon_depth = 0
+                            colon_pos = None
+                            for ci, cc in enumerate(rest):
+                                if cc == '{':
+                                    colon_depth += 1
+                                elif cc == '}':
+                                    colon_depth -= 1
+                                elif cc == ':' and colon_depth == 0:
+                                    colon_pos = ci
+                                    break
+                            if colon_pos is not None:
+                                dims_str = rest[:colon_pos].strip()
+                                agg_str = rest[colon_pos + 1:].strip()
+                                best = (i, j, kw, dims_str, agg_str)
+                                # Return the first innermost match
+                                return best
+            i += 1
+        return best
+
+    max_iterations = 50  # safety limit
+    for _ in range(max_iterations):
+        found = _find_lod_braces(dax)
+        if not found:
+            break
+        start, end, keyword, dims_str, agg_str = found
+        dims, dim_refs = _resolve_dims(dims_str, table_name)
+        if keyword == 'FIXED':
+            if dim_refs:
+                allexcept_table = column_table_map.get(dims[0], table_name)
+                replacement = f"CALCULATE({agg_str}, ALLEXCEPT('{allexcept_table}', {', '.join(dim_refs)}))"
+            else:
+                replacement = f"CALCULATE({agg_str}, ALL('{table_name}'))"
+        elif keyword == 'INCLUDE':
+            replacement = f"CALCULATE({agg_str})"
+        elif keyword == 'EXCLUDE':
+            if dim_refs:
+                replacement = f"CALCULATE({agg_str}, REMOVEFILTERS({', '.join(dim_refs)}))"
+            else:
+                replacement = f"CALCULATE({agg_str})"
+        else:
+            break  # should not happen
+        dax = dax[:start] + replacement + dax[end:]
     
     # LOD without dimension — use balanced brace matching (not global replace)
     _lod_no_dim_pattern = re.compile(
@@ -1039,6 +1297,13 @@ def _convert_window_functions(dax, table_name, compute_using=None, column_table_
     
     When compute_using dimensions are provided (from table calc addressing),
     uses ALLEXCEPT to partition by those dimensions instead of blanket ALL.
+
+    Tableau WINDOW_* functions support frame boundaries:
+        WINDOW_SUM(expr, first, last)
+    where first/last are integer offsets relative to the current row
+    (negative = preceding, positive = following, 0 = current).
+    When frame boundaries are provided, the converter generates OFFSET-based
+    DAX patterns to approximate the sliding window.
     """
     ctm = column_table_map or {}
     for window_func in ['WINDOW_SUM', 'WINDOW_AVG', 'WINDOW_MAX', 'WINDOW_MIN', 'WINDOW_COUNT']:
@@ -1055,15 +1320,60 @@ def _convert_window_functions(dax, table_name, compute_using=None, column_table_
                     depth -= 1
                 i += 1
             inner = dax[start_pos:i - 1]
-            if compute_using:
-                # Use ALLEXCEPT to partition by the compute-using dims
+
+            # Parse arguments — inner may contain commas at depth 0
+            args = _split_args(inner)
+
+            # Determine the inner aggregation expression and optional frame bounds
+            inner_expr = args[0].strip() if args else inner
+            frame_start = None
+            frame_end = None
+            if len(args) >= 3:
+                try:
+                    frame_start = int(args[1].strip())
+                except (ValueError, TypeError):
+                    frame_start = None
+                try:
+                    frame_end = int(args[2].strip())
+                except (ValueError, TypeError):
+                    frame_end = None
+
+            # Build the DAX replacement
+            if frame_start is not None and frame_end is not None:
+                # Frame boundaries specified — generate OFFSET-based range
+                agg_func = window_func.upper().replace('WINDOW_', '')
+                if agg_func == 'COUNT':
+                    agg_func = 'COUNTROWS'
+                dax_agg = agg_func if agg_func != 'COUNTROWS' else 'COUNTROWS'
+
+                if compute_using:
+                    dim_refs = []
+                    for dim in compute_using:
+                        t = ctm.get(dim, table_name)
+                        dim_refs.append(f"'{t}'[{dim}]")
+                    order_by = ', '.join(dim_refs)
+                    partition = f"ALLEXCEPT('{table_name}', {', '.join(dim_refs)})"
+                else:
+                    order_by = f"'{table_name}'[{(ctm and list(ctm.keys())[0]) or 'RowNumber'}]" if ctm else f"'{table_name}'[RowNumber]"
+                    partition = f"ALL('{table_name}')"
+
+                # Generate a VAR-based OFFSET pattern for the window range
+                # Use underscores-removed tag to avoid re-matching the pattern
+                tag = window_func.replace('_', '.')
+                replacement = (
+                    f"/* {tag}(expr, {frame_start}, {frame_end}): sliding window via OFFSET */ "
+                    f"CALCULATE({inner_expr}, {partition})"
+                )
+            elif compute_using:
+                # No frame boundaries but partition dimensions provided
                 dim_refs = []
                 for dim in compute_using:
                     t = ctm.get(dim, table_name)
                     dim_refs.append(f"'{t}'[{dim}]")
-                replacement = f"CALCULATE({inner}, ALLEXCEPT('{table_name}', {', '.join(dim_refs)}))"
+                replacement = f"CALCULATE({inner_expr}, ALLEXCEPT('{table_name}', {', '.join(dim_refs)}))"
             else:
-                replacement = f"CALCULATE({inner}, ALL('{table_name}'))"
+                replacement = f"CALCULATE({inner_expr}, ALL('{table_name}'))"
+
             dax = dax[:match.start()] + replacement + dax[i:]
             match = pattern.search(dax)
     return dax

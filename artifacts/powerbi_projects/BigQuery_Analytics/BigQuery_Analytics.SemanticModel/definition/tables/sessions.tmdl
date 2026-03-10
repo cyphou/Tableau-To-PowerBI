@@ -1,42 +1,42 @@
 table sessions
-	lineageTag: 201d9cdb-9765-469b-b9f7-f32aad196058
+	lineageTag: 94426413-5a1f-4695-8b73-6f768a00f8fc
 
 	measure 'Total Sessions' = COUNT('sessions'[session_id])
 		displayFolder: Measures
-		lineageTag: 9c520d61-9360-46a6-8bef-f9687db7af83
+		lineageTag: f54b0bb6-eb46-4542-b6c5-f08763c54731
 
 	measure 'Unique Visitors' = DISTINCTCOUNT('sessions'[user_id])
 		displayFolder: Measures
-		lineageTag: ca41f718-150a-4316-91c8-4bf721576683
+		lineageTag: 85aa78d3-a9fa-4c3c-8d09-ce8bb03189c8
 
 	measure 'Conversion Rate' = SUMX('sessions', IF('sessions'[converted], 1, 0)) / COUNT('sessions'[session_id])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 4498eae6-6873-439f-8d6d-9f234a22506c
+		lineageTag: cbea0759-5186-4705-8aa0-36c1191b2910
 
 	measure 'Avg Session Duration' = AVERAGE('sessions'[session_duration])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: e20fa073-7eba-424a-9b02-d40ff14f491f
+		lineageTag: b4dfd99c-1fe3-4959-88b7-36bde31d336d
 
 	measure 'Total Revenue' = SUM('sessions'[revenue])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: eb61555b-1de0-4b93-b4ab-c8e33a6f24d4
+		lineageTag: 27f22e85-416f-47d2-9ce9-3b237efc0f8f
 
 	measure 'Revenue per Session' = SUM('sessions'[revenue]) / COUNT('sessions'[session_id])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: d915d135-8ee7-455e-ae1e-027e145af3d9
+		lineageTag: 249e5769-64a2-4391-a664-d4c515cc3871
 
 	measure 'Revenue by Channel' = CALCULATE(SUM('sessions'[revenue]), ALLEXCEPT('sessions', 'sessions'[channel]))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: ebac7f5f-e79d-416e-a805-c54296c235f4
+		lineageTag: f9ca8d78-2282-4af2-be1c-0ddbad7975e3
 
 	column session_id
 		dataType: string
-		lineageTag: 287af403-d842-4ca2-9c02-d92519248904
+		lineageTag: 0bcc1886-6e56-42fd-b682-319f1513cae8
 		summarizeBy: none
 		sourceColumn: session_id
 
@@ -45,7 +45,7 @@ table sessions
 	column session_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 3c757971-ee2e-4668-b0d8-71dc10dd1cd2
+		lineageTag: 52a1fa29-6eb1-484f-9320-b1ca4644b28c
 		summarizeBy: none
 		sourceColumn: session_date
 		dataCategory: DateTime
@@ -54,7 +54,7 @@ table sessions
 
 	column user_id
 		dataType: string
-		lineageTag: c26d5fac-a870-4819-a267-2247c157b832
+		lineageTag: ad90148b-0189-4d6f-a346-101e13525dc6
 		summarizeBy: none
 		sourceColumn: user_id
 
@@ -62,7 +62,7 @@ table sessions
 
 	column channel
 		dataType: string
-		lineageTag: 8be5210e-f8de-433f-9012-fde1561dd699
+		lineageTag: f24f105e-f251-46c3-988b-7aa5350ee582
 		summarizeBy: none
 		sourceColumn: channel
 
@@ -70,7 +70,7 @@ table sessions
 
 	column device_type
 		dataType: string
-		lineageTag: e5a828dd-71ce-4215-8452-e4d4bfe9c5de
+		lineageTag: c7e2405b-4fb5-4403-9568-368e7a1f8803
 		summarizeBy: none
 		sourceColumn: device_type
 
@@ -78,7 +78,7 @@ table sessions
 
 	column country
 		dataType: string
-		lineageTag: 82e54404-42ca-4542-830c-0e65287a31bd
+		lineageTag: 8f02b736-1c57-425e-89ea-be2698f5a351
 		summarizeBy: none
 		sourceColumn: country
 		dataCategory: Country
@@ -87,7 +87,7 @@ table sessions
 
 	column page_views
 		dataType: int64
-		lineageTag: 0282b0a4-4ba4-4771-adf1-061e6a06f83b
+		lineageTag: dc015dfd-6b9c-4a7e-aeb7-212391fb1a58
 		summarizeBy: sum
 		sourceColumn: page_views
 
@@ -96,7 +96,7 @@ table sessions
 	column session_duration
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 53f0e3f2-755f-497b-a7ef-d147e08b89c6
+		lineageTag: fdb66970-8d9c-43b3-a046-16c80ce2f1ef
 		summarizeBy: sum
 		sourceColumn: session_duration
 
@@ -104,7 +104,7 @@ table sessions
 
 	column converted
 		dataType: boolean
-		lineageTag: 7225b260-c1b6-4afb-bcbd-b44fee49416e
+		lineageTag: 26d7c020-61e3-4ee7-8a45-849d4c4ec41a
 		summarizeBy: none
 		sourceColumn: converted
 
@@ -113,34 +113,36 @@ table sessions
 	column revenue
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 41c1a190-c428-41be-945e-4c87b8eff925
+		lineageTag: 080c7069-ddc9-42f1-9a6e-618d23f195cd
 		summarizeBy: sum
 		sourceColumn: revenue
 
 		annotation SummarizationSetBy = Automatic
 
-	column 'Channel Category' = IF('sessions'[channel] = "Organic Search" || 'sessions'[channel] = "Paid Search", "Search", IF('sessions'[channel] = "Social" || 'sessions'[channel] = "Referral", "Social/Referral", IF('sessions'[channel] = "Direct", "Direct", "Other")))
+	column 'Channel Category'
 		dataType: string
-		lineageTag: 3af952dd-9ea7-4550-bbe4-0be2d26b4d3e
+		lineageTag: 02ac4172-75cd-44ff-b110-aa62b840dc90
 		summarizeBy: none
+		sourceColumn: 'Channel Category'
 
 		annotation SummarizationSetBy = Automatic
 
-	column 'Engagement Level' = IF('sessions'[page_views] >= 10, "High", IF('sessions'[page_views] >= 5, "Medium", "Low"))
+	column 'Engagement Level'
 		dataType: string
-		lineageTag: a956b113-8ed4-4086-99a4-759ac18d6703
+		lineageTag: 7c6e4f95-e91c-480f-b33d-4a7134c8b5b3
 		summarizeBy: none
+		sourceColumn: 'Engagement Level'
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Days Since Signup' = DATEDIFF(RELATED('users'[signup_date]), TODAY(), DAY)
 		dataType: int64
-		lineageTag: 65f328cc-2ca6-4843-a9dc-ebb4ee668f0a
+		lineageTag: 8d04213b-4284-4b0b-b385-9482af5dd1d0
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'sessions-e70dc560-1db7-43d9-af80-f6c8aef6a061' = m
+	partition 'sessions-56788e47-cf85-4931-96a3-21a0ed06d357' = m
 		mode: import
 		source =
 				let
@@ -148,7 +150,9 @@ table sessions
 				    Source = GoogleBigQuery.Database([BillingProject="my-analytics-project"]),
 				    #"web_data" = Source{[Name="web_data"]}[Data],
 				    #"sessions Table" = #"web_data"{[Name="sessions"]}[Data],
-				    Result = #"sessions Table"
+				    #"Added Channel Category" = Table.AddColumn(#"sessions Table", "Channel Category", each if [channel] = "Organic Search"  or  [channel] = "Paid Search" then "Search" else if [channel] = "Social"  or  [channel] = "Referral" then "Social/Referral" else if [channel] = "Direct" then "Direct" else "Other", type text),
+				    #"Added Engagement Level" = Table.AddColumn(#"Added Channel Category", "Engagement Level", each if [page_views] >= 10 then "High" else if [page_views] >= 5 then "Medium" else "Low", type text),
+				    Result = #"Added Engagement Level"
 				in
 				    Result
 

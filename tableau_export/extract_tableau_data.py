@@ -40,6 +40,68 @@ def _strip_brackets(s):
     return s.replace('[', '').replace(']', '')
 
 
+def _split_sql_values(values_str):
+    """Split a SQL VALUES tuple string into individual values.
+
+    Handles quoted strings that contain commas, e.g.::
+
+        ``"'hello, world', 42, NULL"`` → ``["'hello, world'", "42", "NULL"]``
+    """
+    result = []
+    current = []
+    in_quote = False
+    for ch in values_str:
+        if ch == "'" and not in_quote:
+            in_quote = True
+            current.append(ch)
+        elif ch == "'" and in_quote:
+            in_quote = False
+            current.append(ch)
+        elif ch == ',' and not in_quote:
+            result.append(''.join(current).strip())
+            current = []
+        else:
+            current.append(ch)
+    if current:
+        result.append(''.join(current).strip())
+    return result
+
+
+def _scan_delimited_sample(text_chunk, col_names, max_rows):
+    """Attempt to extract sample rows from tab- or comma-delimited blocks.
+
+    Some Hyper files embed small data blocks.  This does a best-effort
+    scan for consistent delimiter lines that match the expected column
+    count.
+
+    Returns:
+        list[dict]: Up to *max_rows* dicts ``{col_name: value}``.
+    """
+    ncols = len(col_names) if col_names else 0
+    if ncols < 2:
+        return []
+    samples = []
+    for delim in ('\t', '|'):
+        lines = text_chunk.split('\n')
+        for line in lines:
+            parts = line.split(delim)
+            # Accept lines whose column count matches ±1
+            if abs(len(parts) - ncols) <= 1 and len(parts) >= ncols:
+                row = {}
+                for i in range(ncols):
+                    val = parts[i].strip() if i < len(parts) else ''
+                    row[col_names[i]] = val
+                # Skip if every value is empty or looks like binary
+                if all(v == '' or v.startswith('\x00') for v in row.values()):
+                    continue
+                samples.append(row)
+                if len(samples) >= max_rows:
+                    return samples
+        if samples:
+            return samples
+    return samples
+
+
 class TableauExtractor:
     """Tableau objects extractor"""
     
@@ -2245,7 +2307,27 @@ class TableauExtractor:
         print(f"  ✓ {len(blending)} data blending links extracted")
 
     def extract_hyper_metadata(self):
-        """Extracts .hyper file metadata from .twbx packages (file names and sizes)."""
+        """Extracts .hyper file metadata from .twbx packages (file names, sizes, and column info).
+
+        Reads the first bytes of each ``.hyper`` file to detect the Hyper
+        format signature and extract table/column metadata when possible.
+        When INSERT statements are present in the header region, sample
+        data rows are also extracted (up to ``max_sample_rows`` per table).
+
+        Column type mapping: 0=bool, 1=bigint, 2=smallint, 3=int, 4=double,
+        5=oid, 6=bytes, 7=text, 8=varchar, 9=char, 10=json, 11=date,
+        12=interval, 13=time, 14=timestamp, 15=timestamptz, 16=geography,
+        17=numeric.
+        """
+        # Hyper type-id → friendly name
+        _hyper_type_map = {
+            0: 'boolean', 1: 'bigint', 2: 'smallint', 3: 'integer',
+            4: 'double', 5: 'oid', 6: 'bytes', 7: 'text', 8: 'varchar',
+            9: 'char', 10: 'json', 11: 'date', 12: 'interval', 13: 'time',
+            14: 'timestamp', 15: 'timestamptz', 16: 'geography', 17: 'numeric',
+        }
+        max_sample_rows = 5  # number of sample rows to extract per table
+
         hyper_files = []
         file_ext = os.path.splitext(self.tableau_file)[1].lower()
         if file_ext in ['.twbx', '.tdsx']:
@@ -2253,17 +2335,134 @@ class TableauExtractor:
                 with zipfile.ZipFile(self.tableau_file, 'r') as z:
                     for info in z.infolist():
                         if info.filename.lower().endswith('.hyper'):
-                            hyper_files.append({
+                            entry = {
                                 'path': info.filename,
                                 'filename': os.path.basename(info.filename),
                                 'size_bytes': info.file_size,
                                 'compressed_size': info.compress_size,
-                            })
+                            }
+                            # Attempt to parse header for column metadata
+                            try:
+                                raw = z.read(info.filename)
+                                header_str = raw[:min(4096, len(raw))]
+                                # Detect format signature
+                                if header_str[:4] == b'HyPe':
+                                    entry['format'] = 'hyper'
+                                elif header_str[:6] == b'SQLite':
+                                    entry['format'] = 'sqlite'
+                                # Scan a larger region for SQL patterns
+                                scan_limit = min(262144, len(raw))
+                                text_region = raw[:scan_limit]
+                                try:
+                                    text_chunk = text_region.decode('utf-8', errors='replace')
+                                except Exception:
+                                    text_chunk = ''
+                                creates = re.findall(
+                                    r'CREATE\s+TABLE\s+"?([^"\s(]+)"?\s*\(([^)]+)\)',
+                                    text_chunk, re.IGNORECASE
+                                )
+                                if creates:
+                                    tables_info = []
+                                    for tname, cols_str in creates:
+                                        cols = []
+                                        for col_def in cols_str.split(','):
+                                            col_def = col_def.strip()
+                                            parts = col_def.split()
+                                            if len(parts) >= 2:
+                                                cname = parts[0].strip('"')
+                                                ctype = ' '.join(parts[1:]).lower()
+                                                cols.append({
+                                                    'name': cname,
+                                                    'hyper_type': ctype,
+                                                })
+                                        tbl_entry = {
+                                            'table': tname,
+                                            'columns': cols,
+                                            'column_count': len(cols),
+                                        }
+                                        # --- Sample-row extraction ---
+                                        samples = self._extract_hyper_sample_rows(
+                                            text_chunk, tname, cols, max_sample_rows
+                                        )
+                                        if samples:
+                                            tbl_entry['sample_rows'] = samples
+                                            tbl_entry['sample_row_count'] = len(samples)
+                                        tables_info.append(tbl_entry)
+                                    entry['tables'] = tables_info
+                                # Estimate row count from file size and column count
+                                if entry.get('tables'):
+                                    tbl0 = entry['tables'][0]
+                                    ncols = tbl0.get('column_count', 1)
+                                    avg_bytes_per_col = 20
+                                    estimated = entry['size_bytes'] // max(ncols * avg_bytes_per_col, 1)
+                                    entry['estimated_row_count'] = max(estimated, 0)
+                            except Exception as exc:
+                                logger.debug("Could not parse hyper header: %s", exc)
+                            hyper_files.append(entry)
             except (zipfile.BadZipFile, OSError, KeyError) as exc:
                 logger.debug("Could not read hyper files from archive: %s", exc)
         self.workbook_data['hyper_files'] = hyper_files
         if hyper_files:
-            print(f"  ✓ {len(hyper_files)} .hyper extract files detected")
+            total_tables = sum(len(h.get('tables', [])) for h in hyper_files)
+            total_rows = sum(
+                h.get('estimated_row_count', 0, ) for h in hyper_files
+            )
+            msg = f"  ✓ {len(hyper_files)} .hyper extract files detected"
+            if total_tables:
+                msg += f" ({total_tables} tables parsed)"
+            if total_rows:
+                msg += f" (~{total_rows:,} rows estimated)"
+            print(msg)
+
+    # ------------------------------------------------------------------
+    # Helpers for Hyper sample-row extraction
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _extract_hyper_sample_rows(text_chunk, table_name, columns, max_rows):
+        """Extract sample data rows from INSERT statements in a Hyper text region.
+
+        Some Hyper files contain SQL-style INSERT statements in their
+        headers.  This method scans for ``INSERT INTO "table" VALUES
+        (...)`` patterns and returns up to *max_rows* dicts mapping
+        column names to string values.
+
+        Args:
+            text_chunk: The decoded text region of the .hyper file.
+            table_name: The target table name (matched against INSERT).
+            columns: Column info list, each with a 'name' key.
+            max_rows: Maximum sample rows to return.
+
+        Returns:
+            list[dict]: Up to *max_rows* dicts ``{col_name: value}``.
+        """
+        # Escape table name for regex
+        esc_name = re.escape(table_name)
+        # Match INSERT INTO "table" VALUES (...), (...)
+        insert_pat = re.compile(
+            r'INSERT\s+INTO\s+"?' + esc_name + r'"?\s+VALUES\s*'
+            r'(\([^)]*\)(?:\s*,\s*\([^)]*\))*)',
+            re.IGNORECASE,
+        )
+        col_names = [c.get('name', f'col{i}') for i, c in enumerate(columns)]
+        samples = []
+        for m in insert_pat.finditer(text_chunk):
+            values_block = m.group(1)
+            # Split into individual value tuples
+            tuples = re.findall(r'\(([^)]*)\)', values_block)
+            for tup in tuples:
+                vals = _split_sql_values(tup)
+                row = {}
+                for i, v in enumerate(vals):
+                    name = col_names[i] if i < len(col_names) else f'col{i}'
+                    row[name] = v.strip().strip("'")
+                samples.append(row)
+                if len(samples) >= max_rows:
+                    return samples
+        # Fallback: try to detect CSV-like or TSV-like data blocks
+        if not samples:
+            samples = _scan_delimited_sample(text_chunk, col_names, max_rows)
+        return samples
 
     def extract_totals_subtotals(self, worksheet):
         """Extracts grand-total and sub-total settings from a worksheet."""

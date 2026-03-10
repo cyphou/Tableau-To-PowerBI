@@ -1,0 +1,29 @@
+{
+  "generated_at": "2026-03-10T09:39:56.560395",
+  "source": "Tableau Migration",
+  "report_name": "global_superstores_db",
+  "objects_converted": {
+    "worksheets": 20,
+    "dashboards": 6,
+    "datasources": 1,
+    "calculations": 4,
+    "parameters": 0,
+    "filters": 17,
+    "stories": 0,
+    "sets": 0,
+    "groups": 4,
+    "bins": 1,
+    "hierarchies": 0,
+    "user_filters": 0,
+    "actions": 4,
+    "custom_sql": 0
+  },
+  "generated_output": {
+    "pages": 6,
+    "visuals": 14,
+    "theme_applied": false
+  },
+  "tmdl_stats": {
+    "tables": 2
+  }
+}

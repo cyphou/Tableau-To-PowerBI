@@ -1,0 +1,7 @@
+let
+    // Source PostgreSQL
+    Source = PostgreSQL.Database("db.example.com:5432", "analytics"),
+    #"events Table" = Source{[Schema="public", Item="events"]}[Data],
+    Result = #"events Table"
+in
+    Result

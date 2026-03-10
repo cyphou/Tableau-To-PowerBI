@@ -1,23 +1,23 @@
 table Employees
-	lineageTag: 38d1d493-47df-4257-9588-7a1473089b22
+	lineageTag: a3b3a063-1913-4d80-9da2-98eaa3218027
 
 	measure 'Average Salary' = AVERAGE('Employees'[Salary])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: b5b041b8-2814-41d9-a271-94c166b64b48
+		lineageTag: d52d7139-b6cf-4bf1-aa33-006be1516166
 
 	measure 'Employee Count' = COUNT('Employees'[EmployeeID])
 		displayFolder: Measures
-		lineageTag: 602fce7f-9c69-4669-a79d-420b0fae2d14
+		lineageTag: 9cdee969-54a1-4c8e-b0eb-4dd880cb3445
 
 	measure 'Total Compensation' = SUM('Employees'[Salary]) * 1.25
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 732ced53-f216-4f38-86e8-747e48a40b41
+		lineageTag: 0333f288-82b7-4418-bf93-6de19f691968
 
 	column EmployeeID
 		dataType: int64
-		lineageTag: becd069a-a7bf-45ee-9ab7-1b0260b3c5ad
+		lineageTag: d4db7ebe-0205-41b1-a1cb-ca3b0fb38972
 		summarizeBy: sum
 		sourceColumn: EmployeeID
 
@@ -25,7 +25,7 @@ table Employees
 
 	column FirstName
 		dataType: string
-		lineageTag: ee66e68d-3c03-4f58-94e4-aebbcc1cd5d8
+		lineageTag: 34a71969-bcbc-457d-bb2b-30d38106e58f
 		summarizeBy: none
 		sourceColumn: FirstName
 
@@ -33,7 +33,7 @@ table Employees
 
 	column LastName
 		dataType: string
-		lineageTag: b17c20e2-64b3-4d3f-8f97-85aaef78b663
+		lineageTag: b674f4eb-07b7-46e8-bd27-c3907f85156e
 		summarizeBy: none
 		sourceColumn: LastName
 
@@ -42,7 +42,7 @@ table Employees
 	column HireDate
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: a6f1098b-e8e9-4302-b77c-4aac6c0c3a73
+		lineageTag: 9d984f91-471d-4e21-a6a3-953e17ae013a
 		summarizeBy: none
 		sourceColumn: HireDate
 		dataCategory: DateTime
@@ -51,7 +51,7 @@ table Employees
 
 	column Department
 		dataType: string
-		lineageTag: 0817fa15-ac8a-47df-974c-4e69cb8b9e27
+		lineageTag: ea0bcdf0-7759-4466-926b-478202f510b0
 		summarizeBy: none
 		sourceColumn: Department
 
@@ -59,7 +59,7 @@ table Employees
 
 	column JobTitle
 		dataType: string
-		lineageTag: 4f6c2228-71ee-494c-99bf-e06c45aa2483
+		lineageTag: 4ef4f650-e8b2-425a-a763-1bb36e6bf0e0
 		summarizeBy: none
 		sourceColumn: JobTitle
 
@@ -68,7 +68,7 @@ table Employees
 	column Salary
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 661f5c12-40e8-470d-a3e3-67e49a4373f1
+		lineageTag: 75998fa4-35db-4a8a-8cc7-b3c3824510e0
 		summarizeBy: sum
 		sourceColumn: Salary
 
@@ -76,7 +76,7 @@ table Employees
 
 	column Location
 		dataType: string
-		lineageTag: 1b773d6d-5141-40b7-bb4e-6e967786f195
+		lineageTag: e8fb4108-0a66-46f8-9ec5-36fdb6502b24
 		summarizeBy: none
 		sourceColumn: Location
 
@@ -84,7 +84,7 @@ table Employees
 
 	column Age
 		dataType: int64
-		lineageTag: 4500a02d-bcab-4dc9-b6b7-1e20b7d7d4a3
+		lineageTag: a9ebfdbe-3729-4200-85e6-e1f9928ad786
 		summarizeBy: sum
 		sourceColumn: Age
 
@@ -92,7 +92,7 @@ table Employees
 
 	column YearsOfService
 		dataType: int64
-		lineageTag: 0feabc3c-cc4a-4bfd-9956-8be4d8177972
+		lineageTag: 5f57ab0f-a210-4a89-93b9-b4c4c53533bb
 		summarizeBy: sum
 		sourceColumn: YearsOfService
 
@@ -100,27 +100,29 @@ table Employees
 
 	column PerformanceRating
 		dataType: string
-		lineageTag: 6e5f1da2-7f4a-4ba4-90b5-0e9c0b73418c
+		lineageTag: 0765c2e5-12ba-4ae8-8d23-6b22bd48c846
 		summarizeBy: none
 		sourceColumn: PerformanceRating
 
 		annotation SummarizationSetBy = Automatic
 
-	column 'Tenure Category' = IF('Employees'[YearsOfService] < 2, "New", IF('Employees'[YearsOfService] < 5, "Mid", "Senior"))
+	column 'Tenure Category'
 		dataType: string
-		lineageTag: aa60ae0d-653b-4deb-a866-9ac3d9368ac6
+		lineageTag: a614908f-0763-4294-9619-f323ac12f776
 		summarizeBy: none
+		sourceColumn: 'Tenure Category'
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Employees-c3c26a59-1212-4106-91d7-ede864408076' = m
+	partition 'Employees-6376e489-8264-459c-9fbc-9227bf26d56f' = m
 		mode: import
 		source =
 				let
 				    // Source SQL Server
 				    Source = Sql.Database("localhost", "HRDatabase"),
 				    #"Employees Table" = Source{[Schema="dbo", Item="Employees"]}[Data],
-				    Result = #"Employees Table"
+				    #"Added Tenure Category" = Table.AddColumn(#"Employees Table", "Tenure Category", each if [YearsOfService] < 2 then "New" else if [YearsOfService] < 5 then "Mid" else "Senior", type text),
+				    Result = #"Added Tenure Category"
 				in
 				    Result
 

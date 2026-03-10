@@ -7,10 +7,13 @@ including all the files needed to open the project in Power BI Desktop.
 
 import os
 import json
+import logging
 from datetime import datetime
 import uuid
 import re
 import sys
+
+logger = logging.getLogger(__name__)
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -41,7 +44,8 @@ class PowerBIProjectGenerator:
         os.makedirs(self.output_dir, exist_ok=True)
     
     def generate_project(self, report_name, converted_objects, calendar_start=None,
-                         calendar_end=None, culture=None):
+                         calendar_end=None, culture=None, model_mode='import',
+                         output_format='pbip', paginated=False):
         """
         Generates a complete Power BI Project
         
@@ -51,6 +55,7 @@ class PowerBIProjectGenerator:
             calendar_start: Start year for Calendar table (default: 2020)
             calendar_end: End year for Calendar table (default: 2030)
             culture: Override culture/locale for semantic model
+            paginated: If True, generate a paginated report layout alongside interactive report
         
         Returns:
             str: Path to the generated project
@@ -62,6 +67,9 @@ class PowerBIProjectGenerator:
         self._calendar_start = calendar_start
         self._calendar_end = calendar_end
         self._culture = culture
+        self._model_mode = model_mode or 'import'
+        self._output_format = output_format or 'pbip'
+        self._paginated = paginated
         
         # Create project structure
         project_dir = os.path.join(self.output_dir, report_name)
@@ -72,16 +80,23 @@ class PowerBIProjectGenerator:
         print(f"  ✓ .pbip file created: {pbip_file}")
         
         # 2. Create the SemanticModel structure
-        sm_dir = self.create_semantic_model_structure(project_dir, report_name, converted_objects)
-        print(f"  ✓ SemanticModel created: {sm_dir}")
+        if self._output_format in ('pbip', 'tmdl'):
+            sm_dir = self.create_semantic_model_structure(project_dir, report_name, converted_objects)
+            print(f"  ✓ SemanticModel created: {sm_dir}")
         
         # 3. Create the Report structure
-        report_dir = self.create_report_structure(project_dir, report_name, converted_objects)
-        print(f"  ✓ Report created: {report_dir}")
+        if self._output_format in ('pbip', 'pbir'):
+            report_dir = self.create_report_structure(project_dir, report_name, converted_objects)
+            print(f"  ✓ Report created: {report_dir}")
         
         # 4. Create metadata
         self.create_metadata(project_dir, report_name, converted_objects)
         print(f"  ✓ Metadata created")
+        
+        # 5. Create paginated report layout (if requested)
+        if self._paginated:
+            pag_dir = self._create_paginated_report(project_dir, report_name, converted_objects)
+            print(f"  ✓ Paginated report layout created: {pag_dir}")
         
         print(f"\n✅ Power BI Project generated: {project_dir}")
         print(f"   📂 Open in Power BI Desktop: {pbip_file}")
@@ -183,6 +198,7 @@ class PowerBIProjectGenerator:
                 calendar_start=getattr(self, '_calendar_start', None),
                 calendar_end=getattr(self, '_calendar_end', None),
                 culture=getattr(self, '_culture', None),
+                model_mode=getattr(self, '_model_mode', 'import'),
             )
             
             print(f"  \u2713 TMDL model created with:")
@@ -388,13 +404,81 @@ class PowerBIProjectGenerator:
 
         _write_json(os.path.join(visual_dir, 'visual.json'), visual_json, ensure_ascii=False)
 
+    @staticmethod
+    def _parse_rich_text_runs(obj):
+        """Parse Tableau text runs into PBI paragraphs with formatting.
+
+        Converts Tableau <formatted-text><run> elements (bold, italic, color,
+        font_size, url) into PBI textRuns with textStyle properties.
+
+        Args:
+            obj: Dashboard text object with 'text_runs' and 'content' fields
+
+        Returns:
+            list: PBI paragraphs array for textbox visual
+        """
+        text_runs = obj.get('text_runs', [])
+        if not text_runs:
+            # Fallback: single plain run from content
+            return [{"textRuns": [{"value": obj.get('content', '')}]}]
+
+        # Group runs into paragraphs by newline characters
+        paragraphs = []
+        current_runs = []
+        for run in text_runs:
+            text = run.get('text', '')
+            # Split on newlines to create separate paragraphs
+            lines = text.split('\n')
+            for i, line in enumerate(lines):
+                if i > 0:
+                    # Newline = new paragraph
+                    paragraphs.append({"textRuns": current_runs if current_runs else [{"value": ""}]})
+                    current_runs = []
+                if line or i == 0:
+                    pbi_run = {"value": line}
+                    # Build textStyle from Tableau run formatting
+                    style = {}
+                    if run.get('bold'):
+                        style['fontWeight'] = 'bold'
+                    if run.get('italic'):
+                        style['fontStyle'] = 'italic'
+                    if run.get('color'):
+                        color = run['color']
+                        if color.startswith('#') and len(color) == 7:
+                            style['color'] = color
+                        elif color.startswith('#') and len(color) == 9:
+                            # Tableau uses #AARRGGBB, PBI uses #RRGGBB
+                            style['color'] = '#' + color[3:]
+                    if run.get('font_size'):
+                        try:
+                            pts = float(run['font_size'])
+                            style['fontSize'] = f"{pts}pt"
+                        except (ValueError, TypeError):
+                            logger.debug("Could not parse font_size: %s", run.get('font_size'))
+                    if style:
+                        pbi_run['textStyle'] = style
+                    # URL → hyperlink
+                    if run.get('url'):
+                        pbi_run['url'] = run['url']
+                    current_runs.append(pbi_run)
+
+        # Flush last paragraph
+        if current_runs:
+            paragraphs.append({"textRuns": current_runs})
+
+        return paragraphs if paragraphs else [{"textRuns": [{"value": ""}]}]
+
     def _create_visual_textbox(self, visuals_dir, obj, scale_x, scale_y, visual_count):
-        """Create a textbox visual from a Tableau text object."""
+        """Create a textbox visual from a Tableau text object.
+
+        Supports rich text with bold, italic, color, font_size, and URLs
+        from Tableau <formatted-text><run> elements.
+        """
         visual_id = uuid.uuid4().hex[:20]
         visual_dir = os.path.join(visuals_dir, visual_id)
 
         pos = obj.get('position', {})
-        content = obj.get('content', '')
+        paragraphs = self._parse_rich_text_runs(obj)
 
         visual_json = {
             "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
@@ -405,9 +489,7 @@ class PowerBIProjectGenerator:
                 "objects": {
                     "general": [{
                         "properties": {
-                            "paragraphs": _L(json.dumps([{
-                                "textRuns": [{"value": content}]
-                            }]))
+                            "paragraphs": _L(json.dumps(paragraphs))
                         }
                     }]
                 }
@@ -1899,7 +1981,7 @@ class PowerBIProjectGenerator:
                         fs_val = int(float(str(font_size).replace('pt', '').replace('px', '').strip()))
                         objects["labels"][0]["properties"]["fontSize"] = _L(f"{fs_val}D")
                     except (ValueError, TypeError):
-                        pass
+                        logger.debug("Could not parse label fontSize: %s", font_size)
 
         # Enhanced axis config (label rotation, show toggles)
         axes_detail = ws_data.get('axes', {})
@@ -1922,7 +2004,7 @@ class PowerBIProjectGenerator:
                         if rot != 0:
                             props["labelAngle"] = _L(f"{rot}L")
                     except (ValueError, TypeError):
-                        pass
+                        logger.debug("Could not parse axis label_rotation: %s", ax.get('label_rotation'))
                 if ax.get('format'):
                     props["labelDisplayUnits"] = _L("'0L'")
                 objects[axis_obj_key] = [{"properties": props}]
@@ -1952,7 +2034,7 @@ class PowerBIProjectGenerator:
                 if wo_val > 0:
                     map_props["transparency"] = _L(f"{int(wo_val * 100)}L")
             except (ValueError, TypeError):
-                pass
+                logger.debug("Could not parse map washout: %s", washout)
             style = map_opts.get('style', 'road')
             style_map = {'normal': "'road'", 'light': "'grayscale'",
                          'dark': "'darkGrayscale'", 'satellite': "'aerial'",
@@ -2428,3 +2510,121 @@ class PowerBIProjectGenerator:
         }
         metadata_file = os.path.join(project_dir, 'migration_metadata.json')
         _write_json(metadata_file, metadata)
+
+    # ═══════════════════════════════════════════════════════════════════
+    # Paginated Report Generation
+    # ═══════════════════════════════════════════════════════════════════
+
+    def _create_paginated_report(self, project_dir, report_name, converted_objects):
+        """Generate a paginated report layout (RDL-style) for print-oriented output.
+
+        Creates a ``PaginatedReport/`` directory inside the project with:
+        - ``report.json``: Paginated report definition with fixed page dimensions
+        - ``pages/``: One ``pageN.json`` per worksheet with tabular layout
+        - ``header.json`` / ``footer.json``: Placeholder header/footer definitions
+
+        Paginated reports use fixed positioning (inches/cm) rather than
+        responsive layout.  This is a starting point that users can refine
+        in Power BI Report Builder.
+        """
+        pag_dir = os.path.join(project_dir, 'PaginatedReport')
+        pages_dir = os.path.join(pag_dir, 'pages')
+        os.makedirs(pages_dir, exist_ok=True)
+
+        # --- Report-level definition ---
+        report_def = {
+            "$schema": "paginated-report/1.0.0",
+            "name": f"{report_name}_Paginated",
+            "description": f"Paginated report generated from Tableau workbook '{report_name}'",
+            "pageWidth": "8.5in",
+            "pageHeight": "11in",
+            "marginTop": "0.5in",
+            "marginBottom": "0.5in",
+            "marginLeft": "0.75in",
+            "marginRight": "0.75in",
+            "orientation": "Portrait",
+            "pageCount": 0,
+            "dataSource": report_name,
+        }
+
+        # --- Header / Footer ---
+        header_def = {
+            "height": "0.75in",
+            "items": [
+                {
+                    "type": "textbox",
+                    "value": report_name,
+                    "style": {"fontSize": "14pt", "fontWeight": "bold"},
+                    "position": {"left": "0in", "top": "0.1in", "width": "5in", "height": "0.4in"},
+                },
+                {
+                    "type": "textbox",
+                    "value": "=Globals!ExecutionTime",
+                    "style": {"fontSize": "8pt", "textAlign": "right"},
+                    "position": {"left": "5in", "top": "0.1in", "width": "2in", "height": "0.3in"},
+                },
+            ],
+        }
+        footer_def = {
+            "height": "0.5in",
+            "items": [
+                {
+                    "type": "textbox",
+                    "value": "=Globals!PageNumber & \" of \" & Globals!TotalPages",
+                    "style": {"fontSize": "8pt", "textAlign": "center"},
+                    "position": {"left": "2.5in", "top": "0.05in", "width": "2in", "height": "0.3in"},
+                },
+            ],
+        }
+
+        _write_json(os.path.join(pag_dir, 'header.json'), header_def)
+        _write_json(os.path.join(pag_dir, 'footer.json'), footer_def)
+
+        # --- One page per worksheet showing a table of the worksheet's fields ---
+        worksheets = converted_objects.get('worksheets', [])
+        page_num = 0
+        for ws in worksheets:
+            ws_name = ws.get('name', f'Sheet{page_num + 1}')
+            fields = ws.get('fields', [])
+            if not fields:
+                continue
+            page_num += 1
+
+            # Build column definitions from fields
+            col_width = min(2.0, 7.0 / max(len(fields), 1))
+            columns = []
+            for idx, field in enumerate(fields):
+                fname = field if isinstance(field, str) else field.get('name', f'Column{idx}')
+                columns.append({
+                    "name": fname,
+                    "width": f"{col_width:.2f}in",
+                    "header": fname,
+                    "style": {"fontSize": "9pt"},
+                })
+
+            page_def = {
+                "pageNumber": page_num,
+                "name": ws_name,
+                "body": {
+                    "height": "9in",
+                    "items": [
+                        {
+                            "type": "tablix",
+                            "name": f"Table_{ws_name}",
+                            "position": {"left": "0in", "top": "0in",
+                                         "width": f"{min(col_width * len(fields), 7.0):.2f}in",
+                                         "height": "2in"},
+                            "columns": columns,
+                            "dataSetName": ws_name,
+                            "headerRow": True,
+                            "repeatHeaderOnNewPage": True,
+                        }
+                    ],
+                },
+            }
+            _write_json(os.path.join(pages_dir, f'page{page_num}.json'), page_def)
+
+        report_def['pageCount'] = page_num
+        _write_json(os.path.join(pag_dir, 'report.json'), report_def)
+
+        return pag_dir

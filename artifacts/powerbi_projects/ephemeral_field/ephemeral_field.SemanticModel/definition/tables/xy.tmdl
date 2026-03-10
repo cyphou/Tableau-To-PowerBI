@@ -1,0 +1,54 @@
+table xy
+	lineageTag: cec68268-8424-4c12-b6fd-3e728d7e8410
+
+	measure '[Number of Records]' = 1
+		displayFolder: Measures
+		lineageTag: 9d51b116-d934-459e-805a-32cceff9d67b
+
+	column a
+		dataType: string
+		lineageTag: 9bc00464-ada9-4bbc-8452-d868c6d75f2f
+		summarizeBy: none
+		sourceColumn: a
+
+		annotation SummarizationSetBy = Automatic
+
+	column x
+		dataType: int64
+		lineageTag: 9f853f53-8bf5-4547-b105-8dbf281a4dc5
+		summarizeBy: sum
+		sourceColumn: x
+
+		annotation SummarizationSetBy = Automatic
+
+	column y
+		dataType: int64
+		lineageTag: 3bd30a4f-a102-4e10-af6a-07971816c3a2
+		summarizeBy: sum
+		sourceColumn: y
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'xy-9b1e2310-0649-4dd5-b2a3-9675d5a5f9b6' = m
+		mode: import
+		source =
+				let
+				    // TODO: Configure the data source for connector type: Unknown
+				    // Replace the sample table below with the actual source expression.
+				    Source = try
+				        #table(
+				            {"a", "x", "y"},
+				            {
+				                {"Sample 1", 2, 3},
+				                {"Sample 2", 3, 4}
+				            }
+				        )
+				    otherwise
+				        #table({"a", "x", "y"}, {})  // Empty table on error,
+				    #"Renamed Columns" = Table.RenameColumns(Source, {{"a", "A"}, {"x", "X"}, {"y", "Y"}}),
+				    Result = #"Renamed Columns"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+

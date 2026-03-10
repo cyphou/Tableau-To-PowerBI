@@ -38,9 +38,14 @@ jobs:
   test:
     needs: lint
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+        exclude:
+          # macos-latest may not have 3.8 easily; skip to avoid CI flakes
+          - os: macos-latest
+            python-version: "3.8"
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -49,6 +54,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+          allow-prereleases: ${{ matrix.python-version == '3.14' }}
 
       - name: Cache pip packages
         uses: actions/cache@v4
@@ -64,16 +70,68 @@ jobs:
 
       - name: Run unit tests with coverage
         run: |
-          coverage run -m unittest discover tests/ -v
-          coverage report --fail-under=60
+          coverage run -m pytest tests/ -v --tb=short
+          coverage report --fail-under=80
           coverage xml -o coverage.xml
+          coverage html
+
+      - name: Run performance tests
+        run: python -m pytest tests/test_performance.py -v --tb=short
+
+      - name: Run snapshot tests
+        run: python -m pytest tests/test_snapshot.py -v --tb=short
+
+      - name: Run integration tests
+        run: python -m pytest tests/test_integration.py -v --tb=short
+
+      - name: Run Fabric integration tests
+        run: python -m pytest tests/test_fabric_integration.py -v --tb=short
 
       - name: Upload coverage artifact
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
-          path: coverage.xml
+          path: |
+            coverage.xml
+            htmlcov/
+
+      - name: Performance regression check
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        run: |
+          python -c "
+          import time, sys
+          sys.path.insert(0, '.')
+          from tableau_export.dax_converter import convert_tableau_to_dax
+
+          formulas = [
+              'SUM([Sales])', 'IF [Profit] > 0 THEN \"Yes\" ELSE \"No\" END',
+              'DATETRUNC(\"month\", [Order Date])',
+              '{FIXED [Region] : SUM([Sales])}',
+              'RUNNING_SUM(SUM([Sales]))', 'RANK(SUM([Profit]))',
+              'CONTAINS(\"hello world\", \"hello\")',
+              'REGEXP_REPLACE([Name], \"[abc]\", \"X\")',
+              'WINDOW_SUM(SUM([Sales]), -2, 0)',
+              'ZN([Discount])',
+          ]
+
+          start = time.time()
+          iterations = 500
+          for _ in range(iterations):
+              for f in formulas:
+                  convert_tableau_to_dax(f)
+          elapsed = time.time() - start
+
+          per_op = (elapsed / (iterations * len(formulas))) * 1000
+          print(f'Performance: {per_op:.3f} ms/conversion ({iterations * len(formulas)} ops in {elapsed:.2f}s)')
+
+          # Fail if conversions take more than 5ms each on average
+          threshold = 5.0
+          if per_op > threshold:
+              print(f'FAIL: {per_op:.3f} ms/op exceeds {threshold} ms threshold')
+              sys.exit(1)
+          print(f'PASS: {per_op:.3f} ms/op within {threshold} ms threshold')
+          "
 
   # ───────────────────── Stage 3: Validate ─────────────────
   validate:

@@ -239,16 +239,22 @@ in
 
 def _gen_m_fallback(details, table_name, columns):
     conn_type = details.get('_conn_type', 'Unknown')
+    col_list = ", ".join([f'"{col["name"]}"' for col in columns if 'name' in col])
+    sample1 = ", ".join([f'"Sample {i+1}"' if col.get('datatype') == 'string' else str(i+1) for i, col in enumerate(columns)])
+    sample2 = ", ".join([f'"Sample {i+2}"' if col.get('datatype') == 'string' else str(i+2) for i, col in enumerate(columns)])
     return f'''let
-    // TODO: Configure the source for {conn_type}
-    // Connection type not automatically supported
-    Source = #table(
-        {{{", ".join([f'"{col["name"]}"' for col in columns if 'name' in col])}}},
-        {{
-            {{{", ".join([f'"Sample {i+1}"' if col.get('datatype') == 'string' else str(i+1) for i, col in enumerate(columns)])}}},
-            {{{", ".join([f'"Sample {i+2}"' if col.get('datatype') == 'string' else str(i+2) for i, col in enumerate(columns)])}}}
-        }}
-    )
+    // TODO: Configure the data source for connector type: {conn_type}
+    // Replace the sample table below with the actual source expression.
+    Source = try
+        #table(
+            {{{col_list}}},
+            {{
+                {{{sample1}}},
+                {{{sample2}}}
+            }}
+        )
+    otherwise
+        #table({{{col_list}}}, {{}})  // Empty table on error
 in
     Source'''
 
@@ -555,6 +561,35 @@ def _gen_m_presto(details, table_name, columns):
     return _append_type_step(m_query, columns)
 
 
+# ── Microsoft Fabric Lakehouse connector ─────────────────────────────────────
+
+def _gen_m_fabric_lakehouse(details, table_name, columns):
+    """Generate M query for Microsoft Fabric Lakehouse."""
+    workspace_id = details.get('workspace_id', 'WORKSPACE_ID')
+    lakehouse_id = details.get('lakehouse_id', 'LAKEHOUSE_ID')
+    safe = '#"' + table_name + ' Table"'
+
+    m_query = 'let\n'
+    m_query += f'    // Source Microsoft Fabric Lakehouse\n'
+    m_query += f'    Source = Lakehouse.Contents(null, "{workspace_id}", "{lakehouse_id}"),\n'
+    m_query += f'    {safe} = Source{{[Id="{table_name}"]}}[Data],\n'
+    m_query += f'    Result = {safe}\nin\n    Result'
+    return m_query
+
+
+def _gen_m_dataverse(details, table_name, columns):
+    """Generate M query for Microsoft Dataverse (Common Data Service)."""
+    org_url = details.get('server', details.get('org_url', 'https://org.crm.dynamics.com'))
+    safe = '#"' + table_name + ' Table"'
+
+    m_query = 'let\n'
+    m_query += f'    // Source Dataverse: {org_url}\n'
+    m_query += f'    Source = CommonDataService.Database("{org_url}"),\n'
+    m_query += f'    {safe} = Source{{[Name="{table_name}"]}}[Data],\n'
+    m_query += f'    Result = {safe}\nin\n    Result'
+    return m_query
+
+
 # ── Dispatch table ────────────────────────────────────────────────────────────
 
 _M_GENERATORS = {
@@ -599,6 +634,11 @@ _M_GENERATORS = {
     'HDInsight':        _gen_m_hadoop_hive,
     'Presto':           _gen_m_presto,
     'Trino':            _gen_m_presto,
+    'Fabric Lakehouse': _gen_m_fabric_lakehouse,
+    'Lakehouse':        _gen_m_fabric_lakehouse,
+    'Dataverse':        _gen_m_dataverse,
+    'Common Data Service': _gen_m_dataverse,
+    'CDS':              _gen_m_dataverse,
 }
 
 
@@ -628,6 +668,94 @@ def generate_power_query_m(connection, table):
     details_copy = dict(details)
     details_copy['_conn_type'] = conn_type
     return _gen_m_fallback(details_copy, table_name, columns)
+
+
+# ── Connection String Templating ─────────────────────────────────────────────
+
+import re as _re
+
+def apply_connection_template(m_query, env_vars=None):
+    """Replace ${ENV.NAME} placeholders in M queries with environment variable values.
+
+    Allows parameterizing M queries for different environments (dev/staging/prod).
+    If env_vars is None, replaces with M parameter references instead.
+
+    Supported placeholders:
+        ${ENV.SERVER}     - Database server hostname
+        ${ENV.DATABASE}   - Database name
+        ${ENV.PORT}       - Port number
+        ${ENV.USERNAME}   - Username
+        ${ENV.PASSWORD}   - Password
+        ${ENV.WAREHOUSE}  - Snowflake/Databricks warehouse
+        ${ENV.SCHEMA}     - Database schema
+        ${ENV.ACCOUNT}    - Storage account name
+        ${ENV.CONTAINER}  - Blob/ADLS container
+        ${ENV.CATALOG}    - Databricks/BigQuery catalog
+        ${ENV.URL}        - Web/API URL
+        Any custom ${ENV.XXXX} patterns
+
+    Args:
+        m_query: M query string potentially containing ${ENV.*} placeholders
+        env_vars: Optional dict mapping env var names to values.
+                  If None, generates M parameter references.
+
+    Returns:
+        str: M query with placeholders replaced
+    """
+    if not m_query or '${ENV.' not in m_query:
+        return m_query
+
+    def _replacer(match):
+        var_name = match.group(1)
+        if env_vars and var_name in env_vars:
+            return env_vars[var_name]
+        # Default: replace with M parameter reference
+        return '" & ' + var_name + ' & "'
+
+    return _re.sub(r'\$\{ENV\.([A-Za-z_]+)\}', _replacer, m_query)
+
+
+def templatize_m_query(m_query, connection=None):
+    """Convert hardcoded connection strings in an M query to ${ENV.*} templates.
+
+    This is the reverse of apply_connection_template — it turns concrete
+    server/database values into environment variable placeholders so the
+    generated M queries can be parameterized per environment.
+
+    Args:
+        m_query: Concrete M query with hardcoded connection values
+        connection: Optional connection dict with 'details' to identify values
+
+    Returns:
+        str: M query with connection values replaced by ${ENV.*} placeholders
+    """
+    if not m_query or not connection:
+        return m_query
+
+    details = connection.get('details', {})
+    replacements = []
+
+    # Build replacement list (longest values first to avoid partial matches)
+    for key, env_var in [
+        ('server', 'SERVER'), ('database', 'DATABASE'), ('port', 'PORT'),
+        ('warehouse', 'WAREHOUSE'), ('schema', 'SCHEMA'),
+        ('account', 'ACCOUNT'), ('container', 'CONTAINER'),
+        ('catalog', 'CATALOG'), ('project', 'PROJECT'),
+        ('dataset', 'DATASET'), ('http_path', 'HTTP_PATH'),
+        ('site_url', 'SITE_URL'), ('url', 'URL'),
+    ]:
+        value = details.get(key, '')
+        if value and len(value) > 2:
+            replacements.append((value, f'${{ENV.{env_var}}}'))
+
+    # Sort by length descending to replace longer values first
+    replacements.sort(key=lambda x: -len(x[0]))
+
+    result = m_query
+    for old_val, new_val in replacements:
+        result = result.replace(old_val, new_val)
+
+    return result
 
 
 # ══════════════════════════════════════════════════════════════════════════════

@@ -1,0 +1,93 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "tableau-to-powerbi"
+version = "5.0.0"
+description = "Automated migration of Tableau workbooks to Power BI .pbip projects (PBIR v4.0 + TMDL)"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.8"
+authors = [
+    {name = "Tableau to Power BI Migration Team"},
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Database :: Front-Ends",
+]
+keywords = ["tableau", "powerbi", "migration", "pbip", "tmdl", "pbir", "dax"]
+
+# No external dependencies — stdlib only
+dependencies = []
+
+[project.optional-dependencies]
+deploy = [
+    "azure-identity>=1.15.0",
+    "requests>=2.31.0",
+]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "coverage>=7.0",
+]
+all = [
+    "tableau-to-powerbi[deploy,dev]",
+]
+
+[project.urls]
+Homepage = "https://github.com/tableau-to-powerbi/tableau-to-powerbi"
+Documentation = "https://tableau-to-powerbi.github.io/"
+Repository = "https://github.com/tableau-to-powerbi/tableau-to-powerbi"
+Changelog = "https://github.com/tableau-to-powerbi/tableau-to-powerbi/blob/main/CHANGELOG.md"
+
+[project.scripts]
+tableau-to-powerbi = "migrate:main"
+
+[tool.setuptools.packages.find]
+include = ["tableau_export*", "powerbi_import*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.coverage.run]
+source = ["tableau_export", "powerbi_import"]
+omit = [
+    "tests/*",
+    "*/__pycache__/*",
+    "powerbi_import/deploy/*",
+]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__",
+    "raise NotImplementedError",
+    "pass",
+]
+
+[tool.pyright]
+include = ["tableau_export", "powerbi_import", "migrate.py"]
+pythonVersion = "3.8"
+typeCheckingMode = "basic"
+reportMissingImports = true
+reportMissingTypeStubs = false

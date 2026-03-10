@@ -1,0 +1,20 @@
+table 'Top Customers'
+	lineageTag: 79e2e783-0879-458d-8feb-5b4cbc21c34f
+
+	measure 'Top Customers' = SELECTEDVALUE('Top Customers'[Value], 5)
+		lineageTag: 2cbeb521-cea0-4b71-bb2b-e5a2ef8f5bfa
+
+	column Value
+		dataType: int64
+		lineageTag: 515d6140-d6c7-48bb-ac2d-e15160fa7c53
+		summarizeBy: none
+		sourceColumn: Value
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Top Customers-40540c0c-38a5-45c3-8453-e71edd67618a' = calculated
+		mode: import
+		source = GENERATESERIES(5, 20, 5)
+
+	annotation PBI_ResultType = Table
+

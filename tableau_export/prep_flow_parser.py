@@ -122,8 +122,8 @@ _PREP_AGG_MAP = {
     'MAX': 'max',
     'STDEV': 'stdev',
     'STDEVP': 'stdev',
-    'VAR': 'sum',       # approximation
-    'VARP': 'sum',      # approximation
+    'VAR': 'var',
+    'VARP': 'varp',
 }
 
 # Prep join type → m_transform_join join kind
@@ -134,7 +134,7 @@ _PREP_JOIN_MAP = {
     'full': 'full',
     'leftOnly': 'leftanti',
     'rightOnly': 'rightanti',
-    'notInner': 'full',  # full-anti approximated as full
+    'notInner': 'leftanti',  # exclusive left (Tableau "not inner")
 }
 
 

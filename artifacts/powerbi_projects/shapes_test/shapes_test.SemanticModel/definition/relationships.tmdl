@@ -1,0 +1,5 @@
+relationship 4a09c64a-3573-46bf-beb5-11e5d0978bdd
+	fromColumn: Orders.'Order Date'
+	toColumn: Calendar.Date
+	crossFilteringBehavior: oneDirection
+

@@ -1,0 +1,9 @@
+let
+    // Source Snowflake: org.snowflakecomputing.com
+    Source = Snowflake.Databases("org.snowflakecomputing.com", "WH_PROD"),
+    #"ANALYTICS" = Source{[Name="ANALYTICS"]}[Data],
+    #"PUBLIC" = #"ANALYTICS"{[Name="PUBLIC"]}[Data],
+    #"FACT_SALES Table" = #"PUBLIC"{[Name="FACT_SALES"]}[Data],
+    Result = #"FACT_SALES Table"
+in
+    Result

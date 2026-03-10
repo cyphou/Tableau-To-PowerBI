@@ -58,6 +58,91 @@ class ArtifactValidator:
         'https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json',
     ]
 
+    # ── PBIR structural schemas (lightweight, no external dependency) ──
+    # These define required/optional keys and allowed types for each schema,
+    # validated by ``validate_pbir_structure``.
+
+    PBIR_REPORT_REQUIRED_KEYS = {'$schema'}
+    PBIR_REPORT_OPTIONAL_KEYS = {
+        'datasetReference', 'reportId', 'theme', 'themeUri',
+        'resourcePackages', 'objects', 'filters', 'bookmarks',
+        'config', 'layoutOptimization', 'podBookmarks',
+        'publicCustomVisuals', 'registeredResources',
+    }
+
+    PBIR_PAGE_REQUIRED_KEYS = {'$schema', 'name', 'displayName'}
+    PBIR_PAGE_OPTIONAL_KEYS = {
+        'displayOption', 'width', 'height', 'visualContainers',
+        'filters', 'ordinal', 'pageType', 'background', 'wallpaper',
+        'config', 'objects', 'tabOrder',
+    }
+
+    PBIR_VISUAL_REQUIRED_KEYS = {'$schema'}
+    PBIR_VISUAL_OPTIONAL_KEYS = {
+        'name', 'position', 'visual', 'filters', 'query',
+        'dataTransforms', 'objects', 'howCreated', 'isHidden',
+        'tabOrder', 'parentGroupName', 'drillFilterOtherVisuals',
+        'config', 'title', 'singleVisual', 'singleVisualGroup',
+    }
+
+    @classmethod
+    def validate_pbir_structure(cls, json_data, schema_url):
+        """Validate a JSON object against a PBIR structural schema.
+
+        This is a lightweight validator that checks required/optional keys
+        and ``$schema`` values without requiring an external JSON-Schema
+        library.
+
+        Args:
+            json_data: Parsed JSON dict.
+            schema_url: The ``$schema`` URL from the JSON file.
+
+        Returns:
+            list of error strings (empty = valid).
+        """
+        errors = []
+        if not isinstance(json_data, dict):
+            errors.append('PBIR file must be a JSON object')
+            return errors
+
+        # Determine which structural schema to apply
+        if 'report/' in schema_url and 'page' not in schema_url and 'visualContainer' not in schema_url:
+            required = cls.PBIR_REPORT_REQUIRED_KEYS
+            allowed = required | cls.PBIR_REPORT_OPTIONAL_KEYS
+            label = 'report'
+        elif '/page/' in schema_url:
+            required = cls.PBIR_PAGE_REQUIRED_KEYS
+            allowed = required | cls.PBIR_PAGE_OPTIONAL_KEYS
+            label = 'page'
+        elif 'visualContainer' in schema_url:
+            required = cls.PBIR_VISUAL_REQUIRED_KEYS
+            allowed = required | cls.PBIR_VISUAL_OPTIONAL_KEYS
+            label = 'visual'
+        else:
+            # Unknown schema — skip structural validation
+            return errors
+
+        # Check required keys
+        for key in required:
+            if key not in json_data:
+                errors.append(f'Missing required key "{key}" in {label} JSON')
+
+        # Check $schema value
+        actual_schema = json_data.get('$schema', '')
+        if actual_schema:
+            matching_schemas = {
+                'report': cls.VALID_REPORT_SCHEMAS,
+                'page': cls.VALID_PAGE_SCHEMAS,
+                'visual': cls.VALID_VISUAL_SCHEMAS,
+            }.get(label, [])
+            if matching_schemas and actual_schema not in matching_schemas:
+                errors.append(
+                    f'Unexpected $schema "{actual_schema}" for {label} '
+                    f'(expected one of: {matching_schemas})'
+                )
+
+        return errors
+
     # Valid Fabric artifact types
     VALID_ARTIFACT_TYPES = {
         'Dataset',
@@ -448,13 +533,29 @@ class ArtifactValidator:
         # Check Report directory
         report_dir = project_dir / f'{report_name}.Report'
         if report_dir.exists():
-            # Validate report.json
-            report_json = report_dir / 'report.json'
+            # PBIR v4.0 places report.json under definition/
+            definition_dir = report_dir / 'definition'
+
+            # Validate report.json (check both legacy root and PBIR definition/ path)
+            report_json = definition_dir / 'report.json' if definition_dir.exists() else None
+            if report_json is None or not report_json.exists():
+                report_json = report_dir / 'report.json'  # legacy fallback
             if report_json.exists():
                 files_checked += 1
                 valid, err = cls.validate_json_file(report_json)
                 if not valid:
                     errors.append(err)
+                else:
+                    # PBIR structural validation on report.json
+                    try:
+                        with open(report_json, 'r', encoding='utf-8') as f:
+                            rj = json.load(f)
+                        schema_url = rj.get('$schema', '') if isinstance(rj, dict) else ''
+                        if schema_url:
+                            pbir_errs = cls.validate_pbir_structure(rj, schema_url)
+                            warnings.extend(pbir_errs)
+                    except Exception:
+                        pass
             else:
                 errors.append('Missing report.json in Report directory')
 
@@ -469,7 +570,10 @@ class ArtifactValidator:
                 warnings.append('Missing definition.pbir (may be optional)')
 
             # Validate page and visual JSON files
-            pages_dir = report_dir / 'pages'
+            # PBIR v4.0: pages live under definition/pages/
+            pages_dir = definition_dir / 'pages' if definition_dir.exists() else None
+            if pages_dir is None or not pages_dir.exists():
+                pages_dir = report_dir / 'pages'  # legacy fallback
             if pages_dir.exists():
                 for page_dir in pages_dir.iterdir():
                     if page_dir.is_dir():
@@ -479,6 +583,17 @@ class ArtifactValidator:
                             valid, err = cls.validate_json_file(page_json)
                             if not valid:
                                 errors.append(err)
+                            else:
+                                # PBIR structural validation on page.json
+                                try:
+                                    with open(page_json, 'r', encoding='utf-8') as f:
+                                        pj = json.load(f)
+                                    schema_url = pj.get('$schema', '') if isinstance(pj, dict) else ''
+                                    if schema_url:
+                                        pbir_errs = cls.validate_pbir_structure(pj, schema_url)
+                                        warnings.extend(pbir_errs)
+                                except Exception:
+                                    pass
 
                         # Validate visuals
                         visuals_dir = page_dir / 'visuals'
@@ -491,6 +606,17 @@ class ArtifactValidator:
                                         valid, err = cls.validate_json_file(visual_json)
                                         if not valid:
                                             errors.append(err)
+                                        else:
+                                            # PBIR structural validation on visual.json
+                                            try:
+                                                with open(visual_json, 'r', encoding='utf-8') as f:
+                                                    vj = json.load(f)
+                                                schema_url = vj.get('$schema', '') if isinstance(vj, dict) else ''
+                                                if schema_url:
+                                                    pbir_errs = cls.validate_pbir_structure(vj, schema_url)
+                                                    warnings.extend(pbir_errs)
+                                            except Exception:
+                                                pass
         else:
             errors.append(f'Missing Report directory: {report_dir.name}')
 

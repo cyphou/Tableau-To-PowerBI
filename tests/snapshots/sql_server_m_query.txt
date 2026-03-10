@@ -1,0 +1,7 @@
+let
+    // Source SQL Server
+    Source = Sql.Database("localhost", "TestDB"),
+    #"Orders Table" = Source{[Schema="dbo", Item="Orders"]}[Data],
+    Result = #"Orders Table"
+in
+    Result

@@ -265,3 +265,48 @@ TWB-embedded transforms (column renames from captions) are auto-detected and inj
 - Check relationships in the Model view
 - Compare Tableau visuals vs Power BI
 - Refer to `docs/FAQ.md` for frequently asked questions
+
+## Agent Roles — 2-Agent Development Model
+
+This project uses a lightweight 2-agent model. Each role has distinct responsibilities, but a single agent can switch between roles within a session.
+
+### Role: Planner/Reviewer (`plan:` mode)
+
+**When to activate:** At the start of a sprint, when analyzing gaps, or when reviewing completed work.
+
+**Responsibilities:**
+1. **Analyze gaps**: Read `docs/GAP_ANALYSIS.md`, `docs/KNOWN_LIMITATIONS.md`, search for `TODO`/`FIXME`/`pass` in source
+2. **Design approach**: Define what to build, which files to modify, expected behavior
+3. **Validate correctness**: Review generated code against Tableau semantics and PBI PBIR/TMDL specs
+4. **Write acceptance criteria**: Define test cases BEFORE implementation (TDD)
+5. **Update documentation**: `CHANGELOG.md`, `DEVELOPMENT_PLAN.md`, `GAP_ANALYSIS.md`, `KNOWN_LIMITATIONS.md`
+
+**Outputs:** Sprint plan with numbered items, test signatures, architecture decisions, doc updates.
+
+**Rules:**
+- Do NOT write implementation code — only plan, review, and document
+- Always check existing code first (`grep_search` for related functions) before proposing new ones
+- Verify no duplicate function names would be created (learned: `resolve_visual_type` shadowing bug)
+- Check regex patterns in DAX converter won't match replacement text (learned: `WINDOW_AVG` infinite loop)
+
+### Role: Developer/Tester (`dev:` mode)
+
+**When to activate:** When implementing features from a sprint plan, writing tests, or fixing bugs.
+
+**Responsibilities:**
+1. **Implement features**: Write Python code following project conventions (stdlib only, no external deps)
+2. **Write tests**: Create comprehensive unit tests using `unittest.TestCase`, co-located in test files
+3. **Run tests**: Execute `pytest tests/ --tb=short -q` after each change
+4. **Fix regressions**: If tests break, diagnose root cause and fix immediately
+5. **Validate end-to-end**: Run full test suite before marking sprint complete
+
+**Outputs:** Modified source files, new test cases, green test suite.
+
+**Rules:**
+- Always run tests after implementing a feature — never skip validation
+- Check function signatures match between implementation and test (learned: `GatewayConfigGenerator` API mismatch)
+- Verify regex replacements don't create infinite loops (learned: comment text re-matching search pattern)
+- Use `convert_tableau_formula_to_dax()` — NOT `convert_tableau_to_dax()` (doesn't exist)
+- Use `resolve_custom_visual_type()` for tuple returns, `resolve_visual_type()` for string returns
+- `GatewayConfigGenerator()` takes no constructor args — pass datasources to methods
+- Deduplication: check if a function/class already exists before adding a new one with the same name

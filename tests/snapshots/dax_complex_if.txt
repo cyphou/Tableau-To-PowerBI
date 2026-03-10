@@ -1,0 +1,1 @@
+IF('Table'[Status] = "Active", SUM('Table'[Amount]), IF('Table'[Status] = "Pending", SUM('Table'[Amount]) * 0.5, 0))

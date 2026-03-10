@@ -1,0 +1,10 @@
+relationship c91c8f0d-629a-4c81-a569-55381d45e5fe
+	fromColumn: Orders.'Order Date'
+	toColumn: Calendar.Date
+	crossFilteringBehavior: oneDirection
+
+relationship 4e8eb65a-bf71-45f2-a585-5178b050b045
+	fromColumn: Extract.'Order Date'
+	toColumn: Calendar.Date
+	crossFilteringBehavior: oneDirection
+

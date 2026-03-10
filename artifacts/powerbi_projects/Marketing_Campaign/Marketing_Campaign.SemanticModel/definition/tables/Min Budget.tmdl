@@ -1,18 +1,18 @@
 table 'Min Budget'
-	lineageTag: 9a0ea434-a1c9-42dd-acc5-d1ff61a6dbae
+	lineageTag: cb48fc88-3b03-4a15-9ade-ac5acf77200f
 
 	measure 'Min Budget' = SELECTEDVALUE('Min Budget'[Value], 5000)
-		lineageTag: a4691546-2c1b-45fe-a367-fed22a0bb59e
+		lineageTag: ccdf8a2e-25da-426e-8a3f-3f658697933c
 
 	column Value
 		dataType: double
-		lineageTag: 211a596d-ecba-40ef-80bd-fe41d83df2e5
+		lineageTag: 5534b8c9-fe67-47eb-af52-0f437ff9ab7f
 		summarizeBy: none
 		sourceColumn: Value
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Min Budget-a27b5838-9f24-4bbb-94bf-a8fb04e4aee7' = calculated
+	partition 'Min Budget-d2d315a1-b2e5-4b00-b1b2-8beedebe0b48' = calculated
 		mode: import
 		source = GENERATESERIES(0, 100000, 1000)
 

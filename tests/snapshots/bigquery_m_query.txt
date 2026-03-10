@@ -1,0 +1,8 @@
+let
+    // Source Google BigQuery: my-project.analytics
+    Source = GoogleBigQuery.Database([BillingProject="my-project"]),
+    #"analytics" = Source{[Name="analytics"]}[Data],
+    #"users Table" = #"analytics"{[Name="users"]}[Data],
+    Result = #"users Table"
+in
+    Result

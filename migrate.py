@@ -21,6 +21,22 @@ import json
 import logging
 import argparse
 from datetime import datetime
+from enum import IntEnum
+
+
+# ── Structured exit codes ────────────────────────────────────────────
+
+class ExitCode(IntEnum):
+    """Structured exit codes for CI/CD integration."""
+    SUCCESS = 0
+    GENERAL_ERROR = 1
+    FILE_NOT_FOUND = 2
+    EXTRACTION_FAILED = 3
+    GENERATION_FAILED = 4
+    VALIDATION_FAILED = 5
+    ASSESSMENT_FAILED = 6
+    BATCH_PARTIAL_FAIL = 7
+    KEYBOARD_INTERRUPT = 130
 
 # Ensure Unicode output on Windows consoles (✓, →, ❌, etc.)
 if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
@@ -123,6 +139,7 @@ def run_extraction(tableau_file):
     print_step(1, 2, "TABLEAU OBJECTS EXTRACTION")
 
     if not os.path.exists(tableau_file):
+        logger.error(f"Tableau file not found: {tableau_file}")
         print(f"Error: Tableau file not found: {tableau_file}")
         return False
 
@@ -171,12 +188,14 @@ def run_extraction(tableau_file):
             return False
 
     except Exception as e:
+        logger.error(f"Extraction failed: {e}", exc_info=True)
         print(f"\nError during extraction: {str(e)}")
         return False
 
 
 def run_generation(report_name=None, output_dir=None, calendar_start=None,
-                   calendar_end=None, culture=None):
+                   calendar_end=None, culture=None, model_mode='import',
+                   output_format='pbip', paginated=False):
     """Generate Power BI project (.pbip) from extracted data
 
     Args:
@@ -185,6 +204,7 @@ def run_generation(report_name=None, output_dir=None, calendar_start=None,
         calendar_start: Start year for Calendar table (default: 2020)
         calendar_end: End year for Calendar table (default: 2030)
         culture: Override culture/locale for semantic model (e.g., fr-FR)
+        paginated: If True, generate paginated report layout alongside interactive report
     """
     global _stats
     print_step(2, 2, "POWER BI PROJECT GENERATION")
@@ -196,7 +216,8 @@ def run_generation(report_name=None, output_dir=None, calendar_start=None,
         importer = PowerBIImporter()
         importer.import_all(generate_pbip=True, report_name=report_name, output_dir=output_dir,
                             calendar_start=calendar_start, calendar_end=calendar_end,
-                            culture=culture)
+                            culture=culture, model_mode=model_mode,
+                            output_format=output_format)
 
         # Collect generation stats from the output
         base_dir = output_dir or os.path.join('artifacts', 'powerbi_projects')
@@ -237,6 +258,7 @@ def run_generation(report_name=None, output_dir=None, calendar_start=None,
         return True
 
     except Exception as e:
+        logger.error(f"Generation failed: {e}", exc_info=True)
         print(f"\nError during generation: {str(e)}")
         return False
 
@@ -379,6 +401,10 @@ def _build_calc_map_from_tmdl(report_name, output_dir=None):
     inline_pattern = _re.compile(r'(?:measure|column)\s+(.+?)\s*=\s*(.*)')
     # Multi-line format: measure 'Name' = ```
     multiline_start = _re.compile(r'(?:measure|column)\s+(.+?)\s*=\s*```\s*$')
+    # Column declaration without expression (M-based calculated columns)
+    col_only_pattern = _re.compile(r'^\s+column\s+(.+?)\s*$')
+    # Table.AddColumn step in M partition
+    m_add_col_pattern = _re.compile(r'Table\.AddColumn\([^,]+,\s*"([^"]+)"')
 
     def _strip_quotes(name):
         """Remove surrounding TMDL single-quotes."""
@@ -394,6 +420,13 @@ def _build_calc_map_from_tmdl(report_name, output_dir=None):
         try:
             with open(filepath, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
+
+            # Collect M-based column names from Table.AddColumn steps in partitions
+            m_based_columns = set()
+            for line in lines:
+                m_add = m_add_col_pattern.search(line)
+                if m_add:
+                    m_based_columns.add(m_add.group(1))
 
             i = 0
             while i < len(lines):
@@ -424,6 +457,17 @@ def _build_calc_map_from_tmdl(report_name, output_dir=None):
                     expression = m.group(2).strip()
                     if expression and not expression.startswith('let'):
                         calc_map[name] = expression
+                    i += 1
+                    continue
+
+                # M-based calculated column: column 'Name' (no = sign)
+                # These are generated as Table.AddColumn in the M partition
+                m = col_only_pattern.match(lines[i])
+                if m:
+                    name = _strip_quotes(m.group(1))
+                    if name not in calc_map and name in m_based_columns:
+                        calc_map[name] = '[M-based column]'
+
                 i += 1
 
         except Exception:
@@ -488,6 +532,131 @@ def run_prep_flow(prep_file, datasources_json='tableau_export/datasources.json')
         import traceback
         traceback.print_exc()
         return False
+
+
+def _run_batch_config(args):
+    """Run migrations using a JSON batch configuration file.
+
+    The config file is a JSON array of objects, each specifying a
+    workbook to migrate with optional per-workbook overrides::
+
+        [
+          {"file": "sales.twbx", "culture": "fr-FR", "paginated": true},
+          {"file": "finance.twb", "prep": "flow.tfl", "calendar_start": 2018}
+        ]
+
+    Supported keys per entry:
+        file (required), prep, output_dir, culture, calendar_start,
+        calendar_end, mode, paginated, skip_extraction
+    """
+    config_path = args.batch_config
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            entries = json.load(f)
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"Error: Cannot load batch config: {exc}")
+        return ExitCode.GENERAL_ERROR
+
+    if not isinstance(entries, list):
+        print("Error: Batch config must be a JSON array of objects")
+        return ExitCode.GENERAL_ERROR
+
+    config_dir = os.path.dirname(os.path.abspath(config_path))
+
+    print_header("TABLEAU TO POWER BI BATCH-CONFIG MIGRATION")
+    print(f"  Config file:  {config_path}")
+    print(f"  Entries:      {len(entries)}")
+    print()
+
+    global _stats
+    batch_start = datetime.now()
+    results = {}
+
+    for i, entry in enumerate(entries, 1):
+        raw_file = entry.get('file', '')
+        if not raw_file:
+            print(f"  [{i}/{len(entries)}] SKIP — missing 'file' key")
+            continue
+
+        # Resolve relative paths against config file location
+        tableau_file = raw_file if os.path.isabs(raw_file) else os.path.join(config_dir, raw_file)
+        if not os.path.isfile(tableau_file):
+            print(f"  [{i}/{len(entries)}] SKIP — file not found: {raw_file}")
+            results[raw_file] = {'success': False, 'error': 'file_not_found'}
+            continue
+
+        basename = os.path.splitext(os.path.basename(tableau_file))[0]
+        print(f"\n{'=' * 80}")
+        print(f"  [{i}/{len(entries)}] Migrating: {basename}")
+        print(f"{'=' * 80}")
+
+        _stats = MigrationStats()
+
+        # Per-entry overrides (fall back to CLI args)
+        skip = entry.get('skip_extraction', args.skip_extraction)
+        prep = entry.get('prep', args.prep)
+        out_dir = entry.get('output_dir', args.output_dir)
+        cal_start = entry.get('calendar_start', args.calendar_start)
+        cal_end = entry.get('calendar_end', args.calendar_end)
+        culture = entry.get('culture', args.culture)
+        paginated = entry.get('paginated', getattr(args, 'paginated', False))
+
+        file_results = {}
+
+        # Extract
+        if not skip:
+            file_results['extraction'] = run_extraction(tableau_file)
+            if not file_results['extraction']:
+                results[basename] = {'success': False, 'error': 'extraction'}
+                continue
+        else:
+            file_results['extraction'] = True
+
+        # Prep flow
+        if prep:
+            ppath = prep if os.path.isabs(prep) else os.path.join(config_dir, prep)
+            file_results['prep'] = run_prep_flow(ppath)
+
+        # Generate
+        file_results['generation'] = run_generation(
+            report_name=basename,
+            output_dir=out_dir,
+            calendar_start=cal_start,
+            calendar_end=cal_end,
+            culture=culture,
+            paginated=paginated,
+        )
+
+        # Migration report
+        report_summary = None
+        if file_results.get('generation'):
+            report_summary = run_migration_report(report_name=basename, output_dir=out_dir)
+
+        all_ok = all(v for v in file_results.values() if v is not None)
+        results[basename] = {
+            'success': all_ok,
+            'stats': _stats.to_dict(),
+            'fidelity': report_summary.get('fidelity_score') if report_summary else None,
+        }
+
+    # Summary
+    batch_duration = datetime.now() - batch_start
+    succeeded = sum(1 for r in results.values() if r.get('success'))
+    failed = len(results) - succeeded
+
+    print_header("BATCH-CONFIG MIGRATION SUMMARY")
+    print(f"  Total entries: {len(results)}")
+    print(f"  Succeeded:     {succeeded}")
+    print(f"  Failed:        {failed}")
+    print(f"  Duration:      {batch_duration}")
+    print()
+    for name, res in results.items():
+        status = "[OK]" if res.get('success') else "[FAIL]"
+        fid = res.get('fidelity')
+        fid_str = f"  (fidelity: {fid}%)" if fid is not None else ""
+        print(f"  {status} {name}{fid_str}")
+
+    return ExitCode.SUCCESS if failed == 0 else ExitCode.BATCH_PARTIAL_FAIL
 
 
 def run_batch_migration(batch_dir, output_dir=None, prep_file=None, skip_extraction=False,
@@ -599,7 +768,7 @@ def run_batch_migration(batch_dir, output_dir=None, prep_file=None, skip_extract
         fid_str = f"  (fidelity: {fidelity}%)" if fidelity is not None else ""
         print(f"  {status} {name}{fid_str}")
 
-    return 0 if failed == 0 else 1
+    return ExitCode.SUCCESS if failed == 0 else ExitCode.BATCH_PARTIAL_FAIL
 
 
 def main():
@@ -626,6 +795,13 @@ def main():
         '--skip-extraction',
         action='store_true',
         help='Skip extraction (use existing datasources.json)'
+    )
+
+    parser.add_argument(
+        '--wizard',
+        action='store_true',
+        default=False,
+        help='Launch the interactive migration wizard (guided step-by-step prompts)'
     )
 
     parser.add_argument(
@@ -696,10 +872,116 @@ def main():
         help='Run pre-migration assessment and strategy analysis after extraction (no generation)'
     )
 
+    parser.add_argument(
+        '--mode',
+        choices=['import', 'directquery', 'composite'],
+        default='import',
+        help='Semantic model mode: import (default), directquery, or composite'
+    )
+
+    parser.add_argument(
+        '--rollback',
+        action='store_true',
+        help='Backup existing .pbip project before overwriting'
+    )
+
+    parser.add_argument(
+        '--output-format',
+        choices=['pbip', 'tmdl', 'pbir'],
+        default='pbip',
+        help='Output format: pbip (default, full project), tmdl (semantic model only), pbir (report only)'
+    )
+
+    parser.add_argument(
+        '--config',
+        metavar='FILE',
+        default=None,
+        help='Path to a JSON configuration file (CLI args override config file values)'
+    )
+
+    parser.add_argument(
+        '--incremental',
+        metavar='DIR',
+        default=None,
+        help='Path to an existing .pbip project — merge changes incrementally, preserving manual edits'
+    )
+
+    parser.add_argument(
+        '--telemetry',
+        action='store_true',
+        default=False,
+        help='Enable anonymous usage telemetry (opt-in, no PII collected)'
+    )
+
+    parser.add_argument(
+        '--paginated',
+        action='store_true',
+        default=False,
+        help='Generate a paginated report layout alongside the interactive report'
+    )
+
+    parser.add_argument(
+        '--batch-config',
+        metavar='FILE',
+        default=None,
+        help=(
+            'Path to a JSON batch configuration file.  The file should '
+            'contain a list of objects, each with at least a "file" key '
+            'and optional per-workbook overrides (prep, culture, '
+            'calendar_start, calendar_end, mode, paginated, output_dir).  '
+            'Example: [{"file": "sales.twbx", "culture": "fr-FR"}]'
+        )
+    )
+
     args = parser.parse_args()
+
+    # Load configuration file if specified (CLI args take precedence)
+    if args.config:
+        try:
+            sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'powerbi_import'))
+            from config.migration_config import load_config
+            config = load_config(filepath=args.config, args=args)
+            # Apply config values to args where args has defaults
+            if not args.tableau_file and config.tableau_file:
+                args.tableau_file = config.tableau_file
+            if not args.prep and config.prep_flow:
+                args.prep = config.prep_flow
+            if not args.output_dir and config.output_dir:
+                args.output_dir = config.output_dir
+            if args.mode == 'import' and config.model_mode != 'import':
+                args.mode = config.model_mode
+            if not args.culture and config.culture != 'en-US':
+                args.culture = config.culture
+            if args.calendar_start is None and config.calendar_start != 2020:
+                args.calendar_start = config.calendar_start
+            if args.calendar_end is None and config.calendar_end != 2030:
+                args.calendar_end = config.calendar_end
+            if args.output_format == 'pbip' and config.output_format != 'pbip':
+                args.output_format = config.output_format
+            if not args.rollback and config.rollback:
+                args.rollback = True
+            if not args.verbose and config.verbose:
+                args.verbose = True
+            if not args.log_file and config.log_file:
+                args.log_file = config.log_file
+            logger.info(f"Configuration loaded from: {args.config}")
+        except Exception as e:
+            print(f"Warning: Failed to load config file: {e}")
+
+    # ── Interactive wizard mode ───────────────────────────────
+    if getattr(args, 'wizard', False):
+        from powerbi_import.wizard import run_wizard, wizard_to_args
+        config = run_wizard()
+        if config is None:
+            return ExitCode.SUCCESS
+        args = wizard_to_args(config)
 
     # Setup structured logging
     setup_logging(verbose=args.verbose, log_file=args.log_file)
+
+    # ── Batch-config migration mode ───────────────────────────
+    if args.batch_config:
+        return _run_batch_config(args)
 
     # ── Batch migration mode ──────────────────────────────────
     if args.batch:
@@ -731,17 +1013,35 @@ def main():
         print(f"Calendar:    {cal_start}–{cal_end}")
     if args.culture:
         print(f"Culture:     {args.culture}")
+    if args.mode and args.mode != 'import':
+        print(f"Mode:        {args.mode}")
+    if args.output_format and args.output_format != 'pbip':
+        print(f"Format:      {args.output_format}")
+    if args.rollback:
+        print(f"Rollback:    enabled")
+    if getattr(args, 'telemetry', False):
+        print(f"Telemetry:   enabled")
     print()
 
     start_time = datetime.now()
     results = {}
+
+    # Initialize telemetry (opt-in)
+    telemetry = None
+    if getattr(args, 'telemetry', False):
+        try:
+            from powerbi_import.telemetry import TelemetryCollector
+            telemetry = TelemetryCollector(enabled=True)
+            telemetry.start()
+        except Exception:
+            pass
 
     # Step 1: Extraction
     if not args.skip_extraction:
         results['extraction'] = run_extraction(args.tableau_file)
         if not results['extraction']:
             print("\nMigration aborted due to extraction failure")
-            return 1
+            return ExitCode.EXTRACTION_FAILED
     else:
         print("\nExtraction skipped (using existing datasources.json)")
         results['extraction'] = True
@@ -789,15 +1089,27 @@ def main():
             print_recommendation(rec)
 
             print("\n✓ Assessment complete (no generation performed)")
-            return 0
+            return ExitCode.SUCCESS
         except Exception as e:
             logger.error(f"Assessment failed: {e}")
             print(f"\n✗ Assessment failed: {e}")
-            return 1
+            return ExitCode.ASSESSMENT_FAILED
 
     # Step 2: Generate .pbip project
     # Derive report name from the source filename
     source_basename = os.path.splitext(os.path.basename(args.tableau_file))[0]
+
+    # Rollback: backup existing output if requested
+    if args.rollback and not args.dry_run:
+        out_base = args.output_dir or os.path.join('artifacts', 'powerbi_projects')
+        existing_dir = os.path.join(out_base, source_basename)
+        if os.path.exists(existing_dir):
+            import shutil
+            ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+            backup_dir = existing_dir + f'.backup_{ts}'
+            shutil.copytree(existing_dir, backup_dir)
+            logger.info(f"Rollback backup created: {backup_dir}")
+            print(f"  Rollback backup: {backup_dir}")
 
     if args.dry_run:
         print("\n[DRY RUN] Skipping generation — would produce:")
@@ -812,9 +1124,39 @@ def main():
             calendar_start=args.calendar_start,
             calendar_end=args.calendar_end,
             culture=args.culture,
+            model_mode=args.mode,
+            output_format=args.output_format,
+            paginated=getattr(args, 'paginated', False),
         )
 
-    # Step 3: Migration report
+    # Step 3: Incremental merge (optional)
+    if getattr(args, 'incremental', None) and results.get('generation'):
+        try:
+            from powerbi_import.incremental import IncrementalMerger
+            out_dir = args.output_dir or os.path.join('artifacts', 'powerbi_projects')
+            generated_dir = os.path.join(out_dir, source_basename)
+            existing_dir = args.incremental
+            if os.path.isdir(existing_dir) and os.path.isdir(generated_dir):
+                print_header("INCREMENTAL MERGE")
+                merge_stats = IncrementalMerger.merge(
+                    existing_dir=existing_dir,
+                    incoming_dir=generated_dir,
+                    output_dir=generated_dir,
+                )
+                print(f"  Added: {merge_stats['added']}")
+                print(f"  Merged: {merge_stats['merged']}")
+                print(f"  Removed: {merge_stats['removed']}")
+                print(f"  Preserved: {merge_stats['preserved']}")
+                if merge_stats['conflicts']:
+                    print(f"  Conflicts: {len(merge_stats['conflicts'])}")
+                    for c in merge_stats['conflicts']:
+                        print(f"    ⚠ {c}")
+            else:
+                print(f"  ⚠ Incremental merge skipped: directory not found")
+        except Exception as exc:
+            print(f"  ⚠ Incremental merge failed: {exc}")
+
+    # Step 4: Migration report
     report_summary = None
     if results.get('generation'):
         report_summary = run_migration_report(
@@ -927,7 +1269,21 @@ def main():
     else:
         print("\n✗ Migration completed with errors")
 
-    return 0 if all_success else 1
+    # Finalize telemetry
+    if telemetry:
+        try:
+            telemetry.record_stats(
+                success=all_success,
+                extraction=bool(results.get('extraction')),
+                generation=bool(results.get('generation')),
+            )
+            telemetry.finish()
+            telemetry.save()
+            telemetry.send()
+        except Exception:
+            pass
+
+    return ExitCode.SUCCESS if all_success else ExitCode.GENERAL_ERROR
 
 
 if __name__ == '__main__':
@@ -936,7 +1292,8 @@ if __name__ == '__main__':
         sys.exit(exit_code)
     except KeyboardInterrupt:
         print("\n\nMigration interrupted by user")
-        sys.exit(1)
+        sys.exit(ExitCode.KEYBOARD_INTERRUPT)
     except Exception as e:
+        logger.critical(f"Fatal error: {e}", exc_info=True)
         print(f"\n\nFatal error: {str(e)}")
-        sys.exit(1)
+        sys.exit(ExitCode.GENERAL_ERROR)

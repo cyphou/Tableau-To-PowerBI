@@ -1,0 +1,220 @@
+table Sheet1
+	lineageTag: bba8f8aa-0526-442a-9dfd-a0887b8cd2c8
+
+	measure 'p. Rebounds' = SWITCH([Rebounds], 1, AVERAGE('Sheet1'[DEF]), 2, AVERAGE('Sheet1'[OFF]), 3, AVERAGE('Sheet1'[REB]))
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 8b4c0c4d-f1a4-4a32-8825-340e74a4705c
+
+	column Player
+		dataType: string
+		lineageTag: 926af8a5-1022-4f60-9d2a-44532aa8d86f
+		summarizeBy: none
+		sourceColumn: Player
+
+		annotation SummarizationSetBy = Automatic
+
+	column YR
+		dataType: int64
+		lineageTag: 93a90acb-1e58-4fb6-abdc-5c4189684d37
+		summarizeBy: sum
+		sourceColumn: YR
+
+		annotation SummarizationSetBy = Automatic
+
+	column TM
+		dataType: string
+		lineageTag: aae2347a-d193-4c52-9ecf-a1fb6511c33c
+		summarizeBy: none
+		sourceColumn: TM
+
+		annotation SummarizationSetBy = Automatic
+
+	column GP
+		dataType: int64
+		lineageTag: c00d3528-d601-4720-8ed0-351d96c7af44
+		summarizeBy: sum
+		sourceColumn: GP
+
+		annotation SummarizationSetBy = Automatic
+
+	column MIN
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 4ca7ce1b-cd70-4c34-acbf-640dee49a531
+		summarizeBy: sum
+		sourceColumn: MIN
+
+		annotation SummarizationSetBy = Automatic
+
+	column FGM
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 04978931-1fd3-4d95-8470-e087d98384ee
+		summarizeBy: sum
+		sourceColumn: FGM
+
+		annotation SummarizationSetBy = Automatic
+
+	column FGA
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 72dc3db9-b637-491c-805d-c5bdb2d0506d
+		summarizeBy: sum
+		sourceColumn: FGA
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'FG%'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 12c134fb-cdb3-4182-810e-f719b0101a53
+		summarizeBy: sum
+		sourceColumn: 'FG%'
+
+		annotation SummarizationSetBy = Automatic
+
+	column '3PT%'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: da9b4d19-5868-41ec-9934-43963aa826e7
+		summarizeBy: sum
+		sourceColumn: '3PT%'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'FT%'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 607238d9-31d7-4960-9174-df9685551a57
+		summarizeBy: sum
+		sourceColumn: 'FT%'
+
+		annotation SummarizationSetBy = Automatic
+
+	column OFF
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 159dde91-30f3-470e-96ed-22e34425e488
+		summarizeBy: sum
+		sourceColumn: OFF
+
+		annotation SummarizationSetBy = Automatic
+
+	column DEF
+		dataType: double
+		formatString: #,0.00
+		lineageTag: a773f8bb-65ad-44ce-8846-0749d296261f
+		summarizeBy: sum
+		sourceColumn: DEF
+
+		annotation SummarizationSetBy = Automatic
+
+	column REB
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 7d067262-914e-41f9-b356-bc231d11f243
+		summarizeBy: sum
+		sourceColumn: REB
+
+		annotation SummarizationSetBy = Automatic
+
+	column ASST
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 0c0ef9cb-21cc-425c-a666-0b5a9a2733f3
+		summarizeBy: sum
+		sourceColumn: ASST
+
+		annotation SummarizationSetBy = Automatic
+
+	column STL
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 313b71d6-ba7c-488c-8ff1-ba94f4109555
+		summarizeBy: sum
+		sourceColumn: STL
+
+		annotation SummarizationSetBy = Automatic
+
+	column BLK
+		dataType: double
+		formatString: #,0.00
+		lineageTag: a998db96-3e94-47ad-a3fc-708b99ef7af6
+		summarizeBy: sum
+		sourceColumn: BLK
+
+		annotation SummarizationSetBy = Automatic
+
+	column TO
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 07927aed-19a5-40a3-aa17-0362b2e5d636
+		summarizeBy: sum
+		sourceColumn: TO
+
+		annotation SummarizationSetBy = Automatic
+
+	column PF
+		dataType: double
+		formatString: #,0.00
+		lineageTag: e77a44ed-4cd7-44d7-852f-4094de7251d6
+		summarizeBy: sum
+		sourceColumn: PF
+
+		annotation SummarizationSetBy = Automatic
+
+	column PTS
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 1f637e01-e4aa-43d6-90d4-4cc255d659a5
+		summarizeBy: sum
+		sourceColumn: PTS
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Action (Player)'
+		dataType: string
+		lineageTag: 27eda00b-523d-4222-90f7-28b92a8acf75
+		summarizeBy: none
+		sourceColumn: 'Action (Player)'
+		displayFolder: Groups
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Sheet1-027ae5e8-de2f-42e0-aff9-03a807228ec8' = m
+		mode: import
+		source =
+				let
+				    // Source Excel: Data/Datasets/nba_players.xlsx
+				    Source = Excel.Workbook(File.Contents(DataFolder & "\Data\Datasets\nba_players.xlsx"), null, true),
+				    #"Sheet1 Sheet" = Source{[Item="Sheet1",Kind="Sheet"]}[Data],
+				    #"Promoted Headers" = Table.PromoteHeaders(#"Sheet1 Sheet", [PromoteAllScalars=true]),
+				    #"Changed Types" = Table.TransformColumnTypes(#"Promoted Headers", {
+				        {"Player", type text},
+				        {"YR", Int64.Type},
+				        {"TM", type text},
+				        {"GP", Int64.Type},
+				        {"MIN", type number},
+				        {"FGM", type number},
+				        {"FGA", type number},
+				        {"FG%", type number},
+				        {"3PT%", type number},
+				        {"FT%", type number},
+				        {"OFF", type number},
+				        {"DEF", type number},
+				        {"REB", type number},
+				        {"ASST", type number},
+				        {"STL", type number},
+				        {"BLK", type number},
+				        {"TO", type number},
+				        {"PF", type number},
+				        {"PTS", type number}
+				    }),
+				    #"Added Action (Player)" = Table.AddColumn(#"Changed Types", "Action (Player)", each [Player], type text),
+				    Result = #"Added Action (Player)"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+

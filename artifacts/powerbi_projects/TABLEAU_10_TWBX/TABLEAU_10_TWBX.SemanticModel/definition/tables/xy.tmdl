@@ -1,0 +1,41 @@
+table xy
+	lineageTag: 776e32cc-ae6f-4797-9afe-754e8c9346eb
+
+	column a
+		dataType: string
+		lineageTag: 6ff486f5-6a29-4b35-9639-849bc65d1246
+		summarizeBy: none
+		sourceColumn: a
+
+		annotation SummarizationSetBy = Automatic
+
+	column x
+		dataType: int64
+		lineageTag: 47039b47-7c5f-4476-8412-fae19f922e06
+		summarizeBy: sum
+		sourceColumn: x
+
+		annotation SummarizationSetBy = Automatic
+
+	column y
+		dataType: int64
+		lineageTag: 160c1ec4-5a41-41cc-b95f-dc9e199180a1
+		summarizeBy: sum
+		sourceColumn: y
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'xy-38af0fc8-678e-4fea-969e-0f4ed73cef25' = m
+		mode: import
+		source =
+				let
+				    // Source SQL Server
+				    Source = Sql.Database("mssql2012.test.tsi.lan", "TestV1"),
+				    #"xy Table" = Source{[Schema="dbo", Item="xy"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(#"xy Table", {{"a", "A"}, {"x", "X"}, {"y", "Y"}}),
+				    Result = #"Renamed Columns"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+

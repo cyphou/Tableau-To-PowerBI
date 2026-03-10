@@ -1,0 +1,24 @@
+table sqlproxy
+	lineageTag: 0c74b2b2-bfe4-4240-98e3-7a9e3a063d6b
+
+	partition 'sqlproxy-e0c4310c-c01d-45e7-b31a-b9e546649f31' = m
+		mode: import
+		source =
+				let
+				    // TODO: Configure the data source for connector type: Unknown
+				    // Replace the sample table below with the actual source expression.
+				    Source = try
+				        #table(
+				            {},
+				            {
+				                {},
+				                {}
+				            }
+				        )
+				    otherwise
+				        #table({}, {})  // Empty table on error
+				in
+				    Source
+
+	annotation PBI_ResultType = Table
+
