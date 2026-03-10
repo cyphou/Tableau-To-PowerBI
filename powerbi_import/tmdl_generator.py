@@ -617,8 +617,44 @@ def _build_semantic_model(datasources, report_name="Report", extra_objects=None,
     }
 
     # Phase 3: Create tables
+    # Build reverse map: datasource_name → best table name within that datasource
+    ds_main_table = {}  # datasource_name → table_name (the table with the most columns in that DS)
+    for tname, ds_name in datasource_table_map.items():
+        if ds_name not in ds_main_table:
+            ds_main_table[ds_name] = tname
+        else:
+            # Pick the table with more columns within the same datasource
+            existing = ds_main_table[ds_name]
+            existing_cols = len(best_tables.get(existing, ({}, {}))[0].get('columns', []))
+            current_cols = len(best_tables.get(tname, ({}, {}))[0].get('columns', []))
+            if current_cols > existing_cols:
+                ds_main_table[ds_name] = tname
+
     for table_name, (table, table_conn) in best_tables.items():
-        table_calculations = all_calculations if table_name == main_table_name else []
+        # Route calculations to their source datasource's main table
+        ds_for_table = datasource_table_map.get(table_name)
+        if ds_for_table and ds_main_table.get(ds_for_table) == table_name:
+            # This table is the main table for its datasource — give it that DS's calcs
+            table_calculations = [
+                c for c in all_calculations
+                if c.get('datasource_name', '') == ds_for_table
+            ]
+            # Also add calcs with no datasource_name (legacy) if this is the global main table
+            if table_name == main_table_name:
+                table_calculations += [
+                    c for c in all_calculations
+                    if not c.get('datasource_name')
+                ]
+        elif table_name == main_table_name:
+            # Fallback: calcs with no datasource match go to the global main table
+            routed_ds_names = set(ds_main_table.values())
+            table_calculations = [
+                c for c in all_calculations
+                if c.get('datasource_name', '') not in datasource_table_map.values()
+                or not c.get('datasource_name')
+            ]
+        else:
+            table_calculations = []
 
         tbl = _build_table(
             table=table,
@@ -1267,6 +1303,59 @@ def _infer_cross_table_relationships(model):
 
             connected_pairs.add((source_table, ref_table))
             connected_pairs.add((ref_table, source_table))
+
+    # Pass 2: Proactive key-column matching for unconnected tables
+    # Looks for columns with identical names that look like keys (ID, Key, Code, etc.)
+    _KEY_SUFFIXES = {'id', 'key', 'code', 'no', 'number', 'num', 'pk', 'fk', 'sk'}
+    all_table_names = list(table_columns.keys())
+
+    for i, t1 in enumerate(all_table_names):
+        for t2 in all_table_names[i + 1:]:
+            if (t1, t2) in connected_pairs:
+                continue
+            # Skip auto-generated tables (Calendar, parameters)
+            if t1 == 'Calendar' or t2 == 'Calendar':
+                continue
+
+            t1_cols = table_columns.get(t1, set())
+            t2_cols = table_columns.get(t2, set())
+
+            best_col = None
+            best_score = 0
+
+            common_cols = t1_cols & t2_cols
+            for col in common_cols:
+                col_lower = col.lower().rstrip('_')
+                # Score: exact ID/key column names get highest priority
+                parts = re.split(r'[_\s]', col_lower)
+                has_key_suffix = any(p in _KEY_SUFFIXES for p in parts)
+                if has_key_suffix:
+                    score = 90
+                elif col_lower.endswith('name'):
+                    score = 40
+                else:
+                    score = 20  # Any common column
+                if score > best_score:
+                    best_score = score
+                    best_col = col
+
+            if best_col and best_score >= 40:
+                # Fact = table with more columns, dim = fewer
+                if len(t1_cols) >= len(t2_cols):
+                    fact_table, dim_table = t1, t2
+                else:
+                    fact_table, dim_table = t2, t1
+
+                relationships.append({
+                    "name": f"inferred_{fact_table}_{dim_table}",
+                    "fromTable": fact_table,
+                    "fromColumn": best_col,
+                    "toTable": dim_table,
+                    "toColumn": best_col,
+                    "crossFilteringBehavior": "oneDirection"
+                })
+                connected_pairs.add((t1, t2))
+                connected_pairs.add((t2, t1))
 
 
 def _detect_many_to_many(model, datasources):

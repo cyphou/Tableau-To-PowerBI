@@ -2481,6 +2481,61 @@ class PowerBIProjectGenerator:
         if os.path.isdir(tables_dir):
             tmdl_stats['tables'] = len([f for f in os.listdir(tables_dir) if f.endswith('.tmdl')])
 
+        # Count measures and relationships from TMDL files
+        measures_count = 0
+        columns_count = 0
+        if os.path.isdir(tables_dir):
+            for tmdl_file in os.listdir(tables_dir):
+                if tmdl_file.endswith('.tmdl'):
+                    try:
+                        with open(os.path.join(tables_dir, tmdl_file), 'r', encoding='utf-8') as f:
+                            content = f.read()
+                        measures_count += content.count('\n\tmeasure ')
+                        columns_count += content.count('\n\tcolumn ')
+                    except (IOError, OSError):
+                        pass
+        tmdl_stats['measures'] = measures_count
+        tmdl_stats['columns'] = columns_count
+
+        relationships_count = 0
+        rels_path = os.path.join(project_dir, f"{report_name}.SemanticModel",
+                                 "definition", "relationships.tmdl")
+        if os.path.isfile(rels_path):
+            try:
+                with open(rels_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                relationships_count = content.count('\nrelationship ')
+            except (IOError, OSError):
+                pass
+        tmdl_stats['relationships'] = relationships_count
+
+        # Collect visual type mappings used
+        visual_types_used = {}
+        for ws in converted_objects.get('worksheets', []):
+            ws_name = ws.get('name', 'Unknown')
+            mark = ws.get('mark_type', 'Automatic')
+            visual_types_used[ws_name] = mark
+
+        # Collect approximation warnings from visual generation
+        from powerbi_import.visual_generator import get_approximation_note
+        approximations = []
+        for ws_name, mark in visual_types_used.items():
+            note = get_approximation_note(mark)
+            if note:
+                approximations.append({"worksheet": ws_name, "source_type": mark, "note": note})
+
+        # Theme detail
+        theme_detail = {}
+        if theme_applied:
+            theme_detail['status'] = 'applied'
+        else:
+            has_colors = any(
+                d.get('formatting', {}).get('background_color')
+                for d in converted_objects.get('dashboards', [])
+            )
+            theme_detail['status'] = 'skipped'
+            theme_detail['reason'] = 'no dashboard colors detected' if not has_colors else 'generation error'
+
         metadata = {
             "generated_at": datetime.now().isoformat(),
             "source": "Tableau Migration",
@@ -2504,9 +2559,12 @@ class PowerBIProjectGenerator:
             "generated_output": {
                 "pages": pages_count,
                 "visuals": visuals_count,
-                "theme_applied": theme_applied
+                "theme_applied": theme_applied,
+                "theme_detail": theme_detail
             },
-            "tmdl_stats": tmdl_stats
+            "tmdl_stats": tmdl_stats,
+            "visual_type_mappings": visual_types_used,
+            "approximations": approximations,
         }
         metadata_file = os.path.join(project_dir, 'migration_metadata.json')
         _write_json(metadata_file, metadata)

@@ -1,5 +1,54 @@
 # Changelog
 
+## v5.5.0 — Phases I-M: Multi-DS Routing, Windows CI, Inference, DAX Coverage, Metadata
+
+### Phase I — Multi-Datasource Calculation Routing
+
+- **`datasource_extractor.py`**: Tagged each extracted calculation with `datasource_name` so calcs carry their source datasource identity.
+- **`tmdl_generator.py`**: Built `ds_main_table` map (datasource → its largest table). Replaced global boolean gate with datasource-aware routing: each datasource's main table receives only its own calculations, while untagged (legacy) calcs fall back to the global main table.
+
+### Phase J — Windows CI + Batch Validation
+
+- **`ci.yml`**: Added `--batch` mode test step to CI validate job (copies `.twb` samples to temp dir, runs batch migration).
+- **`ci.yml`**: Added Windows PowerShell validate step (`pwsh` shell) that loops over `.twb` samples and runs `migrate.py` with `--output-dir` on Windows runners.
+
+### Phase K — Relationship Inference Improvement
+
+- **`tmdl_generator.py`**: Added proactive key-column matching pass in `_infer_cross_table_relationships()`:
+  - Scans all unconnected table pairs for columns with matching names ending in key-like suffixes (`id`, `key`, `code`, `number`, `pk`, `fk`, etc.).
+  - Scoring: exact match=100, both key-suffix=80, substring=50, common prefix ≥3 chars=25. Threshold: score ≥ 50.
+  - Creates `inferred_key_` prefixed relationships (manyToOne).
+
+### Phase L — DAX Conversion Coverage Hardening
+
+- **`tests/test_phase_l_dax_coverage.py`** (NEW): 55 tests across 10 classes covering edge cases:
+  - Table calc compounds (INDEX/SIZE/FIRST/LAST in IF)
+  - Table calc edge cases (RANK_MODIFIED, RANK_PERCENTILE, RUNNING_SUM with compute_using, TOTAL COUNTD, LOOKUP offset 0)
+  - Window statistical functions (WINDOW_STDEVP, WINDOW_VARP, WINDOW_CORR, WINDOW_COVAR, WINDOW_COVARP)
+  - Date converter edge cases (DATEDIFF second/quarter, DATENAME hour, DATEPARSE US)
+  - String converter edge cases (STR expr, FLOAT nested, ENDSWITH/STARTSWITH, FIND 3-arg)
+  - LOD combos (ratio, EXCLUDE, INCLUDE MEDIAN, date literal)
+  - Operators & case insensitivity (lowercase functions, mixed case, all operators, deep nested IF)
+  - Spatial placeholders (BUFFER, AREA, INTERSECTION)
+  - Regexp smart patterns (REGEXP_MATCH, REGEXP_EXTRACT_NTH, REGEXP_REPLACE char class)
+  - Multiple functions in formula (SUM+COUNTD, AGG(IF)→AGGX, percent-of-total)
+
+### Phase M — Migration Metadata Enrichment
+
+- **`pbip_generator.py`**: Enriched `migration_metadata.json` with:
+  - `tmdl_stats.measures` — count of measures in generated TMDL files
+  - `tmdl_stats.columns` — count of columns in generated TMDL files
+  - `tmdl_stats.relationships` — count of relationships from `relationships.tmdl`
+  - `visual_type_mappings` — dict mapping worksheet name → Tableau mark type
+  - `approximations` — list of visuals using approximated type mappings with migration notes
+  - `generated_output.theme_detail` — applied/skipped status with reason
+
+### Stats
+- **1,777 tests passing** (55 new in Phase L)
+- All phases non-breaking (additive changes only)
+
+---
+
 ## v5.4.0 — Phases D-H: Visual Fidelity, Coverage, CI/CD, Config & Docs
 
 ### Phase D — Visual Fidelity

@@ -88,13 +88,17 @@ def extract_datasource(datasource_elem, twbx_path=None):
     # Build the connection_name -> connection_details mapping
     connection_map = _build_connection_map(datasource_elem, twbx_path=twbx_path)
     
+    calcs = extract_calculations(datasource_elem)
+    for c in calcs:
+        c['datasource_name'] = ds_name
+
     datasource = {
         'name': ds_name,
         'caption': ds_caption,
         'connection': extract_connection_details(datasource_elem),
         'connection_map': connection_map,
         'tables': extract_tables_with_columns(datasource_elem, connection_map),
-        'calculations': extract_calculations(datasource_elem),
+        'calculations': calcs,
         'columns': extract_column_metadata(datasource_elem),
         'relationships': extract_relationships(datasource_elem)
     }

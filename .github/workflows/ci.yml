@@ -213,6 +213,16 @@ jobs:
               sys.exit(1)
           "
 
+      - name: Validate batch mode
+        run: |
+          python migrate.py --batch examples/tableau_samples/ --output-dir /tmp/pbi_batch --quiet
+          BATCH_COUNT=$(find /tmp/pbi_batch -name "*.pbip" | wc -l)
+          echo "Batch mode produced $BATCH_COUNT .pbip projects"
+          if [ "$BATCH_COUNT" -lt 1 ]; then
+            echo "ERROR: Batch mode produced no output"
+            exit 1
+          fi
+
       - name: Upload validated projects
         uses: actions/upload-artifact@v4
         with:
