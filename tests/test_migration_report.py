@@ -298,5 +298,85 @@ class TestPrintSummary(unittest.TestCase):
         r.print_summary()  # Should not raise
 
 
+class TestTableMapping(unittest.TestCase):
+    """Tests for the source→target table mapping feature."""
+
+    def test_add_datasources_builds_table_mapping(self):
+        r = MigrationReport("T")
+        r.add_datasources([{
+            'name': 'DS1',
+            'caption': 'Sales Data',
+            'connection': {'class': 'sqlserver'},
+            'tables': [
+                {'name': 'Orders', 'columns': [{'name': 'id'}, {'name': 'total'}]},
+                {'name': 'Customers', 'columns': [{'name': 'cid'}]},
+            ],
+        }])
+        self.assertEqual(len(r.table_mapping), 2)
+        self.assertEqual(r.table_mapping[0]['source_datasource'], 'Sales Data')
+        self.assertEqual(r.table_mapping[0]['source_table'], 'Orders')
+        self.assertEqual(r.table_mapping[0]['target_table'], 'Orders')
+        self.assertEqual(r.table_mapping[0]['connection_type'], 'sqlserver')
+        self.assertEqual(r.table_mapping[0]['columns'], 2)
+        self.assertEqual(r.table_mapping[1]['source_table'], 'Customers')
+        self.assertEqual(r.table_mapping[1]['columns'], 1)
+
+    def test_add_datasources_uses_name_as_fallback(self):
+        """When no caption, source_datasource should fall back to name."""
+        r = MigrationReport("T")
+        r.add_datasources([{
+            'name': 'DS1',
+            'connection': {'class': 'x'},
+            'tables': [{'name': 'T1', 'columns': []}],
+        }])
+        self.assertEqual(r.table_mapping[0]['source_datasource'], 'DS1')
+
+    def test_add_datasources_skips_non_dict_tables(self):
+        """Backwards compat: tables as plain ints (old test fixtures)."""
+        r = MigrationReport("T")
+        r.add_datasources([{
+            'name': 'DS1',
+            'connection': {'class': 'x'},
+            'tables': [1, 2],
+        }])
+        self.assertEqual(len(r.table_mapping), 0)
+        self.assertEqual(len(r.items), 1)  # datasource item still added
+
+    def test_add_table_mapping_from_tmdl(self):
+        r = MigrationReport("T")
+        r.add_datasources([{
+            'name': 'DS1',
+            'connection': {'class': 'x'},
+            'tables': [
+                {'name': 'Orders', 'columns': [{'name': 'a'}]},
+                {'name': 'Removed', 'columns': [{'name': 'b'}]},
+            ],
+        }])
+        r.add_table_mapping_from_tmdl({'Orders'})
+        self.assertEqual(r.table_mapping[0]['target_table'], 'Orders')
+        self.assertEqual(r.table_mapping[1]['target_table'], '(deduplicated / merged)')
+
+    def test_table_mapping_in_to_dict(self):
+        r = MigrationReport("T")
+        r.add_datasources([{
+            'name': 'DS1',
+            'connection': {'class': 'x'},
+            'tables': [{'name': 'T1', 'columns': []}],
+        }])
+        d = r.to_dict()
+        self.assertIn('table_mapping', d)
+        self.assertEqual(len(d['table_mapping']), 1)
+        self.assertEqual(d['table_mapping'][0]['source_table'], 'T1')
+
+    def test_table_mapping_in_print_summary(self):
+        r = MigrationReport("T")
+        r.add_datasources([{
+            'name': 'DS1',
+            'connection': {'class': 'x'},
+            'tables': [{'name': 'T1', 'columns': [{'name': 'c1'}]}],
+        }])
+        r.print_summary()  # Should not raise
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -21,6 +21,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from tableau_export.server_client import TableauServerClient
 
+import argparse
+
 
 class TestTableauServerClientInit(unittest.TestCase):
     """Test client initialization and configuration."""
@@ -340,7 +342,6 @@ class TestCLIServerFlags(unittest.TestCase):
     """Test that --server CLI arguments are registered."""
 
     def test_server_arguments(self):
-        import argparse
         parser = argparse.ArgumentParser()
         parser.add_argument('tableau_file', nargs='?')
         parser.add_argument('--server', default=None)
@@ -364,7 +365,6 @@ class TestCLIServerFlags(unittest.TestCase):
         self.assertEqual(args.token_secret, 'sec1')
 
     def test_server_batch_flag(self):
-        import argparse
         parser = argparse.ArgumentParser()
         parser.add_argument('--server', default=None)
         parser.add_argument('--server-batch', default=None)

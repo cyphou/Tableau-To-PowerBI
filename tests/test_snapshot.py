@@ -25,6 +25,10 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'powerbi_import
 
 from tests.conftest import SAMPLE_DATASOURCE, SAMPLE_EXTRACTED, make_temp_dir, cleanup_dir
 
+from m_query_builder import generate_power_query_m
+from dax_converter import convert_tableau_formula_to_dax
+from tmdl_generator import generate_tmdl
+
 
 SNAPSHOTS_DIR = os.path.join(os.path.dirname(__file__), 'snapshots')
 UPDATE_SNAPSHOTS = os.environ.get('UPDATE_SNAPSHOTS', '').lower() in ('1', 'true', 'yes')
@@ -93,7 +97,6 @@ class TestMQuerySnapshots(SnapshotTestCase):
     """Snapshot tests for Power Query M generation."""
 
     def test_sql_server_m_query(self):
-        from m_query_builder import generate_power_query_m
         conn = {'type': 'SQL Server', 'details': {'server': 'localhost', 'database': 'TestDB'}}
         table = {'name': 'Orders', 'columns': [
             {'name': 'OrderID', 'datatype': 'integer'},
@@ -104,7 +107,6 @@ class TestMQuerySnapshots(SnapshotTestCase):
         self.assertMatchesSnapshot(result, 'sql_server_m_query.txt')
 
     def test_postgresql_m_query(self):
-        from m_query_builder import generate_power_query_m
         conn = {'type': 'PostgreSQL', 'details': {
             'server': 'db.example.com', 'port': '5432', 'database': 'analytics'
         }}
@@ -117,7 +119,6 @@ class TestMQuerySnapshots(SnapshotTestCase):
         self.assertMatchesSnapshot(result, 'postgresql_m_query.txt')
 
     def test_csv_m_query(self):
-        from m_query_builder import generate_power_query_m
         conn = {'type': 'CSV', 'details': {'filename': 'data.csv', 'delimiter': ','}}
         table = {'name': 'data', 'columns': [
             {'name': 'id', 'datatype': 'integer'},
@@ -128,7 +129,6 @@ class TestMQuerySnapshots(SnapshotTestCase):
         self.assertMatchesSnapshot(result, 'csv_m_query.txt')
 
     def test_bigquery_m_query(self):
-        from m_query_builder import generate_power_query_m
         conn = {'type': 'BigQuery', 'details': {'project': 'my-project', 'dataset': 'analytics'}}
         table = {'name': 'users', 'columns': [
             {'name': 'user_id', 'datatype': 'integer'},
@@ -138,7 +138,6 @@ class TestMQuerySnapshots(SnapshotTestCase):
         self.assertMatchesSnapshot(result, 'bigquery_m_query.txt')
 
     def test_snowflake_m_query(self):
-        from m_query_builder import generate_power_query_m
         conn = {'type': 'Snowflake', 'details': {
             'server': 'org.snowflakecomputing.com',
             'database': 'ANALYTICS', 'warehouse': 'WH_PROD', 'schema': 'PUBLIC'
@@ -155,17 +154,14 @@ class TestDAXSnapshots(SnapshotTestCase):
     """Snapshot tests for DAX conversion output stability."""
 
     def test_fixed_lod_snapshot(self):
-        from dax_converter import convert_tableau_formula_to_dax
         result = convert_tableau_formula_to_dax('{FIXED [Customer] : SUM([Sales])}')
         self.assertMatchesSnapshot(result, 'dax_fixed_lod.txt')
 
     def test_running_sum_snapshot(self):
-        from dax_converter import convert_tableau_formula_to_dax
         result = convert_tableau_formula_to_dax('RUNNING_SUM(SUM([Sales]))')
         self.assertMatchesSnapshot(result, 'dax_running_sum.txt')
 
     def test_complex_if_snapshot(self):
-        from dax_converter import convert_tableau_formula_to_dax
         formula = (
             'IF [Status] = "Active" THEN SUM([Amount]) '
             'ELSEIF [Status] = "Pending" THEN SUM([Amount]) * 0.5 '
@@ -175,12 +171,10 @@ class TestDAXSnapshots(SnapshotTestCase):
         self.assertMatchesSnapshot(result, 'dax_complex_if.txt')
 
     def test_countd_snapshot(self):
-        from dax_converter import convert_tableau_formula_to_dax
         result = convert_tableau_formula_to_dax('COUNTD([CustomerID])')
         self.assertMatchesSnapshot(result, 'dax_countd.txt')
 
     def test_datetrunc_snapshot(self):
-        from dax_converter import convert_tableau_formula_to_dax
         result = convert_tableau_formula_to_dax('DATETRUNC("month", [OrderDate])')
         self.assertMatchesSnapshot(result, 'dax_datetrunc.txt')
 
@@ -189,7 +183,6 @@ class TestTmdlFileSnapshots(SnapshotTestCase):
     """Snapshot tests for TMDL file generation."""
 
     def test_simple_model_tmdl(self):
-        from tmdl_generator import generate_tmdl
         temp_dir = make_temp_dir()
         try:
             ds = copy.deepcopy(SAMPLE_DATASOURCE)
@@ -205,7 +198,6 @@ class TestTmdlFileSnapshots(SnapshotTestCase):
             cleanup_dir(temp_dir)
 
     def test_database_tmdl(self):
-        from tmdl_generator import generate_tmdl
         temp_dir = make_temp_dir()
         try:
             ds = copy.deepcopy(SAMPLE_DATASOURCE)

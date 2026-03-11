@@ -19,6 +19,11 @@ import importlib
 import copy
 import re
 
+from tableau_export.dax_converter import convert_tableau_formula_to_dax
+from tableau_export.m_query_builder import generate_power_query_m
+from powerbi_import.validator import ArtifactValidator
+import os
+
 
 class TestMutationSmoke(unittest.TestCase):
     """Lightweight mutation smoke tests — verify critical assertions exist.
@@ -36,20 +41,17 @@ class TestMutationSmoke(unittest.TestCase):
 
     def test_dax_sum_mutation_caught(self):
         """If SUM were mutated to AVG, tests would catch it."""
-        from tableau_export.dax_converter import convert_tableau_formula_to_dax
         result = convert_tableau_formula_to_dax('SUM([Sales])', table_name='T')
         self.assertIn('SUM', result)
         self.assertNotIn('AVG', result)
 
     def test_dax_countd_mutation_caught(self):
         """COUNTD → DISTINCTCOUNT is correctly converted (not silently dropped)."""
-        from tableau_export.dax_converter import convert_tableau_formula_to_dax
         result = convert_tableau_formula_to_dax('COUNTD([ID])', table_name='T')
         self.assertIn('DISTINCTCOUNT', result)
 
     def test_dax_if_structure_mutation_caught(self):
         """IF/THEN/ELSE structure conversion is preserved."""
-        from tableau_export.dax_converter import convert_tableau_formula_to_dax
         result = convert_tableau_formula_to_dax(
             'IF [X] > 0 THEN "yes" ELSE "no" END', table_name='T'
         )
@@ -59,7 +61,6 @@ class TestMutationSmoke(unittest.TestCase):
 
     def test_dax_operator_mutation_caught(self):
         """Operator conversion (== → =, != → <>) is validated."""
-        from tableau_export.dax_converter import convert_tableau_formula_to_dax
         result_eq = convert_tableau_formula_to_dax('[X] == 1', table_name='T')
         # Should not contain ==
         self.assertNotIn('==', result_eq)
@@ -74,7 +75,6 @@ class TestMutationSmoke(unittest.TestCase):
 
     def test_m_query_sql_server_mutation_caught(self):
         """SQL Server M query contains Sql.Database (not mutated away)."""
-        from tableau_export.m_query_builder import generate_power_query_m
         conn = {'type': 'SQL Server', 'details': {
             'server': 'host', 'database': 'db'}}
         result = generate_power_query_m(conn, {'name': 'T'})
@@ -87,7 +87,6 @@ class TestMutationSmoke(unittest.TestCase):
 
     def test_validator_paren_check_mutation_caught(self):
         """Unbalanced parenthesis detection works correctly."""
-        from powerbi_import.validator import ArtifactValidator
         issues = ArtifactValidator.validate_dax_formula('SUM((([X])')
         self.assertTrue(any('parenthesis' in i.lower() for i in issues))
 
@@ -103,7 +102,6 @@ class TestMutationSmoke(unittest.TestCase):
 
     def test_mutmut_config_exists(self):
         """setup.cfg contains [mutmut] configuration."""
-        import os
         cfg_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
                                 'setup.cfg')
         self.assertTrue(os.path.exists(cfg_path))

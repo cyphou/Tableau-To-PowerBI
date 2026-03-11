@@ -23,6 +23,13 @@ from powerbi_import.deploy.pbi_client import PBIServiceClient
 from powerbi_import.deploy.pbix_packager import PBIXPackager
 from powerbi_import.deploy.pbi_deployer import PBIWorkspaceDeployer, DeploymentResult
 
+import io
+import argparse
+from powerbi_import.deploy import PBIServiceClient
+from powerbi_import.deploy import PBIXPackager
+from powerbi_import.deploy import PBIWorkspaceDeployer
+from powerbi_import.deploy import DeploymentResult
+
 
 # ── DeploymentResult ──────────────────────────────────────────
 
@@ -232,7 +239,6 @@ class TestPBIXPackager(unittest.TestCase):
 
     def test_package_to_bytes_is_valid_zip(self):
         """Bytes output is a valid ZIP."""
-        import io
         with tempfile.TemporaryDirectory() as td:
             proj = self._make_pbip_project(td, 'ZipCheck')
             data = PBIXPackager().package_to_bytes(proj)
@@ -268,26 +274,30 @@ class TestPBIWorkspaceDeployer(unittest.TestCase):
         client.get_refresh_history.return_value = []
         return client
 
+    @staticmethod
+    def _make_deploy_project(td, name):
+        """Create a minimal .pbip project structure for deployment tests."""
+        proj = os.path.join(td, name)
+        os.makedirs(proj)
+        with open(os.path.join(proj, f'{name}.pbip'), 'w') as f:
+            json.dump({}, f)
+        rd = os.path.join(proj, f'{name}.Report')
+        os.makedirs(rd)
+        with open(os.path.join(rd, 'report.json'), 'w') as f:
+            json.dump({}, f)
+        sd = os.path.join(proj, f'{name}.SemanticModel')
+        os.makedirs(sd)
+        with open(os.path.join(sd, 'model.tmdl'), 'w') as f:
+            f.write('model\n')
+        return proj
+
     def test_deploy_project_success(self):
         """Successful deployment returns succeeded result."""
         client = self._make_mock_client()
         deployer = PBIWorkspaceDeployer(workspace_id='ws-1', client=client)
 
         with tempfile.TemporaryDirectory() as td:
-            # Create minimal project
-            proj = os.path.join(td, 'Sales')
-            os.makedirs(proj)
-            with open(os.path.join(proj, 'Sales.pbip'), 'w') as f:
-                json.dump({}, f)
-            report_dir = os.path.join(proj, 'Sales.Report')
-            os.makedirs(report_dir)
-            with open(os.path.join(report_dir, 'report.json'), 'w') as f:
-                json.dump({}, f)
-            sm_dir = os.path.join(proj, 'Sales.SemanticModel')
-            os.makedirs(sm_dir)
-            with open(os.path.join(sm_dir, 'model.tmdl'), 'w') as f:
-                f.write('model\n')
-
+            proj = self._make_deploy_project(td, 'Sales')
             result = deployer.deploy_project(proj, max_wait_seconds=5, poll_interval=0)
 
         self.assertEqual(result.status, 'succeeded')
@@ -304,19 +314,7 @@ class TestPBIWorkspaceDeployer(unittest.TestCase):
         deployer = PBIWorkspaceDeployer(workspace_id='ws-1', client=client)
 
         with tempfile.TemporaryDirectory() as td:
-            proj = os.path.join(td, 'Bad')
-            os.makedirs(proj)
-            with open(os.path.join(proj, 'Bad.pbip'), 'w') as f:
-                json.dump({}, f)
-            rd = os.path.join(proj, 'Bad.Report')
-            os.makedirs(rd)
-            with open(os.path.join(rd, 'report.json'), 'w') as f:
-                json.dump({}, f)
-            sd = os.path.join(proj, 'Bad.SemanticModel')
-            os.makedirs(sd)
-            with open(os.path.join(sd, 'model.tmdl'), 'w') as f:
-                f.write('model\n')
-
+            proj = self._make_deploy_project(td, 'Bad')
             result = deployer.deploy_project(proj, max_wait_seconds=5, poll_interval=0)
 
         self.assertEqual(result.status, 'failed')
@@ -329,19 +327,7 @@ class TestPBIWorkspaceDeployer(unittest.TestCase):
         deployer = PBIWorkspaceDeployer(workspace_id='ws-1', client=client)
 
         with tempfile.TemporaryDirectory() as td:
-            proj = os.path.join(td, 'Net')
-            os.makedirs(proj)
-            with open(os.path.join(proj, 'Net.pbip'), 'w') as f:
-                json.dump({}, f)
-            rd = os.path.join(proj, 'Net.Report')
-            os.makedirs(rd)
-            with open(os.path.join(rd, 'report.json'), 'w') as f:
-                json.dump({}, f)
-            sd = os.path.join(proj, 'Net.SemanticModel')
-            os.makedirs(sd)
-            with open(os.path.join(sd, 'model.tmdl'), 'w') as f:
-                f.write('model\n')
-
+            proj = self._make_deploy_project(td, 'Net')
             result = deployer.deploy_project(proj, max_wait_seconds=5, poll_interval=0)
 
         self.assertEqual(result.status, 'failed')
@@ -354,19 +340,7 @@ class TestPBIWorkspaceDeployer(unittest.TestCase):
         deployer = PBIWorkspaceDeployer(workspace_id='ws-1', client=client)
 
         with tempfile.TemporaryDirectory() as td:
-            proj = os.path.join(td, 'Slow')
-            os.makedirs(proj)
-            with open(os.path.join(proj, 'Slow.pbip'), 'w') as f:
-                json.dump({}, f)
-            rd = os.path.join(proj, 'Slow.Report')
-            os.makedirs(rd)
-            with open(os.path.join(rd, 'report.json'), 'w') as f:
-                json.dump({}, f)
-            sd = os.path.join(proj, 'Slow.SemanticModel')
-            os.makedirs(sd)
-            with open(os.path.join(sd, 'model.tmdl'), 'w') as f:
-                f.write('model\n')
-
+            proj = self._make_deploy_project(td, 'Slow')
             result = deployer.deploy_project(
                 proj, max_wait_seconds=0, poll_interval=0,
             )
@@ -380,19 +354,7 @@ class TestPBIWorkspaceDeployer(unittest.TestCase):
         deployer = PBIWorkspaceDeployer(workspace_id='ws-1', client=client)
 
         with tempfile.TemporaryDirectory() as td:
-            proj = os.path.join(td, 'Ref')
-            os.makedirs(proj)
-            with open(os.path.join(proj, 'Ref.pbip'), 'w') as f:
-                json.dump({}, f)
-            rd = os.path.join(proj, 'Ref.Report')
-            os.makedirs(rd)
-            with open(os.path.join(rd, 'report.json'), 'w') as f:
-                json.dump({}, f)
-            sd = os.path.join(proj, 'Ref.SemanticModel')
-            os.makedirs(sd)
-            with open(os.path.join(sd, 'model.tmdl'), 'w') as f:
-                f.write('model\n')
-
+            proj = self._make_deploy_project(td, 'Ref')
             result = deployer.deploy_project(
                 proj, refresh=True, max_wait_seconds=5, poll_interval=0,
             )
@@ -432,7 +394,6 @@ class TestCLIDeployFlag(unittest.TestCase):
 
     def test_deploy_argument_recognized(self):
         """argparse accepts --deploy WORKSPACE_ID."""
-        import argparse
         # Import migrate module to get the parser
         # We'll just verify the arg is parseable
         parser = argparse.ArgumentParser()
@@ -444,7 +405,6 @@ class TestCLIDeployFlag(unittest.TestCase):
         self.assertFalse(args.deploy_refresh)
 
     def test_deploy_refresh_flag(self):
-        import argparse
         parser = argparse.ArgumentParser()
         parser.add_argument('tableau_file', nargs='?')
         parser.add_argument('--deploy', default=None)
@@ -459,19 +419,15 @@ class TestDeployExports(unittest.TestCase):
     """Verify deploy subpackage exports."""
 
     def test_import_pbi_client(self):
-        from powerbi_import.deploy import PBIServiceClient
         self.assertTrue(callable(PBIServiceClient))
 
     def test_import_pbix_packager(self):
-        from powerbi_import.deploy import PBIXPackager
         self.assertTrue(callable(PBIXPackager))
 
     def test_import_pbi_deployer(self):
-        from powerbi_import.deploy import PBIWorkspaceDeployer
         self.assertTrue(callable(PBIWorkspaceDeployer))
 
     def test_import_deployment_result(self):
-        from powerbi_import.deploy import DeploymentResult
         self.assertTrue(callable(DeploymentResult))
 
 

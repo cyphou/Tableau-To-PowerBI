@@ -19,6 +19,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'powerbi_import
 
 from tests.conftest import SAMPLE_DATASOURCE, SAMPLE_EXTRACTED, make_temp_dir, cleanup_dir
 
+from dax_converter import convert_tableau_formula_to_dax
+from m_query_builder import generate_power_query_m
+from m_query_builder import generate_power_query_m, inject_m_steps
+from m_query_builder import m_transform_rename, m_transform_filter_values
+from tmdl_generator import generate_tmdl
+from visual_generator import generate_visual_containers
+
 
 # ── Performance thresholds (seconds) ─────────────────────────────────
 # These are generous limits — real execution should be much faster.
@@ -37,7 +44,6 @@ class TestDaxConverterPerformance(unittest.TestCase):
     """Performance benchmarks for DAX conversion."""
 
     def test_single_conversion_speed(self):
-        from dax_converter import convert_tableau_formula_to_dax
         start = time.perf_counter()
         convert_tableau_formula_to_dax('SUM([Sales])')
         elapsed = time.perf_counter() - start
@@ -45,7 +51,6 @@ class TestDaxConverterPerformance(unittest.TestCase):
                         f"Single DAX conversion took {elapsed:.4f}s (threshold: {THRESHOLD_DAX_SINGLE}s)")
 
     def test_batch_100_formulas(self):
-        from dax_converter import convert_tableau_formula_to_dax
         formulas = [
             'SUM([Amount])',
             'IF [Status] = "Active" THEN 1 ELSE 0 END',
@@ -67,7 +72,6 @@ class TestDaxConverterPerformance(unittest.TestCase):
                         f"100 DAX conversions took {elapsed:.4f}s (threshold: {THRESHOLD_DAX_BATCH_100}s)")
 
     def test_complex_nested_formula(self):
-        from dax_converter import convert_tableau_formula_to_dax
         complex_formula = (
             'IF {FIXED [Customer] : SUM([Sales])} > 1000 '
             'THEN "High" '
@@ -86,7 +90,6 @@ class TestMQueryPerformance(unittest.TestCase):
     """Performance benchmarks for M query generation."""
 
     def test_single_query_speed(self):
-        from m_query_builder import generate_power_query_m
         conn = {'type': 'SQL Server', 'details': {'server': 'localhost', 'database': 'test'}}
         table = {'name': 'T1', 'columns': [{'name': 'id', 'datatype': 'integer'}]}
         start = time.perf_counter()
@@ -95,7 +98,6 @@ class TestMQueryPerformance(unittest.TestCase):
         self.assertLess(elapsed, THRESHOLD_M_QUERY_SINGLE)
 
     def test_batch_100_queries(self):
-        from m_query_builder import generate_power_query_m
         connectors = [
             ('SQL Server', {'server': 'srv', 'database': 'db'}),
             ('PostgreSQL', {'server': 'srv', 'port': '5432', 'database': 'db'}),
@@ -113,8 +115,6 @@ class TestMQueryPerformance(unittest.TestCase):
         self.assertLess(elapsed, THRESHOLD_M_QUERY_BATCH_100)
 
     def test_inject_steps_performance(self):
-        from m_query_builder import generate_power_query_m, inject_m_steps
-        from m_query_builder import m_transform_rename, m_transform_filter_values
         conn = {'type': 'CSV', 'details': {'filename': 'f.csv', 'delimiter': ','}}
         cols = [{'name': f'col{i}', 'datatype': 'string'} for i in range(10)]
         m_query = generate_power_query_m(conn, {'name': 'T1', 'columns': cols})
@@ -150,7 +150,6 @@ class TestTmdlPerformance(unittest.TestCase):
         }
 
     def test_small_model_generation(self):
-        from tmdl_generator import generate_tmdl
         temp_dir = make_temp_dir()
         try:
             ds = self._make_datasource(n_tables=3, n_cols=5)
@@ -163,7 +162,6 @@ class TestTmdlPerformance(unittest.TestCase):
             cleanup_dir(temp_dir)
 
     def test_large_model_generation(self):
-        from tmdl_generator import generate_tmdl
         temp_dir = make_temp_dir()
         try:
             ds = self._make_datasource(n_tables=50, n_cols=15)
@@ -180,7 +178,6 @@ class TestVisualPerformance(unittest.TestCase):
     """Performance benchmarks for visual container generation."""
 
     def test_batch_20_visuals(self):
-        from visual_generator import generate_visual_containers
         worksheets = [
             {
                 'name': f'Sheet {i}',

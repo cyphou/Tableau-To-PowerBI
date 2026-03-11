@@ -22,6 +22,10 @@ from tableau_export.prep_flow_parser import _PREP_AGG_MAP, _PREP_JOIN_MAP
 from powerbi_import.visual_generator import create_filters_config
 from powerbi_import.assessment import run_assessment, _check_migration_scope
 
+from powerbi_import.assessment import _PARTIAL_FUNCTIONS
+import powerbi_import.pbip_generator as pg
+import logging
+
 
 # ════════════════════════════════════════════════════════════════════
 #  Sprint 9: DAX Conversion Accuracy
@@ -347,21 +351,17 @@ class TestAssessmentPartialFunctions(unittest.TestCase):
     """WINDOW_CORR/COVAR/COVARP removed from partial functions (now fully converted)."""
 
     def test_window_corr_not_partial(self):
-        from powerbi_import.assessment import _PARTIAL_FUNCTIONS
         # WINDOW_CORR should NOT match _PARTIAL_FUNCTIONS anymore
         self.assertIsNone(_PARTIAL_FUNCTIONS.search('WINDOW_CORR('))
 
     def test_window_covar_not_partial(self):
-        from powerbi_import.assessment import _PARTIAL_FUNCTIONS
         self.assertIsNone(_PARTIAL_FUNCTIONS.search('WINDOW_COVAR('))
 
     def test_index_not_partial(self):
         """INDEX is now properly converted, should not be in partial list."""
-        from powerbi_import.assessment import _PARTIAL_FUNCTIONS
         self.assertIsNone(_PARTIAL_FUNCTIONS.search('INDEX('))
 
     def test_regexp_extract_nth_still_partial(self):
-        from powerbi_import.assessment import _PARTIAL_FUNCTIONS
         self.assertIsNotNone(_PARTIAL_FUNCTIONS.search('REGEXP_EXTRACT_NTH('))
 
 
@@ -373,12 +373,9 @@ class TestPbipGeneratorLogging(unittest.TestCase):
     """Verify pbip_generator has logging configured."""
 
     def test_logger_exists(self):
-        import powerbi_import.pbip_generator as pg
         self.assertTrue(hasattr(pg, 'logger'))
 
     def test_logger_is_logger(self):
-        import logging
-        import powerbi_import.pbip_generator as pg
         self.assertIsInstance(pg.logger, logging.Logger)
 
 

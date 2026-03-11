@@ -40,14 +40,23 @@ sys.path.insert(0, os.path.join(ROOT, 'powerbi_import'))
 from extract_tableau_data import TableauExtractor
 from pbip_generator import PowerBIProjectGenerator
 
+import re
+from dax_converter import convert_tableau_formula_to_dax
+from tmdl_generator import _add_date_table
+
 
 # ═══════════════════════════════════════════════════════════════════
 # Helpers
 # ═══════════════════════════════════════════════════════════════════
 
+# Track temp dirs for cleanup (prevents leaks from _make_generator/_make_extractor)
+_TEMP_DIRS = []
+
+
 def _make_extractor(xml_string=None):
     """Create a TableauExtractor with a temp dir."""
     tmpdir = tempfile.mkdtemp()
+    _TEMP_DIRS.append(tmpdir)
     tmpfile = os.path.join(tmpdir, 'test.twb')
     if xml_string:
         with open(tmpfile, 'w', encoding='utf-8') as f:
@@ -61,8 +70,10 @@ def _make_extractor(xml_string=None):
 
 def _make_generator():
     """Create a PowerBIProjectGenerator with temp dirs."""
+    output_dir = tempfile.mkdtemp()
+    _TEMP_DIRS.append(output_dir)
     return PowerBIProjectGenerator(
-        output_dir=tempfile.mkdtemp()
+        output_dir=output_dir
     )
 
 
@@ -71,6 +82,13 @@ def _cleanup(tmpdir):
         shutil.rmtree(tmpdir)
     except Exception:
         pass
+
+
+def teardown_module():
+    """Clean up all tracked temp dirs at module exit."""
+    for d in _TEMP_DIRS:
+        _cleanup(d)
+    _TEMP_DIRS.clear()
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -904,7 +922,6 @@ class TestQuickTableCalcDetection(unittest.TestCase):
             </worksheet>
             ''')
             # Simulate field extraction logic
-            import re
             field_name = 'pcto:sum:Sales'
             table_calc_re = re.compile(r'^(pcto|pctd|diff|running_sum|running_avg|running_count|running_min|running_max|rank|rank_unique|rank_dense)(?::(\w+))?:')
             m = table_calc_re.match(field_name)
@@ -915,7 +932,6 @@ class TestQuickTableCalcDetection(unittest.TestCase):
             _cleanup(tmpdir)
 
     def test_rank_detection(self):
-        import re
         field_name = 'rank:sum:Profit'
         table_calc_re = re.compile(r'^(pcto|pctd|diff|running_sum|running_avg|running_count|running_min|running_max|rank|rank_unique|rank_dense)(?::(\w+))?:')
         m = table_calc_re.match(field_name)
@@ -923,7 +939,6 @@ class TestQuickTableCalcDetection(unittest.TestCase):
         self.assertEqual(m.group(1), 'rank')
 
     def test_running_sum_detection(self):
-        import re
         field_name = 'running_sum:sum:Revenue'
         table_calc_re = re.compile(r'^(pcto|pctd|diff|running_sum|running_avg|running_count|running_min|running_max|rank|rank_unique|rank_dense)(?::(\w+))?:')
         m = table_calc_re.match(field_name)
@@ -939,7 +954,6 @@ class TestTableCalcAddressing(unittest.TestCase):
     """Test that partition_fields → ALLEXCEPT in DAX converter."""
 
     def test_allexcept_with_partition(self):
-        from dax_converter import convert_tableau_formula_to_dax
         result = convert_tableau_formula_to_dax(
             'WINDOW_SUM(SUM([Sales]))',
             column_table_map={'Sales': 'Orders'},
@@ -950,7 +964,6 @@ class TestTableCalcAddressing(unittest.TestCase):
         self.assertIn('Region', result)
 
     def test_no_partition_uses_all(self):
-        from dax_converter import convert_tableau_formula_to_dax
         result = convert_tableau_formula_to_dax(
             'WINDOW_SUM(SUM([Sales]))',
             column_table_map={'Sales': 'Orders'}
@@ -968,7 +981,6 @@ class TestDateHierarchy(unittest.TestCase):
     """Test that Calendar table gets a Date Hierarchy."""
 
     def test_calendar_has_hierarchy(self):
-        from tmdl_generator import _add_date_table
 
         # Create a minimal model dict matching the structure _add_date_table expects
         model = {'model': {'tables': [

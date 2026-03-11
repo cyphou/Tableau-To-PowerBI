@@ -1,5 +1,5 @@
-"""
-Tests for Phase C — DAX & M Conversion Hardening (v5.3.0).
+﻿"""
+Tests for Phase C â€” DAX & M Conversion Hardening (v5.3.0).
 
 Tests cover:
 - WINDOW_CORR/COVAR/COVARP dedicated converters (replacing naive prefix swap)
@@ -17,11 +17,18 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'tableau_export
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from dax_converter import convert_tableau_formula_to_dax
+from m_query_builder import (
+    m_transform_remove_errors,
+    m_transform_replace_errors,
+    m_transform_try_otherwise,
+    wrap_source_with_try_otherwise,
+    inject_m_steps,
+)
 
 
-# ═══════════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 # WINDOW_CORR / WINDOW_COVAR / WINDOW_COVARP
-# ═══════════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class TestWindowCorrelationCovariance(unittest.TestCase):
     """Test WINDOW_CORR/COVAR/COVARP produce valid VAR/SUMX DAX (not fake CORREL)."""
@@ -113,9 +120,9 @@ class TestWindowCorrelationCovariance(unittest.TestCase):
         self.assertIn('CALCULATE(', result)
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# CORR / COVAR / COVARP — table_name parameter
-# ═══════════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# CORR / COVAR / COVARP â€” table_name parameter
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class TestCorrCovarTableName(unittest.TestCase):
     """Test that CORR/COVAR/COVARP use the correct table name (not hardcoded 'Table')."""
@@ -153,15 +160,15 @@ class TestCorrCovarTableName(unittest.TestCase):
         self.assertIn("Customer''s Orders", result)
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# REGEXP_EXTRACT_NTH — dedicated converter
-# ═══════════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# REGEXP_EXTRACT_NTH â€” dedicated converter
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class TestRegexpExtractNth(unittest.TestCase):
     """Test REGEXP_EXTRACT_NTH uses proper argument parsing (not broken MID prefix)."""
 
     def test_delimiter_based_extraction(self):
-        """REGEXP_EXTRACT_NTH with delimiter pattern → PATHITEM(SUBSTITUTE(...))."""
+        """REGEXP_EXTRACT_NTH with delimiter pattern â†’ PATHITEM(SUBSTITUTE(...))."""
         result = convert_tableau_formula_to_dax(
             'REGEXP_EXTRACT_NTH([FullName], "([^-]*)", 2)',
             table_name='People'
@@ -192,7 +199,7 @@ class TestRegexpExtractNth(unittest.TestCase):
         self.assertIn('PATHITEM(', result)
 
     def test_fixed_prefix_capture(self):
-        """Pattern like 'prefix(.*)' → MID extraction."""
+        """Pattern like 'prefix(.*)' â†’ MID extraction."""
         result = convert_tableau_formula_to_dax(
             'REGEXP_EXTRACT_NTH([URL], "https://(.*)", 1)',
             table_name='T'
@@ -201,7 +208,7 @@ class TestRegexpExtractNth(unittest.TestCase):
         self.assertIn('SEARCH("https://"', result)
 
     def test_alternation_capture(self):
-        """Pattern like '(cat|dog|fish)' → IF chain with CONTAINSSTRING."""
+        """Pattern like '(cat|dog|fish)' â†’ IF chain with CONTAINSSTRING."""
         result = convert_tableau_formula_to_dax(
             'REGEXP_EXTRACT_NTH([Animal], "(cat|dog|fish)", 1)',
             table_name='Animals'
@@ -226,7 +233,7 @@ class TestRegexpExtractNth(unittest.TestCase):
             'REGEXP_EXTRACT_NTH([Name], "([^ ]*)")',
             table_name='T'
         )
-        # Should not error — should produce some output
+        # Should not error â€” should produce some output
         self.assertFalse(result.startswith('REGEXP_EXTRACT_NTH'))
 
     def test_one_arg_fallback(self):
@@ -238,9 +245,9 @@ class TestRegexpExtractNth(unittest.TestCase):
         self.assertIn('insufficient arguments', result)
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# Nested LOD — parenthesis depth in colon-split
-# ═══════════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# Nested LOD â€” parenthesis depth in colon-split
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class TestNestedLODEdgeCases(unittest.TestCase):
     """Test LOD conversion handles colons inside function calls and nested LODs."""
@@ -267,7 +274,7 @@ class TestNestedLODEdgeCases(unittest.TestCase):
             column_table_map={'Region': 'Orders', 'State': 'Orders', 'Sales': 'Orders'}
         )
         self.assertIn('CALCULATE(', result)
-        # Should not contain raw braces — both LODs converted
+        # Should not contain raw braces â€” both LODs converted
         self.assertNotIn('{FIXED', result)
         self.assertNotIn('{', result.replace('CALCULATE(', ''))
 
@@ -283,7 +290,7 @@ class TestNestedLODEdgeCases(unittest.TestCase):
         self.assertNotIn('{INCLUDE', result)
 
     def test_lod_with_datediff_containing_colon_arg(self):
-        """LOD with DATEDIFF inside — colons in date expressions should not split."""
+        """LOD with DATEDIFF inside â€” colons in date expressions should not split."""
         # DATEDIFF contains string arg "day" separated by comma not colon,
         # but verify the overall LOD conversion works with complex inner expressions.
         result = convert_tableau_formula_to_dax(
@@ -314,55 +321,41 @@ class TestNestedLODEdgeCases(unittest.TestCase):
         self.assertIn('REMOVEFILTERS(', result)
 
 
-# ═══════════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 # M Query Error Handling
-# ═══════════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class TestMQueryErrorHandling(unittest.TestCase):
     """Test M query error handling utility functions."""
 
-    def setUp(self):
-        from m_query_builder import (
-            m_transform_remove_errors,
-            m_transform_replace_errors,
-            m_transform_try_otherwise,
-            wrap_source_with_try_otherwise,
-            inject_m_steps,
-        )
-        self.m_transform_remove_errors = m_transform_remove_errors
-        self.m_transform_replace_errors = m_transform_replace_errors
-        self.m_transform_try_otherwise = m_transform_try_otherwise
-        self.wrap_source_with_try_otherwise = wrap_source_with_try_otherwise
-        self.inject_m_steps = inject_m_steps
-
     def test_remove_errors_all_columns(self):
         """m_transform_remove_errors() without columns removes all row errors."""
-        name, expr = self.m_transform_remove_errors()
+        name, expr = m_transform_remove_errors()
         self.assertEqual(name, '#"Removed Errors"')
         self.assertIn('Table.RemoveRowsWithErrors({prev})', expr)
 
     def test_remove_errors_specific_columns(self):
         """m_transform_remove_errors() with columns filters specific columns."""
-        name, expr = self.m_transform_remove_errors(['Sales', 'Profit'])
+        name, expr = m_transform_remove_errors(['Sales', 'Profit'])
         self.assertIn('"Sales"', expr)
         self.assertIn('"Profit"', expr)
         self.assertIn('Table.RemoveRowsWithErrors', expr)
 
     def test_replace_errors_default_null(self):
         """m_transform_replace_errors() defaults to null replacement."""
-        name, expr = self.m_transform_replace_errors(['Price'])
+        name, expr = m_transform_replace_errors(['Price'])
         self.assertIn('Table.ReplaceErrorValues', expr)
         self.assertIn('"Price"', expr)
         self.assertIn('null', expr)
 
     def test_replace_errors_custom_value(self):
         """m_transform_replace_errors() with custom replacement value."""
-        name, expr = self.m_transform_replace_errors(['Amount'], replacement='0')
+        name, expr = m_transform_replace_errors(['Amount'], replacement='0')
         self.assertIn('each 0', expr)
 
     def test_try_otherwise(self):
         """m_transform_try_otherwise wraps expression in try...otherwise."""
-        name, expr = self.m_transform_try_otherwise(
+        name, expr = m_transform_try_otherwise(
             '#"Safe Source"',
             'Sql.Database("server", "db")',
             '#table({}, {})'
@@ -381,10 +374,10 @@ class TestMQueryErrorHandling(unittest.TestCase):
 in
     #"Changed Types"'''
         steps = [
-            self.m_transform_remove_errors(),
-            self.m_transform_replace_errors(['Sales'], replacement='0'),
+            m_transform_remove_errors(),
+            m_transform_replace_errors(['Sales'], replacement='0'),
         ]
-        result = self.inject_m_steps(m_query, steps)
+        result = inject_m_steps(m_query, steps)
         self.assertIn('#"Removed Errors"', result)
         self.assertIn('#"Replaced Errors"', result)
         self.assertIn('Table.RemoveRowsWithErrors', result)
@@ -397,7 +390,7 @@ in
     #"Nav" = Source{[Schema="dbo", Item="Orders"]}[Data]
 in
     #"Nav"'''
-        result = self.wrap_source_with_try_otherwise(m_query, ['OrderID', 'Sales'])
+        result = wrap_source_with_try_otherwise(m_query, ['OrderID', 'Sales'])
         self.assertIn('try', result)
         self.assertIn('otherwise', result)
         self.assertIn('"OrderID"', result)
@@ -409,7 +402,7 @@ in
     Source = Excel.Workbook(File.Contents("data.xlsx"))
 in
     Source'''
-        result = self.wrap_source_with_try_otherwise(m_query)
+        result = wrap_source_with_try_otherwise(m_query)
         self.assertIn('try', result)
         self.assertIn('#table({}, {})', result)
 
@@ -419,13 +412,13 @@ in
     Data = #table({"A"}, {{"x"}})
 in
     Data'''
-        result = self.wrap_source_with_try_otherwise(m_query)
+        result = wrap_source_with_try_otherwise(m_query)
         self.assertEqual(result, m_query)
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# WINDOW_SUM/AVG/MAX/MIN (existing — non-regression)
-# ═══════════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# WINDOW_SUM/AVG/MAX/MIN (existing â€” non-regression)
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class TestWindowFunctionsNonRegression(unittest.TestCase):
     """Ensure existing WINDOW_SUM/AVG/MAX/MIN still work correctly."""
@@ -471,9 +464,9 @@ class TestWindowFunctionsNonRegression(unittest.TestCase):
         self.assertIn('CALCULATE(', result)
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# REGEXP_MATCH / REGEXP_EXTRACT / REGEXP_REPLACE (existing — non-regression)
-# ═══════════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# REGEXP_MATCH / REGEXP_EXTRACT / REGEXP_REPLACE (existing â€” non-regression)
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class TestRegexpNonRegression(unittest.TestCase):
     """Ensure existing REGEXP converters still work correctly."""
@@ -528,9 +521,9 @@ class TestRegexpNonRegression(unittest.TestCase):
         self.assertIn('SUBSTITUTE(', result)
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# SPLIT (existing — non-regression)
-# ═══════════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# SPLIT (existing â€” non-regression)
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class TestSplitNonRegression(unittest.TestCase):
     """Ensure SPLIT still works correctly."""

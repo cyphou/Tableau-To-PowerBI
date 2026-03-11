@@ -11,6 +11,7 @@ import sys
 import os
 import json
 import copy
+import glob
 import tempfile
 import shutil
 
@@ -22,6 +23,11 @@ from tests.conftest import (
     SAMPLE_DATASOURCE, SAMPLE_EXTRACTED, SAMPLE_EXTRACTED_WITH_MEASURES,
     make_temp_dir, cleanup_dir,
 )
+
+from pbip_generator import PowerBIProjectGenerator
+from tmdl_generator import generate_tmdl
+from validator import ArtifactValidator
+from migration_report import MigrationReport
 
 
 class TestPipelineIntegration(unittest.TestCase):
@@ -35,8 +41,6 @@ class TestPipelineIntegration(unittest.TestCase):
 
     def test_full_generation_pipeline(self):
         """Test that generation produces a valid .pbip project structure."""
-        from pbip_generator import PowerBIProjectGenerator
-
         generator = PowerBIProjectGenerator(output_dir=self.temp_dir)
         project_path = generator.generate_project('IntegrationTest', copy.deepcopy(SAMPLE_EXTRACTED))
 
@@ -54,8 +58,6 @@ class TestPipelineIntegration(unittest.TestCase):
 
     def test_semantic_model_structure(self):
         """Test that SemanticModel structure is complete."""
-        from pbip_generator import PowerBIProjectGenerator
-
         generator = PowerBIProjectGenerator(output_dir=self.temp_dir)
         project_path = generator.generate_project('SMTest', copy.deepcopy(SAMPLE_EXTRACTED))
 
@@ -78,8 +80,6 @@ class TestPipelineIntegration(unittest.TestCase):
 
     def test_report_structure(self):
         """Test that Report structure is complete."""
-        from pbip_generator import PowerBIProjectGenerator
-
         generator = PowerBIProjectGenerator(output_dir=self.temp_dir)
         project_path = generator.generate_project('ReportTest', copy.deepcopy(SAMPLE_EXTRACTED))
 
@@ -98,8 +98,6 @@ class TestPipelineIntegration(unittest.TestCase):
 
     def test_tmdl_tables_generated(self):
         """Test that TMDL tables are generated from datasource tables."""
-        from tmdl_generator import generate_tmdl
-
         ds = copy.deepcopy(SAMPLE_DATASOURCE)
         stats = generate_tmdl([ds], 'TmdlTest', {}, self.temp_dir)
 
@@ -112,8 +110,6 @@ class TestPipelineIntegration(unittest.TestCase):
 
     def test_mode_passthrough(self):
         """Test that model_mode is passed through the pipeline."""
-        from pbip_generator import PowerBIProjectGenerator
-
         generator = PowerBIProjectGenerator(output_dir=self.temp_dir)
         # Should not raise with composite mode
         project_path = generator.generate_project(
@@ -124,8 +120,6 @@ class TestPipelineIntegration(unittest.TestCase):
 
     def test_output_format_tmdl_only(self):
         """Test that output_format='tmdl' generates only semantic model."""
-        from pbip_generator import PowerBIProjectGenerator
-
         generator = PowerBIProjectGenerator(output_dir=self.temp_dir)
         project_path = generator.generate_project(
             'TmdlOnly', copy.deepcopy(SAMPLE_EXTRACTED),
@@ -140,8 +134,6 @@ class TestPipelineIntegration(unittest.TestCase):
 
     def test_output_format_pbir_only(self):
         """Test that output_format='pbir' generates only report."""
-        from pbip_generator import PowerBIProjectGenerator
-
         generator = PowerBIProjectGenerator(output_dir=self.temp_dir)
         project_path = generator.generate_project(
             'PbirOnly', copy.deepcopy(SAMPLE_EXTRACTED),
@@ -156,8 +148,6 @@ class TestPipelineIntegration(unittest.TestCase):
 
     def test_culture_passthrough(self):
         """Test that culture is passed through to TMDL."""
-        from tmdl_generator import generate_tmdl
-
         ds = copy.deepcopy(SAMPLE_DATASOURCE)
         stats = generate_tmdl([ds], 'CultureTest', {}, self.temp_dir,
                               culture='fr-FR')
@@ -179,18 +169,12 @@ class TestValidatorIntegration(unittest.TestCase):
 
     def test_validate_generated_project(self):
         """Test that a generated project passes validation."""
-        from pbip_generator import PowerBIProjectGenerator
-
         generator = PowerBIProjectGenerator(output_dir=self.temp_dir)
         project_path = generator.generate_project('ValidTest', copy.deepcopy(SAMPLE_EXTRACTED))
 
-        try:
-            from validator import validate_pbip_project
-            result = validate_pbip_project(project_path)
-            # Should pass or have only warnings (not errors)
-            self.assertIsNotNone(result)
-        except ImportError:
-            self.skipTest("Validator not available")
+        result = ArtifactValidator.validate_project(project_path)
+        # Should pass or have only warnings (not errors)
+        self.assertIsNotNone(result)
 
 
 class TestMigrationReportIntegration(unittest.TestCase):
@@ -204,24 +188,19 @@ class TestMigrationReportIntegration(unittest.TestCase):
 
     def test_migration_report_structure(self):
         """Test that migration report produces valid JSON."""
-        try:
-            from migration_report import MigrationReport
+        report = MigrationReport('IntegrationReportTest')
 
-            report = MigrationReport('IntegrationReportTest')
+        # Add sample data
+        ds = copy.deepcopy(SAMPLE_DATASOURCE)
+        report.add_datasources([ds])
 
-            # Add sample data
-            ds = copy.deepcopy(SAMPLE_DATASOURCE)
-            report.add_datasources([ds])
+        calcs = SAMPLE_EXTRACTED.get('calculations', [])
+        report.add_calculations(calcs, {})
 
-            calcs = SAMPLE_EXTRACTED.get('calculations', [])
-            report.add_calculations(calcs, {})
-
-            # Generate summary
-            summary = report.get_summary()
-            self.assertIsNotNone(summary)
-            self.assertIsInstance(summary, dict)
-        except ImportError:
-            self.skipTest("MigrationReport not available")
+        # Generate summary
+        summary = report.get_summary()
+        self.assertIsNotNone(summary)
+        self.assertIsInstance(summary, dict)
 
 
 class TestBatchModeIntegration(unittest.TestCase):
@@ -256,9 +235,6 @@ class TestVisualTmdlCrossValidation(unittest.TestCase):
 
     def test_visual_fields_all_resolve_to_tmdl(self):
         """Every Entity+Property in visual.json must exist in the TMDL model."""
-        from pbip_generator import PowerBIProjectGenerator
-        from validator import ArtifactValidator
-
         generator = PowerBIProjectGenerator(output_dir=self.temp_dir)
         project_path = generator.generate_project(
             'CrossValTest', copy.deepcopy(SAMPLE_EXTRACTED_WITH_MEASURES)
@@ -271,8 +247,6 @@ class TestVisualTmdlCrossValidation(unittest.TestCase):
 
     def test_tmdl_stats_contain_symbols(self):
         """generate_tmdl() must return actual_bim_symbols with (table, field) tuples."""
-        from tmdl_generator import generate_tmdl
-
         data = copy.deepcopy(SAMPLE_EXTRACTED_WITH_MEASURES)
         # Embed calculations into the datasource (as extract_datasource does)
         ds = data['datasources'][0]
@@ -302,9 +276,6 @@ class TestVisualTmdlCrossValidation(unittest.TestCase):
     def test_measure_wrapper_matches_tmdl_type(self):
         """Named DAX measures must use 'Measure' wrapper in visual JSON,
         physical/calculated columns must use 'Column' wrapper."""
-        from pbip_generator import PowerBIProjectGenerator
-        import glob
-
         generator = PowerBIProjectGenerator(output_dir=self.temp_dir)
         project_path = generator.generate_project(
             'WrapperTest', copy.deepcopy(SAMPLE_EXTRACTED_WITH_MEASURES)
@@ -348,9 +319,6 @@ class TestVisualTmdlCrossValidation(unittest.TestCase):
 
     def test_validator_project_includes_visual_cross_check(self):
         """validate_project() must include visual reference cross-checks in warnings."""
-        from pbip_generator import PowerBIProjectGenerator
-        from validator import ArtifactValidator
-
         generator = PowerBIProjectGenerator(output_dir=self.temp_dir)
         project_path = generator.generate_project(
             'FullValTest', copy.deepcopy(SAMPLE_EXTRACTED_WITH_MEASURES)

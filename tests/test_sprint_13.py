@@ -19,6 +19,20 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'powerbi_import'))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'tableau_export'))
 
+from visual_generator import APPROXIMATION_MAP
+from visual_generator import resolve_visual_type
+from visual_generator import get_custom_visual_guid_for_approx
+from visual_generator import resolve_custom_visual_type
+from visual_generator import _build_dynamic_reference_line
+from tmdl_generator import resolve_table_for_column
+from tmdl_generator import resolve_table_for_formula
+from validator import ArtifactValidator
+from dax_converter import convert_tableau_formula_to_dax
+from visual_generator import APPROXIMATION_MAP, CUSTOM_VISUAL_GUIDS
+from visual_generator import CUSTOM_VISUAL_GUIDS
+from visual_generator import get_approximation_note
+from visual_generator import _build_data_bar_config
+
 
 # ═══════════════════════════════════════════════════════════════════
 # N.1 — Custom Visual GUID Registry
@@ -28,97 +42,81 @@ class TestCustomVisualGUIDs(unittest.TestCase):
     """N.1: APPROXIMATION_MAP now uses custom visual types for Sankey/Chord/Network/Gantt."""
 
     def test_sankey_maps_to_custom_visual(self):
-        from visual_generator import APPROXIMATION_MAP
         pbi_type, note = APPROXIMATION_MAP['sankey']
         self.assertEqual(pbi_type, 'sankeyDiagram')
         self.assertIn('AppSource', note)
         self.assertIn('ChicagoITSankey', note)
 
     def test_chord_maps_to_custom_visual(self):
-        from visual_generator import APPROXIMATION_MAP
         pbi_type, note = APPROXIMATION_MAP['chord']
         self.assertEqual(pbi_type, 'chordChart')
         self.assertIn('AppSource', note)
 
     def test_network_maps_to_custom_visual(self):
-        from visual_generator import APPROXIMATION_MAP
         pbi_type, note = APPROXIMATION_MAP['network']
         pbi_type_expected = 'networkNavigator'
         self.assertEqual(pbi_type, pbi_type_expected)
         self.assertIn('AppSource', note)
 
     def test_ganttbar_maps_to_custom_visual(self):
-        from visual_generator import APPROXIMATION_MAP
         pbi_type, note = APPROXIMATION_MAP['ganttbar']
         self.assertEqual(pbi_type, 'ganttChart')
         self.assertIn('AppSource', note)
 
     def test_mekko_still_uses_builtin(self):
-        from visual_generator import APPROXIMATION_MAP
         pbi_type, note = APPROXIMATION_MAP['mekko']
         self.assertEqual(pbi_type, 'stackedBarChart')
         self.assertNotIn('AppSource', note)
 
     def test_resolve_visual_type_uses_approximation(self):
-        from visual_generator import resolve_visual_type
         self.assertEqual(resolve_visual_type('sankey'), 'sankeyDiagram')
         self.assertEqual(resolve_visual_type('chord'), 'chordChart')
         self.assertEqual(resolve_visual_type('network'), 'networkNavigator')
         self.assertEqual(resolve_visual_type('ganttbar'), 'ganttChart')
 
     def test_resolve_visual_type_prefers_exact_map(self):
-        from visual_generator import resolve_visual_type
         self.assertEqual(resolve_visual_type('bar'), 'clusteredBarChart')
         self.assertEqual(resolve_visual_type('line'), 'lineChart')
 
     def test_resolve_visual_type_default(self):
-        from visual_generator import resolve_visual_type
         self.assertEqual(resolve_visual_type('nonexistent_mark'), 'tableEx')
         self.assertEqual(resolve_visual_type(None), 'tableEx')
         self.assertEqual(resolve_visual_type(''), 'tableEx')
 
     def test_get_custom_visual_guid_for_approx_sankey(self):
-        from visual_generator import get_custom_visual_guid_for_approx
         guid_info = get_custom_visual_guid_for_approx('sankey')
         self.assertIsNotNone(guid_info)
         self.assertEqual(guid_info['guid'], 'ChicagoITSankey1.1.0')
 
     def test_get_custom_visual_guid_for_approx_chord(self):
-        from visual_generator import get_custom_visual_guid_for_approx
         guid_info = get_custom_visual_guid_for_approx('chord')
         self.assertIsNotNone(guid_info)
         self.assertEqual(guid_info['guid'], 'ChicagoITChord1.0.0')
 
     def test_get_custom_visual_guid_for_approx_network(self):
-        from visual_generator import get_custom_visual_guid_for_approx
         guid_info = get_custom_visual_guid_for_approx('network')
         self.assertIsNotNone(guid_info)
 
     def test_get_custom_visual_guid_for_approx_ganttbar(self):
-        from visual_generator import get_custom_visual_guid_for_approx
         guid_info = get_custom_visual_guid_for_approx('ganttbar')
         self.assertIsNotNone(guid_info)
         self.assertEqual(guid_info['guid'], 'GanttByMAQSoftware1.0.0')
 
     def test_get_custom_visual_guid_for_approx_builtin_returns_none(self):
-        from visual_generator import get_custom_visual_guid_for_approx
         self.assertIsNone(get_custom_visual_guid_for_approx('mekko'))
         self.assertIsNone(get_custom_visual_guid_for_approx('bumpchart'))
         self.assertIsNone(get_custom_visual_guid_for_approx(None))
 
     def test_resolve_custom_visual_type_sankey(self):
-        from visual_generator import resolve_custom_visual_type
         vtype, guid_info = resolve_custom_visual_type('sankey')
         self.assertEqual(vtype, 'sankeyDiagram')
         self.assertIsNotNone(guid_info)
 
     def test_resolve_custom_visual_type_disabled(self):
-        from visual_generator import resolve_custom_visual_type
         vtype, guid_info = resolve_custom_visual_type('sankey', use_custom_visuals=False)
         self.assertIsNone(guid_info)
 
     def test_approximation_map_all_entries(self):
-        from visual_generator import APPROXIMATION_MAP
         self.assertEqual(len(APPROXIMATION_MAP), 12)
         for key, (pbi_type, note) in APPROXIMATION_MAP.items():
             self.assertTrue(pbi_type, f"Empty pbi_type for {key}")
@@ -215,7 +213,6 @@ class TestDynamicReferenceLines(unittest.TestCase):
     """N.3: Dynamic reference lines (average, median, percentile, min, max)."""
 
     def test_average_reference_line(self):
-        from visual_generator import _build_dynamic_reference_line
         ref = _build_dynamic_reference_line('average', 'Sales', 'Orders')
         self.assertIsNotNone(ref)
         self.assertIn('properties', ref)
@@ -223,49 +220,41 @@ class TestDynamicReferenceLines(unittest.TestCase):
         self.assertEqual(props['type']['expr']['Literal']['Value'], "'Average'")
 
     def test_median_reference_line(self):
-        from visual_generator import _build_dynamic_reference_line
         ref = _build_dynamic_reference_line('median', 'Revenue', 'Sales')
         props = ref['properties']
         self.assertEqual(props['type']['expr']['Literal']['Value'], "'Median'")
 
     def test_percentile_reference_line(self):
-        from visual_generator import _build_dynamic_reference_line
         ref = _build_dynamic_reference_line('percentile', 'Score', 'Students')
         props = ref['properties']
         self.assertEqual(props['type']['expr']['Literal']['Value'], "'Percentile'")
         self.assertEqual(props['percentile']['expr']['Literal']['Value'], '50D')
 
     def test_min_reference_line(self):
-        from visual_generator import _build_dynamic_reference_line
         ref = _build_dynamic_reference_line('min')
         props = ref['properties']
         self.assertEqual(props['type']['expr']['Literal']['Value'], "'Min'")
 
     def test_max_reference_line(self):
-        from visual_generator import _build_dynamic_reference_line
         ref = _build_dynamic_reference_line('max')
         props = ref['properties']
         self.assertEqual(props['type']['expr']['Literal']['Value'], "'Max'")
 
     def test_trend_reference_line(self):
-        from visual_generator import _build_dynamic_reference_line
         ref = _build_dynamic_reference_line('trend')
         props = ref['properties']
         self.assertEqual(props['type']['expr']['Literal']['Value'], "'Trend'")
 
     def test_constant_returns_none(self):
-        from visual_generator import _build_dynamic_reference_line
         ref = _build_dynamic_reference_line('constant')
         self.assertIsNone(ref)
 
     def test_custom_style(self):
-        from visual_generator import _build_dynamic_reference_line
         ref = _build_dynamic_reference_line('average', style='solid')
         props = ref['properties']
         self.assertEqual(props['style']['expr']['Literal']['Value'], "'solid'")
 
     def test_custom_label(self):
-        from visual_generator import _build_dynamic_reference_line
         ref = _build_dynamic_reference_line('average', label='My Average')
         props = ref['properties']
         self.assertIn('My Average', props['displayName']['expr']['Literal']['Value'])
@@ -279,7 +268,6 @@ class TestMultiDSCalcRouting(unittest.TestCase):
     """N.4: resolve_table_for_formula routes calcs by column reference density."""
 
     def test_resolve_table_for_column_ds_specific(self):
-        from tmdl_generator import resolve_table_for_column
         ctx = {
             'column_table_map': {'Sales': 'Orders', 'Name': 'Customers'},
             'ds_column_table_map': {
@@ -292,7 +280,6 @@ class TestMultiDSCalcRouting(unittest.TestCase):
         self.assertEqual(resolve_table_for_column('Revenue', 'DS2', ctx), 'FinanceDS2')
 
     def test_resolve_table_for_column_fallback(self):
-        from tmdl_generator import resolve_table_for_column
         ctx = {
             'column_table_map': {'Sales': 'Orders'},
             'ds_column_table_map': {},
@@ -300,11 +287,9 @@ class TestMultiDSCalcRouting(unittest.TestCase):
         self.assertEqual(resolve_table_for_column('Sales', 'UnknownDS', ctx), 'Orders')
 
     def test_resolve_table_for_column_no_context(self):
-        from tmdl_generator import resolve_table_for_column
         self.assertIsNone(resolve_table_for_column('Sales'))
 
     def test_resolve_table_for_formula_single_table(self):
-        from tmdl_generator import resolve_table_for_formula
         ctx = {
             'column_table_map': {'Sales': 'Orders', 'Qty': 'Orders', 'Name': 'Customers'},
             'ds_column_table_map': {},
@@ -313,7 +298,6 @@ class TestMultiDSCalcRouting(unittest.TestCase):
         self.assertEqual(result, 'Orders')
 
     def test_resolve_table_for_formula_majority_vote(self):
-        from tmdl_generator import resolve_table_for_formula
         ctx = {
             'column_table_map': {'Sales': 'Orders', 'Qty': 'Orders', 'Name': 'Customers'},
             'ds_column_table_map': {},
@@ -323,13 +307,11 @@ class TestMultiDSCalcRouting(unittest.TestCase):
         self.assertEqual(result, 'Orders')
 
     def test_resolve_table_for_formula_no_refs(self):
-        from tmdl_generator import resolve_table_for_formula
         ctx = {'column_table_map': {}, 'ds_column_table_map': {}}
         result = resolve_table_for_formula('1 + 2', None, ctx)
         self.assertIsNone(result)
 
     def test_resolve_table_for_formula_empty(self):
-        from tmdl_generator import resolve_table_for_formula
         self.assertIsNone(resolve_table_for_formula('', None, None))
         self.assertIsNone(resolve_table_for_formula(None, None, None))
 
@@ -349,7 +331,6 @@ class TestSortByColumnValidation(unittest.TestCase):
         return path
 
     def test_valid_sort_by_column(self):
-        from validator import ArtifactValidator
         tmdl = (
             "table Calendar\n"
             "\n"
@@ -369,7 +350,6 @@ class TestSortByColumnValidation(unittest.TestCase):
             os.unlink(path)
 
     def test_invalid_sort_by_column(self):
-        from validator import ArtifactValidator
         tmdl = (
             "table Calendar\n"
             "\n"
@@ -390,7 +370,6 @@ class TestSortByColumnValidation(unittest.TestCase):
             os.unlink(path)
 
     def test_multiple_sort_by_column_mixed(self):
-        from validator import ArtifactValidator
         tmdl = (
             "table Calendar\n"
             "\n"
@@ -423,7 +402,6 @@ class TestNestedLODEdgeCases(unittest.TestCase):
     """N.6: LOD nesting, ATTR-wrapped LOD, AGG(LOD) cleanup."""
 
     def test_simple_fixed_lod(self):
-        from dax_converter import convert_tableau_formula_to_dax
         result = convert_tableau_formula_to_dax(
             '{FIXED [Region] : SUM([Sales])}',
             'Orders', column_table_map={'Region': 'Regions', 'Sales': 'Orders'}
@@ -433,7 +411,6 @@ class TestNestedLODEdgeCases(unittest.TestCase):
         self.assertIn('SUM', result)
 
     def test_nested_fixed_lod(self):
-        from dax_converter import convert_tableau_formula_to_dax
         result = convert_tableau_formula_to_dax(
             '{FIXED [Region] : SUM({FIXED [Category] : COUNT([OrderID])})}',
             'Orders', column_table_map={
@@ -447,7 +424,6 @@ class TestNestedLODEdgeCases(unittest.TestCase):
         self.assertNotIn('}', result)
 
     def test_lod_with_attr_wrapper(self):
-        from dax_converter import convert_tableau_formula_to_dax
         result = convert_tableau_formula_to_dax(
             'ATTR({FIXED [Region] : SUM([Sales])})',
             'Orders', column_table_map={'Region': 'Regions', 'Sales': 'Orders'}
@@ -459,7 +435,6 @@ class TestNestedLODEdgeCases(unittest.TestCase):
         self.assertNotIn('{', result)
 
     def test_include_lod(self):
-        from dax_converter import convert_tableau_formula_to_dax
         result = convert_tableau_formula_to_dax(
             '{INCLUDE [State] : SUM([Sales])}',
             'Orders', column_table_map={'State': 'Geo', 'Sales': 'Orders'}
@@ -469,7 +444,6 @@ class TestNestedLODEdgeCases(unittest.TestCase):
         self.assertNotIn('{', result)
 
     def test_exclude_lod(self):
-        from dax_converter import convert_tableau_formula_to_dax
         result = convert_tableau_formula_to_dax(
             '{EXCLUDE [Region] : SUM([Sales])}',
             'Orders', column_table_map={'Region': 'Regions', 'Sales': 'Orders'}
@@ -479,7 +453,6 @@ class TestNestedLODEdgeCases(unittest.TestCase):
         self.assertNotIn('{', result)
 
     def test_fixed_no_dims(self):
-        from dax_converter import convert_tableau_formula_to_dax
         result = convert_tableau_formula_to_dax(
             '{FIXED : SUM([Sales])}',
             'Orders', column_table_map={'Sales': 'Orders'}
@@ -489,7 +462,6 @@ class TestNestedLODEdgeCases(unittest.TestCase):
 
     def test_agg_wrapping_lod_collapsed(self):
         """SUM({FIXED ...}) should collapse: SUM(CALCULATE(...)) → CALCULATE(...)."""
-        from dax_converter import convert_tableau_formula_to_dax
         result = convert_tableau_formula_to_dax(
             'SUM({FIXED [Region] : MAX([Sales])})',
             'Orders', column_table_map={'Region': 'Regions', 'Sales': 'Orders'}
@@ -499,7 +471,6 @@ class TestNestedLODEdgeCases(unittest.TestCase):
         self.assertNotIn('SUM(CALCULATE', result)
 
     def test_lod_no_dimension_with_agg(self):
-        from dax_converter import convert_tableau_formula_to_dax
         result = convert_tableau_formula_to_dax(
             '{SUM([Sales])}',
             'Orders', column_table_map={'Sales': 'Orders'}
@@ -516,7 +487,6 @@ class TestCustomVisualGUIDIntegration(unittest.TestCase):
     """Integration: CUSTOM_VISUAL_GUIDS entries are consistent with APPROXIMATION_MAP."""
 
     def test_all_approx_custom_visuals_have_guids(self):
-        from visual_generator import APPROXIMATION_MAP, CUSTOM_VISUAL_GUIDS
         custom_classes = {v['class'] for v in CUSTOM_VISUAL_GUIDS.values()}
         for key, (pbi_type, note) in APPROXIMATION_MAP.items():
             if 'AppSource' in note:
@@ -525,7 +495,6 @@ class TestCustomVisualGUIDIntegration(unittest.TestCase):
                               f"class '{pbi_type}' not in CUSTOM_VISUAL_GUIDS")
 
     def test_custom_visual_guids_have_required_keys(self):
-        from visual_generator import CUSTOM_VISUAL_GUIDS
         for key, info in CUSTOM_VISUAL_GUIDS.items():
             self.assertIn('guid', info, f"Missing 'guid' in {key}")
             self.assertIn('name', info, f"Missing 'name' in {key}")
@@ -533,13 +502,11 @@ class TestCustomVisualGUIDIntegration(unittest.TestCase):
             self.assertIn('roles', info, f"Missing 'roles' in {key}")
 
     def test_get_approximation_note_returns_string(self):
-        from visual_generator import get_approximation_note
         note = get_approximation_note('sankey')
         self.assertIsInstance(note, str)
         self.assertTrue(len(note) > 10)
 
     def test_get_approximation_note_none_for_exact(self):
-        from visual_generator import get_approximation_note
         self.assertIsNone(get_approximation_note('bar'))
         self.assertIsNone(get_approximation_note('line'))
         self.assertIsNone(get_approximation_note(None))
@@ -549,14 +516,12 @@ class TestDynamicRefLineBuilders(unittest.TestCase):
     """Integration: _build_data_bar_config returns valid structure."""
 
     def test_data_bar_config(self):
-        from visual_generator import _build_data_bar_config
         config = _build_data_bar_config('Revenue', 'Sales')
         self.assertEqual(config['id'], 'dataBar_Revenue')
         self.assertIn('field', config)
         self.assertIn('positiveColor', config)
 
     def test_data_bar_custom_colors(self):
-        from visual_generator import _build_data_bar_config
         config = _build_data_bar_config('Col', 'T', min_color='#000', max_color='#FFF')
         self.assertEqual(config['positiveColor']['solid']['color'], '#FFF')
 

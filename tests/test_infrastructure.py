@@ -25,6 +25,20 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, 'powerbi_import'))
 
+from powerbi_import.validator import ArtifactValidator
+from powerbi_import.deploy.utils import DeploymentReport
+import io
+from powerbi_import.deploy.utils import ArtifactCache
+from powerbi_import.deploy.config.environments import EnvironmentType
+from powerbi_import.deploy.config.environments import EnvironmentConfig, EnvironmentType
+from powerbi_import.deploy.config.settings import get_settings
+from powerbi_import.deploy.config import settings as settings_mod
+from powerbi_import.deploy.config import get_settings, EnvironmentType, EnvironmentConfig
+from powerbi_import.deploy import auth as _auth_mod
+from powerbi_import.deploy.client import FabricClient
+from powerbi_import.deploy.deployer import ArtifactType
+from powerbi_import.deploy.deployer import FabricDeployer
+
 
 # ═══════════════════════════════════════════════════════════════════
 # Validator Tests
@@ -40,7 +54,6 @@ class TestArtifactValidator(unittest.TestCase):
         shutil.rmtree(self.tmpdir)
 
     def test_validate_valid_json_artifact(self):
-        from powerbi_import.validator import ArtifactValidator
         fp = os.path.join(self.tmpdir, 'artifact.json')
         with open(fp, 'w') as f:
             json.dump({"type": "Report", "name": "Test"}, f)
@@ -49,7 +62,6 @@ class TestArtifactValidator(unittest.TestCase):
         self.assertEqual(errors, [])
 
     def test_validate_invalid_json(self):
-        from powerbi_import.validator import ArtifactValidator
         fp = os.path.join(self.tmpdir, 'bad.json')
         with open(fp, 'w') as f:
             f.write("{not valid json")
@@ -58,13 +70,11 @@ class TestArtifactValidator(unittest.TestCase):
         self.assertTrue(any('Invalid JSON' in e for e in errors))
 
     def test_validate_missing_file(self):
-        from powerbi_import.validator import ArtifactValidator
         valid, errors = ArtifactValidator.validate_artifact('/nonexistent/file.json')
         self.assertFalse(valid)
         self.assertTrue(any('not found' in e for e in errors))
 
     def test_validate_invalid_artifact_type(self):
-        from powerbi_import.validator import ArtifactValidator
         fp = os.path.join(self.tmpdir, 'artifact.json')
         with open(fp, 'w') as f:
             json.dump({"type": "InvalidTypeXYZ"}, f)
@@ -73,7 +83,6 @@ class TestArtifactValidator(unittest.TestCase):
         self.assertTrue(any('Invalid artifact type' in e for e in errors))
 
     def test_validate_json_file_valid(self):
-        from powerbi_import.validator import ArtifactValidator
         fp = os.path.join(self.tmpdir, 'good.json')
         with open(fp, 'w') as f:
             json.dump({"key": "value"}, f)
@@ -82,7 +91,6 @@ class TestArtifactValidator(unittest.TestCase):
         self.assertIsNone(err)
 
     def test_validate_json_file_invalid(self):
-        from powerbi_import.validator import ArtifactValidator
         fp = os.path.join(self.tmpdir, 'bad.json')
         with open(fp, 'w') as f:
             f.write("not json at all")
@@ -91,7 +99,6 @@ class TestArtifactValidator(unittest.TestCase):
         self.assertIsNotNone(err)
 
     def test_validate_tmdl_valid(self):
-        from powerbi_import.validator import ArtifactValidator
         fp = os.path.join(self.tmpdir, 'model.tmdl')
         with open(fp, 'w') as f:
             f.write('model Model\n\tculture: en-US\n')
@@ -99,7 +106,6 @@ class TestArtifactValidator(unittest.TestCase):
         self.assertTrue(valid)
 
     def test_validate_tmdl_bad_model(self):
-        from powerbi_import.validator import ArtifactValidator
         fp = os.path.join(self.tmpdir, 'model.tmdl')
         with open(fp, 'w') as f:
             f.write('table Foo\n')
@@ -108,7 +114,6 @@ class TestArtifactValidator(unittest.TestCase):
         self.assertTrue(any('model Model' in e for e in errors))
 
     def test_validate_tmdl_empty(self):
-        from powerbi_import.validator import ArtifactValidator
         fp = os.path.join(self.tmpdir, 'empty.tmdl')
         with open(fp, 'w') as f:
             f.write('')
@@ -116,13 +121,11 @@ class TestArtifactValidator(unittest.TestCase):
         self.assertFalse(valid)
 
     def test_validate_project_missing_dir(self):
-        from powerbi_import.validator import ArtifactValidator
         result = ArtifactValidator.validate_project('/nonexistent/project')
         self.assertFalse(result['valid'])
 
     def test_validate_project_complete(self):
         """Build a minimal valid project and validate it."""
-        from powerbi_import.validator import ArtifactValidator
         name = 'TestProject'
         proj = os.path.join(self.tmpdir, name)
         os.makedirs(proj)
@@ -150,7 +153,6 @@ class TestArtifactValidator(unittest.TestCase):
         self.assertGreater(result['files_checked'], 0)
 
     def test_validate_directory(self):
-        from powerbi_import.validator import ArtifactValidator
         # Create a project inside artifacts dir
         name = 'DirTest'
         proj = os.path.join(self.tmpdir, name)
@@ -170,7 +172,6 @@ class TestArtifactValidator(unittest.TestCase):
         self.assertIn(name, results)
 
     def test_validate_directory_nonexistent(self):
-        from powerbi_import.validator import ArtifactValidator
         results = ArtifactValidator.validate_directory('/no/such/dir')
         self.assertEqual(results, {})
 
@@ -183,7 +184,6 @@ class TestDeploymentReport(unittest.TestCase):
     """Test DeploymentReport class."""
 
     def test_empty_report(self):
-        from powerbi_import.deploy.utils import DeploymentReport
         rpt = DeploymentReport('ws-123')
         self.assertEqual(rpt.workspace_id, 'ws-123')
         d = rpt.to_dict()
@@ -191,7 +191,6 @@ class TestDeploymentReport(unittest.TestCase):
         self.assertEqual(d['successful'], 0)
 
     def test_add_results(self):
-        from powerbi_import.deploy.utils import DeploymentReport
         rpt = DeploymentReport()
         rpt.add_result('Report1', 'Report', 'success', item_id='id-1')
         rpt.add_result('Report2', 'Report', 'failed', error='Timeout')
@@ -201,7 +200,6 @@ class TestDeploymentReport(unittest.TestCase):
         self.assertEqual(d['failed'], 1)
 
     def test_to_json(self):
-        from powerbi_import.deploy.utils import DeploymentReport
         rpt = DeploymentReport()
         rpt.add_result('R1', 'Report', 'success')
         j = rpt.to_json()
@@ -209,7 +207,6 @@ class TestDeploymentReport(unittest.TestCase):
         self.assertEqual(parsed['total_artifacts'], 1)
 
     def test_save_report(self):
-        from powerbi_import.deploy.utils import DeploymentReport
         tmpdir = tempfile.mkdtemp()
         try:
             rpt = DeploymentReport()
@@ -224,12 +221,10 @@ class TestDeploymentReport(unittest.TestCase):
             shutil.rmtree(tmpdir)
 
     def test_print_summary(self):
-        from powerbi_import.deploy.utils import DeploymentReport
         rpt = DeploymentReport()
         rpt.add_result('R1', 'Report', 'success')
         rpt.add_result('R2', 'Report', 'failed', error='err')
         # Should not raise
-        import io
         old_stdout = sys.stdout
         sys.stdout = io.StringIO()
         try:
@@ -246,7 +241,6 @@ class TestArtifactCache(unittest.TestCase):
     """Test ArtifactCache class."""
 
     def test_set_get(self):
-        from powerbi_import.deploy.utils import ArtifactCache
         tmpfile = os.path.join(tempfile.mkdtemp(), '.cache')
         try:
             cache = ArtifactCache(tmpfile)
@@ -257,7 +251,6 @@ class TestArtifactCache(unittest.TestCase):
                 os.remove(tmpfile)
 
     def test_persistence(self):
-        from powerbi_import.deploy.utils import ArtifactCache
         tmpfile = os.path.join(tempfile.mkdtemp(), '.cache')
         try:
             c1 = ArtifactCache(tmpfile)
@@ -269,7 +262,6 @@ class TestArtifactCache(unittest.TestCase):
                 os.remove(tmpfile)
 
     def test_clear(self):
-        from powerbi_import.deploy.utils import ArtifactCache
         tmpfile = os.path.join(tempfile.mkdtemp(), '.cache')
         try:
             cache = ArtifactCache(tmpfile)
@@ -281,7 +273,6 @@ class TestArtifactCache(unittest.TestCase):
                 os.remove(tmpfile)
 
     def test_missing_key(self):
-        from powerbi_import.deploy.utils import ArtifactCache
         tmpfile = os.path.join(tempfile.mkdtemp(), '.cache')
         try:
             cache = ArtifactCache(tmpfile)
@@ -299,24 +290,20 @@ class TestConfigEnvironments(unittest.TestCase):
     """Test environment configuration."""
 
     def test_environment_types(self):
-        from powerbi_import.deploy.config.environments import EnvironmentType
         self.assertEqual(EnvironmentType.DEVELOPMENT.value, 'development')
         self.assertEqual(EnvironmentType.STAGING.value, 'staging')
         self.assertEqual(EnvironmentType.PRODUCTION.value, 'production')
 
     def test_environment_config(self):
-        from powerbi_import.deploy.config.environments import EnvironmentConfig, EnvironmentType
         config = EnvironmentConfig.get_config(EnvironmentType.DEVELOPMENT)
         self.assertEqual(config['log_level'], 'DEBUG')
         self.assertFalse(config.get('require_approval', False))
 
     def test_production_requires_approval(self):
-        from powerbi_import.deploy.config.environments import EnvironmentConfig, EnvironmentType
         config = EnvironmentConfig.get_config(EnvironmentType.PRODUCTION)
         self.assertTrue(config.get('require_approval', False))
 
     def test_apply_config(self):
-        from powerbi_import.deploy.config.environments import EnvironmentConfig, EnvironmentType
         # Should not raise
         config = EnvironmentConfig.get_config(EnvironmentType.STAGING)
         self.assertIsNotNone(config)
@@ -326,19 +313,16 @@ class TestConfigSettings(unittest.TestCase):
     """Test settings module."""
 
     def test_get_settings_returns_object(self):
-        from powerbi_import.deploy.config.settings import get_settings
         settings = get_settings()
         self.assertIsNotNone(settings)
 
     def test_fallback_settings_have_attributes(self):
-        from powerbi_import.deploy.config.settings import get_settings
         settings = get_settings()
         # Should have known attributes (may be empty)
         self.assertTrue(hasattr(settings, 'fabric_workspace_id'))
         self.assertTrue(hasattr(settings, 'fabric_tenant_id'))
 
     def test_settings_reads_env_vars(self):
-        from powerbi_import.deploy.config import settings as settings_mod
         # Reset singleton
         settings_mod._settings_instance = None
         os.environ['FABRIC_WORKSPACE_ID'] = 'test-ws-id-123'
@@ -354,7 +338,6 @@ class TestConfigInit(unittest.TestCase):
     """Test config package exports."""
 
     def test_imports(self):
-        from powerbi_import.deploy.config import get_settings, EnvironmentType, EnvironmentConfig
         self.assertIsNotNone(get_settings)
         self.assertIsNotNone(EnvironmentType)
         self.assertIsNotNone(EnvironmentConfig)
@@ -369,7 +352,6 @@ class TestFabricAuthenticator(unittest.TestCase):
 
     def test_import_error_without_azure_identity(self):
         """Creating authenticator requires azure-identity."""
-        from powerbi_import.deploy import auth as _auth_mod
         FabricAuthenticator = _auth_mod.FabricAuthenticator
         if _auth_mod.ClientSecretCredential is None:
             with self.assertRaises(ImportError):
@@ -387,7 +369,6 @@ class TestFabricClient(unittest.TestCase):
 
     def test_client_creates_without_requests(self):
         """FabricClient should initialize even without requests library."""
-        from powerbi_import.deploy.client import FabricClient
         # Passing a dummy token for initialization
         client = FabricClient.__new__(FabricClient)
         # Just test that the class is importable and instantiable
@@ -402,13 +383,11 @@ class TestDeployer(unittest.TestCase):
     """Test FabricDeployer and ArtifactType."""
 
     def test_artifact_types(self):
-        from powerbi_import.deploy.deployer import ArtifactType
         self.assertEqual(ArtifactType.REPORT, 'Report')
         self.assertEqual(ArtifactType.SEMANTIC_MODEL, 'SemanticModel')
         self.assertEqual(ArtifactType.DATASET, 'Dataset')
 
     def test_deployer_accepts_client(self):
-        from powerbi_import.deploy.deployer import FabricDeployer
         try:
             # FabricDeployer.__init__ creates a FabricClient which needs auth
             # We create an instance via __new__ to bypass __init__

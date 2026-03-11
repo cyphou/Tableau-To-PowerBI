@@ -16,6 +16,24 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, 'tableau_export'))
 
+from prep_flow_parser import read_prep_flow
+from prep_flow_parser import _get_node_type
+from prep_flow_parser import _topological_sort
+from prep_flow_parser import _convert_prep_expression_to_m
+from prep_flow_parser import _parse_clean_actions
+from prep_flow_parser import _parse_aggregate_node
+from prep_flow_parser import _parse_join_node
+from prep_flow_parser import _parse_union_node
+from prep_flow_parser import _parse_pivot_node
+from prep_flow_parser import _parse_input_node
+from prep_flow_parser import _clean_m_table_ref
+from prep_flow_parser import merge_prep_with_workbook
+from prep_flow_parser import parse_prep_flow
+from prep_flow_parser import _PREP_CONNECTION_MAP
+from prep_flow_parser import _PREP_TYPE_MAP
+from prep_flow_parser import _PREP_AGG_MAP
+from prep_flow_parser import _PREP_JOIN_MAP
+
 
 # ═══════════════════════════════════════════════════════════════════
 # Helper — build minimal flow JSON
@@ -76,7 +94,6 @@ class TestReadPrepFlow(unittest.TestCase):
     """Test read_prep_flow for .tfl files."""
 
     def test_read_tfl_file(self):
-        from prep_flow_parser import read_prep_flow
         flow_data = _make_flow({'n1': _input_node()})
         with tempfile.NamedTemporaryFile(mode='w', suffix='.tfl', delete=False,
                                          encoding='utf-8') as f:
@@ -90,7 +107,6 @@ class TestReadPrepFlow(unittest.TestCase):
             os.unlink(path)
 
     def test_unsupported_extension_raises(self):
-        from prep_flow_parser import read_prep_flow
         with tempfile.NamedTemporaryFile(suffix='.txt', delete=False) as f:
             path = f.name
         try:
@@ -108,17 +124,14 @@ class TestGetNodeType(unittest.TestCase):
     """Test _get_node_type extraction."""
 
     def test_versioned_node_type(self):
-        from prep_flow_parser import _get_node_type
         node = {'nodeType': '.v2018_3_3.SuperTransform'}
         self.assertEqual(_get_node_type(node), 'SuperTransform')
 
     def test_simple_node_type(self):
-        from prep_flow_parser import _get_node_type
         node = {'nodeType': '.v1.LoadCsv'}
         self.assertEqual(_get_node_type(node), 'LoadCsv')
 
     def test_empty_node_type(self):
-        from prep_flow_parser import _get_node_type
         node = {'nodeType': ''}
         self.assertEqual(_get_node_type(node), '')
 
@@ -131,7 +144,6 @@ class TestTopologicalSort(unittest.TestCase):
     """Test _topological_sort for DAG traversal."""
 
     def test_linear_chain(self):
-        from prep_flow_parser import _topological_sort
         nodes = {
             'a': {'nextNodes': [{'nextNodeId': 'b'}]},
             'b': {'nextNodes': [{'nextNodeId': 'c'}]},
@@ -141,7 +153,6 @@ class TestTopologicalSort(unittest.TestCase):
         self.assertEqual(result, ['a', 'b', 'c'])
 
     def test_diamond_graph(self):
-        from prep_flow_parser import _topological_sort
         nodes = {
             'a': {'nextNodes': [{'nextNodeId': 'b'}, {'nextNodeId': 'c'}]},
             'b': {'nextNodes': [{'nextNodeId': 'd'}]},
@@ -154,13 +165,11 @@ class TestTopologicalSort(unittest.TestCase):
         self.assertEqual(len(result), 4)
 
     def test_single_node(self):
-        from prep_flow_parser import _topological_sort
         nodes = {'a': {'nextNodes': []}}
         result = _topological_sort(nodes)
         self.assertEqual(result, ['a'])
 
     def test_empty_graph(self):
-        from prep_flow_parser import _topological_sort
         result = _topological_sort({})
         self.assertEqual(result, [])
 
@@ -173,7 +182,6 @@ class TestConvertPrepExpression(unittest.TestCase):
     """Test _convert_prep_expression_to_m."""
 
     def test_if_then_else(self):
-        from prep_flow_parser import _convert_prep_expression_to_m
         result = _convert_prep_expression_to_m('IF [X] > 10 THEN "High" ELSE "Low" END')
         self.assertIn('if', result)
         self.assertIn('then', result)
@@ -181,19 +189,16 @@ class TestConvertPrepExpression(unittest.TestCase):
         self.assertNotIn('END', result)
 
     def test_elseif_conversion(self):
-        from prep_flow_parser import _convert_prep_expression_to_m
         result = _convert_prep_expression_to_m('IF [X] > 10 THEN "A" ELSEIF [X] > 5 THEN "B" ELSE "C" END')
         self.assertIn('else if', result)
 
     def test_logical_operators(self):
-        from prep_flow_parser import _convert_prep_expression_to_m
         result = _convert_prep_expression_to_m('[A] > 1 AND [B] < 2 OR NOT [C]')
         self.assertIn('and', result)
         self.assertIn('or', result)
         self.assertIn('not', result)
 
     def test_comparison_operators(self):
-        from prep_flow_parser import _convert_prep_expression_to_m
         result = _convert_prep_expression_to_m('[A] != [B] AND [C] == [D]')
         self.assertIn('<>', result)
         self.assertNotIn('!=', result)
@@ -201,32 +206,26 @@ class TestConvertPrepExpression(unittest.TestCase):
         self.assertIn('=', result)
 
     def test_string_functions(self):
-        from prep_flow_parser import _convert_prep_expression_to_m
         result = _convert_prep_expression_to_m('CONTAINS([Name], "test")')
         self.assertIn('Text.Contains', result)
 
     def test_len_function(self):
-        from prep_flow_parser import _convert_prep_expression_to_m
         result = _convert_prep_expression_to_m('LEN([Name])')
         self.assertIn('Text.Length', result)
 
     def test_upper_lower(self):
-        from prep_flow_parser import _convert_prep_expression_to_m
         self.assertIn('Text.Upper', _convert_prep_expression_to_m('UPPER([X])'))
         self.assertIn('Text.Lower', _convert_prep_expression_to_m('LOWER([X])'))
 
     def test_empty_returns_empty_string_literal(self):
-        from prep_flow_parser import _convert_prep_expression_to_m
         result = _convert_prep_expression_to_m('')
         self.assertEqual(result, '""')
 
     def test_none_returns_empty_string_literal(self):
-        from prep_flow_parser import _convert_prep_expression_to_m
         result = _convert_prep_expression_to_m(None)
         self.assertEqual(result, '""')
 
     def test_isnull_conversion(self):
-        from prep_flow_parser import _convert_prep_expression_to_m
         result = _convert_prep_expression_to_m('ISNULL([X])')
         self.assertIn('null', result)
 
@@ -239,7 +238,6 @@ class TestCleanActions(unittest.TestCase):
     """Test _parse_clean_actions and _convert_action_to_m_step."""
 
     def test_rename_column(self):
-        from prep_flow_parser import _parse_clean_actions
         node = _clean_node(actions=[
             {'actionType': '.v1.RenameColumn', 'columnName': 'OldName', 'newColumnName': 'NewName'},
         ])
@@ -251,7 +249,6 @@ class TestCleanActions(unittest.TestCase):
         self.assertIn('NewName', step_expr)
 
     def test_batched_renames(self):
-        from prep_flow_parser import _parse_clean_actions
         node = _clean_node(actions=[
             {'actionType': '.v1.RenameColumn', 'columnName': 'A', 'newColumnName': 'X'},
             {'actionType': '.v1.RenameColumn', 'columnName': 'B', 'newColumnName': 'Y'},
@@ -266,7 +263,6 @@ class TestCleanActions(unittest.TestCase):
         self.assertIn('Y', expr)
 
     def test_remove_column(self):
-        from prep_flow_parser import _parse_clean_actions
         node = _clean_node(actions=[
             {'actionType': '.v1.RemoveColumn', 'columnName': 'DropMe'},
         ])
@@ -277,7 +273,6 @@ class TestCleanActions(unittest.TestCase):
         self.assertIn('DropMe', expr)
 
     def test_duplicate_column(self):
-        from prep_flow_parser import _parse_clean_actions
         node = _clean_node(actions=[
             {'actionType': '.v1.DuplicateColumn', 'columnName': 'Col', 'newColumnName': 'Col_copy'},
         ])
@@ -287,7 +282,6 @@ class TestCleanActions(unittest.TestCase):
         self.assertIn('DuplicateColumn', expr)
 
     def test_change_column_type(self):
-        from prep_flow_parser import _parse_clean_actions
         node = _clean_node(actions=[
             {'actionType': '.v1.ChangeColumnType', 'columnName': 'Amount', 'newType': 'integer'},
         ])
@@ -298,7 +292,6 @@ class TestCleanActions(unittest.TestCase):
         self.assertIn('number', expr)
 
     def test_filter_values_keep(self):
-        from prep_flow_parser import _parse_clean_actions
         node = _clean_node(actions=[
             {'actionType': '.v1.FilterValues', 'columnName': 'Status',
              'values': ['Active', 'Pending'], 'filterType': 'keep'},
@@ -307,7 +300,6 @@ class TestCleanActions(unittest.TestCase):
         self.assertEqual(len(steps), 1)
 
     def test_filter_values_remove(self):
-        from prep_flow_parser import _parse_clean_actions
         node = _clean_node(actions=[
             {'actionType': '.v1.FilterValues', 'columnName': 'Status',
              'values': ['Deleted'], 'filterType': 'remove'},
@@ -316,7 +308,6 @@ class TestCleanActions(unittest.TestCase):
         self.assertEqual(len(steps), 1)
 
     def test_replace_values(self):
-        from prep_flow_parser import _parse_clean_actions
         node = _clean_node(actions=[
             {'actionType': '.v1.ReplaceValues', 'columnName': 'Region',
              'oldValue': 'NA', 'newValue': 'North America'},
@@ -327,7 +318,6 @@ class TestCleanActions(unittest.TestCase):
         self.assertIn('ReplaceValue', expr)
 
     def test_split_column(self):
-        from prep_flow_parser import _parse_clean_actions
         node = _clean_node(actions=[
             {'actionType': '.v1.SplitColumn', 'columnName': 'FullName', 'delimiter': ' '},
         ])
@@ -337,7 +327,6 @@ class TestCleanActions(unittest.TestCase):
         self.assertIn('SplitColumn', expr)
 
     def test_add_column(self):
-        from prep_flow_parser import _parse_clean_actions
         node = _clean_node(actions=[
             {'actionType': '.v1.AddColumn', 'columnName': 'Total',
              'expression': '[Amount] * 1.1'},
@@ -348,7 +337,6 @@ class TestCleanActions(unittest.TestCase):
         self.assertIn('AddColumn', expr)
 
     def test_clean_operation_trim(self):
-        from prep_flow_parser import _parse_clean_actions
         node = _clean_node(actions=[
             {'actionType': '.v1.CleanOperation', 'columnName': 'Name', 'operation': 'trim'},
         ])
@@ -358,7 +346,6 @@ class TestCleanActions(unittest.TestCase):
         self.assertIn('Trim', expr)
 
     def test_fill_down(self):
-        from prep_flow_parser import _parse_clean_actions
         node = _clean_node(actions=[
             {'actionType': '.v1.FillValues', 'columnName': 'Region', 'direction': 'down'},
         ])
@@ -368,7 +355,6 @@ class TestCleanActions(unittest.TestCase):
         self.assertIn('FillDown', expr)
 
     def test_fill_up(self):
-        from prep_flow_parser import _parse_clean_actions
         node = _clean_node(actions=[
             {'actionType': '.v1.FillValues', 'columnName': 'Region', 'direction': 'up'},
         ])
@@ -378,7 +364,6 @@ class TestCleanActions(unittest.TestCase):
         self.assertIn('FillUp', expr)
 
     def test_group_replace(self):
-        from prep_flow_parser import _parse_clean_actions
         node = _clean_node(actions=[
             {'actionType': '.v1.GroupReplace', 'columnName': 'Category',
              'groupings': [
@@ -390,7 +375,6 @@ class TestCleanActions(unittest.TestCase):
         self.assertEqual(len(steps), 2)  # One replace step per grouping
 
     def test_unknown_action_returns_nothing(self):
-        from prep_flow_parser import _parse_clean_actions
         node = _clean_node(actions=[
             {'actionType': '.v1.FutureAction', 'columnName': 'X'},
         ])
@@ -399,7 +383,6 @@ class TestCleanActions(unittest.TestCase):
 
     def test_rename_flush_before_other_action(self):
         """Renames should flush before a non-rename action."""
-        from prep_flow_parser import _parse_clean_actions
         node = _clean_node(actions=[
             {'actionType': '.v1.RenameColumn', 'columnName': 'A', 'newColumnName': 'X'},
             {'actionType': '.v1.RemoveColumn', 'columnName': 'B'},
@@ -419,7 +402,6 @@ class TestAggregateNode(unittest.TestCase):
     """Test _parse_aggregate_node."""
 
     def test_basic_aggregation(self):
-        from prep_flow_parser import _parse_aggregate_node
         node = {
             'groupByFields': [{'name': 'Region'}],
             'aggregateFields': [
@@ -433,7 +415,6 @@ class TestAggregateNode(unittest.TestCase):
         self.assertIn('Table.Group', step_expr)
 
     def test_empty_fields_returns_none(self):
-        from prep_flow_parser import _parse_aggregate_node
         node = {'groupByFields': [], 'aggregateFields': []}
         result = _parse_aggregate_node(node)
         self.assertIsNone(result)
@@ -447,7 +428,6 @@ class TestJoinNode(unittest.TestCase):
     """Test _parse_join_node."""
 
     def test_inner_join(self):
-        from prep_flow_parser import _parse_join_node
         node = {
             'joinType': 'inner',
             'joinConditions': [
@@ -465,7 +445,6 @@ class TestJoinNode(unittest.TestCase):
         self.assertTrue(len(result) >= 1)
 
     def test_no_conditions_returns_none(self):
-        from prep_flow_parser import _parse_join_node
         node = {'joinType': 'inner', 'joinConditions': []}
         result = _parse_join_node(node, 'Table', [])
         self.assertIsNone(result)
@@ -479,7 +458,6 @@ class TestUnionNode(unittest.TestCase):
     """Test _parse_union_node."""
 
     def test_union_two_tables(self):
-        from prep_flow_parser import _parse_union_node
         node = {}
         result = _parse_union_node(node, ['TableA', 'TableB'])
         self.assertIsNotNone(result)
@@ -488,7 +466,6 @@ class TestUnionNode(unittest.TestCase):
         self.assertIn('Table.Combine', step_expr)
 
     def test_empty_tables_returns_none(self):
-        from prep_flow_parser import _parse_union_node
         result = _parse_union_node({}, [])
         self.assertIsNone(result)
 
@@ -501,7 +478,6 @@ class TestPivotNode(unittest.TestCase):
     """Test _parse_pivot_node."""
 
     def test_unpivot(self):
-        from prep_flow_parser import _parse_pivot_node
         node = {
             'pivotType': 'columnsToRows',
             'pivotFields': [{'name': 'Q1'}, {'name': 'Q2'}],
@@ -515,7 +491,6 @@ class TestPivotNode(unittest.TestCase):
         self.assertIn('Unpivot', expr)
 
     def test_pivot(self):
-        from prep_flow_parser import _parse_pivot_node
         node = {
             'pivotType': 'rowsToColumns',
             'pivotKeyField': {'name': 'Category'},
@@ -529,7 +504,6 @@ class TestPivotNode(unittest.TestCase):
         self.assertIn('Pivot', expr)
 
     def test_unknown_pivot_type_returns_none(self):
-        from prep_flow_parser import _parse_pivot_node
         result = _parse_pivot_node({'pivotType': 'somethingElse'})
         self.assertIsNone(result)
 
@@ -542,7 +516,6 @@ class TestParseInputNode(unittest.TestCase):
     """Test _parse_input_node."""
 
     def test_csv_input(self):
-        from prep_flow_parser import _parse_input_node
         node = _input_node('sales', 'c1')
         connections = {
             'c1': {'connectionAttributes': {'class': 'csv', 'filename': 'sales.csv'}},
@@ -553,7 +526,6 @@ class TestParseInputNode(unittest.TestCase):
         self.assertEqual(len(table['columns']), 3)
 
     def test_postgres_input(self):
-        from prep_flow_parser import _parse_input_node
         node = {
             'baseType': 'input',
             'nodeType': '.v1.LoadSql',
@@ -584,19 +556,15 @@ class TestCleanMTableRef(unittest.TestCase):
     """Test _clean_m_table_ref."""
 
     def test_strips_csv_extension(self):
-        from prep_flow_parser import _clean_m_table_ref
         self.assertEqual(_clean_m_table_ref('sales.csv'), 'sales')
 
     def test_strips_xlsx_extension(self):
-        from prep_flow_parser import _clean_m_table_ref
         self.assertEqual(_clean_m_table_ref('data.xlsx'), 'data')
 
     def test_replaces_spaces(self):
-        from prep_flow_parser import _clean_m_table_ref
         self.assertEqual(_clean_m_table_ref('my table'), 'my_table')
 
     def test_no_extension(self):
-        from prep_flow_parser import _clean_m_table_ref
         self.assertEqual(_clean_m_table_ref('RawTable'), 'RawTable')
 
 
@@ -610,7 +578,6 @@ class TestMergePrepWithWorkbook(unittest.TestCase):
     def _run_merge(self, prep, twb):
         """Run merge_prep_with_workbook with stdout redirected to avoid
         Unicode encoding errors on Windows cp1252 consoles."""
-        from prep_flow_parser import merge_prep_with_workbook
         old_stdout = sys.stdout
         sys.stdout = io.StringIO()
         try:
@@ -655,8 +622,6 @@ class TestParseFlowEndToEnd(unittest.TestCase):
     """Test parse_prep_flow with a minimal synthetic flow."""
 
     def test_simple_input_to_output(self):
-        import io
-        from prep_flow_parser import parse_prep_flow
 
         flow = {
             'nodes': {
@@ -715,23 +680,19 @@ class TestPrepTypeMaps(unittest.TestCase):
     """Test mapping dictionaries."""
 
     def test_connection_map_coverage(self):
-        from prep_flow_parser import _PREP_CONNECTION_MAP
         # Core connectors should be mapped
         for key in ['csv', 'excel', 'sqlserver', 'postgres', 'mysql', 'bigquery']:
             self.assertIn(key, _PREP_CONNECTION_MAP, f'Missing connector: {key}')
 
     def test_type_map_coverage(self):
-        from prep_flow_parser import _PREP_TYPE_MAP
         for key in ['string', 'integer', 'real', 'date', 'datetime', 'boolean']:
             self.assertIn(key, _PREP_TYPE_MAP, f'Missing type: {key}')
 
     def test_agg_map_coverage(self):
-        from prep_flow_parser import _PREP_AGG_MAP
         for key in ['SUM', 'AVG', 'COUNT', 'COUNTD', 'MIN', 'MAX']:
             self.assertIn(key, _PREP_AGG_MAP, f'Missing agg: {key}')
 
     def test_join_map_coverage(self):
-        from prep_flow_parser import _PREP_JOIN_MAP
         for key in ['inner', 'left', 'right', 'full', 'leftOnly', 'rightOnly']:
             self.assertIn(key, _PREP_JOIN_MAP, f'Missing join type: {key}')
 

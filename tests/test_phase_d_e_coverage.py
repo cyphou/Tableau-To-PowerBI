@@ -15,6 +15,18 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from powerbi_import.visual_generator import _get_config_template, VISUAL_DATA_ROLES
+from powerbi_import.visual_generator import APPROXIMATION_MAP, get_approximation_note
+from powerbi_import.visual_generator import create_visual_container
+from powerbi_import.tmdl_generator import _write_partition
+from powerbi_import.tmdl_generator import _deactivate_ambiguous_paths
+from powerbi_import.tmdl_generator import _detect_many_to_many
+from powerbi_import.tmdl_generator import _replace_related_with_lookupvalue
+from powerbi_import.tmdl_generator import _fix_related_for_many_to_many
+from powerbi_import.tmdl_generator import _infer_cross_table_relationships
+from powerbi_import.pbip_generator import PowerBIProjectGenerator
+from powerbi_import.visual_generator import resolve_visual_type
+
 
 # ═══════════════════════════════════════════════════════════════════
 # Phase D — Visual Fidelity Tests
@@ -25,7 +37,6 @@ class TestVisualConfigTemplates(unittest.TestCase):
     """Test that all visual types with data roles have config templates."""
 
     def setUp(self):
-        from powerbi_import.visual_generator import _get_config_template, VISUAL_DATA_ROLES
         self._get_config = _get_config_template
         self._roles = VISUAL_DATA_ROLES
 
@@ -75,7 +86,6 @@ class TestApproximationMap(unittest.TestCase):
     """Test the APPROXIMATION_MAP and get_approximation_note function."""
 
     def setUp(self):
-        from powerbi_import.visual_generator import APPROXIMATION_MAP, get_approximation_note
         self._map = APPROXIMATION_MAP
         self._note = get_approximation_note
 
@@ -121,7 +131,6 @@ class TestMigrationNoteOnVisuals(unittest.TestCase):
     """Test that approximation-mapped visuals get migration note annotations."""
 
     def test_sankey_visual_has_annotation(self):
-        from powerbi_import.visual_generator import create_visual_container
         ws = {"name": "Test Sankey", "visualType": "sankey",
               "dataFields": [{"field": "A", "role": "dimension"}]}
         result = create_visual_container(ws)
@@ -131,7 +140,6 @@ class TestMigrationNoteOnVisuals(unittest.TestCase):
         self.assertEqual(annotations[0]["name"], "MigrationNote")
 
     def test_exact_type_has_no_annotation(self):
-        from powerbi_import.visual_generator import create_visual_container
         ws = {"name": "Test Bar", "visualType": "bar",
               "dataFields": [{"field": "A", "role": "dimension"}]}
         result = create_visual_container(ws)
@@ -140,7 +148,6 @@ class TestMigrationNoteOnVisuals(unittest.TestCase):
         self.assertEqual(len(annotations), 0, "Exact PBI type should have no annotation")
 
     def test_butterfly_visual_has_annotation(self):
-        from powerbi_import.visual_generator import create_visual_container
         ws = {"name": "Test Butterfly", "visualType": "butterfly",
               "dataFields": [{"field": "A", "role": "dimension"}]}
         result = create_visual_container(ws)
@@ -154,7 +161,6 @@ class TestFallbackPartition(unittest.TestCase):
     """Test that fallback M partition uses #table instead of null."""
 
     def test_fallback_produces_empty_table(self):
-        from powerbi_import.tmdl_generator import _write_partition
         lines = []
         source = {"type": "m", "expression": ""}
         _write_partition(lines, "TestPartition", source)
@@ -163,7 +169,6 @@ class TestFallbackPartition(unittest.TestCase):
         self.assertNotIn("Source = null", content)
 
     def test_fallback_has_todo_comment(self):
-        from powerbi_import.tmdl_generator import _write_partition
         lines = []
         source = {"type": "m", "expression": ""}
         _write_partition(lines, "TestPartition", source)
@@ -180,7 +185,6 @@ class TestDeactivateAmbiguousPaths(unittest.TestCase):
     """Test _deactivate_ambiguous_paths (Union-Find cycle detection)."""
 
     def setUp(self):
-        from powerbi_import.tmdl_generator import _deactivate_ambiguous_paths
         self._deactivate = _deactivate_ambiguous_paths
 
     def _make_model(self, relationships):
@@ -257,7 +261,6 @@ class TestDetectManyToMany(unittest.TestCase):
     """Test _detect_many_to_many cardinality detection."""
 
     def setUp(self):
-        from powerbi_import.tmdl_generator import _detect_many_to_many
         self._detect = _detect_many_to_many
 
     def _make_model(self, relationships):
@@ -297,7 +300,6 @@ class TestReplaceRelatedWithLookupvalue(unittest.TestCase):
     """Test _replace_related_with_lookupvalue string transformation."""
 
     def setUp(self):
-        from powerbi_import.tmdl_generator import _replace_related_with_lookupvalue
         self._replace = _replace_related_with_lookupvalue
 
     def test_replaces_related_for_m2m_table(self):
@@ -331,7 +333,6 @@ class TestFixRelatedForManyToMany(unittest.TestCase):
     """Test _fix_related_for_many_to_many end-to-end pattern."""
 
     def setUp(self):
-        from powerbi_import.tmdl_generator import _fix_related_for_many_to_many
         self._fix = _fix_related_for_many_to_many
 
     def test_replaces_in_measures(self):
@@ -369,7 +370,6 @@ class TestInferCrossTableRelationships(unittest.TestCase):
     """Test _infer_cross_table_relationships."""
 
     def setUp(self):
-        from powerbi_import.tmdl_generator import _infer_cross_table_relationships
         self._infer = _infer_cross_table_relationships
 
     def test_infers_from_measure_cross_ref(self):
@@ -423,7 +423,6 @@ class TestCreateReportFilters(unittest.TestCase):
     """Test PBIPGenerator._create_report_filters."""
 
     def _make_generator(self):
-        from powerbi_import.pbip_generator import PowerBIProjectGenerator
         gen = PowerBIProjectGenerator.__new__(PowerBIProjectGenerator)
         gen._field_map = {"Price": ("Products", "Price")}
         return gen
@@ -457,7 +456,6 @@ class TestCreateVisualTextbox(unittest.TestCase):
     """Test PBIPGenerator._create_visual_textbox writes valid JSON."""
 
     def _make_generator(self):
-        from powerbi_import.pbip_generator import PowerBIProjectGenerator
         gen = PowerBIProjectGenerator.__new__(PowerBIProjectGenerator)
         return gen
 
@@ -480,7 +478,6 @@ class TestCreateVisualImage(unittest.TestCase):
     """Test PBIPGenerator._create_visual_image writes valid JSON."""
 
     def _make_generator(self):
-        from powerbi_import.pbip_generator import PowerBIProjectGenerator
         gen = PowerBIProjectGenerator.__new__(PowerBIProjectGenerator)
         return gen
 
@@ -501,7 +498,6 @@ class TestCreatePaginatedReport(unittest.TestCase):
     """Test PBIPGenerator._create_paginated_report."""
 
     def _make_generator(self):
-        from powerbi_import.pbip_generator import PowerBIProjectGenerator
         gen = PowerBIProjectGenerator.__new__(PowerBIProjectGenerator)
         gen._field_map = {}
         return gen
@@ -527,19 +523,15 @@ class TestVisualTypeNonRegression(unittest.TestCase):
     """Verify that the Phase D changes don't break existing visual mappings."""
 
     def test_resolve_bar(self):
-        from powerbi_import.visual_generator import resolve_visual_type
         self.assertEqual(resolve_visual_type("bar"), "clusteredBarChart")
 
     def test_resolve_line(self):
-        from powerbi_import.visual_generator import resolve_visual_type
         self.assertEqual(resolve_visual_type("line"), "lineChart")
 
     def test_resolve_none(self):
-        from powerbi_import.visual_generator import resolve_visual_type
         self.assertEqual(resolve_visual_type(None), "tableEx")
 
     def test_resolve_unknown(self):
-        from powerbi_import.visual_generator import resolve_visual_type
         self.assertEqual(resolve_visual_type("nonexistent_xyz"), "tableEx")
 
 

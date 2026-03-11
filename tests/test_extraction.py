@@ -17,6 +17,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, 'tableau_export'))
 
+from extract_tableau_data import TableauExtractor
+
 SAMPLE_TWB = os.path.join(ROOT, 'examples', 'tableau_samples', 'Superstore_Sales.twb')
 
 
@@ -32,7 +34,6 @@ class TestExtractorInit(unittest.TestCase):
     """Test TableauExtractor initialization and file reading."""
 
     def test_constructor_sets_fields(self):
-        from extract_tableau_data import TableauExtractor
         tmpdir = tempfile.mkdtemp()
         try:
             ext = TableauExtractor(SAMPLE_TWB, output_dir=tmpdir)
@@ -43,7 +44,6 @@ class TestExtractorInit(unittest.TestCase):
 
     @unittest.skipUnless(_has_sample(), 'Superstore sample not available')
     def test_read_tableau_file_returns_xml(self):
-        from extract_tableau_data import TableauExtractor
         tmpdir = tempfile.mkdtemp()
         try:
             ext = TableauExtractor(SAMPLE_TWB, output_dir=tmpdir)
@@ -54,7 +54,6 @@ class TestExtractorInit(unittest.TestCase):
             shutil.rmtree(tmpdir)
 
     def test_missing_file_raises_or_returns_none(self):
-        from extract_tableau_data import TableauExtractor
         tmpdir = tempfile.mkdtemp()
         try:
             ext = TableauExtractor('/nonexistent/file.twb', output_dir=tmpdir)
@@ -80,7 +79,6 @@ class TestFullExtraction(unittest.TestCase):
     def setUpClass(cls):
         """Run extraction once for all tests in this class."""
         cls.tmpdir = tempfile.mkdtemp()
-        from extract_tableau_data import TableauExtractor
         ext = TableauExtractor(SAMPLE_TWB, output_dir=cls.tmpdir)
 
         # Suppress print output during extraction

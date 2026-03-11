@@ -60,6 +60,7 @@ class MigrationReport:
         self.report_name = report_name
         self.created_at = datetime.now().isoformat()
         self.items = []
+        self.table_mapping = []  # source→target table mapping
         self._summary = None
 
     def add_item(self, category, name, status, *, dax=None, note=None,
@@ -237,14 +238,48 @@ class MigrationReport:
                               note='User filter → RLS role with USERPRINCIPALNAME()')
 
     def add_datasources(self, datasources):
-        """Add datasource migration entries."""
+        """Add datasource migration entries and build table mapping."""
         for ds in datasources:
             name = ds.get('name') or ds.get('caption', 'Unknown')
+            caption = ds.get('caption') or name
             conn = ds.get('connection', {})
             conn_type = conn.get('class', conn.get('type', '?'))
-            tables = len(ds.get('tables', []))
+            tables = ds.get('tables', [])
+            table_count = len(tables)
             self.add_item('datasource', name, self.EXACT,
-                          note=f"{conn_type}, {tables} table(s)")
+                          note=f"{conn_type}, {table_count} table(s)")
+
+            # Add per-table mapping entries
+            for table in tables:
+                if not isinstance(table, dict):
+                    continue
+                tbl_name = table.get('name', '')
+                if not tbl_name or tbl_name == 'Unknown':
+                    continue
+                col_count = len(table.get('columns', []))
+                self.table_mapping.append({
+                    'source_datasource': caption,
+                    'source_table': tbl_name,
+                    'target_table': tbl_name,
+                    'connection_type': conn_type,
+                    'columns': col_count,
+                })
+
+    def add_table_mapping_from_tmdl(self, tmdl_tables):
+        """Update table mapping with actual TMDL target table names.
+
+        Call this after TMDL generation to record which target tables
+        were actually created (some source tables may be deduplicated
+        or renamed).
+
+        Args:
+            tmdl_tables: Set or list of table names present in the
+                generated TMDL semantic model.
+        """
+        tmdl_set = set(tmdl_tables) if not isinstance(tmdl_tables, set) else tmdl_tables
+        for entry in self.table_mapping:
+            if entry['target_table'] not in tmdl_set:
+                entry['target_table'] = '(deduplicated / merged)'
 
     # ── Classification helpers ───────────────────────────────────
 
@@ -328,6 +363,7 @@ class MigrationReport:
             'report_name': self.report_name,
             'created_at': self.created_at,
             'summary': self.get_summary(),
+            'table_mapping': self.table_mapping,
             'items': self.items,
         }
 
@@ -376,6 +412,19 @@ class MigrationReport:
                 exact = counts.get('exact', 0)
                 pct = round(exact / total * 100) if total else 0
                 print(f'    {cat:<20} {total:>4} items  ({pct}% exact)')
+
+        # Table mapping
+        if self.table_mapping:
+            print()
+            print('  Table mapping (source → target):')
+            print(f'    {"Source Datasource":<30} {"Source Table":<30} {"Target Table":<30} {"Columns":>7}')
+            print(f'    {"─" * 30} {"─" * 30} {"─" * 30} {"─" * 7}')
+            for entry in self.table_mapping:
+                src_ds = entry['source_datasource'][:30]
+                src_tbl = entry['source_table'][:30]
+                tgt_tbl = entry['target_table'][:30]
+                cols = entry.get('columns', 0)
+                print(f'    {src_ds:<30} {src_tbl:<30} {tgt_tbl:<30} {cols:>7}')
 
         # List unsupported items
         unsupported = [i for i in self.items if i['status'] == self.UNSUPPORTED]

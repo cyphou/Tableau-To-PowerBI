@@ -271,6 +271,24 @@ def generate_html(assessments, reports, metadata):
             vt_tags = " &nbsp; ".join(f'{ws}→<em>{mark}</em>' for ws, mark in vtm.items())
             html += f'<p style="font-size:0.85em;color:#605e5c"><strong>Visual mappings:</strong> {vt_tags}</p>'
 
+        # Table mapping (source → target)
+        table_mapping = r.get("table_mapping", [])
+        if table_mapping:
+            html += """<h4 style="margin-top:15px;color:#323130">&#128203; Table Mapping (Source → Target)</h4>
+<table class="detail-table">
+<tr><th>Source Datasource</th><th>Source Table</th><th>Target Table (PBI)</th><th>Connection</th><th>Columns</th></tr>"""
+            for tm in table_mapping:
+                tgt = tm.get('target_table', '')
+                tgt_style = 'color:#dc3545;font-style:italic' if tgt.startswith('(') else ''
+                html += f"""<tr>
+    <td>{tm.get('source_datasource', '')}</td>
+    <td><strong>{tm.get('source_table', '')}</strong></td>
+    <td style="{tgt_style}"><strong>{tgt}</strong></td>
+    <td><span class="connector-tag">{tm.get('connection_type', '?')}</span></td>
+    <td style="text-align:right">{tm.get('columns', 0)}</td>
+</tr>"""
+            html += "</table>"
+
         # Approximations
         approx = m.get("approximations", [])
         if approx:

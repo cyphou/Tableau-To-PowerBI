@@ -29,6 +29,22 @@ sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, 'tableau_export'))
 sys.path.insert(0, os.path.join(ROOT, 'powerbi_import'))
 
+from dax_converter import convert_tableau_formula_to_dax
+import xml.etree.ElementTree as ET
+from extract_tableau_data import TableauExtractor
+from validator import ArtifactValidator
+from pbip_generator import PowerBIProjectGenerator as PBIPGenerator
+from tmdl_generator import _convert_tableau_format_to_pbi
+import importlib
+from powerbi_import.deploy.config import settings as smod
+from tmdl_generator import _build_semantic_model, _add_date_table
+from tmdl_generator import _add_date_table
+import migrate
+from powerbi_import.deploy.utils import DeploymentReport
+from powerbi_import.deploy.utils import ArtifactCache
+from powerbi_import.deploy.client import FabricClient
+from powerbi_import.deploy.deployer import FabricDeployer
+
 
 # ═══════════════════════════════════════════════════════════════════
 # DAX Conversion Tests — New Patterns
@@ -38,7 +54,6 @@ class TestDaxNewConversions(unittest.TestCase):
     """Test new/fixed DAX conversion patterns."""
 
     def _convert(self, formula, table='T', col_map=None, measure_names=None):
-        from dax_converter import convert_tableau_formula_to_dax
         return convert_tableau_formula_to_dax(
             formula,
             column_table_map=col_map or {},
@@ -123,8 +138,6 @@ class TestDatasourceFilterExtraction(unittest.TestCase):
     """Test extraction of datasource-level filters."""
 
     def test_parse_categorical_filter(self):
-        import xml.etree.ElementTree as ET
-        from extract_tableau_data import TableauExtractor
 
         xml = '''<filter column="[Products].[Category]" class="categorical">
             <groupfilter function="member" member="Furniture"/>
@@ -138,8 +151,6 @@ class TestDatasourceFilterExtraction(unittest.TestCase):
         self.assertIn('Furniture', result['values'])
 
     def test_parse_quantitative_filter(self):
-        import xml.etree.ElementTree as ET
-        from extract_tableau_data import TableauExtractor
 
         xml = '''<filter column="[Sales]" class="quantitative">
             <min value="100"/>
@@ -153,8 +164,6 @@ class TestDatasourceFilterExtraction(unittest.TestCase):
         self.assertEqual(result['range_max'], '5000')
 
     def test_parse_filter_no_column_returns_none(self):
-        import xml.etree.ElementTree as ET
-        from extract_tableau_data import TableauExtractor
 
         xml = '<filter class="categorical"/>'
         el = ET.fromstring(xml)
@@ -162,8 +171,6 @@ class TestDatasourceFilterExtraction(unittest.TestCase):
         self.assertIsNone(result)
 
     def test_extract_datasource_filters_deduplicates(self):
-        import xml.etree.ElementTree as ET
-        from extract_tableau_data import TableauExtractor
 
         xml = '''<workbook>
             <datasource name="DS1" caption="Data Source">
@@ -218,7 +225,6 @@ class TestSemanticValidation(unittest.TestCase):
         shutil.rmtree(self.tmpdir)
 
     def test_collect_model_symbols(self):
-        from validator import ArtifactValidator
         symbols = ArtifactValidator._collect_model_symbols(self.sm_dir)
         self.assertIn('Sales', symbols['tables'])
         self.assertIn('Amount', symbols['columns']['Sales'])
@@ -226,12 +232,10 @@ class TestSemanticValidation(unittest.TestCase):
         self.assertIn('TotalSales', symbols['measures']['Sales'])
 
     def test_valid_references_no_warnings(self):
-        from validator import ArtifactValidator
         warnings = ArtifactValidator.validate_semantic_references(self.sm_dir)
         self.assertEqual(len(warnings), 0)
 
     def test_unknown_table_reference(self):
-        from validator import ArtifactValidator
         # Add a measure referencing an unknown table
         tables_dir = os.path.join(self.sm_dir, 'definition', 'tables')
         with open(os.path.join(tables_dir, 'Sales.tmdl'), 'a') as f:
@@ -241,7 +245,6 @@ class TestSemanticValidation(unittest.TestCase):
         self.assertTrue(any('NonExistent' in w for w in warnings))
 
     def test_unknown_column_reference(self):
-        from validator import ArtifactValidator
         tables_dir = os.path.join(self.sm_dir, 'definition', 'tables')
         with open(os.path.join(tables_dir, 'Sales.tmdl'), 'a') as f:
             f.write("  measure BadCol\n")
@@ -250,7 +253,6 @@ class TestSemanticValidation(unittest.TestCase):
         self.assertTrue(any('NonExistentCol' in w for w in warnings))
 
     def test_validate_project_includes_semantic_check(self):
-        from validator import ArtifactValidator
         # Build a full project structure
         proj_dir = os.path.join(self.tmpdir, 'TestProj')
         os.makedirs(proj_dir)
@@ -284,7 +286,6 @@ class TestSlicerTypeVariety(unittest.TestCase):
     """Test slicer mode detection and generation."""
 
     def test_create_slicer_dropdown_mode(self):
-        from pbip_generator import PowerBIProjectGenerator as PBIPGenerator
         gen = PBIPGenerator.__new__(PBIPGenerator)
         slicer = gen._create_slicer_visual('v1', 0, 0, 200, 60, 'Region', 'Sales', 1,
                                             slicer_mode='Dropdown')
@@ -292,7 +293,6 @@ class TestSlicerTypeVariety(unittest.TestCase):
         self.assertEqual(mode_val, "'Dropdown'")
 
     def test_create_slicer_list_mode(self):
-        from pbip_generator import PowerBIProjectGenerator as PBIPGenerator
         gen = PBIPGenerator.__new__(PBIPGenerator)
         slicer = gen._create_slicer_visual('v2', 0, 0, 200, 200, 'Category', 'Products', 1,
                                             slicer_mode='List')
@@ -300,7 +300,6 @@ class TestSlicerTypeVariety(unittest.TestCase):
         self.assertEqual(mode_val, "'List'")
 
     def test_create_slicer_between_mode_has_numeric_input(self):
-        from pbip_generator import PowerBIProjectGenerator as PBIPGenerator
         gen = PBIPGenerator.__new__(PBIPGenerator)
         slicer = gen._create_slicer_visual('v3', 0, 0, 200, 60, 'Amount', 'Sales', 1,
                                             slicer_mode='Between')
@@ -310,7 +309,6 @@ class TestSlicerTypeVariety(unittest.TestCase):
         self.assertIn('numericInputStyle', slicer['visual']['objects'])
 
     def test_detect_slicer_mode_range_param(self):
-        from pbip_generator import PowerBIProjectGenerator as PBIPGenerator
         gen = PBIPGenerator.__new__(PBIPGenerator)
         obj = {'param': '[Parameters].[Sales Range]', 'name': 'Sales Range'}
         converted = {
@@ -321,7 +319,6 @@ class TestSlicerTypeVariety(unittest.TestCase):
         self.assertEqual(mode, 'Between')
 
     def test_detect_slicer_mode_list_param(self):
-        from pbip_generator import PowerBIProjectGenerator as PBIPGenerator
         gen = PBIPGenerator.__new__(PBIPGenerator)
         obj = {'param': '[Parameters].[Region]', 'name': 'Region'}
         converted = {
@@ -332,7 +329,6 @@ class TestSlicerTypeVariety(unittest.TestCase):
         self.assertEqual(mode, 'List')
 
     def test_detect_slicer_mode_date_column(self):
-        from pbip_generator import PowerBIProjectGenerator as PBIPGenerator
         gen = PBIPGenerator.__new__(PBIPGenerator)
         obj = {'param': '', 'name': 'Order Date'}
         converted = {
@@ -347,7 +343,6 @@ class TestSlicerTypeVariety(unittest.TestCase):
         self.assertEqual(mode, 'Basic')  # date → relative date slicer
 
     def test_detect_slicer_mode_numeric_column(self):
-        from pbip_generator import PowerBIProjectGenerator as PBIPGenerator
         gen = PBIPGenerator.__new__(PBIPGenerator)
         obj = {'param': '', 'name': 'Quantity'}
         converted = {
@@ -362,7 +357,6 @@ class TestSlicerTypeVariety(unittest.TestCase):
         self.assertEqual(mode, 'Between')
 
     def test_detect_slicer_mode_default_dropdown(self):
-        from pbip_generator import PowerBIProjectGenerator as PBIPGenerator
         gen = PBIPGenerator.__new__(PBIPGenerator)
         obj = {'param': '', 'name': 'Status'}
         converted = {'parameters': [], 'datasources': []}
@@ -384,7 +378,6 @@ class TestDrillthroughPages(unittest.TestCase):
         shutil.rmtree(self.tmpdir)
 
     def test_drillthrough_creates_page(self):
-        from pbip_generator import PowerBIProjectGenerator as PBIPGenerator
         gen = PBIPGenerator.__new__(PBIPGenerator)
         pages_dir = os.path.join(self.tmpdir, 'pages')
         os.makedirs(pages_dir)
@@ -413,7 +406,6 @@ class TestDrillthroughPages(unittest.TestCase):
         self.assertIn('Drillthrough - Detail', page_data.get('displayName', ''))
 
     def test_drillthrough_no_actions_no_pages(self):
-        from pbip_generator import PowerBIProjectGenerator as PBIPGenerator
         gen = PBIPGenerator.__new__(PBIPGenerator)
         pages_dir = os.path.join(self.tmpdir, 'pages')
         os.makedirs(pages_dir)
@@ -424,7 +416,6 @@ class TestDrillthroughPages(unittest.TestCase):
         self.assertEqual(len(page_names), 0)
 
     def test_drillthrough_skips_unknown_worksheet(self):
-        from pbip_generator import PowerBIProjectGenerator as PBIPGenerator
         gen = PBIPGenerator.__new__(PBIPGenerator)
         pages_dir = os.path.join(self.tmpdir, 'pages')
         os.makedirs(pages_dir)
@@ -446,7 +437,6 @@ class TestNumberFormatConversion(unittest.TestCase):
     """Test Tableau → PBI number format conversion."""
 
     def _convert(self, fmt):
-        from tmdl_generator import _convert_tableau_format_to_pbi
         return _convert_tableau_format_to_pbi(fmt)
 
     def test_percentage_format(self):
@@ -493,8 +483,6 @@ class TestSettingsValidation(unittest.TestCase):
         orig = os.environ.get('LOG_LEVEL')
         os.environ['LOG_LEVEL'] = 'INVALID_LEVEL'
         try:
-            import importlib
-            from powerbi_import.deploy.config import settings as smod
             importlib.reload(smod)
             s = smod._FallbackSettings()
             self.assertEqual(s.log_level, 'INFO')  # Should fall back to INFO
@@ -508,8 +496,6 @@ class TestSettingsValidation(unittest.TestCase):
         orig = os.environ.get('RETRY_ATTEMPTS')
         os.environ['RETRY_ATTEMPTS'] = '-5'
         try:
-            import importlib
-            from powerbi_import.deploy.config import settings as smod
             importlib.reload(smod)
             s = smod._FallbackSettings()
             self.assertEqual(s.retry_attempts, 3)  # Should fall back to default
@@ -523,8 +509,6 @@ class TestSettingsValidation(unittest.TestCase):
         orig = os.environ.get('DEPLOYMENT_TIMEOUT')
         os.environ['DEPLOYMENT_TIMEOUT'] = '0.5'
         try:
-            import importlib
-            from powerbi_import.deploy.config import settings as smod
             importlib.reload(smod)
             s = smod._FallbackSettings()
             self.assertEqual(s.deployment_timeout, 0.5)
@@ -543,7 +527,6 @@ class TestCalendarCustomization(unittest.TestCase):
     """Test that calendar start/end years are configurable."""
 
     def test_calendar_custom_range(self):
-        from tmdl_generator import _build_semantic_model, _add_date_table
         model = {
             'model': {
                 'tables': [
@@ -572,7 +555,6 @@ class TestCalendarCustomization(unittest.TestCase):
         self.assertIn('2025', m_expr)
 
     def test_calendar_default_range(self):
-        from tmdl_generator import _add_date_table
         model = {
             'model': {
                 'tables': [
@@ -606,9 +588,7 @@ class TestBatchModeCLI(unittest.TestCase):
         sys_argv_orig = sys.argv
         try:
             sys.argv = ['migrate.py', '--batch', 'examples/tableau_samples/']
-            import importlib
             # We test the argparse setup by importing and checking
-            import migrate
             parser = migrate.create_parser()
             args = parser.parse_args(['--batch', 'examples/tableau_samples/'])
             self.assertEqual(args.batch, 'examples/tableau_samples/')
@@ -621,7 +601,6 @@ class TestBatchModeCLI(unittest.TestCase):
     def test_dry_run_arg_parsed(self):
         """Test that --dry-run argument is recognized."""
         try:
-            import migrate
             parser = migrate.create_parser()
             args = parser.parse_args(['workbook.twbx', '--dry-run'])
             self.assertTrue(args.dry_run)
@@ -631,7 +610,6 @@ class TestBatchModeCLI(unittest.TestCase):
     def test_calendar_args_parsed(self):
         """Test that --calendar-start/end arguments are recognized."""
         try:
-            import migrate
             parser = migrate.create_parser()
             args = parser.parse_args(['workbook.twbx',
                                       '--calendar-start', '2018',
@@ -644,7 +622,6 @@ class TestBatchModeCLI(unittest.TestCase):
     def test_culture_arg_parsed(self):
         """Test that --culture argument is recognized."""
         try:
-            import migrate
             parser = migrate.create_parser()
             args = parser.parse_args(['workbook.twbx', '--culture', 'fr-FR'])
             self.assertEqual(args.culture, 'fr-FR')
@@ -660,8 +637,6 @@ class TestReferenceBandExtraction(unittest.TestCase):
     """Test reference band detection in extract_reference_lines."""
 
     def test_reference_band_detected(self):
-        import xml.etree.ElementTree as ET
-        from extract_tableau_data import TableauExtractor
 
         xml = '''<worksheet name="Test">
             <table>
@@ -692,7 +667,6 @@ class TestDeploymentEdgeCases(unittest.TestCase):
     """Test deployment-related edge cases."""
 
     def test_deployment_report_pass_fail(self):
-        from powerbi_import.deploy.utils import DeploymentReport
         report = DeploymentReport()
         report.add_result('artifact1', 'report', 'success')
         report.add_result('artifact2', 'dataset', 'failed', error='HTTP 500')
@@ -703,7 +677,6 @@ class TestDeploymentEdgeCases(unittest.TestCase):
         self.assertEqual(len(failed), 1)
 
     def test_artifact_cache_metadata(self):
-        from powerbi_import.deploy.utils import ArtifactCache
         tmpdir = tempfile.mkdtemp()
         try:
             cache_file = os.path.join(tmpdir, '.fabric_cache')
@@ -716,7 +689,6 @@ class TestDeploymentEdgeCases(unittest.TestCase):
             shutil.rmtree(tmpdir)
 
     def test_fabric_client_constructor(self):
-        from powerbi_import.deploy.client import FabricClient
         # FabricClient takes authenticator=None; may fail due to relative imports
         try:
             client = FabricClient()
@@ -726,7 +698,6 @@ class TestDeploymentEdgeCases(unittest.TestCase):
             pass
 
     def test_deployer_constructor(self):
-        from powerbi_import.deploy.deployer import FabricDeployer
         # FabricDeployer takes client=None
         try:
             deployer = FabricDeployer()

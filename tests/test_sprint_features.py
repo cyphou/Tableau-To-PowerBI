@@ -33,6 +33,25 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'powerbi_import
 
 from tests.conftest import SAMPLE_DATASOURCE, SAMPLE_EXTRACTED, make_temp_dir, cleanup_dir
 
+from dax_converter import convert_tableau_formula_to_dax
+from visual_generator import _build_small_multiples_config
+from visual_generator import SMALL_MULTIPLES_TYPES
+from visual_generator import _calculate_proportional_layout
+from visual_generator import _build_dynamic_reference_line
+from visual_generator import _build_data_bar_config
+from pbip_generator import PowerBIProjectGenerator
+from tmdl_generator import generate_tmdl
+from m_query_builder import generate_power_query_m
+from m_query_builder import apply_connection_template
+from m_query_builder import templatize_m_query
+from powerbi_import.config.migration_config import MigrationConfig
+from powerbi_import.config.migration_config import load_config
+from plugins import PluginManager, PluginBase
+from plugins import PluginManager
+from plugins import get_plugin_manager, reset_plugin_manager
+from plugins import PluginBase
+import argparse
+
 
 # ═══════════════════════════════════════════════════════════════════════
 #  DAX CONVERTER — Sprint 2/3/4 features
@@ -42,7 +61,6 @@ class TestRegexpMatch(unittest.TestCase):
     """Tests for REGEXP_MATCH → CONTAINSSTRING/LEFT/RIGHT conversion."""
 
     def _convert(self, formula, **kwargs):
-        from dax_converter import convert_tableau_formula_to_dax
         return convert_tableau_formula_to_dax(formula, **kwargs)
 
     def test_regexp_match_simple_literal(self):
@@ -80,7 +98,6 @@ class TestNestedLOD(unittest.TestCase):
     """Tests for nested LOD expression parsing with balanced braces."""
 
     def _convert(self, formula, **kwargs):
-        from dax_converter import convert_tableau_formula_to_dax
         return convert_tableau_formula_to_dax(formula, **kwargs)
 
     def test_single_fixed_lod(self):
@@ -114,7 +131,6 @@ class TestStringConcatPlus(unittest.TestCase):
     """Tests for string + → & conversion at all depths."""
 
     def _convert(self, formula, **kwargs):
-        from dax_converter import convert_tableau_formula_to_dax
         return convert_tableau_formula_to_dax(formula, calc_datatype='string', **kwargs)
 
     def test_simple_string_concat(self):
@@ -122,7 +138,6 @@ class TestStringConcatPlus(unittest.TestCase):
         self.assertIn('&', result)
 
     def test_preserves_numeric_plus(self):
-        from dax_converter import convert_tableau_formula_to_dax
         result = convert_tableau_formula_to_dax('[Amount] + 10', calc_datatype='real')
         self.assertIn('+', result)
         self.assertNotIn('&', result)
@@ -140,19 +155,16 @@ class TestSmallMultiples(unittest.TestCase):
     """Tests for Small Multiples visual configuration."""
 
     def test_small_multiples_config_structure(self):
-        from visual_generator import _build_small_multiples_config
         config, projection = _build_small_multiples_config('Region', 'Sales')
         self.assertIsInstance(config, dict)
         self.assertIsInstance(projection, dict)
 
     def test_small_multiples_projection(self):
-        from visual_generator import _build_small_multiples_config
         config, projection = _build_small_multiples_config('Category', 'Sales')
         self.assertIn('field', projection)
         self.assertIn('queryRef', projection)
 
     def test_small_multiples_types_defined(self):
-        from visual_generator import SMALL_MULTIPLES_TYPES
         self.assertIn('clusteredBarChart', SMALL_MULTIPLES_TYPES)
         self.assertIn('lineChart', SMALL_MULTIPLES_TYPES)
         self.assertIn('areaChart', SMALL_MULTIPLES_TYPES)
@@ -162,7 +174,6 @@ class TestProportionalLayout(unittest.TestCase):
     """Tests for proportional visual positioning from Tableau source positions."""
 
     def test_basic_layout(self):
-        from visual_generator import _calculate_proportional_layout
         worksheets = ['Sheet1', 'Sheet2']
         source_positions = [
             {'x': 0, 'y': 0, 'w': 400, 'h': 300},
@@ -181,14 +192,12 @@ class TestProportionalLayout(unittest.TestCase):
             self.assertIsInstance(h, int)
 
     def test_grid_fallback(self):
-        from visual_generator import _calculate_proportional_layout
         # No source positions should use grid fallback
         worksheets = ['S1', 'S2', 'S3', 'S4']
         result = _calculate_proportional_layout(worksheets, 1280, 720)
         self.assertEqual(len(result), 4)
 
     def test_minimum_size_enforced(self):
-        from visual_generator import _calculate_proportional_layout
         worksheets = ['Sheet1']
         source_positions = [{'x': 0, 'y': 0, 'w': 1, 'h': 1}]
         result = _calculate_proportional_layout(worksheets, 1280, 720,
@@ -202,7 +211,6 @@ class TestDynamicReferenceLines(unittest.TestCase):
     """Tests for dynamic reference line generation."""
 
     def test_average_reference_line(self):
-        from visual_generator import _build_dynamic_reference_line
         config = _build_dynamic_reference_line('average', 'Sales', 'SalesTable')
         self.assertIsNotNone(config)
         self.assertIn('properties', config)
@@ -210,26 +218,22 @@ class TestDynamicReferenceLines(unittest.TestCase):
         self.assertEqual(props['type']['expr']['Literal']['Value'], "'Average'")
 
     def test_median_reference_line(self):
-        from visual_generator import _build_dynamic_reference_line
         config = _build_dynamic_reference_line('median', 'Sales', 'SalesTable')
         props = config['properties']
         self.assertEqual(props['type']['expr']['Literal']['Value'], "'Median'")
 
     def test_percentile_reference_line(self):
-        from visual_generator import _build_dynamic_reference_line
         config = _build_dynamic_reference_line('percentile', 'Sales', 'SalesTable')
         props = config['properties']
         self.assertEqual(props['type']['expr']['Literal']['Value'], "'Percentile'")
         self.assertIn('percentile', props)
 
     def test_trend_reference_line(self):
-        from visual_generator import _build_dynamic_reference_line
         config = _build_dynamic_reference_line('trend', 'Sales', 'SalesTable')
         self.assertIn('properties', config)
         self.assertEqual(config['properties']['type']['expr']['Literal']['Value'], "'Trend'")
 
     def test_unknown_type_fallback(self):
-        from visual_generator import _build_dynamic_reference_line
         config = _build_dynamic_reference_line('unknown_type', 'Sales', 'SalesTable')
         # Unknown types still produce a config dict with properties
         self.assertIn('properties', config)
@@ -240,14 +244,12 @@ class TestDataBars(unittest.TestCase):
     """Tests for data bar configuration on table/matrix visuals."""
 
     def test_data_bar_config(self):
-        from visual_generator import _build_data_bar_config
         config = _build_data_bar_config('Amount', 'Sales')
         self.assertIn('positiveColor', config)
         self.assertIn('negativeColor', config)
         self.assertIn('axisColor', config)
 
     def test_data_bar_has_column_name(self):
-        from visual_generator import _build_data_bar_config
         config = _build_data_bar_config('Revenue', 'Sales')
         # Column name is in the field property
         self.assertIn('field', config)
@@ -262,7 +264,6 @@ class TestRichTextParsing(unittest.TestCase):
     """Tests for rich text textbox parsing in PBIP generator."""
 
     def _parse(self, obj):
-        from pbip_generator import PowerBIProjectGenerator
         return PowerBIProjectGenerator._parse_rich_text_runs(obj)
 
     def test_plain_text_fallback(self):
@@ -341,7 +342,6 @@ class TestCompositeModel(unittest.TestCase):
     """Tests for composite model mode in TMDL generation."""
 
     def test_generate_tmdl_accepts_model_mode(self):
-        from tmdl_generator import generate_tmdl
         temp_dir = make_temp_dir()
         try:
             datasources = [copy.deepcopy(SAMPLE_DATASOURCE)]
@@ -358,7 +358,6 @@ class TestCompositeModel(unittest.TestCase):
             cleanup_dir(temp_dir)
 
     def test_import_mode_is_default(self):
-        from tmdl_generator import generate_tmdl
         temp_dir = make_temp_dir()
         try:
             datasources = [copy.deepcopy(SAMPLE_DATASOURCE)]
@@ -373,7 +372,6 @@ class TestCompositeModel(unittest.TestCase):
             cleanup_dir(temp_dir)
 
     def test_directquery_mode(self):
-        from tmdl_generator import generate_tmdl
         temp_dir = make_temp_dir()
         try:
             datasources = [copy.deepcopy(SAMPLE_DATASOURCE)]
@@ -397,7 +395,6 @@ class TestNewConnectors(unittest.TestCase):
     """Tests for Fabric Lakehouse and Dataverse connectors."""
 
     def test_fabric_lakehouse(self):
-        from m_query_builder import generate_power_query_m
         conn = {'type': 'Fabric Lakehouse', 'details': {
             'workspace_id': 'ws-123', 'lakehouse_id': 'lh-456'
         }}
@@ -407,7 +404,6 @@ class TestNewConnectors(unittest.TestCase):
         self.assertIn('ws-123', result)
 
     def test_dataverse(self):
-        from m_query_builder import generate_power_query_m
         conn = {'type': 'Dataverse', 'details': {
             'server': 'https://org.crm.dynamics.com'
         }}
@@ -416,7 +412,6 @@ class TestNewConnectors(unittest.TestCase):
         self.assertIn('CommonDataService.Database', result)
 
     def test_cds_alias(self):
-        from m_query_builder import generate_power_query_m
         conn = {'type': 'CDS', 'details': {}}
         table = {'name': 'T1', 'columns': []}
         result = generate_power_query_m(conn, table)
@@ -427,7 +422,6 @@ class TestConnectionTemplating(unittest.TestCase):
     """Tests for ${ENV.*} connection string templating."""
 
     def test_apply_template_with_values(self):
-        from m_query_builder import apply_connection_template
         m_query = 'Source = Sql.Database("${ENV.SERVER}", "${ENV.DATABASE}")'
         result = apply_connection_template(m_query, {'SERVER': 'prod.db.com', 'DATABASE': 'analytics'})
         self.assertIn('prod.db.com', result)
@@ -435,20 +429,17 @@ class TestConnectionTemplating(unittest.TestCase):
         self.assertNotIn('${ENV.', result)
 
     def test_apply_template_without_values(self):
-        from m_query_builder import apply_connection_template
         m_query = 'Source = Sql.Database("${ENV.SERVER}", "${ENV.DATABASE}")'
         result = apply_connection_template(m_query)
         self.assertIn('SERVER', result)
         self.assertIn('DATABASE', result)
 
     def test_no_template_passthrough(self):
-        from m_query_builder import apply_connection_template
         m_query = 'Source = Sql.Database("localhost", "mydb")'
         result = apply_connection_template(m_query)
         self.assertEqual(result, m_query)
 
     def test_templatize_m_query(self):
-        from m_query_builder import templatize_m_query
         m_query = 'Source = Sql.Database("myserver.db.com", "analytics")'
         conn = {'details': {'server': 'myserver.db.com', 'database': 'analytics'}}
         result = templatize_m_query(m_query, conn)
@@ -456,7 +447,6 @@ class TestConnectionTemplating(unittest.TestCase):
         self.assertIn('${ENV.DATABASE}', result)
 
     def test_templatize_preserves_unknown(self):
-        from m_query_builder import templatize_m_query
         result = templatize_m_query('Source = foo', None)
         self.assertEqual(result, 'Source = foo')
 
@@ -469,7 +459,6 @@ class TestMigrationConfig(unittest.TestCase):
     """Tests for MigrationConfig class."""
 
     def test_default_config(self):
-        from powerbi_import.config.migration_config import MigrationConfig
         config = MigrationConfig()
         self.assertEqual(config.model_mode, 'import')
         self.assertEqual(config.culture, 'en-US')
@@ -480,7 +469,6 @@ class TestMigrationConfig(unittest.TestCase):
         self.assertFalse(config.rollback)
 
     def test_custom_config(self):
-        from powerbi_import.config.migration_config import MigrationConfig
         config = MigrationConfig({
             'model': {'mode': 'composite', 'culture': 'fr-FR'},
             'output': {'format': 'tmdl'},
@@ -490,7 +478,6 @@ class TestMigrationConfig(unittest.TestCase):
         self.assertEqual(config.output_format, 'tmdl')
 
     def test_load_from_file(self):
-        from powerbi_import.config.migration_config import MigrationConfig
         temp_dir = make_temp_dir()
         try:
             config_path = os.path.join(temp_dir, 'config.json')
@@ -502,12 +489,10 @@ class TestMigrationConfig(unittest.TestCase):
             cleanup_dir(temp_dir)
 
     def test_file_not_found_raises(self):
-        from powerbi_import.config.migration_config import MigrationConfig
         with self.assertRaises(FileNotFoundError):
             MigrationConfig.from_file('/nonexistent/config.json')
 
     def test_save_config(self):
-        from powerbi_import.config.migration_config import MigrationConfig
         temp_dir = make_temp_dir()
         try:
             config = MigrationConfig({'model': {'mode': 'composite'}})
@@ -521,7 +506,6 @@ class TestMigrationConfig(unittest.TestCase):
             cleanup_dir(temp_dir)
 
     def test_to_dict(self):
-        from powerbi_import.config.migration_config import MigrationConfig
         config = MigrationConfig()
         d = config.to_dict()
         self.assertIsInstance(d, dict)
@@ -530,14 +514,12 @@ class TestMigrationConfig(unittest.TestCase):
         self.assertIn('output', d)
 
     def test_template_vars(self):
-        from powerbi_import.config.migration_config import MigrationConfig
         config = MigrationConfig({
             'connections': {'template_vars': {'SERVER': 'prod.db'}}
         })
         self.assertEqual(config.template_vars['SERVER'], 'prod.db')
 
     def test_plugins_list(self):
-        from powerbi_import.config.migration_config import MigrationConfig
         config = MigrationConfig({'plugins': ['my_plugin.MyPlugin']})
         self.assertEqual(config.plugins, ['my_plugin.MyPlugin'])
 
@@ -546,12 +528,10 @@ class TestLoadConfig(unittest.TestCase):
     """Tests for the load_config convenience function."""
 
     def test_no_args_returns_defaults(self):
-        from powerbi_import.config.migration_config import load_config
         config = load_config()
         self.assertEqual(config.model_mode, 'import')
 
     def test_file_only(self):
-        from powerbi_import.config.migration_config import load_config
         temp_dir = make_temp_dir()
         try:
             config_path = os.path.join(temp_dir, 'config.json')
@@ -571,7 +551,6 @@ class TestPluginManager(unittest.TestCase):
     """Tests for the plugin manager."""
 
     def test_register_plugin(self):
-        from plugins import PluginManager, PluginBase
         manager = PluginManager()
         plugin = PluginBase()
         plugin.name = 'test_plugin'
@@ -579,7 +558,6 @@ class TestPluginManager(unittest.TestCase):
         self.assertEqual(len(manager.plugins), 1)
 
     def test_call_hook(self):
-        from plugins import PluginManager
 
         class TestPlugin:
             name = 'echo'
@@ -592,7 +570,6 @@ class TestPluginManager(unittest.TestCase):
         self.assertEqual(result, 'called')
 
     def test_apply_transform_chain(self):
-        from plugins import PluginManager
 
         class UpperPlugin:
             name = 'upper'
@@ -611,7 +588,6 @@ class TestPluginManager(unittest.TestCase):
         self.assertEqual(result, 'RESULT: SUM(X)')
 
     def test_missing_hook_ignored(self):
-        from plugins import PluginManager
 
         class EmptyPlugin:
             name = 'empty'
@@ -622,14 +598,12 @@ class TestPluginManager(unittest.TestCase):
         self.assertIsNone(result)
 
     def test_has_plugins(self):
-        from plugins import PluginManager
         manager = PluginManager()
         self.assertFalse(manager.has_plugins())
         manager.register(type('P', (), {'name': 'p'})())
         self.assertTrue(manager.has_plugins())
 
     def test_global_manager(self):
-        from plugins import get_plugin_manager, reset_plugin_manager
         manager = get_plugin_manager()
         self.assertIsNotNone(manager)
         new_manager = reset_plugin_manager()
@@ -637,7 +611,6 @@ class TestPluginManager(unittest.TestCase):
         self.assertEqual(len(new_manager.plugins), 0)
 
     def test_custom_visual_mapping_hook(self):
-        from plugins import PluginManager
 
         class MapPlugin:
             name = 'map'
@@ -654,7 +627,6 @@ class TestPluginManager(unittest.TestCase):
         self.assertIsNone(result2)
 
     def test_error_handling_in_hook(self):
-        from plugins import PluginManager
 
         class BrokenPlugin:
             name = 'broken'
@@ -672,7 +644,6 @@ class TestPluginBase(unittest.TestCase):
     """Tests for PluginBase default implementations."""
 
     def test_all_hooks_exist(self):
-        from plugins import PluginBase
         base = PluginBase()
         # All hook methods should be callable
         self.assertTrue(callable(base.pre_extraction))
@@ -684,12 +655,10 @@ class TestPluginBase(unittest.TestCase):
         self.assertTrue(callable(base.custom_visual_mapping))
 
     def test_transform_dax_returns_input(self):
-        from plugins import PluginBase
         base = PluginBase()
         self.assertEqual(base.transform_dax('SUM(X)'), 'SUM(X)')
 
     def test_custom_visual_returns_none(self):
-        from plugins import PluginBase
         base = PluginBase()
         self.assertIsNone(base.custom_visual_mapping('bar'))
 
@@ -703,7 +672,6 @@ class TestCLIArgParsing(unittest.TestCase):
 
     def _parse(self, args_list):
         """Parse CLI arguments using the real argument parser."""
-        import argparse
         # Replicate the argument parser from migrate.py
         parser = argparse.ArgumentParser()
         parser.add_argument('tableau_file', nargs='?', default=None)

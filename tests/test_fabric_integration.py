@@ -24,6 +24,10 @@ from powerbi_import.deploy.utils import DeploymentReport, ArtifactCache
 from powerbi_import.deploy.config.settings import _FallbackSettings
 from powerbi_import.deploy.config.environments import EnvironmentConfig, EnvironmentType
 
+from powerbi_import.gateway_config import GatewayConfigGenerator
+from powerbi_import.gateway_config import OAUTH_CONNECTORS
+from powerbi_import.comparison_report import generate_comparison_report
+
 
 # ────────────────────────────────────────────────────────
 # Auth stub
@@ -269,31 +273,26 @@ class TestGatewayConfig(unittest.TestCase):
     """Tests for the gateway configuration generator."""
 
     def test_import(self):
-        from powerbi_import.gateway_config import GatewayConfigGenerator
         gen = GatewayConfigGenerator()
         self.assertIsNotNone(gen)
 
     def test_oauth_connectors(self):
-        from powerbi_import.gateway_config import OAUTH_CONNECTORS
         self.assertIn('bigquery', OAUTH_CONNECTORS)
         self.assertIn('snowflake', OAUTH_CONNECTORS)
         self.assertIn('salesforce', OAUTH_CONNECTORS)
 
     def test_generate_empty(self):
-        from powerbi_import.gateway_config import GatewayConfigGenerator
         gen = GatewayConfigGenerator()
         config = gen.generate_gateway_config([])
         self.assertIsInstance(config, dict)
 
     def test_generate_with_datasource(self):
-        from powerbi_import.gateway_config import GatewayConfigGenerator
         ds = [{'name': 'BQ', 'connection': {'class': 'bigquery'}}]
         gen = GatewayConfigGenerator()
         config = gen.generate_gateway_config(ds)
         self.assertIn('connections', config)
 
     def test_write_config(self):
-        from powerbi_import.gateway_config import GatewayConfigGenerator
         ds = [{'name': 'SF', 'connection': {'class': 'snowflake'}}]
         gen = GatewayConfigGenerator()
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -309,11 +308,9 @@ class TestComparisonReport(unittest.TestCase):
     """Tests for the side-by-side comparison report generator."""
 
     def test_import(self):
-        from powerbi_import.comparison_report import generate_comparison_report
         self.assertTrue(callable(generate_comparison_report))
 
     def test_generate_empty(self):
-        from powerbi_import.comparison_report import generate_comparison_report
         with tempfile.TemporaryDirectory() as tmpdir:
             extract_dir = os.path.join(tmpdir, 'extract')
             pbip_dir = os.path.join(tmpdir, 'pbip')

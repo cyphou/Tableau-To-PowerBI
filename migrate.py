@@ -304,9 +304,22 @@ def run_migration_report(report_name, output_dir=None):
         hierarchies = _load('hierarchies.json')
         user_filters = _load('user_filters.json')
 
-        # Add datasources
+        # Add datasources (also builds source→target table mapping)
         if datasources:
             report.add_datasources(datasources)
+
+        # Update table mapping with actual TMDL target table names
+        base_dir = output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
+        tables_dir = os.path.join(base_dir, report_name,
+                                  f'{report_name}.SemanticModel',
+                                  'definition', 'tables')
+        if os.path.isdir(tables_dir):
+            tmdl_tables = set()
+            for tmdl_file in os.listdir(tables_dir):
+                if tmdl_file.endswith('.tmdl'):
+                    # Table name = file name without .tmdl extension
+                    tmdl_tables.add(tmdl_file[:-5])
+            report.add_table_mapping_from_tmdl(tmdl_tables)
 
         # Build calc_map from generated TMDL files to classify calculations
         calc_map = _build_calc_map_from_tmdl(report_name, output_dir)
@@ -691,10 +704,6 @@ def _run_batch_config(args):
             'fidelity': report_summary.get('fidelity_score') if report_summary else None,
             'metadata_path': os.path.join(dashboard_dir, basename, 'migration_metadata.json'),
         }
-
-        # Per-workbook HTML dashboard
-        if file_results.get('generation'):
-            run_html_dashboard(basename, dashboard_dir)
 
     # Summary
     batch_duration = datetime.now() - batch_start

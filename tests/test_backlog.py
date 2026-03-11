@@ -16,13 +16,24 @@ import unittest
 
 from tests.conftest import SAMPLE_DATASOURCE, SAMPLE_EXTRACTED, make_temp_dir, cleanup_dir
 
+from powerbi_import.tmdl_generator import resolve_table_for_column
+from powerbi_import.tmdl_generator import generate_tmdl
+from powerbi_import.incremental import IncrementalMerger, DiffEntry
+from powerbi_import.incremental import IncrementalMerger
+from powerbi_import.incremental import DiffEntry
+from powerbi_import.validator import ArtifactValidator
+from powerbi_import.telemetry import is_telemetry_enabled
+from powerbi_import.telemetry import TelemetryCollector
+import sys
+from docs.generate_api_docs import generate_with_builtin
+import docs.generate_api_docs as gen_mod
+
 
 class TestMultiDatasourceContext(unittest.TestCase):
     """Tests for multi-datasource column-to-table routing."""
 
     def test_resolve_table_for_column_global(self):
         """Falls back to global column_table_map when no datasource specified."""
-        from powerbi_import.tmdl_generator import resolve_table_for_column
         ctx = {
             'column_table_map': {'Sales': 'Orders', 'Profit': 'Orders'},
             'ds_column_table_map': {},
@@ -31,7 +42,6 @@ class TestMultiDatasourceContext(unittest.TestCase):
 
     def test_resolve_table_for_column_ds_scoped(self):
         """Returns datasource-specific table when scoped."""
-        from powerbi_import.tmdl_generator import resolve_table_for_column
         ctx = {
             'column_table_map': {'Sales': 'AllOrders'},
             'ds_column_table_map': {
@@ -50,7 +60,6 @@ class TestMultiDatasourceContext(unittest.TestCase):
 
     def test_resolve_table_for_column_fallback(self):
         """Falls back to global when column not in datasource-specific map."""
-        from powerbi_import.tmdl_generator import resolve_table_for_column
         ctx = {
             'column_table_map': {'Region': 'Geo'},
             'ds_column_table_map': {
@@ -64,18 +73,15 @@ class TestMultiDatasourceContext(unittest.TestCase):
 
     def test_resolve_table_for_column_none_context(self):
         """Returns None when dax_context is None."""
-        from powerbi_import.tmdl_generator import resolve_table_for_column
         self.assertIsNone(resolve_table_for_column('Sales'))
 
     def test_resolve_table_for_column_unknown(self):
         """Returns None for unknown columns."""
-        from powerbi_import.tmdl_generator import resolve_table_for_column
         ctx = {'column_table_map': {}, 'ds_column_table_map': {}}
         self.assertIsNone(resolve_table_for_column('Unknown', dax_context=ctx))
 
     def test_dax_context_has_ds_maps(self):
         """generate_tmdl produces dax_context with ds_column_table_map."""
-        from powerbi_import.tmdl_generator import generate_tmdl
         tmp = make_temp_dir()
         try:
             datasources = [{
@@ -127,7 +133,6 @@ class TestIncrementalMigration(unittest.TestCase):
 
     def test_diff_identical(self):
         """Identical files produce UNCHANGED entries."""
-        from powerbi_import.incremental import IncrementalMerger, DiffEntry
         self._write(self.existing, 'a.json', '{"x": 1}')
         self._write(self.incoming, 'a.json', '{"x": 1}')
         diffs = IncrementalMerger.diff_projects(self.existing, self.incoming)
@@ -136,7 +141,6 @@ class TestIncrementalMigration(unittest.TestCase):
 
     def test_diff_added(self):
         """New file in incoming is detected as ADDED."""
-        from powerbi_import.incremental import IncrementalMerger, DiffEntry
         self._write(self.existing, 'a.json', '{}')
         self._write(self.incoming, 'a.json', '{}')
         self._write(self.incoming, 'b.json', '{"new": true}')
@@ -147,7 +151,6 @@ class TestIncrementalMigration(unittest.TestCase):
 
     def test_diff_removed(self):
         """File missing from incoming is detected as REMOVED."""
-        from powerbi_import.incremental import IncrementalMerger, DiffEntry
         self._write(self.existing, 'a.json', '{}')
         self._write(self.existing, 'b.json', '{}')
         self._write(self.incoming, 'a.json', '{}')
@@ -157,7 +160,6 @@ class TestIncrementalMigration(unittest.TestCase):
 
     def test_diff_modified(self):
         """Changed content is detected as MODIFIED."""
-        from powerbi_import.incremental import IncrementalMerger, DiffEntry
         self._write(self.existing, 'a.json', '{"x": 1}')
         self._write(self.incoming, 'a.json', '{"x": 2}')
         diffs = IncrementalMerger.diff_projects(self.existing, self.incoming)
@@ -166,7 +168,6 @@ class TestIncrementalMigration(unittest.TestCase):
 
     def test_merge_preserves_user_editable_keys(self):
         """Merge preserves user-editable keys from existing project."""
-        from powerbi_import.incremental import IncrementalMerger
         self._write(self.existing, 'visual.json',
                      json.dumps({"title": "My Custom Title", "x": 1}))
         self._write(self.incoming, 'visual.json',
@@ -181,7 +182,6 @@ class TestIncrementalMigration(unittest.TestCase):
 
     def test_merge_adds_new_files(self):
         """Merge adds new files from incoming."""
-        from powerbi_import.incremental import IncrementalMerger
         self._write(self.existing, 'a.json', '{}')
         self._write(self.incoming, 'a.json', '{}')
         self._write(self.incoming, 'new.json', '{"added": true}')
@@ -191,7 +191,6 @@ class TestIncrementalMigration(unittest.TestCase):
 
     def test_merge_preserves_user_owned(self):
         """User-owned files (staticResources/) are preserved even if removed."""
-        from powerbi_import.incremental import IncrementalMerger
         self._write(self.existing, 'staticResources/logo.png', 'PNG_DATA')
         self._write(self.existing, 'a.json', '{}')
         self._write(self.incoming, 'a.json', '{}')
@@ -200,7 +199,6 @@ class TestIncrementalMigration(unittest.TestCase):
 
     def test_merge_writes_report(self):
         """Merge creates a .migration_merge_report.json."""
-        from powerbi_import.incremental import IncrementalMerger
         self._write(self.existing, 'a.json', '{}')
         self._write(self.incoming, 'a.json', '{"changed": true}')
         IncrementalMerger.merge(self.existing, self.incoming, self.output)
@@ -213,7 +211,6 @@ class TestIncrementalMigration(unittest.TestCase):
 
     def test_generate_diff_report(self):
         """generate_diff_report returns a formatted string."""
-        from powerbi_import.incremental import IncrementalMerger
         self._write(self.existing, 'a.json', '{"x": 1}')
         self._write(self.incoming, 'a.json', '{"x": 2}')
         self._write(self.incoming, 'b.json', '{}')
@@ -224,7 +221,6 @@ class TestIncrementalMigration(unittest.TestCase):
 
     def test_diff_entry_to_dict(self):
         """DiffEntry.to_dict returns expected format."""
-        from powerbi_import.incremental import DiffEntry
         d = DiffEntry('path/to/file.json', DiffEntry.MODIFIED, 'key changed')
         dd = d.to_dict()
         self.assertEqual(dd['path'], 'path/to/file.json')
@@ -233,7 +229,6 @@ class TestIncrementalMigration(unittest.TestCase):
 
     def test_merge_tmdl_takes_incoming(self):
         """Non-JSON files (like .tmdl) always take the incoming version."""
-        from powerbi_import.incremental import IncrementalMerger
         self._write(self.existing, 'model.tmdl', 'model Model\n  old content')
         self._write(self.incoming, 'model.tmdl', 'model Model\n  new content')
         stats = IncrementalMerger.merge(self.existing, self.incoming, self.output)
@@ -247,7 +242,6 @@ class TestPBIRSchemaValidation(unittest.TestCase):
 
     def test_valid_report_json(self):
         """Valid report.json passes structural validation."""
-        from powerbi_import.validator import ArtifactValidator
         data = {'$schema': ArtifactValidator.VALID_REPORT_SCHEMAS[0]}
         errors = ArtifactValidator.validate_pbir_structure(
             data, ArtifactValidator.VALID_REPORT_SCHEMAS[0])
@@ -255,7 +249,6 @@ class TestPBIRSchemaValidation(unittest.TestCase):
 
     def test_missing_schema_key(self):
         """Missing $schema in report JSON is flagged."""
-        from powerbi_import.validator import ArtifactValidator
         url = 'https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/3.1.0/schema.json'
         data = {'datasetReference': {}}
         errors = ArtifactValidator.validate_pbir_structure(data, url)
@@ -263,7 +256,6 @@ class TestPBIRSchemaValidation(unittest.TestCase):
 
     def test_valid_page_json(self):
         """Valid page.json passes structural validation."""
-        from powerbi_import.validator import ArtifactValidator
         url = ArtifactValidator.VALID_PAGE_SCHEMAS[0]
         data = {'$schema': url, 'name': 'Page1', 'displayName': 'Sales'}
         errors = ArtifactValidator.validate_pbir_structure(data, url)
@@ -271,7 +263,6 @@ class TestPBIRSchemaValidation(unittest.TestCase):
 
     def test_page_missing_required(self):
         """Page JSON missing 'name' or 'displayName' is flagged."""
-        from powerbi_import.validator import ArtifactValidator
         url = ArtifactValidator.VALID_PAGE_SCHEMAS[0]
         data = {'$schema': url, 'name': 'Page1'}
         errors = ArtifactValidator.validate_pbir_structure(data, url)
@@ -279,7 +270,6 @@ class TestPBIRSchemaValidation(unittest.TestCase):
 
     def test_visual_valid(self):
         """Valid visual.json passes structural validation."""
-        from powerbi_import.validator import ArtifactValidator
         url = ArtifactValidator.VALID_VISUAL_SCHEMAS[0]
         data = {'$schema': url, 'name': 'vis1'}
         errors = ArtifactValidator.validate_pbir_structure(data, url)
@@ -287,20 +277,17 @@ class TestPBIRSchemaValidation(unittest.TestCase):
 
     def test_non_dict_input(self):
         """Non-dict JSON produces an error."""
-        from powerbi_import.validator import ArtifactValidator
         errors = ArtifactValidator.validate_pbir_structure([], 'report/')
         self.assertTrue(any('JSON object' in e for e in errors))
 
     def test_unknown_schema_skipped(self):
         """Unknown schema URLs produce no errors (graceful skip)."""
-        from powerbi_import.validator import ArtifactValidator
         data = {'$schema': 'https://example.com/unknown/schema'}
         errors = ArtifactValidator.validate_pbir_structure(data, 'https://example.com/unknown')
         self.assertEqual(errors, [])
 
     def test_wrong_schema_version_warning(self):
         """Wrong schema version produces a warning."""
-        from powerbi_import.validator import ArtifactValidator
         url = 'https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/9.9.9/schema.json'
         data = {'$schema': url}
         errors = ArtifactValidator.validate_pbir_structure(data, url)
@@ -314,12 +301,10 @@ class TestTelemetry(unittest.TestCase):
         """Telemetry is disabled when env var not set."""
         # Ensure env var is not set
         os.environ.pop('TTPBI_TELEMETRY', None)
-        from powerbi_import.telemetry import is_telemetry_enabled
         self.assertFalse(is_telemetry_enabled())
 
     def test_enabled_via_env(self):
         """Telemetry is enabled when TTPBI_TELEMETRY=1."""
-        from powerbi_import.telemetry import is_telemetry_enabled
         os.environ['TTPBI_TELEMETRY'] = '1'
         try:
             self.assertTrue(is_telemetry_enabled())
@@ -328,7 +313,6 @@ class TestTelemetry(unittest.TestCase):
 
     def test_collector_records_stats(self):
         """TelemetryCollector records stats correctly."""
-        from powerbi_import.telemetry import TelemetryCollector
         t = TelemetryCollector(enabled=True)
         t.start()
         t.record_stats(tables=5, columns=20)
@@ -342,7 +326,6 @@ class TestTelemetry(unittest.TestCase):
 
     def test_collector_disabled_no_record(self):
         """Disabled collector doesn't record anything."""
-        from powerbi_import.telemetry import TelemetryCollector
         t = TelemetryCollector(enabled=False)
         t.record_stats(tables=5)
         t.record_error('dax', 'err')
@@ -352,7 +335,6 @@ class TestTelemetry(unittest.TestCase):
 
     def test_collector_save_to_file(self):
         """Collector saves JSONL to file."""
-        from powerbi_import.telemetry import TelemetryCollector
         tmp = make_temp_dir()
         try:
             log_path = os.path.join(tmp, 'telemetry.json')
@@ -371,7 +353,6 @@ class TestTelemetry(unittest.TestCase):
 
     def test_collector_read_log(self):
         """read_log parses JSONL correctly."""
-        from powerbi_import.telemetry import TelemetryCollector
         tmp = make_temp_dir()
         try:
             log_path = os.path.join(tmp, 'telemetry.json')
@@ -389,7 +370,6 @@ class TestTelemetry(unittest.TestCase):
 
     def test_collector_summary(self):
         """summary() returns aggregate stats."""
-        from powerbi_import.telemetry import TelemetryCollector
         tmp = make_temp_dir()
         try:
             log_path = os.path.join(tmp, 'telemetry.json')
@@ -405,13 +385,11 @@ class TestTelemetry(unittest.TestCase):
 
     def test_collector_no_log_file(self):
         """read_log returns empty list for missing file."""
-        from powerbi_import.telemetry import TelemetryCollector
         entries = TelemetryCollector.read_log('/tmp/nonexistent_ttpbi.json')
         self.assertEqual(entries, [])
 
     def test_collector_version_detection(self):
         """Tool version is detected from CHANGELOG."""
-        from powerbi_import.telemetry import TelemetryCollector
         t = TelemetryCollector(enabled=True)
         data = t.get_data()
         # Should find a version or 'unknown'
@@ -424,16 +402,13 @@ class TestAPIDocGenerator(unittest.TestCase):
 
     def test_builtin_generator(self):
         """Built-in doc generator produces HTML files."""
-        import sys
         root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         if root not in sys.path:
             sys.path.insert(0, root)
 
         tmp = make_temp_dir()
         try:
-            from docs.generate_api_docs import generate_with_builtin
             # Generate docs for a subset to keep test fast
-            import docs.generate_api_docs as gen_mod
             original_modules = gen_mod.MODULES
             gen_mod.MODULES = ['powerbi_import.validator']
             try:

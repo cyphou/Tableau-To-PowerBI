@@ -25,6 +25,10 @@ sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, 'tableau_export'))
 sys.path.insert(0, os.path.join(ROOT, 'powerbi_import'))
 
+from extract_tableau_data import TableauExtractor
+from import_to_powerbi import PowerBIImporter
+import warnings
+
 SAMPLES_DIR = os.path.join(ROOT, 'examples', 'tableau_samples')
 
 # All available sample workbooks
@@ -52,8 +56,6 @@ def _run_migration(twb_path, output_dir):
     The pipeline uses CWD-relative paths (tableau_export/, artifacts/),
     so we chdir to a temp workspace and set up the required structure.
     """
-    from extract_tableau_data import TableauExtractor
-    from import_to_powerbi import PowerBIImporter
 
     report_name = os.path.splitext(os.path.basename(twb_path))[0]
 
@@ -340,7 +342,10 @@ def _assert_report_json_valid(test_case, project_dir, report_name):
 class NonRegressionBase(unittest.TestCase):
     """
     Base class that migrates a sample workbook once in setUpClass
-    and provides the project directory to all test methods.
+    and runs all standard validation checks as test methods.
+
+    Subclasses only need to set SAMPLE_NAME.
+    All 13 standard checks are inherited automatically.
     """
     SAMPLE_NAME = None  # Override in subclasses
 
@@ -365,13 +370,7 @@ class NonRegressionBase(unittest.TestCase):
         if hasattr(cls, '_output_dir'):
             shutil.rmtree(cls._output_dir, ignore_errors=True)
 
-
-# ═══════════════════════════════════════════════════════════════════════
-# Per-sample regression suites
-# ═══════════════════════════════════════════════════════════════════════
-
-class TestSuperstoreSales(NonRegressionBase):
-    SAMPLE_NAME = "Superstore_Sales"
+    # ─── Standard checks (inherited by all subclasses) ──────────────
 
     def test_project_structure(self):
         _assert_project_structure(self, self._project_dir, self.SAMPLE_NAME)
@@ -413,167 +412,40 @@ class TestSuperstoreSales(NonRegressionBase):
         _assert_report_json_valid(self, self._project_dir, self.SAMPLE_NAME)
 
 
+# ═══════════════════════════════════════════════════════════════════════
+# Per-sample regression suites — inherit all 13 checks from base
+# ═══════════════════════════════════════════════════════════════════════
+
+class TestSuperstoreSales(NonRegressionBase):
+    SAMPLE_NAME = "Superstore_Sales"
+
+
 class TestHRAnalytics(NonRegressionBase):
     SAMPLE_NAME = "HR_Analytics"
-
-    def test_project_structure(self):
-        _assert_project_structure(self, self._project_dir, self.SAMPLE_NAME)
-
-    def test_json_files_valid(self):
-        _assert_json_files_valid(self, self._project_dir)
-
-    def test_tmdl_syntax(self):
-        _assert_tmdl_syntax(self, self._project_dir, self.SAMPLE_NAME)
-
-    def test_no_tableau_leakage(self):
-        _assert_no_tableau_leakage(self, self._project_dir, self.SAMPLE_NAME)
-
-    def test_pages_present(self):
-        _assert_pages_present(self, self._project_dir, self.SAMPLE_NAME)
-
-    def test_visuals_present(self):
-        _assert_visuals_present(self, self._project_dir, self.SAMPLE_NAME)
-
-    def test_tables_present(self):
-        _assert_tables_present(self, self._project_dir, self.SAMPLE_NAME)
-
-    def test_perspectives(self):
-        _assert_perspectives_present(self, self._project_dir, self.SAMPLE_NAME)
-
-    def test_diagram_layout(self):
-        _assert_diagram_layout_present(self, self._project_dir, self.SAMPLE_NAME)
-
-    def test_visual_json(self):
-        _assert_visual_json_valid(self, self._project_dir, self.SAMPLE_NAME)
-
-    def test_pbip_valid(self):
-        _assert_pbip_valid(self, self._project_dir, self.SAMPLE_NAME)
 
 
 class TestFinancialReport(NonRegressionBase):
     SAMPLE_NAME = "Financial_Report"
 
-    def test_project_structure(self):
-        _assert_project_structure(self, self._project_dir, self.SAMPLE_NAME)
-
-    def test_json_files_valid(self):
-        _assert_json_files_valid(self, self._project_dir)
-
-    def test_tmdl_syntax(self):
-        _assert_tmdl_syntax(self, self._project_dir, self.SAMPLE_NAME)
-
-    def test_no_tableau_leakage(self):
-        _assert_no_tableau_leakage(self, self._project_dir, self.SAMPLE_NAME)
-
-    def test_pages_present(self):
-        _assert_pages_present(self, self._project_dir, self.SAMPLE_NAME)
-
-    def test_tables_present(self):
-        _assert_tables_present(self, self._project_dir, self.SAMPLE_NAME)
-
-    def test_perspectives(self):
-        _assert_perspectives_present(self, self._project_dir, self.SAMPLE_NAME)
-
-    def test_pbip_valid(self):
-        _assert_pbip_valid(self, self._project_dir, self.SAMPLE_NAME)
-
 
 class TestBigQueryAnalytics(NonRegressionBase):
     SAMPLE_NAME = "BigQuery_Analytics"
-
-    def test_project_structure(self):
-        _assert_project_structure(self, self._project_dir, self.SAMPLE_NAME)
-
-    def test_json_files_valid(self):
-        _assert_json_files_valid(self, self._project_dir)
-
-    def test_tmdl_syntax(self):
-        _assert_tmdl_syntax(self, self._project_dir, self.SAMPLE_NAME)
-
-    def test_no_tableau_leakage(self):
-        _assert_no_tableau_leakage(self, self._project_dir, self.SAMPLE_NAME)
-
-    def test_tables_present(self):
-        _assert_tables_present(self, self._project_dir, self.SAMPLE_NAME)
-
-    def test_pbip_valid(self):
-        _assert_pbip_valid(self, self._project_dir, self.SAMPLE_NAME)
 
 
 class TestEnterpriseSales(NonRegressionBase):
     SAMPLE_NAME = "Enterprise_Sales"
 
-    def test_project_structure(self):
-        _assert_project_structure(self, self._project_dir, self.SAMPLE_NAME)
-
-    def test_json_files_valid(self):
-        _assert_json_files_valid(self, self._project_dir)
-
-    def test_tmdl_syntax(self):
-        _assert_tmdl_syntax(self, self._project_dir, self.SAMPLE_NAME)
-
-    def test_no_tableau_leakage(self):
-        _assert_no_tableau_leakage(self, self._project_dir, self.SAMPLE_NAME)
-
-    def test_tables_present(self):
-        _assert_tables_present(self, self._project_dir, self.SAMPLE_NAME)
-
-    def test_pbip_valid(self):
-        _assert_pbip_valid(self, self._project_dir, self.SAMPLE_NAME)
-
 
 class TestManufacturingIoT(NonRegressionBase):
     SAMPLE_NAME = "Manufacturing_IoT"
-
-    def test_project_structure(self):
-        _assert_project_structure(self, self._project_dir, self.SAMPLE_NAME)
-
-    def test_json_files_valid(self):
-        _assert_json_files_valid(self, self._project_dir)
-
-    def test_tmdl_syntax(self):
-        _assert_tmdl_syntax(self, self._project_dir, self.SAMPLE_NAME)
-
-    def test_no_tableau_leakage(self):
-        _assert_no_tableau_leakage(self, self._project_dir, self.SAMPLE_NAME)
-
-    def test_pbip_valid(self):
-        _assert_pbip_valid(self, self._project_dir, self.SAMPLE_NAME)
 
 
 class TestMarketingCampaign(NonRegressionBase):
     SAMPLE_NAME = "Marketing_Campaign"
 
-    def test_project_structure(self):
-        _assert_project_structure(self, self._project_dir, self.SAMPLE_NAME)
-
-    def test_json_files_valid(self):
-        _assert_json_files_valid(self, self._project_dir)
-
-    def test_tmdl_syntax(self):
-        _assert_tmdl_syntax(self, self._project_dir, self.SAMPLE_NAME)
-
-    def test_pbip_valid(self):
-        _assert_pbip_valid(self, self._project_dir, self.SAMPLE_NAME)
-
 
 class TestSecurityTest(NonRegressionBase):
     SAMPLE_NAME = "Security_Test"
-
-    def test_project_structure(self):
-        _assert_project_structure(self, self._project_dir, self.SAMPLE_NAME)
-
-    def test_json_files_valid(self):
-        _assert_json_files_valid(self, self._project_dir)
-
-    def test_tmdl_syntax(self):
-        _assert_tmdl_syntax(self, self._project_dir, self.SAMPLE_NAME)
-
-    def test_no_tableau_leakage(self):
-        _assert_no_tableau_leakage(self, self._project_dir, self.SAMPLE_NAME)
-
-    def test_pbip_valid(self):
-        _assert_pbip_valid(self, self._project_dir, self.SAMPLE_NAME)
 
     def test_rls_roles(self):
         """Security_Test should produce RLS roles."""
@@ -581,7 +453,6 @@ class TestSecurityTest(NonRegressionBase):
             self._project_dir, f"{self.SAMPLE_NAME}.SemanticModel",
             "definition", "roles.tmdl"
         )
-        # RLS roles file should exist for the security test workbook
         if os.path.exists(roles_path):
             with open(roles_path, 'r', encoding='utf-8') as f:
                 content = f.read()
@@ -656,7 +527,6 @@ class TestCrossSampleConsistency(unittest.TestCase):
                             empty_dirs.append(f"{name}/{vid}")
         # Warn but don't fail for empty visual dirs in pre-existing artifacts
         if empty_dirs:
-            import warnings
             warnings.warn(
                 f"{len(empty_dirs)} empty visual dirs found: {', '.join(empty_dirs[:5])}"
             )

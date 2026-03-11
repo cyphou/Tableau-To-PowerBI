@@ -24,6 +24,9 @@ from tableau_export.extract_tableau_data import _clean_field_ref
 from powerbi_import.tmdl_generator import generate_tmdl
 from powerbi_import.validator import ArtifactValidator
 
+import xml.etree.ElementTree as ET
+from powerbi_import.tmdl_generator import _write_measure
+
 
 # ═══════════════════════════════════════════════════════════════════
 # 1. Empty Measure Expression Tests
@@ -35,7 +38,6 @@ class TestEmptyMeasurePrevention(unittest.TestCase):
     def _make_xml_column(self, name, formula='', calc_class='tableau',
                          role='measure', datatype='real'):
         """Create a minimal XML string for a <column> with <calculation>."""
-        import xml.etree.ElementTree as ET
         col = ET.Element('column', attrib={
             'name': f'[{name}]',
             'caption': name,
@@ -50,7 +52,6 @@ class TestEmptyMeasurePrevention(unittest.TestCase):
 
     def _make_datasource_elem(self, columns):
         """Wrap column elements in a datasource element."""
-        import xml.etree.ElementTree as ET
         ds = ET.Element('datasource')
         for col in columns:
             ds.append(col)
@@ -136,7 +137,6 @@ class TestEmptyMeasurePrevention(unittest.TestCase):
         lines = []
         ArtifactValidator  # just import check
         # Directly test tmdl_generator._write_measure
-        from powerbi_import.tmdl_generator import _write_measure
         measure = {'name': 'Test Measure', 'expression': '', 'formatString': '0'}
         _write_measure(lines, measure)
         # Should produce "measure 'Test Measure' = 0" not "measure 'Test Measure' = "
@@ -146,7 +146,6 @@ class TestEmptyMeasurePrevention(unittest.TestCase):
 
     def test_write_measure_none_expression(self):
         """_write_measure should handle None expression."""
-        from powerbi_import.tmdl_generator import _write_measure
         lines = []
         measure = {'name': 'Null Measure'}
         _write_measure(lines, measure)

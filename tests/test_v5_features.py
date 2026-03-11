@@ -14,6 +14,24 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
+from tableau_export.dax_converter import convert_tableau_formula_to_dax
+from powerbi_import.visual_generator import _build_sparkline_config
+from powerbi_import.visual_generator import CUSTOM_VISUAL_GUIDS
+from powerbi_import.visual_generator import resolve_custom_visual_type
+from tableau_export.extract_tableau_data import _split_sql_values
+from tableau_export.extract_tableau_data import _scan_delimited_sample
+from tableau_export.extract_tableau_data import TableauExtractor
+from powerbi_import.gateway_config import GatewayConfigGenerator
+from powerbi_import.gateway_config import OAUTH_CONNECTORS
+from powerbi_import.gateway_config import GATEWAY_CONNECTORS
+from powerbi_import.comparison_report import generate_comparison_report
+from powerbi_import.progress import MigrationProgress
+from powerbi_import.progress import NullProgress
+from powerbi_import.telemetry_dashboard import generate_dashboard
+from powerbi_import.wizard import wizard_to_args
+import argparse
+from powerbi_import.tmdl_generator import detect_refresh_policy
+
 
 # ════════════════════════════════════════════════════════════
 # Sprint 6 — Conversion Accuracy
@@ -23,30 +41,25 @@ class TestWindowFrameBoundaries(unittest.TestCase):
     """Tests for WINDOW_* frame boundary conversion (6.1)."""
 
     def test_window_sum_no_frame(self):
-        from tableau_export.dax_converter import convert_tableau_formula_to_dax
         result = convert_tableau_formula_to_dax('WINDOW_SUM(SUM([Sales]))')
         self.assertIn('CALCULATE', result)
         self.assertIn('SUM', result)
 
     def test_window_sum_with_frame(self):
-        from tableau_export.dax_converter import convert_tableau_formula_to_dax
         result = convert_tableau_formula_to_dax('WINDOW_SUM(SUM([Sales]), -2, 0)')
         self.assertIn('CALCULATE', result)
         # Should contain some offset or frame reference
         self.assertTrue(len(result) > 10)
 
     def test_window_avg_with_frame(self):
-        from tableau_export.dax_converter import convert_tableau_formula_to_dax
         result = convert_tableau_formula_to_dax('WINDOW_AVG(AVG([Profit]), -3, 0)')
         self.assertIn('CALCULATE', result)
 
     def test_window_max_no_frame(self):
-        from tableau_export.dax_converter import convert_tableau_formula_to_dax
         result = convert_tableau_formula_to_dax('WINDOW_MAX(MAX([Sales]))')
         self.assertIn('CALCULATE', result)
 
     def test_window_min_with_frame(self):
-        from tableau_export.dax_converter import convert_tableau_formula_to_dax
         result = convert_tableau_formula_to_dax('WINDOW_MIN(MIN([Cost]), -1, 1)')
         self.assertIn('CALCULATE', result)
 
@@ -55,33 +68,27 @@ class TestRegexpReplaceDepth(unittest.TestCase):
     """Tests for REGEXP_REPLACE deep conversion (6.2)."""
 
     def test_simple_literal(self):
-        from tableau_export.dax_converter import convert_tableau_formula_to_dax
         result = convert_tableau_formula_to_dax('REGEXP_REPLACE([Name], "foo", "bar")')
         self.assertIn('SUBSTITUTE', result)
 
     def test_character_class(self):
-        from tableau_export.dax_converter import convert_tableau_formula_to_dax
         result = convert_tableau_formula_to_dax('REGEXP_REPLACE([Name], "[abc]", "X")')
         self.assertIn('SUBSTITUTE', result)
 
     def test_alternation(self):
-        from tableau_export.dax_converter import convert_tableau_formula_to_dax
         result = convert_tableau_formula_to_dax('REGEXP_REPLACE([Name], "foo|bar", "X")')
         self.assertIn('SUBSTITUTE', result)
 
     def test_anchored_start(self):
-        from tableau_export.dax_converter import convert_tableau_formula_to_dax
         result = convert_tableau_formula_to_dax('REGEXP_REPLACE([Name], "^prefix", "")')
         # Should contain IF or LEFT pattern
         self.assertTrue(len(result) > 5)
 
     def test_anchored_end(self):
-        from tableau_export.dax_converter import convert_tableau_formula_to_dax
         result = convert_tableau_formula_to_dax('REGEXP_REPLACE([Name], "suffix$", "")')
         self.assertTrue(len(result) > 5)
 
     def test_complex_pattern_fallback(self):
-        from tableau_export.dax_converter import convert_tableau_formula_to_dax
         result = convert_tableau_formula_to_dax('REGEXP_REPLACE([Name], "\\\\d+", "NUM")')
         # Should produce something, even if fallback
         self.assertTrue(len(result) > 5)
@@ -95,7 +102,6 @@ class TestSparklineConfig(unittest.TestCase):
     """Tests for sparkline configuration builder (6.3)."""
 
     def test_build_sparkline_config(self):
-        from powerbi_import.visual_generator import _build_sparkline_config
         config = _build_sparkline_config('Sales', 'Orders', 'OrderDate')
         self.assertEqual(config['type'], 'sparkline')
         self.assertEqual(config['sparklineType'], 'line')
@@ -103,24 +109,20 @@ class TestSparklineConfig(unittest.TestCase):
         self.assertIn('dateAxis', config)
 
     def test_sparkline_column_type(self):
-        from powerbi_import.visual_generator import _build_sparkline_config
         config = _build_sparkline_config('Revenue', 'Sales', sparkline_type='column')
         self.assertEqual(config['sparklineType'], 'column')
 
     def test_sparkline_custom_color(self):
-        from powerbi_import.visual_generator import _build_sparkline_config
         config = _build_sparkline_config('Profit', 'Orders', color='#FF0000')
         self.assertEqual(config['lineColor']['solid']['color'], '#FF0000')
 
     def test_sparkline_show_points(self):
-        from powerbi_import.visual_generator import _build_sparkline_config
         config = _build_sparkline_config('X', 'T')
         self.assertTrue(config['showHighPoint'])
         self.assertTrue(config['showLowPoint'])
         self.assertFalse(config['showLastPoint'])
 
     def test_sparkline_id(self):
-        from powerbi_import.visual_generator import _build_sparkline_config
         config = _build_sparkline_config('Revenue', 'SalesTable')
         self.assertEqual(config['id'], 'sparkline_Revenue')
 
@@ -129,52 +131,42 @@ class TestCustomVisualGUIDs(unittest.TestCase):
     """Tests for custom visual GUID registry (6.4)."""
 
     def test_guid_registry_exists(self):
-        from powerbi_import.visual_generator import CUSTOM_VISUAL_GUIDS
         self.assertIsInstance(CUSTOM_VISUAL_GUIDS, dict)
         self.assertGreater(len(CUSTOM_VISUAL_GUIDS), 5)
 
     def test_sankey_guid(self):
-        from powerbi_import.visual_generator import CUSTOM_VISUAL_GUIDS
         self.assertIn('sankey', CUSTOM_VISUAL_GUIDS)
         self.assertIn('guid', CUSTOM_VISUAL_GUIDS['sankey'])
 
     def test_chord_guid(self):
-        from powerbi_import.visual_generator import CUSTOM_VISUAL_GUIDS
         self.assertIn('chord', CUSTOM_VISUAL_GUIDS)
 
     def test_wordcloud_guid(self):
-        from powerbi_import.visual_generator import CUSTOM_VISUAL_GUIDS
         self.assertIn('wordcloud', CUSTOM_VISUAL_GUIDS)
 
     def test_ganttbar_guid(self):
-        from powerbi_import.visual_generator import CUSTOM_VISUAL_GUIDS
         self.assertIn('ganttbar', CUSTOM_VISUAL_GUIDS)
 
     def test_guid_has_roles(self):
-        from powerbi_import.visual_generator import CUSTOM_VISUAL_GUIDS
         for key, info in CUSTOM_VISUAL_GUIDS.items():
             self.assertIn('roles', info, f"Missing roles for {key}")
             self.assertIn('guid', info, f"Missing guid for {key}")
 
     def test_resolve_visual_type_custom(self):
-        from powerbi_import.visual_generator import resolve_custom_visual_type
         vtype, guid_info = resolve_custom_visual_type('sankey')
         self.assertIsNotNone(guid_info)
         self.assertIn('guid', guid_info)
 
     def test_resolve_visual_type_standard(self):
-        from powerbi_import.visual_generator import resolve_custom_visual_type
         vtype, guid_info = resolve_custom_visual_type('Bar')
         self.assertIsNone(guid_info)
         self.assertEqual(vtype, 'clusteredBarChart')
 
     def test_resolve_visual_type_no_custom(self):
-        from powerbi_import.visual_generator import resolve_custom_visual_type
         vtype, guid_info = resolve_custom_visual_type('sankey', use_custom_visuals=False)
         self.assertIsNone(guid_info)
 
     def test_resolve_unknown_type(self):
-        from powerbi_import.visual_generator import resolve_custom_visual_type
         vtype, guid_info = resolve_custom_visual_type('totally_unknown')
         self.assertIsNone(guid_info)
         self.assertEqual(vtype, 'tableEx')
@@ -188,7 +180,6 @@ class TestHyperSampleRows(unittest.TestCase):
     """Tests for Hyper sample-row extraction helpers (6.5)."""
 
     def test_split_sql_values_simple(self):
-        from tableau_export.extract_tableau_data import _split_sql_values
         result = _split_sql_values("'hello', 42, NULL")
         self.assertEqual(len(result), 3)
         self.assertEqual(result[0], "'hello'")
@@ -196,18 +187,15 @@ class TestHyperSampleRows(unittest.TestCase):
         self.assertEqual(result[2], 'NULL')
 
     def test_split_sql_values_comma_in_quote(self):
-        from tableau_export.extract_tableau_data import _split_sql_values
         result = _split_sql_values("'hello, world', 42")
         self.assertEqual(len(result), 2)
         self.assertIn('hello, world', result[0])
 
     def test_split_sql_values_empty(self):
-        from tableau_export.extract_tableau_data import _split_sql_values
         result = _split_sql_values("")
         self.assertEqual(result, [])
 
     def test_scan_delimited_sample_tab(self):
-        from tableau_export.extract_tableau_data import _scan_delimited_sample
         text = "Alice\t30\nBob\t25\nCharlie\t35"
         cols = ['Name', 'Age']
         result = _scan_delimited_sample(text, cols, 5)
@@ -216,25 +204,21 @@ class TestHyperSampleRows(unittest.TestCase):
         self.assertEqual(result[1]['Age'], '25')
 
     def test_scan_delimited_sample_pipe(self):
-        from tableau_export.extract_tableau_data import _scan_delimited_sample
         text = "X|Y\n1|2\n3|4"
         cols = ['A', 'B']
         result = _scan_delimited_sample(text, cols, 5)
         self.assertGreater(len(result), 0)
 
     def test_scan_delimited_no_match(self):
-        from tableau_export.extract_tableau_data import _scan_delimited_sample
         result = _scan_delimited_sample("no delimiters here", ['A', 'B'], 5)
         self.assertEqual(len(result), 0)
 
     def test_scan_delimited_single_column(self):
-        from tableau_export.extract_tableau_data import _scan_delimited_sample
         result = _scan_delimited_sample("a\nb\nc", ['X'], 5)
         # Single column — should return empty (ncols < 2)
         self.assertEqual(len(result), 0)
 
     def test_extract_hyper_sample_rows_insert(self):
-        from tableau_export.extract_tableau_data import TableauExtractor
         text = 'CREATE TABLE "Sales" ("Name" TEXT, "Amount" INTEGER)\n'
         text += "INSERT INTO \"Sales\" VALUES ('Alice', 100), ('Bob', 200)"
         cols = [{'name': 'Name'}, {'name': 'Amount'}]
@@ -244,7 +228,6 @@ class TestHyperSampleRows(unittest.TestCase):
         self.assertEqual(result[1]['Amount'], '200')
 
     def test_extract_hyper_sample_rows_limit(self):
-        from tableau_export.extract_tableau_data import TableauExtractor
         text = "INSERT INTO \"T\" VALUES ('a', 1), ('b', 2), ('c', 3)"
         cols = [{'name': 'X'}, {'name': 'Y'}]
         result = TableauExtractor._extract_hyper_sample_rows(text, 'T', cols, 2)
@@ -259,11 +242,9 @@ class TestGatewayConfig(unittest.TestCase):
     """Tests for gateway/OAuth config generator (5.4)."""
 
     def test_import(self):
-        from powerbi_import.gateway_config import GatewayConfigGenerator
         self.assertTrue(callable(GatewayConfigGenerator))
 
     def test_oauth_connectors(self):
-        from powerbi_import.gateway_config import OAUTH_CONNECTORS
         self.assertIn('bigquery', OAUTH_CONNECTORS)
         self.assertIn('snowflake', OAUTH_CONNECTORS)
         self.assertIn('salesforce', OAUTH_CONNECTORS)
@@ -271,19 +252,16 @@ class TestGatewayConfig(unittest.TestCase):
         self.assertIn('databricks', OAUTH_CONNECTORS)
 
     def test_gateway_connectors(self):
-        from powerbi_import.gateway_config import GATEWAY_CONNECTORS
         self.assertIn('sqlserver', GATEWAY_CONNECTORS)
         self.assertIn('postgresql', GATEWAY_CONNECTORS)
 
     def test_generate_empty(self):
-        from powerbi_import.gateway_config import GatewayConfigGenerator
         gen = GatewayConfigGenerator()
         config = gen.generate_gateway_config([])
         self.assertIsInstance(config, dict)
         self.assertIn('connections', config)
 
     def test_generate_bigquery(self):
-        from powerbi_import.gateway_config import GatewayConfigGenerator
         ds = [{'name': 'BQ', 'connection_type': 'bigquery',
                'connection': {'server': '', 'database': ''}}]
         gen = GatewayConfigGenerator()
@@ -291,7 +269,6 @@ class TestGatewayConfig(unittest.TestCase):
         self.assertTrue(len(config['connections']) > 0)
 
     def test_generate_multi(self):
-        from powerbi_import.gateway_config import GatewayConfigGenerator
         ds = [
             {'name': 'BQ', 'connection_type': 'bigquery'},
             {'name': 'SF', 'connection_type': 'snowflake'},
@@ -301,7 +278,6 @@ class TestGatewayConfig(unittest.TestCase):
         self.assertEqual(len(config['connections']), 2)
 
     def test_write_config(self):
-        from powerbi_import.gateway_config import GatewayConfigGenerator
         ds = [{'name': 'TestDS', 'connection_type': 'salesforce'}]
         gen = GatewayConfigGenerator()
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -316,11 +292,9 @@ class TestComparisonReport(unittest.TestCase):
     """Tests for side-by-side comparison report (7.3)."""
 
     def test_import(self):
-        from powerbi_import.comparison_report import generate_comparison_report
         self.assertTrue(callable(generate_comparison_report))
 
     def test_generate_empty(self):
-        from powerbi_import.comparison_report import generate_comparison_report
         with tempfile.TemporaryDirectory() as tmpdir:
             extract = os.path.join(tmpdir, 'extract')
             pbip = os.path.join(tmpdir, 'pbip')
@@ -331,7 +305,6 @@ class TestComparisonReport(unittest.TestCase):
             self.assertTrue(os.path.isfile(result))
 
     def test_generate_with_worksheets(self):
-        from powerbi_import.comparison_report import generate_comparison_report
         with tempfile.TemporaryDirectory() as tmpdir:
             extract = os.path.join(tmpdir, 'extract')
             pbip = os.path.join(tmpdir, 'pbip')
@@ -349,7 +322,6 @@ class TestComparisonReport(unittest.TestCase):
             self.assertIn('Sales', content)
 
     def test_generate_with_datasources(self):
-        from powerbi_import.comparison_report import generate_comparison_report
         with tempfile.TemporaryDirectory() as tmpdir:
             extract = os.path.join(tmpdir, 'extract')
             pbip = os.path.join(tmpdir, 'pbip')
@@ -394,12 +366,10 @@ class TestProgressTracker(unittest.TestCase):
     """Tests for MigrationProgress (8.2)."""
 
     def test_create(self):
-        from powerbi_import.progress import MigrationProgress
         p = MigrationProgress(total_steps=3, show_bar=False)
         self.assertIsNotNone(p)
 
     def test_start_complete(self):
-        from powerbi_import.progress import MigrationProgress
         p = MigrationProgress(total_steps=2, show_bar=False)
         p.start("Step 1")
         p.complete("Done")
@@ -407,7 +377,6 @@ class TestProgressTracker(unittest.TestCase):
         self.assertEqual(s['completed'], 1)
 
     def test_fail(self):
-        from powerbi_import.progress import MigrationProgress
         p = MigrationProgress(total_steps=2, show_bar=False)
         p.start("Step 1")
         p.fail("Oops")
@@ -415,14 +384,12 @@ class TestProgressTracker(unittest.TestCase):
         self.assertEqual(s['failed'], 1)
 
     def test_skip(self):
-        from powerbi_import.progress import MigrationProgress
         p = MigrationProgress(total_steps=3, show_bar=False)
         p.skip("Optional step", "not needed")
         s = p.summary()
         self.assertEqual(s['skipped'], 1)
 
     def test_callback(self):
-        from powerbi_import.progress import MigrationProgress
         calls = []
         def on_step(idx, name, status, msg):
             calls.append((idx, name, status))
@@ -434,7 +401,6 @@ class TestProgressTracker(unittest.TestCase):
         self.assertEqual(calls[1][2], 'complete')
 
     def test_null_progress(self):
-        from powerbi_import.progress import NullProgress
         p = NullProgress()
         p.start("A")
         p.complete("B")
@@ -444,7 +410,6 @@ class TestProgressTracker(unittest.TestCase):
         self.assertEqual(s['completed'], 0)
 
     def test_multiple_steps(self):
-        from powerbi_import.progress import MigrationProgress
         p = MigrationProgress(total_steps=4, show_bar=False)
         p.start("Step 1"); p.complete()
         p.start("Step 2"); p.complete()
@@ -460,18 +425,15 @@ class TestTelemetryDashboard(unittest.TestCase):
     """Tests for telemetry dashboard generator (8.3)."""
 
     def test_import(self):
-        from powerbi_import.telemetry_dashboard import generate_dashboard
         self.assertTrue(callable(generate_dashboard))
 
     def test_generate_empty_dir(self):
-        from powerbi_import.telemetry_dashboard import generate_dashboard
         with tempfile.TemporaryDirectory() as tmpdir:
             out = os.path.join(tmpdir, 'dash.html')
             result = generate_dashboard(tmpdir, out)
             self.assertTrue(os.path.isfile(result))
 
     def test_generate_with_reports(self):
-        from powerbi_import.telemetry_dashboard import generate_dashboard
         with tempfile.TemporaryDirectory() as tmpdir:
             rpt = {
                 'report_name': 'TestWB',
@@ -498,7 +460,6 @@ class TestWizardHelpers(unittest.TestCase):
     """Tests for wizard helper functions (8.1)."""
 
     def test_wizard_to_args(self):
-        from powerbi_import.wizard import wizard_to_args
         config = {
             'tableau_file': 'test.twbx',
             'prep': None,
@@ -520,7 +481,6 @@ class TestWizardHelpers(unittest.TestCase):
         self.assertEqual(args.output_dir, 'out/')
 
     def test_wizard_to_args_defaults(self):
-        from powerbi_import.wizard import wizard_to_args
         config = {
             'tableau_file': 'x.twb',
         }
@@ -534,7 +494,6 @@ class TestBatchConfig(unittest.TestCase):
 
     def test_batch_config_flag_exists(self):
         """Verify --batch-config is parsed by argparse."""
-        import argparse
         # Import migrate to check the parser
         # We just verify the flag is accepted
         from migrate import main
@@ -623,7 +582,6 @@ class TestIncrementalRefresh(unittest.TestCase):
     """Tests for incremental refresh policy (5.5)."""
 
     def test_detect_refresh_policy(self):
-        from powerbi_import.tmdl_generator import detect_refresh_policy
         table = {
             'name': 'Orders',
             'columns': [
@@ -636,7 +594,6 @@ class TestIncrementalRefresh(unittest.TestCase):
         self.assertIn('incrementalGranularity', policy)
 
     def test_detect_no_date_column(self):
-        from powerbi_import.tmdl_generator import detect_refresh_policy
         table = {
             'name': 'Products',
             'columns': [
@@ -652,7 +609,6 @@ class TestPaginatedReport(unittest.TestCase):
 
     def test_paginated_flag_in_argparse(self):
         """Verify --paginated is parsed."""
-        import argparse
         parser = argparse.ArgumentParser()
         parser.add_argument('--paginated', action='store_true', default=False)
         args = parser.parse_args(['--paginated'])
