@@ -250,6 +250,7 @@ class PowerBIProjectGenerator:
             # role='measure' metadata — a calculated column like DATEDIFF()
             # has role='measure' in Tableau but is a column in the BIM model.
             self._actual_bim_measure_names = stats.get('actual_bim_measures', set())
+            self._actual_bim_symbols = stats.get('actual_bim_symbols', set())
             
         except Exception as e:
             print(f"  \u26a0 Error during TMDL generation: {e}")

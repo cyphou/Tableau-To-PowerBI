@@ -458,13 +458,16 @@ class ArtifactValidator:
     # ── Semantic model validation ──────────────────────────────────
 
     # Regex to match TMDL table definition:  ``table 'Name'`` or ``table Name``
-    _RE_TABLE_DEF = re.compile(r"^table\s+'?([^']+?)'?\s*$")
-    # Regex to match TMDL column definition:  ``column Name`` or ``column 'Name'``
-    _RE_COL_DEF = re.compile(r"^column\s+'?([^']+?)'?\s*$")
-    # Regex to match TMDL measure definition:  ``measure Name`` or ``measure 'Name'``
-    _RE_MEASURE_DEF = re.compile(r"^measure\s+'?([^']+?)'?\s*$")
+    _RE_TABLE_DEF = re.compile(r"^table\s+'((?:[^']|'')+)'|^table\s+(\w+)(?:\s|$)")
+    # Regex to match TMDL column definition:  ``column 'Name'`` or ``column Name``
+    # Handles escaped apostrophes ('') inside quoted names and optional ``= expression``.
+    _RE_COL_DEF = re.compile(r"^column\s+'((?:[^']|'')+)'|^column\s+(\w+)(?:\s|$)")
+    # Regex to match TMDL measure definition:  ``measure 'Name'`` or ``measure Name``
+    # Handles escaped apostrophes ('') inside quoted names and optional ``= expression``.
+    _RE_MEASURE_DEF = re.compile(r"^measure\s+'((?:[^']|'')+)'|^measure\s+(\w+)(?:\s|$)")
     # Regex to extract DAX column/measure references: 'Table'[Column]
-    _RE_DAX_REF = re.compile(r"'([^']+?)'\[([^\]]+)\]")
+    # Handles escaped apostrophes ('') inside table names.
+    _RE_DAX_REF = re.compile(r"'((?:[^']|'')+)'\[([^\]]+)\]")
 
     # Pre-compiled patterns for validate_tmdl_dax hot loop
     _RE_TMDL_COL_DEF = re.compile(r"^\s*column\s+'?([^'=]+?)'?\s*$")
@@ -503,7 +506,8 @@ class ArtifactValidator:
                 stripped = line.strip()
                 tm = cls._RE_TABLE_DEF.match(stripped)
                 if tm:
-                    current_table = tm.group(1)
+                    raw = tm.group(1) if tm.group(1) is not None else tm.group(2)
+                    current_table = cls._unescape_tmdl_name(raw)
                     tables.add(current_table)
                     columns.setdefault(current_table, set())
                     measures.setdefault(current_table, set())
@@ -511,11 +515,13 @@ class ArtifactValidator:
                 if current_table:
                     cm = cls._RE_COL_DEF.match(stripped)
                     if cm:
-                        columns[current_table].add(cm.group(1))
+                        raw = cm.group(1) if cm.group(1) is not None else cm.group(2)
+                        columns[current_table].add(cls._unescape_tmdl_name(raw))
                         continue
                     mm = cls._RE_MEASURE_DEF.match(stripped)
                     if mm:
-                        measures[current_table].add(mm.group(1))
+                        raw = mm.group(1) if mm.group(1) is not None else mm.group(2)
+                        measures[current_table].add(cls._unescape_tmdl_name(raw))
                         continue
 
         sm_path = Path(sm_dir)
@@ -573,7 +579,7 @@ class ArtifactValidator:
                 continue
             basename = tmdl_file.name
             for match in cls._RE_DAX_REF.finditer(content):
-                table_ref = match.group(1)
+                table_ref = cls._unescape_tmdl_name(match.group(1))
                 col_ref = match.group(2)
                 if table_ref not in known_tables:
                     warnings_list.append(
@@ -759,7 +765,14 @@ class ArtifactValidator:
             sem_warnings = cls.validate_semantic_references(str(sm_dir))
             if sem_warnings:
                 warnings.extend(sem_warnings)
-        else:
+
+        # Visual → TMDL cross-validation (check Entity+Property in visuals)
+        if sm_dir.exists() and report_dir.exists():
+            visual_errors = cls.validate_visual_references(project_dir)
+            if visual_errors:
+                warnings.extend(visual_errors)
+
+        if not sm_dir.exists():
             errors.append(f'Missing SemanticModel directory: {sm_dir.name}')
 
         is_valid = len(errors) == 0
@@ -781,6 +794,98 @@ class ArtifactValidator:
             logger.info(f'  WARN: {w}')
 
         return result
+
+    # ── Visual → TMDL cross-validation ─────────────────────────────
+
+    # Regex to extract Entity/Property from PBIR visual JSON "Column" or "Measure" refs
+    _RE_VISUAL_FIELD_REF = re.compile(
+        r'"(?:Column|Measure)"\s*:\s*\{\s*'
+        r'"Expression"\s*:\s*\{\s*"SourceRef"\s*:\s*\{\s*"Entity"\s*:\s*"([^"]+)"\s*\}\s*\}\s*,\s*'
+        r'"Property"\s*:\s*"([^"]+)"',
+        re.DOTALL
+    )
+
+    @classmethod
+    def _unescape_tmdl_name(cls, name):
+        """Unescape TMDL doubled apostrophes: ``''`` → ``'``."""
+        return name.replace("''", "'")
+
+    @classmethod
+    def validate_visual_references(cls, project_dir):
+        """Validate that all Entity+Property field references in visual.json
+        files resolve to an actual table+column or table+measure in the
+        TMDL semantic model.
+
+        Args:
+            project_dir: Path to the .pbip project directory.
+
+        Returns:
+            list of error strings for unresolved visual field references.
+        """
+        project_dir = Path(project_dir)
+        report_name = project_dir.name
+
+        sm_dir = project_dir / f'{report_name}.SemanticModel'
+        report_dir = project_dir / f'{report_name}.Report'
+
+        if not sm_dir.exists() or not report_dir.exists():
+            return []  # nothing to validate
+
+        # Collect all symbols from TMDL (already unescaped)
+        symbols = cls._collect_model_symbols(str(sm_dir))
+        known_tables = symbols['tables']
+        known_cols = symbols['columns']    # table -> {col names}
+        known_measures = symbols['measures']  # table -> {measure names}
+
+        # Build combined field lookup (no extra unescaping needed — done at collection)
+        all_fields_by_table = {}
+        for t in known_tables:
+            all_fields_by_table[t] = known_cols.get(t, set()) | known_measures.get(t, set())
+
+        # Scan visual.json files for Entity+Property references
+        errors = []
+        definition_dir = report_dir / 'definition'
+        pages_dir = definition_dir / 'pages' if definition_dir.exists() else report_dir / 'pages'
+        if not pages_dir.exists():
+            return []
+
+        for page_dir in sorted(pages_dir.iterdir()):
+            if not page_dir.is_dir():
+                continue
+            visuals_dir = page_dir / 'visuals'
+            if not visuals_dir.exists():
+                continue
+            for visual_dir in sorted(visuals_dir.iterdir()):
+                if not visual_dir.is_dir():
+                    continue
+                visual_json = visual_dir / 'visual.json'
+                if not visual_json.exists():
+                    continue
+                try:
+                    content = visual_json.read_text(encoding='utf-8')
+                except Exception:
+                    continue
+
+                # Extract all Entity+Property pairs from JSON text
+                for match in cls._RE_VISUAL_FIELD_REF.finditer(content):
+                    entity = match.group(1)
+                    prop = match.group(2)
+
+                    if entity not in known_tables:
+                        errors.append(
+                            f'Visual {visual_dir.name}: unknown Entity '
+                            f'"{entity}" (not in TMDL model)'
+                        )
+                    else:
+                        fields = all_fields_by_table.get(entity, set())
+                        if prop not in fields:
+                            errors.append(
+                                f'Visual {visual_dir.name}: unknown Property '
+                                f'"{prop}" in Entity "{entity}" '
+                                f'(not a column or measure in TMDL)'
+                            )
+
+        return errors
 
     @classmethod
     def validate_directory(cls, artifacts_dir):

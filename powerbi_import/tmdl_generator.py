@@ -427,11 +427,20 @@ def generate_tmdl(datasources, report_name, extra_objects, output_dir,
     # so that the report generator can distinguish real DAX measures from
     # calculated columns that Tableau marks as role='measure'.
     actual_bim_measures = set()
+    # Full symbol set: (table_name, field_name) tuples for cross-validation
+    # between visual field references and the semantic model.
+    actual_bim_symbols = set()
     for t in tables:
+        tname = t.get('name', '')
         for m in t.get('measures', []):
             mname = m.get('name', '')
             if mname:
                 actual_bim_measures.add(mname)
+                actual_bim_symbols.add((tname, mname))
+        for c in t.get('columns', []):
+            cname = c.get('name', '')
+            if cname:
+                actual_bim_symbols.add((tname, cname))
 
     stats = {
         'tables': len(tables),
@@ -441,6 +450,7 @@ def generate_tmdl(datasources, report_name, extra_objects, output_dir,
         'hierarchies': sum(len(t.get('hierarchies', [])) for t in tables),
         'roles': len(model.get('model', {}).get('roles', [])),
         'actual_bim_measures': actual_bim_measures,
+        'actual_bim_symbols': actual_bim_symbols,
     }
     return stats
 
@@ -2068,6 +2078,9 @@ def _create_parameter_tables(model, parameters, main_table_name):
         if not table_expr:
             continue
 
+        # Escape apostrophes in caption for DAX table references
+        dax_caption = caption.replace("'", "''")
+
         param_table = {
             "name": caption,
             "columns": [{
@@ -2080,7 +2093,7 @@ def _create_parameter_tables(model, parameters, main_table_name):
             }],
             "measures": [{
                 "name": caption,
-                "expression": f"SELECTEDVALUE('{caption}'[{col_name}], {default_expr})",
+                "expression": f"SELECTEDVALUE('{dax_caption}'[{col_name}], {default_expr})",
                 "annotations": [
                     {"name": "displayFolder", "value": "Parameters"}
                 ]

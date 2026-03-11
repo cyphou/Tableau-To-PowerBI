@@ -18,7 +18,10 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'tableau_export'))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'powerbi_import'))
 
-from tests.conftest import SAMPLE_DATASOURCE, SAMPLE_EXTRACTED, make_temp_dir, cleanup_dir
+from tests.conftest import (
+    SAMPLE_DATASOURCE, SAMPLE_EXTRACTED, SAMPLE_EXTRACTED_WITH_MEASURES,
+    make_temp_dir, cleanup_dir,
+)
 
 
 class TestPipelineIntegration(unittest.TestCase):
@@ -233,6 +236,137 @@ class TestBatchModeIntegration(unittest.TestCase):
             self.assertNotEqual(result, 0)  # Should fail — no files found
         finally:
             cleanup_dir(temp_dir)
+
+
+class TestVisualTmdlCrossValidation(unittest.TestCase):
+    """Tests that generated visual field references (Entity+Property)
+    resolve to actual columns/measures in the TMDL semantic model.
+
+    This catches mismatches between the PBIR report layer and the
+    semantic model — e.g., a visual referencing 'Amount' as a Measure
+    when the BIM model defines it as a Column, or referencing a field
+    that doesn't exist in any table.
+    """
+
+    def setUp(self):
+        self.temp_dir = make_temp_dir()
+
+    def tearDown(self):
+        cleanup_dir(self.temp_dir)
+
+    def test_visual_fields_all_resolve_to_tmdl(self):
+        """Every Entity+Property in visual.json must exist in the TMDL model."""
+        from pbip_generator import PowerBIProjectGenerator
+        from validator import ArtifactValidator
+
+        generator = PowerBIProjectGenerator(output_dir=self.temp_dir)
+        project_path = generator.generate_project(
+            'CrossValTest', copy.deepcopy(SAMPLE_EXTRACTED_WITH_MEASURES)
+        )
+
+        errors = ArtifactValidator.validate_visual_references(project_path)
+        self.assertEqual(errors, [],
+                         f"Visual field references not found in TMDL model:\n"
+                         + "\n".join(errors))
+
+    def test_tmdl_stats_contain_symbols(self):
+        """generate_tmdl() must return actual_bim_symbols with (table, field) tuples."""
+        from tmdl_generator import generate_tmdl
+
+        data = copy.deepcopy(SAMPLE_EXTRACTED_WITH_MEASURES)
+        # Embed calculations into the datasource (as extract_datasource does)
+        ds = data['datasources'][0]
+        ds['calculations'] = copy.deepcopy(data['calculations'])
+
+        stats = generate_tmdl([ds], 'SymbolTest', data, self.temp_dir)
+
+        self.assertIn('actual_bim_symbols', stats)
+        symbols = stats['actual_bim_symbols']
+        self.assertIsInstance(symbols, set)
+        self.assertGreater(len(symbols), 0)
+
+        # Each symbol is a (table_name, field_name) tuple
+        for sym in symbols:
+            self.assertIsInstance(sym, tuple)
+            self.assertEqual(len(sym), 2)
+
+        # Check that known measures are present
+        measure_props = {prop for (_table, prop) in symbols}
+        self.assertIn('Total Sales', measure_props)
+        self.assertIn('Order Count', measure_props)
+
+        # Check that known columns are present
+        self.assertIn('OrderID', measure_props)
+        self.assertIn('CustomerName', measure_props)
+
+    def test_measure_wrapper_matches_tmdl_type(self):
+        """Named DAX measures must use 'Measure' wrapper in visual JSON,
+        physical/calculated columns must use 'Column' wrapper."""
+        from pbip_generator import PowerBIProjectGenerator
+        import glob
+
+        generator = PowerBIProjectGenerator(output_dir=self.temp_dir)
+        project_path = generator.generate_project(
+            'WrapperTest', copy.deepcopy(SAMPLE_EXTRACTED_WITH_MEASURES)
+        )
+
+        # Collect actual BIM measures from the TMDL stats
+        bim_measures = getattr(generator, '_actual_bim_measure_names', set())
+
+        # Scan all visual.json files
+        pattern = os.path.join(project_path, '**', 'visual.json')
+        visual_files = glob.glob(pattern, recursive=True)
+        self.assertGreater(len(visual_files), 0, "No visual.json files found")
+
+        import re
+        measure_re = re.compile(
+            r'"Measure"\s*:\s*\{[^}]*"Property"\s*:\s*"([^"]+)"',
+            re.DOTALL
+        )
+        column_re = re.compile(
+            r'"Column"\s*:\s*\{[^}]*"Property"\s*:\s*"([^"]+)"',
+            re.DOTALL
+        )
+
+        for vf in visual_files:
+            with open(vf, 'r', encoding='utf-8') as f:
+                content = f.read()
+
+            # Every Measure-wrapped property must be in bim_measures
+            for m in measure_re.finditer(content):
+                prop = m.group(1)
+                self.assertIn(prop, bim_measures,
+                              f"'{prop}' wrapped as Measure but not in BIM measures "
+                              f"(file: {os.path.relpath(vf, project_path)})")
+
+            # Every Column-wrapped property must NOT be in bim_measures
+            for m in column_re.finditer(content):
+                prop = m.group(1)
+                self.assertNotIn(prop, bim_measures,
+                                 f"'{prop}' wrapped as Column but IS a BIM measure "
+                                 f"(file: {os.path.relpath(vf, project_path)})")
+
+    def test_validator_project_includes_visual_cross_check(self):
+        """validate_project() must include visual reference cross-checks in warnings."""
+        from pbip_generator import PowerBIProjectGenerator
+        from validator import ArtifactValidator
+
+        generator = PowerBIProjectGenerator(output_dir=self.temp_dir)
+        project_path = generator.generate_project(
+            'FullValTest', copy.deepcopy(SAMPLE_EXTRACTED_WITH_MEASURES)
+        )
+
+        result = ArtifactValidator.validate_project(project_path)
+
+        # Project should be valid (no errors)
+        self.assertTrue(result['valid'],
+                        f"Project validation failed: {result['errors']}")
+
+        # Any visual reference issues would appear as warnings
+        visual_ref_warnings = [w for w in result.get('warnings', [])
+                               if 'unknown Entity' in w or 'unknown Property' in w]
+        self.assertEqual(visual_ref_warnings, [],
+                         f"Visual reference warnings:\n" + "\n".join(visual_ref_warnings))
 
 
 if __name__ == '__main__':
