@@ -142,9 +142,32 @@ _PREP_JOIN_MAP = {
 #  FLOW FILE READER
 # ═══════════════════════════════════════════════════════════════════════════════
 
+def _read_tflx_zip(filepath):
+    """Extract and parse the flow JSON from inside a .tflx ZIP archive.
+
+    Tableau Prep saves flow data in ZIP archives. The flow JSON can be
+    stored as a file named ``*.tfl`` or simply ``flow`` (no extension).
+    """
+    with zipfile.ZipFile(filepath, 'r') as z:
+        names = z.namelist()
+        # Prefer a file ending in .tfl
+        for name in names:
+            if name.endswith('.tfl'):
+                with z.open(name) as f:
+                    return json.loads(f.read().decode('utf-8'))
+        # Fallback: look for a file named 'flow' (Prep 2020.3+ format)
+        if 'flow' in names:
+            with z.open('flow') as f:
+                return json.loads(f.read().decode('utf-8'))
+    raise ValueError(f"No .tfl or 'flow' entry found inside {filepath}")
+
+
 def read_prep_flow(filepath):
     """
     Read a Tableau Prep flow file (.tfl or .tflx) and return the parsed JSON.
+
+    Auto-detects ZIP archives even when the file has a .tfl extension
+    (some Prep exports save .tflx content with a .tfl extension).
 
     Args:
         filepath: Path to .tfl or .tflx file
@@ -154,20 +177,17 @@ def read_prep_flow(filepath):
     """
     ext = os.path.splitext(filepath)[1].lower()
 
+    if ext == '.tflx':
+        return _read_tflx_zip(filepath)
+
     if ext == '.tfl':
+        # Auto-detect ZIP archives saved with .tfl extension
+        if zipfile.is_zipfile(filepath):
+            return _read_tflx_zip(filepath)
         with open(filepath, 'r', encoding='utf-8') as f:
             return json.load(f)
 
-    elif ext == '.tflx':
-        with zipfile.ZipFile(filepath, 'r') as z:
-            for name in z.namelist():
-                if name.endswith('.tfl'):
-                    with z.open(name) as f:
-                        return json.loads(f.read().decode('utf-8'))
-        raise ValueError(f"No .tfl file found inside {filepath}")
-
-    else:
-        raise ValueError(f"Unsupported file extension: {ext} (expected .tfl or .tflx)")
+    raise ValueError(f"Unsupported file extension: {ext} (expected .tfl or .tflx)")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

@@ -45,6 +45,7 @@ from m_query_builder import (
     m_transform_filter_values,
     m_transform_filter_nulls,
     m_transform_add_column,
+    wrap_source_with_try_otherwise,
 )
 
 
@@ -976,6 +977,10 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
     m_steps = _build_m_transform_steps(columns, col_metadata_map)
     if m_steps:
         m_query = inject_m_steps(m_query, m_steps)
+
+    # Wrap Source step with try...otherwise for graceful error handling
+    col_names = [c.get('name', '') for c in columns if c.get('name')]
+    m_query = wrap_source_with_try_otherwise(m_query, col_names)
 
     # Determine partition mode based on model_mode
     # For composite: large tables use directQuery, small/lookup use import

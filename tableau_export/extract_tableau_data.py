@@ -203,6 +203,7 @@ class TableauExtractor:
                 'name': worksheet.get('name', ''),
                 'title': worksheet.findtext('.//title', ''),
                 'chart_type': self.determine_chart_type(worksheet),
+                'original_mark_class': self._extract_mark_class(worksheet),
                 'fields': self.extract_worksheet_fields(worksheet),
                 'filters': self.extract_worksheet_filters(worksheet),
                 'formatting': self.extract_formatting(worksheet),
@@ -457,6 +458,21 @@ class TableauExtractor:
     
     # Helper methods
     
+    def _extract_mark_class(self, worksheet):
+        """Returns the raw Tableau mark class string (e.g. 'Bar', 'Gantt Bar').
+
+        Used downstream by the PBIR generator to look up custom visual
+        GUIDs for mark types that have AppSource equivalents.
+        """
+        for pane in worksheet.findall('.//pane'):
+            mark = pane.find('.//mark')
+            if mark is not None and mark.get('class'):
+                return mark.get('class')
+        for mark in worksheet.findall('.//style/mark'):
+            if mark.get('class'):
+                return mark.get('class')
+        return None
+
     def determine_chart_type(self, worksheet):
         """Determines the chart type from the Tableau mark type.
         

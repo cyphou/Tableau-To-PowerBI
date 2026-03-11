@@ -1,5 +1,28 @@
 # Changelog
 
+## v6.1.0 — Gap Closure & Batch Validation
+
+### Prep Flow Parser
+- **ZIP auto-detection**: `.tfl` files that are actually ZIP archives (PK header) are now auto-detected via `zipfile.is_zipfile()`. The `flow` entry (Prep 2020.3+ format) is also supported alongside `*.tfl` entries inside ZIP archives.
+- 3 new tests in `test_prep_flow_parser.py` (61 total, up from 58)
+
+### M Query Error Handling
+- **`try...otherwise` wired**: `wrap_source_with_try_otherwise()` now called in `tmdl_generator.generate_table_bim()` after `inject_m_steps` — wraps Source step with `try...otherwise` error handling using column names
+
+### Report-Level Filter Promotion
+- **Global + datasource filter promotion**: `_create_visual_filters()` now generates report-level `filterConfig` from `converted_objects['filters']` and `converted_objects['datasource_filters']` in `report.json`
+
+### Custom Visual GUID Wiring
+- **`resolve_custom_visual_type()` integrated**: `_create_visual_worksheet()` now checks `original_mark_class` against `CUSTOM_VISUAL_GUIDS` registry (9 entries: sankey, chord, network, wordcloud, ganttbar, histogram, boxplot, radial, bullet)
+- **`customVisualsRepository`** added to `report.json` when custom visuals are used
+- Original Tableau mark class now extracted as `original_mark_class` field on worksheets
+
+### Batch Validation
+- 14/14 real-world workbooks pass at **100% fidelity**
+- **1,983 tests passing**, 15 skipped
+
+---
+
 ## v6.0.0 — Sprints 13-16: Conversion Depth, PBI Service Deploy, Tableau Server, Polish
 
 ### Sprint 13 — Conversion Depth (Phase N)

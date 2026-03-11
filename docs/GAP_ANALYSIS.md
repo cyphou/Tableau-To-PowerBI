@@ -151,8 +151,8 @@
 ### What is APPROXIMATED
 - **Visual positioning**: Dashboard objects are scaled proportionally from Tableau canvas to PBI page size. Not pixel-perfect; overlapping is possible
 - **Slicer bindings**: ✅ IMPROVED — `_detect_slicer_mode()` auto-selects Dropdown/List/Between/Basic based on parameter domain_type and column datatype (date→Basic, numeric→Between, list→List, default→Dropdown)
-- **Report filters from parameters**: Parameters are converted to measures (SELECTEDVALUE), but the report filter generated has `Categorical` type which may not match the parameter's domain
-- **Textbox/Image objects**: Minimal HTML → plain text conversion; rich text formatting is lost
+- **Report-level filters**: ✅ IMPLEMENTED — Global filters and datasource-level filters are now promoted to report-level `filterConfig` via `_create_visual_filters()`. Parameters remain inlined as DAX measures.
+- **Textbox/Image objects**: ✅ Rich text implemented via `_parse_rich_text_runs()` — supports bold, italic, color, font_size, URL formatting
 - **Combo chart mapping**: Dual axis charts map to `lineClusteredColumnComboChart` with proper ColumnY/LineY roles; axis scale sync is detected but complex independent axis configurations may not fully transfer
 
 ---
@@ -307,7 +307,7 @@
 | **PDF connector** | Produces `Pdf.Tables(File.Contents(...))` — may need page/table index parameters |
 | **Salesforce connector** | Basic `Salesforce.Data()` — may need object/API version specification |
 | **Custom SQL with parameters** | Custom SQL uses `Value.NativeQuery()` but parameter binding is not supported |
-| **Error handling in M steps** | No `try...otherwise` patterns for graceful error handling |
+| **Error handling in M steps** | ✅ IMPLEMENTED — `wrap_source_with_try_otherwise()` wired into `tmdl_generator.generate_table_bim()` after `inject_m_steps` |
 | **Data type detection from Tableau metadata** | Type columns rely on Tableau's `datatype` attribute; complex types (duration, geographic) may mis-map |
 
 ### What is APPROXIMATED
@@ -472,7 +472,7 @@
 |---------|--------|-----|
 | Slicer mode detection | Always Dropdown | ✅ PBI: `_detect_slicer_mode()` — Dropdown/List/Between/Basic |
 | Bookmark creation | Inline in `create_report_structure` | ✅ PBI: Standalone `_create_bookmarks()` method |
-| Report filters | From workbook-scope filters | ✅ PBI: From parameters via `_create_report_filters()` |
+| Report filters | From workbook-scope filters | ✅ PBI: Global + datasource filters promoted to report-level `filterConfig` |
 | Drill-through pages | Not implemented | ✅ PBI: `_create_drillthrough_pages()` |
 | Action buttons | `_create_visual_nav_button` + `_create_visual_action_button` | ✅ PBI: `_create_action_visuals()` (unified) |
 | Pages shelf slicer | `_create_pages_shelf_slicer()` | ✅ PBI: `_create_pages_shelf_slicer()` |
@@ -498,7 +498,7 @@
 | Difference | Fabric | PBI |
 |-----------|--------|-----|
 | Sankey/Chord mapping | `sankeyChart`/`chordChart` (custom visuals) | `decompositionTree` (fallback) |
-| Custom visual GUIDs | Defines `CUSTOM_VISUAL_GUIDS` dict | Relies on PBI Desktop built-in |
+| Custom visual GUIDs | Defines `CUSTOM_VISUAL_GUIDS` dict | ✅ IMPLEMENTED — `resolve_custom_visual_type()` wired into `_create_visual_worksheet()` with `customVisualsRepository` in report.json |
 | `_make_column_proj()` | Extra helper function | Not present (inlined) |
 
 #### `strategy_advisor.py` (Fabric: 348 lines vs PBI: 334 lines)
@@ -537,4 +537,4 @@
 | `conversion/` (8 modular converters) | High | Medium | Skip — PBI converts directly from extraction JSON |
 | `constants.py` + `naming.py` (shared utilities) | Low | Low | Skip — PBI inlines these |
 | Fabric coverage tests (750 tests) | Medium | High | Consider — would significantly boost coverage |
-| Context filter promotion | Low | Medium | Consider — improves filter fidelity |
+| Context filter promotion | Low | Medium | ✅ **Implemented** — context filters promoted to page-level; global/datasource filters promoted to report-level |

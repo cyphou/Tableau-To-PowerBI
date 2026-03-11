@@ -316,6 +316,17 @@ class PowerBIProjectGenerator:
         visual_type = ws_data.get('chart_type', 'clusteredBarChart') if ws_data else 'clusteredBarChart'
         ws_name = obj.get('worksheetName', '')
 
+        # Check for custom visual GUID (higher-fidelity AppSource visual)
+        guid_info = None
+        mark_type = ws_data.get('original_mark_class') if ws_data else None
+        if mark_type and hasattr(self, '_used_custom_guids'):
+            from visual_generator import resolve_custom_visual_type
+            custom_vtype, guid_info = resolve_custom_visual_type(mark_type)
+            if guid_info:
+                visual_type = custom_vtype
+                key = mark_type.lower().replace(' ', '').replace('_', '')
+                self._used_custom_guids[key] = guid_info
+
         # Validate scatter chart: needs at least one measure for X/Y axes.
         # Circle/Shape marks sometimes produce scatterChart but lack measures.
         if visual_type == 'scatterChart' and ws_data:
@@ -838,11 +849,18 @@ class PowerBIProjectGenerator:
                 "type": "CustomTheme"
             }
         
-        # Tableau parameters are inlined as constant values in DAX
-        # calculated measures/columns. No report filters are generated because
-        # parameters do not correspond to filterable data columns.
+        # Promote global filters and datasource-level filters to report level
+        all_report_filters = list(converted_objects.get('filters', []))
+        all_report_filters += list(converted_objects.get('datasource_filters', []))
+        if all_report_filters:
+            report_level_filters = self._create_visual_filters(all_report_filters)
+            if report_level_filters:
+                report_json["filterConfig"] = {"filters": report_level_filters}
         
-        _write_json(os.path.join(def_dir, 'report.json'), report_json)
+        # Defer writing report.json until after pages — custom visual
+        # GUIDs are discovered during visual creation and must be added
+        # to report.json before it is persisted.
+        self._used_custom_guids = {}  # key → guid_info dict
         
         # Write custom theme file if theme data was found
         if theme_data:
@@ -997,6 +1015,16 @@ class PowerBIProjectGenerator:
                 
                 visual_type = ws.get('chart_type', 'clusteredBarChart')
                 ws_name = ws.get('name', f'Visual {idx+1}')
+
+                # Check for custom visual GUID
+                mark_type = ws.get('original_mark_class')
+                if mark_type and hasattr(self, '_used_custom_guids'):
+                    from visual_generator import resolve_custom_visual_type
+                    custom_vtype, guid_info = resolve_custom_visual_type(mark_type)
+                    if guid_info:
+                        visual_type = custom_vtype
+                        key = mark_type.lower().replace(' ', '').replace('_', '')
+                        self._used_custom_guids[key] = guid_info
 
                 # Validate scatter chart has measures for X/Y
                 if visual_type == 'scatterChart':
@@ -1159,6 +1187,20 @@ class PowerBIProjectGenerator:
                             shutil.rmtree(vpath)
                         except (PermissionError, OSError):
                             pass  # Skip if still locked
+        
+        # Add custom visual repository to report.json if any custom
+        # visuals were discovered during page creation
+        if self._used_custom_guids:
+            custom_vis_list = []
+            for key, info in self._used_custom_guids.items():
+                custom_vis_list.append({
+                    "name": info["guid"],
+                    "displayName": info["name"],
+                    "visualType": info.get("class", key),
+                })
+            report_json["customVisualsRepository"] = custom_vis_list
+        
+        _write_json(os.path.join(def_dir, 'report.json'), report_json)
         
         return report_dir
     

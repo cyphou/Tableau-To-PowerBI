@@ -11,6 +11,7 @@ import os
 import sys
 import tempfile
 import unittest
+import zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
@@ -112,6 +113,47 @@ class TestReadPrepFlow(unittest.TestCase):
         try:
             with self.assertRaises(ValueError):
                 read_prep_flow(path)
+        finally:
+            os.unlink(path)
+
+    def test_read_tflx_zip(self):
+        """read_prep_flow handles .tflx ZIP archives with a .tfl entry."""
+        flow_data = _make_flow({'n1': _input_node()})
+        with tempfile.NamedTemporaryFile(suffix='.tflx', delete=False) as tmp:
+            path = tmp.name
+        try:
+            with zipfile.ZipFile(path, 'w') as z:
+                z.writestr('flow.tfl', json.dumps(flow_data))
+            result = read_prep_flow(path)
+            self.assertIn('nodes', result)
+            self.assertIn('n1', result['nodes'])
+        finally:
+            os.unlink(path)
+
+    def test_read_tfl_zip_autodetect(self):
+        """read_prep_flow auto-detects ZIP archives with a .tfl extension."""
+        flow_data = _make_flow({'n1': _input_node()})
+        with tempfile.NamedTemporaryFile(suffix='.tfl', delete=False) as tmp:
+            path = tmp.name
+        try:
+            with zipfile.ZipFile(path, 'w') as z:
+                z.writestr('flow', json.dumps(flow_data))
+            result = read_prep_flow(path)
+            self.assertIn('nodes', result)
+        finally:
+            os.unlink(path)
+
+    def test_read_tflx_flow_entry_fallback(self):
+        """read_prep_flow finds a 'flow' entry when no .tfl entry exists."""
+        flow_data = _make_flow({'n2': _input_node('T2')})
+        with tempfile.NamedTemporaryFile(suffix='.tflx', delete=False) as tmp:
+            path = tmp.name
+        try:
+            with zipfile.ZipFile(path, 'w') as z:
+                z.writestr('flow', json.dumps(flow_data))
+                z.writestr('maestroMetadata', '{}')
+            result = read_prep_flow(path)
+            self.assertIn('n2', result['nodes'])
         finally:
             os.unlink(path)
 
