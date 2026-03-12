@@ -1,9 +1,147 @@
 # Development Plan — Tableau to Power BI Migration Tool
 
-**Version:** v7.0.0  
-**Date:** 2025-06-30  
+**Version:** v8.0.0 (planned)  
+**Date:** 2026-03-12  
 **Current state:** v7.0.0 — **2,057 tests** across 40 test files (+conftest.py), 0 failures  
-**Previous baseline:** v3.5.0 — 887 → v4.0.0 — 1,387 → v5.0.0 — 1,543 → v5.1.0 — 1,595 → v5.5.0 — 1,777 → v6.0.0 — 1,889 → v6.1.0 — 1,997 → v7.0.0 — **2,000+ tests**
+**Previous baseline:** v3.5.0 — 887 → v4.0.0 — 1,387 → v5.0.0 — 1,543 → v5.1.0 — 1,595 → v5.5.0 — 1,777 → v6.0.0 — 1,889 → v6.1.0 — 1,997 → v7.0.0 — **2,057 tests**
+
+---
+
+## v8.0.0 — Code Quality, Conversion Depth & Enterprise Readiness
+
+### Motivation
+
+v7.0.0 reached feature completeness for most migration scenarios (2,057 tests, 60+ visuals, 180+ DAX, 33 connectors). v8.0.0 shifts focus to:
+- **Code maintainability** — breaking apart the 13 functions exceeding 200 lines
+- **Error resilience** — eliminating silent exception swallowing (4 medium-risk sites)
+- **Conversion accuracy** — closing remaining DAX/M approximation gaps
+- **Enterprise scale** — handling large Tableau Server migrations with 100+ workbooks
+
+### Sprint 21 — Refactor Large Functions ⬜
+
+**Goal:** Split the 5 largest functions (200+ lines) into composable sub-functions for testability and readability.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 21.1 | **Split `_build_visual_objects()`** | `pbip_generator.py` | High | 569 lines → extract `_build_axis_objects()`, `_build_legend_objects()`, `_build_label_objects()`, `_build_formatting_objects()`, `_build_analytics_objects()` |
+| 21.2 | **Split `create_report_structure()`** | `pbip_generator.py` | High | 513 lines → extract `_create_pages()`, `_create_report_filters()`, `_create_report_metadata()`, `_create_bookmarks_section()` |
+| 21.3 | **Split `_build_semantic_model()`** | `tmdl_generator.py` | Medium | 444 lines → extract `_build_tables_phase()`, `_build_relationships_phase()`, `_build_security_phase()`, `_build_parameters_phase()` |
+| 21.4 | **Split `parse_prep_flow()`** | `prep_flow_parser.py` | Medium | 361 lines → extract `_traverse_dag()`, `_generate_m_from_steps()`, `_emit_datasources()` |
+| 21.5 | **Split `create_visual_container()`** | `visual_generator.py` | Medium | 342 lines → extract `_build_visual_config()`, `_build_visual_query()`, `_build_visual_layout()` |
+| 21.6 | **Sprint 21 tests** | `tests/` | Medium | Regression tests verifying identical output before/after refactor |
+
+### Sprint 22 — Error Handling & Logging Hardening ⬜
+
+**Goal:** Eliminate silent exception swallowing, add structured logging to all catch blocks, improve error recovery.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 22.1 | **Fix `_load_json()` silent failure** | `migrate.py` | Low | Replace `except Exception: pass` → `except (json.JSONDecodeError, OSError) as e: logger.warning(...)` with specific exceptions |
+| 22.2 | **Fix incremental merge error hiding** | `incremental.py` | Medium | `except Exception: pass` at L244 → log warning + collect errors in merge report |
+| 22.3 | **Fix validator silent swallowing** | `validator.py` | Medium | 3 sites (L658, L696, L719) — log errors + add to validation report instead of swallowing |
+| 22.4 | **Fix file cleanup silencing** | `pbip_generator.py` | Low | `PermissionError` at L735/L740 → log warning with file path |
+| 22.5 | **Add structured error context** | All source files | Medium | Wrap top-level operations with `logger.exception()` so stack traces reach log output |
+| 22.6 | **Sprint 22 tests** | `tests/test_error_paths.py` | Medium | Add tests for error recovery: corrupted JSON, locked files, invalid TMDL |
+
+### Sprint 23 — DAX Conversion Accuracy Boost ⬜
+
+**Goal:** Improve DAX conversion quality for the most common approximated functions — REGEX, WINDOW, and LOD edge cases.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 23.1 | **REGEX character class expansion** | `dax_converter.py` | High | `[a-zA-Z]` → generate `OR(AND(CODE(c)>=65, CODE(c)<=90), AND(CODE(c)>=97, CODE(c)<=122))` patterns for common character classes |
+| 23.2 | **REGEX groups & backreferences** | `dax_converter.py` | High | `(pattern)` capture group → `MID/SEARCH` extraction with proper offset tracking |
+| 23.3 | **WINDOW frame boundary precision** | `dax_converter.py` | Medium | `-3..0` frame → proper `OFFSET(-3)` to `OFFSET(0)` with boundary clamping |
+| 23.4 | **Multi-dimension LOD** | `dax_converter.py` | Medium | `{FIXED [A], [B] : SUM([C])}` → `CALCULATE(SUM([C]), ALLEXCEPT('T', 'T'[A], 'T'[B]))` with proper multi-dim handling |
+| 23.5 | **FIRST()/LAST() table calc context** | `dax_converter.py` | Low | Currently returns `0` — convert to `RANKX` offset within sorted table for accurate first/last row detection |
+| 23.6 | **Sprint 23 tests** | `tests/test_dax_coverage.py` | Medium | 30+ new edge-case tests for REGEX, WINDOW, LOD patterns |
+
+### Sprint 24 — Enterprise & Scale Features ⬜
+
+**Goal:** Enable large-scale migrations — 100+ workbooks, multi-site Tableau Server, parallel processing.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 24.1 | **Parallel batch migration** | `migrate.py` | High | `--parallel N` flag — use `concurrent.futures.ProcessPoolExecutor` for parallel workbook migration (stdlib) |
+| 24.2 | **Migration manifest** | `migrate.py` | Medium | `--manifest manifest.json` — JSON file mapping source workbooks to target workspaces with per-workbook config overrides |
+| 24.3 | **Resume interrupted batch** | `migrate.py` | Medium | `--resume` flag — skip already-completed workbooks in batch mode (check output dir for existing .pbip) |
+| 24.4 | **Structured migration log** | `migrate.py` | Low | JSON Lines (`.jsonl`) output with per-workbook timing, item counts, warnings, errors — machine-parseable |
+| 24.5 | **Large workbook optimization** | `tmdl_generator.py`, `pbip_generator.py` | Medium | Lazy evaluation: stream TMDL/PBIR files instead of building full dicts in memory, reducing peak memory for 500+ table workbooks |
+| 24.6 | **Sprint 24 tests** | `tests/` | Medium | Parallel batch, manifest parsing, resume logic, memory benchmarks |
+
+### Sprint 25 — Visual Fidelity & Formatting Depth ⬜
+
+**Goal:** Close the remaining visual accuracy gaps — pixel-accurate positioning, advanced formatting, animation flags.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 25.1 | **Grid-based layout engine** | `pbip_generator.py` | High | Replace proportional scaling with CSS-grid-like layout: rows/columns, alignment constraints, minimum gaps. Handles Tableau tiled + floating zones correctly |
+| 25.2 | **Dashboard tab strip** | `pbip_generator.py` | Low | Tableau dashboard tab strip → PBI page navigation visual (type: `pageNavigator`) |
+| 25.3 | **Sheet-swap containers** | `pbip_generator.py` | Medium | Dynamic zone visibility (Tableau 2022.3+) → PBI bookmarks toggling visual visibility per zone state |
+| 25.4 | **Motion chart annotation** | `visual_generator.py`, `assessment.py` | Low | Detect Tableau motion/animated marks → add migration note + generate Play Axis config stub (PBI preview feature) |
+| 25.5 | **Custom shape migration** | `extract_tableau_data.py`, `pbip_generator.py` | Medium | Extract shape `.png`/`.svg` from `.twbx` archive → embed as image resources in PBIR `RegisteredResources/` |
+| 25.6 | **Sprint 25 tests** | `tests/` | Medium | Layout accuracy tests, tab strip, dynamic visibility, shape extraction |
+
+### Sprint 26 — Test Quality & Coverage ⬜
+
+**Goal:** Reach 90%+ line coverage, strengthen edge-case testing, improve test infrastructure.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 26.1 | **Coverage-driven gap filling** | `tests/` | High | Run `coverage report --show-missing` → write tests for uncovered branches (target: 90% lines) |
+| 26.2 | **Real-world workbook E2E tests** | `tests/test_non_regression.py` | Medium | Add 5+ additional real-world `.twbx` samples covering edge cases: multi-datasource, LOD-heavy, 50+ sheet dashboards |
+| 26.3 | **DAX round-trip testing** | `tests/test_dax_converter.py` | Medium | Property: `parse(convert(formula))` should produce valid DAX syntax (balanced parens, valid functions, no doubled operators) |
+| 26.4 | **Version bump to 8.0.0** | `pyproject.toml`, `powerbi_import/__init__.py` | Low | Align version strings |
+| 26.5 | **Update all docs** | `docs/` | Low | Refresh GAP_ANALYSIS, KNOWN_LIMITATIONS, CHANGELOG, copilot-instructions |
+| 26.6 | **Sprint 26 tests** | `tests/` | Medium | Coverage-driven new tests (goal: +150 tests) |
+
+---
+
+### Sprint Sequencing (v8.0.0)
+
+```
+Sprint 21 (Refactor)  ──→  Sprint 22 (Error Handling)
+         ↓                           ↓
+Sprint 23 (DAX Accuracy)  ──→  Sprint 24 (Enterprise Scale)
+         ↓                           ↓
+Sprint 25 (Visual Fidelity)  ──→  Sprint 26 (Tests & Release)
+```
+
+- Sprint 21 comes first — refactored code is easier to add error handling to
+- Sprints 23 & 24 are independent (can run in parallel)
+- Sprint 26 is last — documentation and coverage after all features are stable
+
+### Success Criteria for v8.0.0
+
+| Metric | Target |
+|--------|--------|
+| Tests | 2,400+ |
+| Line coverage | ≥ 90% |
+| Functions > 200 lines | 0 (all split) |
+| Silent `except: pass` (medium risk) | 0 |
+| DAX approximated functions improved | 5+ |
+| Batch parallelism | Process-level (`--parallel N`) |
+| Largest function | < 150 lines |
+| Doc freshness | All docs reflect v8.0.0 |
+
+---
+
+### v8.0.0 Feature Backlog (prioritized, not sprint-assigned)
+
+Items that may be pulled into sprints if capacity allows:
+
+| # | Feature | Priority | Effort | Details |
+|---|---------|----------|--------|---------|
+| B.1 | **Tableau Pulse → PBI Goals** | Medium | High | Tableau Pulse metrics → Power BI Goals/Scorecards (new Tableau 2024+ feature) |
+| B.2 | **SCRIPT_* → PBI Python/R visuals** | Low | Medium | Map `SCRIPT_BOOL/INT/REAL/STR` to PBI Python/R visual containers instead of `BLANK()` |
+| B.3 | **Data-driven alerts** | Low | Medium | Tableau data alerts → PBI alert rules on dashboards |
+| B.4 | **Web UI / Streamlit frontend** | Low | High | Browser-based migration wizard (upload .twbx → get .pbip) using Streamlit or Flask |
+| B.5 | **LLM-assisted DAX correction** | Low | High | Optional AI pass: send approximated DAX to GPT/Claude for semantic review (opt-in, requires API key) |
+| B.6 | **Hyper data loading** | Low | High | Read row-level data from `.hyper` files via SQLite interface (currently metadata-only) |
+| B.7 | **Side-by-side screenshot comparison** | Low | High | Selenium/Playwright capture Tableau + PBI screenshots, generate visual diff report |
+| B.8 | **PBIR schema forward-compat** | Low | Low | Monitor PBI docs for PBIR v5.0+ schema changes, update `$schema` URLs as needed |
+| B.9 | **Plugin examples** | Low | Low | Ship 2-3 example plugins: custom visual mapper, DAX post-processor, naming convention enforcer |
+| B.10 | **Tableau 2024.3+ dynamic params** | Medium | Medium | Database-query-driven parameters — extract query definition, generate M parameter with refresh |
 
 ---
 

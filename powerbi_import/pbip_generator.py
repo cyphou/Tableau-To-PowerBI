@@ -880,291 +880,19 @@ class PowerBIProjectGenerator:
         tooltip_page_map = {}
         
         if dashboards:
-            for db_idx, db in enumerate(dashboards):
-                page_name = f"ReportSection{uuid.uuid4().hex[:20]}" if db_idx > 0 else "ReportSection"
-                page_display_name = db.get('name', f'Page {db_idx + 1}')
-                page_names.append(page_name)
-                
-                # Create the page folder
-                page_dir = os.path.join(pages_dir, page_name)
-                os.makedirs(page_dir, exist_ok=True)
-                
-                # Get the size
-                size = db.get('size', {})
-                page_width = size.get('width', 1280)
-                page_height = size.get('height', 720)
-                
-                page_json = {
-                    "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.0.0/schema.json",
-                    "name": page_name,
-                    "displayName": page_display_name,
-                    "displayOption": "FitToPage",
-                    "height": page_height,
-                    "width": page_width
-                }
-                
-                # Add page-level filters from dashboard filters
-                db_filters = list(db.get('filters', []))
-                # Also promote context filters from worksheets to page level
-                for ws in worksheets:
-                    for f in ws.get('filters', []):
-                        if f.get('is_context', False):
-                            db_filters.append(f)
-                if db_filters:
-                    page_filters = self._create_visual_filters(db_filters)
-                    if page_filters:
-                        page_json["filterConfig"] = {"filters": page_filters}
-                
-                _write_json(os.path.join(page_dir, 'page.json'), page_json)
-                
-                # Create visuals
-                visuals_dir = os.path.join(page_dir, 'visuals')
-                os.makedirs(visuals_dir, exist_ok=True)
-                
-                db_objects = db.get('objects', [])
-                visual_count = 0
-                
-                # Build a calc_id → caption lookup for slicers
-                calcs = converted_objects.get('calculations', [])
-                calc_id_to_caption = {}
-                for c in calcs:
-                    cname = c.get('name', '').strip('[]')
-                    ccaption = c.get('caption', '')
-                    if cname and ccaption:
-                        calc_id_to_caption[cname] = ccaption
-                
-                # Compute scale factor from Tableau to Power BI pixels
-                max_x = max((o.get('position', {}).get('x', 0) + o.get('position', {}).get('w', 0) for o in db_objects), default=page_width)
-                max_y = max((o.get('position', {}).get('y', 0) + o.get('position', {}).get('h', 0) for o in db_objects), default=page_height)
-                scale_x = page_width / max(max_x, 1)
-                scale_y = page_height / max(max_y, 1)
-                
-                for obj in db_objects:
-                    if obj.get('type') == 'worksheetReference':
-                        ws_name = obj.get('worksheetName', '')
-                        ws_data = self._find_worksheet(worksheets, ws_name)
-                        self._create_visual_worksheet(visuals_dir, ws_data, obj,
-                                                       scale_x, scale_y, visual_count,
-                                                       worksheets, converted_objects,
-                                                       tooltip_page_map=tooltip_page_map)
-                        visual_count += 1
-                    
-                    elif obj.get('type') == 'text':
-                        self._create_visual_textbox(visuals_dir, obj, scale_x, scale_y, visual_count)
-                        visual_count += 1
-                    
-                    elif obj.get('type') == 'image':
-                        self._create_visual_image(visuals_dir, obj, scale_x, scale_y, visual_count)
-                        visual_count += 1
-                    
-                    elif obj.get('type') == 'filter_control':
-                        self._create_visual_filter_control(visuals_dir, obj, scale_x, scale_y,
-                                                            visual_count, calc_id_to_caption,
-                                                            converted_objects)
-                        visual_count += 1
-                
-                # Create action buttons for URL and sheet-navigate actions
-                actions = converted_objects.get('actions', [])
-                if actions:
-                    # Filter actions relevant to this dashboard
-                    db_name = db.get('name', '')
-                    db_actions = [a for a in actions if a.get('type') in ('url', 'sheet-navigate')
-                                  and (not a.get('source_worksheet') or a.get('source_worksheet') == db_name
-                                       or any(o.get('worksheetName') == a.get('source_worksheet') for o in db_objects))]
-                    if db_actions:
-                        created = self._create_action_visuals(visuals_dir, db_actions,
-                                                               scale_x, scale_y, visual_count,
-                                                               page_display_name)
-                        visual_count += created
-
-                # Create slicer for Pages shelf (Tableau play-axis animation)
-                pages_shelf = db.get('pages_shelf', {})
-                if pages_shelf:
-                    self._create_pages_shelf_slicer(
-                        visuals_dir, pages_shelf, scale_x, scale_y,
-                        visual_count, converted_objects)
-                    visual_count += 1
-                
-                print(f"  📊 Page '{page_display_name}': {visual_count} visuals created")
+            page_names = self._create_dashboard_pages(
+                pages_dir, dashboards, worksheets, converted_objects, tooltip_page_map)
         
         # Fallback: default page
         if not page_names or (dashboards and all(len(d.get('objects', [])) == 0 for d in dashboards)):
-            page_name = "ReportSection"
-            page_names = [page_name]
-            
-            page_dir = os.path.join(pages_dir, page_name)
-            os.makedirs(page_dir, exist_ok=True)
-            
-            page_json = {
-                "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.0.0/schema.json",
-                "name": page_name,
-                "displayName": "Tableau Migration",
-                "displayOption": "FitToPage",
-                "height": 720,
-                "width": 1280
-            }
-            _write_json(os.path.join(page_dir, 'page.json'), page_json)
-            
-            visuals_dir = os.path.join(page_dir, 'visuals')
-            os.makedirs(visuals_dir, exist_ok=True)
-            
-            x, y = 10, 10
-            for idx, ws in enumerate(worksheets):
-                visual_id = uuid.uuid4().hex[:20]
-                visual_dir = os.path.join(visuals_dir, visual_id)
-                
-                visual_type = ws.get('chart_type', 'clusteredBarChart')
-                ws_name = ws.get('name', f'Visual {idx+1}')
-
-                # Check for custom visual GUID
-                mark_type = ws.get('original_mark_class')
-                if mark_type and hasattr(self, '_used_custom_guids'):
-                    from visual_generator import resolve_custom_visual_type
-                    custom_vtype, guid_info = resolve_custom_visual_type(mark_type)
-                    if guid_info:
-                        visual_type = custom_vtype
-                        key = mark_type.lower().replace(' ', '').replace('_', '')
-                        self._used_custom_guids[key] = guid_info
-
-                # Validate scatter chart has measures for X/Y
-                if visual_type == 'scatterChart':
-                    skip_names = {'Measure Names', 'Measure Values', 'Multiple Values',
-                                  ':Measure Names', ':Measure Values'}
-                    fields = ws.get('fields', [])
-                    has_measure = any(
-                        self._is_measure_field(self._clean_field_name(f.get('name', '')))
-                        for f in fields
-                        if self._clean_field_name(f.get('name', '')) not in skip_names
-                    )
-                    if not has_measure:
-                        visual_type = 'table'
-                
-                visual_json = {
-                    "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
-                    "name": visual_id,
-                    "position": {
-                        "x": x,
-                        "y": y,
-                        "z": idx * 1000,
-                        "height": 200,
-                        "width": 300,
-                        "tabOrder": idx * 1000
-                    },
-                    "visual": {
-                        "visualType": visual_type,
-                        "drillFilterOtherVisuals": True
-                    }
-                }
-                
-                if ws.get('fields'):
-                    query = self._build_visual_query(ws)
-                    if query:
-                        visual_json["visual"]["query"] = query
-                
-                _write_json(os.path.join(visual_dir, 'visual.json'), visual_json, ensure_ascii=False)
-                
-                x += 320
-                if x > 1000:
-                    x = 10
-                    y += 220
-            
-            print(f"  📊 Default page: {len(worksheets)} visuals created")
+            page_names = self._create_fallback_page(pages_dir, worksheets, converted_objects)
         
-        # 5b. Tooltip pages — worksheets with viz_in_tooltip data
-        # Build a mapping: worksheet_name → tooltip_page_name for binding
-        tooltip_page_map = {}  # viz_in_tooltip source worksheet → tooltip page name
-        tooltip_worksheets = [ws for ws in worksheets if ws.get('tooltip', {}).get('viz_in_tooltip')]
-        # Also check tooltips list for viz_in_tooltip entries
-        if not tooltip_worksheets:
-            tooltip_worksheets = []
-            for ws in worksheets:
-                tooltips = ws.get('tooltips', [])
-                if isinstance(tooltips, list):
-                    for tip in tooltips:
-                        if isinstance(tip, dict) and tip.get('type') == 'viz_in_tooltip':
-                            tooltip_worksheets.append(ws)
-                            break
-        
-        for tip_ws in tooltip_worksheets:
-            tip_name = f"Tooltip_{uuid.uuid4().hex[:12]}"
-            tip_display = f"Tooltip - {tip_ws.get('name', 'Tooltip')}"
-            page_names.append(tip_name)
-            # Track tooltip page for visual binding
-            tooltip_page_map[tip_ws.get('name', '')] = tip_name
-            # Also map from viz_in_tooltip references
-            tooltips = tip_ws.get('tooltips', [])
-            if isinstance(tooltips, list):
-                for tip in tooltips:
-                    if isinstance(tip, dict) and tip.get('type') == 'viz_in_tooltip':
-                        tooltip_page_map[tip.get('worksheet', '')] = tip_name
+        # 5b. Tooltip pages
+        self._create_tooltip_pages(pages_dir, page_names, worksheets, converted_objects)
 
-            tip_dir = os.path.join(pages_dir, tip_name)
-            os.makedirs(tip_dir, exist_ok=True)
-
-            tip_page = {
-                "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.0.0/schema.json",
-                "name": tip_name,
-                "displayName": tip_display,
-                "displayOption": "FitToPage",
-                "height": 320,
-                "width": 480,
-                "pageType": "Tooltip"
-            }
-            _write_json(os.path.join(tip_dir, 'page.json'), tip_page)
-
-            # Create a visual for the tooltip
-            tip_visuals_dir = os.path.join(tip_dir, 'visuals')
-            os.makedirs(tip_visuals_dir, exist_ok=True)
-            self._create_visual_worksheet(
-                tip_visuals_dir, tip_ws,
-                {'type': 'worksheetReference', 'worksheetName': tip_ws.get('name', ''),
-                 'position': {'x': 0, 'y': 0, 'w': 480, 'h': 320}},
-                1.0, 1.0, 0, worksheets, converted_objects
-            )
-            print(f"  💡 Tooltip page '{tip_display}' created")
-
-        # 5c. Mobile layout pages — from device layouts (phone/tablet)
+        # 5c. Mobile layout pages
         if dashboards:
-            for db_idx, db in enumerate(dashboards):
-                device_layouts = db.get('device_layouts', [])
-                for dl in device_layouts:
-                    device_type = dl.get('device_type', '')
-                    if device_type == 'phone' and not dl.get('auto_generated', False):
-                        mobile_page_name = f"MobileLayout_{uuid.uuid4().hex[:12]}"
-                        mobile_display = f"{db.get('name', 'Dashboard')} (Phone)"
-                        page_names.append(mobile_page_name)
-                        
-                        mobile_dir = os.path.join(pages_dir, mobile_page_name)
-                        os.makedirs(mobile_dir, exist_ok=True)
-                        
-                        mobile_page = {
-                            "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.0.0/schema.json",
-                            "name": mobile_page_name,
-                            "displayName": mobile_display,
-                            "displayOption": "FitToPage",
-                            "height": 568,
-                            "width": 320,
-                        }
-                        _write_json(os.path.join(mobile_dir, 'page.json'), mobile_page)
-                        
-                        # Create visuals for visible zones
-                        mobile_visuals_dir = os.path.join(mobile_dir, 'visuals')
-                        os.makedirs(mobile_visuals_dir, exist_ok=True)
-                        
-                        vis_count = 0
-                        for zone in dl.get('zones', []):
-                            zone_name = zone.get('name', '')
-                            ws_data = self._find_worksheet(worksheets, zone_name)
-                            if ws_data:
-                                self._create_visual_worksheet(
-                                    mobile_visuals_dir, ws_data,
-                                    {'type': 'worksheetReference', 'worksheetName': zone_name,
-                                     'position': zone.get('position', {'x': 0, 'y': vis_count * 200, 'w': 320, 'h': 200})},
-                                    1.0, 1.0, vis_count, worksheets, converted_objects
-                                )
-                                vis_count += 1
-                        
-                        print(f"  📱 Mobile layout page '{mobile_display}': {vis_count} visuals")
+            self._create_mobile_pages(pages_dir, page_names, dashboards, worksheets, converted_objects)
 
         # 5d. Drill-through pages — from filter actions targeting specific worksheets
         self._create_drillthrough_pages(pages_dir, page_names, worksheets,
@@ -1204,6 +932,301 @@ class PowerBIProjectGenerator:
         
         return report_dir
     
+    # ── Report page sub-methods (extracted from create_report_structure) ──
+
+    def _create_dashboard_pages(self, pages_dir, dashboards, worksheets, converted_objects,
+                                tooltip_page_map):
+        """Creates report pages from Tableau dashboards. Returns list of page_names."""
+        page_names = []
+        for db_idx, db in enumerate(dashboards):
+            page_name = f"ReportSection{uuid.uuid4().hex[:20]}" if db_idx > 0 else "ReportSection"
+            page_display_name = db.get('name', f'Page {db_idx + 1}')
+            page_names.append(page_name)
+
+            # Create the page folder
+            page_dir = os.path.join(pages_dir, page_name)
+            os.makedirs(page_dir, exist_ok=True)
+
+            # Get the size
+            size = db.get('size', {})
+            page_width = size.get('width', 1280)
+            page_height = size.get('height', 720)
+
+            page_json = {
+                "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.0.0/schema.json",
+                "name": page_name,
+                "displayName": page_display_name,
+                "displayOption": "FitToPage",
+                "height": page_height,
+                "width": page_width
+            }
+
+            # Add page-level filters from dashboard filters
+            db_filters = list(db.get('filters', []))
+            # Also promote context filters from worksheets to page level
+            for ws in worksheets:
+                for f in ws.get('filters', []):
+                    if f.get('is_context', False):
+                        db_filters.append(f)
+            if db_filters:
+                page_filters = self._create_visual_filters(db_filters)
+                if page_filters:
+                    page_json["filterConfig"] = {"filters": page_filters}
+
+            _write_json(os.path.join(page_dir, 'page.json'), page_json)
+
+            # Create visuals
+            visuals_dir = os.path.join(page_dir, 'visuals')
+            os.makedirs(visuals_dir, exist_ok=True)
+
+            db_objects = db.get('objects', [])
+            visual_count = 0
+
+            # Build a calc_id → caption lookup for slicers
+            calcs = converted_objects.get('calculations', [])
+            calc_id_to_caption = {}
+            for c in calcs:
+                cname = c.get('name', '').strip('[]')
+                ccaption = c.get('caption', '')
+                if cname and ccaption:
+                    calc_id_to_caption[cname] = ccaption
+
+            # Compute scale factor from Tableau to Power BI pixels
+            max_x = max((o.get('position', {}).get('x', 0) + o.get('position', {}).get('w', 0) for o in db_objects), default=page_width)
+            max_y = max((o.get('position', {}).get('y', 0) + o.get('position', {}).get('h', 0) for o in db_objects), default=page_height)
+            scale_x = page_width / max(max_x, 1)
+            scale_y = page_height / max(max_y, 1)
+
+            for obj in db_objects:
+                if obj.get('type') == 'worksheetReference':
+                    ws_name = obj.get('worksheetName', '')
+                    ws_data = self._find_worksheet(worksheets, ws_name)
+                    self._create_visual_worksheet(visuals_dir, ws_data, obj,
+                                                   scale_x, scale_y, visual_count,
+                                                   worksheets, converted_objects,
+                                                   tooltip_page_map=tooltip_page_map)
+                    visual_count += 1
+
+                elif obj.get('type') == 'text':
+                    self._create_visual_textbox(visuals_dir, obj, scale_x, scale_y, visual_count)
+                    visual_count += 1
+
+                elif obj.get('type') == 'image':
+                    self._create_visual_image(visuals_dir, obj, scale_x, scale_y, visual_count)
+                    visual_count += 1
+
+                elif obj.get('type') == 'filter_control':
+                    self._create_visual_filter_control(visuals_dir, obj, scale_x, scale_y,
+                                                        visual_count, calc_id_to_caption,
+                                                        converted_objects)
+                    visual_count += 1
+
+            # Create action buttons for URL and sheet-navigate actions
+            actions = converted_objects.get('actions', [])
+            if actions:
+                # Filter actions relevant to this dashboard
+                db_name = db.get('name', '')
+                db_actions = [a for a in actions if a.get('type') in ('url', 'sheet-navigate')
+                              and (not a.get('source_worksheet') or a.get('source_worksheet') == db_name
+                                   or any(o.get('worksheetName') == a.get('source_worksheet') for o in db_objects))]
+                if db_actions:
+                    created = self._create_action_visuals(visuals_dir, db_actions,
+                                                           scale_x, scale_y, visual_count,
+                                                           page_display_name)
+                    visual_count += created
+
+            # Create slicer for Pages shelf (Tableau play-axis animation)
+            pages_shelf = db.get('pages_shelf', {})
+            if pages_shelf:
+                self._create_pages_shelf_slicer(
+                    visuals_dir, pages_shelf, scale_x, scale_y,
+                    visual_count, converted_objects)
+                visual_count += 1
+
+            print(f"  📊 Page '{page_display_name}': {visual_count} visuals created")
+
+        return page_names
+
+    def _create_fallback_page(self, pages_dir, worksheets, converted_objects):
+        """Creates a default page when no dashboards exist. Returns page_names list."""
+        page_name = "ReportSection"
+        page_names = [page_name]
+
+        page_dir = os.path.join(pages_dir, page_name)
+        os.makedirs(page_dir, exist_ok=True)
+
+        page_json = {
+            "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.0.0/schema.json",
+            "name": page_name,
+            "displayName": "Tableau Migration",
+            "displayOption": "FitToPage",
+            "height": 720,
+            "width": 1280
+        }
+        _write_json(os.path.join(page_dir, 'page.json'), page_json)
+
+        visuals_dir = os.path.join(page_dir, 'visuals')
+        os.makedirs(visuals_dir, exist_ok=True)
+
+        x, y = 10, 10
+        for idx, ws in enumerate(worksheets):
+            visual_id = uuid.uuid4().hex[:20]
+            visual_dir = os.path.join(visuals_dir, visual_id)
+
+            visual_type = ws.get('chart_type', 'clusteredBarChart')
+            ws_name = ws.get('name', f'Visual {idx+1}')
+
+            # Check for custom visual GUID
+            mark_type = ws.get('original_mark_class')
+            if mark_type and hasattr(self, '_used_custom_guids'):
+                from visual_generator import resolve_custom_visual_type
+                custom_vtype, guid_info = resolve_custom_visual_type(mark_type)
+                if guid_info:
+                    visual_type = custom_vtype
+                    key = mark_type.lower().replace(' ', '').replace('_', '')
+                    self._used_custom_guids[key] = guid_info
+
+            # Validate scatter chart has measures for X/Y
+            if visual_type == 'scatterChart':
+                skip_names = {'Measure Names', 'Measure Values', 'Multiple Values',
+                              ':Measure Names', ':Measure Values'}
+                fields = ws.get('fields', [])
+                has_measure = any(
+                    self._is_measure_field(self._clean_field_name(f.get('name', '')))
+                    for f in fields
+                    if self._clean_field_name(f.get('name', '')) not in skip_names
+                )
+                if not has_measure:
+                    visual_type = 'table'
+
+            visual_json = {
+                "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
+                "name": visual_id,
+                "position": {
+                    "x": x,
+                    "y": y,
+                    "z": idx * 1000,
+                    "height": 200,
+                    "width": 300,
+                    "tabOrder": idx * 1000
+                },
+                "visual": {
+                    "visualType": visual_type,
+                    "drillFilterOtherVisuals": True
+                }
+            }
+
+            if ws.get('fields'):
+                query = self._build_visual_query(ws)
+                if query:
+                    visual_json["visual"]["query"] = query
+
+            _write_json(os.path.join(visual_dir, 'visual.json'), visual_json, ensure_ascii=False)
+
+            x += 320
+            if x > 1000:
+                x = 10
+                y += 220
+
+        print(f"  📊 Default page: {len(worksheets)} visuals created")
+        return page_names
+
+    def _create_tooltip_pages(self, pages_dir, page_names, worksheets, converted_objects):
+        """Creates tooltip pages from worksheets with viz_in_tooltip data."""
+        tooltip_page_map = {}
+        tooltip_worksheets = [ws for ws in worksheets if ws.get('tooltip', {}).get('viz_in_tooltip')]
+        # Also check tooltips list for viz_in_tooltip entries
+        if not tooltip_worksheets:
+            tooltip_worksheets = []
+            for ws in worksheets:
+                tooltips = ws.get('tooltips', [])
+                if isinstance(tooltips, list):
+                    for tip in tooltips:
+                        if isinstance(tip, dict) and tip.get('type') == 'viz_in_tooltip':
+                            tooltip_worksheets.append(ws)
+                            break
+
+        for tip_ws in tooltip_worksheets:
+            tip_name = f"Tooltip_{uuid.uuid4().hex[:12]}"
+            tip_display = f"Tooltip - {tip_ws.get('name', 'Tooltip')}"
+            page_names.append(tip_name)
+            # Track tooltip page for visual binding
+            tooltip_page_map[tip_ws.get('name', '')] = tip_name
+            # Also map from viz_in_tooltip references
+            tooltips = tip_ws.get('tooltips', [])
+            if isinstance(tooltips, list):
+                for tip in tooltips:
+                    if isinstance(tip, dict) and tip.get('type') == 'viz_in_tooltip':
+                        tooltip_page_map[tip.get('worksheet', '')] = tip_name
+
+            tip_dir = os.path.join(pages_dir, tip_name)
+            os.makedirs(tip_dir, exist_ok=True)
+
+            tip_page = {
+                "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.0.0/schema.json",
+                "name": tip_name,
+                "displayName": tip_display,
+                "displayOption": "FitToPage",
+                "height": 320,
+                "width": 480,
+                "pageType": "Tooltip"
+            }
+            _write_json(os.path.join(tip_dir, 'page.json'), tip_page)
+
+            # Create a visual for the tooltip
+            tip_visuals_dir = os.path.join(tip_dir, 'visuals')
+            os.makedirs(tip_visuals_dir, exist_ok=True)
+            self._create_visual_worksheet(
+                tip_visuals_dir, tip_ws,
+                {'type': 'worksheetReference', 'worksheetName': tip_ws.get('name', ''),
+                 'position': {'x': 0, 'y': 0, 'w': 480, 'h': 320}},
+                1.0, 1.0, 0, worksheets, converted_objects
+            )
+            print(f"  💡 Tooltip page '{tip_display}' created")
+
+    def _create_mobile_pages(self, pages_dir, page_names, dashboards, worksheets, converted_objects):
+        """Creates mobile layout pages from phone device layouts."""
+        for db_idx, db in enumerate(dashboards):
+            device_layouts = db.get('device_layouts', [])
+            for dl in device_layouts:
+                device_type = dl.get('device_type', '')
+                if device_type == 'phone' and not dl.get('auto_generated', False):
+                    mobile_page_name = f"MobileLayout_{uuid.uuid4().hex[:12]}"
+                    mobile_display = f"{db.get('name', 'Dashboard')} (Phone)"
+                    page_names.append(mobile_page_name)
+
+                    mobile_dir = os.path.join(pages_dir, mobile_page_name)
+                    os.makedirs(mobile_dir, exist_ok=True)
+
+                    mobile_page = {
+                        "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.0.0/schema.json",
+                        "name": mobile_page_name,
+                        "displayName": mobile_display,
+                        "displayOption": "FitToPage",
+                        "height": 568,
+                        "width": 320,
+                    }
+                    _write_json(os.path.join(mobile_dir, 'page.json'), mobile_page)
+
+                    # Create visuals for visible zones
+                    mobile_visuals_dir = os.path.join(mobile_dir, 'visuals')
+                    os.makedirs(mobile_visuals_dir, exist_ok=True)
+
+                    vis_count = 0
+                    for zone in dl.get('zones', []):
+                        zone_name = zone.get('name', '')
+                        ws_data = self._find_worksheet(worksheets, zone_name)
+                        if ws_data:
+                            self._create_visual_worksheet(
+                                mobile_visuals_dir, ws_data,
+                                {'type': 'worksheetReference', 'worksheetName': zone_name,
+                                 'position': zone.get('position', {'x': 0, 'y': vis_count * 200, 'w': 320, 'h': 200})},
+                                1.0, 1.0, vis_count, worksheets, converted_objects
+                            )
+                            vis_count += 1
+
+                    print(f"  📱 Mobile layout page '{mobile_display}': {vis_count} visuals")
+
     def _build_field_mapping(self, converted_objects):
         """Builds the mapping from Tableau fields to the Power BI model.
         
@@ -1775,22 +1798,38 @@ class PowerBIProjectGenerator:
         return visual_filters
     
     def _build_visual_objects(self, ws_name, ws_data, visual_type):
-        """Builds visual objects (title, colors, labels, legend, axes)"""
+        """Builds visual objects (title, colors, labels, legend, axes).
+
+        Orchestrator that delegates to focused sub-methods.
+        """
         objects = {}
-        
+
         # Title
         objects["title"] = [{
             "properties": {
                 "text": _L(f"'{ws_name}'")
             }
         }]
-        
+
         if not ws_data:
             return objects
-        
+
         formatting = ws_data.get('formatting', {})
         mark_encoding = ws_data.get('mark_encoding', {})
-        
+
+        self._build_label_objects(objects, formatting, mark_encoding)
+        self._build_legend_objects(objects, mark_encoding, formatting)
+        self._build_axis_objects(objects, ws_data, visual_type)
+        self._build_visual_styling_objects(objects, ws_data, visual_type, formatting, mark_encoding)
+        self._build_color_encoding_objects(objects, ws_data, visual_type, mark_encoding)
+        self._build_analytics_objects(objects, ws_data, visual_type, formatting)
+
+        return objects
+
+    # ── Visual-object sub-methods (extracted from _build_visual_objects) ──
+
+    def _build_label_objects(self, objects, formatting, mark_encoding):
+        """Data labels, label color, and font formatting."""
         # Data labels — from formatting.mark.mark-labels-show OR mark_encoding.label
         show_labels = False
         mark_fmt = formatting.get('mark', {})
@@ -1798,7 +1837,7 @@ class PowerBIProjectGenerator:
             show_labels = mark_fmt.get('mark-labels-show', '').lower() == 'true'
         if mark_encoding.get('label', {}).get('show'):
             show_labels = True
-        
+
         if show_labels:
             label_props = {
                 "show": _L("true")
@@ -1812,13 +1851,47 @@ class PowerBIProjectGenerator:
                     "solid": {"color": _L(f"'{label_info['font_color']}'")}
                 }
             # Map label position (Tableau → PBI)
-            pos_map = {'top': "'OutsideEnd'", 'center': "'InsideCenter'", 
+            pos_map = {'top': "'OutsideEnd'", 'center': "'InsideCenter'",
                        'bottom': "'InsideBase'", 'left': "'Left'", 'right': "'Right'"}
             if label_info.get('position') and label_info['position'] in pos_map:
                 label_props["labelPosition"] = _L(pos_map[label_info['position']])
             objects["labels"] = [{"properties": label_props}]
-        
-        # Legend (if color encoded on a field)
+
+        # Label color (from formatting.label.color)
+        label_fmt = formatting.get('label', {})
+        if isinstance(label_fmt, dict) and label_fmt.get('color'):
+            if "labels" not in objects:
+                objects["labels"] = [{"properties": {}}]
+            objects["labels"][0]["properties"]["color"] = {
+                "solid": {"color": _L(f"'{label_fmt['color']}'")}
+            }
+
+        # Font formatting (family + size from extracted formatting)
+        font_props = formatting.get('font', {})
+        if isinstance(font_props, dict):
+            font_family = font_props.get('family', '')
+            font_size = font_props.get('size', '')
+            if font_family or font_size:
+                if "labels" not in objects:
+                    objects["labels"] = [{"properties": {}}]
+                if font_family:
+                    objects["labels"][0]["properties"]["fontFamily"] = _L(f"'{font_family}'")
+                if font_size:
+                    try:
+                        fs_val = int(float(str(font_size).replace('pt', '').replace('px', '').strip()))
+                        objects["labels"][0]["properties"]["fontSize"] = _L(f"{fs_val}D")
+                    except (ValueError, TypeError):
+                        logger.debug("Could not parse label fontSize: %s", font_size)
+
+        # Number format mapping on labels
+        fmt_info = formatting.get('number_format', formatting.get('format_string', ''))
+        if fmt_info:
+            pbi_fmt = self._convert_number_format(fmt_info)
+            if pbi_fmt and "labels" in objects:
+                objects["labels"][0]["properties"]["labelDisplayUnits"] = _L(f"'{pbi_fmt}'")
+
+    def _build_legend_objects(self, objects, mark_encoding, formatting):
+        """Legend configuration from color encoding."""
         color_field = mark_encoding.get('color', {}).get('field', '')
         if color_field and color_field != 'Multiple Values':
             legend_props = {
@@ -1850,16 +1923,11 @@ class PowerBIProjectGenerator:
             else:
                 legend_props["position"] = _L("'Right'")
             objects["legend"] = [{"properties": legend_props}]
-        
-        # Label color (from formatting.label.color)
-        label_fmt = formatting.get('label', {})
-        if isinstance(label_fmt, dict) and label_fmt.get('color'):
-            if "labels" not in objects:
-                objects["labels"] = [{"properties": {}}]
-            objects["labels"][0]["properties"]["color"] = {
-                "solid": {"color": _L(f"'{label_fmt['color']}'")}
-            }
-        
+
+    def _build_axis_objects(self, objects, ws_data, visual_type):
+        """Axis display, explicit axes, dual axis, enhanced config, continuous/discrete, sync."""
+        formatting = ws_data.get('formatting', {})
+
         # Axis display (formatting.axis.display)
         axis_fmt = formatting.get('axis', {})
         if isinstance(axis_fmt, dict):
@@ -1876,7 +1944,7 @@ class PowerBIProjectGenerator:
                         "show": _L("true")
                     }
                 }]
-        
+
         # Explicit axes (if extracted)
         axes_data = ws_data.get('axes', {})
         if axes_data:
@@ -1891,7 +1959,7 @@ class PowerBIProjectGenerator:
                 if x_axis.get('reversed'):
                     cat_props["reverseOrder"] = _L("true")
                 objects["categoryAxis"] = [{"properties": cat_props}]
-                
+
             y_axis = axes_data.get('y', {})
             if y_axis:
                 val_props = {
@@ -1913,7 +1981,7 @@ class PowerBIProjectGenerator:
                 if y_axis.get('reversed'):
                     val_props["reverseOrder"] = _L("true")
                 objects["valueAxis"] = [{"properties": val_props}]
-            
+
             # Dual-axis / combo-chart secondary axis
             if axes_data.get('dual_axis') and visual_type in ('lineClusteredColumnComboChart', 'lineStackedColumnComboChart'):
                 y2_props = {
@@ -1929,7 +1997,55 @@ class PowerBIProjectGenerator:
                     if y_axis.get('scale') == 'log':
                         y2_props["axisScale"] = _L("'Log'")
                 objects["y1AxisReferenceLine"] = [{"properties": {}}]  # Marker for combo secondary axis
-        
+
+        # Enhanced axis config (label rotation, show toggles)
+        axes_detail = ws_data.get('axes', {})
+        if axes_detail:
+            for axis_key, axis_obj_key in [('x', 'categoryAxis'), ('y', 'valueAxis')]:
+                ax = axes_detail.get(axis_key, {})
+                if not ax:
+                    continue
+                if axis_obj_key in objects:
+                    props = objects[axis_obj_key][0].get("properties", {})
+                else:
+                    props = {"show": _L("true")}
+                if ax.get('show_title') is False:
+                    props["showAxisTitle"] = _L("false")
+                if ax.get('show_label') is False:
+                    props["show"] = _L("false")
+                if ax.get('label_rotation'):
+                    try:
+                        rot = int(float(ax['label_rotation']))
+                        if rot != 0:
+                            props["labelAngle"] = _L(f"{rot}L")
+                    except (ValueError, TypeError):
+                        logger.debug("Could not parse axis label_rotation: %s", ax.get('label_rotation'))
+                if ax.get('format'):
+                    props["labelDisplayUnits"] = _L("'0L'")
+                objects[axis_obj_key] = [{"properties": props}]
+
+        # Continuous vs discrete axis scale
+        for axis_key, axis_obj_key in [('x', 'categoryAxis'), ('y', 'valueAxis')]:
+            ax = axes_detail.get(axis_key, {})
+            if ax.get('is_continuous') is True:
+                if axis_obj_key in objects:
+                    objects[axis_obj_key][0]["properties"]["axisType"] = _L("'Continuous'")
+            elif ax.get('is_continuous') is False and axis_obj_key in objects:
+                objects[axis_obj_key][0]["properties"]["axisType"] = _L("'Categorical'")
+
+        # Dual-axis synchronization (secShow / secAxisLabel)
+        dual_axis = ws_data.get('dual_axis', {})
+        if isinstance(dual_axis, dict) and dual_axis.get('enabled'):
+            if "valueAxis" not in objects:
+                objects["valueAxis"] = [{"properties": {"show": _L("true")}}]
+            if dual_axis.get('synchronized'):
+                objects["valueAxis"][0]["properties"]["secShow"] = _L("true")
+                objects["valueAxis"][0]["properties"]["secAxisLabel"] = _L("true")
+
+    def _build_visual_styling_objects(self, objects, ws_data, visual_type, formatting, mark_encoding):
+        """Background, table formatting, data bars, totals, padding."""
+        color_enc = mark_encoding.get('color', {})
+
         # Background color
         bg_color = formatting.get('background_color', '')
         if not bg_color and isinstance(formatting.get('pane', {}), dict):
@@ -1942,7 +2058,7 @@ class PowerBIProjectGenerator:
                     }
                 }
             }]
-        
+
         # Table/matrix-specific formatting (header font, row banding, grid)
         if visual_type in ('tableEx', 'table', 'matrix'):
             header_style = formatting.get('header_style', formatting.get('column-header_style', {}))
@@ -1958,7 +2074,7 @@ class PowerBIProjectGenerator:
                     }
                 if col_headers_props:
                     objects["columnHeaders"] = [{"properties": col_headers_props}]
-            
+
             # Row banding (alternating row colors)
             row_style = formatting.get('worksheet_style', {})
             if isinstance(row_style, dict) and row_style.get('band-color'):
@@ -1969,7 +2085,7 @@ class PowerBIProjectGenerator:
                         }
                     }
                 }]
-            
+
             # Grid/border
             if isinstance(header_style, dict) and header_style.get('border-style', 'none') != 'none':
                 grid_props = {"show": _L("true")}
@@ -1978,8 +2094,49 @@ class PowerBIProjectGenerator:
                         "solid": {"color": _L(f"'{header_style['border-color']}'")}
                     }
                 objects["gridlines"] = [{"properties": grid_props}]
-        
-        # Conditional formatting (color encoding)
+
+        # Data bars for table/matrix columns
+        if visual_type in ('tableEx', 'matrix', 'pivotTable', 'table'):
+            value_fields = [f for f in ws_data.get('fields', [])
+                            if f.get('role') == 'measure']
+            if value_fields and color_enc.get('type') == 'quantitative':
+                data_bar_props = {
+                    "show": _L("true"),
+                    "positiveColor": {"solid": {"color": _L("'#4472C4'")}},
+                    "negativeColor": {"solid": {"color": _L("'#ED7D31'")}},
+                }
+                objects["dataBar"] = [{"properties": data_bar_props}]
+
+            # Default row banding fallback
+            if "values" not in objects:
+                objects["values"] = [{
+                    "properties": {
+                        "backColor": {"solid": {"color": _L("'#F2F2F2'")}}
+                    }
+                }]
+
+            # Totals and subtotals
+            totals = ws_data.get('totals', {})
+            if totals and (totals.get('grand_totals') or totals.get('subtotals')):
+                objects.setdefault("total", [{"properties": {}}])
+                objects["total"][0]["properties"]["totals"] = _L("true")
+                if totals.get('subtotals'):
+                    objects.setdefault("subTotals", [{"properties": {}}])
+                    objects["subTotals"][0]["properties"]["rowSubtotals"] = _L("true")
+
+        # Per-object padding
+        padding = ws_data.get('padding', {})
+        if isinstance(padding, dict) and padding:
+            pad_props = {}
+            for side in ('top', 'bottom', 'left', 'right'):
+                val = padding.get(f'padding_{side}', padding.get(f'margin_{side}', 0))
+                if val:
+                    pad_props[side] = _L(f"{val}L")
+            if pad_props:
+                objects["visualContainerPadding"] = [{"properties": pad_props}]
+
+    def _build_color_encoding_objects(self, objects, ws_data, visual_type, mark_encoding):
+        """Conditional formatting gradient, per-value colors, stepped thresholds."""
         color_enc = mark_encoding.get('color', {})
         color_mode = color_enc.get('type', '')  # 'quantitative' → gradient, 'categorical' → distinct
         if color_mode == 'quantitative' or color_enc.get('palette', ''):
@@ -2020,159 +2177,6 @@ class PowerBIProjectGenerator:
                         }
                     }
                 }]
-        
-        # Reference lines (Tableau reference lines/bands → PBI constant + dynamic lines)
-        ref_lines = ws_data.get('reference_lines', [])
-        if ref_lines:
-            y_ref_lines = []
-            dynamic_ref_lines = []
-            for ref in ref_lines:
-                ref_value = ref.get('value', 0)
-                ref_label = ref.get('label', '')
-                ref_color = ref.get('color', '#666666')
-                ref_style = ref.get('style', 'dashed')
-                ref_type = ref.get('computation', ref.get('type', 'constant')).lower()
-
-                if ref_type in ('average', 'median', 'percentile', 'min', 'max'):
-                    # Dynamic reference line (analytics pane)
-                    from visual_generator import _build_dynamic_reference_line
-                    dyn_line = _build_dynamic_reference_line(
-                        ref_type=ref_type,
-                        field_name=ref.get('field'),
-                        table_name=table_name,
-                        label=ref_label,
-                        color=ref_color,
-                        style=ref_style,
-                    )
-                    if dyn_line:
-                        dynamic_ref_lines.append(dyn_line)
-                else:
-                    # Constant reference line
-                    line_def = {
-                        "type": "Constant",
-                        "value": str(ref_value),
-                        "show": _L("true"),
-                        "displayName": _L(f"'{ref_label}'"),
-                        "color": {"solid": {"color": _L(f"'{ref_color}'")}},
-                        "style": _L(f"'{ref_style}'") if ref_style in ('solid', 'dashed', 'dotted') else _L("'dashed'"),
-                    }
-                    y_ref_lines.append(line_def)
-
-            if y_ref_lines or dynamic_ref_lines:
-                if "valueAxis" not in objects:
-                    objects["valueAxis"] = [{"properties": {"show": _L("true")}}]
-                all_lines = y_ref_lines + dynamic_ref_lines
-                objects["valueAxis"][0]["properties"]["referenceLine"] = all_lines
-
-        # ── Extended visual config (ported from Fabric) ──────────────
-
-        # Trend lines (analytics pane)
-        trend_lines = ws_data.get('trend_lines', [])
-        if trend_lines:
-            trend_objs = []
-            for tl in trend_lines:
-                trend_type = tl.get('type', 'linear').capitalize()
-                if trend_type not in ('Linear', 'Exponential', 'Logarithmic',
-                                      'Polynomial', 'Power', 'MovingAverage'):
-                    trend_type = 'Linear'
-                trend_obj = {
-                    "show": _L("true"),
-                    "lineColor": {"solid": {"color": _L(f"'{tl.get('color', '#666666')}'")}}
-                }
-                if tl.get('show_equation'):
-                    trend_obj["displayEquation"] = _L("true")
-                if tl.get('show_r_squared'):
-                    trend_obj["displayRSquared"] = _L("true")
-                trend_objs.append({"properties": trend_obj})
-            objects["trend"] = trend_objs
-
-        # Annotations → subtitle text
-        annotations = ws_data.get('annotations', [])
-        if annotations:
-            anno_texts = [a.get('text', '') for a in annotations if a.get('text')]
-            if anno_texts:
-                subtitle_text = "; ".join(anno_texts[:3])
-                objects.setdefault("subTitle", [{"properties": {}}])
-                objects["subTitle"][0]["properties"]["show"] = _L("true")
-                objects["subTitle"][0]["properties"]["text"] = _L(json.dumps(subtitle_text))
-
-        # Font formatting (family + size from extracted formatting)
-        font_props = formatting.get('font', {})
-        if isinstance(font_props, dict):
-            font_family = font_props.get('family', '')
-            font_size = font_props.get('size', '')
-            if font_family or font_size:
-                if "labels" not in objects:
-                    objects["labels"] = [{"properties": {}}]
-                if font_family:
-                    objects["labels"][0]["properties"]["fontFamily"] = _L(f"'{font_family}'")
-                if font_size:
-                    try:
-                        fs_val = int(float(str(font_size).replace('pt', '').replace('px', '').strip()))
-                        objects["labels"][0]["properties"]["fontSize"] = _L(f"{fs_val}D")
-                    except (ValueError, TypeError):
-                        logger.debug("Could not parse label fontSize: %s", font_size)
-
-        # Enhanced axis config (label rotation, show toggles)
-        axes_detail = ws_data.get('axes', {})
-        if axes_detail:
-            for axis_key, axis_obj_key in [('x', 'categoryAxis'), ('y', 'valueAxis')]:
-                ax = axes_detail.get(axis_key, {})
-                if not ax:
-                    continue
-                if axis_obj_key in objects:
-                    props = objects[axis_obj_key][0].get("properties", {})
-                else:
-                    props = {"show": _L("true")}
-                if ax.get('show_title') is False:
-                    props["showAxisTitle"] = _L("false")
-                if ax.get('show_label') is False:
-                    props["show"] = _L("false")
-                if ax.get('label_rotation'):
-                    try:
-                        rot = int(float(ax['label_rotation']))
-                        if rot != 0:
-                            props["labelAngle"] = _L(f"{rot}L")
-                    except (ValueError, TypeError):
-                        logger.debug("Could not parse axis label_rotation: %s", ax.get('label_rotation'))
-                if ax.get('format'):
-                    props["labelDisplayUnits"] = _L("'0L'")
-                objects[axis_obj_key] = [{"properties": props}]
-
-        # Forecast config (analytics pane)
-        forecasts = ws_data.get('forecasting', [])
-        if forecasts:
-            fc = forecasts[0]
-            forecast_obj = {
-                "show": _L("true"),
-                "forecastLength": _L(f"{fc.get('periods', 5)}L"),
-                "confidenceBandStyle": _L("'fill'"),
-            }
-            ci = fc.get('prediction_interval', '95')
-            forecast_obj["confidenceLevel"] = _L(f"'{ci}'")
-            if fc.get('ignore_last', '0') != '0':
-                forecast_obj["ignoreLast"] = _L(f"{fc['ignore_last']}L")
-            objects["forecast"] = [{"properties": forecast_obj}]
-
-        # Map options (washout/transparency + style)
-        map_opts = ws_data.get('map_options', {})
-        if map_opts and visual_type in ('map', 'filledMap'):
-            map_props = {}
-            washout = map_opts.get('washout', '0.0')
-            try:
-                wo_val = float(washout)
-                if wo_val > 0:
-                    map_props["transparency"] = _L(f"{int(wo_val * 100)}L")
-            except (ValueError, TypeError):
-                logger.debug("Could not parse map washout: %s", washout)
-            style = map_opts.get('style', 'road')
-            style_map = {'normal': "'road'", 'light': "'grayscale'",
-                         'dark': "'darkGrayscale'", 'satellite': "'aerial'",
-                         'streets': "'road'"}
-            pbi_style = style_map.get(style.lower(), "'road'")
-            map_props["mapStyle"] = _L(pbi_style)
-            if map_props:
-                objects["mapControl"] = [{"properties": map_props}]
 
         # Per-value color assignments (categorical color map)
         if not objects.get("dataPoint"):
@@ -2224,7 +2228,6 @@ class PowerBIProjectGenerator:
                 # Also set up the conditionalFormatting array for the visual
                 color_field = color_enc.get('field', '')
                 if color_field and cf_rules:
-                    cf_table = column_table_map.get(color_field, table_name)
                     objects["conditionalFormatting"] = [{
                         "properties": {
                             "show": _L("true"),
@@ -2232,63 +2235,117 @@ class PowerBIProjectGenerator:
                         }
                     }]
 
-        # Data bars for table/matrix columns
-        if visual_type in ('tableEx', 'matrix', 'pivotTable', 'table'):
-            value_fields = [f for f in ws_data.get('fields', [])
-                            if f.get('role') == 'measure']
-            if value_fields and color_enc.get('type') == 'quantitative':
-                data_bar_props = {
-                    "show": _L("true"),
-                    "positiveColor": {"solid": {"color": _L("'#4472C4'")}},
-                    "negativeColor": {"solid": {"color": _L("'#ED7D31'")}},
-                }
-                objects["dataBar"] = [{"properties": data_bar_props}]
+    def _build_analytics_objects(self, objects, ws_data, visual_type, formatting):
+        """Reference lines, trend lines, annotations, forecast, map, analytics stats, small multiples."""
+        main_table = getattr(self, '_main_table', 'Table')
 
-            # Default row banding fallback
-            if "values" not in objects:
-                objects["values"] = [{
-                    "properties": {
-                        "backColor": {"solid": {"color": _L("'#F2F2F2'")}}
+        # Reference lines (Tableau reference lines/bands → PBI constant + dynamic lines)
+        ref_lines = ws_data.get('reference_lines', [])
+        if ref_lines:
+            y_ref_lines = []
+            dynamic_ref_lines = []
+            for ref in ref_lines:
+                ref_value = ref.get('value', 0)
+                ref_label = ref.get('label', '')
+                ref_color = ref.get('color', '#666666')
+                ref_style = ref.get('style', 'dashed')
+                ref_type = ref.get('computation', ref.get('type', 'constant')).lower()
+
+                if ref_type in ('average', 'median', 'percentile', 'min', 'max'):
+                    # Dynamic reference line (analytics pane)
+                    from visual_generator import _build_dynamic_reference_line
+                    dyn_line = _build_dynamic_reference_line(
+                        ref_type=ref_type,
+                        field_name=ref.get('field'),
+                        table_name=main_table,
+                        label=ref_label,
+                        color=ref_color,
+                        style=ref_style,
+                    )
+                    if dyn_line:
+                        dynamic_ref_lines.append(dyn_line)
+                else:
+                    # Constant reference line
+                    line_def = {
+                        "type": "Constant",
+                        "value": str(ref_value),
+                        "show": _L("true"),
+                        "displayName": _L(f"'{ref_label}'"),
+                        "color": {"solid": {"color": _L(f"'{ref_color}'")}},
+                        "style": _L(f"'{ref_style}'") if ref_style in ('solid', 'dashed', 'dotted') else _L("'dashed'"),
                     }
-                }]
+                    y_ref_lines.append(line_def)
 
-            # Totals and subtotals
-            totals = ws_data.get('totals', {})
-            if totals and (totals.get('grand_totals') or totals.get('subtotals')):
-                objects.setdefault("total", [{"properties": {}}])
-                objects["total"][0]["properties"]["totals"] = _L("true")
-                if totals.get('subtotals'):
-                    objects.setdefault("subTotals", [{"properties": {}}])
-                    objects["subTotals"][0]["properties"]["rowSubtotals"] = _L("true")
+            if y_ref_lines or dynamic_ref_lines:
+                if "valueAxis" not in objects:
+                    objects["valueAxis"] = [{"properties": {"show": _L("true")}}]
+                all_lines = y_ref_lines + dynamic_ref_lines
+                objects["valueAxis"][0]["properties"]["referenceLine"] = all_lines
 
-        # Continuous vs discrete axis scale
-        for axis_key, axis_obj_key in [('x', 'categoryAxis'), ('y', 'valueAxis')]:
-            ax = axes_detail.get(axis_key, {})
-            if ax.get('is_continuous') is True:
-                if axis_obj_key in objects:
-                    objects[axis_obj_key][0]["properties"]["axisType"] = _L("'Continuous'")
-            elif ax.get('is_continuous') is False and axis_obj_key in objects:
-                objects[axis_obj_key][0]["properties"]["axisType"] = _L("'Categorical'")
+        # Trend lines (analytics pane)
+        trend_lines = ws_data.get('trend_lines', [])
+        if trend_lines:
+            trend_objs = []
+            for tl in trend_lines:
+                trend_type = tl.get('type', 'linear').capitalize()
+                if trend_type not in ('Linear', 'Exponential', 'Logarithmic',
+                                      'Polynomial', 'Power', 'MovingAverage'):
+                    trend_type = 'Linear'
+                trend_obj = {
+                    "show": _L("true"),
+                    "lineColor": {"solid": {"color": _L(f"'{tl.get('color', '#666666')}'")}}
+                }
+                if tl.get('show_equation'):
+                    trend_obj["displayEquation"] = _L("true")
+                if tl.get('show_r_squared'):
+                    trend_obj["displayRSquared"] = _L("true")
+                trend_objs.append({"properties": trend_obj})
+            objects["trend"] = trend_objs
 
-        # Dual-axis synchronization (secShow / secAxisLabel)
-        dual_axis = ws_data.get('dual_axis', {})
-        if isinstance(dual_axis, dict) and dual_axis.get('enabled'):
-            if "valueAxis" not in objects:
-                objects["valueAxis"] = [{"properties": {"show": _L("true")}}]
-            if dual_axis.get('synchronized'):
-                objects["valueAxis"][0]["properties"]["secShow"] = _L("true")
-                objects["valueAxis"][0]["properties"]["secAxisLabel"] = _L("true")
+        # Annotations → subtitle text
+        annotations = ws_data.get('annotations', [])
+        if annotations:
+            anno_texts = [a.get('text', '') for a in annotations if a.get('text')]
+            if anno_texts:
+                subtitle_text = "; ".join(anno_texts[:3])
+                objects.setdefault("subTitle", [{"properties": {}}])
+                objects["subTitle"][0]["properties"]["show"] = _L("true")
+                objects["subTitle"][0]["properties"]["text"] = _L(json.dumps(subtitle_text))
 
-        # Per-object padding
-        padding = ws_data.get('padding', {})
-        if isinstance(padding, dict) and padding:
-            pad_props = {}
-            for side in ('top', 'bottom', 'left', 'right'):
-                val = padding.get(f'padding_{side}', padding.get(f'margin_{side}', 0))
-                if val:
-                    pad_props[side] = _L(f"{val}L")
-            if pad_props:
-                objects["visualContainerPadding"] = [{"properties": pad_props}]
+        # Forecast config (analytics pane)
+        forecasts = ws_data.get('forecasting', [])
+        if forecasts:
+            fc = forecasts[0]
+            forecast_obj = {
+                "show": _L("true"),
+                "forecastLength": _L(f"{fc.get('periods', 5)}L"),
+                "confidenceBandStyle": _L("'fill'"),
+            }
+            ci = fc.get('prediction_interval', '95')
+            forecast_obj["confidenceLevel"] = _L(f"'{ci}'")
+            if fc.get('ignore_last', '0') != '0':
+                forecast_obj["ignoreLast"] = _L(f"{fc['ignore_last']}L")
+            objects["forecast"] = [{"properties": forecast_obj}]
+
+        # Map options (washout/transparency + style)
+        map_opts = ws_data.get('map_options', {})
+        if map_opts and visual_type in ('map', 'filledMap'):
+            map_props = {}
+            washout = map_opts.get('washout', '0.0')
+            try:
+                wo_val = float(washout)
+                if wo_val > 0:
+                    map_props["transparency"] = _L(f"{int(wo_val * 100)}L")
+            except (ValueError, TypeError):
+                logger.debug("Could not parse map washout: %s", washout)
+            style = map_opts.get('style', 'road')
+            style_map = {'normal': "'road'", 'light': "'grayscale'",
+                         'dark': "'darkGrayscale'", 'satellite': "'aerial'",
+                         'streets': "'road'"}
+            pbi_style = style_map.get(style.lower(), "'road'")
+            map_props["mapStyle"] = _L(pbi_style)
+            if map_props:
+                objects["mapControl"] = [{"properties": map_props}]
 
         # Reference bands and statistical reference lines (analytics_stats)
         analytics_stats = ws_data.get('analytics_stats', [])
@@ -2333,15 +2390,6 @@ class PowerBIProjectGenerator:
                 "layoutMode": _L("'Flow'"),
                 "showChartTitle": _L("true"),
             }}]
-
-        # Number format mapping on labels
-        fmt_info = formatting.get('number_format', formatting.get('format_string', ''))
-        if fmt_info:
-            pbi_fmt = self._convert_number_format(fmt_info)
-            if pbi_fmt and "labels" in objects:
-                objects["labels"][0]["properties"]["labelDisplayUnits"] = _L(f"'{pbi_fmt}'")
-
-        return objects
     
     def _create_slicer_visual(self, visual_id, x, y, w, h, field_name, table_name, z_order,
                                slicer_mode='Dropdown'):

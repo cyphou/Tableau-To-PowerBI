@@ -1024,7 +1024,82 @@ def create_visual_container(worksheet, visual_id=None, x=10, y=10,
     if "objects" in config:
         visual_obj["objects"] = config["objects"]
 
-    # ── Build query state ─────────────────────────────────────
+    # Build query state from dimensions/measures
+    _build_visual_query_state(worksheet, pbi_type, ctm, ml, visual_obj)
+
+    # Apply decorations: title, subtitle, formatting, filters, sort, reference lines, etc.
+    _apply_visual_decorations(worksheet, visual_type, pbi_type, visual_name, ctm, visual_obj)
+
+    # ── Assemble container ────────────────────────────────────
+    container = {
+        "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
+        "name": vid,
+        "position": {
+            "x": x,
+            "y": y,
+            "z": z_index * 1000,
+            "height": height,
+            "width": width,
+            "tabOrder": z_index * 1000,
+        },
+        "visual": visual_obj,
+    }
+
+    # ── Action button navigation ──────────────────────────────
+    if pbi_type == "actionButton":
+        nav_target = worksheet.get('navigation', worksheet.get('action', {}))
+        if isinstance(nav_target, dict):
+            target_page = nav_target.get('sheet', nav_target.get('pageName', ''))
+            nav_url = nav_target.get('url', '')
+            if target_page:
+                visual_obj.setdefault("objects", {})
+                visual_obj["objects"]["action"] = [{
+                    "properties": {
+                        "show": _L("true"),
+                        "type": _L("'PageNavigation'"),
+                        "destination": _L(json.dumps(target_page)),
+                    }
+                }]
+            elif nav_url:
+                visual_obj.setdefault("objects", {})
+                visual_obj["objects"]["action"] = [{
+                    "properties": {
+                        "show": _L("true"),
+                        "type": _L("'WebUrl'"),
+                        "destination": _L(json.dumps(nav_url)),
+                    }
+                }]
+
+    # ── Slicer sync group ─────────────────────────────────────
+    if pbi_type == "slicer":
+        sync_group = worksheet.get('syncGroup', worksheet.get('filterScope', ''))
+        if sync_group:
+            container["syncGroup"] = {
+                "groupName": sync_group,
+                "syncField": True,
+                "syncFilters": True,
+            }
+
+    # ── Cross-filtering behavior ──────────────────────────────
+    interactions = worksheet.get('interactions', worksheet.get('crossFilter', {}))
+    if isinstance(interactions, dict) and interactions.get('disabled'):
+        container["filterConfig"] = {
+            "filters": [],
+            "disabled": True,
+        }
+
+    # Add filters if present (legacy format)
+    filters = worksheet.get('filters', [])
+    if filters and 'filters' not in visual_obj:
+        container_filters = create_filters_config(filters)
+        if container_filters:
+            container["filters"] = json.dumps(container_filters)
+
+    return container
+
+
+def _build_visual_query_state(worksheet, pbi_type, ctm, ml, visual_obj):
+    """Build query state from dimensions, measures, and data fields."""
     data_fields = worksheet.get('dataFields', [])
     dimensions = worksheet.get('dimensions', [])
     measures = list(worksheet.get('measures', []))
@@ -1052,6 +1127,11 @@ def create_visual_container(worksheet, visual_id=None, x=10, y=10,
         proto_query = create_prototype_query(worksheet)
         visual_obj["projections"] = projections
         visual_obj["prototypeQuery"] = proto_query
+
+
+def _apply_visual_decorations(worksheet, visual_type, pbi_type, visual_name, ctm, visual_obj):
+    """Apply all visual decorations: title, subtitle, formatting, filters, sort, reference lines,
+    data bars, small multiples, and axis config."""
 
     # ── Title ─────────────────────────────────────────────────
     visual_obj.setdefault("vcObjects", {})
@@ -1246,73 +1326,6 @@ def create_visual_container(worksheet, visual_id=None, x=10, y=10,
                 ca_props["titleText"] = _L(json.dumps(x_axis['title']))
                 ca_props["showAxisTitle"] = _L("true")
             visual_obj["objects"]["categoryAxis"] = [{"properties": ca_props}]
-
-    # ── Assemble container ────────────────────────────────────
-    container = {
-        "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
-        "name": vid,
-        "position": {
-            "x": x,
-            "y": y,
-            "z": z_index * 1000,
-            "height": height,
-            "width": width,
-            "tabOrder": z_index * 1000,
-        },
-        "visual": visual_obj,
-    }
-
-    # ── Action button navigation ──────────────────────────────
-    if pbi_type == "actionButton":
-        nav_target = worksheet.get('navigation', worksheet.get('action', {}))
-        if isinstance(nav_target, dict):
-            target_page = nav_target.get('sheet', nav_target.get('pageName', ''))
-            nav_url = nav_target.get('url', '')
-            if target_page:
-                visual_obj.setdefault("objects", {})
-                visual_obj["objects"]["action"] = [{
-                    "properties": {
-                        "show": _L("true"),
-                        "type": _L("'PageNavigation'"),
-                        "destination": _L(json.dumps(target_page)),
-                    }
-                }]
-            elif nav_url:
-                visual_obj.setdefault("objects", {})
-                visual_obj["objects"]["action"] = [{
-                    "properties": {
-                        "show": _L("true"),
-                        "type": _L("'WebUrl'"),
-                        "destination": _L(json.dumps(nav_url)),
-                    }
-                }]
-
-    # ── Slicer sync group ─────────────────────────────────────
-    if pbi_type == "slicer":
-        sync_group = worksheet.get('syncGroup', worksheet.get('filterScope', ''))
-        if sync_group:
-            container["syncGroup"] = {
-                "groupName": sync_group,
-                "syncField": True,
-                "syncFilters": True,
-            }
-
-    # ── Cross-filtering behavior ──────────────────────────────
-    interactions = worksheet.get('interactions', worksheet.get('crossFilter', {}))
-    if isinstance(interactions, dict) and interactions.get('disabled'):
-        container["filterConfig"] = {
-            "filters": [],
-            "disabled": True,
-        }
-
-    # Add filters if present (legacy format)
-    filters = worksheet.get('filters', [])
-    if filters and 'filters' not in visual_obj:
-        container_filters = create_filters_config(filters)
-        if container_filters:
-            container["filters"] = json.dumps(container_filters)
-
-    return container
 
 
 def _build_visual_filters(viz_filters, col_table_map):

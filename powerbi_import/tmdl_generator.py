@@ -470,18 +470,7 @@ def _build_semantic_model(datasources, report_name="Report", extra_objects=None,
     columns, relationships, hierarchies, sets/groups/bins, parameters,
     date table, geographic data categories, hidden columns, and RLS roles.
 
-    Args:
-        datasources: List of datasources with connections, tables, calculations
-        report_name: Report name
-        extra_objects: Optional dict with hierarchies, sets, groups, bins, aliases
-        calendar_start: Start year for Calendar table (default: 2020)
-        calendar_end: End year for Calendar table (default: 2030)
-        culture: Override culture/locale (default: en-US)
-        model_mode: 'import', 'directquery', or 'composite'
-        culture: Override culture/locale (default: en-US)
-
-    Returns:
-        dict: Complete semantic model
+    Orchestrator that delegates to focused sub-functions.
     """
     if extra_objects is None:
         extra_objects = {}
@@ -510,6 +499,29 @@ def _build_semantic_model(datasources, report_name="Report", extra_objects=None,
     # Store raw datasources for M parameter generation (server/database)
     model['_datasources'] = datasources
 
+    # Phase 1-2c: Collect tables, build context mappings
+    ctx = _collect_semantic_context(datasources, extra_objects)
+
+    # Phase 3: Create tables
+    _create_semantic_tables(model, ctx, datasources)
+
+    # Phase 4: Create and validate relationships
+    _create_and_validate_relationships(model, datasources)
+
+    # Phases 5-12: Enrichments (sets, date table, hierarchies, params, RLS, etc.)
+    _apply_semantic_enrichments(model, extra_objects, ctx['main_table_name'],
+                                ctx['column_table_map'], datasources)
+
+    return model
+
+
+def _collect_semantic_context(datasources, extra_objects):
+    """Phases 1-2c: Collect tables, deduplicate, and build DAX context mappings.
+
+    Returns a dict with: best_tables, m_query_overrides, all_calculations,
+    col_metadata_map, main_table_name, dax_context, column_table_map,
+    table_datasource_set, ds_main_table, measure_names.
+    """
     # Phase 1: Collect all physical tables and deduplicate
     best_tables = {}  # name -> (table_dict, connection_details)
     m_query_overrides = {}  # table_name -> complete M query (from Prep flows)
@@ -716,10 +728,8 @@ def _build_semantic_model(datasources, report_name="Report", extra_objects=None,
         'datasource_table_map': datasource_table_map,
     }
 
-    # Phase 3: Create tables
-    # Build reverse map: datasource_name → best table name within that datasource
-    # Use table_datasource_set (collision-safe) instead of datasource_table_map
-    ds_main_table = {}  # datasource_name → table_name (the table with the most columns in that DS)
+    # Build ds_main_table: datasource_name → table_name (table with most columns in that DS)
+    ds_main_table = {}
     for tname, ds_names in table_datasource_set.items():
         if tname not in best_tables:
             continue
@@ -727,12 +737,38 @@ def _build_semantic_model(datasources, report_name="Report", extra_objects=None,
             if ds_name not in ds_main_table:
                 ds_main_table[ds_name] = tname
             else:
-                # Pick the table with more columns within the same datasource
                 existing = ds_main_table[ds_name]
                 existing_cols = len(best_tables.get(existing, ({}, {}))[0].get('columns', []))
                 current_cols = len(best_tables.get(tname, ({}, {}))[0].get('columns', []))
                 if current_cols > existing_cols:
                     ds_main_table[ds_name] = tname
+
+    return {
+        'best_tables': best_tables,
+        'm_query_overrides': m_query_overrides,
+        'all_calculations': all_calculations,
+        'col_metadata_map': col_metadata_map,
+        'main_table_name': main_table_name,
+        'dax_context': dax_context,
+        'column_table_map': column_table_map,
+        'table_datasource_set': table_datasource_set,
+        'ds_main_table': ds_main_table,
+        'measure_names': measure_names,
+        'datasource_table_map': datasource_table_map,
+    }
+
+
+def _create_semantic_tables(model, ctx, datasources):
+    """Phase 3: Create model tables with calculation routing."""
+    best_tables = ctx['best_tables']
+    all_calculations = ctx['all_calculations']
+    main_table_name = ctx['main_table_name']
+    table_datasource_set = ctx['table_datasource_set']
+    ds_main_table = ctx['ds_main_table']
+    dax_context = ctx['dax_context']
+    col_metadata_map = ctx['col_metadata_map']
+    m_query_overrides = ctx['m_query_overrides']
+    datasource_table_map = ctx['datasource_table_map']
 
     for table_name, (table, table_conn) in best_tables.items():
         # Route calculations to their source datasource's main table
@@ -775,13 +811,15 @@ def _build_semantic_model(datasources, report_name="Report", extra_objects=None,
             columns_metadata=[],
             dax_context=dax_context,
             col_metadata_map=col_metadata_map,
-            extra_objects=extra_objects,
+            extra_objects={},
             m_query_override=m_query_overrides.get(table_name, ''),
             model_mode=model.get('_model_mode', 'import'),
         )
         model["model"]["tables"].append(tbl)
 
-    # Phase 4: Create relationships (with cross-datasource deduplication)
+
+def _create_and_validate_relationships(model, datasources):
+    """Phase 4: Create, deduplicate, validate, and fix type mismatches in relationships."""
     seen_rels = set()
     for ds in datasources:
         relationships = ds.get('relationships', [])
@@ -832,6 +870,9 @@ def _build_semantic_model(datasources, report_name="Report", extra_objects=None,
     # Phase 4b: Fix type mismatches in relationship keys
     _fix_relationship_type_mismatches(model)
 
+
+def _apply_semantic_enrichments(model, extra_objects, main_table_name, column_table_map, datasources):
+    """Phases 5-12: Sets, date table, hierarchies, parameters, RLS, cross-table inference, perspectives."""
     # Phase 5: Add sets, groups, bins as calculated columns
     _process_sets_groups_bins(model, extra_objects, main_table_name, column_table_map)
 
@@ -900,8 +941,6 @@ def _build_semantic_model(datasources, report_name="Report", extra_objects=None,
         "name": "Full Model",
         "tables": all_table_names
     }]
-
-    return model
 
 
 def _build_m_transform_steps(columns, col_metadata_map):
