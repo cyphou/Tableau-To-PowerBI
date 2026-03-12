@@ -1,8 +1,8 @@
 # Comprehensive Gap Analysis — Tableau to Power BI Migration Tool
 
-**Date:** 2026-03-15 — updated through v9.0.0 (Sprints 13-29)  
+**Date:** 2026-03-15 — updated through v9.0.0 (Sprints 13-32)  
 **Scope:** Every source file, test file, CI/CD, docs, config, and cross-project comparison with TableauToFabric  
-**Status:** 2,666 tests passing across 48 test files
+**Status:** 3,196 tests passing across 54 test files
 
 ### Implementation Coverage
 
@@ -10,7 +10,7 @@
  EXTRACTION          GENERATION         INFRA / CI         DOCUMENTATION
 +----------------+  +----------------+  +----------------+  +----------------+
 | 20 object types|  | PBIR v4.0      |  | 5-stage CI/CD  |  | 13 doc files   |
-| .twb/.twbx/.tfl|  | TMDL semantic  |  | 1,889 tests    |  | DAX reference  |
+| .twb/.twbx/.tfl|  | TMDL semantic  |  | 3,196 tests    |  | DAX reference  |
 | 180+ DAX conv  |  | 60+ visuals    |  | Artifact valid |  | M query ref    |
 | 33 connectors  |  | Drill-through  |  | Fabric deploy  |  | Prep ref       |
 | 40+ transforms |  | Slicer modes   |  | Env configs    |  | Architecture   |
@@ -22,20 +22,12 @@
         |                    |                    |                    |
         +--------------------+--------------------+--------------------+
                                      |
-                           v4.0 → v5.0.0
+                           v9.0.0 → v10.0.0
                      +-------------------------------+
-                     | Sparkline visuals             |
-                     | Custom visual GUID registry   |
-                     | WINDOW_* frame boundaries     |
-                     | REGEXP_REPLACE depth          |
-                     | Paginated report layout       |
-                     | OAuth/gateway config          |
-                     | Incremental refresh policies  |
-                     | Interactive wizard            |
-                     | Progress bar / streaming      |
-                     | PyPI packaging                |
-                     | HTML comparison report        |
-                     | Perf regression CI            |
+                     | Plugin system & examples      |
+                     | PyPI auto-publish workflow    |
+                     | PBIR schema forward-compat    |
+                     | Fractional deploy timeouts    |
                      +-------------------------------+
 ```
 
@@ -160,7 +152,7 @@
 ## 3. Test Coverage
 
 ### What IS implemented
-- **887 tests across 18 test files** (original) + **1,779 additional tests in v3.6–v9.0.0**, totaling **2,666 tests across 48 test files** including shared fixtures in `conftest.py`:
+- **887 tests across 18 test files** (original) + **2,309 additional tests in v3.6–v9.0.0**, totaling **3,196 tests across 54 test files** including shared fixtures in `conftest.py`:
 
 | Test File | Tests | Lines | Coverage Focus |
 |-----------|-------|-------|----------------|
@@ -398,7 +390,7 @@
 | **No `.env.example` file** | ✅ IMPLEMENTED — `.env.example` and `config.example.json` templates provided |
 | **No validation of settings values** | ✅ IMPLEMENTED — `_FallbackSettings` validates LOG_LEVEL, RETRY_ATTEMPTS, DEPLOYMENT_TIMEOUT |
 | **No dry-run mode** | ✅ IMPLEMENTED — `--dry-run` CLI flag previews migration without writing files |
-| **`DEPLOYMENT_TIMEOUT` and `RETRY_DELAY` are int-only** | Cannot specify sub-second delays or fractional timeouts |
+| **`DEPLOYMENT_TIMEOUT` and `RETRY_DELAY` are int-only** | ✅ CLOSED — Sprint 31 added fractional (float) timeout support |
 
 ---
 
@@ -413,8 +405,8 @@
 | **M Query** | **33 connectors** (+8: OData, Google Analytics, Azure Blob/ADLS, Vertica, Impala, Hadoop Hive, Presto), 30+ transforms, **DAX-to-M expression converter** (calc columns as M steps), **Hyper data → M #table()** | OAuth, gateway, incremental refresh | Fallback #table, BigQuery/Oracle config | Low |
 | **Prep Flow** | DAG traversal, 20+ action types, **ExtractValues**, **CustomCalculation**, **Script/Prediction/CrossJoin/PublishedDataSource** handlers, 5 new connection mappings, **Hyper data loading** | — | Prep VAR/VARP joins | Low |
 | **Pre-Migration** | **Assessment** (8-category scoring: datasource/calculation/visual/filter/data model/interactivity/extract/scope), **Strategy advisor** (Import/DirectQuery/Composite), JSON report export | — | — | Low |
-| **Test Coverage** | **2,666 tests across 48 files** (+conftest.py shared fixtures) | Perf tests, integration tests | — | Low |
-| **CI/CD** | **5-stage pipeline** (lint+ruff, test, **strict validate+twbx**, **staging deploy**, production deploy), **pip caching** | Coverage reporting, Windows CI, schema validation | — | Medium |
+| **Test Coverage** | **3,196 tests across 54 files** (+conftest.py shared fixtures) | Perf tests, integration tests | — | Low |
+| **CI/CD** | **5-stage pipeline** (lint+ruff, test, **strict validate+twbx**, **staging deploy**, production deploy), **pip caching**, **PBIR schema forward-compat check** (`--check-schema`), **PyPI auto-publish workflow** (`publish.yml`), **plugin system** (`plugins.py` + `examples/plugins/`) | Coverage reporting, Windows CI | — | Low |
 | **Documentation** | **13 docs** + copilot instructions (ARCHITECTURE, KNOWN_LIMITATIONS, MIGRATION_CHECKLIST, DEPLOYMENT_GUIDE, TABLEAU_VERSION_COMPATIBILITY, CONTRIBUTING) | API docs | — | Low |
 | **Config** | 11 env vars, 3 environments, **settings validation**, **dry-run**, **calendar/culture CLI**, **.env.example** | Config file, connection templating | — | Low |
 

@@ -1,6 +1,14 @@
 # Changelog
 
-## v9.0.0 — Coverage, Hyper Data, Modern Tableau & Polish (in progress)
+## v9.0.0 — Coverage, Hyper Data, Modern Tableau & Polish
+
+### Sprint 32 — Documentation, Polish & Release ✅
+- **32.1: GAP_ANALYSIS.md refresh**: Updated test count (3,196 across 54 files), sprint range (13-32), ASCII art box, closed settings gap (fractional timeouts), added Sprint 30-31 CI/CD closures (plugin system, PBIR schema check, PyPI workflow).
+- **32.2: KNOWN_LIMITATIONS.md refresh**: Updated sprint header, removed int-only timeout limitation (fixed Sprint 31), added Plugin System Limitations and Schema Compatibility sections, added `--check-schema` workaround.
+- **32.3: CHANGELOG.md finalized**: Removed "(in progress)" from v9.0.0 header, added Sprint 32 entry.
+- **32.4: copilot-instructions.md update**: Updated test count (3,196+ across 54 files), added `plugins.py` module, `examples/plugins/` directory, `--check-schema` CLI flag, PyPI publish workflow reference.
+- **32.5: Version bump**: `pyproject.toml` and `powerbi_import/__init__.py` bumped from 8.0.0 → 9.0.0.
+- **32.6: Final validation**: Full test suite pass (3,196 tests, 92.76% coverage).
 
 ### Sprint 31 — Plugins, Packaging & Automation ✅
 - **31.1: Plugin examples**: 3 example plugins in `examples/plugins/` — `custom_visual_mapper.py` (visual type overrides), `dax_post_processor.py` (regex-based DAX transforms + IFERROR wrapping), `naming_convention.py` (snake/pascal/camel case enforcement). Each with `Plugin` alias, docstrings, and README.

@@ -35,6 +35,7 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
   - `validator.py`: Artifact validator — validates .pbip projects (JSON, TMDL, report structure) before opening in PBI Desktop
   - `migration_report.py`: Per-item fidelity tracking and migration status reporting
   - `goals_generator.py`: PBI Goals/Scorecard generator — converts Tableau Pulse metrics to Power BI Goals JSON (goal name, current value measure, target, status rules, sparkline)
+  - `plugins.py`: Plugin system — auto-discovers and loads plugins from `examples/plugins/` via `importlib`, hook-based extension points for visual mapping, DAX post-processing, naming conventions
   - `deploy/`: Fabric deployment subpackage
     - `auth.py`: Azure AD authentication — Service Principal + Managed Identity (optional `azure-identity`)
     - `client.py`: Fabric REST API client — auto-detects `requests` with retry, falls back to `urllib`
@@ -45,9 +46,11 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
     - `pbi_client.py`: Power BI Service REST API client — Azure AD auth (SP/MI/token), import .pbix, refresh, list/delete datasets/reports
     - `pbix_packager.py`: .pbip → .pbix ZIP packager with OPC content types
     - `pbi_deployer.py`: PBI Service deployment orchestrator — package, upload, poll, refresh, validate
-- **tests/**: Unit and integration tests (2,666+ tests across 48 test files + conftest.py shared fixtures)
+- **tests/**: Unit and integration tests (3,196+ tests across 54 test files + conftest.py shared fixtures)
 - **docs/**: FAQ, PBI project guide, mapping reference
 - **.github/workflows/ci.yml**: CI/CD pipeline (lint → test → validate → deploy)
+- **.github/workflows/publish.yml**: PyPI auto-publish workflow (tag-triggered, OIDC trusted publisher)
+- **examples/plugins/**: Plugin examples (custom visual mapper, DAX post-processor, naming convention)
 - **artifacts/**: Migration output (generated .pbip projects)
 
 ## Technologies
@@ -74,6 +77,7 @@ python migrate.py --server https://tableau.company.com --workbook "Sales Dashboa
 python migrate.py --server https://tableau.company.com --server-batch Marketing --output-dir /tmp/batch
 python migrate.py path/to/workbook.twbx --languages fr-FR,de-DE,ja-JP
 python migrate.py path/to/workbook.twbx --goals
+python migrate.py path/to/workbook.twbx --check-schema
 ```
 
 ## Extracted Objects (16 types)

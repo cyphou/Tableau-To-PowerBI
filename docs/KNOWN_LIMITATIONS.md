@@ -2,7 +2,7 @@
 
 This document lists known limitations and approximations in the Tableau to Power BI migration tool.
 
-> **Last updated:** v9.0.0 (Sprint 29) — many previous limitations have been addressed in Sprints 27-29. See below for current status.
+> **Last updated:** v9.0.0 (Sprint 32) — many previous limitations have been addressed in Sprints 27-32. See below for current status.
 
 ---
 
@@ -81,6 +81,19 @@ This document lists known limitations and approximations in the Tableau to Power
 | **Fabric deployment** | Fabric deployment is structurally tested but not against a real workspace |
 | **Windows paths** | OneDrive file locks may leave stale artifacts (handled via try/except) |
 
+## Plugin System Limitations
+
+| Area | Limitation |
+|------|------------|
+| **Plugin API stability** | The plugin hook interface (`plugins.py`) is functional but the API is not yet frozen — custom plugins may need updates across major versions |
+| **Plugin discovery** | Plugins are auto-discovered from `examples/plugins/` via `importlib` — only `.py` files with a `register(hooks)` function are loaded |
+
+## Schema Compatibility
+
+| Area | Limitation |
+|------|------------|
+| **PBIR schema versions** | Generated output targets PBIR v4.0 schemas. Use `--check-schema` to verify forward-compatibility with newer Power BI Desktop versions |
+
 ## Workarounds
 
 For most limitations, the recommended workflow is:
@@ -97,3 +110,4 @@ For most limitations, the recommended workflow is:
 10. Use `--server` to extract workbooks directly from Tableau Server/Cloud
 11. Use `--languages fr-FR,de-DE` to generate multi-language culture TMDL files with translated display folders
 12. Use `--goals` to convert Tableau Pulse metrics to Power BI Goals/Scorecard artifacts
+13. Use `--check-schema` to verify PBIR schema forward-compatibility before opening in newer PBI Desktop versions
