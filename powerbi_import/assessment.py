@@ -67,12 +67,17 @@ _UNSUPPORTED_CONNECTORS = frozenset({
 
 _UNSUPPORTED_FUNCTIONS = re.compile(
     r'\b('
-    r'SCRIPT_BOOL|SCRIPT_INT|SCRIPT_REAL|SCRIPT_STR'
-    r'|COLLECT'
+    r'COLLECT'
     r'|BUFFER|AREA|INTERSECTION|MAKELINE|MAKEPOINT'
     r'|HEXBINX|HEXBINY'
     r'|USERDOMAIN'
     r')\s*\(',
+    re.IGNORECASE,
+)
+
+# SCRIPT_* functions: supported via Python/R visuals (warn, not fail)
+_SCRIPT_FUNCTIONS = re.compile(
+    r'\b(SCRIPT_BOOL|SCRIPT_INT|SCRIPT_REAL|SCRIPT_STR)\s*\(',
     re.IGNORECASE,
 )
 
@@ -396,6 +401,7 @@ def _check_calculations(extracted: Dict) -> CategoryResult:
     # Classify
     unsupported = []
     partial = []
+    script_calcs = []
     lod_calcs = []
     table_calcs = []
 
@@ -405,6 +411,8 @@ def _check_calculations(extracted: Dict) -> CategoryResult:
 
         if _UNSUPPORTED_FUNCTIONS.search(formula):
             unsupported.append(name)
+        if _SCRIPT_FUNCTIONS.search(formula):
+            script_calcs.append(name)
         if _PARTIAL_FUNCTIONS.search(formula):
             partial.append(name)
         if _LOD_PATTERN.search(formula):
@@ -420,7 +428,7 @@ def _check_calculations(extracted: Dict) -> CategoryResult:
             cat.name, "Unsupported functions", FAIL,
             f"{len(unsupported)} calculation(s) use functions with no DAX equivalent: "
             f"{names_preview}{extra}.",
-            "SCRIPT_* (R/Python), COLLECT (spatial aggregate), HEXBIN, "
+            "COLLECT (spatial aggregate), HEXBIN, "
             "BUFFER/AREA/INTERSECTION (spatial ops) have no Power BI equivalent. "
             "Manual rewrite or removal is required.",
         ))
@@ -428,6 +436,23 @@ def _check_calculations(extracted: Dict) -> CategoryResult:
         cat.checks.append(CheckItem(
             cat.name, "Unsupported functions", PASS,
             "No calculations use unsupported functions.",
+        ))
+
+    if script_calcs:
+        names_preview = ", ".join(script_calcs[:5])
+        extra = f" (+{len(script_calcs) - 5} more)" if len(script_calcs) > 5 else ""
+        cat.checks.append(CheckItem(
+            cat.name, "SCRIPT_* analytics extensions", WARN,
+            f"{len(script_calcs)} calculation(s) use R/Python analytics extensions: "
+            f"{names_preview}{extra}.",
+            "SCRIPT_* functions are migrated to Power BI Python/R script visuals. "
+            "Requires Python or R runtime configured in PBI Desktop "
+            "(File → Options → Python/R scripting). Scripts may need manual adaptation.",
+        ))
+    else:
+        cat.checks.append(CheckItem(
+            cat.name, "SCRIPT_* analytics extensions", PASS,
+            "No calculations use R/Python analytics extensions.",
         ))
 
     if partial:

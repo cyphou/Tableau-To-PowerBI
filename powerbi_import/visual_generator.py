@@ -1613,3 +1613,108 @@ def create_page_layout(worksheets):
         "width": 1280,
         "height": 720
     }
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Python / R Script Visual Generator
+# ═══════════════════════════════════════════════════════════════════
+
+def generate_script_visual(visual_name, script_info, fields=None,
+                           x=10, y=10, width=400, height=300, z_index=0):
+    """Generate a Power BI Python or R script visual container.
+
+    Power BI Desktop supports ``scriptVisual`` (Python) and
+    ``scriptRVisual`` (R) visual types that execute user-provided
+    scripts against a dataframe built from the selected fields.
+
+    Args:
+        visual_name: Display name for the visual.
+        script_info: Dict from ``dax_converter.detect_script_functions()``
+            with keys ``language``, ``code``, ``function``, ``return_type``.
+        fields: Optional list of field names used by the script.
+        x, y, width, height, z_index: Layout positioning.
+
+    Returns:
+        dict: PBIR-compatible visualContainer.
+    """
+    language = script_info.get('language', 'python')
+    original_code = script_info.get('code', '')
+    func_name = script_info.get('function', 'SCRIPT_REAL')
+
+    if language == 'python':
+        pbi_visual_type = 'scriptVisual'
+        runtime_label = 'Python'
+        # Wrap original Tableau code in a PBI-compatible Python script
+        script_content = (
+            f"# Migrated from Tableau {func_name}\n"
+            f"# Original Tableau script (may need adaptation for PBI dataframe):\n"
+            f"# ─────────────────────────────────────────────\n"
+        )
+        for line in original_code.split('\n'):
+            script_content += f"# {line}\n"
+        script_content += (
+            "#\n"
+            "# Power BI provides a 'dataset' pandas DataFrame with your selected fields.\n"
+            "# Assign your matplotlib/seaborn figure to display it.\n"
+            "import matplotlib.pyplot as plt\n"
+            "fig, ax = plt.subplots()\n"
+            "ax.text(0.5, 0.5, 'TODO: Adapt Tableau script for PBI',\n"
+            "        ha='center', va='center', fontsize=14)\n"
+            "plt.show()\n"
+        )
+    else:
+        pbi_visual_type = 'scriptRVisual'
+        runtime_label = 'R'
+        script_content = (
+            f"# Migrated from Tableau {func_name}\n"
+            f"# Original Tableau script (may need adaptation for PBI dataframe):\n"
+            f"# ─────────────────────────────────────────────\n"
+        )
+        for line in original_code.split('\n'):
+            script_content += f"# {line}\n"
+        script_content += (
+            "#\n"
+            "# Power BI provides a 'dataset' data.frame with your selected fields.\n"
+            "# Plot output is captured automatically.\n"
+            "plot(1, type='n', main='TODO: Adapt Tableau script for PBI')\n"
+            "text(1, 1, 'Adapt the commented script above', cex=1.2)\n"
+        )
+
+    vid = _new_guid()
+
+    visual_obj = {
+        "visualType": pbi_visual_type,
+        "drillFilterOtherVisuals": True,
+        "script": {
+            "scriptProviderDefault": language,
+            "scriptOutputType": "static",
+            "scriptText": script_content.rstrip(),
+        },
+        "annotations": [
+            {
+                "name": "MigrationNote",
+                "value": (
+                    f"Converted from Tableau {func_name}. "
+                    f"Requires {runtime_label} runtime configured in PBI Desktop "
+                    f"(File → Options → {runtime_label} scripting). "
+                    f"Original script preserved as comments."
+                ),
+            }
+        ],
+    }
+
+    container = {
+        "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
+        "name": vid,
+        "position": {
+            "x": x,
+            "y": y,
+            "z": z_index * 1000,
+            "height": height,
+            "width": width,
+            "tabOrder": z_index * 1000,
+        },
+        "visual": visual_obj,
+    }
+
+    return container

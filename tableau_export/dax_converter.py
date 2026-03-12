@@ -2105,3 +2105,76 @@ def generate_combined_field_dax(source_fields, table_name, separator=' '):
     if len(parts) == 2:
         return f"{parts[0]} & {sep_literal} & {parts[1]}"
     return (' & ' + sep_literal + ' & ').join(parts)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  SCRIPT_* Analytics Extension Detection
+# ═══════════════════════════════════════════════════════════════════════════════
+
+_RE_SCRIPT_CALL = re.compile(
+    r'\b(SCRIPT_(?:BOOL|INT|REAL|STR))\s*\(\s*"((?:[^"\\]|\\.)*)"\s*,',
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+def detect_script_functions(formula):
+    """Detect SCRIPT_* analytics extension calls in a Tableau formula.
+
+    Args:
+        formula: Raw Tableau calculation formula string.
+
+    Returns:
+        list[dict]: One entry per SCRIPT_* call with keys:
+            - ``function``: e.g. ``"SCRIPT_REAL"``
+            - ``language``: ``"python"`` or ``"r"`` (heuristic)
+            - ``code``: The embedded script source string.
+            - ``return_type``: ``"bool"``, ``"int"``, ``"real"``, or ``"str"``.
+    """
+    if not formula:
+        return []
+
+    results = []
+    for m in _RE_SCRIPT_CALL.finditer(formula):
+        func_name = m.group(1).upper()
+        raw_code = m.group(2).replace('\\"', '"').replace('\\n', '\n')
+
+        # Heuristic: detect language from script content
+        language = _detect_script_language(raw_code)
+
+        type_suffix = func_name.split('_')[1].lower()
+        results.append({
+            'function': func_name,
+            'language': language,
+            'code': raw_code,
+            'return_type': type_suffix,
+        })
+    return results
+
+
+def _detect_script_language(code):
+    """Heuristic to detect if a script is Python or R.
+
+    Checks for common language-specific markers.
+
+    Returns:
+        ``"python"`` or ``"r"``.
+    """
+    python_markers = ['import ', 'def ', 'pandas', 'numpy', 'print(', 'elif ',
+                      'return ', 'lambda ', '__', '.append(', '.items()',
+                      'pd.', 'np.', 'from ']
+    r_markers = ['<-', 'library(', 'c(', 'data.frame(', 'ggplot', 'dplyr',
+                 'tidyr', 'sapply(', 'lapply(', 'function(', 'nrow(',
+                 'ncol(', 'paste0(', '%>%', 'data.table']
+
+    code_lower = code.lower()
+    py_score = sum(1 for m in python_markers if m.lower() in code_lower)
+    r_score = sum(1 for m in r_markers if m.lower() in code_lower)
+
+    return 'python' if py_score >= r_score else 'r'
+
+
+def has_script_functions(formula):
+    """Return True if the formula contains any SCRIPT_* function call."""
+    if not formula:
+        return False
+    return bool(_RE_SCRIPT_CALL.search(formula))

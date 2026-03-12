@@ -331,13 +331,40 @@ class PowerBIProjectGenerator:
     def _create_visual_worksheet(self, visuals_dir, ws_data, obj, scale_x, scale_y,
                                   visual_count, worksheets, converted_objects,
                                   tooltip_page_map=None):
-        """Create a worksheet-type visual (chart, table, etc.)."""
+        """Create a worksheet-type visual (chart, table, etc.).
+
+        If the worksheet uses SCRIPT_* analytics extensions, generates a
+        PBI Python or R script visual instead of a standard chart.
+        """
         visual_id = uuid.uuid4().hex[:20]
         visual_dir = os.path.join(visuals_dir, visual_id)
 
         pos = obj.get('position', {})
-        visual_type = ws_data.get('chart_type', 'clusteredBarChart') if ws_data else 'clusteredBarChart'
         ws_name = obj.get('worksheetName', '')
+
+        # ── SCRIPT_* detection ────────────────────────────────
+        script_info = self._detect_script_visual(ws_data, converted_objects)
+        if script_info:
+            from visual_generator import generate_script_visual
+            position = self._make_visual_position(pos, scale_x, scale_y, visual_count)
+            field_names = [self._clean_field_name(f.get('name', ''))
+                           for f in (ws_data or {}).get('fields', [])
+                           if f.get('name')]
+            container = generate_script_visual(
+                visual_name=ws_name,
+                script_info=script_info,
+                fields=field_names,
+                x=position.get('x', 10),
+                y=position.get('y', 10),
+                width=position.get('width', 400),
+                height=position.get('height', 300),
+                z_index=visual_count,
+            )
+            os.makedirs(visual_dir, exist_ok=True)
+            _write_json(os.path.join(visual_dir, 'visual.json'), container, ensure_ascii=False)
+            return
+
+        visual_type = ws_data.get('chart_type', 'clusteredBarChart') if ws_data else 'clusteredBarChart'
 
         # Check for custom visual GUID (higher-fidelity AppSource visual)
         guid_info = None
@@ -2820,6 +2847,55 @@ class PowerBIProjectGenerator:
                             return tables[0].get('name', '')
         return ''
     
+    def _detect_script_visual(self, ws_data, converted_objects):
+        """Check if a worksheet uses SCRIPT_* analytics extensions.
+
+        Scans the worksheet's fields against the project's calculation
+        formulas.  Returns the first ``script_info`` dict (from
+        ``detect_script_functions``) if a SCRIPT_* call is found, else
+        ``None``.
+        """
+        if not ws_data:
+            return None
+
+        # Gather all raw formulas for this worksheet's fields
+        field_names = set()
+        for f in ws_data.get('fields', []):
+            fname = self._clean_field_name(f.get('name', ''))
+            if fname:
+                field_names.add(fname)
+
+        # Search calculations for SCRIPT_* usage
+        try:
+            from dax_converter import detect_script_functions
+        except ImportError:
+            return None
+
+        if field_names:
+            calcs = converted_objects.get('calculations', [])
+            for calc in calcs:
+                calc_name = calc.get('caption', calc.get('name', '')).strip('[]')
+                raw_formula = calc.get('formula', '')
+                if not raw_formula:
+                    continue
+                # Check if this calculation is used in the worksheet
+                if calc_name in field_names or calc.get('name', '').strip('[]') in field_names:
+                    scripts = detect_script_functions(raw_formula)
+                    if scripts:
+                        return scripts[0]
+
+        # Also check fields directly for embedded SCRIPT_* in mark_encoding
+        mark_enc = ws_data.get('mark_encoding', {})
+        for enc_key, enc_val in mark_enc.items():
+            if isinstance(enc_val, dict):
+                formula = enc_val.get('formula', '')
+                if formula:
+                    scripts = detect_script_functions(formula)
+                    if scripts:
+                        return scripts[0]
+
+        return None
+
     def _find_worksheet(self, worksheets, name):
         """Finds a worksheet by name"""
         for ws in worksheets:

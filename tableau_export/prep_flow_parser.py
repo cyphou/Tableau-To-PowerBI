@@ -32,6 +32,7 @@ import sys
 sys.path.insert(0, os.path.dirname(__file__))
 from m_query_builder import (
     generate_power_query_m,
+    generate_m_from_hyper,
     inject_m_steps,
     m_transform_rename,
     m_transform_remove_columns,
@@ -792,9 +793,32 @@ def _process_prep_node(nid, nodes, connections, node_results, secondary_branch_i
 
 
 def _process_input_node(nid, node, connections, node_results, node_name):
-    """Process an input node: parse connection and generate base M query."""
+    """Process an input node: parse connection and generate base M query.
+
+    For Hyper connections, attempts to read actual schema/data via
+    ``hyper_reader`` to produce a richer M expression.
+    """
     connection, table = _parse_input_node(node, connections)
-    m_query = generate_power_query_m(connection, table)
+    conn_type = connection.get('type', '')
+
+    m_query = None
+    # For hyper sources, try to read actual data first
+    if conn_type.lower() in ('hyper', 'extract'):
+        filename = connection.get('details', {}).get('filename', '')
+        if filename:
+            try:
+                from hyper_reader import read_hyper
+                result = read_hyper(filename, max_rows=20)
+                hyper_tables = result.get('tables', [])
+                if hyper_tables:
+                    m_query = generate_m_from_hyper(
+                        hyper_tables, table.get('name'))
+            except Exception:
+                pass  # Fall through to normal generation
+
+    if m_query is None:
+        m_query = generate_power_query_m(connection, table)
+
     node_results[nid] = {
         'connection': connection,
         'table': table,

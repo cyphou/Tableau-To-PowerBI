@@ -267,11 +267,15 @@ class TestCheckCalculations(unittest.TestCase):
         self.assertNotEqual(cat.worst_severity, FAIL)
 
     def test_unsupported_script(self):
+        """SCRIPT_* functions are now WARN (Python/R visual), not FAIL."""
         ext = {'calculations': [
             {'name': 'Script', 'caption': 'Script', 'formula': 'SCRIPT_REAL("x", [y])'},
         ]}
         cat = _check_calculations(ext)
-        self.assertEqual(cat.worst_severity, FAIL)
+        self.assertEqual(cat.worst_severity, WARN)
+        script_checks = [c for c in cat.checks if 'SCRIPT' in c.name]
+        self.assertTrue(len(script_checks) > 0)
+        self.assertIn('Python/R', script_checks[0].recommendation)
 
     def test_partial_regex(self):
         ext = {'calculations': [

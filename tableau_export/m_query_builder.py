@@ -604,6 +604,44 @@ def _gen_m_dataverse(details, table_name, columns):
 
 # ── Dispatch table ────────────────────────────────────────────────────────────
 
+def _gen_m_hyper(details, table_name, columns):
+    """Generate M query for a Hyper extract data source.
+
+    Tries to load actual schema/data from hyper_reader; falls back to
+    an inline #table() with the column list.
+    """
+    try:
+        from hyper_reader import read_hyper, generate_m_for_hyper_table
+        filename = details.get('filename', '')
+        if filename and os.path.isfile(filename):
+            result = read_hyper(filename, max_rows=20)
+            tables = result.get('tables', [])
+            # Find matching table or use the first
+            target = None
+            for t in tables:
+                if t.get('table', '').lower() == table_name.lower():
+                    target = t
+                    break
+            if target is None and tables:
+                target = tables[0]
+            if target and target.get('columns'):
+                return generate_m_for_hyper_table(target)
+    except Exception:
+        pass
+
+    # Fallback: structured #table() with column names from metadata
+    col_list = ', '.join([f'"{ col["name"] }"' for col in columns if 'name' in col])
+    return f'''let
+    // Hyper extract: {table_name}
+    // TODO: Replace with actual data source or imported CSV.
+    Source = #table(
+        {{{col_list}}},
+        {{}}
+    )
+in
+    Source'''
+
+
 _M_GENERATORS = {
     'Excel':            _gen_m_excel,
     'SQL Server':       _gen_m_sql_server,
@@ -651,6 +689,9 @@ _M_GENERATORS = {
     'Dataverse':        _gen_m_dataverse,
     'Common Data Service': _gen_m_dataverse,
     'CDS':              _gen_m_dataverse,
+    'hyper':            _gen_m_hyper,
+    'Hyper':            _gen_m_hyper,
+    'extract':          _gen_m_hyper,
 }
 
 
@@ -1357,3 +1398,43 @@ def wrap_source_with_try_otherwise(m_query, empty_table_columns=None):
     new_source = f'{indent}{source_assign}try\n{indent}    {source_expr.strip()}\n{indent}otherwise\n{indent}    {fallback},'
 
     return m_query[:match.start()] + new_source + after_assign[remaining_start:]
+
+
+# ── Hyper data integration ────────────────────────────────────────────────────
+
+
+def generate_m_from_hyper(hyper_tables, table_name=None):
+    """Generate an M query using data from ``hyper_reader``.
+
+    If the datasource has ``hyper_reader_tables`` (populated by
+    ``extract_hyper_metadata``), this function produces an M expression
+    with inline sample data or a CSV reference.
+
+    Args:
+        hyper_tables: list of table dicts from ``hyper_reader.read_hyper()``.
+        table_name: Optional table name to match. If ``None``, uses the first.
+
+    Returns:
+        str | None: M expression, or ``None`` if no suitable data found.
+    """
+    if not hyper_tables:
+        return None
+
+    try:
+        from hyper_reader import generate_m_for_hyper_table
+    except ImportError:
+        return None
+
+    # Find matching table
+    target = None
+    for t in hyper_tables:
+        if table_name and t.get('table', '').lower() == table_name.lower():
+            target = t
+            break
+    if target is None:
+        target = hyper_tables[0]
+
+    if not target.get('columns'):
+        return None
+
+    return generate_m_for_hyper_table(target)

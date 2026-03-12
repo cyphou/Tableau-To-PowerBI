@@ -14,6 +14,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 import re
 from datasource_extractor import extract_datasource
+from hyper_reader import read_hyper_from_twbx
 
 logger = logging.getLogger(__name__)
 
@@ -2516,6 +2517,35 @@ class TableauExtractor:
             if total_rows:
                 msg += f" (~{total_rows:,} rows estimated)"
             print(msg)
+
+        # Attempt deeper reading via SQLite (hyper_reader module)
+        file_ext = os.path.splitext(self.tableau_file)[1].lower()
+        if file_ext in ['.twbx', '.tdsx']:
+            try:
+                deep_results = read_hyper_from_twbx(
+                    self.tableau_file, max_rows=20,
+                )
+                if deep_results:
+                    # Merge deep data (actual row counts, richer sample rows)
+                    deep_map = {}
+                    for dr in deep_results:
+                        key = dr.get('original_filename', '')
+                        deep_map[key] = dr
+                    for entry in hyper_files:
+                        fname = entry.get('filename', '')
+                        deep = deep_map.get(fname)
+                        if deep and deep.get('tables'):
+                            entry['hyper_reader_tables'] = deep['tables']
+                            entry['hyper_reader_format'] = deep.get('format', 'unknown')
+                            # Update row count from actual COUNT(*)
+                            total = sum(
+                                t.get('row_count', 0) for t in deep['tables']
+                            )
+                            if total > 0:
+                                entry['actual_row_count'] = total
+                    logger.debug("Hyper reader enriched %d file(s)", len(deep_results))
+            except Exception as exc:
+                logger.debug("Hyper reader enrichment failed: %s", exc)
 
     # ------------------------------------------------------------------
     # Helpers for Hyper sample-row extraction
