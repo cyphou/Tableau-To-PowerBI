@@ -1,0 +1,59 @@
+table Extract
+	lineageTag: 73f4547f-b39b-48b4-9c82-9df504bf0aaa
+
+	measure '[Number of Records]' = 1
+		displayFolder: Measures
+		lineageTag: 983d3b26-f03a-4866-816f-142cf090aa53
+
+	column 'Number of Records'
+		dataType: int64
+		lineageTag: 7182ef0a-0595-48f6-a110-9cd20d93b8e4
+		summarizeBy: sum
+		sourceColumn: 'Number of Records'
+
+		annotation SummarizationSetBy = Automatic
+
+	column a
+		dataType: string
+		lineageTag: 0a70c244-9f1f-4df9-a885-e4b739f58f34
+		summarizeBy: none
+		sourceColumn: a
+
+		annotation SummarizationSetBy = Automatic
+
+	column x
+		dataType: int64
+		lineageTag: 8861909d-579a-4a75-8641-ae06babf09de
+		summarizeBy: sum
+		sourceColumn: x
+
+		annotation SummarizationSetBy = Automatic
+
+	column y
+		dataType: int64
+		lineageTag: 5219ef38-fd54-493b-8b09-f48e6b600c8a
+		summarizeBy: sum
+		sourceColumn: y
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Extract-a51b1bd1-69fb-4150-b370-cc6484188914' = m
+		mode: import
+		source =
+				let
+				    // Source SQL Server
+				    Source = try
+				
+				        Sql.Database("mssql2012.test.tsi.lan", "TestV1")
+				
+				    otherwise
+				
+				        #table({"Number of Records", "a", "x", "y"}, {}),
+				    #"Extract Table" = Source{[Schema="dbo", Item="Extract"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(#"Extract Table", {{"a", "A"}, {"x", "X"}, {"y", "Y"}}),
+				    Result = #"Renamed Columns"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+

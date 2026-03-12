@@ -23,6 +23,7 @@ import json
 import logging
 import os
 import re
+import urllib.error
 
 logger = logging.getLogger(__name__)
 
@@ -204,7 +205,7 @@ class TableauServerClient:
                 url = f'{self.base_url}/auth/signout'
                 self._request('POST', url)
                 logger.info('Signed out')
-            except Exception as e:
+            except (urllib.error.URLError, OSError, RuntimeError) as e:
                 logger.warning(f'Sign-out failed: {e}')
             finally:
                 self._auth_token = None
@@ -347,7 +348,7 @@ class TableauServerClient:
                     'path': output_path,
                     'status': 'success',
                 })
-            except Exception as e:
+            except (urllib.error.URLError, OSError, RuntimeError) as e:
                 logger.error(f'Failed to download {wb_name}: {e}')
                 results.append({
                     'name': wb_name,

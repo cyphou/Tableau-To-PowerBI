@@ -46,11 +46,13 @@ class TestFirstLastInCompound(unittest.TestCase):
 
     def test_first_standalone(self):
         result = convert_tableau_formula_to_dax('FIRST()')
-        self.assertIn('0', result)
+        self.assertIn('RANKX', result)
+        self.assertIn('ALLSELECTED', result)
 
     def test_last_standalone(self):
         result = convert_tableau_formula_to_dax('LAST()')
-        self.assertIn('0', result)
+        self.assertIn('RANKX', result)
+        self.assertIn('COUNTROWS', result)
 
     def test_first_in_if(self):
         result = convert_tableau_formula_to_dax('IF FIRST() = 0 THEN [Sales] END')

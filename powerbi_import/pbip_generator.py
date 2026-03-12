@@ -294,14 +294,37 @@ class PowerBIProjectGenerator:
     
     # ── Visual creation helpers (extracted from create_report_structure) ─────
 
-    def _make_visual_position(self, pos, scale_x, scale_y, z_index):
-        """Create a standard PBIR position dict from Tableau coordinates."""
+    # Layout constants
+    MIN_VISUAL_WIDTH = 60
+    MIN_VISUAL_HEIGHT = 40
+    MIN_GAP = 4  # pixels between adjacent visuals
+
+    def _make_visual_position(self, pos, scale_x, scale_y, z_index,
+                               page_width=1280, page_height=720):
+        """Create a standard PBIR position dict from Tableau coordinates.
+
+        Applies minimum size constraints, clamps to page bounds, and enforces
+        a minimum gap between the visual edge and the page boundary.
+        """
+        x = round(pos.get('x', 0) * scale_x)
+        y = round(pos.get('y', 0) * scale_y)
+        w = max(round(pos.get('w', 300) * scale_x), self.MIN_VISUAL_WIDTH)
+        h = max(round(pos.get('h', 200) * scale_y), self.MIN_VISUAL_HEIGHT)
+
+        # Clamp within page bounds
+        if x + w > page_width:
+            w = max(page_width - x, self.MIN_VISUAL_WIDTH)
+        if y + h > page_height:
+            h = max(page_height - y, self.MIN_VISUAL_HEIGHT)
+        x = max(x, 0)
+        y = max(y, 0)
+
         return {
-            "x": round(pos.get('x', 0) * scale_x),
-            "y": round(pos.get('y', 0) * scale_y),
+            "x": x,
+            "y": y,
             "z": z_index * 1000,
-            "height": round(pos.get('h', 200) * scale_y),
-            "width": round(pos.get('w', 300) * scale_x),
+            "height": h,
+            "width": w,
             "tabOrder": z_index * 1000
         }
 
@@ -866,6 +889,9 @@ class PowerBIProjectGenerator:
         if theme_data:
             res_dir = os.path.join(def_dir, 'RegisteredResources')
             _write_json(os.path.join(res_dir, 'TableauMigrationTheme.json'), custom_theme)
+
+        # Copy custom shapes from extraction output to RegisteredResources
+        self._copy_custom_shapes(def_dir, converted_objects)
         
         # 4. Create pages with visuals
         pages_dir = os.path.join(def_dir, 'pages')
@@ -883,6 +909,21 @@ class PowerBIProjectGenerator:
             page_names = self._create_dashboard_pages(
                 pages_dir, dashboards, worksheets, converted_objects, tooltip_page_map)
         
+        # Collect bookmarks: from stories + from dynamic zone visibility (sheet-swap)
+        all_bookmarks = []
+        stories = converted_objects.get('stories', [])
+        if stories:
+            all_bookmarks.extend(self._create_bookmarks(stories))
+        # Dynamic zone visibility → swap bookmarks (per dashboard)
+        if dashboards:
+            for db_idx, db in enumerate(dashboards):
+                dz_vis = db.get('dynamic_zone_visibility', [])
+                if dz_vis:
+                    pg_name = page_names[db_idx] if db_idx < len(page_names) else ''
+                    all_bookmarks.extend(self._create_swap_bookmarks(dz_vis, pg_name))
+        if all_bookmarks:
+            report_json["bookmarks"] = all_bookmarks
+
         # Fallback: default page
         if not page_names or (dashboards and all(len(d.get('objects', [])) == 0 for d in dashboards)):
             page_names = self._create_fallback_page(pages_dir, worksheets, converted_objects)
@@ -1041,6 +1082,11 @@ class PowerBIProjectGenerator:
                 self._create_pages_shelf_slicer(
                     visuals_dir, pages_shelf, scale_x, scale_y,
                     visual_count, converted_objects)
+                visual_count += 1
+
+            # Add page navigator when multiple dashboards exist (Tableau tab strip)
+            if len(dashboards) > 1:
+                self._create_page_navigator(visuals_dir, page_width, page_height, visual_count)
                 visual_count += 1
 
             print(f"  📊 Page '{page_display_name}': {visual_count} visuals created")
@@ -1622,7 +1668,93 @@ class PowerBIProjectGenerator:
                     bookmark["explorationState"]["activeSection"] = sp.get('captured_sheet', '')
                 bookmarks.append(bookmark)
         return bookmarks
-    
+
+    def _create_swap_bookmarks(self, dynamic_zones, page_name):
+        """Create bookmarks from dynamic zone visibility (sheet-swap containers).
+
+        Each dynamic zone maps to a bookmark that toggles visual visibility
+        for its zone. This simulates Tableau's show/hide sheet feature.
+
+        Args:
+            dynamic_zones: List from extract_dynamic_zone_visibility
+            page_name: The PBI page name these bookmarks belong to
+
+        Returns:
+            List of PBI bookmark dicts
+        """
+        bookmarks = []
+        for dz in dynamic_zones:
+            zone_name = dz.get('zone_name', 'Zone')
+            field = dz.get('field', '')
+            value = dz.get('value', '')
+            label = f"Show {zone_name}" if zone_name else f"Swap: {field}={value}"
+            bookmark = {
+                "name": f"Swap_{uuid.uuid4().hex[:12]}",
+                "displayName": label,
+                "explorationState": {
+                    "version": "1.0",
+                    "activeSection": page_name,
+                },
+                "options": {
+                    "MigrationNote": (
+                        f"Dynamic zone visibility: zone '{zone_name}', "
+                        f"field='{field}', value='{value}', "
+                        f"condition='{dz.get('condition', 'equals')}'. "
+                        "Assign visual visibility toggles in Power BI Desktop."
+                    )
+                },
+            }
+            bookmarks.append(bookmark)
+        return bookmarks
+
+    def _copy_custom_shapes(self, def_dir, converted_objects):
+        """Copy extracted custom shape files to RegisteredResources/.
+
+        Shape images are extracted from .twbx during the extraction phase
+        into ``<extraction_output_dir>/shapes/``.  This method copies them
+        into the PBIR ``RegisteredResources/`` folder so that Power BI
+        Desktop can reference them.
+        """
+        import shutil
+        shapes = converted_objects.get('custom_shapes', [])
+        if not shapes:
+            return
+
+        # Determine source shapes directory — typically tableau_export/shapes/
+        # Search common extraction output locations
+        search_dirs = [
+            os.path.join('tableau_export', 'shapes'),
+            os.path.join(os.path.dirname(def_dir), '..', 'tableau_export', 'shapes'),
+        ]
+        shapes_src = None
+        for sd in search_dirs:
+            if os.path.isdir(sd):
+                shapes_src = sd
+                break
+
+        if not shapes_src:
+            return
+
+        res_dir = os.path.join(def_dir, 'RegisteredResources')
+        os.makedirs(res_dir, exist_ok=True)
+
+        copied = 0
+        for shape in shapes:
+            filename = shape.get('filename', '')
+            if not filename:
+                continue
+            src_path = os.path.join(shapes_src, filename)
+            if os.path.isfile(src_path):
+                dst_path = os.path.join(res_dir, filename)
+                try:
+                    shutil.copy2(src_path, dst_path)
+                    copied += 1
+                except (OSError, PermissionError) as exc:
+                    logger.debug("Could not copy shape %s: %s", filename, exc)
+
+        if copied:
+            print(f"  🖼️  Copied {copied} custom shape(s) to RegisteredResources/")
+
     def _create_report_filters(self, converted_objects):
         """Creates report-level filters from parameters"""
         report_filters = []
@@ -2490,6 +2622,42 @@ class PowerBIProjectGenerator:
 
         # Default to Dropdown for categorical text fields
         return 'Dropdown'
+
+    def _create_page_navigator(self, visuals_dir, page_width, page_height, z_index):
+        """Create a pageNavigator visual (Tableau dashboard tab strip equivalent).
+
+        Places a horizontal page navigator bar at the bottom of the page.
+        """
+        visual_id = uuid.uuid4().hex[:20]
+        visual_dir = os.path.join(visuals_dir, visual_id)
+        os.makedirs(visual_dir, exist_ok=True)
+
+        nav_height = 40
+        visual_json = {
+            "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
+            "name": visual_id,
+            "position": {
+                "x": 0,
+                "y": page_height - nav_height,
+                "z": z_index * 1000,
+                "height": nav_height,
+                "width": page_width,
+                "tabOrder": z_index * 1000,
+            },
+            "visual": {
+                "visualType": "pageNavigator",
+                "objects": {
+                    "content": [{
+                        "properties": {
+                            "navigationStyle": {"expr": {"Literal": {"Value": "'Tabs'"}}},
+                            "showTooltips": {"expr": {"Literal": {"Value": "true"}}},
+                        }
+                    }]
+                }
+            },
+            "filters": [],
+        }
+        _write_json(os.path.join(visual_dir, 'visual.json'), visual_json)
 
     def _create_pages_shelf_slicer(self, visuals_dir, pages_shelf, scale_x, scale_y,
                                     visual_count, converted_objects):

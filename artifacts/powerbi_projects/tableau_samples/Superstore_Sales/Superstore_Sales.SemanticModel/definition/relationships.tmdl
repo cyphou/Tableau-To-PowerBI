@@ -1,0 +1,15 @@
+relationship 217e4e49-57f8-4732-9441-c93926c9b6bc
+	fromColumn: Orders.Region
+	toColumn: People.Region
+	crossFilteringBehavior: oneDirection
+
+relationship f17ea234-217a-4bad-9bad-a0b6295bf0fb
+	fromColumn: Orders.'Order ID'
+	toColumn: Returns.'Order ID'
+	crossFilteringBehavior: oneDirection
+
+relationship 8e32227c-bdb4-4168-a048-c198a9eec0c5
+	fromColumn: Orders.'Order Date'
+	toColumn: Calendar.Date
+	crossFilteringBehavior: oneDirection
+

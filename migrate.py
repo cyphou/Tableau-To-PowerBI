@@ -21,6 +21,7 @@ import json
 import logging
 import argparse
 import tempfile
+import concurrent.futures
 from datetime import datetime
 from enum import IntEnum
 
@@ -44,7 +45,7 @@ if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
     try:
         sys.stdout.reconfigure(encoding='utf-8', errors='replace')
         sys.stderr.reconfigure(encoding='utf-8', errors='replace')
-    except Exception:
+    except (AttributeError, OSError):
         pass
 
 
@@ -185,8 +186,8 @@ def run_extraction(tableau_file):
                         with open(fpath, 'r', encoding='utf-8') as f:
                             data = json.load(f)
                         setattr(_stats, attr, len(data) if isinstance(data, list) else 0)
-                    except Exception:
-                        pass
+                    except (json.JSONDecodeError, OSError) as e:
+                        logger.debug("Could not load stats from %s: %s", fname, e)
 
             print("\n✓ Extraction completed successfully")
             return True
@@ -258,8 +259,8 @@ def run_generation(report_name=None, output_dir=None, calendar_start=None,
                     _stats.tmdl_relationships = tmdl.get('relationships', 0)
                     _stats.tmdl_hierarchies = tmdl.get('hierarchies', 0)
                     _stats.tmdl_roles = tmdl.get('roles', 0)
-                except Exception:
-                    pass
+                except (json.JSONDecodeError, OSError, KeyError) as e:
+                    logger.debug("Could not load TMDL stats: %s", e)
 
         print("\n✓ Power BI project generated successfully")
         return True
@@ -392,8 +393,8 @@ def _load_json(filepath):
         if os.path.exists(filepath):
             with open(filepath, 'r', encoding='utf-8') as f:
                 return json.load(f)
-    except Exception:
-        pass
+    except (json.JSONDecodeError, OSError) as e:
+        logger.debug("Could not load JSON %s: %s", filepath, e)
     return []
 
 
@@ -413,7 +414,7 @@ def run_html_dashboard(report_name, output_dir):
         if html_path:
             print(f"\n📊 HTML dashboard: {html_path}")
         return html_path
-    except Exception as e:
+    except (ImportError, OSError, ValueError) as e:
         logger.warning(f"HTML dashboard generation failed: {e}")
         return None
 
@@ -434,9 +435,103 @@ def run_batch_html_dashboard(output_dir, workbook_results):
         if html_path:
             print(f"\n📊 Batch HTML dashboard: {html_path}")
         return html_path
-    except Exception as e:
+    except (ImportError, OSError, ValueError) as e:
         logger.warning(f"Batch HTML dashboard generation failed: {e}")
         return None
+
+
+def run_consolidate_reports(directory):
+    """Scan a directory tree for existing migration reports and metadata,
+    then generate a single consolidated MIGRATION_DASHBOARD.html.
+
+    This allows producing a unified report after running multiple individual
+    migrations (e.g., one per subfolder) without re-running the migrations.
+
+    The function searches recursively for:
+    - ``migration_report_*.json`` files (per-workbook migration reports)
+    - ``migration_metadata.json`` files (per-workbook metadata)
+
+    Args:
+        directory: Root directory to scan for existing migration artifacts.
+
+    Returns:
+        int: 0 on success, 1 on failure.
+    """
+    directory = os.path.abspath(directory)
+    if not os.path.isdir(directory):
+        print(f"Error: Directory not found: {directory}")
+        return 1
+
+    print_header("CONSOLIDATE MIGRATION REPORTS")
+    print(f"  Scanning: {directory}")
+    print()
+
+    # Discover migration report JSON files
+    report_files = []
+    metadata_files = []
+    for root, _dirs, files in os.walk(directory):
+        for f in files:
+            full = os.path.join(root, f)
+            if f.startswith('migration_report_') and f.endswith('.json'):
+                report_files.append(full)
+            elif f == 'migration_metadata.json':
+                metadata_files.append(full)
+
+    if not report_files and not metadata_files:
+        print("  No migration reports or metadata found.")
+        print("  Run migrations first, then consolidate.")
+        return 1
+
+    # Build workbook_results dict: name → {migration_report_path, metadata_path}
+    # Group by workbook name, keeping the latest report per name
+    workbook_results = {}
+
+    for rp in sorted(report_files):
+        try:
+            with open(rp, encoding='utf-8') as fh:
+                data = json.load(fh)
+            name = data.get('report_name', '')
+            if not name:
+                continue
+            if name not in workbook_results:
+                workbook_results[name] = {}
+            # Keep the latest report (sorted → last wins)
+            workbook_results[name]['migration_report_path'] = rp
+        except (json.JSONDecodeError, OSError) as e:
+            logger.debug("Skipping unreadable report %s: %s", rp, e)
+            continue
+
+    for mp in metadata_files:
+        # metadata lives inside <output_dir>/<report_name>/migration_metadata.json
+        parent = os.path.basename(os.path.dirname(mp))
+        if parent not in workbook_results:
+            workbook_results[parent] = {}
+        workbook_results[parent]['metadata_path'] = mp
+
+    if not workbook_results:
+        print("  No valid migration data found.")
+        return 1
+
+    print(f"  Found {len(workbook_results)} workbook(s):")
+    for name in sorted(workbook_results):
+        has_report = 'migration_report_path' in workbook_results[name]
+        has_meta = 'metadata_path' in workbook_results[name]
+        flags = []
+        if has_report:
+            flags.append('report')
+        if has_meta:
+            flags.append('metadata')
+        print(f"    - {name} ({', '.join(flags)})")
+    print()
+
+    # Generate consolidated dashboard
+    html_path = run_batch_html_dashboard(directory, workbook_results)
+    if html_path:
+        print(f"\n  Consolidated report: {html_path}")
+        return 0
+    else:
+        print("  Failed to generate consolidated dashboard.")
+        return 1
 
 
 def _build_calc_map_from_tmdl(report_name, output_dir=None):
@@ -534,7 +629,8 @@ def _build_calc_map_from_tmdl(report_name, output_dir=None):
 
                 i += 1
 
-        except Exception:
+        except (OSError, UnicodeDecodeError) as e:
+            logger.debug("Could not read TMDL file: %s", e)
             continue
 
     return calc_map
@@ -591,10 +687,9 @@ def run_prep_flow(prep_file, datasources_json='tableau_export/datasources.json')
         print("\n[OK] Prep flow parsing completed successfully")
         return True
 
-    except Exception as e:
+    except (ImportError, OSError, json.JSONDecodeError) as e:
+        logger.error("Prep flow parsing failed: %s", e, exc_info=True)
         print(f"\nError during Prep flow parsing: {str(e)}")
-        import traceback
-        traceback.print_exc()
         return False
 
 
@@ -740,8 +835,64 @@ def _run_batch_config(args):
     return ExitCode.SUCCESS if failed == 0 else ExitCode.BATCH_PARTIAL_FAIL
 
 
+def _migrate_single_workbook(tableau_file, basename, workbook_output_dir, display_name,
+                             skip_extraction, wb_prep, wb_cal_start, wb_cal_end, wb_culture):
+    """Migrate a single workbook — used by both sequential and parallel batch modes.
+
+    Returns:
+        dict: Result dict with success, stats, fidelity, report_name, output_dir, metadata_path
+    """
+    global _stats
+    _stats = MigrationStats()
+
+    file_results = {}
+
+    # Step 1: Extract
+    if not skip_extraction:
+        file_results['extraction'] = run_extraction(tableau_file)
+        if not file_results['extraction']:
+            logger.warning("Extraction failed for %s, skipping", display_name)
+            return {'success': False, 'error': 'extraction', 'report_name': basename,
+                    'output_dir': workbook_output_dir,
+                    'metadata_path': os.path.join(workbook_output_dir, basename, 'migration_metadata.json')}
+    else:
+        file_results['extraction'] = True
+
+    # Step 1b: Prep flow (optional)
+    if wb_prep:
+        file_results['prep'] = run_prep_flow(wb_prep)
+
+    # Step 2: Generate
+    file_results['generation'] = run_generation(
+        report_name=basename,
+        output_dir=workbook_output_dir,
+        calendar_start=wb_cal_start,
+        calendar_end=wb_cal_end,
+        culture=wb_culture,
+    )
+
+    # Step 3: Migration report
+    report_summary = None
+    if file_results.get('generation'):
+        report_summary = run_migration_report(
+            report_name=basename,
+            output_dir=workbook_output_dir,
+        )
+
+    all_ok = all(v for v in file_results.values() if v is not None)
+    return {
+        'success': all_ok,
+        'stats': _stats.to_dict(),
+        'fidelity': report_summary.get('fidelity_score') if report_summary else None,
+        'report_name': basename,
+        'output_dir': workbook_output_dir,
+        'metadata_path': os.path.join(workbook_output_dir, basename, 'migration_metadata.json'),
+    }
+
+
 def run_batch_migration(batch_dir, output_dir=None, prep_file=None, skip_extraction=False,
-                        calendar_start=None, calendar_end=None, culture=None):
+                        calendar_start=None, calendar_end=None, culture=None,
+                        parallel=None, resume=False, jsonl_log=None, manifest=None):
     """Batch migrate all .twb/.twbx files in a directory (recursive).
 
     Searches the directory tree recursively for Tableau workbooks and
@@ -759,6 +910,10 @@ def run_batch_migration(batch_dir, output_dir=None, prep_file=None, skip_extract
         calendar_start: Start year for Calendar table
         calendar_end: End year for Calendar table
         culture: Override culture/locale
+        parallel: Number of parallel workers (None = sequential)
+        resume: Skip workbooks with existing .pbip output
+        jsonl_log: Path to write structured JSONL migration events
+        manifest: List of manifest entries [{file, culture, calendar_start, ...}] for per-workbook config
 
     Returns:
         int: 0 if all succeeded, 1 if any failed
@@ -790,71 +945,163 @@ def run_batch_migration(batch_dir, output_dir=None, prep_file=None, skip_extract
     print(f"  Source:     {batch_dir}")
     print(f"  Workbooks:  {len(tableau_files)}")
     print(f"  Output:     {migrated_root}")
+    if parallel:
+        print(f"  Parallel:   {parallel} workers")
+    if resume:
+        print(f"  Resume:     enabled (skip completed)")
+    if jsonl_log:
+        print(f"  JSONL log:  {jsonl_log}")
     print()
+
+    # ── JSONL structured logging ──────────────────────────────
+    jsonl_fh = None
+    if jsonl_log:
+        jsonl_fh = open(jsonl_log, 'a', encoding='utf-8')
+
+    def _write_jsonl(event_type, data):
+        """Append a structured event to the JSONL log file."""
+        if jsonl_fh is None:
+            return
+        import json as _json
+        record = {
+            'timestamp': datetime.now().isoformat(),
+            'event': event_type,
+            **data,
+        }
+        jsonl_fh.write(_json.dumps(record, default=str) + '\n')
+        jsonl_fh.flush()
+
+    _write_jsonl('batch_start', {
+        'source_dir': batch_dir,
+        'workbook_count': len(tableau_files),
+        'output_dir': migrated_root,
+        'parallel': parallel,
+        'resume': resume,
+    })
+
+    # ── Resume: filter out completed workbooks ────────────────
+    if resume:
+        original_count = len(tableau_files)
+        filtered = []
+        for twb in tableau_files:
+            bn = os.path.splitext(os.path.basename(twb))[0]
+            rel = os.path.relpath(os.path.dirname(twb), batch_dir)
+            out_base = os.path.join(migrated_root, rel) if rel != '.' else migrated_root
+            pbip_path = os.path.join(out_base, bn, f'{bn}.pbip')
+            if os.path.exists(pbip_path):
+                logger.info("Resume: skipping already-completed %s", bn)
+                _write_jsonl('resume_skip', {'workbook': bn, 'pbip_path': pbip_path})
+            else:
+                filtered.append(twb)
+        tableau_files = filtered
+        skipped = original_count - len(tableau_files)
+        if skipped:
+            print(f"  Resume: skipped {skipped} already-completed workbook(s)")
+        if not tableau_files:
+            print("  All workbooks already completed — nothing to do.")
+            if jsonl_fh:
+                _write_jsonl('batch_end', {'status': 'all_completed', 'skipped': skipped})
+                jsonl_fh.close()
+            return ExitCode.SUCCESS
 
     batch_start = datetime.now()
     batch_results = {}
 
+    # ── Manifest: per-workbook config overrides ───────────────
+    manifest_lookup = {}
+    if manifest:
+        for entry in manifest:
+            key = os.path.normpath(entry.get('file', ''))
+            manifest_lookup[key] = entry
+
+    # ── Pre-compute workbook tasks ──────────────────────────────
+    tasks = []
     for i, tableau_file in enumerate(tableau_files, 1):
         basename = os.path.splitext(os.path.basename(tableau_file))[0]
-
-        # Compute relative path from batch_dir to preserve folder structure
         rel_dir = os.path.relpath(os.path.dirname(tableau_file), batch_dir)
         workbook_output_dir = os.path.join(migrated_root, rel_dir) if rel_dir != '.' else migrated_root
         os.makedirs(workbook_output_dir, exist_ok=True)
-
-        # Use rel_dir/basename as the unique key (avoids collisions)
         display_name = os.path.join(rel_dir, basename) if rel_dir != '.' else basename
 
+        # Per-workbook config from manifest (if provided)
+        wb_culture = culture
+        wb_cal_start = calendar_start
+        wb_cal_end = calendar_end
+        wb_prep = prep_file
+        if manifest_lookup:
+            rel_path = os.path.relpath(tableau_file, batch_dir)
+            m_entry = manifest_lookup.get(os.path.normpath(rel_path), {})
+            if not m_entry:
+                m_entry = manifest_lookup.get(os.path.normpath(os.path.basename(tableau_file)), {})
+            wb_culture = m_entry.get('culture', wb_culture)
+            wb_cal_start = m_entry.get('calendar_start', wb_cal_start)
+            wb_cal_end = m_entry.get('calendar_end', wb_cal_end)
+            wb_prep = m_entry.get('prep', wb_prep)
+
+        tasks.append({
+            'index': i,
+            'tableau_file': tableau_file,
+            'basename': basename,
+            'workbook_output_dir': workbook_output_dir,
+            'display_name': display_name,
+            'skip_extraction': skip_extraction,
+            'wb_prep': wb_prep,
+            'wb_cal_start': wb_cal_start,
+            'wb_cal_end': wb_cal_end,
+            'wb_culture': wb_culture,
+        })
+
+    def _run_task(task):
+        """Execute a single workbook migration task."""
         print(f"\n{'=' * 80}")
-        print(f"  [{i}/{len(tableau_files)}] Migrating: {display_name}")
+        print(f"  [{task['index']}/{len(tasks)}] Migrating: {task['display_name']}")
         print(f"{'=' * 80}")
 
-        global _stats
-        _stats = MigrationStats()
+        wb_start_time = datetime.now()
+        _write_jsonl('workbook_start', {
+            'workbook': task['display_name'],
+            'index': task['index'],
+            'total': len(tasks),
+        })
 
-        file_results = {}
-
-        # Step 1: Extract
-        if not skip_extraction:
-            file_results['extraction'] = run_extraction(tableau_file)
-            if not file_results['extraction']:
-                logger.warning(f"Extraction failed for {display_name}, skipping")
-                batch_results[display_name] = {'success': False, 'error': 'extraction'}
-                continue
-        else:
-            file_results['extraction'] = True
-
-        # Step 1b: Prep flow (optional)
-        if prep_file:
-            file_results['prep'] = run_prep_flow(prep_file)
-
-        # Step 2: Generate
-        file_results['generation'] = run_generation(
-            report_name=basename,
-            output_dir=workbook_output_dir,
-            calendar_start=calendar_start,
-            calendar_end=calendar_end,
-            culture=culture,
+        wb_result = _migrate_single_workbook(
+            tableau_file=task['tableau_file'],
+            basename=task['basename'],
+            workbook_output_dir=task['workbook_output_dir'],
+            display_name=task['display_name'],
+            skip_extraction=task['skip_extraction'],
+            wb_prep=task['wb_prep'],
+            wb_cal_start=task['wb_cal_start'],
+            wb_cal_end=task['wb_cal_end'],
+            wb_culture=task['wb_culture'],
         )
 
-        # Step 3: Migration report
-        report_summary = None
-        if file_results.get('generation'):
-            report_summary = run_migration_report(
-                report_name=basename,
-                output_dir=workbook_output_dir,
-            )
+        wb_duration = (datetime.now() - wb_start_time).total_seconds()
+        _write_jsonl('workbook_end', {
+            'workbook': task['display_name'],
+            'success': wb_result.get('success', False),
+            'duration_sec': wb_duration,
+            'fidelity': wb_result.get('fidelity'),
+            'stats': wb_result.get('stats', {}),
+        })
+        return task['display_name'], wb_result
 
-        all_ok = all(v for v in file_results.values() if v is not None)
-        batch_results[display_name] = {
-            'success': all_ok,
-            'stats': _stats.to_dict(),
-            'fidelity': report_summary.get('fidelity_score') if report_summary else None,
-            'report_name': basename,
-            'output_dir': workbook_output_dir,
-            'metadata_path': os.path.join(workbook_output_dir, basename, 'migration_metadata.json'),
-        }
+    # ── Execute tasks (sequential or parallel) ────────────────
+    if parallel and parallel > 1 and len(tasks) > 1:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=parallel) as executor:
+            futures = {executor.submit(_run_task, t): t for t in tasks}
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    display_name, wb_result = future.result()
+                    batch_results[display_name] = wb_result
+                except Exception:
+                    task = futures[future]
+                    batch_results[task['display_name']] = {'success': False, 'error': 'parallel_exception'}
+                    logger.exception("Parallel migration failed for %s", task['display_name'])
+    else:
+        for task in tasks:
+            display_name, wb_result = _run_task(task)
+            batch_results[display_name] = wb_result
 
     # Batch summary
     batch_duration = datetime.now() - batch_start
@@ -908,6 +1155,17 @@ def run_batch_migration(batch_dir, output_dir=None, prep_file=None, skip_extract
         min_fid = min(fidelities)
         max_fid = max(fidelities)
         print(f"  Fidelity: avg {avg_fid}% | min {min_fid}% | max {max_fid}%")
+
+    # ── Close JSONL log ────────────────────────────────────
+    _write_jsonl('batch_end', {
+        'total': len(batch_results),
+        'succeeded': succeeded,
+        'failed': failed,
+        'duration_sec': batch_duration.total_seconds(),
+        'avg_fidelity': round(sum(fidelities) / len(fidelities), 1) if fidelities else None,
+    })
+    if jsonl_fh:
+        jsonl_fh.close()
 
     return ExitCode.SUCCESS if failed == 0 else ExitCode.BATCH_PARTIAL_FAIL
 
@@ -983,6 +1241,18 @@ def _build_argument_parser():
         metavar='DIR',
         default=None,
         help='Batch migrate all .twb/.twbx files in the specified directory'
+    )
+
+    parser.add_argument(
+        '--consolidate',
+        metavar='DIR',
+        default=None,
+        help=(
+            'Scan a directory tree for existing migration reports and metadata, '
+            'then generate a single consolidated MIGRATION_DASHBOARD.html. '
+            'Use this after running multiple individual migrations to produce '
+            'one unified report covering all workbooks.'
+        )
     )
 
     parser.add_argument(
@@ -1154,6 +1424,39 @@ def _build_argument_parser():
         metavar='PROJECT',
         default=None,
         help='Download and migrate all workbooks from a Tableau Server project (requires --server)'
+    )
+
+    # ── Sprint 24: Enterprise & Scale features ────────────────
+    parser.add_argument(
+        '--parallel',
+        metavar='N',
+        type=int,
+        default=None,
+        help='Number of parallel workers for batch migration (default: sequential)'
+    )
+
+    parser.add_argument(
+        '--resume',
+        action='store_true',
+        default=False,
+        help='Skip already-completed workbooks in batch mode (checks for existing .pbip in output dir)'
+    )
+
+    parser.add_argument(
+        '--manifest',
+        metavar='FILE',
+        default=None,
+        help=(
+            'Path to a JSON manifest file mapping source workbooks to target configs. '
+            'Format: [{"file": "path/to/workbook.twbx", "culture": "fr-FR", ...}]'
+        )
+    )
+
+    parser.add_argument(
+        '--jsonl-log',
+        metavar='FILE',
+        default=None,
+        help='Write structured migration events to a JSON Lines (.jsonl) file for machine parsing'
     )
 
     return parser
@@ -1464,6 +1767,25 @@ def main():
         if server_result is not None:
             return server_result
 
+    # ── Consolidate existing reports mode ─────────────────────
+    if getattr(args, 'consolidate', None):
+        result = run_consolidate_reports(args.consolidate)
+        return ExitCode.SUCCESS if result == 0 else ExitCode.GENERAL_ERROR
+
+    # ── Manifest-based batch migration ─────────────────────────
+    manifest_data = None
+    if getattr(args, 'manifest', None):
+        try:
+            with open(args.manifest, 'r', encoding='utf-8') as mf:
+                manifest_data = json.loads(mf.read())
+        except (OSError, json.JSONDecodeError) as exc:
+            print(f"Error: Cannot load manifest {args.manifest}: {exc}")
+            return ExitCode.GENERAL_ERROR
+
+        # If no --batch dir given, derive from manifest file location
+        if not args.batch:
+            args.batch = os.path.dirname(os.path.abspath(args.manifest)) or '.'
+
     # ── Batch migration mode ──────────────────────────────────
     if args.batch:
         return run_batch_migration(
@@ -1474,6 +1796,10 @@ def main():
             calendar_start=args.calendar_start,
             calendar_end=args.calendar_end,
             culture=args.culture,
+            parallel=getattr(args, 'parallel', None),
+            resume=getattr(args, 'resume', False),
+            jsonl_log=getattr(args, 'jsonl_log', None),
+            manifest=manifest_data,
         )
 
     # ── Single file migration ─────────────────────────────────

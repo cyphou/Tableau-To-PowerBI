@@ -216,7 +216,7 @@ class IncrementalMerger:
         try:
             with open(a, 'rb') as fa, open(b, 'rb') as fb:
                 return fa.read() == fb.read()
-        except Exception:
+        except OSError:
             return False
 
     @classmethod
@@ -241,7 +241,7 @@ class IncrementalMerger:
                     if changed:
                         parts.append(f'~{changed} keys changed')
                     return ', '.join(parts) if parts else 'content differs'
-            except Exception:
+            except (json.JSONDecodeError, OSError):
                 pass
         return 'content differs'
 
@@ -267,7 +267,7 @@ class IncrementalMerger:
                 existing = json.load(f)
             with open(incoming_path, 'r', encoding='utf-8') as f:
                 incoming = json.load(f)
-        except Exception:
+        except (json.JSONDecodeError, OSError):
             # Can't parse — take incoming
             shutil.copy2(incoming_path, target_path)
             return True, False

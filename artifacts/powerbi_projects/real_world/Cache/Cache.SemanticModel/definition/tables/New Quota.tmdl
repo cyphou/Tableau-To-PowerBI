@@ -1,0 +1,20 @@
+table 'New Quota'
+	lineageTag: 52fd9d84-d493-4f18-97b3-65c73ecfb238
+
+	measure 'New Quota' = SELECTEDVALUE('New Quota'[Value], 500000)
+		lineageTag: 61c5dab3-5682-46cf-841b-b7af17505f0a
+
+	column Value
+		dataType: int64
+		lineageTag: c178ec60-14ae-4304-958d-5e5d0ba4e2de
+		summarizeBy: none
+		sourceColumn: Value
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'New Quota-3f79ffe0-a239-455b-9750-45c46098e787' = calculated
+		mode: import
+		source = GENERATESERIES(100000, , 25000)
+
+	annotation PBI_ResultType = Table
+

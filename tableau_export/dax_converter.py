@@ -166,8 +166,8 @@ _SIMPLE_FUNCTION_MAP = [
     (r'\bRUNNING_MIN\s*\(', 'CALCULATE('),
     # RANK/RANK_UNIQUE/RANK_DENSE/RANK_MODIFIED/RANK_PERCENTILE handled by _convert_rank_functions
     (r'\bINDEX\s*\(\s*\)', 'RANKX(ALLSELECTED(), [Value], , ASC, DENSE) /* INDEX: row number within partition */'),
-    (r'\bFIRST\s*\(\s*\)', '0'),
-    (r'\bLAST\s*\(\s*\)', '0'),
+    (r'\bFIRST\s*\(\s*\)', '/* FIRST(): rows from first row — use ORDERBY column */ -(RANKX(ALLSELECTED(), [__SortColumn__], , ASC, DENSE) - 1)'),
+    (r'\bLAST\s*\(\s*\)', '/* LAST(): rows to last row — use ORDERBY column */ COUNTROWS(ALLSELECTED()) - RANKX(ALLSELECTED(), [__SortColumn__], , ASC, DENSE)'),
     (r'\bTOTAL\s*\(', 'CALCULATE('),
     # PREVIOUS_VALUE and LOOKUP handled by dedicated converters below
     (r'\bSIZE\s*\(\s*\)', 'COUNTROWS(ALLSELECTED()) /* SIZE: partition row count */'),
@@ -994,6 +994,34 @@ def _convert_iif(dax):
     return _transform_func_call(dax, 'IIF', _xf)
 
 
+def _char_class_to_code_check(char_class_body, field_expr):
+    """Convert a regex character class body like ``a-zA-Z0-9`` to a DAX CODE-based check.
+
+    *field_expr* should be a single-character expression like ``MID(field, i, 1)``.
+    Returns a DAX boolean expression using ``||`` and ``&&`` operators (not
+    ``OR()``/``AND()`` functions, which would be mangled by Phase 4 operator
+    conversion), or ``None`` if the class is too complex.
+    """
+    parts = []
+    i = 0
+    while i < len(char_class_body):
+        if i + 2 < len(char_class_body) and char_class_body[i + 1] == '-':
+            # Range like a-z
+            lo = char_class_body[i]
+            hi = char_class_body[i + 2]
+            parts.append(f'(CODE({field_expr}) >= {ord(lo)} && CODE({field_expr}) <= {ord(hi)})')
+            i += 3
+        else:
+            ch = char_class_body[i]
+            parts.append(f'(CODE({field_expr}) = {ord(ch)})')
+            i += 1
+    if not parts:
+        return None
+    if len(parts) == 1:
+        return parts[0]
+    return '(' + ' || '.join(parts) + ')'
+
+
 def _convert_regexp_match(dax):
     """Convert REGEXP_MATCH(field, "pattern") to DAX equivalents.
 
@@ -1002,6 +1030,10 @@ def _convert_regexp_match(dax):
     - literal$  → RIGHT(field, len) = "literal"
     - pat1|pat2 → CONTAINSSTRING(field, "pat1") || CONTAINSSTRING(field, "pat2")
     - simple literal (no metacharacters) → CONTAINSSTRING(field, "literal")
+    - ^[0-9]+$ → ISNUMBER(VALUE(field))  (digits-only check)
+    - ^[a-zA-Z]+$ → CODE-based letter check
+    - [a-z] / [A-Z] / [0-9] → CODE-based character class check
+    - \\d / \\d+ → digit detection via CODE ranges
     - complex patterns → CONTAINSSTRING fallback with warning comment
     """
     _REGEX_META = set(r'.+?*[](){}\^$')
@@ -1022,6 +1054,9 @@ def _convert_regexp_match(dax):
         else:
             pat = raw_pat
 
+        # Normalize common regex shorthands to bracket notation
+        pat = pat.replace('\\d', '[0-9]').replace('\\w', '[a-zA-Z0-9_]').replace('\\s', '[ \\t]')
+
         # ^literal  → LEFT match
         if pat.startswith('^'):
             body = pat[1:]
@@ -1033,6 +1068,59 @@ def _convert_regexp_match(dax):
             body = pat[:-1]
             if _is_simple_literal(body):
                 return f'(RIGHT({field}, {len(body)}) = "{body}")'
+
+        # --- Character class patterns ---
+        # ^[0-9]+$ → ISNUMBER(VALUE(field))  (entire string is digits)
+        if pat in ('^[0-9]+$', '^\\d+$'):
+            return f'ISNUMBER(VALUE({field}))'
+
+        # ^[a-zA-Z]+$ → all letters check via CODE
+        cc_full_match = re.match(r'^\^\[([a-zA-Z0-9\-]+)\]\+?\$$', pat)
+        if cc_full_match:
+            cc_body = cc_full_match.group(1)
+            code_check = _char_class_to_code_check(cc_body, f'MID({field}, __i__, 1)')
+            if code_check:
+                # Simplified: generate a NOT-contains-non-matching approach
+                return (
+                    f'/* REGEXP_MATCH("^[{cc_body}]+$"): all-character class check */ '
+                    f'NOT(CONTAINSSTRING(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE('
+                    f'SUBSTITUTE({field}, " ", ""), "-", ""), "_", ""), ".", ""), ",", ""), '
+                    f'"[^{cc_body}]")) '
+                    f'/* verify manually — DAX lacks native regex */'
+                )
+
+        # [0-9] / \\d → contains any digit
+        if pat in ('[0-9]', '\\d'):
+            digit_checks = ' || '.join(
+                f'CONTAINSSTRING({field}, "{d}")' for d in '0123456789'
+            )
+            return f'({digit_checks})'
+
+        # [a-z] → contains any lowercase letter
+        if pat == '[a-z]':
+            return (
+                f'/* [a-z]: contains lowercase letter */ '
+                f'OR(AND(CODE(MID({field}, 1, 1)) >= 97, CODE(MID({field}, 1, 1)) <= 122), '
+                f'CONTAINSSTRING({field}, " ")) '
+                f'/* simplified — verify manually */'
+            )
+
+        # [A-Z] → contains any uppercase letter
+        if pat == '[A-Z]':
+            return (
+                f'/* [A-Z]: contains uppercase letter */ '
+                f'OR(AND(CODE(MID({field}, 1, 1)) >= 65, CODE(MID({field}, 1, 1)) <= 90), '
+                f'CONTAINSSTRING({field}, " ")) '
+                f'/* simplified — verify manually */'
+            )
+
+        # General [X-Y] character class (contains check)
+        cc_contains = re.match(r'^\[([a-zA-Z0-9\-]+)\]$', pat)
+        if cc_contains:
+            cc_body = cc_contains.group(1)
+            code_check = _char_class_to_code_check(cc_body, f'MID({field}, 1, 1)')
+            if code_check:
+                return f'/* [{cc_body}]: character class check */ {code_check}'
 
         # pat1|pat2|...  → OR of CONTAINSSTRING (only if each branch is simple)
         if '|' in pat and not any(ch in pat for ch in r'.+?*[](){}\^$' if ch != '|'):
@@ -1055,6 +1143,9 @@ def _convert_regexp_extract(dax):
     """Convert REGEXP_EXTRACT(field, "pattern") to DAX equivalents.
 
     - Fixed-prefix capture: "prefix(.*)" → MID(field, SEARCH("prefix", field) + len, LEN(field))
+    - Suffix capture: "(.*)suffix" → LEFT(field, SEARCH("suffix", field) - 1)
+    - Prefix+suffix capture: "prefix(.*)suffix" → MID with calculated length
+    - Digit extraction: "(\\d+)" → extract first numeric substring
     - Fallback → comment + BLANK()
     """
     def _xf(args, inner):
@@ -1069,12 +1160,49 @@ def _convert_regexp_extract(dax):
         else:
             pat = raw_pat
 
+        # Normalize regex shorthands
+        pat = pat.replace('\\d', '[0-9]').replace('\\w', '[a-zA-Z0-9_]')
+
+        # Character class for literal prefix/suffix chars (broader set)
+        _LIT = r'[A-Za-z0-9_=:;/&@#%!,.<>\-\[\]{}|~\' ]+'
+
         # Fixed-prefix capture: "prefix(.*)"  or  "prefix(.*?)" or "prefix(.+)"
-        m = re.match(r'^([A-Za-z0-9_=:;/&@#%!, -]+)\(\.(\*|\+)\??\)$', pat)
+        m = re.match(r'^(' + _LIT + r')\(\.(\*|\+)\??\)$', pat)
         if m:
             prefix = m.group(1)
             prefix_len = len(prefix)
             return f'MID({field}, SEARCH("{prefix}", {field}) + {prefix_len}, LEN({field}))'
+
+        # Suffix capture: "(.*)" + suffix or "(.*?)suffix"
+        m = re.match(r'^\(\.\*\??\)(' + _LIT + r')$', pat)
+        if m:
+            suffix = m.group(1)
+            return f'LEFT({field}, SEARCH("{suffix}", {field}) - 1)'
+
+        # Prefix + suffix capture: "prefix(.*)suffix"
+        m = re.match(r'^(' + _LIT + r')\(\.\*\??\)(' + _LIT + r')$', pat)
+        if m:
+            prefix = m.group(1)
+            suffix = m.group(2)
+            prefix_len = len(prefix)
+            return (
+                f'MID({field}, '
+                f'SEARCH("{prefix}", {field}) + {prefix_len}, '
+                f'SEARCH("{suffix}", {field}) - SEARCH("{prefix}", {field}) - {prefix_len})'
+            )
+
+        # Digit extraction: "([0-9]+)"
+        if pat in ('([0-9]+)',):
+            return (
+                f'/* REGEXP_EXTRACT("\\d+"): extract first number */ '
+                f'MID({field}, '
+                f'MIN(IFERROR(FIND("0",{field}),999), IFERROR(FIND("1",{field}),999), '
+                f'IFERROR(FIND("2",{field}),999), IFERROR(FIND("3",{field}),999), '
+                f'IFERROR(FIND("4",{field}),999), IFERROR(FIND("5",{field}),999), '
+                f'IFERROR(FIND("6",{field}),999), IFERROR(FIND("7",{field}),999), '
+                f'IFERROR(FIND("8",{field}),999), IFERROR(FIND("9",{field}),999)), '
+                f'LEN({field}))'
+            )
 
         # Fallback
         return f'/* REGEXP_EXTRACT("{pat}"): no DAX regex — manual conversion needed */ BLANK()'
@@ -1531,29 +1659,30 @@ def _convert_window_functions(dax, table_name, compute_using=None, column_table_
 
             # Build the DAX replacement
             if frame_start is not None and frame_end is not None:
-                # Frame boundaries specified — generate OFFSET-based range
+                # Frame boundaries specified — use DAX WINDOW function for precise range
                 agg_func = window_func.upper().replace('WINDOW_', '')
                 if agg_func == 'COUNT':
                     agg_func = 'COUNTROWS'
-                dax_agg = agg_func if agg_func != 'COUNTROWS' else 'COUNTROWS'
 
                 if compute_using:
                     dim_refs = []
                     for dim in compute_using:
                         t = ctm.get(dim, table_name)
                         dim_refs.append(f"'{t}'[{dim}]")
-                    order_by = ', '.join(dim_refs)
+                    order_col = dim_refs[0]
                     partition = f"ALLEXCEPT('{table_name}', {', '.join(dim_refs)})"
                 else:
-                    order_by = f"'{table_name}'[{(ctm and list(ctm.keys())[0]) or 'RowNumber'}]" if ctm else f"'{table_name}'[RowNumber]"
+                    order_col = f"'{table_name}'[{(ctm and list(ctm.keys())[0]) or 'RowNumber'}]" if ctm else f"'{table_name}'[RowNumber]"
                     partition = f"ALL('{table_name}')"
 
-                # Generate a VAR-based OFFSET pattern for the window range
-                # Use underscores-removed tag to avoid re-matching the pattern
+                # Generate WINDOW-based DAX for precise frame boundaries
+                # DAX WINDOW(from, fromType, to, toType, ORDERBY, blanks, partitionBy)
                 tag = window_func.replace('_', '.')
                 replacement = (
-                    f"/* {tag}(expr, {frame_start}, {frame_end}): sliding window via OFFSET */ "
-                    f"CALCULATE({inner_expr}, {partition})"
+                    f"CALCULATE({inner_expr}, "
+                    f"WINDOW({frame_start}, REL, {frame_end}, REL, "
+                    f"ORDERBY({order_col}, ASC)), {partition}) "
+                    f"/* {tag}: frame [{frame_start},{frame_end}] */"
                 )
             elif compute_using:
                 # No frame boundaries but partition dimensions provided

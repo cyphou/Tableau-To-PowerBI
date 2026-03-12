@@ -311,7 +311,7 @@ class TestTableauServerClientBatch(unittest.TestCase):
                 {'id': 'wb1', 'name': 'Good'},
                 {'id': 'wb2', 'name': 'Bad'},
             ]
-            mock_dl.side_effect = ['/tmp/good.twbx', Exception('Network error')]
+            mock_dl.side_effect = ['/tmp/good.twbx', OSError('Network error')]
             with tempfile.TemporaryDirectory() as td:
                 results = c.download_all_workbooks(td)
         success = [r for r in results if r['status'] == 'success']

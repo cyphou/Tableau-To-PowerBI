@@ -195,7 +195,7 @@ class ArtifactValidator:
 
         except json.JSONDecodeError as e:
             return False, [f'Invalid JSON: {str(e)}']
-        except Exception as e:
+        except (KeyError, TypeError, ValueError, OSError) as e:
             return False, [f'Validation error: {str(e)}']
 
     @staticmethod
@@ -214,7 +214,7 @@ class ArtifactValidator:
             return True, None
         except json.JSONDecodeError as e:
             return False, f'Invalid JSON in {filepath}: {e}'
-        except Exception as e:
+        except OSError as e:
             return False, f'Error reading {filepath}: {e}'
 
     @staticmethod
@@ -244,7 +244,7 @@ class ArtifactValidator:
 
             return len(errors) == 0, errors
 
-        except Exception as e:
+        except OSError as e:
             return False, [f'Error reading {filepath}: {e}']
 
     # ── Tableau derivation field reference pattern ────────────────
@@ -337,7 +337,7 @@ class ArtifactValidator:
         try:
             with open(filepath, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
-        except Exception:
+        except OSError:
             return issues
 
         basename = os.path.basename(filepath)
@@ -499,7 +499,7 @@ class ArtifactValidator:
             try:
                 with open(filepath, 'r', encoding='utf-8') as f:
                     lines = f.readlines()
-            except Exception:
+            except OSError:
                 return
             current_table = None
             for line in lines:
@@ -575,7 +575,7 @@ class ArtifactValidator:
         for tmdl_file in tmdl_files:
             try:
                 content = tmdl_file.read_text(encoding='utf-8')
-            except Exception:
+            except OSError:
                 continue
             basename = tmdl_file.name
             for match in cls._RE_DAX_REF.finditer(content):
@@ -655,7 +655,7 @@ class ArtifactValidator:
                         if schema_url:
                             pbir_errs = cls.validate_pbir_structure(rj, schema_url)
                             warnings.extend(pbir_errs)
-                    except Exception:
+                    except (json.JSONDecodeError, OSError):
                         pass
             else:
                 errors.append('Missing report.json in Report directory')
@@ -693,7 +693,7 @@ class ArtifactValidator:
                                     if schema_url:
                                         pbir_errs = cls.validate_pbir_structure(pj, schema_url)
                                         warnings.extend(pbir_errs)
-                                except Exception:
+                                except (json.JSONDecodeError, OSError):
                                     pass
 
                         # Validate visuals
@@ -716,7 +716,7 @@ class ArtifactValidator:
                                                 if schema_url:
                                                     pbir_errs = cls.validate_pbir_structure(vj, schema_url)
                                                     warnings.extend(pbir_errs)
-                                            except Exception:
+                                            except (json.JSONDecodeError, OSError):
                                                 pass
         else:
             errors.append(f'Missing Report directory: {report_dir.name}')
@@ -863,7 +863,7 @@ class ArtifactValidator:
                     continue
                 try:
                     content = visual_json.read_text(encoding='utf-8')
-                except Exception:
+                except OSError:
                     continue
 
                 # Extract all Entity+Property pairs from JSON text

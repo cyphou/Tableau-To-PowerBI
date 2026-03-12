@@ -1,0 +1,18 @@
+relationship c62875a9-b307-446f-abb7-94b1d5035340
+	fromColumn: Orders.'Order Date'
+	toColumn: Calendar.Date
+	crossFilteringBehavior: oneDirection
+
+relationship 75dd4e57-76b0-4a41-8931-0dd5e063c6f2
+	fromColumn: Extract.'Order Date'
+	toColumn: Calendar.Date
+	crossFilteringBehavior: oneDirection
+	isActive: false
+
+relationship 5c0dadfc-264e-40ee-84aa-54d387d453e9
+	fromColumn: Orders.'Row ID'
+	toColumn: Extract.'Row ID'
+	fromCardinality: many
+	toCardinality: many
+	crossFilteringBehavior: bothDirections
+

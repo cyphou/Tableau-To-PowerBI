@@ -22,7 +22,7 @@ if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
     try:
         sys.stdout.reconfigure(encoding='utf-8', errors='replace')
         sys.stderr.reconfigure(encoding='utf-8', errors='replace')
-    except Exception:
+    except (AttributeError, OSError):
         pass
 
 
@@ -2273,18 +2273,30 @@ class TableauExtractor:
         return dual_axis
 
     def extract_custom_shapes(self):
-        """Extracts custom shape references from .twbx package."""
+        """Extracts custom shape references from .twbx package.
+
+        Also extracts binary shape files into ``<output_dir>/shapes/``
+        so the generator can embed them as ``RegisteredResources/``.
+        """
         shapes = []
         file_ext = os.path.splitext(self.tableau_file)[1].lower()
         if file_ext in ['.twbx', '.tdsx']:
             try:
+                shapes_dir = os.path.join(self.output_dir, 'shapes')
                 with zipfile.ZipFile(self.tableau_file, 'r') as z:
                     for name in z.namelist():
                         if '/Shapes/' in name or '/shapes/' in name:
+                            filename = os.path.basename(name)
                             shapes.append({
                                 'path': name,
-                                'filename': os.path.basename(name),
+                                'filename': filename,
                             })
+                            # Extract binary shape file
+                            if filename and not name.endswith('/'):
+                                os.makedirs(shapes_dir, exist_ok=True)
+                                target = os.path.join(shapes_dir, filename)
+                                with z.open(name) as src, open(target, 'wb') as dst:
+                                    dst.write(src.read())
             except (zipfile.BadZipFile, OSError, KeyError) as exc:
                 logger.debug("Could not read shapes from archive: %s", exc)
         return shapes
@@ -2446,7 +2458,7 @@ class TableauExtractor:
                                 text_region = raw[:scan_limit]
                                 try:
                                     text_chunk = text_region.decode('utf-8', errors='replace')
-                                except Exception:
+                                except (UnicodeDecodeError, AttributeError):
                                     text_chunk = ''
                                 creates = re.findall(
                                     r'CREATE\s+TABLE\s+"?([^"\s(]+)"?\s*\(([^)]+)\)',

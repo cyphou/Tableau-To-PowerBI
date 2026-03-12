@@ -594,5 +594,136 @@ class TestFactoryEdgeCases(unittest.TestCase):
         self.assertEqual(len(model['custom_sql']), 1)
 
 
+# ═══════════════════════════════════════════════════════════════════════
+# Sprint 22 — Error Recovery & Narrowed Exception Tests
+# ═══════════════════════════════════════════════════════════════════════
+
+class TestLoadJsonErrorRecovery(unittest.TestCase):
+    """Test _load_json() with corrupted/missing files."""
+
+    def test_load_json_missing_file(self):
+        from migrate import _load_json
+        result = _load_json('/nonexistent/path/file.json')
+        self.assertEqual(result, [])
+
+    def test_load_json_corrupted_json(self):
+        from migrate import _load_json
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            f.write('{not valid json!!!')
+            f.flush()
+            path = f.name
+        try:
+            result = _load_json(path)
+            self.assertEqual(result, [])
+        finally:
+            os.unlink(path)
+
+    def test_load_json_valid(self):
+        from migrate import _load_json
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            json.dump([1, 2, 3], f)
+            f.flush()
+            path = f.name
+        try:
+            result = _load_json(path)
+            self.assertEqual(result, [1, 2, 3])
+        finally:
+            os.unlink(path)
+
+
+class TestValidatorNarrowedExceptions(unittest.TestCase):
+    """Test that validator handles specific exception types correctly."""
+
+    def test_validate_json_file_not_found(self):
+        valid, err = ArtifactValidator.validate_json_file('/nonexistent.json')
+        self.assertFalse(valid)
+        self.assertIn('Error reading', err)
+
+    def test_validate_tmdl_file_not_found(self):
+        valid, errors = ArtifactValidator.validate_tmdl_file('/nonexistent.tmdl')
+        self.assertFalse(valid)
+        self.assertIn('Error reading', errors[0])
+
+    def test_validate_json_file_invalid_json(self):
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            f.write('{bad json')
+            path = f.name
+        try:
+            valid, err = ArtifactValidator.validate_json_file(path)
+            self.assertFalse(valid)
+            self.assertIn('Invalid JSON', err)
+        finally:
+            os.unlink(path)
+
+    def test_validate_artifact_with_invalid_type(self):
+        artifact = {'type': 'INVALID_TYPE_999'}
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            json.dump(artifact, f)
+            path = f.name
+        try:
+            valid, errors = ArtifactValidator.validate_artifact(path)
+            self.assertFalse(valid)
+            self.assertIn('Invalid artifact type', errors[0])
+        finally:
+            os.unlink(path)
+
+
+class TestIncrementalMergerErrorRecovery(unittest.TestCase):
+    """Test incremental merger handles file errors gracefully."""
+
+    def test_files_equal_missing_file(self):
+        from powerbi_import.incremental import IncrementalMerger
+        result = IncrementalMerger._files_equal('/nonexistent_a', '/nonexistent_b')
+        self.assertFalse(result)
+
+    def test_describe_change_corrupted_json(self):
+        from powerbi_import.incremental import IncrementalMerger
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            f.write('not json')
+            path_a = f.name
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            json.dump({'key': 'val'}, f)
+            path_b = f.name
+        try:
+            result = IncrementalMerger._describe_change(path_a, path_b, 'test.json')
+            self.assertEqual(result, 'content differs')
+        finally:
+            os.unlink(path_a)
+            os.unlink(path_b)
+
+    def test_merge_json_corrupted_existing(self):
+        from powerbi_import.incremental import IncrementalMerger
+        with tempfile.TemporaryDirectory() as td:
+            existing = os.path.join(td, 'existing.json')
+            incoming = os.path.join(td, 'incoming.json')
+            target = os.path.join(td, 'target.json')
+            with open(existing, 'w') as f:
+                f.write('bad json')
+            with open(incoming, 'w') as f:
+                json.dump({'a': 1}, f)
+            success, conflict = IncrementalMerger._merge_json(existing, incoming, target)
+            self.assertTrue(success)
+            self.assertFalse(conflict)
+            # Target should be a copy of incoming
+            with open(target) as f:
+                data = json.load(f)
+            self.assertEqual(data, {'a': 1})
+
+
+class TestConsolidateReportsErrorRecovery(unittest.TestCase):
+    """Test run_consolidate_reports handles corrupted files."""
+
+    def test_consolidate_skips_corrupted_report(self):
+        from migrate import run_consolidate_reports
+        with tempfile.TemporaryDirectory() as td:
+            # Create a corrupted migration report
+            bad_report = os.path.join(td, 'migration_report_Bad_20260101.json')
+            with open(bad_report, 'w') as f:
+                f.write('NOT JSON AT ALL')
+            # Should not crash — gracefully skip corrupted file and return 1
+            result = run_consolidate_reports(td)
+            self.assertEqual(result, 1)
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

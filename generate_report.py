@@ -372,7 +372,7 @@ def generate_dashboard(report_name, output_dir, migration_report_path=None, meta
             with open(migration_report_path, encoding="utf-8") as fh:
                 data = json.load(fh)
             reports[data.get("report_name", report_name)] = data
-        except Exception:
+        except (json.JSONDecodeError, OSError):
             pass
     else:
         # Auto-discover latest migration report in output_dir
@@ -383,7 +383,7 @@ def generate_dashboard(report_name, output_dir, migration_report_path=None, meta
                 with open(candidates[-1], encoding="utf-8") as fh:
                     data = json.load(fh)
                 reports[data.get("report_name", report_name)] = data
-            except Exception:
+            except (json.JSONDecodeError, OSError):
                 pass
 
     # ── Locate metadata JSON ─────────────────────────────────────────
@@ -392,7 +392,7 @@ def generate_dashboard(report_name, output_dir, migration_report_path=None, meta
         try:
             with open(metadata_path, encoding="utf-8") as fh:
                 metadata[report_name] = json.load(fh)
-        except Exception:
+        except (json.JSONDecodeError, OSError):
             pass
     else:
         candidate = os.path.join(output_dir, report_name, "migration_metadata.json")
@@ -400,7 +400,7 @@ def generate_dashboard(report_name, output_dir, migration_report_path=None, meta
             try:
                 with open(candidate, encoding="utf-8") as fh:
                     metadata[report_name] = json.load(fh)
-            except Exception:
+            except (json.JSONDecodeError, OSError):
                 pass
 
     if not reports and not metadata:
@@ -435,14 +435,14 @@ def generate_batch_dashboard(output_dir, workbook_results):
             try:
                 with open(rp, encoding="utf-8") as fh:
                     reports[name] = json.load(fh)
-            except Exception:
+            except (json.JSONDecodeError, OSError):
                 pass
         mp = paths.get("metadata_path")
         if mp and os.path.isfile(mp):
             try:
                 with open(mp, encoding="utf-8") as fh:
                     metadata[name] = json.load(fh)
-            except Exception:
+            except (json.JSONDecodeError, OSError):
                 pass
 
     if not reports and not metadata:

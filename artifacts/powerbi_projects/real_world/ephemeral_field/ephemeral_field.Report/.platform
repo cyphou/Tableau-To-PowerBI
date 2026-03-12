@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Report",
+    "displayName": "ephemeral_field"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "f3c36431-6f5e-4105-927f-bd46a4ca9668"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "generated_at": "2026-03-12T09:13:14.080828",
+  "source": "Tableau Migration",
+  "report_name": "HR_Analytics",
+  "objects_converted": {
+    "worksheets": 4,
+    "dashboards": 1,
+    "datasources": 1,
+    "calculations": 4,
+    "parameters": 0,
+    "filters": 0,
+    "stories": 0,
+    "sets": 0,
+    "groups": 0,
+    "bins": 0,
+    "hierarchies": 0,
+    "user_filters": 0,
+    "actions": 0,
+    "custom_sql": 0
+  },
+  "generated_output": {
+    "pages": 1,
+    "visuals": 4,
+    "theme_applied": false,
+    "theme_detail": {
+      "status": "skipped",
+      "reason": "no dashboard colors detected"
+    }
+  },
+  "tmdl_stats": {
+    "tables": 2,
+    "measures": 6,
+    "columns": 20,
+    "relationships": 0
+  },
+  "visual_type_mappings": {
+    "Headcount by Department": "Automatic",
+    "Salary Analysis": "Automatic",
+    "Hiring Trend": "Automatic",
+    "Performance Matrix": "Automatic"
+  },
+  "approximations": []
+}

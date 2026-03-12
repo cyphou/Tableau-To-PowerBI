@@ -217,5 +217,206 @@ class TestBatchSummaryFormatting(unittest.TestCase):
         self.assertFalse(stats.theme_applied)
 
 
+# ── Consolidate reports tests ────────────────────────────────────────────────
+
+class TestConsolidateReports(unittest.TestCase):
+    """Tests for the --consolidate feature (run_consolidate_reports)."""
+
+    def test_consolidate_arg_exists(self):
+        """--consolidate CLI argument is recognized."""
+        from migrate import _build_argument_parser
+        parser = _build_argument_parser()
+        args = parser.parse_args(['--consolidate', '/tmp/test'])
+        self.assertEqual(args.consolidate, '/tmp/test')
+
+    def test_consolidate_default_none(self):
+        """--consolidate defaults to None."""
+        from migrate import _build_argument_parser
+        parser = _build_argument_parser()
+        args = parser.parse_args(['test.twbx'])
+        self.assertIsNone(args.consolidate)
+
+    def test_consolidate_nonexistent_dir(self):
+        """Non-existent directory returns error code 1."""
+        from migrate import run_consolidate_reports
+        result = run_consolidate_reports('/nonexistent/path/xyz_9999')
+        self.assertEqual(result, 1)
+
+    def test_consolidate_empty_dir(self):
+        """Empty directory with no reports returns 1."""
+        from migrate import run_consolidate_reports
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = run_consolidate_reports(tmpdir)
+            self.assertEqual(result, 1)
+
+    def test_consolidate_with_reports(self):
+        """Directory with migration reports produces consolidated dashboard."""
+        from migrate import run_consolidate_reports
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create fake migration report
+            report = {
+                "report_name": "TestWorkbook",
+                "created_at": "2025-01-01T00:00:00",
+                "summary": {
+                    "fidelity_score": 95,
+                    "total_items": 10,
+                    "exact": 9,
+                    "approximate": 1,
+                    "unsupported": 0,
+                },
+                "items": [],
+            }
+            rp = os.path.join(tmpdir, 'migration_report_TestWorkbook_20250101.json')
+            with open(rp, 'w', encoding='utf-8') as f:
+                json.dump(report, f)
+
+            # Create fake metadata
+            meta_dir = os.path.join(tmpdir, 'TestWorkbook')
+            os.makedirs(meta_dir, exist_ok=True)
+            metadata = {
+                "tmdl_stats": {"tables": 3, "measures": 5, "columns": 20, "relationships": 2},
+                "generated_output": {"pages": 2, "visuals": 8},
+            }
+            mp = os.path.join(meta_dir, 'migration_metadata.json')
+            with open(mp, 'w', encoding='utf-8') as f:
+                json.dump(metadata, f)
+
+            result = run_consolidate_reports(tmpdir)
+            self.assertEqual(result, 0)
+
+            # Check dashboard was created
+            dash = os.path.join(tmpdir, 'MIGRATION_DASHBOARD.html')
+            self.assertTrue(os.path.isfile(dash))
+
+            # Check HTML contains the workbook name
+            with open(dash, encoding='utf-8') as f:
+                html = f.read()
+            self.assertIn('TestWorkbook', html)
+
+    def test_consolidate_multiple_workbooks(self):
+        """Consolidation merges multiple workbooks into one dashboard."""
+        from migrate import run_consolidate_reports
+        with tempfile.TemporaryDirectory() as tmpdir:
+            for name in ['Sales', 'Marketing', 'Finance']:
+                report = {
+                    "report_name": name,
+                    "created_at": "2025-01-01T00:00:00",
+                    "summary": {
+                        "fidelity_score": 100,
+                        "total_items": 5,
+                        "exact": 5,
+                        "approximate": 0,
+                        "unsupported": 0,
+                    },
+                    "items": [],
+                }
+                rp = os.path.join(tmpdir, f'migration_report_{name}_20250101.json')
+                with open(rp, 'w', encoding='utf-8') as f:
+                    json.dump(report, f)
+
+                meta_dir = os.path.join(tmpdir, name)
+                os.makedirs(meta_dir, exist_ok=True)
+                metadata = {
+                    "tmdl_stats": {"tables": 2, "measures": 3, "columns": 10, "relationships": 1},
+                    "generated_output": {"pages": 1, "visuals": 4},
+                }
+                with open(os.path.join(meta_dir, 'migration_metadata.json'), 'w', encoding='utf-8') as f:
+                    json.dump(metadata, f)
+
+            result = run_consolidate_reports(tmpdir)
+            self.assertEqual(result, 0)
+
+            dash = os.path.join(tmpdir, 'MIGRATION_DASHBOARD.html')
+            self.assertTrue(os.path.isfile(dash))
+
+            with open(dash, encoding='utf-8') as f:
+                html = f.read()
+            for name in ['Sales', 'Marketing', 'Finance']:
+                self.assertIn(name, html)
+
+    def test_consolidate_nested_subdirectories(self):
+        """Reports in nested subdirectories are discovered."""
+        from migrate import run_consolidate_reports
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Simulate EDF-like structure: SIMPLE/migrated/..., COMPLEXE/migrated/...
+            for folder, wb_name in [('SIMPLE', 'SalesReport'), ('COMPLEXE', 'LODMaps')]:
+                sub = os.path.join(tmpdir, folder, 'migrated')
+                os.makedirs(sub, exist_ok=True)
+                report = {
+                    "report_name": wb_name,
+                    "created_at": "2025-01-01T00:00:00",
+                    "summary": {
+                        "fidelity_score": 98,
+                        "total_items": 8,
+                        "exact": 8,
+                        "approximate": 0,
+                        "unsupported": 0,
+                    },
+                    "items": [],
+                }
+                rp = os.path.join(sub, f'migration_report_{wb_name}_20250101.json')
+                with open(rp, 'w', encoding='utf-8') as f:
+                    json.dump(report, f)
+
+                meta_dir = os.path.join(sub, wb_name)
+                os.makedirs(meta_dir, exist_ok=True)
+                metadata = {
+                    "tmdl_stats": {"tables": 2, "measures": 4, "columns": 15, "relationships": 1},
+                    "generated_output": {"pages": 1, "visuals": 3},
+                }
+                with open(os.path.join(meta_dir, 'migration_metadata.json'), 'w', encoding='utf-8') as f:
+                    json.dump(metadata, f)
+
+            result = run_consolidate_reports(tmpdir)
+            self.assertEqual(result, 0)
+
+            dash = os.path.join(tmpdir, 'MIGRATION_DASHBOARD.html')
+            self.assertTrue(os.path.isfile(dash))
+
+            with open(dash, encoding='utf-8') as f:
+                html = f.read()
+            self.assertIn('SalesReport', html)
+            self.assertIn('LODMaps', html)
+
+    def test_consolidate_keeps_latest_report(self):
+        """When multiple report JSONs exist for same workbook, latest is used."""
+        from migrate import run_consolidate_reports
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Older report
+            old_report = {
+                "report_name": "Sales",
+                "created_at": "2025-01-01T00:00:00",
+                "summary": {"fidelity_score": 80, "total_items": 5, "exact": 4,
+                             "approximate": 1, "unsupported": 0},
+                "items": [],
+            }
+            with open(os.path.join(tmpdir, 'migration_report_Sales_20250101.json'), 'w', encoding='utf-8') as f:
+                json.dump(old_report, f)
+
+            # Newer report (higher fidelity)
+            new_report = {
+                "report_name": "Sales",
+                "created_at": "2025-06-01T00:00:00",
+                "summary": {"fidelity_score": 99, "total_items": 5, "exact": 5,
+                             "approximate": 0, "unsupported": 0},
+                "items": [],
+            }
+            with open(os.path.join(tmpdir, 'migration_report_Sales_20250601.json'), 'w', encoding='utf-8') as f:
+                json.dump(new_report, f)
+
+            meta_dir = os.path.join(tmpdir, 'Sales')
+            os.makedirs(meta_dir, exist_ok=True)
+            with open(os.path.join(meta_dir, 'migration_metadata.json'), 'w', encoding='utf-8') as f:
+                json.dump({"tmdl_stats": {"tables": 1}, "generated_output": {"pages": 1}}, f)
+
+            result = run_consolidate_reports(tmpdir)
+            self.assertEqual(result, 0)
+
+    def test_consolidate_function_exists(self):
+        """run_consolidate_reports is importable."""
+        from migrate import run_consolidate_reports
+        self.assertTrue(callable(run_consolidate_reports))
+
+
 if __name__ == '__main__':
     unittest.main()

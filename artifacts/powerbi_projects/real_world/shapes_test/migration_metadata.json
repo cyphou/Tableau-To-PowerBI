@@ -1,0 +1,40 @@
+{
+  "generated_at": "2026-03-12T09:13:26.749375",
+  "source": "Tableau Migration",
+  "report_name": "shapes_test",
+  "objects_converted": {
+    "worksheets": 1,
+    "dashboards": 0,
+    "datasources": 2,
+    "calculations": 4,
+    "parameters": 2,
+    "filters": 0,
+    "stories": 0,
+    "sets": 0,
+    "groups": 1,
+    "bins": 1,
+    "hierarchies": 0,
+    "user_filters": 0,
+    "actions": 1,
+    "custom_sql": 0
+  },
+  "generated_output": {
+    "pages": 1,
+    "visuals": 1,
+    "theme_applied": false,
+    "theme_detail": {
+      "status": "skipped",
+      "reason": "no dashboard colors detected"
+    }
+  },
+  "tmdl_stats": {
+    "tables": 6,
+    "measures": 6,
+    "columns": 38,
+    "relationships": 1
+  },
+  "visual_type_mappings": {
+    "Sheet 1": "Automatic"
+  },
+  "approximations": []
+}

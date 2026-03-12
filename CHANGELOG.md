@@ -1,5 +1,65 @@
 # Changelog
 
+## v8.0.0 — Code Quality, Enterprise Readiness
+
+### Sprint 21 — Refactor Large Functions ✅
+- **5 major function splits**: All functions exceeding 200 lines refactored into composable sub-functions
+  - `_build_visual_objects()` (569 lines) → 5 focused helpers: axis, legend, label, formatting, analytics
+  - `create_report_structure()` (513 lines) → 4 helpers: pages, report filters, metadata, bookmarks
+  - `_build_semantic_model()` (444 lines) → 4 helpers: tables, relationships, security, parameters
+  - `parse_prep_flow()` (361 lines) → 3 helpers: DAG traversal, M generation, datasource emission
+  - `create_visual_container()` (342 lines) → 3 helpers: visual config, query, layout
+- Committed as `642d18a`, pushed to main
+
+### Sprint 21b — Consolidated Migration Dashboard ✅
+- **`--consolidate DIR` CLI flag**: Scans directory tree for existing migration reports, generates unified `MIGRATION_DASHBOARD.html`
+- **`run_consolidate_reports()`**: Recursive discovery of `migration_report_*.json` and `migration_metadata.json`, groups by workbook (latest report wins)
+- 9 new tests in `test_cli_wiring.py` (TestConsolidateReports class)
+
+### Sprint 22 — Error Handling & Logging Hardening ✅
+- **33 exception handlers narrowed** across 7 files: `except Exception` → specific types (`json.JSONDecodeError`, `OSError`, `KeyError`, `ValueError`, `ET.ParseError`, `urllib.error.URLError`, etc.)
+- All catch blocks now log warnings with context instead of silently swallowing
+- 16 new error recovery tests in `test_error_paths.py`
+
+### Sprint 23 — DAX Conversion Accuracy Boost ✅
+- **REGEX character class expansion**: `[a-zA-Z]` → `CODE()`-based checks using `||`/`&&` operators
+- **REGEX extract improvements**: suffix capture, prefix+suffix, digit extraction patterns
+- **WINDOW frame precision**: Proper DAX `WINDOW` function generation instead of comment placeholders
+- **FIRST()/LAST()**: Changed from `0` to `RANKX`-based offsets for accurate first/last row detection
+- 35+ new tests in `test_dax_coverage.py`
+
+### Sprint 24 — Enterprise & Scale Features ✅
+- **`--parallel N`**: Thread-based parallel batch migration via `ThreadPoolExecutor`
+- **`--resume`**: Skip already-completed workbooks (checks output dir for existing `.pbip`)
+- **`--manifest FILE`**: JSON manifest with per-workbook config overrides
+- **`--jsonl-log FILE`**: Structured JSON Lines logging (batch_start/end, workbook_start/end, resume_skip)
+- Extracted `_migrate_single_workbook()` helper for cleaner batch orchestration
+- 21 new tests in `test_enterprise_features.py`
+
+### Sprint 25 — Visual Fidelity & Formatting Depth ✅
+- **Grid-based layout**: MIN_VISUAL_WIDTH=60, MIN_VISUAL_HEIGHT=40, MIN_GAP=4, page bounds clamping
+- **Dashboard tab strip → page navigator**: `_create_page_navigator()` for multi-dashboard projects
+- **Sheet-swap containers → bookmarks**: `_create_swap_bookmarks()` for dynamic zone visibility
+- **Motion chart annotation**: Pages shelf detection + dynamic zone visibility checks in assessment
+- **Custom shape migration**: Extracts shape files from `.twbx` → `RegisteredResources/`
+- 20 new tests in `test_visual_fidelity.py`
+
+### Sprint 26 — Test Quality & Coverage ✅
+- **Coverage-driven gap filling**: 123 new tests covering M connectors (28 types), M transforms (33 edge cases), DAX round-trip (18), DAX edge cases (25), assessment (4), type mapping (2), additional connectors (8)
+- **Coverage reached 81.9%** (up from 79.8%), passing the 80% threshold
+- Version bumped to 8.0.0
+
+### Customer Validation — EDF SA
+- 3/3 workbooks migrated at **100% fidelity** (lod_maps, TDB_DOAAT_INTER, Hypermarché)
+- Duration: 1.66s total for all 3 workbooks
+
+### Stats
+- **2,275 tests** across 45 test files, 0 failures, 15 skipped
+- **81.9% line coverage** (10,083 statements, 1,830 missing)
+- 209 new tests added across sprints 21b-26
+
+---
+
 ## v7.0.0 — CLI UX, DAX & M Hardening, Visual Refinements
 
 ### Sprint 17 — CLI Wiring & UX

@@ -414,13 +414,17 @@ class TestTableCalcAdvanced(unittest.TestCase):
         result = convert_tableau_formula_to_dax("INDEX()")
         self.assertIn("RANKX", result)
 
-    def test_first_to_zero(self):
+    def test_first_to_rankx(self):
         result = convert_tableau_formula_to_dax("FIRST()")
-        self.assertEqual(result.strip(), "0")
+        self.assertIn("RANKX", result)
+        self.assertIn("FIRST()", result)  # In comment
+        self.assertIn("ALLSELECTED", result)
 
-    def test_last_to_zero(self):
+    def test_last_to_rankx(self):
         result = convert_tableau_formula_to_dax("LAST()")
-        self.assertEqual(result.strip(), "0")
+        self.assertIn("RANKX", result)
+        self.assertIn("LAST()", result)  # In comment
+        self.assertIn("COUNTROWS", result)
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -1185,6 +1189,302 @@ class TestComplexFormulaCoverage(unittest.TestCase):
         )
         # Should not crash — may produce imperfect but valid output
         self.assertIsInstance(result, str)
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# Sprint 23 — REGEX Character Class, WINDOW Frame, LOD Multi-dim,
+#              FIRST/LAST, REGEXP_EXTRACT Suffix
+# ═══════════════════════════════════════════════════════════════════════
+
+class TestRegexpMatchCharacterClass(unittest.TestCase):
+    """Sprint 23.1 — REGEXP_MATCH character class expansion."""
+
+    def test_digits_only_full_match(self):
+        """^[0-9]+$ → ISNUMBER(VALUE(field))."""
+        result = convert_tableau_formula_to_dax('REGEXP_MATCH([ZipCode], "^[0-9]+$")')
+        self.assertIn('ISNUMBER', result)
+        self.assertIn('VALUE', result)
+        self.assertNotIn('REGEXP_MATCH', result.split('*/')[0] if '*/' in result else '')
+
+    def test_digits_shorthand_full_match(self):
+        """^\\d+$ → ISNUMBER(VALUE(field))."""
+        result = convert_tableau_formula_to_dax('REGEXP_MATCH([Code], "^\\d+$")')
+        self.assertIn('ISNUMBER', result)
+
+    def test_contains_digit(self):
+        """[0-9] → OR of CONTAINSSTRING for each digit."""
+        result = convert_tableau_formula_to_dax('REGEXP_MATCH([Name], "[0-9]")')
+        self.assertIn('CONTAINSSTRING', result)
+        self.assertIn('"0"', result)
+        self.assertIn('"9"', result)
+
+    def test_contains_digit_shorthand(self):
+        """\\d → OR of CONTAINSSTRING for each digit."""
+        result = convert_tableau_formula_to_dax('REGEXP_MATCH([Name], "\\d")')
+        self.assertIn('CONTAINSSTRING', result)
+
+    def test_alpha_full_match(self):
+        """^[a-zA-Z]+$ → CODE-based check with comment."""
+        result = convert_tableau_formula_to_dax('REGEXP_MATCH([Name], "^[a-zA-Z]+$")')
+        self.assertIn('[a-zA-Z]', result)  # In comment
+
+    def test_general_char_class_contains(self):
+        """[a-z] → CODE-based check."""
+        result = convert_tableau_formula_to_dax('REGEXP_MATCH([Name], "[a-z]")')
+        self.assertIn('CODE', result)
+
+    def test_uppercase_class_contains(self):
+        """[A-Z] → CODE-based check."""
+        result = convert_tableau_formula_to_dax('REGEXP_MATCH([Name], "[A-Z]")')
+        self.assertIn('CODE', result)
+
+    def test_general_bracket_class(self):
+        """[a-z0-9] → CODE-based check."""
+        result = convert_tableau_formula_to_dax('REGEXP_MATCH([Name], "[a-z0-9]")')
+        self.assertIn('CODE', result)
+        self.assertIn('||', result)
+
+    def test_existing_left_match_still_works(self):
+        """^literal → LEFT match must not regress."""
+        result = convert_tableau_formula_to_dax('REGEXP_MATCH([Name], "^ABC")')
+        self.assertIn('LEFT', result)
+        self.assertIn('"ABC"', result)
+
+    def test_existing_right_match_still_works(self):
+        """literal$ → RIGHT match must not regress."""
+        result = convert_tableau_formula_to_dax('REGEXP_MATCH([Name], "XYZ$")')
+        self.assertIn('RIGHT', result)
+        self.assertIn('"XYZ"', result)
+
+    def test_alternation_still_works(self):
+        result = convert_tableau_formula_to_dax('REGEXP_MATCH([Type], "foo|bar|baz")')
+        self.assertIn('CONTAINSSTRING', result)
+        self.assertIn('"foo"', result)
+        self.assertIn('"bar"', result)
+
+
+class TestRegexpExtractImproved(unittest.TestCase):
+    """Sprint 23.2 — REGEXP_EXTRACT suffix and prefix+suffix capture."""
+
+    def test_prefix_capture_unchanged(self):
+        """prefix(.*) → MID + SEARCH — must not regress."""
+        result = convert_tableau_formula_to_dax('REGEXP_EXTRACT([URL], "host=(.*)")')
+        self.assertIn('MID', result)
+        self.assertIn('SEARCH', result)
+        self.assertIn('"host="', result)
+
+    def test_suffix_capture(self):
+        """(.*) + suffix → LEFT + SEARCH."""
+        result = convert_tableau_formula_to_dax('REGEXP_EXTRACT([Path], "(.*)/file.txt")')
+        self.assertIn('LEFT', result)
+        self.assertIn('SEARCH', result)
+        self.assertIn('"/file.txt"', result)
+
+    def test_prefix_suffix_capture(self):
+        """prefix(.*)suffix → MID with calculated length."""
+        result = convert_tableau_formula_to_dax('REGEXP_EXTRACT([HTML], "<b>(.*)</b>")')
+        self.assertIn('MID', result)
+        self.assertIn('SEARCH', result)
+        self.assertIn('"<b>"', result)
+        self.assertIn('"</b>"', result)
+
+    def test_digit_extraction(self):
+        """(\\d+) → digit extraction pattern."""
+        result = convert_tableau_formula_to_dax('REGEXP_EXTRACT([Mixed], "(\\d+)")')
+        self.assertIn('MID', result)
+        self.assertIn('FIND', result)
+
+    def test_digit_extraction_bracket(self):
+        """([0-9]+) → digit extraction pattern."""
+        result = convert_tableau_formula_to_dax('REGEXP_EXTRACT([Mixed], "([0-9]+)")')
+        self.assertIn('MID', result)
+        self.assertIn('FIND', result)
+
+
+class TestWindowFramePrecision(unittest.TestCase):
+    """Sprint 23.3 — WINDOW frame boundary precision."""
+
+    def test_window_sum_with_frame(self):
+        """WINDOW_SUM(expr, -3, 0) → CALCULATE with WINDOW function."""
+        result = convert_tableau_formula_to_dax(
+            "WINDOW_SUM(SUM([Sales]), -3, 0)",
+            table_name="Orders",
+            column_table_map={"Sales": "Orders"},
+        )
+        self.assertIn('CALCULATE', result)
+        self.assertIn('WINDOW', result)
+        self.assertIn('-3', result)
+        self.assertIn('REL', result)
+        self.assertIn('ORDERBY', result)
+
+    def test_window_avg_with_frame(self):
+        """WINDOW_AVG(expr, -7, 0) → moving average."""
+        result = convert_tableau_formula_to_dax(
+            "WINDOW_AVG(AVG([Price]), -7, 0)",
+            table_name="Products",
+            column_table_map={"Price": "Products"},
+        )
+        self.assertIn('CALCULATE', result)
+        self.assertIn('WINDOW', result)
+        self.assertIn('ORDERBY', result)
+
+    def test_window_with_frame_and_compute_using(self):
+        """Frame + compute_using → WINDOW + ALLEXCEPT."""
+        result = convert_tableau_formula_to_dax(
+            "WINDOW_SUM(SUM([Sales]), -2, 2)",
+            table_name="Orders",
+            compute_using=["Date"],
+            column_table_map={"Sales": "Orders", "Date": "Orders"},
+        )
+        self.assertIn('CALCULATE', result)
+        self.assertIn('WINDOW', result)
+        self.assertIn('ALLEXCEPT', result)
+        self.assertIn('Date', result)
+
+    def test_window_no_frame_unchanged(self):
+        """WINDOW_SUM without frame → simple CALCULATE (no WINDOW)."""
+        result = convert_tableau_formula_to_dax(
+            "WINDOW_SUM(SUM([Sales]))",
+            table_name="Orders",
+        )
+        self.assertIn('CALCULATE', result)
+        self.assertNotIn('WINDOW(', result)
+
+    def test_window_max_with_frame(self):
+        """WINDOW_MAX(expr, -5, -1) → preceding window."""
+        result = convert_tableau_formula_to_dax(
+            "WINDOW_MAX(MAX([Temperature]), -5, -1)",
+            table_name="Weather",
+            column_table_map={"Temperature": "Weather"},
+        )
+        self.assertIn('CALCULATE', result)
+        self.assertIn('WINDOW', result)
+        self.assertIn('-5', result)
+        self.assertIn('-1', result)
+
+
+class TestLODMultiDimension(unittest.TestCase):
+    """Sprint 23.4 — Multi-dimension LOD expressions."""
+
+    def test_fixed_two_dims(self):
+        """{FIXED [A], [B] : SUM([C])} → CALCULATE(SUM, ALLEXCEPT(T, A, B))."""
+        result = convert_tableau_formula_to_dax(
+            "{FIXED [Region], [Category] : SUM([Sales])}",
+            table_name="Orders",
+            column_table_map={"Region": "Orders", "Category": "Orders", "Sales": "Orders"},
+        )
+        self.assertIn('ALLEXCEPT', result)
+        self.assertIn("'Orders'[Region]", result)
+        self.assertIn("'Orders'[Category]", result)
+
+    def test_fixed_three_dims(self):
+        """{FIXED [A], [B], [C] : COUNT([D])} → three dimensions in ALLEXCEPT."""
+        result = convert_tableau_formula_to_dax(
+            "{FIXED [Year], [Quarter], [Region] : COUNT([OrderID])}",
+            table_name="Sales",
+            column_table_map={
+                "Year": "Sales", "Quarter": "Sales",
+                "Region": "Sales", "OrderID": "Sales"
+            },
+        )
+        self.assertIn('ALLEXCEPT', result)
+        self.assertIn("'Sales'[Year]", result)
+        self.assertIn("'Sales'[Quarter]", result)
+        self.assertIn("'Sales'[Region]", result)
+
+    def test_exclude_multi_dim(self):
+        """{EXCLUDE [A], [B] : AVG([C])} → REMOVEFILTERS on both dims."""
+        result = convert_tableau_formula_to_dax(
+            "{EXCLUDE [State], [City] : AVG([Profit])}",
+            table_name="Geo",
+            column_table_map={"State": "Geo", "City": "Geo", "Profit": "Geo"},
+        )
+        self.assertIn('REMOVEFILTERS', result)
+        self.assertIn("'Geo'[State]", result)
+        self.assertIn("'Geo'[City]", result)
+
+    def test_fixed_cross_table_dims(self):
+        """Dimensions from different tables."""
+        result = convert_tableau_formula_to_dax(
+            "{FIXED [Region], [ProductName] : SUM([Sales])}",
+            table_name="Orders",
+            column_table_map={
+                "Region": "Orders", "ProductName": "Products", "Sales": "Orders"
+            },
+        )
+        self.assertIn('ALLEXCEPT', result)
+        self.assertIn("'Products'[ProductName]", result)
+        self.assertIn("'Orders'[Region]", result)
+
+
+class TestFirstLastImproved(unittest.TestCase):
+    """Sprint 23.5 — FIRST()/LAST() → RANKX-based offset."""
+
+    def test_first_contains_rankx(self):
+        result = convert_tableau_formula_to_dax("FIRST()")
+        self.assertIn('RANKX', result)
+        self.assertIn('ALLSELECTED', result)
+        self.assertIn('FIRST()', result)  # In comment
+
+    def test_last_contains_countrows(self):
+        result = convert_tableau_formula_to_dax("LAST()")
+        self.assertIn('COUNTROWS', result)
+        self.assertIn('ALLSELECTED', result)
+        self.assertIn('RANKX', result)
+
+    def test_first_in_if_expression(self):
+        """IF FIRST() = 0 THEN ... should produce valid DAX."""
+        result = convert_tableau_formula_to_dax(
+            "IF FIRST() = 0 THEN [Sales] END",
+            table_name="T",
+            column_table_map={"Sales": "T"},
+        )
+        self.assertIn('IF(', result)
+        self.assertIn('RANKX', result)
+
+    def test_last_in_arithmetic(self):
+        """LAST() + 1 should maintain structure."""
+        result = convert_tableau_formula_to_dax("LAST() + 1")
+        self.assertIn('COUNTROWS', result)
+        self.assertIn('+ 1', result)
+
+
+class TestCharClassHelper(unittest.TestCase):
+    """Test _char_class_to_code_check helper function."""
+
+    def test_single_range(self):
+        from tableau_export.dax_converter import _char_class_to_code_check
+        result = _char_class_to_code_check('a-z', 'X')
+        self.assertIn('CODE(X)', result)
+        self.assertIn('>= 97', result)
+        self.assertIn('<= 122', result)
+
+    def test_multiple_ranges(self):
+        from tableau_export.dax_converter import _char_class_to_code_check
+        result = _char_class_to_code_check('a-zA-Z', 'X')
+        self.assertIn('||', result)
+        self.assertIn('>= 65', result)  # A
+        self.assertIn('<= 90', result)  # Z
+        self.assertIn('>= 97', result)  # a
+        self.assertIn('<= 122', result)  # z
+
+    def test_single_char(self):
+        from tableau_export.dax_converter import _char_class_to_code_check
+        result = _char_class_to_code_check('x', 'C')
+        self.assertIn(f'= {ord("x")}', result)
+
+    def test_mixed_range_and_char(self):
+        from tableau_export.dax_converter import _char_class_to_code_check
+        result = _char_class_to_code_check('0-9_', 'C')
+        self.assertIn('||', result)
+        self.assertIn('>= 48', result)  # 0
+        self.assertIn('<= 57', result)  # 9
+        self.assertIn(f'= {ord("_")}', result)
+
+    def test_empty_returns_none(self):
+        from tableau_export.dax_converter import _char_class_to_code_check
+        result = _char_class_to_code_check('', 'X')
+        self.assertIsNone(result)
 
 
 if __name__ == '__main__':

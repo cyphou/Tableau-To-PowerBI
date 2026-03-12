@@ -686,7 +686,19 @@ def _check_interactivity(extracted: Dict) -> CategoryResult:
     actions = extracted.get("actions", [])
     stories = extracted.get("stories", [])
 
-    if not actions and not stories:
+    # Check for pages shelf / dynamic zones before early return
+    worksheets = extracted.get("worksheets", [])
+    dashboards = extracted.get("dashboards", [])
+    has_pages_shelf = any(
+        ws.get("pages_shelf") and ws["pages_shelf"].get("field")
+        for ws in worksheets
+    )
+    dz_count = sum(
+        len(db.get("dynamic_zone_visibility", []))
+        for db in dashboards
+    )
+
+    if not actions and not stories and not has_pages_shelf and not dz_count:
         cat.checks.append(CheckItem(
             cat.name, "No actions or stories", PASS,
             "No interactivity features detected.",
@@ -731,6 +743,30 @@ def _check_interactivity(extracted: Dict) -> CategoryResult:
             f"{len(stories)} story/stories with {total_points} story point(s) → bookmarks.",
             "Stories are converted to bookmarks. Review bookmark state "
             "and navigator after migration.",
+        ))
+
+    # Pages shelf / motion charts (animation)
+    pages_worksheets = [
+        ws.get("name", "?") for ws in worksheets
+        if ws.get("pages_shelf") and ws["pages_shelf"].get("field")
+    ]
+    if pages_worksheets:
+        cat.checks.append(CheckItem(
+            cat.name, "Pages Shelf / Animation", WARN,
+            f"{len(pages_worksheets)} worksheet(s) use Pages shelf (animation): "
+            f"{', '.join(pages_worksheets[:5])}.",
+            "Tableau Pages shelf animates through dimension values. "
+            "Converted to a slicer. Power BI Play Axis (preview) may "
+            "offer similar animation — enable it manually if needed.",
+        ))
+
+    # Dynamic zone visibility (sheet-swap)
+    if dz_count:
+        cat.checks.append(CheckItem(
+            cat.name, "Dynamic Zone Visibility", INFO,
+            f"{dz_count} dynamic zone(s) detected → converted to bookmarks.",
+            "Dynamic zone visibility (sheet-swap) is approximated via "
+            "bookmarks. Configure visual visibility toggles in PBI Desktop.",
         ))
 
     return cat
