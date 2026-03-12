@@ -1,5 +1,25 @@
 # Changelog
 
+## v10.0.0 — Test Coverage Push & Quality
+
+### Sprint 34 — Documentation, Version Bump & Release ✅
+- **34.1: DEVELOPMENT_PLAN.md refresh**: Updated version header, test counts (3,342 across 60 files), coverage (93.08%).
+- **34.2: CHANGELOG.md finalized**: Added v10.0.0 entry with Sprint 33-34 details.
+- **34.3: copilot-instructions.md update**: Updated test count and coverage figures.
+- **34.4: Version bump**: `pyproject.toml` and `powerbi_import/__init__.py` bumped from 9.0.0 → 10.0.0.
+- **34.5: Final validation**: Full test suite pass (3,342 tests, 93.08% coverage).
+
+### Sprint 33 — Dedicated Test Files for Uncovered Modules ✅
+- **33.1: test_telemetry.py** (41 tests): Comprehensive tests for `telemetry.py` — `IsTelemetryEnabled` (7), `TelemetryCollectorInit` (6), `StartFinish` (3), `Recording` (5), `Save` (4), `Send` (4), `GetToolVersion` (3), `ReadLog` (4), `Summary` (3), `GetData` (2). Coverage 80.4% → **97.9%**.
+- **33.2: test_comparison_report.py** (20 tests): Tests for `comparison_report.py` — `LoadJson` (3), `LoadExtracted` (2), `LoadPbip` (3), `CompareWorksheets` (3), `CompareCalculations` (2), `CompareDatasources` (3), `GenerateComparisonReport` (3), `Main` (1). Coverage 87.9% → **91.1%**.
+- **33.3: test_telemetry_dashboard.py** (18 tests): Tests for `telemetry_dashboard.py` — `Esc` (5), `LoadReports` (5), `GenerateDashboard` (6), `Main` (2). Module now fully covered.
+- **33.4: test_goals_generator.py** (24 tests): Tests for `goals_generator.py` — `CadenceRefresh` (2), `BuildGoal` (10), `GenerateGoalsJson` (8), `WriteGoalsArtifact` (4). Coverage → **100%**.
+- **33.5: test_wizard.py** (24 tests): Tests for `wizard.py` — `InputHelper` (6), `YesNo` (8), `Choose` (5), `WizardToArgs` (3), `RunWizard` (2).
+- **33.6: test_import_to_powerbi.py** (19 tests): Tests for `import_to_powerbi.py` — `Init` (2), `LoadConvertedObjects` (6), `ImportAll` (5), `GeneratePowerBIProject` (4), `Main` (2). Coverage 79.4% → **100%**.
+- **Overall: 3,196 → 3,342 tests** (+146), coverage **92.76% → 93.08%**, 6 new test files, 60 total test files.
+
+---
+
 ## v9.0.0 — Coverage, Hyper Data, Modern Tableau & Polish
 
 ### Sprint 32 — Documentation, Polish & Release ✅

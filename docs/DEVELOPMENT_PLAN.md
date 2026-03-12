@@ -1,9 +1,43 @@
 # Development Plan — Tableau to Power BI Migration Tool
 
-**Version:** v9.0.0 (in progress)  
-**Date:** 2026-03-12  
-**Current state:** Sprint 29 done — **2,666 tests** across 48 test files (+conftest.py), 0 failures, 88.1% coverage  
-**Previous baseline:** v3.5.0 — 887 → v4.0.0 — 1,387 → v5.0.0 — 1,543 → v5.1.0 — 1,595 → v5.5.0 — 1,777 → v6.0.0 — 1,889 → v6.1.0 — 1,997 → v7.0.0 — 2,057 → Sprint 21 — 2,066 → v8.0.0 — 2,275 → Sprint 27 — 2,542 → Sprint 28 — 2,616 → **Sprint 29 — 2,666** → v9.0.0 — target 2,800+ tests
+**Version:** v10.0.0  
+**Date:** 2026-07-16  
+**Current state:** Sprint 34 done — **3,342 tests** across 60 test files (+conftest.py), 0 failures, 93.08% coverage  
+**Previous baseline:** v3.5.0 — 887 → v4.0.0 — 1,387 → v5.0.0 — 1,543 → v5.1.0 — 1,595 → v5.5.0 — 1,777 → v6.0.0 — 1,889 → v6.1.0 — 1,997 → v7.0.0 — 2,057 → Sprint 21 — 2,066 → v8.0.0 — 2,275 → Sprint 27 — 2,542 → Sprint 28 — 2,616 → Sprint 29 — 2,666 → v9.0.0 — 3,196 → **v10.0.0 — 3,342**
+
+---
+
+## v10.0.0 — Test Coverage Push & Quality
+
+### Motivation
+
+v9.0.0 reached 3,196 tests and 92.76% coverage across 54 test files. v10.0.0 focuses on closing the remaining test gaps by creating dedicated test files for every module that lacked one, pushing toward the 95% coverage target.
+
+### Sprint 33 — Dedicated Test Files for Uncovered Modules ✅ COMPLETED
+
+**Goal:** Create test files for all source modules without dedicated coverage. Add 100+ new tests.  
+**Result:** 6 new test files, 146 new tests, coverage 92.76% → 93.08%. Committed as part of v10.0.0 release.
+
+| # | Item | File(s) | Status | Details |
+|---|------|---------|--------|---------|
+| 33.1 | **test_telemetry.py** | `tests/test_telemetry.py` | ✅ Done | 41 tests across 10 classes — `telemetry.py` 80.4% → **97.9%** |
+| 33.2 | **test_comparison_report.py** | `tests/test_comparison_report.py` | ✅ Done | 20 tests across 8 classes — `comparison_report.py` 87.9% → **91.1%** |
+| 33.3 | **test_telemetry_dashboard.py** | `tests/test_telemetry_dashboard.py` | ✅ Done | 18 tests across 4 classes — module fully covered |
+| 33.4 | **test_goals_generator.py** | `tests/test_goals_generator.py` | ✅ Done | 24 tests across 4 classes — `goals_generator.py` → **100%** |
+| 33.5 | **test_wizard.py** | `tests/test_wizard.py` | ✅ Done | 24 tests across 5 classes — InputHelper, YesNo, Choose, WizardToArgs, RunWizard |
+| 33.6 | **test_import_to_powerbi.py** | `tests/test_import_to_powerbi.py` | ✅ Done | 19 tests across 5 classes — `import_to_powerbi.py` 79.4% → **100%** |
+
+### Sprint 34 — Documentation, Version Bump & Release ✅ COMPLETED
+
+**Goal:** Update all docs to reflect v10.0.0 state, bump version, commit and push.
+
+| # | Item | File(s) | Status | Details |
+|---|------|---------|--------|---------|
+| 34.1 | **Version bump** | `pyproject.toml`, `__init__.py` | ✅ Done | 9.0.0 → 10.0.0 |
+| 34.2 | **CHANGELOG.md** | `CHANGELOG.md` | ✅ Done | v10.0.0 entry with Sprint 33-34 details |
+| 34.3 | **DEVELOPMENT_PLAN.md** | `docs/DEVELOPMENT_PLAN.md` | ✅ Done | Header + sprint sections updated |
+| 34.4 | **copilot-instructions.md** | `.github/copilot-instructions.md` | ✅ Done | Test count and coverage updated |
+| 34.5 | **Final validation & push** | — | ✅ Done | 3,342 tests, 93.08% coverage, pushed |
 
 ---
 

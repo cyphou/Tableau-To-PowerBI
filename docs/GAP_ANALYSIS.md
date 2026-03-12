@@ -1,8 +1,8 @@
 # Comprehensive Gap Analysis — Tableau to Power BI Migration Tool
 
-**Date:** 2026-03-15 — updated through v9.0.0 (Sprints 13-32)  
+**Date:** 2026-07-16 — updated through v10.0.0 (Sprints 13-34)  
 **Scope:** Every source file, test file, CI/CD, docs, config, and cross-project comparison with TableauToFabric  
-**Status:** 3,196 tests passing across 54 test files
+**Status:** 3,342 tests passing across 60 test files, 93.08% coverage
 
 ### Implementation Coverage
 
@@ -10,7 +10,7 @@
  EXTRACTION          GENERATION         INFRA / CI         DOCUMENTATION
 +----------------+  +----------------+  +----------------+  +----------------+
 | 20 object types|  | PBIR v4.0      |  | 5-stage CI/CD  |  | 13 doc files   |
-| .twb/.twbx/.tfl|  | TMDL semantic  |  | 3,196 tests    |  | DAX reference  |
+| .twb/.twbx/.tfl|  | TMDL semantic  |  | 3,342 tests    |  | DAX reference  |
 | 180+ DAX conv  |  | 60+ visuals    |  | Artifact valid |  | M query ref    |
 | 33 connectors  |  | Drill-through  |  | Fabric deploy  |  | Prep ref       |
 | 40+ transforms |  | Slicer modes   |  | Env configs    |  | Architecture   |
@@ -152,7 +152,7 @@
 ## 3. Test Coverage
 
 ### What IS implemented
-- **887 tests across 18 test files** (original) + **2,309 additional tests in v3.6–v9.0.0**, totaling **3,196 tests across 54 test files** including shared fixtures in `conftest.py`:
+- **887 tests across 18 test files** (original) + **2,455 additional tests in v3.6–v10.0.0**, totaling **3,342 tests across 60 test files** including shared fixtures in `conftest.py`:
 
 | Test File | Tests | Lines | Coverage Focus |
 |-----------|-------|-------|----------------|
@@ -177,6 +177,12 @@
 | `test_sprint_13.py` | 53 | ~450 | Sprint 13: custom visual GUIDs, stepped colors, dynamic reference lines, multi-DS routing, sortByColumn validation, nested LOD cleanup |
 | `test_pbi_service.py` | 33 | ~350 | Sprint 14: PBIServiceClient, PBIXPackager, PBIWorkspaceDeployer — structural + integration tests |
 | `test_server_client.py` | 26 | ~280 | Sprint 15: TableauServerClient — auth, list, download, batch, error handling (mock-based) |
+| `test_telemetry.py` | 41 | ~286 | Sprint 33: Telemetry — enabled detection, collector init/start/finish/recording/save/send, version, read log, summary, get data |
+| `test_comparison_report.py` | 20 | ~230 | Sprint 33: Comparison report — load JSON/extracted/PBIP, compare worksheets/calculations/datasources, generate report |
+| `test_telemetry_dashboard.py` | 18 | ~230 | Sprint 33: Telemetry dashboard — escape, load reports, generate dashboard, main |
+| `test_goals_generator.py` | 24 | ~190 | Sprint 33: Goals generator — cadence refresh, build goal, generate goals JSON, write artifact |
+| `test_wizard.py` | 24 | ~180 | Sprint 33: Wizard — input helper, yes/no, choose, wizard_to_args, run_wizard |
+| `test_import_to_powerbi.py` | 19 | ~185 | Sprint 33: Import orchestrator — init, load converted objects, import_all, generate project, main |
 
 ### What is MISSING or INCOMPLETE
 - **No mocking of file I/O**: Tests write real files to tempdir — no mocking of file system operations
@@ -405,7 +411,7 @@
 | **M Query** | **33 connectors** (+8: OData, Google Analytics, Azure Blob/ADLS, Vertica, Impala, Hadoop Hive, Presto), 30+ transforms, **DAX-to-M expression converter** (calc columns as M steps), **Hyper data → M #table()** | OAuth, gateway, incremental refresh | Fallback #table, BigQuery/Oracle config | Low |
 | **Prep Flow** | DAG traversal, 20+ action types, **ExtractValues**, **CustomCalculation**, **Script/Prediction/CrossJoin/PublishedDataSource** handlers, 5 new connection mappings, **Hyper data loading** | — | Prep VAR/VARP joins | Low |
 | **Pre-Migration** | **Assessment** (8-category scoring: datasource/calculation/visual/filter/data model/interactivity/extract/scope), **Strategy advisor** (Import/DirectQuery/Composite), JSON report export | — | — | Low |
-| **Test Coverage** | **3,196 tests across 54 files** (+conftest.py shared fixtures) | Perf tests, integration tests | — | Low |
+| **Test Coverage** | **3,342 tests across 60 files** (+conftest.py shared fixtures), 93.08% coverage | Perf tests, integration tests | — | Low |
 | **CI/CD** | **5-stage pipeline** (lint+ruff, test, **strict validate+twbx**, **staging deploy**, production deploy), **pip caching**, **PBIR schema forward-compat check** (`--check-schema`), **PyPI auto-publish workflow** (`publish.yml`), **plugin system** (`plugins.py` + `examples/plugins/`) | Coverage reporting, Windows CI | — | Low |
 | **Documentation** | **13 docs** + copilot instructions (ARCHITECTURE, KNOWN_LIMITATIONS, MIGRATION_CHECKLIST, DEPLOYMENT_GUIDE, TABLEAU_VERSION_COMPATIBILITY, CONTRIBUTING) | API docs | — | Low |
 | **Config** | 11 env vars, 3 environments, **settings validation**, **dry-run**, **calendar/culture CLI**, **.env.example** | Config file, connection templating | — | Low |
