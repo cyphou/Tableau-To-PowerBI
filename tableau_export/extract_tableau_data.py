@@ -396,6 +396,21 @@ class TableauExtractor:
                 'domain_type': param.get('param-domain-type', ''),
                 'allowable_values': self.extract_allowable_values(param),
             }
+
+            # Detect dynamic (database-query-driven) parameters in old format
+            if param.get('param-domain-type') == 'database':
+                param_data['domain_type'] = 'database'
+                query_elem = param.find('.//query')
+                if query_elem is None:
+                    query_elem = param.find('.//calculation')
+                if query_elem is not None:
+                    param_data['query'] = query_elem.get('formula', '') or query_elem.text or ''
+                conn_elem = param.find('.//connection')
+                if conn_elem is not None:
+                    param_data['query_connection'] = conn_elem.get('class', '')
+                    param_data['query_dbname'] = conn_elem.get('dbname', '')
+                param_data['refresh_on_open'] = True
+
             parameters.append(param_data)
         
         # Format 2: New-style <parameters><parameter> elements
@@ -420,6 +435,31 @@ class TableauExtractor:
                 'domain_type': domain_type,
                 'allowable_values': self.extract_allowable_values(param),
             }
+
+            # Detect dynamic (database-query-driven) parameters (Tableau 2024.3+)
+            query_elem = param.find('.//query')
+            if query_elem is not None:
+                param_data['domain_type'] = 'database'
+                param_data['query'] = query_elem.text or query_elem.get('value', '')
+                conn_elem = param.find('.//query-connection')
+                if conn_elem is None:
+                    conn_elem = param.find('.//connection')
+                if conn_elem is not None:
+                    param_data['query_connection'] = conn_elem.get('class', '')
+                    param_data['query_dbname'] = conn_elem.get('dbname', '')
+                param_data['refresh_on_open'] = (
+                    param.get('refresh-on-open', 'false').lower() == 'true'
+                )
+            elif param.get('param-domain-type') == 'database':
+                # Column-style dynamic parameter
+                param_data['domain_type'] = 'database'
+                sql_elem = param.find('.//query')
+                if sql_elem is None:
+                    sql_elem = param.find('.//calculation')
+                if sql_elem is not None:
+                    param_data['query'] = sql_elem.get('formula', '') or sql_elem.text or ''
+                param_data['refresh_on_open'] = True
+
             parameters.append(param_data)
         
         self.workbook_data['parameters'] = parameters

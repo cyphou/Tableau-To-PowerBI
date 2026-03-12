@@ -78,7 +78,7 @@ class PowerBIProjectGenerator:
     
     def generate_project(self, report_name, converted_objects, calendar_start=None,
                          calendar_end=None, culture=None, model_mode='import',
-                         output_format='pbip', paginated=False):
+                         output_format='pbip', paginated=False, languages=None):
         """
         Generates a complete Power BI Project
         
@@ -103,6 +103,7 @@ class PowerBIProjectGenerator:
         self._model_mode = model_mode or 'import'
         self._output_format = output_format or 'pbip'
         self._paginated = paginated
+        self._languages = languages
         
         # Create project structure
         project_dir = os.path.join(self.output_dir, report_name)
@@ -232,6 +233,7 @@ class PowerBIProjectGenerator:
                 calendar_end=getattr(self, '_calendar_end', None),
                 culture=getattr(self, '_culture', None),
                 model_mode=getattr(self, '_model_mode', 'import'),
+                languages=getattr(self, '_languages', None),
             )
             
             print(f"  \u2713 TMDL model created with:")

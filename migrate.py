@@ -203,7 +203,7 @@ def run_extraction(tableau_file):
 
 def run_generation(report_name=None, output_dir=None, calendar_start=None,
                    calendar_end=None, culture=None, model_mode='import',
-                   output_format='pbip', paginated=False):
+                   output_format='pbip', paginated=False, languages=None):
     """Generate Power BI project (.pbip) from extracted data
 
     Args:
@@ -213,6 +213,7 @@ def run_generation(report_name=None, output_dir=None, calendar_start=None,
         calendar_end: End year for Calendar table (default: 2030)
         culture: Override culture/locale for semantic model (e.g., fr-FR)
         paginated: If True, generate paginated report layout alongside interactive report
+        languages: Comma-separated additional locales (e.g. 'fr-FR,de-DE')
     """
     global _stats
     print_step(2, 2, "POWER BI PROJECT GENERATION")
@@ -225,7 +226,7 @@ def run_generation(report_name=None, output_dir=None, calendar_start=None,
         importer.import_all(generate_pbip=True, report_name=report_name, output_dir=output_dir,
                             calendar_start=calendar_start, calendar_end=calendar_end,
                             culture=culture, model_mode=model_mode,
-                            output_format=output_format)
+                            output_format=output_format, languages=languages)
 
         # Collect generation stats from the output
         base_dir = output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
@@ -1285,6 +1286,20 @@ def _build_argument_parser():
     )
 
     parser.add_argument(
+        '--languages',
+        metavar='LOCALES',
+        default=None,
+        help='Comma-separated additional locales for multi-language TMDL cultures (e.g., fr-FR,de-DE,es-ES)'
+    )
+
+    parser.add_argument(
+        '--goals',
+        action='store_true',
+        default=False,
+        help='Generate PBI Goals/Scorecard JSON from Tableau Pulse metrics (requires Fabric workspace for deployment)'
+    )
+
+    parser.add_argument(
         '--assess',
         action='store_true',
         help='Run pre-migration assessment and strategy analysis after extraction (no generation)'
@@ -1917,6 +1932,7 @@ def main():
             model_mode=args.mode,
             output_format=args.output_format,
             paginated=getattr(args, 'paginated', False),
+            languages=getattr(args, 'languages', None),
         )
         if results['generation']:
             progress.complete(f"Generated {source_basename}")
@@ -1949,6 +1965,44 @@ def main():
                 print(f"  ⚠ Incremental merge skipped: directory not found")
         except Exception as exc:
             print(f"  ⚠ Incremental merge failed: {exc}")
+
+    # Step 3b: Goals/Scorecard generation (optional, --goals flag)
+    if getattr(args, 'goals', False) and results.get('generation'):
+        try:
+            sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'tableau_export'))
+            sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'powerbi_import'))
+            from pulse_extractor import extract_pulse_metrics, has_pulse_metrics
+            from goals_generator import generate_goals_json, write_goals_artifact
+            import xml.etree.ElementTree as _ET
+
+            twb_path = args.workbook
+            pulse_root = None
+            if twb_path and os.path.isfile(twb_path):
+                if twb_path.endswith('.twbx'):
+                    import zipfile
+                    with zipfile.ZipFile(twb_path, 'r') as z:
+                        for name in z.namelist():
+                            if name.endswith('.twb'):
+                                with z.open(name) as f:
+                                    pulse_root = _ET.parse(f).getroot()
+                                break
+                else:
+                    pulse_root = _ET.parse(twb_path).getroot()
+
+            if pulse_root is not None and has_pulse_metrics(pulse_root):
+                metrics = extract_pulse_metrics(pulse_root)
+                if metrics:
+                    scorecard = generate_goals_json(metrics, report_name=source_basename)
+                    out_dir = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
+                    project_dir = os.path.join(out_dir, source_basename)
+                    filepath = write_goals_artifact(scorecard, project_dir)
+                    print(f"  ✓ Goals scorecard: {filepath} ({len(metrics)} goals)")
+                else:
+                    print("  ⚠ No Pulse metrics found in workbook")
+            else:
+                print("  ⚠ No Pulse metrics found in workbook")
+        except Exception as exc:
+            print(f"  ⚠ Goals generation failed: {exc}")
 
     # Step 4: Migration report
     progress.start("Generating migration report")

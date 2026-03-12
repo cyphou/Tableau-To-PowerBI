@@ -388,7 +388,7 @@ def resolve_table_for_formula(formula, datasource_name=None, dax_context=None):
 
 def generate_tmdl(datasources, report_name, extra_objects, output_dir,
                   calendar_start=None, calendar_end=None, culture=None,
-                  model_mode='import'):
+                  model_mode='import', languages=None):
     """
     Main entry point: directly convert extracted Tableau data to TMDL files.
 
@@ -403,6 +403,7 @@ def generate_tmdl(datasources, report_name, extra_objects, output_dir,
         culture: Override culture/locale (default: en-US)
         model_mode: 'import', 'directquery', or 'composite'
                     Controls partition mode for all tables
+        languages: Comma-separated additional locales (e.g. 'fr-FR,de-DE')
 
     Returns:
         dict: Statistics about the generated model
@@ -416,6 +417,10 @@ def generate_tmdl(datasources, report_name, extra_objects, output_dir,
                                   calendar_end=calendar_end,
                                   culture=culture,
                                   model_mode=model_mode)
+
+    # Attach languages metadata for _write_tmdl_files
+    if languages:
+        model['model']['_languages'] = languages
 
     # Step 2: Write TMDL files
     _write_tmdl_files(model, output_dir)
@@ -2080,6 +2085,61 @@ def _create_parameter_tables(model, parameters, main_table_name):
         else:
             default_expr = default_value if default_value else '0'
 
+        if domain_type == 'database':
+            # Dynamic parameter — database-query-driven (Tableau 2024.3+)
+            # Generate M table using Value.NativeQuery() for database refresh
+            query_sql = param.get('query', '')
+            conn_class = param.get('query_connection', '')
+            dbname = param.get('query_dbname', '')
+
+            # Build M expression referencing native query
+            if query_sql:
+                escaped_sql = query_sql.replace('"', '""')
+                m_source = f'Value.NativeQuery(#"Source", "{escaped_sql}", null, [EnableFolding=true])'
+            else:
+                # Fallback — no query available, produce DAX table
+                m_source = None
+
+            col_name = "Value"
+            param_table = {
+                "name": caption,
+                "columns": [{
+                    "name": col_name,
+                    "dataType": pbi_type,
+                    "sourceColumn": col_name,
+                    "annotations": [
+                        {"name": "displayFolder", "value": "Parameters"}
+                    ]
+                }],
+                "measures": [{
+                    "name": caption,
+                    "expression": f"SELECTEDVALUE('{caption.replace(chr(39), chr(39)*2)}'[{col_name}], {default_expr})",
+                    "annotations": [
+                        {"name": "displayFolder", "value": "Parameters"},
+                        {"name": "MigrationNote",
+                         "value": f"Dynamic parameter from Tableau — source query: {query_sql[:200]}"}
+                    ]
+                }],
+                "partitions": [{
+                    "name": caption,
+                    "mode": "import",
+                    "source": {
+                        "type": "m",
+                        "expression": m_source or f'#table({{"{col_name}"}}, {{{{"{default_value}"}}}})'
+                    }
+                }],
+                "annotations": [
+                    {"name": "MigrationNote",
+                     "value": "Tableau dynamic parameter — configure Power Query source connection"}
+                ]
+            }
+            if param.get('refresh_on_open'):
+                param_table['refreshPolicy'] = {
+                    'type': 'automatic'
+                }
+            model["model"]["tables"].append(param_table)
+            continue
+
         if domain_type == 'any' or not allowable_values:
             for table in model["model"]["tables"]:
                 if table.get("name") == main_table_name:
@@ -3139,6 +3199,11 @@ def _write_tmdl_files(model_data, output_dir):
         os.makedirs(cultures_dir, exist_ok=True)
         _write_culture_tmdl(cultures_dir, culture, tables)
 
+    # 9b. Additional language cultures (--languages flag)
+    extra_languages = model.get('_languages', '')
+    if extra_languages:
+        _write_multi_language_cultures(def_dir, extra_languages, tables)
+
     return def_dir
 
 
@@ -3170,10 +3235,12 @@ def _write_perspectives_tmdl(def_dir, perspectives):
 
 def _write_culture_tmdl(cultures_dir, culture_name, tables):
     """
-    Write a culture TMDL file with linguistic metadata.
+    Write a culture TMDL file with linguistic metadata and translations.
 
     Generates translation entries for all table and column names
-    in the model for the specified culture/locale.
+    in the model for the specified culture/locale.  When the culture
+    differs from en-US, also writes ``translatedDisplayFolders`` and
+    ``translatedDescriptions`` for measures and columns.
 
     Args:
         cultures_dir: Path to the cultures/ folder
@@ -3182,7 +3249,7 @@ def _write_culture_tmdl(cultures_dir, culture_name, tables):
     """
     lines = [f"culture {_quote_name(culture_name)}"]
 
-    # Generate linguistic metadata entries for tables and columns
+    # Linguistic metadata
     lines.append("\tlinguisticMetadata =")
     lines.append('\t\t```')
     metadata = {
@@ -3194,9 +3261,208 @@ def _write_culture_tmdl(cultures_dir, culture_name, tables):
     lines.append('\t\t\t```')
     lines.append("")
 
+    # Translation section — translatedDisplayFolders + translatedDescriptions
+    folder_translations = _get_display_folder_translations(culture_name)
+    if folder_translations and tables:
+        for table in tables:
+            tbl_name = table.get('name', '')
+            if not tbl_name:
+                continue
+            # Translate display folders for measures
+            for measure in table.get('measures', []):
+                for ann in measure.get('annotations', []):
+                    if ann.get('name') == 'displayFolder':
+                        orig = ann.get('value', '')
+                        translated = folder_translations.get(orig, '')
+                        if translated and translated != orig:
+                            lines.append(
+                                f"\ttranslatedDisplayFolder {_quote_name(tbl_name)}"
+                                f".{_quote_name(measure.get('name', ''))}"
+                                f" = {_quote_name(translated)}"
+                            )
+            # Translate display folders for columns
+            for col in table.get('columns', []):
+                for ann in col.get('annotations', []):
+                    if ann.get('name') == 'displayFolder':
+                        orig = ann.get('value', '')
+                        translated = folder_translations.get(orig, '')
+                        if translated and translated != orig:
+                            lines.append(
+                                f"\ttranslatedDisplayFolder {_quote_name(tbl_name)}"
+                                f".{_quote_name(col.get('name', ''))}"
+                                f" = {_quote_name(translated)}"
+                            )
+        lines.append("")
+
     filepath = os.path.join(cultures_dir, f'{culture_name}.tmdl')
     with open(filepath, 'w', encoding='utf-8') as f:
         f.write('\n'.join(lines))
+
+
+def _write_multi_language_cultures(def_dir, languages, tables):
+    """Write culture TMDL files for multiple languages.
+
+    Args:
+        def_dir: Path to the definition/ folder
+        languages: Comma-separated locale string (e.g. 'fr-FR,de-DE,es-ES')
+        tables: List of table definitions
+    """
+    if not languages:
+        return
+
+    locales = [loc.strip() for loc in languages.split(',') if loc.strip()]
+    if not locales:
+        return
+
+    cultures_dir = os.path.join(def_dir, 'cultures')
+    os.makedirs(cultures_dir, exist_ok=True)
+
+    for locale in locales:
+        if locale == 'en-US':
+            continue  # Default culture, no need for translation file
+        _write_culture_tmdl(cultures_dir, locale, tables)
+
+
+# ── Display folder translations (built-in) ──────────────────────────────────
+
+_DISPLAY_FOLDER_TRANSLATIONS = {
+    'fr-FR': {
+        'Dimensions': 'Dimensions',
+        'Measures': 'Mesures',
+        'Time Intelligence': 'Intelligence Temporelle',
+        'Flags': 'Indicateurs',
+        'Calculations': 'Calculs',
+        'Groups': 'Groupes',
+        'Sets': 'Ensembles',
+        'Bins': 'Intervalles',
+        'Parameters': 'Paramètres',
+        'Field Parameters': 'Paramètres de Champ',
+        'Calculation Groups': 'Groupes de Calcul',
+    },
+    'de-DE': {
+        'Dimensions': 'Dimensionen',
+        'Measures': 'Kennzahlen',
+        'Time Intelligence': 'Zeitintelligenz',
+        'Flags': 'Kennzeichen',
+        'Calculations': 'Berechnungen',
+        'Groups': 'Gruppen',
+        'Sets': 'Mengen',
+        'Bins': 'Intervalle',
+        'Parameters': 'Parameter',
+        'Field Parameters': 'Feldparameter',
+        'Calculation Groups': 'Berechnungsgruppen',
+    },
+    'es-ES': {
+        'Dimensions': 'Dimensiones',
+        'Measures': 'Medidas',
+        'Time Intelligence': 'Inteligencia Temporal',
+        'Flags': 'Indicadores',
+        'Calculations': 'Cálculos',
+        'Groups': 'Grupos',
+        'Sets': 'Conjuntos',
+        'Bins': 'Intervalos',
+        'Parameters': 'Parámetros',
+        'Field Parameters': 'Parámetros de Campo',
+        'Calculation Groups': 'Grupos de Cálculo',
+    },
+    'pt-BR': {
+        'Dimensions': 'Dimensões',
+        'Measures': 'Medidas',
+        'Time Intelligence': 'Inteligência Temporal',
+        'Flags': 'Indicadores',
+        'Calculations': 'Cálculos',
+        'Groups': 'Grupos',
+        'Sets': 'Conjuntos',
+        'Bins': 'Intervalos',
+        'Parameters': 'Parâmetros',
+        'Field Parameters': 'Parâmetros de Campo',
+        'Calculation Groups': 'Grupos de Cálculo',
+    },
+    'ja-JP': {
+        'Dimensions': 'ディメンション',
+        'Measures': 'メジャー',
+        'Time Intelligence': 'タイムインテリジェンス',
+        'Flags': 'フラグ',
+        'Calculations': '計算',
+        'Groups': 'グループ',
+        'Sets': 'セット',
+        'Bins': 'ビン',
+        'Parameters': 'パラメーター',
+        'Field Parameters': 'フィールドパラメーター',
+        'Calculation Groups': '計算グループ',
+    },
+    'zh-CN': {
+        'Dimensions': '维度',
+        'Measures': '度量',
+        'Time Intelligence': '时间智能',
+        'Flags': '标志',
+        'Calculations': '计算',
+        'Groups': '组',
+        'Sets': '集',
+        'Bins': '区间',
+        'Parameters': '参数',
+        'Field Parameters': '字段参数',
+        'Calculation Groups': '计算组',
+    },
+    'ko-KR': {
+        'Dimensions': '차원',
+        'Measures': '측정값',
+        'Time Intelligence': '시간 인텔리전스',
+        'Flags': '플래그',
+        'Calculations': '계산',
+        'Groups': '그룹',
+        'Sets': '집합',
+        'Bins': '구간',
+        'Parameters': '매개변수',
+        'Field Parameters': '필드 매개변수',
+        'Calculation Groups': '계산 그룹',
+    },
+    'it-IT': {
+        'Dimensions': 'Dimensioni',
+        'Measures': 'Misure',
+        'Time Intelligence': 'Time Intelligence',
+        'Flags': 'Indicatori',
+        'Calculations': 'Calcoli',
+        'Groups': 'Gruppi',
+        'Sets': 'Insiemi',
+        'Bins': 'Intervalli',
+        'Parameters': 'Parametri',
+        'Field Parameters': 'Parametri di Campo',
+        'Calculation Groups': 'Gruppi di Calcolo',
+    },
+    'nl-NL': {
+        'Dimensions': 'Dimensies',
+        'Measures': 'Metingen',
+        'Time Intelligence': 'Tijdintelligentie',
+        'Flags': 'Vlaggen',
+        'Calculations': 'Berekeningen',
+        'Groups': 'Groepen',
+        'Sets': 'Sets',
+        'Bins': 'Intervallen',
+        'Parameters': 'Parameters',
+        'Field Parameters': 'Veldparameters',
+        'Calculation Groups': 'Berekeningsgroepen',
+    },
+}
+
+
+def _get_display_folder_translations(culture_name):
+    """Look up display folder translations for a given culture.
+
+    Falls back to translating using the language portion (e.g. 'fr' from 'fr-CA').
+    Returns empty dict if no translations are available.
+    """
+    # Exact match
+    if culture_name in _DISPLAY_FOLDER_TRANSLATIONS:
+        return _DISPLAY_FOLDER_TRANSLATIONS[culture_name]
+
+    # Try language-only match (e.g. 'fr' from 'fr-CA' → 'fr-FR')
+    lang = culture_name.split('-')[0].lower()
+    for key, val in _DISPLAY_FOLDER_TRANSLATIONS.items():
+        if key.split('-')[0].lower() == lang:
+            return val
+
+    return {}
 
 
 def _write_database_tmdl(def_dir, model):
