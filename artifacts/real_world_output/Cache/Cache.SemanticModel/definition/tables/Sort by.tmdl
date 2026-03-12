@@ -1,0 +1,20 @@
+table 'Sort by'
+	lineageTag: c19a5373-e0f5-4124-b2e2-f603fd820446
+
+	measure 'Sort by' = SELECTEDVALUE('Sort by'[Value], "Names")
+		lineageTag: 39f97aa3-724a-4e0f-a4a7-c89d8e6c8f45
+
+	column Value
+		dataType: string
+		lineageTag: 67b555f3-b6b3-4739-bb85-f6936f242398
+		summarizeBy: none
+		sourceColumn: Value
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Sort by-25fb51b5-5336-44c8-b08a-cf0496c1cc1e' = calculated
+		mode: import
+		source = DATATABLE("Value", STRING, {{""\% quota ascending""}, {""\% quota descending""}, {""Names""}})
+
+	annotation PBI_ResultType = Table
+

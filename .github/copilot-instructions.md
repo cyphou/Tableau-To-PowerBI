@@ -42,7 +42,7 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
     - `pbi_client.py`: Power BI Service REST API client — Azure AD auth (SP/MI/token), import .pbix, refresh, list/delete datasets/reports
     - `pbix_packager.py`: .pbip → .pbix ZIP packager with OPC content types
     - `pbi_deployer.py`: PBI Service deployment orchestrator — package, upload, poll, refresh, validate
-- **tests/**: Unit and integration tests (1,889 tests across 37 test files + conftest.py shared fixtures)
+- **tests/**: Unit and integration tests (2,000+ tests across 38 test files + conftest.py shared fixtures)
 - **docs/**: FAQ, PBI project guide, mapping reference
 - **.github/workflows/ci.yml**: CI/CD pipeline (lint → test → validate → deploy)
 - **artifacts/**: Migration output (generated .pbip projects)
@@ -186,14 +186,17 @@ TWB-embedded transforms (column renames from captions) are auto-detected and inj
 | Funnel | funnel | |
 | Bullet / Radial / Gauge | gauge | |
 | Heat Map / Highlight Table / Calendar | matrix | Conditional formatting |
-| Packed Bubble / Strip Plot | scatterChart | Bubble variant |
+| Packed Bubble / Strip Plot | scatterChart | Bubble variant; size encoding auto-injected |
 | Word Cloud | wordCloud | |
 | Dual Axis / Combo / Pareto | lineClusteredColumnComboChart | |
 | Bump Chart / Slope Chart / Timeline / Sparkline | lineChart | |
-| Butterfly Chart / Waffle | hundredPercentStackedBarChart | |
+| Butterfly Chart / Waffle | hundredPercentStackedBarChart | Negate one measure for symmetry |
 | Sankey / Chord / Network | decompositionTree | |
 | KPI | card | |
 | Image | image | |
+| Violin Plot | boxAndWhisker | Custom visual ViolinPlot1.0.0 |
+| Parallel Coordinates | lineChart | Custom visual ParallelCoordinates1.0.0 |
+| Calendar Heat Map | matrix | Auto-enables conditional formatting |
 
 ## Semantic Model Features
 

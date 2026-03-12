@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Report",
+    "displayName": "multiple_connections"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "f3acfc47-fb2e-4b29-ab5d-c41e74f1e324"
+  }
+}

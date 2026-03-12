@@ -1,0 +1,46 @@
+{
+  "generated_at": "2026-03-11T22:39:37.614429",
+  "source": "Tableau Migration",
+  "report_name": "RESTAPISample",
+  "objects_converted": {
+    "worksheets": 7,
+    "dashboards": 1,
+    "datasources": 1,
+    "calculations": 4,
+    "parameters": 0,
+    "filters": 16,
+    "stories": 0,
+    "sets": 0,
+    "groups": 5,
+    "bins": 0,
+    "hierarchies": 0,
+    "user_filters": 0,
+    "actions": 6,
+    "custom_sql": 0
+  },
+  "generated_output": {
+    "pages": 1,
+    "visuals": 3,
+    "theme_applied": false,
+    "theme_detail": {
+      "status": "skipped",
+      "reason": "no dashboard colors detected"
+    }
+  },
+  "tmdl_stats": {
+    "tables": 2,
+    "measures": 7,
+    "columns": 26,
+    "relationships": 0
+  },
+  "visual_type_mappings": {
+    "Country ranks": "Automatic",
+    "GDP per capita": "Automatic",
+    "GDP per capita by region": "Automatic",
+    "GDP per capita map": "Automatic",
+    "Health spending vs life expectancy": "Automatic",
+    "Interest rates": "Automatic",
+    "Share of World GDP": "Automatic"
+  },
+  "approximations": []
+}

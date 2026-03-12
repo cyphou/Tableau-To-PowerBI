@@ -1,0 +1,6 @@
+expression DataFolder = "C:\\Data" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+
+expression ServerName = "b5dpm3ihhu.database.windows.net" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+
+expression DatabaseName = "EmptyDB" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+

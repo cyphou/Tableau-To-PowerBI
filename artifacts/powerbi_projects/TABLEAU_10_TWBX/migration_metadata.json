@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-10T14:08:29.598551",
+  "generated_at": "2026-03-11T23:06:14.791667",
   "source": "Tableau Migration",
   "report_name": "TABLEAU_10_TWBX",
   "objects_converted": {
@@ -20,7 +20,7 @@
   },
   "generated_output": {
     "pages": 1,
-    "visuals": 1,
+    "visuals": 2,
     "theme_applied": false,
     "theme_detail": {
       "status": "skipped",

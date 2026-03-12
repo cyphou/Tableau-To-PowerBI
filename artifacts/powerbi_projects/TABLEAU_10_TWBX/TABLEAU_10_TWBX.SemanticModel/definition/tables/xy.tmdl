@@ -1,9 +1,9 @@
 table xy
-	lineageTag: adc831ae-f9d9-428e-bc97-8ea7d9ec439e
+	lineageTag: 809799b9-2e68-451c-831a-14445b12a87b
 
 	column a
 		dataType: string
-		lineageTag: ae9f108f-8f82-4c4d-859e-1f01e16fe875
+		lineageTag: b2c00243-fe50-4835-a574-a5f71afb4b5c
 		summarizeBy: none
 		sourceColumn: a
 
@@ -11,7 +11,7 @@ table xy
 
 	column x
 		dataType: int64
-		lineageTag: 30e64dec-3b1c-46f8-95fe-e5e5f7d116f1
+		lineageTag: 623fa01e-f2b9-4157-8608-1835b23b54e1
 		summarizeBy: sum
 		sourceColumn: x
 
@@ -19,18 +19,24 @@ table xy
 
 	column y
 		dataType: int64
-		lineageTag: 5a8d3509-88ab-49b7-a2c7-9d4f18878f15
+		lineageTag: 77e80908-c0db-4199-8e12-3d8f2277b84f
 		summarizeBy: sum
 		sourceColumn: y
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'xy-796a6795-8991-4cc5-9509-f0ae54cfe121' = m
+	partition 'xy-8dfc4d47-e1d1-4060-8c2d-663967265de5' = m
 		mode: import
 		source =
 				let
 				    // Source SQL Server
-				    Source = Sql.Database("mssql2012.test.tsi.lan", "TestV1"),
+				    Source = try
+				
+				        Sql.Database("mssql2012.test.tsi.lan", "TestV1")
+				
+				    otherwise
+				
+				        #table({"a", "x", "y"}, {}),
 				    #"xy Table" = Source{[Schema="dbo", Item="xy"]}[Data],
 				    #"Renamed Columns" = Table.RenameColumns(#"xy Table", {{"a", "A"}, {"x", "X"}, {"y", "Y"}}),
 				    Result = #"Renamed Columns"

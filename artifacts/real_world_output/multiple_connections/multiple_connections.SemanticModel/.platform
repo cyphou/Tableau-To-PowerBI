@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "SemanticModel",
+    "displayName": "multiple_connections"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "70a385b5-2ea5-4e38-a68e-065b01aab895"
+  }
+}

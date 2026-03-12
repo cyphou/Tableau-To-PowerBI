@@ -177,6 +177,11 @@ VISUAL_TYPE_MAP = {
     "waffle": "hundredPercentStackedBarChart",
     "pareto": "lineClusteredColumnComboChart",
     "dualaxis": "lineClusteredColumnComboChart",
+    "violin": "boxAndWhisker",
+    "violinplot": "boxAndWhisker",
+    "parallelcoordinates": "lineChart",
+    "parallel-coordinates": "lineChart",
+    "calendarheatmap": "matrix",
 
     # ── PBI pass-through (already correct) ─────────────────
     "clusteredbarchart": "clusteredBarChart",
@@ -254,6 +259,18 @@ CUSTOM_VISUAL_GUIDS = {
         "name": "Bullet Chart",
         "class": "bulletChart",
         "roles": {"Value": "measure", "Target": "measure", "Category": "dimension"},
+    },
+    "violin": {
+        "guid": "ViolinPlot1.0.0",
+        "name": "Violin Plot",
+        "class": "violinPlot",
+        "roles": {"Category": "dimension", "Value": "measure"},
+    },
+    "parallelcoordinates": {
+        "guid": "ParallelCoordinates1.0.0",
+        "name": "Parallel Coordinates",
+        "class": "parallelCoordinates",
+        "roles": {"Category": "dimension", "Value": "measure"},
     },
 }
 
@@ -631,7 +648,10 @@ APPROXIMATION_MAP = {
     "bumpchart":   ("lineChart",                         "Bump chart mapped to Line Chart — ranking semantics lost"),
     "slopechart":  ("lineChart",                         "Slope chart mapped to Line Chart — period comparison semantics lost"),
     "timeline":    ("lineChart",                         "Timeline mapped to Line Chart — event markers not supported"),
-    "butterfly":   ("hundredPercentStackedBarChart",     "Butterfly chart mapped to 100% Stacked Bar — symmetry lost"),
+    "butterfly":   ("hundredPercentStackedBarChart",     "Butterfly chart mapped to 100% Stacked Bar — negate one measure to simulate symmetry"),
+    "violin":      ("boxAndWhisker",                     "Violin plot mapped to Box and Whisker — distribution shape lost, use custom visual from AppSource (ViolinPlot1.0.0)"),
+    "parallelcoordinates": ("lineChart",               "Parallel coordinates mapped to Line Chart — multi-axis layout lost, use custom visual from AppSource (ParallelCoordinates1.0.0)"),
+    "calendarheatmap": ("matrix",                       "Calendar heat map mapped to Matrix with conditional formatting — configure color rules manually"),
     "waffle":      ("hundredPercentStackedBarChart",     "Waffle chart mapped to 100% Stacked Bar — grid layout lost"),
     "pareto":      ("lineClusteredColumnComboChart",     "Pareto mapped to Line+Column Combo — cumulative line may need adjustment"),
     "dualaxis":    ("lineClusteredColumnComboChart",     "Dual axis mapped to Line+Column Combo"),
@@ -1007,7 +1027,18 @@ def create_visual_container(worksheet, visual_id=None, x=10, y=10,
     # ── Build query state ─────────────────────────────────────
     data_fields = worksheet.get('dataFields', [])
     dimensions = worksheet.get('dimensions', [])
-    measures = worksheet.get('measures', [])
+    measures = list(worksheet.get('measures', []))
+
+    # ── Packed bubble / scatter: inject size from mark_encoding ─
+    mark_enc = worksheet.get('mark_encoding', {})
+    size_enc = mark_enc.get('size', {})
+    if pbi_type == 'scatterChart' and size_enc.get('field'):
+        size_field = size_enc['field']
+        # Ensure size field appears as 3rd measure (→ Size data role)
+        existing = [m.get('name', m.get('label', '')) for m in measures]
+        if size_field not in existing:
+            measures.append({'name': size_field, 'label': size_field,
+                             'expression': f'SUM({size_field})'})
 
     if dimensions or measures:
         query_state = build_query_state(
@@ -1052,6 +1083,23 @@ def create_visual_container(worksheet, visual_id=None, x=10, y=10,
             }]
         elif mode in ('byDimension', 'dimension'):
             visual_obj["objects"].setdefault("dataPoint", [{}])
+
+    # ── Calendar heat map: auto-enable conditional formatting ─
+    source_key = (visual_type or '').lower().replace(' ', '').replace('_', '')
+    if source_key in ('calendar', 'calendarheatmap', 'highlighttable') and pbi_type == 'matrix':
+        visual_obj.setdefault("objects", {})
+        visual_obj["objects"]["values"] = [{
+            "properties": {
+                "backColorConditionalFormatting": _L("true"),
+                "fontColorConditionalFormatting": _L("true"),
+            }
+        }]
+        if not visual_obj.get("annotations"):
+            visual_obj["annotations"] = []
+        visual_obj["annotations"].append({
+            "name": "MigrationNote",
+            "value": "Calendar/heat map: enable Background Color conditional formatting rules on the Values well in Power BI Desktop"
+        })
 
     # ── Conditional formatting rules (explicit) ───────────────
     cond_format = worksheet.get('conditionalFormatting', [])

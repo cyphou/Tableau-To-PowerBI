@@ -1,0 +1,67 @@
+table Extract
+	lineageTag: 74c9aaeb-7307-4674-b17d-fa043290b655
+
+	column Category
+		dataType: string
+		lineageTag: 54777260-54e1-4c7e-b5b9-6d504c20806b
+		summarizeBy: none
+		sourceColumn: Category
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Number of Records'
+		dataType: int64
+		lineageTag: 2712b77b-3518-4a73-aa5b-8dfb3fca7637
+		summarizeBy: sum
+		sourceColumn: 'Number of Records'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Order Date'
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 2606ef29-66b6-44f8-80ba-986592cf4320
+		summarizeBy: none
+		sourceColumn: 'Order Date'
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Sales Target'
+		dataType: int64
+		formatString: c"$"#,#0;("$"#,#0)
+		lineageTag: 6f5c28e4-2f8d-46c1-af0b-9fa1f8e34f25
+		summarizeBy: sum
+		sourceColumn: 'Sales Target'
+
+		annotation SummarizationSetBy = Automatic
+
+	column Segment
+		dataType: string
+		lineageTag: d262accc-4c6a-4802-95c3-f560f0943e9d
+		summarizeBy: none
+		sourceColumn: Segment
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Extract-ef3f99be-4a2a-49ba-baf4-3e65564d287a' = m
+		mode: import
+		source =
+				let
+				    // TODO: Configure the data source for connector type: DATAENGINE
+				    // Replace the sample table below with the actual source expression.
+				    Source = try
+				        #table(
+				            {"Category", "Number of Records", "Order Date", "Sales Target", "Segment"},
+				            {
+				                {"Sample 1", 2, 3, 4, "Sample 5"},
+				                {"Sample 2", 3, 4, 5, "Sample 6"}
+				            }
+				        )
+				    otherwise
+				        #table({"Category", "Number of Records", "Order Date", "Sales Target", "Segment"}, {})  // Empty table on error
+				in
+				    Source
+
+	annotation PBI_ResultType = Table
+

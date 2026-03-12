@@ -75,18 +75,17 @@ class TestIndexConversion(unittest.TestCase):
 
 
 class TestSizeConversion(unittest.TestCase):
-    """SIZE() → CALCULATE(COUNTROWS(), ALLSELECTED())."""
+    """SIZE() → COUNTROWS(ALLSELECTED())."""
 
     def test_size_basic(self):
         result = convert_tableau_formula_to_dax('SIZE()')
-        self.assertIn('CALCULATE', result)
         self.assertIn('COUNTROWS', result)
         self.assertIn('ALLSELECTED', result)
 
     def test_size_not_bare_countrows(self):
-        """Old version was just COUNTROWS() — now should use CALCULATE wrapper."""
+        """Should use COUNTROWS(ALLSELECTED()), not bare COUNTROWS()."""
         result = convert_tableau_formula_to_dax('SIZE()')
-        self.assertIn('CALCULATE(COUNTROWS()', result)
+        self.assertIn('COUNTROWS(ALLSELECTED())', result)
 
 
 class TestWindowCorrCovar(unittest.TestCase):

@@ -1,0 +1,150 @@
+{
+  "report_name": "Cache",
+  "created_at": "2026-03-11T23:04:48.995668",
+  "summary": {
+    "total_items": 17,
+    "exact": 17,
+    "approximate": 0,
+    "placeholder": 0,
+    "unsupported": 0,
+    "skipped": 0,
+    "fidelity_score": 100.0,
+    "by_category": {
+      "datasource": {
+        "total": 2,
+        "exact": 2
+      },
+      "calculation": {
+        "total": 7,
+        "exact": 7
+      },
+      "visual": {
+        "total": 1,
+        "exact": 1
+      },
+      "parameter": {
+        "total": 7,
+        "exact": 7
+      }
+    }
+  },
+  "table_mapping": [
+    {
+      "source_datasource": "Sales Target",
+      "source_table": "Extract",
+      "target_table": "Extract",
+      "connection_type": "DATAENGINE",
+      "columns": 5
+    }
+  ],
+  "items": [
+    {
+      "category": "datasource",
+      "name": "Parameters",
+      "status": "exact",
+      "note": "Unknown, 0 table(s)"
+    },
+    {
+      "category": "datasource",
+      "name": "dataengine.42019.622799629629",
+      "status": "exact",
+      "note": "DATAENGINE, 1 table(s)"
+    },
+    {
+      "category": "calculation",
+      "name": "Base Salary",
+      "status": "exact",
+      "source_formula": "50000",
+      "dax": "SELECTEDVALUE('Base Salary'[Value], 50000)"
+    },
+    {
+      "category": "calculation",
+      "name": "Commission Rate",
+      "status": "exact",
+      "source_formula": "18.400000000000002",
+      "dax": "SELECTEDVALUE('Commission Rate'[Value], 18.400000000000002)"
+    },
+    {
+      "category": "calculation",
+      "name": "New Quota",
+      "status": "exact",
+      "source_formula": "500000",
+      "dax": "SELECTEDVALUE('New Quota'[Value], 500000)"
+    },
+    {
+      "category": "calculation",
+      "name": "Sort by",
+      "status": "exact",
+      "source_formula": "\"Names\"",
+      "dax": "SELECTEDVALUE('Sort by'[Value], \"Names\")"
+    },
+    {
+      "category": "calculation",
+      "name": "New Business Growth",
+      "status": "exact",
+      "source_formula": "0.59999999999999998",
+      "dax": "SELECTEDVALUE('New Business Growth'[Value], 0.59999999999999998)"
+    },
+    {
+      "category": "calculation",
+      "name": "Churn Rate",
+      "status": "exact",
+      "source_formula": "0.064000000000000001",
+      "dax": "SELECTEDVALUE('Churn Rate'[Value], 0.064000000000000001)"
+    },
+    {
+      "category": "calculation",
+      "name": "State",
+      "status": "exact",
+      "source_formula": "\"Alabama\"",
+      "dax": "SELECTEDVALUE('State'[Value], \"Alabama\")"
+    },
+    {
+      "category": "visual",
+      "name": "Sheet 21",
+      "status": "exact"
+    },
+    {
+      "category": "parameter",
+      "name": "[Base Salary]",
+      "status": "exact",
+      "note": "domain=range"
+    },
+    {
+      "category": "parameter",
+      "name": "[Commission Rate]",
+      "status": "exact",
+      "note": "domain=range"
+    },
+    {
+      "category": "parameter",
+      "name": "[New Quota]",
+      "status": "exact",
+      "note": "domain=range"
+    },
+    {
+      "category": "parameter",
+      "name": "[Parameter 1 1]",
+      "status": "exact",
+      "note": "domain=list"
+    },
+    {
+      "category": "parameter",
+      "name": "[Parameter 1]",
+      "status": "exact",
+      "note": "domain=range"
+    },
+    {
+      "category": "parameter",
+      "name": "[Parameter 2]",
+      "status": "exact",
+      "note": "domain=range"
+    },
+    {
+      "category": "parameter",
+      "name": "[Parameter 3]",
+      "status": "exact",
+      "note": "domain=list"
+    }
+  ]
+}

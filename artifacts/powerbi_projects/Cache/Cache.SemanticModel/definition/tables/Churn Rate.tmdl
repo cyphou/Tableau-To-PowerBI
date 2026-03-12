@@ -1,18 +1,18 @@
 table 'Churn Rate'
-	lineageTag: b98d9f2c-6755-4a76-9f26-fb44288c02af
+	lineageTag: 0f796b90-e979-49d2-9585-9689a7972ff9
 
 	measure 'Churn Rate' = SELECTEDVALUE('Churn Rate'[Value], 0.064000000000000001)
-		lineageTag: ce06cac3-ae2c-4b19-b5bc-cd42dbabf283
+		lineageTag: 70db5bc4-20f8-4a5b-b517-9892884998ed
 
 	column Value
 		dataType: double
-		lineageTag: 58a03de3-b035-42c3-89b7-60c97b3b1d66
+		lineageTag: 14f9e50c-694e-45c0-a399-341ee8e06fb9
 		summarizeBy: none
 		sourceColumn: Value
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Churn Rate-3fa0a8b7-1286-43e4-a600-4be2eb81d487' = calculated
+	partition 'Churn Rate-f2cce408-4420-48f1-b7a8-a176cd77aaf2' = calculated
 		mode: import
 		source = GENERATESERIES(0.0, 0.25, 0.001)
 

@@ -408,6 +408,7 @@ class TestTableCalcAdvanced(unittest.TestCase):
     def test_size_to_countrows(self):
         result = convert_tableau_formula_to_dax("SIZE()")
         self.assertIn("COUNTROWS", result)
+        self.assertNotIn("CALCULATE", result)  # Simplified: COUNTROWS(ALLSELECTED()) only
 
     def test_index_to_rankx(self):
         result = convert_tableau_formula_to_dax("INDEX()")
@@ -555,6 +556,7 @@ class TestRankVariants(unittest.TestCase):
             "RANK_MODIFIED(SUM([Sales]))", table_name="T")
         self.assertIn("RANKX", result)
         self.assertIn("RANK_MODIFIED", result)  # In comment
+        self.assertIn("SKIP", result)  # Modified competition ranking uses SKIP
 
     def test_rank_percentile(self):
         result = convert_tableau_formula_to_dax(

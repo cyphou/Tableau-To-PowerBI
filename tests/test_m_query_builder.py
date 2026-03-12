@@ -49,6 +49,7 @@ from m_query_builder import (
     m_transform_pivot,
     # Join
     m_transform_join,
+    m_transform_buffer,
     # Union
     m_transform_union,
     m_transform_wildcard_union,
@@ -816,6 +817,84 @@ class TestInjectTransformIntegration(unittest.TestCase):
         result = inject_m_steps(base, join_steps)
         self.assertIn("Table.NestedJoin", result)
         self.assertIn("Table.ExpandTableColumn", result)
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# Sprint 18 — Custom SQL Params, Query Folding, Buffer
+# ═══════════════════════════════════════════════════════════════════════
+
+class TestCustomSqlParamBinding(unittest.TestCase):
+    """Test custom SQL with parameter binding via Value.NativeQuery."""
+
+    def test_custom_sql_with_params(self):
+        conn = {"type": "Custom SQL", "details": {
+            "server": "host", "database": "db",
+            "params": {"Region": "West", "Year": "2024"}
+        }}
+        table = {"name": "Q", "columns": []}
+        result = generate_power_query_m(conn, table)
+        self.assertIn("Value.NativeQuery", result)
+        self.assertIn('Region="West"', result)
+        self.assertIn('Year="2024"', result)
+        self.assertIn("EnableFolding=true", result)
+
+    def test_custom_sql_without_params(self):
+        conn = {"type": "Custom SQL", "details": {
+            "server": "host", "database": "db"
+        }}
+        table = {"name": "Q", "columns": []}
+        result = generate_power_query_m(conn, table)
+        self.assertNotIn("Value.NativeQuery", result)
+        self.assertIn("Sql.Database", result)
+
+    def test_custom_sql_empty_params(self):
+        conn = {"type": "Custom SQL", "details": {
+            "server": "host", "database": "db", "params": {}
+        }}
+        table = {"name": "Q", "columns": []}
+        result = generate_power_query_m(conn, table)
+        self.assertNotIn("Value.NativeQuery", result)
+
+
+class TestQueryFoldingBuffer(unittest.TestCase):
+    """Test Table.Buffer for query folding hints."""
+
+    def test_buffer_standalone(self):
+        step_name, step_expr = m_transform_buffer()
+        self.assertEqual(step_name, '#"Buffered Table"')
+        self.assertIn("Table.Buffer({prev})", step_expr)
+
+    def test_buffer_with_ref(self):
+        step_name, step_expr = m_transform_buffer("LookupTable")
+        self.assertIn("Table.Buffer(LookupTable)", step_expr)
+
+    def test_join_with_buffer_right(self):
+        steps = m_transform_join(
+            "LookupTable", ["ID"], ["ID"], "left",
+            buffer_right=True
+        )
+        self.assertEqual(len(steps), 1)
+        self.assertIn("Table.Buffer(LookupTable)", steps[0][1])
+        self.assertIn("Table.NestedJoin", steps[0][1])
+
+    def test_join_without_buffer_right(self):
+        steps = m_transform_join(
+            "LookupTable", ["ID"], ["ID"], "left",
+            buffer_right=False
+        )
+        self.assertNotIn("Table.Buffer", steps[0][1])
+
+    def test_buffer_injected_into_query(self):
+        base = (
+            "let\n"
+            "    Source = Sql.Database(\"h\", \"d\"),\n"
+            "    Result = Source\n"
+            "in\n"
+            "    Result"
+        )
+        buf_step = m_transform_buffer()
+        result = inject_m_steps(base, [buf_step])
+        self.assertIn("Table.Buffer(Source)", result)
 
 
 if __name__ == '__main__':

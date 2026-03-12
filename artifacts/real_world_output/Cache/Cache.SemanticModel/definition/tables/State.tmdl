@@ -1,0 +1,20 @@
+table State
+	lineageTag: fb15e002-36a3-43c2-8a93-9414d5143f62
+
+	measure State = SELECTEDVALUE('State'[Value], "Alabama")
+		lineageTag: 98a74154-716c-424d-ba3f-ee830b4a1602
+
+	column Value
+		dataType: string
+		lineageTag: 3e1f882d-f081-457c-bf57-7d78f2c7423b
+		summarizeBy: none
+		sourceColumn: Value
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'State-930d6519-4c26-4f3f-8ba2-ff8bca2f0240' = calculated
+		mode: import
+		source = DATATABLE("Value", STRING, {{""Alabama""}, {""Arizona""}, {""Arkansas""}, {""California""}, {""Colorado""}, {""Connecticut""}, {""Delaware""}, {""District of Columbia""}, {""Florida""}, {""Georgia""}, {""Idaho""}, {""Illinois""}, {""Indiana""}, {""Iowa""}, {""Kansas""}, {""Kentucky""}, {""Louisiana""}, {""Maine""}, {""Maryland""}, {""Massachusetts""}, {""Michigan""}, {""Minnesota""}, {""Mississippi""}, {""Missouri""}, {""Montana""}, {""Nebraska""}, {""Nevada""}, {""New Hampshire""}, {""New Jersey""}, {""New Mexico""}, {""New York""}, {""North Carolina""}, {""North Dakota""}, {""Ohio""}, {""Oklahoma""}, {""Oregon""}, {""Pennsylvania""}, {""Rhode Island""}, {""South Carolina""}, {""South Dakota""}, {""Tennessee""}, {""Texas""}, {""Utah""}, {""Vermont""}, {""Virginia""}, {""Washington""}, {""West Virginia""}, {""Wisconsin""}, {""Wyoming""}})
+
+	annotation PBI_ResultType = Table
+

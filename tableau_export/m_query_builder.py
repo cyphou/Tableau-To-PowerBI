@@ -451,18 +451,30 @@ def _gen_m_web(details, table_name, columns):
 
 
 def _gen_m_custom_sql(details, table_name, columns):
-    """Generate M query using native SQL query (for Tableau custom SQL sources)."""
+    """Generate M query using native SQL query (for Tableau custom SQL sources).
+
+    Supports parameter binding via Value.NativeQuery's optional record argument.
+    Parameters are extracted from the ``params`` key in *details*.
+    """
     server = details.get('server', 'localhost')
     database = details.get('database', 'MyDatabase')
     sql_query = details.get('sql_query', f'SELECT * FROM {table_name}')
+    params = details.get('params', {})  # {name: default_value}
     # Escape quotes in SQL for M string
     sql_escaped = sql_query.replace('"', '""')
 
     m_query = 'let\n'
     m_query += '    // Source: Custom SQL Query\n'
-    m_query += f'    Source = Sql.Database("{server}", "{database}", [Query="'
-    m_query += sql_escaped
-    m_query += '"]),\n'
+    if params:
+        # Build parameter record:  [Param1="value1", Param2="value2"]
+        param_items = ', '.join(f'{k}="{v}"' for k, v in params.items())
+        m_query += f'    Source = Value.NativeQuery(Sql.Database("{server}", "{database}"), "'
+        m_query += sql_escaped
+        m_query += f'", [{param_items}], [EnableFolding=true]),\n'
+    else:
+        m_query += f'    Source = Sql.Database("{server}", "{database}", [Query="'
+        m_query += sql_escaped
+        m_query += '"]),\n'
     m_query += '    Result = Source\nin\n    Result'
     return m_query
 
@@ -1097,8 +1109,28 @@ _M_JOIN_KIND = {
 }
 
 
+def m_transform_buffer(table_ref=None):
+    """Buffer a table to force query-folding boundary.
+
+    Wrapping a table reference in Table.Buffer() forces the engine to
+    materialise the table before the next step.  This is useful before
+    joins to prevent the engine from sending un-foldable join predicates
+    to the data source.
+
+    Args:
+        table_ref: Optional M table reference to buffer.  When *None*,
+                   the ``{prev}`` placeholder is used so the step can be
+                   chained via ``inject_m_steps()``.
+    Returns:
+        (step_name, step_expression) tuple.
+    """
+    ref = table_ref or '{prev}'
+    return ('#"Buffered Table"', f'Table.Buffer({ref})')
+
+
 def m_transform_join(right_table_ref, left_keys, right_keys, join_type='left',
-                     expand_columns=None, joined_name="Joined"):
+                     expand_columns=None, joined_name="Joined",
+                     buffer_right=False):
     """
     Join two tables.
     Args:
@@ -1107,6 +1139,9 @@ def m_transform_join(right_table_ref, left_keys, right_keys, join_type='left',
         join_type: str — inner, left, right, full, leftanti, rightanti
         expand_columns: list of str — columns to expand (None = no expansion step)
         joined_name: str — name of the joined nested column
+        buffer_right: bool — when True, wrap right_table_ref in Table.Buffer()
+                      to create a query-folding boundary (prevents the engine from
+                      sending un-foldable join predicates to the data source)
     Returns:
         list of (step_name, step_expression) tuples (join + optional expand)
     """
@@ -1117,8 +1152,10 @@ def m_transform_join(right_table_ref, left_keys, right_keys, join_type='left',
         lk = '{' + ', '.join([f'"{k}"' for k in left_keys]) + '}'
         rk = '{' + ', '.join([f'"{k}"' for k in right_keys]) + '}'
 
+    effective_right = f'Table.Buffer({right_table_ref})' if buffer_right else right_table_ref
+
     steps = [(f'#"Joined {joined_name}"',
-              f'Table.NestedJoin({{prev}}, {lk}, {right_table_ref}, {rk}, '
+              f'Table.NestedJoin({{prev}}, {lk}, {effective_right}, {rk}, '
               f'"{joined_name}", {kind})')]
     if expand_columns:
         cols = ', '.join([f'"{c}"' for c in expand_columns])

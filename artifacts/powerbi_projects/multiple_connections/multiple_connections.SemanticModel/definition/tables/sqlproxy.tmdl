@@ -1,13 +1,15 @@
 table sqlproxy
-	lineageTag: 563ba484-7cfe-4c0e-92c3-8630dbdaa1dd
+	lineageTag: 3d3525d0-596f-49fd-966c-187eedde0bb7
 
-	partition 'sqlproxy-ca2d2b34-86c1-469a-a446-35be1429f23f' = m
+	partition 'sqlproxy-c2bb4a3d-d9bd-408f-b15c-e6e2cbb63eb5' = m
 		mode: import
 		source =
 				let
 				    // TODO: Configure the data source for connector type: Unknown
 				    // Replace the sample table below with the actual source expression.
 				    Source = try
+				
+				        try
 				        #table(
 				            {},
 				            {
@@ -17,6 +19,10 @@ table sqlproxy
 				        )
 				    otherwise
 				        #table({}, {})  // Empty table on error
+				
+				    otherwise
+				
+				        #table({}, {}),
 				in
 				    Source
 

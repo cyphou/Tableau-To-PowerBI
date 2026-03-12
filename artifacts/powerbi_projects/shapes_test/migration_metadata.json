@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-03-10T14:08:34.187065",
+  "generated_at": "2026-03-11T23:06:56.565181",
   "source": "Tableau Migration",
   "report_name": "shapes_test",
   "objects_converted": {
     "worksheets": 1,
     "dashboards": 0,
     "datasources": 2,
-    "calculations": 6,
+    "calculations": 4,
     "parameters": 2,
     "filters": 0,
     "stories": 0,
@@ -20,7 +20,7 @@
   },
   "generated_output": {
     "pages": 1,
-    "visuals": 1,
+    "visuals": 2,
     "theme_applied": false,
     "theme_detail": {
       "status": "skipped",

@@ -1,5 +1,42 @@
 # Changelog
 
+## v7.0.0 — CLI UX, DAX & M Hardening, Visual Refinements
+
+### Sprint 17 — CLI Wiring & UX
+- **`--compare` flag**: Wired `comparison_report.generate_comparison_report()` into CLI — generates side-by-side HTML comparison of Tableau vs Power BI structures
+- **`--dashboard` flag**: Wired `telemetry_dashboard.generate_dashboard()` into CLI — generates interactive HTML telemetry dashboard
+- **`MigrationProgress` wiring**: Progress tracking with dynamic step counting integrated across extraction → prep flow → generation → report steps
+- **Batch summary table**: Formatted console table with Workbook, Status, Fidelity, Tables, Visuals columns plus aggregate stats (avg/min/max fidelity)
+- 14 new tests in `test_cli_wiring.py`
+
+### Sprint 18 — DAX & M Hardening
+- **Custom SQL parameter binding**: `_gen_m_custom_sql()` now generates `Value.NativeQuery()` with parameter record `[Param1="val1", ...]` and `[EnableFolding=true]` when `params` dict is present
+- **RANK_MODIFIED**: Changed to `RANKX({table}, {expr},, ASC, SKIP)` — uses SKIP parameter for correct modified competition ranking
+- **SIZE()**: Simplified to `COUNTROWS(ALLSELECTED())` — direct partition-aware row count without redundant `CALCULATE()` wrapper
+- **Query folding hints**: New `m_transform_buffer()` function; `m_transform_join()` gained `buffer_right` parameter to wrap right table in `Table.Buffer()` for query folding boundaries
+- 10 new tests (3 in `test_m_query_builder.py`, 2 in `test_dax_coverage.py` updated, 5 buffer/folding tests)
+
+### Sprint 19 — Visual & Layout Refinements
+- **Violin plot**: Mapped to `boxAndWhisker` + custom visual GUID `ViolinPlot1.0.0` — entries in `VISUAL_TYPE_MAP`, `CUSTOM_VISUAL_GUIDS`, `APPROXIMATION_MAP`
+- **Parallel coordinates**: Mapped to `lineChart` + custom visual GUID `ParallelCoordinates1.0.0`
+- **Calendar heat map**: Auto-enables conditional formatting properties (`backColorConditionalFormatting`, `fontColorConditionalFormatting`) on matrix visuals + migration note
+- **Packed bubble size**: `mark_encoding.size.field` auto-injected as 3rd measure into scatter chart Size data role
+- **Butterfly chart**: Improved approximation note — suggests negating one measure to simulate symmetry
+- 14 new tests in `test_generation_coverage.py`
+
+### Sprint 20 — Documentation & Release
+- Updated `GAP_ANALYSIS.md`: 10 gaps closed (violin, parallel coords, butterfly, calendar heat map, packed bubble, RANK_MODIFIED, SIZE, custom SQL params, query folding, comparison report)
+- Updated `KNOWN_LIMITATIONS.md`: v7.0.0 closures reflected
+- Updated `DEVELOPMENT_PLAN.md`: v7.0.0 sprint details
+- Updated `CHANGELOG.md` and `.github/copilot-instructions.md`
+
+### Stats
+- **38 new tests** (14 CLI + 10 DAX/M + 14 visual)
+- 8 source files modified, 1 new test file created
+- All phases non-breaking (additive changes only)
+
+---
+
 ## v6.1.0 — Gap Closure & Batch Validation
 
 ### Prep Flow Parser

@@ -1,0 +1,44 @@
+{
+  "generated_at": "2026-03-11T22:39:39.937898",
+  "source": "Tableau Migration",
+  "report_name": "nba_player_stats",
+  "objects_converted": {
+    "worksheets": 5,
+    "dashboards": 1,
+    "datasources": 2,
+    "calculations": 4,
+    "parameters": 1,
+    "filters": 6,
+    "stories": 0,
+    "sets": 0,
+    "groups": 1,
+    "bins": 0,
+    "hierarchies": 0,
+    "user_filters": 0,
+    "actions": 2,
+    "custom_sql": 0
+  },
+  "generated_output": {
+    "pages": 1,
+    "visuals": 5,
+    "theme_applied": false,
+    "theme_detail": {
+      "status": "skipped",
+      "reason": "no dashboard colors detected"
+    }
+  },
+  "tmdl_stats": {
+    "tables": 2,
+    "measures": 3,
+    "columns": 21,
+    "relationships": 0
+  },
+  "visual_type_mappings": {
+    "Average Points per Game": "Automatic",
+    "Player Stats": "Automatic",
+    "Players Headshot": "Automatic",
+    "Rebounds per Game": "Automatic",
+    "Teams": "Automatic"
+  },
+  "approximations": []
+}

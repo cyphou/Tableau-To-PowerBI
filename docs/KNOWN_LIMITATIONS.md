@@ -2,7 +2,7 @@
 
 This document lists known limitations and approximations in the Tableau to Power BI migration tool.
 
-> **Last updated:** v6.0.0 — many previous limitations have been addressed.
+> **Last updated:** v7.0.0 — many previous limitations have been addressed.
 
 ---
 
@@ -57,21 +57,21 @@ This document lists known limitations and approximations in the Tableau to Power
 |---------------|------------|-----|
 | Sankey / Chord / Network | ✅ Custom visual GUID (`sankeyDiagram`, `chordChart`, `networkNavigator`) or `decompositionTree` fallback | Custom visuals require AppSource installation in PBI Desktop |
 | Gantt Bar / Lollipop | ✅ `ganttChart` (custom visual GUID) | Custom visual; time-axis semantics preserved |
-| Butterfly / Waffle | hundredPercentStackedBarChart | Loses symmetry |
-| Calendar Heat Map | matrix | Lacks calendar grid structure |
-| Packed Bubble / Strip Plot | scatterChart | Size encoding may not transfer |
+| Butterfly / Waffle | hundredPercentStackedBarChart | ✅ IMPROVED — negate-one-measure hint in approximation note |
+| Calendar Heat Map | matrix | ✅ IMPROVED — auto-enables conditional formatting properties + migration note |
+| Packed Bubble / Strip Plot | scatterChart | ✅ FIXED — size encoding from `mark_encoding` auto-injected into Size data role |
 | Bump Chart / Slope | lineChart | Ranking semantics lost |
 | Motion chart (animated) | Not handled | No PBI play-axis animation |
-| Violin plot | Not handled | No standard PBI visual |
-| Parallel coordinates | Not handled | No standard PBI visual |
+| Violin plot | ✅ `boxAndWhisker` + custom visual (`ViolinPlot1.0.0`) | Maps to Box & Whisker; AppSource custom visual GUID available |
+| Parallel coordinates | ✅ `lineChart` + custom visual (`ParallelCoordinates1.0.0`) | Maps to Line Chart; AppSource custom visual GUID available |
 
 ## Power Query M Limitations
 
 | Area | Limitation |
 |------|-----------|
-| **Custom SQL params** | `Value.NativeQuery()` generated but parameter binding not supported |
+| **Custom SQL params** | ✅ IMPLEMENTED — `Value.NativeQuery()` with parameter record binding and `[EnableFolding=true]` |
 | **Hyper data** | `.hyper` files referenced in Prep flows produce empty `#table` (metadata is extracted) |
-| **Query folding** | No `Table.Buffer()` or `Value.NativeQuery()` optimization hints |
+| **Query folding** | ✅ IMPLEMENTED — `m_transform_buffer()` + `m_transform_join(buffer_right=True)` for `Table.Buffer()` folding boundaries |
 
 ## Deployment Limitations
 

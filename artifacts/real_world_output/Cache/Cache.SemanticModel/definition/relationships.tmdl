@@ -1,0 +1,7 @@
+relationship 94691c4c-af57-49e6-8294-92f114f3748a
+	fromColumn: Extract.'Order Date'
+	toColumn: Calendar.Date
+	fromCardinality: many
+	toCardinality: many
+	crossFilteringBehavior: bothDirections
+

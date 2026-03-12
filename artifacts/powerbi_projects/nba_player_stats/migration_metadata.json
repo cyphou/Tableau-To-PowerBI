@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-03-10T14:08:33.164065",
+  "generated_at": "2026-03-11T23:06:46.056388",
   "source": "Tableau Migration",
   "report_name": "nba_player_stats",
   "objects_converted": {
     "worksheets": 5,
     "dashboards": 1,
     "datasources": 2,
-    "calculations": 3,
+    "calculations": 4,
     "parameters": 1,
     "filters": 6,
     "stories": 0,
@@ -20,7 +20,7 @@
   },
   "generated_output": {
     "pages": 1,
-    "visuals": 5,
+    "visuals": 10,
     "theme_applied": false,
     "theme_detail": {
       "status": "skipped",
@@ -29,7 +29,7 @@
   },
   "tmdl_stats": {
     "tables": 2,
-    "measures": 2,
+    "measures": 3,
     "columns": 21,
     "relationships": 0
   },

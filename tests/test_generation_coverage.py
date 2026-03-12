@@ -24,8 +24,11 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'tableau_export
 
 from powerbi_import.visual_generator import (
     resolve_visual_type,
+    resolve_custom_visual_type,
     VISUAL_TYPE_MAP,
     VISUAL_DATA_ROLES,
+    CUSTOM_VISUAL_GUIDS,
+    APPROXIMATION_MAP,
     generate_visual_containers,
     create_visual_container,
     build_query_state,
@@ -962,6 +965,154 @@ class TestFactories(unittest.TestCase):
         self.assertTrue(len(conv['sets']) >= 1)
         self.assertTrue(len(conv['groups']) >= 1)
         self.assertTrue(len(conv['bins']) >= 1)
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# Sprint 19 — Visual & Layout Refinements
+# ═══════════════════════════════════════════════════════════════════════
+
+class TestViolinAndParallelCoords(unittest.TestCase):
+    """Test violin plot and parallel coordinates visual mappings."""
+
+    def test_violin_in_visual_type_map(self):
+        self.assertEqual(VISUAL_TYPE_MAP.get("violin"), "boxAndWhisker")
+        self.assertEqual(VISUAL_TYPE_MAP.get("violinplot"), "boxAndWhisker")
+
+    def test_violin_custom_visual_guid(self):
+        self.assertIn("violin", CUSTOM_VISUAL_GUIDS)
+        self.assertEqual(CUSTOM_VISUAL_GUIDS["violin"]["guid"], "ViolinPlot1.0.0")
+
+    def test_violin_resolve_custom(self):
+        pbi_type, guid_info = resolve_custom_visual_type("violin", use_custom_visuals=True)
+        self.assertIsNotNone(guid_info)
+        self.assertIn("Violin", guid_info["name"])
+
+    def test_parallel_coordinates_in_visual_type_map(self):
+        self.assertEqual(VISUAL_TYPE_MAP.get("parallelcoordinates"), "lineChart")
+        self.assertEqual(VISUAL_TYPE_MAP.get("parallel-coordinates"), "lineChart")
+
+    def test_parallel_coordinates_custom_visual_guid(self):
+        self.assertIn("parallelcoordinates", CUSTOM_VISUAL_GUIDS)
+        guid = CUSTOM_VISUAL_GUIDS["parallelcoordinates"]["guid"]
+        self.assertEqual(guid, "ParallelCoordinates1.0.0")
+
+    def test_parallel_coordinates_resolve_custom(self):
+        pbi_type, guid_info = resolve_custom_visual_type("parallelcoordinates", use_custom_visuals=True)
+        self.assertIsNotNone(guid_info)
+
+    def test_violin_approximation_note(self):
+        from powerbi_import.visual_generator import get_approximation_note
+        note = get_approximation_note("violin")
+        self.assertIsNotNone(note)
+        self.assertIn("Violin", note)
+
+    def test_parallel_coords_approximation_note(self):
+        from powerbi_import.visual_generator import get_approximation_note
+        note = get_approximation_note("parallelcoordinates")
+        self.assertIsNotNone(note)
+        self.assertIn("Parallel", note)
+
+
+class TestCalendarHeatMap(unittest.TestCase):
+    """Test calendar heat map → matrix with conditional formatting."""
+
+    def test_calendar_maps_to_matrix(self):
+        self.assertEqual(resolve_visual_type("calendar"), "matrix")
+        self.assertEqual(resolve_visual_type("calendarheatmap"), "matrix")
+
+    def test_calendar_heatmap_auto_conditional_formatting(self):
+        ws = {
+            "name": "Sales Calendar",
+            "visualType": "calendarheatmap",
+            "dimensions": [{"field": "Date", "name": "Date"}],
+            "measures": [{"name": "Sales", "label": "Sales"}],
+        }
+        container = create_visual_container(
+            ws, col_table_map={"Date": "Calendar", "Sales": "Fact"},
+            measure_lookup={"Sales": ("Fact", "SUM('Fact'[Sales])")},
+        )
+        visual = container["visual"]
+        # Should have conditional formatting hints
+        objects = visual.get("objects", {})
+        vals = objects.get("values", [])
+        self.assertTrue(len(vals) > 0, "Calendar heat map should have values objects")
+        # Should have migration note
+        annotations = visual.get("annotations", [])
+        notes = [a["value"] for a in annotations if a.get("name") == "MigrationNote"]
+        self.assertTrue(any("heat map" in n.lower() or "calendar" in n.lower() for n in notes))
+
+    def test_calendar_approximation_note(self):
+        note = APPROXIMATION_MAP.get("calendarheatmap")
+        self.assertIsNotNone(note)
+        self.assertIn("Calendar", note[1])
+
+
+class TestPackedBubbleSizeEncoding(unittest.TestCase):
+    """Test packed bubble size encoding → Size data role."""
+
+    def test_size_encoding_injected_for_scatter(self):
+        ws = {
+            "name": "Packed Bubbles",
+            "visualType": "packedbubble",
+            "dimensions": [{"field": "Category", "name": "Category"}],
+            "measures": [
+                {"name": "X_Val", "label": "X_Val"},
+                {"name": "Y_Val", "label": "Y_Val"},
+            ],
+            "mark_encoding": {
+                "size": {"field": "Revenue"},
+            },
+        }
+        container = create_visual_container(
+            ws,
+            col_table_map={"Category": "T", "X_Val": "T", "Y_Val": "T", "Revenue": "T"},
+            measure_lookup={
+                "X_Val": ("T", "SUM('T'[X_Val])"),
+                "Y_Val": ("T", "SUM('T'[Y_Val])"),
+                "Revenue": ("T", "SUM('T'[Revenue])"),
+            },
+        )
+        visual = container["visual"]
+        qs = visual.get("query", {}).get("queryState", {})
+        # Size role should be populated
+        self.assertIn("Size", qs, "Scatter chart should have Size data role from mark_encoding")
+
+    def test_no_duplicate_size_measure(self):
+        ws = {
+            "name": "Bubbles",
+            "visualType": "packedbubble",
+            "dimensions": [{"field": "Cat", "name": "Cat"}],
+            "measures": [
+                {"name": "X", "label": "X"},
+                {"name": "Y", "label": "Y"},
+                {"name": "Revenue", "label": "Revenue"},
+            ],
+            "mark_encoding": {
+                "size": {"field": "Revenue"},
+            },
+        }
+        container = create_visual_container(
+            ws,
+            col_table_map={"Cat": "T", "X": "T", "Y": "T", "Revenue": "T"},
+            measure_lookup={
+                "X": ("T", "SUM('T'[X])"),
+                "Y": ("T", "SUM('T'[Y])"),
+                "Revenue": ("T", "SUM('T'[Revenue])"),
+            },
+        )
+        visual = container["visual"]
+        qs = visual.get("query", {}).get("queryState", {})
+        # Revenue should not be duplicated — should appear exactly once
+        self.assertIn("Size", qs)
+
+
+class TestButterflyApproximation(unittest.TestCase):
+    """Test butterfly chart improved approximation note."""
+
+    def test_butterfly_approximation_note_mentions_negate(self):
+        note = APPROXIMATION_MAP.get("butterfly")
+        self.assertIsNotNone(note)
+        self.assertIn("negate", note[1].lower())
 
 
 if __name__ == '__main__':

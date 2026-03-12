@@ -1,0 +1,40 @@
+{
+  "generated_at": "2026-03-11T22:39:37.234237",
+  "source": "Tableau Migration",
+  "report_name": "Cache",
+  "objects_converted": {
+    "worksheets": 1,
+    "dashboards": 0,
+    "datasources": 2,
+    "calculations": 7,
+    "parameters": 7,
+    "filters": 0,
+    "stories": 0,
+    "sets": 0,
+    "groups": 0,
+    "bins": 0,
+    "hierarchies": 0,
+    "user_filters": 0,
+    "actions": 0,
+    "custom_sql": 0
+  },
+  "generated_output": {
+    "pages": 1,
+    "visuals": 1,
+    "theme_applied": false,
+    "theme_detail": {
+      "status": "skipped",
+      "reason": "no dashboard colors detected"
+    }
+  },
+  "tmdl_stats": {
+    "tables": 9,
+    "measures": 7,
+    "columns": 20,
+    "relationships": 0
+  },
+  "visual_type_mappings": {
+    "Sheet 21": "Automatic"
+  },
+  "approximations": []
+}

@@ -1,9 +1,9 @@
 table Extract
-	lineageTag: b0d41b6b-70ca-46d3-97b1-6842671511f9
+	lineageTag: f7bcf2e7-a665-484f-9c71-53a0a7dc69b9
 
 	column Category
 		dataType: string
-		lineageTag: bed5611e-fd8a-479b-bc30-fa26ccc90d6d
+		lineageTag: 37b119fa-d845-48e1-8cab-b7de483f8dcd
 		summarizeBy: none
 		sourceColumn: Category
 
@@ -11,7 +11,7 @@ table Extract
 
 	column 'Number of Records'
 		dataType: int64
-		lineageTag: 9913f6c6-4733-422e-bf05-f7c293744622
+		lineageTag: 2224b490-14f5-4e2b-bd82-742b9d6980e3
 		summarizeBy: sum
 		sourceColumn: 'Number of Records'
 
@@ -20,7 +20,7 @@ table Extract
 	column 'Order Date'
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 1bfc0638-416a-468f-9caa-4746687d4dd9
+		lineageTag: 14b7a9ff-766e-47af-bcae-7493f80bd81f
 		summarizeBy: none
 		sourceColumn: 'Order Date'
 		dataCategory: DateTime
@@ -30,7 +30,7 @@ table Extract
 	column 'Sales Target'
 		dataType: int64
 		formatString: c"$"#,#0;("$"#,#0)
-		lineageTag: 70a41320-4c1a-4c29-9812-93c02d0be627
+		lineageTag: 2cb176ef-02a5-4e20-b08f-905a0159b2b0
 		summarizeBy: sum
 		sourceColumn: 'Sales Target'
 
@@ -38,19 +38,21 @@ table Extract
 
 	column Segment
 		dataType: string
-		lineageTag: a172aff0-4931-4ac0-974e-f2b1f752c659
+		lineageTag: e4bd621c-77bb-42ae-a171-1c19f8e64669
 		summarizeBy: none
 		sourceColumn: Segment
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Extract-3b0048c0-cb72-4b48-8954-e3c02fa9100c' = m
+	partition 'Extract-20dabf38-783b-4c9d-bfce-2bb6fae67fbb' = m
 		mode: import
 		source =
 				let
 				    // TODO: Configure the data source for connector type: DATAENGINE
 				    // Replace the sample table below with the actual source expression.
 				    Source = try
+				
+				        try
 				        #table(
 				            {"Category", "Number of Records", "Order Date", "Sales Target", "Segment"},
 				            {
@@ -60,6 +62,10 @@ table Extract
 				        )
 				    otherwise
 				        #table({"Category", "Number of Records", "Order Date", "Sales Target", "Segment"}, {})  // Empty table on error
+				
+				    otherwise
+				
+				        #table({"Category", "Number of Records", "Order Date", "Sales Target", "Segment"}, {}),
 				in
 				    Source
 

@@ -1,28 +1,28 @@
 table Extract
-	lineageTag: 304fa274-eeec-4bfa-8fdf-fbe24014a071
+	lineageTag: c9e8eb57-a357-44b6-adf8-30cbefd21d1d
 
 	measure 'GDP % of Total' = AVERAGE('Extract'[F: GDP per capita (curr $)]) / CALCULATE(AVERAGE('Extract'[F: GDP per capita (curr $)]))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 293ae4f4-535b-4a7a-8cac-40653568bb73
+		lineageTag: 7fef10ce-c2bb-4acb-99c6-10f4700e751d
 
 	measure 'GDP per capita (weighted)' = SUM('Extract'[F: GDP (curr $)]) / SUM('Extract'[P: Population (count)])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 3380b74a-f2c7-4e92-a5ac-314dbd3bcb14
+		lineageTag: c560eb96-a35b-470e-8dde-d316b60eba89
 
 	measure 'Rate spread (difference)' = AVERAGE('Extract'[F: Lending interest rate (%)])-AVERAGE('Extract'[F: Deposit interest rate (%)])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 1b627047-e246-484a-ae59-1d37954b4e74
+		lineageTag: 46751a57-8c55-44b6-bc99-84a00ea60fbb
 
 	measure '[Number of Records]' = 1
 		displayFolder: Measures
-		lineageTag: 5e60f71b-e5e2-4739-b6fb-3109351f2573
+		lineageTag: 65d5c1d6-8872-450f-9bbe-e89b7e0b5d48
 
 	column 'Country / Region'
 		dataType: string
-		lineageTag: c1a8e50f-16cf-41dc-bea0-676890f2a8b2
+		lineageTag: d10e3fe3-48b0-4b73-af48-57c8f22fd246
 		summarizeBy: none
 		sourceColumn: 'Country / Region'
 		dataCategory: Country
@@ -32,7 +32,7 @@ table Extract
 	column Date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: ff20e461-20bb-43e4-86b5-1d29b7ecdc06
+		lineageTag: 5e65c52c-8374-4039-849a-044c3d025bf8
 		summarizeBy: none
 		sourceColumn: Date
 		dataCategory: DateTime
@@ -42,7 +42,7 @@ table Extract
 	column 'F: Deposit interest rate (%)'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: bf3f484a-35da-4a1c-bf6a-0dab81b09ddf
+		lineageTag: 8a537290-fc4b-4a02-adc8-f59efbef93a4
 		summarizeBy: sum
 		sourceColumn: 'F: Deposit interest rate (%)'
 
@@ -51,7 +51,7 @@ table Extract
 	column 'F: GDP (curr $)'
 		dataType: double
 		formatString: c"$"#,#0,,.00B;("$"#,#0,,.00B)
-		lineageTag: b7ca8a1d-e39c-4211-95bd-402c6dfe120b
+		lineageTag: 8573ca46-0ffc-4c74-b08a-ee8a6940ebbc
 		summarizeBy: sum
 		sourceColumn: 'F: GDP (curr $)'
 
@@ -60,7 +60,7 @@ table Extract
 	column 'F: GDP per capita (curr $)'
 		dataType: double
 		formatString: c"$"#,#0,.0K;("$"#,#0,.0K)
-		lineageTag: ec6f8e96-6f03-4cb1-b842-091c323036b7
+		lineageTag: 1717f4ee-f8a4-4671-b175-34652a8f7792
 		summarizeBy: sum
 		sourceColumn: 'F: GDP per capita (curr $)'
 
@@ -69,7 +69,7 @@ table Extract
 	column 'F: Lending interest rate (%)'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: a81fa2f8-c593-4eac-b1b5-c5a7286378e0
+		lineageTag: bc2a56ed-8e16-4c9a-ac18-f15221360799
 		summarizeBy: sum
 		sourceColumn: 'F: Lending interest rate (%)'
 
@@ -78,7 +78,7 @@ table Extract
 	column 'H: Health exp (% GDP)'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 46656e4e-60ee-4dd7-80b1-a04d80952033
+		lineageTag: 809b5d52-803b-4f7e-8650-621379bdd80c
 		summarizeBy: sum
 		sourceColumn: 'H: Health exp (% GDP)'
 
@@ -87,7 +87,7 @@ table Extract
 	column 'H: Health exp/cap (curr $)'
 		dataType: double
 		formatString: c"$"#,#0,,.0B;("$"#,#0,,.0B)
-		lineageTag: 30c8a8d9-8653-472f-865e-3ead1c45af06
+		lineageTag: 3343dba6-d67c-4214-bf28-00fd8f29e7ac
 		summarizeBy: sum
 		sourceColumn: 'H: Health exp/cap (curr $)'
 
@@ -96,7 +96,7 @@ table Extract
 	column 'H: Life exp (years)'
 		dataType: double
 		formatString: n#,0;-#,0
-		lineageTag: ad8e8049-b183-4646-8fb6-7edd8eba8e73
+		lineageTag: 320a27be-724e-4423-912c-f98ab0792408
 		summarizeBy: sum
 		sourceColumn: 'H: Life exp (years)'
 
@@ -104,7 +104,7 @@ table Extract
 
 	column 'Number of Records'
 		dataType: int64
-		lineageTag: 0939082d-3b4d-4d2c-9d2d-b4a6887b73dc
+		lineageTag: 3f8d8369-07b7-498a-ab42-f3d72043a7f5
 		summarizeBy: sum
 		sourceColumn: 'Number of Records'
 
@@ -113,7 +113,7 @@ table Extract
 	column 'P: Population (count)'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 2d231e7c-94fc-45fa-bf58-cf06d17c7b79
+		lineageTag: ffeed1c2-2fdd-431d-88bd-6360c263c2ad
 		summarizeBy: sum
 		sourceColumn: 'P: Population (count)'
 
@@ -121,7 +121,7 @@ table Extract
 
 	column Region
 		dataType: string
-		lineageTag: 6bc6746c-d382-4c05-868b-293433da4cf3
+		lineageTag: 5d0074ad-5e64-4a1c-b099-9bc8a6b015ca
 		summarizeBy: none
 		sourceColumn: Region
 		dataCategory: StateOrProvince
@@ -130,7 +130,7 @@ table Extract
 
 	column Subregion
 		dataType: string
-		lineageTag: df55c9c7-1838-4be0-84b3-189d30837359
+		lineageTag: 451139cb-7def-458f-8c26-b64b75620f99
 		summarizeBy: none
 		sourceColumn: Subregion
 		dataCategory: StateOrProvince
@@ -139,7 +139,7 @@ table Extract
 
 	column 'Action (Country Name)'
 		dataType: string
-		lineageTag: 9799ad40-7146-427c-aa56-c93e99cf47d4
+		lineageTag: 5276cdd0-d629-452b-ab9f-9b90b3c39d60
 		summarizeBy: none
 		sourceColumn: 'Action (Country Name)'
 		displayFolder: Groups
@@ -148,7 +148,7 @@ table Extract
 
 	column 'Action (Date (year))'
 		dataType: string
-		lineageTag: b88c7580-ee35-453d-8aa5-d7f05f655863
+		lineageTag: d60f649d-f953-468c-b33e-d64790c875cb
 		summarizeBy: none
 		sourceColumn: 'Action (Date (year))'
 		displayFolder: Groups
@@ -157,7 +157,7 @@ table Extract
 
 	column 'Action (Region)'
 		dataType: string
-		lineageTag: b43d6727-f6a1-443a-89a9-62d934ebedf6
+		lineageTag: e092f454-6f6b-4b5b-9303-e60ecd77e040
 		summarizeBy: none
 		sourceColumn: 'Action (Region)'
 		displayFolder: Groups
@@ -166,7 +166,7 @@ table Extract
 
 	column 'Action (YEAR(Date (year)))'
 		dataType: string
-		lineageTag: b0724a3f-250f-4310-84e6-3aa74673ec5e
+		lineageTag: 919e6bc2-535e-43f4-a19a-70ae4cfabbbf
 		summarizeBy: none
 		sourceColumn: 'Action (YEAR(Date (year)))'
 		displayFolder: Groups
@@ -175,20 +175,22 @@ table Extract
 
 	column 'Exclusions (Country Name,YEAR(Date (year)))'
 		dataType: string
-		lineageTag: 4d306373-b314-4d4f-bf30-16e2a4e3ea14
+		lineageTag: 8139ba95-9d16-44ce-83fa-940e3c705fda
 		summarizeBy: none
 		sourceColumn: 'Exclusions (Country Name,YEAR(Date (year)))'
 		displayFolder: Groups
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Extract-70aef056-f26d-40fc-8939-fce3a03ba497' = m
+	partition 'Extract-475ccead-f64c-4528-b014-ff5d7c3f8c2a' = m
 		mode: import
 		source =
 				let
 				    // TODO: Configure the data source for connector type: DATAENGINE
 				    // Replace the sample table below with the actual source expression.
 				    Source = try
+				
+				        try
 				        #table(
 				            {"Country / Region", "Date", "F: Deposit interest rate (%)", "F: GDP (curr $)", "F: GDP per capita (curr $)", "F: Lending interest rate (%)", "H: Health exp (% GDP)", "H: Health exp/cap (curr $)", "H: Life exp (years)", "Number of Records", "P: Population (count)", "Region", "Subregion"},
 				            {
@@ -197,13 +199,17 @@ table Extract
 				            }
 				        )
 				    otherwise
-				        #table({"Country / Region", "Date", "F: Deposit interest rate (%)", "F: GDP (curr $)", "F: GDP per capita (curr $)", "F: Lending interest rate (%)", "H: Health exp (% GDP)", "H: Health exp/cap (curr $)", "H: Life exp (years)", "Number of Records", "P: Population (count)", "Region", "Subregion"}, {})  // Empty table on error,
+				        #table({"Country / Region", "Date", "F: Deposit interest rate (%)", "F: GDP (curr $)", "F: GDP per capita (curr $)", "F: Lending interest rate (%)", "H: Health exp (% GDP)", "H: Health exp/cap (curr $)", "H: Life exp (years)", "Number of Records", "P: Population (count)", "Region", "Subregion"}, {})
+				
+				    otherwise
+				
+				        #table({"Country / Region", "Date", "F: Deposit interest rate (%)", "F: GDP (curr $)", "F: GDP per capita (curr $)", "F: Lending interest rate (%)", "H: Health exp (% GDP)", "H: Health exp/cap (curr $)", "H: Life exp (years)", "Number of Records", "P: Population (count)", "Region", "Subregion"}, {}),
 				    #"Renamed Columns" = Table.RenameColumns(Source, {{"Date", "Date (year)"}, {"F: Deposit interest rate (%)", "Deposit interest rate (%)"}, {"F: GDP (curr $)", "GDP (curr $)"}, {"F: GDP per capita (curr $)", "GDP per capita (curr $)"}, {"F: Lending interest rate (%)", "Lending interest rate (%)"}, {"H: Health exp (% GDP)", "Health exp (% GDP)"}, {"H: Health exp/cap (curr $)", "Health exp/cap (curr $)"}, {"H: Life exp (years)", "Life exp (years)"}, {"P: Population (count)", "Population (count)"}}),
-				    #"Added Action (Country Name)" = Table.AddColumn(#"Renamed Columns", "Action (Country Name)", each [Country / Region], type text),
+				    #"Added Action (Country Name)" = Table.AddColumn(#"Renamed Columns", "Action (Country Name)", each [#"Country / Region"], type text),
 				    #"Added Action (Date (year))" = Table.AddColumn(#"Added Action (Country Name)", "Action (Date (year))", each [Date], type text),
 				    #"Added Action (Region)" = Table.AddColumn(#"Added Action (Date (year))", "Action (Region)", each [Region], type text),
 				    #"Added Action (YEAR(Date (year)))" = Table.AddColumn(#"Added Action (Region)", "Action (YEAR(Date (year)))", each [Date], type text),
-				    #"Added Exclusions (Country Name,YEAR(Date (year)))" = Table.AddColumn(#"Added Action (YEAR(Date (year)))", "Exclusions (Country Name,YEAR(Date (year)))", each [Country / Region] & " | " & [Date], type text),
+				    #"Added Exclusions (Country Name,YEAR(Date (year)))" = Table.AddColumn(#"Added Action (YEAR(Date (year)))", "Exclusions (Country Name,YEAR(Date (year)))", each [#"Country / Region"] & " | " & [Date], type text),
 				    Result = #"Added Exclusions (Country Name,YEAR(Date (year)))"
 				in
 				    Result

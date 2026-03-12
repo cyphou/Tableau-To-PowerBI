@@ -170,7 +170,7 @@ _SIMPLE_FUNCTION_MAP = [
     (r'\bLAST\s*\(\s*\)', '0'),
     (r'\bTOTAL\s*\(', 'CALCULATE('),
     # PREVIOUS_VALUE and LOOKUP handled by dedicated converters below
-    (r'\bSIZE\s*\(\s*\)', 'CALCULATE(COUNTROWS(), ALLSELECTED()) /* SIZE: partition row count */'),
+    (r'\bSIZE\s*\(\s*\)', 'COUNTROWS(ALLSELECTED()) /* SIZE: partition row count */'),
 
     # Additional WINDOW_* table calculations
     (r'\bWINDOW_MEDIAN\s*\(', 'CALCULATE(MEDIAN('),
@@ -1652,7 +1652,7 @@ def _convert_rank_functions(dax, table_name, compute_using=None, column_table_ma
             if func_upper == 'RANK_DENSE':
                 replacement = f"RANKX({table_expr}, {inner},, ASC, DENSE)"
             elif func_upper == 'RANK_MODIFIED':
-                replacement = f"RANKX({table_expr}, {inner}) /* RANK_MODIFIED: uses competition ranking, verify */"
+                replacement = f"RANKX({table_expr}, {inner},, ASC, SKIP) /* RANK_MODIFIED: modified competition ranking */"
             elif func_upper == 'RANK_PERCENTILE':
                 replacement = f"DIVIDE(RANKX({table_expr}, {inner}) - 1, COUNTROWS({table_expr}) - 1) /* RANK_PERCENTILE: approximate */"
             else:

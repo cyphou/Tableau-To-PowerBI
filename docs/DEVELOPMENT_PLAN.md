@@ -1,9 +1,62 @@
 # Development Plan — Tableau to Power BI Migration Tool
 
-**Version:** v6.0.0  
-**Date:** 2026-03-10  
-**Current state:** v6.0.0 — **1,889 tests** across 37 test files (+conftest.py), 0 failures, ~24,000 lines of Python  
-**Previous baseline:** v3.5.0 — 887 → v4.0.0 — 1,387 → v5.0.0 — 1,543 → v5.1.0 — 1,595 → v5.5.0 — 1,777 → v6.0.0 — **1,889 tests**
+**Version:** v7.0.0  
+**Date:** 2026-03-15  
+**Current state:** v7.0.0 — **2,000+ tests** across 38 test files (+conftest.py), 0 failures  
+**Previous baseline:** v3.5.0 — 887 → v4.0.0 — 1,387 → v5.0.0 — 1,543 → v5.1.0 — 1,595 → v5.5.0 — 1,777 → v6.0.0 — 1,889 → v6.1.0 — 1,997 → v7.0.0 — **2,000+ tests**
+
+---
+
+## v7.0.0 — CLI UX, DAX & M Hardening, Visual Refinements
+
+### v7.0.0 Completion Summary
+
+All four sprints (17-20) are **✅ COMPLETED**:
+- **2,000+ tests** passing across 38 test files, 0 failures
+- 38 new tests: 14 CLI + 10 DAX/M + 14 visual
+- 8 source files modified, 1 new test file created
+- New CLI flags: `--compare`, `--dashboard`
+
+### Sprint 17 — CLI Wiring & UX ✅ COMPLETED
+
+| # | Item | File(s) | Status | Details |
+|---|------|---------|--------|---------|
+| 17.1 | **`--compare` CLI flag** | `migrate.py` | ✅ Done | Wired `generate_comparison_report()` after migration report step |
+| 17.2 | **`--dashboard` CLI flag** | `migrate.py` | ✅ Done | Wired `generate_dashboard()` after comparison report step |
+| 17.3 | **MigrationProgress wiring** | `migrate.py` | ✅ Done | Progress tracking with dynamic step counting across all pipeline steps |
+| 17.4 | **Batch summary table** | `migrate.py` | ✅ Done | Formatted table: Workbook, Status, Fidelity, Tables, Visuals + aggregate stats |
+| 17.5 | **Sprint 17 tests** | `tests/test_cli_wiring.py` (NEW) | ✅ Done | 14 tests covering progress, comparison, dashboard, CLI args, batch formatting |
+
+### Sprint 18 — DAX & M Hardening ✅ COMPLETED
+
+| # | Item | File(s) | Status | Details |
+|---|------|---------|--------|---------|
+| 18.1 | **Custom SQL params** | `m_query_builder.py` | ✅ Done | `Value.NativeQuery()` with param record + `[EnableFolding=true]` |
+| 18.2 | **RANK_MODIFIED** | `dax_converter.py` | ✅ Done | `RANKX(..., ASC, SKIP)` — modified competition ranking |
+| 18.3 | **SIZE()** | `dax_converter.py` | ✅ Done | Simplified to `COUNTROWS(ALLSELECTED())` |
+| 18.4 | **Query folding hints** | `m_query_builder.py` | ✅ Done | `m_transform_buffer()` + `m_transform_join(buffer_right=True)` |
+| 18.5 | **Sprint 18 tests** | `test_m_query_builder.py`, `test_dax_coverage.py` | ✅ Done | 10 tests (buffer, custom SQL params, RANK_MODIFIED, SIZE) |
+
+### Sprint 19 — Visual & Layout Refinements ✅ COMPLETED
+
+| # | Item | File(s) | Status | Details |
+|---|------|---------|--------|---------|
+| 19.1 | **Violin plot** | `visual_generator.py` | ✅ Done | `boxAndWhisker` + GUID `ViolinPlot1.0.0` |
+| 19.2 | **Parallel coordinates** | `visual_generator.py` | ✅ Done | `lineChart` + GUID `ParallelCoordinates1.0.0` |
+| 19.3 | **Calendar heat map** | `visual_generator.py` | ✅ Done | Auto-enables conditional formatting on matrix + migration note |
+| 19.4 | **Packed bubble size** | `visual_generator.py` | ✅ Done | `mark_encoding.size.field` → scatter Size data role |
+| 19.5 | **Butterfly note** | `visual_generator.py` | ✅ Done | Improved approximation note — suggests negating one measure |
+| 19.6 | **Sprint 19 tests** | `test_generation_coverage.py` | ✅ Done | 14 tests for all visual refinements |
+
+### Sprint 20 — Documentation & Release ✅ COMPLETED
+
+| # | Item | File(s) | Status | Details |
+|---|------|---------|--------|---------|
+| 20.1 | **GAP_ANALYSIS.md** | `docs/GAP_ANALYSIS.md` | ✅ Done | 10 gaps closed |
+| 20.2 | **KNOWN_LIMITATIONS.md** | `docs/KNOWN_LIMITATIONS.md` | ✅ Done | v7.0.0 closures reflected |
+| 20.3 | **DEVELOPMENT_PLAN.md** | `docs/DEVELOPMENT_PLAN.md` | ✅ Done | v7.0.0 sprint details |
+| 20.4 | **CHANGELOG.md** | `CHANGELOG.md` | ✅ Done | v7.0.0 entry |
+| 20.5 | **copilot-instructions.md** | `.github/copilot-instructions.md` | ✅ Done | Updated |
 
 ---
 

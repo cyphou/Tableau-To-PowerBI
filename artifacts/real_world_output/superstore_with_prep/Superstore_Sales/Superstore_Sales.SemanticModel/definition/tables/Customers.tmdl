@@ -1,0 +1,75 @@
+table Customers
+	lineageTag: 6c675b32-221b-4c99-9292-5fbbb81a5391
+
+	column Customer_ID
+		dataType: string
+		lineageTag: f5143d9d-1ef2-4618-946a-5417b6a40b4a
+		summarizeBy: none
+		sourceColumn: Customer_ID
+
+		annotation SummarizationSetBy = Automatic
+
+	column Customer_Name
+		dataType: string
+		lineageTag: 9367d5a7-b90c-4496-b526-d98f71695545
+		summarizeBy: none
+		sourceColumn: Customer_Name
+
+		annotation SummarizationSetBy = Automatic
+
+	column Segment
+		dataType: string
+		lineageTag: 61712249-fb75-4a74-8afe-7fc4a1191d72
+		summarizeBy: none
+		sourceColumn: Segment
+
+		annotation SummarizationSetBy = Automatic
+
+	column City
+		dataType: string
+		lineageTag: 534d9e04-9471-438d-882a-9154afb8e236
+		summarizeBy: none
+		sourceColumn: City
+		dataCategory: City
+
+		annotation SummarizationSetBy = Automatic
+
+	column State
+		dataType: string
+		lineageTag: ae8b9df0-7493-4620-918c-268ab059ca28
+		summarizeBy: none
+		sourceColumn: State
+		dataCategory: StateOrProvince
+
+		annotation SummarizationSetBy = Automatic
+
+	column Country
+		dataType: string
+		lineageTag: f8a4e61b-a911-42a0-b590-3ab61ae8ded2
+		summarizeBy: none
+		sourceColumn: Country
+		dataCategory: Country
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Customers-2ccc0227-4bac-477f-aad9-2a257522123b' = m
+		mode: import
+		source =
+				let
+				    // TODO: Configure the data source for connector type: textscan
+				    // Replace the sample table below with the actual source expression.
+				    Source = try
+				        #table(
+				            {"Customer_ID", "Customer_Name", "Segment", "City", "State", "Country"},
+				            {
+				                {"Sample 1", "Sample 2", "Sample 3", "Sample 4", "Sample 5", "Sample 6"},
+				                {"Sample 2", "Sample 3", "Sample 4", "Sample 5", "Sample 6", "Sample 7"}
+				            }
+				        )
+				    otherwise
+				        #table({"Customer_ID", "Customer_Name", "Segment", "City", "State", "Country"}, {})  // Empty table on error
+				in
+				    Source
+
+	annotation PBI_ResultType = Table
+

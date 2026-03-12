@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Report",
+    "displayName": "superstore_sales_dashboard"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "f094e1a7-b756-4a42-81e1-abf7a1a29007"
+  }
+}

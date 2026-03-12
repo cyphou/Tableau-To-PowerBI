@@ -1,18 +1,18 @@
 table 'New Business Growth'
-	lineageTag: 4e29c207-d0cd-49ac-aa8e-3c58101ab600
+	lineageTag: 60f54fd7-d9b0-41f6-a8ee-08399807b836
 
 	measure 'New Business Growth' = SELECTEDVALUE('New Business Growth'[Value], 0.59999999999999998)
-		lineageTag: f921cebc-7112-44b5-92c8-a738668473b6
+		lineageTag: 1f0831b7-5173-4871-b4fa-abf5cd47df8e
 
 	column Value
 		dataType: double
-		lineageTag: 2eb85d40-33bd-4b20-be28-267e9b7c46c3
+		lineageTag: 237ef3ae-82f3-4d14-875d-1980d1f38ee3
 		summarizeBy: none
 		sourceColumn: Value
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'New Business Growth-455a6643-3536-475b-b10f-fb7654672a5b' = calculated
+	partition 'New Business Growth-1969ae09-c08f-40f7-96f6-e9494e218851' = calculated
 		mode: import
 		source = GENERATESERIES(0.0, 1.0, 0.01)
 

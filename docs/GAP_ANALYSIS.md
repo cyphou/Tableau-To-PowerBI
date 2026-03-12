@@ -212,13 +212,13 @@
 |---------------|----------------|-----|
 | **Sankey / Chord / Network** | ✅ `sankeyDiagram` / `chordChart` / `networkNavigator` (custom visual GUIDs) | Custom visuals require AppSource installation in PBI Desktop |
 | **Gantt Bar / Lollipop** | ✅ `ganttChart` (custom visual GUID) | Custom visual; time-axis semantics preserved |
-| **Butterfly Chart / Waffle** | `hundredPercentStackedBarChart` | Loses symmetry of butterfly layout |
-| **Calendar Heat Map** | `matrix` | PBI matrix can show colors but lacks calendar grid structure |
-| **Packed Bubble / Strip Plot** | `scatterChart` | Size encoding may not transfer correctly |
+| **Butterfly Chart / Waffle** | `hundredPercentStackedBarChart` | ✅ IMPROVED — approximation note suggests negating one measure to simulate symmetry |
+| **Calendar Heat Map** | `matrix` | ✅ IMPROVED — auto-enables conditional formatting properties + migration note |
+| **Packed Bubble / Strip Plot** | `scatterChart` | ✅ FIXED — size encoding from `mark_encoding` auto-injected into Size data role |
 | **Bump Chart / Slope / Sparkline** | `lineChart` | Ranking semantics of bump charts are lost |
 | **Motion chart (animated)** | Not handled | No PBI equivalent for play-axis animation |
-| **Violin plot** | Not handled | No standard PBI visual |
-| **Parallel coordinates** | Not handled | No standard PBI visual |
+| **Violin plot** | ✅ `boxAndWhisker` + custom visual (`ViolinPlot1.0.0`) | Maps to Box & Whisker; AppSource custom visual GUID available |
+| **Parallel coordinates** | ✅ `lineChart` + custom visual (`ParallelCoordinates1.0.0`) | Maps to Line Chart; AppSource custom visual GUID available |
 | **Small multiples (Tableau grid)** | ✅ IMPLEMENTED | `_build_small_multiples_config()` auto-detects and generates PBI Small Multiples |
 
 ### What is APPROXIMATED
@@ -270,9 +270,9 @@
 | **REGEXP_EXTRACT / REGEXP_EXTRACT_NTH** | `MID(field, SEARCH("prefix", field) + len, LEN(field))` | ✅ IMPROVED — fixed-prefix capture patterns converted; complex falls back to BLANK() |
 | **CORR, COVAR, COVARP** | VAR/iterator DAX patterns | ✅ IMPLEMENTED — Pearson correlation formula with SUMX/VAR, proper N vs N-1 divisor |
 | **RANK_PERCENTILE** | `DIVIDE(RANKX()-1, COUNTROWS()-1)` | Approximate — edge cases with ties |
-| **RANK_MODIFIED** | `RANKX()` + comment | Standard ranking, not modified competition ranking |
+| **RANK_MODIFIED** | `RANKX(..., ASC, SKIP)` | ✅ FIXED — uses SKIP parameter for modified competition ranking |
 | **INDEX()** | `RANKX()` | Row number vs rank — different semantics |
-| **SIZE()** | `COUNTROWS()` | Counts all rows, not partition size |
+| **SIZE()** | `COUNTROWS(ALLSELECTED())` | ✅ FIXED — simplified to COUNTROWS(ALLSELECTED()) for partition-aware row count |
 | **RUNNING_SUM/AVG/COUNT** | `CALCULATE(AGG, FILTER(ALLSELECTED(...)))` | ✅ IMPROVED — now uses FILTER(ALLSELECTED) pattern with proper window semantics; supports partition fields via `compute_using` with ALLEXCEPT |
 | **WINDOW_SUM/AVG/MAX/MIN** | `CALCULATE(inner, ALL/ALLEXCEPT('table'))` with OFFSET frame boundaries | ✅ IMPROVED — frame start/end positions generate OFFSET-based patterns; supports ALLEXCEPT with partition fields |
 | **WINDOW_CORR/COVAR/COVARP** | VAR/iterator DAX patterns | ✅ IMPLEMENTED — proper VAR/SUMX patterns with CALCULATE windowing context (v5.3.0) |
@@ -300,13 +300,13 @@
 | **OAuth / SSO connector auth** | ✅ IMPLEMENTED — `gateway_config.py` generates OAuth redirect templates and data gateway connection references |
 | **Data gateway references** | ✅ IMPLEMENTED — Gateway connection config generated in v5.0 |
 | **Incremental refresh** | ✅ IMPLEMENTED — `refreshPolicy` section in TMDL table partitions |
-| **Query folding hints** | No `Table.Buffer()` or `Value.NativeQuery()` optimization hints |
+| **Query folding hints** | ✅ IMPLEMENTED — `m_transform_buffer()` + `m_transform_join(buffer_right=True)` for `Table.Buffer()` folding boundaries |
 | **Parameterized data sources** | ✅ IMPLEMENTED — `_write_expressions_tmdl()` generates `ServerName`/`DatabaseName` M parameters |
 | **Tableau Hyper extract data** | `.hyper` files referenced in Prep flows produce empty `#table` |
 | **Google Sheets authentication** | M query generated but no OAuth2 credential setup |
 | **PDF connector** | Produces `Pdf.Tables(File.Contents(...))` — may need page/table index parameters |
 | **Salesforce connector** | Basic `Salesforce.Data()` — may need object/API version specification |
-| **Custom SQL with parameters** | Custom SQL uses `Value.NativeQuery()` but parameter binding is not supported |
+| **Custom SQL with parameters** | ✅ IMPLEMENTED — `Value.NativeQuery()` with parameter record binding and `[EnableFolding=true]` |
 | **Error handling in M steps** | ✅ IMPLEMENTED — `wrap_source_with_try_otherwise()` wired into `tmdl_generator.generate_table_bim()` after `inject_m_steps` |
 | **Data type detection from Tableau metadata** | Type columns rely on Tableau's `datatype` attribute; complex types (duration, geographic) may mis-map |
 

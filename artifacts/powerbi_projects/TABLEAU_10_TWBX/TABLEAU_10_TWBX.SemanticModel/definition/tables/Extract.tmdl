@@ -1,13 +1,13 @@
 table Extract
-	lineageTag: b5ae9026-f653-44a8-aa97-2e5d33a21b96
+	lineageTag: bd6582a6-8054-4111-ac6d-da2d359559d1
 
 	measure '[Number of Records]' = 1
 		displayFolder: Measures
-		lineageTag: eaf98d2f-263b-4c1e-9ce5-1780a8f3e284
+		lineageTag: 0b43b15e-94da-49a1-9e20-0426998534c7
 
 	column 'Number of Records'
 		dataType: int64
-		lineageTag: 99610fc4-c642-4afa-bc8a-11f3c99ff301
+		lineageTag: 0ce9737a-96d1-4ffb-b56a-5244a3ffa156
 		summarizeBy: sum
 		sourceColumn: 'Number of Records'
 
@@ -15,7 +15,7 @@ table Extract
 
 	column a
 		dataType: string
-		lineageTag: 06b2ea38-2071-4a99-8b70-bd560843bc65
+		lineageTag: 8347f2d6-38ce-49f1-b0a0-6d9b136a4596
 		summarizeBy: none
 		sourceColumn: a
 
@@ -23,7 +23,7 @@ table Extract
 
 	column x
 		dataType: int64
-		lineageTag: 8588565e-66a3-4fae-a758-095e669032e3
+		lineageTag: af2e5382-fe3e-43d0-ba92-4237daf68e67
 		summarizeBy: sum
 		sourceColumn: x
 
@@ -31,18 +31,24 @@ table Extract
 
 	column y
 		dataType: int64
-		lineageTag: 7a668331-b9cf-4de7-a870-96ebc2db419a
+		lineageTag: 1f711024-fe24-4a65-881a-c8cc05a5376a
 		summarizeBy: sum
 		sourceColumn: y
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Extract-8b02b4f7-05e0-4aef-8807-24969574f849' = m
+	partition 'Extract-47a3b8b6-ccca-4f03-a83c-4bcad529ee13' = m
 		mode: import
 		source =
 				let
 				    // Source SQL Server
-				    Source = Sql.Database("mssql2012.test.tsi.lan", "TestV1"),
+				    Source = try
+				
+				        Sql.Database("mssql2012.test.tsi.lan", "TestV1")
+				
+				    otherwise
+				
+				        #table({"Number of Records", "a", "x", "y"}, {}),
 				    #"Extract Table" = Source{[Schema="dbo", Item="Extract"]}[Data],
 				    #"Renamed Columns" = Table.RenameColumns(#"Extract Table", {{"a", "A"}, {"x", "X"}, {"y", "Y"}}),
 				    Result = #"Renamed Columns"

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "SemanticModel",
+    "displayName": "TABLEAU_10_TWBX"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "befd1c99-f74f-48f8-9e91-c4feb07900fd"
+  }
+}

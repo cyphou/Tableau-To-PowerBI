@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-03-10T14:08:30.379438",
+  "generated_at": "2026-03-11T23:06:25.105849",
   "source": "Tableau Migration",
   "report_name": "ephemeral_field",
   "objects_converted": {
     "worksheets": 2,
     "dashboards": 0,
     "datasources": 1,
-    "calculations": 1,
+    "calculations": 2,
     "parameters": 0,
     "filters": 0,
     "stories": 0,
@@ -20,7 +20,7 @@
   },
   "generated_output": {
     "pages": 1,
-    "visuals": 2,
+    "visuals": 4,
     "theme_applied": false,
     "theme_detail": {
       "status": "skipped",
@@ -29,7 +29,7 @@
   },
   "tmdl_stats": {
     "tables": 1,
-    "measures": 1,
+    "measures": 2,
     "columns": 3,
     "relationships": 0
   },

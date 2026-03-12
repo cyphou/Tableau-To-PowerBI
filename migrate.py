@@ -885,11 +885,29 @@ def run_batch_migration(batch_dir, output_dir=None, prep_file=None, skip_extract
     print(f"  Duration:        {batch_duration}")
     print()
 
+    # Formatted summary table
+    name_width = max((len(n) for n in batch_results), default=20)
+    name_width = max(name_width, 20)
+    header = f"  {'Workbook':<{name_width}}  {'Status':>8}  {'Fidelity':>9}  {'Tables':>7}  {'Visuals':>8}"
+    print(header)
+    print(f"  {'-' * name_width}  {'--------':>8}  {'---------':>9}  {'-------':>7}  {'--------':>8}")
     for name, result in batch_results.items():
-        status = "[OK]" if result['success'] else "[FAIL]"
+        status = "OK" if result['success'] else "FAIL"
         fidelity = result.get('fidelity')
-        fid_str = f"  (fidelity: {fidelity}%)" if fidelity is not None else ""
-        print(f"  {status} {name}{fid_str}")
+        fid_str = f"{fidelity}%" if fidelity is not None else "—"
+        stats = result.get('stats', {})
+        tables = stats.get('tmdl_tables', '—')
+        visuals = stats.get('visuals_generated', '—')
+        print(f"  {name:<{name_width}}  {status:>8}  {fid_str:>9}  {str(tables):>7}  {str(visuals):>8}")
+    print()
+
+    # Aggregate stats
+    fidelities = [r['fidelity'] for r in batch_results.values() if r.get('fidelity') is not None]
+    if fidelities:
+        avg_fid = round(sum(fidelities) / len(fidelities), 1)
+        min_fid = min(fidelities)
+        max_fid = max(fidelities)
+        print(f"  Fidelity: avg {avg_fid}% | min {min_fid}% | max {max_fid}%")
 
     return ExitCode.SUCCESS if failed == 0 else ExitCode.BATCH_PARTIAL_FAIL
 
@@ -1034,6 +1052,20 @@ def _build_argument_parser():
         metavar='DIR',
         default=None,
         help='Path to an existing .pbip project — merge changes incrementally, preserving manual edits'
+    )
+
+    parser.add_argument(
+        '--compare',
+        action='store_true',
+        default=False,
+        help='Generate an HTML side-by-side comparison report (Tableau vs. Power BI)'
+    )
+
+    parser.add_argument(
+        '--dashboard',
+        action='store_true',
+        default=False,
+        help='Generate an HTML telemetry dashboard (aggregated migration statistics)'
     )
 
     parser.add_argument(
@@ -1475,6 +1507,18 @@ def main():
     start_time = datetime.now()
     results = {}
 
+    # Initialize progress tracker
+    from powerbi_import.progress import MigrationProgress, NullProgress
+    show_progress = not getattr(args, 'quiet', False)
+    total_steps = 4  # extraction, generation, report, dashboard
+    if args.prep:
+        total_steps += 1
+    if getattr(args, 'deploy', None):
+        total_steps += 1
+    if getattr(args, 'compare', False):
+        total_steps += 1
+    progress = MigrationProgress(total_steps=total_steps, show_bar=show_progress) if show_progress else NullProgress()
+
     # Initialize telemetry (opt-in)
     telemetry = None
     if getattr(args, 'telemetry', False):
@@ -1486,20 +1530,27 @@ def main():
             pass
 
     # Step 1: Extraction
+    progress.start("Extracting Tableau data")
     if not args.skip_extraction:
         results['extraction'] = run_extraction(args.tableau_file)
         if not results['extraction']:
+            progress.fail("Extraction failed")
             print("\nMigration aborted due to extraction failure")
             return ExitCode.EXTRACTION_FAILED
+        progress.complete(f"Extracted from {os.path.basename(args.tableau_file)}")
     else:
-        print("\nExtraction skipped (using existing datasources.json)")
+        progress.complete("Skipped (using existing data)")
         results['extraction'] = True
 
     # Step 1b: Prep flow (optional)
     if args.prep:
+        progress.start("Parsing Prep flow")
         results['prep'] = run_prep_flow(args.prep)
         if not results['prep']:
+            progress.fail("Prep flow parsing failed")
             print("\n⚠ Prep flow parsing failed — continuing with TWB data only")
+        else:
+            progress.complete("Prep flow merged")
 
     # Step 1c: Assessment (optional)
     if args.assess and results.get('extraction'):
@@ -1527,7 +1578,10 @@ def main():
         out_dir = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
         print(f"  Output:  {os.path.join(out_dir, source_basename)}")
         results['generation'] = True
+        progress.start("Generating Power BI project")
+        progress.complete("Dry run — skipped")
     else:
+        progress.start("Generating Power BI project")
         results['generation'] = run_generation(
             report_name=source_basename,
             output_dir=args.output_dir,
@@ -1538,6 +1592,10 @@ def main():
             output_format=args.output_format,
             paginated=getattr(args, 'paginated', False),
         )
+        if results['generation']:
+            progress.complete(f"Generated {source_basename}")
+        else:
+            progress.fail("Generation failed")
 
     # Step 3: Incremental merge (optional)
     if getattr(args, 'incremental', None) and results.get('generation'):
@@ -1567,17 +1625,45 @@ def main():
             print(f"  ⚠ Incremental merge failed: {exc}")
 
     # Step 4: Migration report
+    progress.start("Generating migration report")
     report_summary = None
     if results.get('generation'):
         report_summary = run_migration_report(
             report_name=source_basename,
             output_dir=args.output_dir,
         )
+    fid = report_summary.get('fidelity_score', '?') if report_summary else '?'
+    progress.complete(f"Fidelity: {fid}%")
 
     # Step 4b: HTML migration dashboard
     if results.get('generation') and not args.dry_run:
         dashboard_dir = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
         run_html_dashboard(source_basename, dashboard_dir)
+
+    # Step 4c: Comparison report (optional)
+    if getattr(args, 'compare', False) and results.get('generation') and not args.dry_run:
+        try:
+            from powerbi_import.comparison_report import generate_comparison_report
+            extract_dir = os.path.join(os.path.dirname(__file__), 'tableau_export')
+            out_base = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
+            pbip_dir = os.path.join(out_base, source_basename)
+            cmp_path = os.path.join(out_base, f'comparison_{source_basename}.html')
+            html_path = generate_comparison_report(extract_dir, pbip_dir, output_path=cmp_path)
+            if html_path:
+                print(f"\n📋 Comparison report: {html_path}")
+        except Exception as exc:
+            logger.warning(f"Comparison report generation failed: {exc}")
+
+    # Step 4d: Telemetry dashboard (optional)
+    if getattr(args, 'dashboard', False) and results.get('generation') and not args.dry_run:
+        try:
+            from powerbi_import.telemetry_dashboard import generate_dashboard as gen_telem_dashboard
+            out_base = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
+            dash_path = gen_telem_dashboard(out_base)
+            if dash_path:
+                print(f"\n📊 Telemetry dashboard: {dash_path}")
+        except Exception as exc:
+            logger.warning(f"Telemetry dashboard generation failed: {exc}")
 
     # Step 5: Deploy to Power BI Service (optional)
     deploy_result = None

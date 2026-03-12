@@ -117,7 +117,7 @@ class TestCustomVisualGUIDs(unittest.TestCase):
         self.assertIsNone(guid_info)
 
     def test_approximation_map_all_entries(self):
-        self.assertEqual(len(APPROXIMATION_MAP), 12)
+        self.assertEqual(len(APPROXIMATION_MAP), 15)
         for key, (pbi_type, note) in APPROXIMATION_MAP.items():
             self.assertTrue(pbi_type, f"Empty pbi_type for {key}")
             self.assertTrue(note, f"Empty note for {key}")
@@ -490,9 +490,11 @@ class TestCustomVisualGUIDIntegration(unittest.TestCase):
         custom_classes = {v['class'] for v in CUSTOM_VISUAL_GUIDS.values()}
         for key, (pbi_type, note) in APPROXIMATION_MAP.items():
             if 'AppSource' in note:
-                self.assertIn(pbi_type, custom_classes,
-                              f"APPROXIMATION_MAP '{key}' claims AppSource but "
-                              f"class '{pbi_type}' not in CUSTOM_VISUAL_GUIDS")
+                # Check by key (custom GUID key) or by pbi_type (class match)
+                has_guid = key in CUSTOM_VISUAL_GUIDS or pbi_type in custom_classes
+                self.assertTrue(has_guid,
+                                f"APPROXIMATION_MAP '{key}' claims AppSource but "
+                                f"no matching entry in CUSTOM_VISUAL_GUIDS")
 
     def test_custom_visual_guids_have_required_keys(self):
         for key, info in CUSTOM_VISUAL_GUIDS.items():
