@@ -2,6 +2,21 @@
 
 ## v9.0.0 — Coverage, Hyper Data, Modern Tableau & Polish (in progress)
 
+### Sprint 29 — Tableau 2024+ Features & Multi-language ✅
+- **29.1: Dynamic parameters (2024.3+)**: Database-query-driven parameter extraction (old + new XML format), generate M partition with `Value.NativeQuery()` source and `refreshPolicy` for automatic refresh. Fixed Python 3.14 Element `or` pattern compatibility.
+- **29.2: Tableau Pulse → PBI Goals**: New `pulse_extractor.py` parses `<metric>`, `<pulse-metric>`, and `<metrics/metric>` elements. New `goals_generator.py` generates Fabric Scorecard API JSON. `--goals` CLI flag for optional scorecard generation.
+- **29.3: Multi-language report labels**: `_write_multi_language_cultures()` generates separate `cultures/{locale}.tmdl` files from comma-separated locales. `--languages` CLI flag threaded through full pipeline (`migrate.py` → `import_to_powerbi.py` → `pbip_generator.py` → `tmdl_generator.py`).
+- **29.4: Translated display folders**: `_DISPLAY_FOLDER_TRANSLATIONS` for 9 locales (fr-FR, de-DE, es-ES, pt-BR, ja-JP, zh-CN, ko-KR, it-IT, nl-NL) with 11 display folder names. `translatedDisplayFolder` entries in culture TMDL files. Language-prefix fallback (e.g., fr-CA → fr-FR).
+- **50 new tests** in `test_sprint29.py` — 2,666 total, 88.1% coverage
+
+### Sprint 28 — Hyper Data Loading & SCRIPT_* Visuals ✅
+- **28.1: Hyper file data reader**: New `hyper_reader.py` (513 lines) — reads `.hyper` files via stdlib `sqlite3`, extracts table schema + first N rows, generates `#table()` M expressions with inline data.
+- **28.2: Pipeline wiring**: Hyper reader integrated into `extract_tableau_data.py` and `m_query_builder.py` — populates M queries with actual data instead of empty `#table()`.
+- **28.3: Prep flow Hyper source**: Hyper reader integrated into `prep_flow_parser.py` for `.hyper` file references in Prep flows.
+- **28.4: SCRIPT_* → Python/R visual**: `SCRIPT_BOOL/INT/REAL/STR` detection generates PBI Python/R visual containers (`scriptVisual`) with original code preserved as comments.
+- **28.5: SCRIPT_* assessment**: Assessment flags SCRIPT_* calcs as "requires Python/R runtime setup" (severity downgraded from `fail` to `warn`).
+- **74 new tests** in `test_sprint28.py` — 2,616 total, 88.0% coverage
+
 ### Sprint 27 — Coverage Push: Extraction Layer ✅
 - **Overall coverage: 81.9% → 88.3%** (+6.4 percentage points)
 - **267 new tests** (2,275 → 2,542), 0 failures, 15 skipped

@@ -2,7 +2,7 @@
 
 This document lists known limitations and approximations in the Tableau to Power BI migration tool.
 
-> **Last updated:** v8.0.0 — many previous limitations have been addressed. See v9.0.0 plan for upcoming closures (Hyper data, SCRIPT_*, dynamic params, Pulse).
+> **Last updated:** v9.0.0 (Sprint 29) — many previous limitations have been addressed in Sprints 27-29. See below for current status.
 
 ---
 
@@ -10,9 +10,9 @@ This document lists known limitations and approximations in the Tableau to Power
 
 | Area | Limitation | Impact |
 |------|-----------|--------|
-| **Hyper files** | `.hyper` file headers and table structure are extracted (column names/types), but row-level data is not loaded | Tables from Hyper extracts will have structure but no inline data preview |
+| **Hyper files** | ✅ `.hyper` file column metadata AND row-level data are now loaded via SQLite interface (`hyper_reader.py`). Some `.hyper` v2+ files may use a proprietary format that SQLite cannot read — falls back to metadata-only extraction | Tables from unsupported Hyper formats will have structure but no inline data |
 | **Tableau Server/Cloud** | ✅ `--server` CLI flag enables direct extraction from Tableau Server/Cloud via REST API (PAT or password auth). Live connections still need reconfiguration in PBI |
-| **Tableau 2024.3+** | Dynamic zone visibility and database-query parameters not fully extracted | These newer features may be ignored during migration |
+| **Tableau 2024.3+** | ✅ Dynamic parameters with database queries are now fully extracted and converted to M partition with `Value.NativeQuery()`. Dynamic zone visibility may still be partially handled | Newer dynamic zone features may need manual adjustment |
 | **Custom shapes** | Shape encoding extracts the field reference only — actual image files are not migrated | Custom shape visuals will show default markers |
 | **OAuth credentials** | Credential metadata is stripped by design | Data source connections need re-authentication in Power BI |
 | **Nested layout containers** | Deeply nested containers may lose relative positioning | Some dashboard layouts may need manual adjustment |
@@ -34,7 +34,7 @@ This document lists known limitations and approximations in the Tableau to Power
 | MAKEPOINT, MAKELINE, DISTANCE, BUFFER, AREA, INTERSECTION | `0` + comment | No spatial functions in DAX |
 | HEXBINX, HEXBINY | `0` + comment | No hex-binning in DAX |
 | COLLECT | `0` + comment | No spatial collection |
-| SCRIPT_BOOL/INT/REAL/STR | `BLANK()` + comment | R/Python scripting has no DAX equivalent |
+| SCRIPT_BOOL/INT/REAL/STR | ✅ `scriptVisual` (Python or R) + `BLANK()` DAX fallback | R/Python scripting → PBI Python/R visual containers with script text and input columns. `BLANK()` DAX measure generated for non-visual contexts. Requires Python/R runtime configured in PBI Desktop |
 | SPLIT | `BLANK()` + comment | No string split to array in DAX |
 
 ### Approximated Functions
@@ -70,7 +70,7 @@ This document lists known limitations and approximations in the Tableau to Power
 | Area | Limitation |
 |------|-----------|
 | **Custom SQL params** | ✅ IMPLEMENTED — `Value.NativeQuery()` with parameter record binding and `[EnableFolding=true]` |
-| **Hyper data** | `.hyper` files referenced in Prep flows produce empty `#table` (metadata is extracted) |
+| **Hyper data** | ✅ `.hyper` files are now loaded via SQLite interface — row data injected into M `#table()` expressions. Some proprietary `.hyper` v2+ formats may fall back to metadata-only |
 | **Query folding** | ✅ IMPLEMENTED — `m_transform_buffer()` + `m_transform_join(buffer_right=True)` for `Table.Buffer()` folding boundaries |
 
 ## Deployment Limitations
@@ -95,3 +95,5 @@ For most limitations, the recommended workflow is:
 8. Use `--incremental` for iterative refinement without losing manual edits
 9. Use `--deploy WORKSPACE_ID` to publish directly to Power BI Service
 10. Use `--server` to extract workbooks directly from Tableau Server/Cloud
+11. Use `--languages fr-FR,de-DE` to generate multi-language culture TMDL files with translated display folders
+12. Use `--goals` to convert Tableau Pulse metrics to Power BI Goals/Scorecard artifacts

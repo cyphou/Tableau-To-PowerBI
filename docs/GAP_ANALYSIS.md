@@ -1,8 +1,8 @@
 # Comprehensive Gap Analysis — Tableau to Power BI Migration Tool
 
-**Date:** 2026-03-15 — updated through v7.0.0 (Sprints 13-20)  
+**Date:** 2026-03-15 — updated through v9.0.0 (Sprints 13-29)  
 **Scope:** Every source file, test file, CI/CD, docs, config, and cross-project comparison with TableauToFabric  
-**Status:** 2,057 tests passing across 40 test files
+**Status:** 2,666 tests passing across 48 test files
 
 ### Implementation Coverage
 
@@ -74,10 +74,10 @@
 
 ### What is MISSING or INCOMPLETE
 - **Tableau Server/Cloud connection types**: ✅ IMPLEMENTED — `TableauServerClient` in `server_client.py` provides PAT/password auth, workbook download, datasource listing, batch download, regex search via `--server` CLI flag
-- **`.hyper` file parsing**: Prep `LoadHyper` emits an empty `#table` — Hyper file data is not read (metadata extraction added but not data)
+- **`.hyper` file parsing**: ✅ IMPLEMENTED — `hyper_reader.py` reads `.hyper` files via SQLite interface (column metadata + row data), schema discovery, type mapping to M/TMDL types; row data injected into M `#table()` expressions
 - **Tableau extensions/LOD filters**: LOD calc extraction relies on text-based `{FIXED ...}` parsing (can miss edge cases with nested LODs or LOD inside LOD)
 - **Dashboard layout containers**: Layout containers are extracted but deeply nested containers may lose relative positioning when mapped to PBI
-- **Tableau 2024.3+ features**: Dynamic parameters with database queries not fully extracted
+- **Tableau 2024.3+ features**: ✅ IMPLEMENTED — Dynamic parameters with database queries fully extracted and converted to M partition with `Value.NativeQuery()` for dynamic parameter refresh
 - **Connection credentials/OAuth**: Credential metadata is stripped (by design), but OAuth redirect configs aren't migrated
 - **Multiple data sources per worksheet**: The extractor handles this, but the downstream TMDL generator may place all calculations on the "main" table, losing the datasource context
 - **Tooltip formatting**: Rich tooltip formatting (HTML, custom layout) — basic run-level formatting now extracted but complex HTML layouts are not preserved
@@ -138,7 +138,7 @@
 ### What is MISSING or INCOMPLETE
 - **No semantic validation of generated TMDL**: ✅ IMPLEMENTED — `validate_semantic_references()` in validator.py collects table/column/measure symbols and validates `'Table'[Column]` DAX references
 - **No incremental migration**: ✅ IMPLEMENTED — `IncrementalMerger` in `incremental.py` provides three-way merge preserving user edits; `--incremental DIR` CLI flag
-- **No multi-language report support**: Single-culture output only (model.tmdl culture ref) — `--culture` flag controls locale
+- **No multi-language report support**: ✅ IMPLEMENTED — `--languages fr-FR,de-DE,ja-JP` generates multiple culture TMDL files with translated display folders (Dimensions→Dimensionen, Measures→Mesures, etc.) and translated calendar column names
 - **No data bar / sparkline visuals**: ✅ PARTIALLY IMPLEMENTED — Data bars added in v4.0; sparkline generation added in v5.0
 - **No drill-through pages**: ✅ IMPLEMENTED — `_create_drillthrough_pages()` in pbip_generator.py
 - **No paginated reports**: ✅ IMPLEMENTED — Basic paginated report layout generation added in v5.0
@@ -160,7 +160,7 @@
 ## 3. Test Coverage
 
 ### What IS implemented
-- **887 tests across 18 test files** (original) + **1,147 additional tests in v3.6–v7.0.0**, totaling **2,057 tests across 40 test files** including shared fixtures in `conftest.py`:
+- **887 tests across 18 test files** (original) + **1,779 additional tests in v3.6–v9.0.0**, totaling **2,666 tests across 48 test files** including shared fixtures in `conftest.py`:
 
 | Test File | Tests | Lines | Coverage Focus |
 |-----------|-------|-------|----------------|
@@ -256,7 +256,7 @@
 | **MAKEPOINT, MAKELINE, DISTANCE, BUFFER, AREA, INTERSECTION** | `0` placeholder + comment | No spatial functions in DAX |
 | **HEXBINX, HEXBINY** | `0` + comment | No hex-binning in DAX |
 | **COLLECT** | `0` + comment | No spatial collection |
-| **SCRIPT_BOOL/INT/REAL/STR** | `BLANK()` + comment | R/Python scripting has no direct DAX equivalent |
+| **SCRIPT_BOOL/INT/REAL/STR** | ✅ `scriptVisual` (Python/R) + `BLANK()` DAX fallback | R/Python scripting → PBI Python/R visual containers with script text and input columns; BLANK() DAX measure for non-visual contexts |
 | **SPLIT** | `BLANK()` + comment | No string split to array in DAX |
 | **PREVIOUS_VALUE** | OFFSET-based DAX | ✅ IMPLEMENTED — uses OFFSET pattern for iterative seed-based calculations |
 | **LOOKUP** | OFFSET-based DAX | ✅ IMPLEMENTED — uses OFFSET pattern for row-relative lookups |
@@ -302,7 +302,7 @@
 | **Incremental refresh** | ✅ IMPLEMENTED — `refreshPolicy` section in TMDL table partitions |
 | **Query folding hints** | ✅ IMPLEMENTED — `m_transform_buffer()` + `m_transform_join(buffer_right=True)` for `Table.Buffer()` folding boundaries |
 | **Parameterized data sources** | ✅ IMPLEMENTED — `_write_expressions_tmdl()` generates `ServerName`/`DatabaseName` M parameters |
-| **Tableau Hyper extract data** | `.hyper` files referenced in Prep flows produce empty `#table` |
+| **Tableau Hyper extract data** | ✅ IMPLEMENTED — `hyper_reader.py` reads `.hyper` files via SQLite interface; row data injected into M `#table()` expressions |
 | **Google Sheets authentication** | M query generated but no OAuth2 credential setup |
 | **PDF connector** | Produces `Pdf.Tables(File.Contents(...))` — may need page/table index parameters |
 | **Salesforce connector** | Basic `Salesforce.Data()` — may need object/API version specification |
@@ -406,14 +406,14 @@
 
 | Area | Implemented | Missing/Incomplete | Approximated | Priority |
 |------|------------|-------------------|-------------|----------|
-| **Extraction** | 20 object types (+4), 10+ connectors, 22 new methods, annotations, layout containers, device layouts, formatting depth, legend, axes, sort depth, **datasource filters**, **reference bands/distributions**, **number formatting**, **custom shapes/fonts/geocoding/hyper metadata**, **dynamic zone visibility**, **clustering/forecasting/trend lines** | Hyper data parsing, composite connectors | Prep VAR/VARP, layout nesting depth | Low |
-| **TMDL Generation** | 14 phases, full model, date hierarchy, quick table calcs, partition addressing, **semantic validation**, **calendar customization**, **culture config**, **M-based calc columns** (DAX→M converter), **calculation groups**, **field parameters** | Incremental, composite model | — | Low |
-| **PBIR Generation** | 60+ visuals, filters, themes, mobile layout, tooltip binding, action buttons, conditional formatting, axis config, legend, sort state, table formatting, padding, **drill-through pages**, **slicer type variety**, **pages shelf**, **number format conversion** | Small Multiples | Position scaling | Low |
-| **DAX Conversion** | ~180+ patterns, ALLEXCEPT for partitioned calcs, **CORR/COVAR/COVARP**, **ATTR→SELECTEDVALUE**, **LOD balanced braces**, **PREVIOUS_VALUE→OFFSET**, **LOOKUP→OFFSET**, **RUNNING_*→CALCULATE+FILTER(ALLSELECTED)**, **TOTAL→CALCULATE+ALL** | Spatial (6), SCRIPT (4), SPLIT | REGEX (4), WINDOW_* frames | Medium |
-| **M Query** | **33 connectors** (+8: OData, Google Analytics, Azure Blob/ADLS, Vertica, Impala, Hadoop Hive, Presto), 30+ transforms, **DAX-to-M expression converter** (calc columns as M steps) | OAuth, gateway, incremental refresh | Fallback #table, BigQuery/Oracle config | Low |
-| **Prep Flow** | DAG traversal, 20+ action types, **ExtractValues**, **CustomCalculation**, **Script/Prediction/CrossJoin/PublishedDataSource** handlers, 5 new connection mappings | Hyper data loading | Prep VAR/VARP joins | Low |
+| **Extraction** | 20 object types (+4), 10+ connectors, 22 new methods, annotations, layout containers, device layouts, formatting depth, legend, axes, sort depth, **datasource filters**, **reference bands/distributions**, **number formatting**, **custom shapes/fonts/geocoding/hyper metadata**, **dynamic zone visibility**, **clustering/forecasting/trend lines**, **Hyper data loading** (sqlite3), **Tableau 2024.3+ dynamic params**, **Pulse metric extraction** | Composite connectors | Prep VAR/VARP, layout nesting depth | Low |
+| **TMDL Generation** | 14 phases, full model, date hierarchy, quick table calcs, partition addressing, **semantic validation**, **calendar customization**, **culture config**, **M-based calc columns** (DAX→M converter), **calculation groups**, **field parameters**, **multi-language cultures** (`--languages`), **Goals/Scorecard** (`--goals`), **dynamic parameter M partitions** | Incremental, composite model | — | Low |
+| **PBIR Generation** | 60+ visuals, filters, themes, mobile layout, tooltip binding, action buttons, conditional formatting, axis config, legend, sort state, table formatting, padding, **drill-through pages**, **slicer type variety**, **pages shelf**, **number format conversion**, **SCRIPT_* → Python/R script visuals** | Small Multiples | Position scaling | Low |
+| **DAX Conversion** | ~180+ patterns, ALLEXCEPT for partitioned calcs, **CORR/COVAR/COVARP**, **ATTR→SELECTEDVALUE**, **LOD balanced braces**, **PREVIOUS_VALUE→OFFSET**, **LOOKUP→OFFSET**, **RUNNING_*→CALCULATE+FILTER(ALLSELECTED)**, **TOTAL→CALCULATE+ALL**, **SCRIPT_* → scriptVisual** | Spatial (6), SPLIT | REGEX (4), WINDOW_* frames | Medium |
+| **M Query** | **33 connectors** (+8: OData, Google Analytics, Azure Blob/ADLS, Vertica, Impala, Hadoop Hive, Presto), 30+ transforms, **DAX-to-M expression converter** (calc columns as M steps), **Hyper data → M #table()** | OAuth, gateway, incremental refresh | Fallback #table, BigQuery/Oracle config | Low |
+| **Prep Flow** | DAG traversal, 20+ action types, **ExtractValues**, **CustomCalculation**, **Script/Prediction/CrossJoin/PublishedDataSource** handlers, 5 new connection mappings, **Hyper data loading** | — | Prep VAR/VARP joins | Low |
 | **Pre-Migration** | **Assessment** (8-category scoring: datasource/calculation/visual/filter/data model/interactivity/extract/scope), **Strategy advisor** (Import/DirectQuery/Composite), JSON report export | — | — | Low |
-| **Test Coverage** | **2,057 tests across 40 files** (+conftest.py shared fixtures) | Perf tests, integration tests | — | Low |
+| **Test Coverage** | **2,666 tests across 48 files** (+conftest.py shared fixtures) | Perf tests, integration tests | — | Low |
 | **CI/CD** | **5-stage pipeline** (lint+ruff, test, **strict validate+twbx**, **staging deploy**, production deploy), **pip caching** | Coverage reporting, Windows CI, schema validation | — | Medium |
 | **Documentation** | **13 docs** + copilot instructions (ARCHITECTURE, KNOWN_LIMITATIONS, MIGRATION_CHECKLIST, DEPLOYMENT_GUIDE, TABLEAU_VERSION_COMPATIBILITY, CONTRIBUTING) | API docs | — | Low |
 | **Config** | 11 env vars, 3 environments, **settings validation**, **dry-run**, **calendar/culture CLI**, **.env.example** | Config file, connection templating | — | Low |

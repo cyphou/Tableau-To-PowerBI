@@ -2,7 +2,7 @@
 
 Automated migration tool for Tableau workbooks (`.twb`, `.twbx`) and Tableau Prep flows (`.tfl`, `.tflx`) to Power BI projects (`.pbip`) that can be opened directly in Power BI Desktop.
 
-**v7.0.0** — 2,057 tests across 40 test files — Python 3.9+ — zero external dependencies for core migration.
+**v9.0.0** — 2,666 tests across 48 test files — Python 3.9+ — zero external dependencies for core migration.
 
 ## Features
 
@@ -23,6 +23,10 @@ Automated migration tool for Tableau workbooks (`.twb`, `.twbx`) and Tableau Pre
 - **Smart cardinality detection**: raw column count ratio determines manyToOne vs manyToMany; cross-table inference creates relationships by scanning unconnected tables for matching column names
 - **Row-Level Security (RLS)**: user filters, USERNAME(), FULLNAME(), ISMEMBEROF() → Power BI RLS roles with `USERPRINCIPALNAME()`
 - **Parameters**: range (integer/real), list (string/boolean), and any-domain → What-If parameter tables with `GENERATESERIES` or `DATATABLE` + `SELECTEDVALUE` measures
+- **Dynamic parameters**: Tableau 2024.3+ database-query-driven parameters → M partition with `Value.NativeQuery()` for dynamic parameter refresh
+- **Hyper data loading**: `.hyper` files read via SQLite interface (`hyper_reader.py`) — column metadata + row data injected into M `#table()` expressions
+- **SCRIPT_* → Python/R visuals**: `SCRIPT_BOOL/INT/REAL/STR` Tableau functions → PBI `scriptVisual` containers (Python or R) with script text and input columns
+- **Tableau Pulse → PBI Goals**: `--goals` flag converts Tableau Pulse metric definitions to Power BI Goals/Scorecard JSON artifacts (goal name, current value measure, target, status rules, sparkline)
 - **Nested LOD cleanup**: `AGG(CALCULATE(...))` redundancy removal for LOD-inside-aggregation patterns
 - **Multi-datasource routing**: calculations tagged with source datasource and routed to the correct table by column reference density
 - **Visuals** automatically positioned based on Tableau worksheets and dashboard layouts
@@ -68,6 +72,7 @@ Automated migration tool for Tableau workbooks (`.twb`, `.twbx`) and Tableau Pre
 - **Bins**: → M-based FLOOR calculated columns (source, size), with DAX fallback
 - **Perspectives**: auto-generated "Full Model" perspective referencing all tables
 - **Cultures**: culture TMDL file with linguistic metadata for non-en-US locales
+- **Multi-language cultures**: `--languages fr-FR,de-DE,ja-JP` generates multiple culture TMDL files with translated display folders (Dimensions→Dimensionen, Measures→Mesures, etc.) and translated calendar column names
 
 ### Pre-Migration Assessment
 - **`--assess` mode**: run readiness analysis before migration — checks 8 categories: datasource, calculation, visual, filter, data model, interactivity, extract, scope
@@ -105,7 +110,7 @@ Automated migration tool for Tableau workbooks (`.twb`, `.twbx`) and Tableau Pre
 - **Migration metadata**: enriched `migration_metadata.json` with TMDL stats (measures, columns, relationships), visual type mappings, approximations, theme status
 - **Per-item fidelity tracking**: `MigrationReport` scores each object (exact / approximate / unsupported) and generates migration reports
 - **CI/CD pipeline**: GitHub Actions with 5-stage pipeline (lint+ruff, test, strict validate+twbx, staging deploy, production deploy)
-- **2,057 tests** across 40 test files + conftest.py shared fixtures
+- **2,666 tests** across 48 test files + conftest.py shared fixtures
 
 ## Quick Start
 
@@ -196,6 +201,8 @@ python migrate.py your_workbook.twbx --assess
 | `--token-name NAME` | PAT name for Tableau Server auth |
 | `--token-secret SECRET` | PAT secret for Tableau Server auth |
 | `--server-batch PROJECT` | Download all workbooks from a server project |
+| `--languages LOCALES` | Comma-separated locales for multi-language culture TMDL files (e.g., `fr-FR,de-DE,ja-JP`) |
+| `--goals` | Convert Tableau Pulse metrics to Power BI Goals/Scorecard artifacts |
 
 ### Output
 

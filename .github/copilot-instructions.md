@@ -22,6 +22,8 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
   - `m_query_builder.py`: Power Query M generator (26 connector types + 40+ transformation generators: rename, filter, aggregate, pivot/unpivot, join, union, sort, conditional columns — chainable via `inject_m_steps()`)
   - `prep_flow_parser.py`: Tableau Prep flow parser (.tfl/.tflx → Power Query M) — DAG traversal, Clean/Join/Aggregate/Union/Pivot steps, expression converter, merge with TWB datasources
   - `server_client.py`: Tableau Server/Cloud REST API client — PAT/password auth, workbook download, datasource listing, batch download, regex search, context manager
+  - `hyper_reader.py`: Hyper file data loader — reads `.hyper` files via SQLite interface (column metadata + row data), schema discovery, type mapping to M/TMDL types
+  - `pulse_extractor.py`: Tableau Pulse metric extractor — parses Pulse metric definitions from TWB XML (metric name, measure, time dimension, filters, goals)
 - **powerbi_import/**: Power BI project generation
   - `pbip_generator.py`: .pbip generator (PBIR v4.0, visuals, filters, bookmarks, slicers, textbox, image, pages shelf, number format conversion, drill-through pages)
   - `tmdl_generator.py`: Unified semantic model generator — direct Tableau → TMDL (tables, columns, measures, relationships, hierarchies, sets/groups/bins, parameters, RLS, dataCategory, isHidden, calculation groups, field parameters, M-based calculated columns)
@@ -32,6 +34,7 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
   - `strategy_advisor.py`: Migration strategy advisor — recommends Import/DirectQuery/Composite based on 7 signals
   - `validator.py`: Artifact validator — validates .pbip projects (JSON, TMDL, report structure) before opening in PBI Desktop
   - `migration_report.py`: Per-item fidelity tracking and migration status reporting
+  - `goals_generator.py`: PBI Goals/Scorecard generator — converts Tableau Pulse metrics to Power BI Goals JSON (goal name, current value measure, target, status rules, sparkline)
   - `deploy/`: Fabric deployment subpackage
     - `auth.py`: Azure AD authentication — Service Principal + Managed Identity (optional `azure-identity`)
     - `client.py`: Fabric REST API client — auto-detects `requests` with retry, falls back to `urllib`
@@ -42,7 +45,7 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
     - `pbi_client.py`: Power BI Service REST API client — Azure AD auth (SP/MI/token), import .pbix, refresh, list/delete datasets/reports
     - `pbix_packager.py`: .pbip → .pbix ZIP packager with OPC content types
     - `pbi_deployer.py`: PBI Service deployment orchestrator — package, upload, poll, refresh, validate
-- **tests/**: Unit and integration tests (2,275+ tests across 45 test files + conftest.py shared fixtures)
+- **tests/**: Unit and integration tests (2,666+ tests across 48 test files + conftest.py shared fixtures)
 - **docs/**: FAQ, PBI project guide, mapping reference
 - **.github/workflows/ci.yml**: CI/CD pipeline (lint → test → validate → deploy)
 - **artifacts/**: Migration output (generated .pbip projects)
@@ -69,6 +72,8 @@ python migrate.py path/to/workbook.twbx --assess
 python migrate.py path/to/workbook.twbx --deploy WORKSPACE_ID --deploy-refresh
 python migrate.py --server https://tableau.company.com --workbook "Sales Dashboard" --token-name my-pat --token-secret secret
 python migrate.py --server https://tableau.company.com --server-batch Marketing --output-dir /tmp/batch
+python migrate.py path/to/workbook.twbx --languages fr-FR,de-DE,ja-JP
+python migrate.py path/to/workbook.twbx --goals
 ```
 
 ## Extracted Objects (16 types)
@@ -214,6 +219,11 @@ TWB-embedded transforms (column renames from captions) are auto-detected and inj
 - **M-based calculated columns**: DAX calc column expressions converted to Power Query M Table.AddColumn steps via `_dax_to_m_expression()` converter — supports IF, SWITCH, UPPER/LOWER/TRIM/LEN/LEFT/RIGHT/MID, ISBLANK, INT/VALUE, CONCATENATE, IN, &, arithmetic; falls back to DAX for cross-table references (RELATED/LOOKUPVALUE)
 - **Perspectives**: auto-generated "Full Model" perspective referencing all tables (`perspectives.tmdl`)
 - **Cultures**: culture TMDL file with linguistic metadata for non-en-US locales (`cultures/{locale}.tmdl`)
+- **Multi-language cultures**: `--languages fr-FR,de-DE` generates multiple culture TMDL files with translated display folders (Dimensions→Dimensionen, Measures→Mesures, etc.) and translated calendar column names
+- **Tableau Pulse → PBI Goals**: `--goals` flag converts Tableau Pulse metric definitions to Power BI Goals/Scorecard JSON artifacts
+- **Dynamic parameters**: Tableau 2024.3+ database-query-driven parameters → M partition with `Value.NativeQuery()` for dynamic parameter refresh
+- **Hyper data loading**: `.hyper` files read via SQLite interface — column metadata + row data injected into M `#table()` expressions
+- **SCRIPT_* → Python/R visuals**: `SCRIPT_BOOL/INT/REAL/STR` Tableau functions → PBI `scriptVisual` containers (Python or R) with script text and input columns
 - **diagramLayout.json**: empty layout file — Power BI Desktop auto-fills on first open
 - **Parameters**: Tableau parameters → PBI What-If parameter tables:
   - Range parameters (integer/real) → `GENERATESERIES(min, max, step)` table + `SELECTEDVALUE` measure
