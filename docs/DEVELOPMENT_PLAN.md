@@ -175,21 +175,21 @@ v8.0.0 delivered code quality (all functions < 150 lines), enterprise scale (`--
 - **Plugin examples** — shipping ready-to-use plugin samples
 - **Documentation & packaging finalization** — PyPI auto-publish, multi-language support, doc refresh
 
-### Coverage Status (v8.0.0 baseline)
+### Coverage Status (Sprint 29 baseline)
 
 | File | Stmts | Miss | Cover | Priority |
 |------|-------|------|-------|----------|
-| `server_client.py` | 152 | 57 | 62.5% | High — auth/download paths untested |
-| `config/migration_config.py` | 136 | 50 | 63.2% | High — config loading/validation untested |
-| `datasource_extractor.py` | 321 | 111 | 65.4% | High — core extraction logic |
-| `prep_flow_parser.py` | 537 | 186 | 65.4% | High — complex DAG/step conversion |
-| `extract_tableau_data.py` | 1,442 | 494 | 65.7% | High — largest absolute gap |
-| `plugins.py` | 79 | 24 | 69.6% | Medium — plugin loading/hooks |
-| `progress.py` | 74 | 18 | 75.7% | Medium — progress tracking |
-| `pbip_generator.py` | 1,448 | 332 | 77.1% | Medium — many visual branches |
+| `plugins.py` | 79 | 24 | 69.6% | High — plugin loading/hooks untested |
+| `progress.py` | 74 | 18 | 75.7% | High — progress tracking |
+| `pbip_generator.py` | 1,488 | 340 | 77.2% | High — largest absolute gap (340 miss) |
 | `import_to_powerbi.py` | 63 | 13 | 79.4% | Low — thin orchestrator |
 | `telemetry.py` | 97 | 19 | 80.4% | Low — opt-in feature |
-| **Total** | **10,083** | **1,830** | **81.9%** | **Target: 90%+** |
+| `hyper_reader.py` | 232 | 43 | 81.5% | Medium — new module, error paths |
+| `visual_generator.py` | 437 | 68 | 84.4% | Medium — slicer/data bar branches |
+| `extract_tableau_data.py` | 1,495 | 222 | 85.2% | Medium — improved from 65.7% in Sprint 27 |
+| `tmdl_generator.py` | 1,933 | 286 | 85.2% | High — second largest gap (286 miss) |
+| `server_client.py` | 152 | 19 | 87.5% | Low — improved from 62.5% in Sprint 27 |
+| **Total** | **10,679** | **1,275** | **88.1%** | **Target: 90%+ (need ≤1,068 miss)** |
 
 ### Sprint 27 — Coverage Push: Extraction Layer (target: 85%+)
 
@@ -235,15 +235,17 @@ v8.0.0 delivered code quality (all functions < 150 lines), enterprise scale (`--
 ### Sprint 30 — Coverage Push: Generation Layer (target: 90%+)
 
 **Goal:** Reach 90%+ overall coverage by filling generation-layer gaps.  
-**Focus files:** `pbip_generator.py` (77.1%), `tmdl_generator.py` (85.1%), `visual_generator.py` (83.7%), `plugins.py` (69.6%), `progress.py` (75.7%)
+**Baseline:** 88.1% (10,679 stmts, 1,275 miss). Need ≤1,068 miss to reach 90% → close ≥207 lines.  
+**Focus files:** `pbip_generator.py` (77.2%, 340 miss), `tmdl_generator.py` (85.2%, 286 miss), `visual_generator.py` (84.4%, 68 miss), `plugins.py` (69.6%, 24 miss), `progress.py` (75.7%, 18 miss), `hyper_reader.py` (81.5%, 43 miss)
 
 | # | Item | File(s) | Est. | Details |
 |---|------|---------|------|---------|
-| 30.1 | **`pbip_generator.py` coverage** | `tests/test_pbip_generator.py` | High | Cover uncovered visual branches: slicer sync groups, cross-filtering disable, action button navigation, drill-through page creation, swap bookmarks, page navigator, custom shape embedding, grid layout edge cases, mobile page generation. Target: 77.1% → 88%+ |
-| 30.2 | **`tmdl_generator.py` coverage** | `tests/test_tmdl_generator.py` | High | Cover: M-based calc column generation, calculation groups, field parameters, RLS role generation (USERNAME/FULLNAME/ISMEMBEROF), cross-table relationship inference, incremental refresh policy, expression TMDL writing. Target: 85.1% → 92%+ |
-| 30.3 | **`visual_generator.py` coverage** | `tests/test_visual_generator.py` | Medium | Cover: custom visual GUID resolution, scatter axis projections, slicer mode detection, small multiples config, data bar config, combo chart role assignment, TopN filter generation. Target: 83.7% → 92%+ |
-| 30.4 | **`plugins.py` + `progress.py` coverage** | `tests/test_infrastructure.py` | Low | Cover: plugin loading from config, hook invocation chain, progress bar formatting, step timing, verbose vs quiet modes. Target: 69.6%/75.7% → 90%+ |
-| 30.5 | **Sprint 30 tests** | `tests/` | — | Target: +100 tests, overall coverage: 90%+ |
+| 30.1 | **`pbip_generator.py` coverage** | `tests/test_pbip_generator.py` | High | 340 miss lines at 77.2%. Cover: slicer sync groups, cross-filtering disable, action button navigation (URL/page), drill-through page creation (`_create_drillthrough_pages`), swap bookmarks, page navigator, custom shape embedding, grid layout edge cases, mobile page generation, datasource filter promotion, number format edge cases. Key uncovered blocks: L265-287 (dashboard tab strip), L631-659 (drill-through), L774-792 (swap bookmarks), L1225-1303 (action visuals), L1754-1785 (mobile pages), L1887-1957 (conditional format), L2700-2715 (grid layout), L3102-3136 (shape resources). Target: 77.2% → 87%+ (cover ~150 lines) |
+| 30.2 | **`tmdl_generator.py` coverage** | `tests/test_tmdl_generator.py` | High | 286 miss lines at 85.2%. Cover: M-based calc column generation (`_dax_to_m_expression` edge cases), calculation groups (`_create_calculation_groups`), field parameters (`_create_field_parameters`), RLS role generation (USERNAME/FULLNAME/ISMEMBEROF pathways), cross-table relationship inference (Phase 10), incremental refresh policy, expression TMDL writing, multi-language culture writing (`_write_multi_language_cultures`), dynamic parameter M partitions. Key uncovered blocks: L565-573 (M expression edge cases), L860-871 (parameter dedup), L1667-1690 (calc groups), L1810-1843 (field params), L2733-2813 (RLS roles), L3558-3602 (culture writing), L3893-3918 (dynamic params). Target: 85.2% → 92%+ (cover ~130 lines) |
+| 30.3 | **`visual_generator.py` coverage** | `tests/test_visual_generator.py` | Medium | 68 miss lines at 84.4%. Cover: custom visual GUID resolution, scatter axis projections, slicer mode detection for date/numeric types, small multiples config, data bar config, combo chart ColumnY/LineY role assignment, TopN filter generation, script visual container creation. Key uncovered blocks: L1094-1096 (scatter axis), L1158-1165 (slicer date), L1230-1294 (data bar/small multiples), L1301-1328 (TopN filter). Target: 84.4% → 92%+ (cover ~35 lines) |
+| 30.4 | **`plugins.py` + `progress.py` coverage** | `tests/test_infrastructure.py` | Low | `plugins.py`: 24 miss at 69.6% — cover plugin loading from config file, hook invocation chain, error handling for missing plugins. `progress.py`: 18 miss at 75.7% — cover progress bar formatting, step timing, verbose vs quiet mode output, completion summary. Target: 69.6%/75.7% → 90%+ (cover ~30 lines) |
+| 30.5 | **`hyper_reader.py` coverage** | `tests/test_sprint28.py` | Medium | 43 miss at 81.5%. Cover: schema discovery edge cases, type mapping for all Tableau data types (date/datetime/geographic), error handling for non-SQLite `.hyper` files, empty table handling, large row count truncation. Key uncovered blocks: L107-125 (schema variants), L176-178 (type fallback), L309-337 (error paths). Target: 81.5% → 92%+ (cover ~25 lines) |
+| 30.6 | **Sprint 30 tests** | `tests/` | — | Target: +120 tests, overall coverage: 90%+ (from 88.1%). Test file: `tests/test_sprint30.py` (NEW) or distributed across existing test files |
 
 ### Sprint 31 — Plugins, Packaging & Automation
 
