@@ -156,8 +156,8 @@ Items that may be pulled into sprints if capacity allows:
 | B.5 | **LLM-assisted DAX correction** | Low | High | Optional AI pass: send approximated DAX to GPT/Claude for semantic review (opt-in, requires API key) | Backlog |
 | B.6 | **Hyper data loading** | Low | High | Read row-level data from `.hyper` files via SQLite interface (currently metadata-only) | ✅ Done — Sprint 28.1 |
 | B.7 | **Side-by-side screenshot comparison** | Low | High | Selenium/Playwright capture Tableau + PBI screenshots, generate visual diff report | Backlog |
-| B.8 | **PBIR schema forward-compat** | Low | Low | Monitor PBI docs for PBIR v5.0+ schema changes, update `$schema` URLs as needed | 📋 Planned → Sprint 31.3 |
-| B.9 | **Plugin examples** | Low | Low | Ship 2-3 example plugins: custom visual mapper, DAX post-processor, naming convention enforcer | 📋 Planned → Sprint 31.1 |
+| B.8 | **PBIR schema forward-compat** | Low | Low | Monitor PBI docs for PBIR v5.0+ schema changes, update `$schema` URLs as needed | ✅ Done — Sprint 31.3 |
+| B.9 | **Plugin examples** | Low | Low | Ship 2-3 example plugins: custom visual mapper, DAX post-processor, naming convention enforcer | ✅ Done — Sprint 31.1 |
 | B.10 | **Tableau 2024.3+ dynamic params** | Medium | Medium | Database-query-driven parameters — extract query definition, generate M parameter with refresh | ✅ Done — Sprint 29.1 |
 
 ---
@@ -247,9 +247,10 @@ v8.0.0 delivered code quality (all functions < 150 lines), enterprise scale (`--
 | 30.5 | **`hyper_reader.py` coverage** | `tests/test_sprint28.py` | Medium | 43 miss at 81.5%. Cover: schema discovery edge cases, type mapping for all Tableau data types (date/datetime/geographic), error handling for non-SQLite `.hyper` files, empty table handling, large row count truncation. Key uncovered blocks: L107-125 (schema variants), L176-178 (type fallback), L309-337 (error paths). Target: 81.5% → 92%+ (cover ~25 lines) |
 | 30.6 | **Sprint 30 tests** | `tests/` | — | Target: +120 tests, overall coverage: 90%+ (from 88.1%). Test file: `tests/test_sprint30.py` (NEW) or distributed across existing test files |
 
-### Sprint 31 — Plugins, Packaging & Automation
+### Sprint 31 — Plugins, Packaging & Automation ✅ COMPLETED
 
 **Goal:** Ship plugin examples (B.9), automate PyPI publishing, improve developer experience.
+**Result:** 3,196 tests (+42), 92.76% coverage, 16 skipped.
 
 | # | Item | File(s) | Est. | Details |
 |---|------|---------|------|---------|
@@ -293,16 +294,16 @@ Sprint 31 (Plugins & Packaging)     ──→  Sprint 32 (Docs & Release)
 
 | Metric | Target | v8.0.0 Baseline | Current (Sprint 29) |
 |--------|--------|-----------------|---------------------|
-| Tests | 2,800+ | 2,275 | **2,666** ✅ |
-| Test files | 48+ | 45 | **48** ✅ |
-| Line coverage | ≥ 90% | 81.9% | **88.1%** (close) |
+| Tests | 2,800+ | 2,275 | **3,196** ✅ |
+| Test files | 48+ | 45 | **54** ✅ |
+| Line coverage | ≥ 90% | 81.9% | **92.76%** ✅ |
 | Hyper data loading | Inline data from `.hyper` files | Metadata-only | ✅ Done (Sprint 28) |
 | SCRIPT_* visuals | Python/R visual containers | `BLANK()` | ✅ Done (Sprint 28) |
 | Dynamic parameters | Database-query-driven M params | Not extracted | ✅ Done (Sprint 29) |
 | Tableau Pulse | Goals/Scorecard JSON | Not supported | ✅ Done (Sprint 29) |
-| Plugin examples | 3 shipped | 0 | Planned (Sprint 31) |
+| Plugin examples | 3 shipped | 0 | ✅ Done (Sprint 31) |
 | Multi-language | `--languages` flag for culture TMDL | Single `--culture` | ✅ Done (Sprint 29) |
-| PyPI auto-publish | Tag-triggered workflow | Manual | Planned (Sprint 31) |
+| PyPI auto-publish | Tag-triggered workflow | Manual | ✅ Done (Sprint 31) |
 | Doc freshness | All docs reflect v9.0.0 | v8.0.0 | Updated (Sprint 29) |
 
 ### Risk Register (v9.0.0)
@@ -330,8 +331,8 @@ Items that may be pulled into sprints if capacity allows:
 | B.5 | **LLM-assisted DAX correction** | Low | High | Optional AI pass: send approximated DAX to GPT/Claude for semantic review (opt-in, requires API key) | Backlog |
 | B.6 | **Hyper data loading** | Low | High | Read row-level data from `.hyper` files via SQLite interface (currently metadata-only) | ✅ Done — Sprint 28.1 |
 | B.7 | **Side-by-side screenshot comparison** | Low | High | Selenium/Playwright capture Tableau + PBI screenshots, generate visual diff report | Backlog |
-| B.8 | **PBIR schema forward-compat** | Low | Low | Monitor PBI docs for PBIR v5.0+ schema changes, update `$schema` URLs as needed | 📋 Planned → Sprint 31.3 |
-| B.9 | **Plugin examples** | Low | Low | Ship 2-3 example plugins: custom visual mapper, DAX post-processor, naming convention enforcer | 📋 Planned → Sprint 31.1 |
+| B.8 | **PBIR schema forward-compat** | Low | Low | Monitor PBI docs for PBIR v5.0+ schema changes, update `$schema` URLs as needed | ✅ Done — Sprint 31.3 |
+| B.9 | **Plugin examples** | Low | Low | Ship 2-3 example plugins: custom visual mapper, DAX post-processor, naming convention enforcer | ✅ Done — Sprint 31.1 |
 | B.10 | **Tableau 2024.3+ dynamic params** | Medium | Medium | Database-query-driven parameters — extract query definition, generate M parameter with refresh | ✅ Done — Sprint 29.1 |
 
 ---

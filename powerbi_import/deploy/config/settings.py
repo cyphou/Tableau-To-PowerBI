@@ -129,9 +129,9 @@ def _make_pydantic_settings():
         use_managed_identity: bool = Field(default=False)
         log_level: str = Field(default='INFO')
         log_format: str = Field(default='text')
-        deployment_timeout: int = Field(default=300)
+        deployment_timeout: float = Field(default=300)
         retry_attempts: int = Field(default=3)
-        retry_delay: int = Field(default=5)
+        retry_delay: float = Field(default=5)
 
         model_config = {
             'env_file': '.env',

@@ -1474,6 +1474,13 @@ def _build_argument_parser():
         help='Write structured migration events to a JSON Lines (.jsonl) file for machine parsing'
     )
 
+    parser.add_argument(
+        '--check-schema',
+        action='store_true',
+        default=False,
+        help='Check PBIR schema versions for updates and exit'
+    )
+
     return parser
 
 
@@ -1781,6 +1788,17 @@ def main():
         server_result = _download_from_server(args)
         if server_result is not None:
             return server_result
+
+    # ── PBIR schema version check mode ────────────────────────
+    if getattr(args, 'check_schema', False):
+        from powerbi_import.validator import ArtifactValidator
+        print_header("PBIR SCHEMA VERSION CHECK")
+        info = ArtifactValidator.check_pbir_schema_version(fetch=True)
+        for schema_type, details in info.items():
+            status = "UPDATE AVAILABLE" if details.get('update_available') else "up to date"
+            latest = details.get('latest', details['current'])
+            print(f"  {schema_type:20s}  current={details['current']}  latest={latest}  [{status}]")
+        return ExitCode.SUCCESS
 
     # ── Consolidate existing reports mode ─────────────────────
     if getattr(args, 'consolidate', None):

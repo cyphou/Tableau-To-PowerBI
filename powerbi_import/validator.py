@@ -887,6 +887,145 @@ class ArtifactValidator:
 
         return errors
 
+    # ── PBIR schema version base URL for discovery ──
+    _SCHEMA_BASE_URL = (
+        'https://developer.microsoft.com/json-schemas'
+        '/fabric/item/report/definition'
+    )
+
+    # Schema paths and their current versions (major.minor.patch)
+    _SCHEMA_VERSIONS = {
+        'report': '3.1.0',
+        'page': '2.0.0',
+        'visualContainer': '2.5.0',
+    }
+
+    @classmethod
+    def check_pbir_schema_version(cls, fetch=False):
+        """Check PBIR schema versions for forward-compatibility.
+
+        Compares the hardcoded schema URLs against the latest known
+        versions.  Optionally fetches the schema URLs from Microsoft
+        docs to detect newer versions.
+
+        Args:
+            fetch: If True, attempt to HTTP-fetch schema URLs to
+                detect newer published versions.  Requires network
+                access.  Defaults to False (offline check only).
+
+        Returns:
+            dict: Keys are schema types ('report', 'page',
+                'visualContainer'), values are dicts with:
+                - ``current``: Currently hardcoded version string
+                - ``latest``: Latest detected version (or current if
+                  fetch is disabled / fails)
+                - ``url``: Full schema URL
+                - ``update_available``: bool
+        """
+        results = {}
+
+        for schema_type, current_version in cls._SCHEMA_VERSIONS.items():
+            url = (
+                f'{cls._SCHEMA_BASE_URL}/{schema_type}'
+                f'/{current_version}/schema.json'
+            )
+            entry = {
+                'current': current_version,
+                'latest': current_version,
+                'url': url,
+                'update_available': False,
+            }
+
+            if fetch:
+                latest = cls._fetch_latest_schema_version(
+                    schema_type, current_version
+                )
+                if latest and latest != current_version:
+                    entry['latest'] = latest
+                    entry['update_available'] = True
+                    latest_url = (
+                        f'{cls._SCHEMA_BASE_URL}/{schema_type}'
+                        f'/{latest}/schema.json'
+                    )
+                    entry['url'] = latest_url
+                    logger.warning(
+                        f'PBIR schema update available for {schema_type}: '
+                        f'{current_version} → {latest}'
+                    )
+
+            results[schema_type] = entry
+
+        return results
+
+    @classmethod
+    def _fetch_latest_schema_version(cls, schema_type, current_version):
+        """Try to fetch a newer schema version from Microsoft docs.
+
+        Probes incrementally higher version numbers (patch, then minor)
+        to find the latest published schema.
+
+        Args:
+            schema_type: Schema type ('report', 'page', 'visualContainer').
+            current_version: Current version string (e.g., '3.1.0').
+
+        Returns:
+            str | None: Latest version string, or None on failure.
+        """
+        try:
+            from urllib.request import urlopen, Request
+            from urllib.error import URLError, HTTPError
+        except ImportError:
+            return None
+
+        parts = current_version.split('.')
+        if len(parts) != 3:
+            return None
+
+        major, minor, patch = int(parts[0]), int(parts[1]), int(parts[2])
+        latest = current_version
+
+        # Probe higher patch versions first
+        for p in range(patch + 1, patch + 5):
+            probe = f'{major}.{minor}.{p}'
+            probe_url = (
+                f'{cls._SCHEMA_BASE_URL}/{schema_type}'
+                f'/{probe}/schema.json'
+            )
+            if cls._url_exists(probe_url):
+                latest = probe
+
+        # Probe next minor version
+        for m in range(minor + 1, minor + 3):
+            probe = f'{major}.{m}.0'
+            probe_url = (
+                f'{cls._SCHEMA_BASE_URL}/{schema_type}'
+                f'/{probe}/schema.json'
+            )
+            if cls._url_exists(probe_url):
+                latest = probe
+
+        return latest
+
+    @staticmethod
+    def _url_exists(url):
+        """Check if a URL returns HTTP 200 (HEAD request).
+
+        Args:
+            url: URL to check.
+
+        Returns:
+            bool: True if the URL is reachable and returns 200.
+        """
+        try:
+            from urllib.request import urlopen, Request
+            from urllib.error import URLError, HTTPError
+            req = Request(url, method='HEAD')
+            req.add_header('User-Agent', 'TableauToPowerBI-SchemaCheck/1.0')
+            with urlopen(req, timeout=5) as resp:
+                return resp.status == 200
+        except Exception:
+            return False
+
     @classmethod
     def validate_directory(cls, artifacts_dir):
         """

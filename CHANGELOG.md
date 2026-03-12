@@ -2,7 +2,14 @@
 
 ## v9.0.0 — Coverage, Hyper Data, Modern Tableau & Polish (in progress)
 
-### Sprint 29 — Tableau 2024+ Features & Multi-language ✅
+### Sprint 31 — Plugins, Packaging & Automation ✅
+- **31.1: Plugin examples**: 3 example plugins in `examples/plugins/` — `custom_visual_mapper.py` (visual type overrides), `dax_post_processor.py` (regex-based DAX transforms + IFERROR wrapping), `naming_convention.py` (snake/pascal/camel case enforcement). Each with `Plugin` alias, docstrings, and README.
+- **31.2: PyPI auto-publish workflow**: `.github/workflows/publish.yml` — tag-triggered (`v*.*.*`) GitHub Actions workflow: build wheel → `twine check` → publish via OIDC trusted publisher.
+- **31.3: PBIR schema forward-compat**: `ArtifactValidator.check_pbir_schema_version()` probes Microsoft schema URLs for newer versions (patch +1..+4, minor +1..+2). `--check-schema` CLI flag for on-demand version check.
+- **31.4: Fractional timeouts**: `deployment_timeout` and `retry_delay` changed from `int` to `float` in Pydantic settings — supports sub-second delays.
+- **42 new tests** in `test_sprint31.py` — 3,196 total, 92.76% coverage
+
+### Sprint 30 — Coverage Push: Generation Layer ✅
 - **29.1: Dynamic parameters (2024.3+)**: Database-query-driven parameter extraction (old + new XML format), generate M partition with `Value.NativeQuery()` source and `refreshPolicy` for automatic refresh. Fixed Python 3.14 Element `or` pattern compatibility.
 - **29.2: Tableau Pulse → PBI Goals**: New `pulse_extractor.py` parses `<metric>`, `<pulse-metric>`, and `<metrics/metric>` elements. New `goals_generator.py` generates Fabric Scorecard API JSON. `--goals` CLI flag for optional scorecard generation.
 - **29.3: Multi-language report labels**: `_write_multi_language_cultures()` generates separate `cultures/{locale}.tmdl` files from comma-separated locales. `--languages` CLI flag threaded through full pipeline (`migrate.py` → `import_to_powerbi.py` → `pbip_generator.py` → `tmdl_generator.py`).
