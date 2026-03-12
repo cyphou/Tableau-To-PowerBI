@@ -1,13 +1,13 @@
 table xy
-	lineageTag: 93bc598f-611e-453d-a7ca-221adcdd149b
+	lineageTag: e9109cfc-7708-431d-b4db-44977953e367
 
 	measure '[Number of Records]' = 1
 		displayFolder: Measures
-		lineageTag: 3aa5547c-bf9e-420b-9256-3eadc45f51f7
+		lineageTag: 5c783777-bfdf-4149-96ea-31cd0b494b2f
 
 	column a
 		dataType: string
-		lineageTag: 0ad9d6d1-7f8e-4278-884e-34755fae1e43
+		lineageTag: 18b46a48-2b74-4648-ac1e-0cc79a392b32
 		summarizeBy: none
 		sourceColumn: a
 
@@ -15,7 +15,7 @@ table xy
 
 	column x
 		dataType: int64
-		lineageTag: 63b5a732-3a28-4b2f-95b6-56a55992f8bd
+		lineageTag: d7f21af6-d538-4e86-8d5f-7fe1fc2f1f3f
 		summarizeBy: sum
 		sourceColumn: x
 
@@ -23,19 +23,21 @@ table xy
 
 	column y
 		dataType: int64
-		lineageTag: 0dda438b-0cb7-4a4a-83af-ddadf88e55f7
+		lineageTag: c290209a-936b-4fa4-b57b-9f47596fd3a1
 		summarizeBy: sum
 		sourceColumn: y
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'xy-a824ecf3-d3f7-4df5-9d18-bd59fa3b9727' = m
+	partition 'xy-6bf8d9b1-83d3-4928-a5cd-8c47d5f7d6a9' = m
 		mode: import
 		source =
 				let
 				    // TODO: Configure the data source for connector type: Unknown
 				    // Replace the sample table below with the actual source expression.
 				    Source = try
+				
+				        try
 				        #table(
 				            {"a", "x", "y"},
 				            {
@@ -44,6 +46,10 @@ table xy
 				            }
 				        )
 				    otherwise
+				        #table({"a", "x", "y"}, {})
+				
+				    otherwise
+				
 				        #table({"a", "x", "y"}, {}),
 				    #"Renamed Columns" = Table.RenameColumns(Source, {{"a", "A"}, {"x", "X"}, {"y", "Y"}}),
 				    Result = #"Renamed Columns"

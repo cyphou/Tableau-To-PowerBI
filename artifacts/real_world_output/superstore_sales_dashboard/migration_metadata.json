@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-11T22:39:40.989648",
+  "generated_at": "2026-03-12T13:08:26.167158",
   "source": "Tableau Migration",
   "report_name": "superstore_sales_dashboard",
   "objects_converted": {
@@ -20,7 +20,7 @@
   },
   "generated_output": {
     "pages": 1,
-    "visuals": 5,
+    "visuals": 10,
     "theme_applied": false,
     "theme_detail": {
       "status": "skipped",

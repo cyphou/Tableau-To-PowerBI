@@ -1,9 +1,9 @@
 # Development Plan — Tableau to Power BI Migration Tool
 
-**Version:** v8.0.0  
-**Date:** 2026-03-16  
+**Version:** v9.0.0 (planning)  
+**Date:** 2026-03-17  
 **Current state:** v8.0.0 — **2,275 tests** across 45 test files (+conftest.py), 0 failures, 81.9% coverage  
-**Previous baseline:** v3.5.0 — 887 → v4.0.0 — 1,387 → v5.0.0 — 1,543 → v5.1.0 — 1,595 → v5.5.0 — 1,777 → v6.0.0 — 1,889 → v6.1.0 — 1,997 → v7.0.0 — 2,057 → Sprint 21 — 2,066 → **v8.0.0 — 2,275 tests**
+**Previous baseline:** v3.5.0 — 887 → v4.0.0 — 1,387 → v5.0.0 — 1,543 → v5.1.0 — 1,595 → v5.5.0 — 1,777 → v6.0.0 — 1,889 → v6.1.0 — 1,997 → v7.0.0 — 2,057 → Sprint 21 — 2,066 → v8.0.0 — 2,275 → **v9.0.0 — target 2,600+ tests**
 
 ---
 
@@ -147,18 +147,188 @@ Sprint 25 (Visual Fidelity)  ──→  Sprint 26 (Tests & Release)
 
 Items that may be pulled into sprints if capacity allows:
 
-| # | Feature | Priority | Effort | Details |
-|---|---------|----------|--------|---------|
-| B.1 | **Tableau Pulse → PBI Goals** | Medium | High | Tableau Pulse metrics → Power BI Goals/Scorecards (new Tableau 2024+ feature) |
-| B.2 | **SCRIPT_* → PBI Python/R visuals** | Low | Medium | Map `SCRIPT_BOOL/INT/REAL/STR` to PBI Python/R visual containers instead of `BLANK()` |
-| B.3 | **Data-driven alerts** | Low | Medium | Tableau data alerts → PBI alert rules on dashboards |
-| B.4 | **Web UI / Streamlit frontend** | Low | High | Browser-based migration wizard (upload .twbx → get .pbip) using Streamlit or Flask |
-| B.5 | **LLM-assisted DAX correction** | Low | High | Optional AI pass: send approximated DAX to GPT/Claude for semantic review (opt-in, requires API key) |
-| B.6 | **Hyper data loading** | Low | High | Read row-level data from `.hyper` files via SQLite interface (currently metadata-only) |
-| B.7 | **Side-by-side screenshot comparison** | Low | High | Selenium/Playwright capture Tableau + PBI screenshots, generate visual diff report |
-| B.8 | **PBIR schema forward-compat** | Low | Low | Monitor PBI docs for PBIR v5.0+ schema changes, update `$schema` URLs as needed |
-| B.9 | **Plugin examples** | Low | Low | Ship 2-3 example plugins: custom visual mapper, DAX post-processor, naming convention enforcer |
-| B.10 | **Tableau 2024.3+ dynamic params** | Medium | Medium | Database-query-driven parameters — extract query definition, generate M parameter with refresh |
+| # | Feature | Priority | Effort | Details | Status |
+|---|---------|----------|--------|---------|--------|
+| B.1 | **Tableau Pulse → PBI Goals** | Medium | High | Tableau Pulse metrics → Power BI Goals/Scorecards (new Tableau 2024+ feature) | 📋 Planned → Sprint 29.2 |
+| B.2 | **SCRIPT_* → PBI Python/R visuals** | Low | Medium | Map `SCRIPT_BOOL/INT/REAL/STR` to PBI Python/R visual containers instead of `BLANK()` | 📋 Planned → Sprint 28.4 |
+| B.3 | **Data-driven alerts** | Low | Medium | Tableau data alerts → PBI alert rules on dashboards | Backlog |
+| B.4 | **Web UI / Streamlit frontend** | Low | High | Browser-based migration wizard (upload .twbx → get .pbip) using Streamlit or Flask | Backlog |
+| B.5 | **LLM-assisted DAX correction** | Low | High | Optional AI pass: send approximated DAX to GPT/Claude for semantic review (opt-in, requires API key) | Backlog |
+| B.6 | **Hyper data loading** | Low | High | Read row-level data from `.hyper` files via SQLite interface (currently metadata-only) | 📋 Planned → Sprint 28.1 |
+| B.7 | **Side-by-side screenshot comparison** | Low | High | Selenium/Playwright capture Tableau + PBI screenshots, generate visual diff report | Backlog |
+| B.8 | **PBIR schema forward-compat** | Low | Low | Monitor PBI docs for PBIR v5.0+ schema changes, update `$schema` URLs as needed | 📋 Planned → Sprint 31.3 |
+| B.9 | **Plugin examples** | Low | Low | Ship 2-3 example plugins: custom visual mapper, DAX post-processor, naming convention enforcer | 📋 Planned → Sprint 31.1 |
+| B.10 | **Tableau 2024.3+ dynamic params** | Medium | Medium | Database-query-driven parameters — extract query definition, generate M parameter with refresh | 📋 Planned → Sprint 29.1 |
+
+---
+
+## v9.0.0 — Coverage, Hyper Data, Modern Tableau & Polish
+
+### Motivation
+
+v8.0.0 delivered code quality (all functions < 150 lines), enterprise scale (`--parallel`, `--manifest`, `--resume`), improved DAX accuracy (REGEX, WINDOW, FIRST/LAST), visual fidelity (grid layout, shapes, swap bookmarks), and 2,275 tests at 81.9% coverage. v9.0.0 shifts focus to:
+
+- **Coverage push to 90%+** — closing the 5 lowest-coverage files that account for 898 of 1,830 missing lines
+- **Hyper data loading** — reading row-level data from `.hyper` extracts (currently metadata-only)
+- **SCRIPT_* → PBI Python/R visuals** — mapping R/Python scripted visuals instead of `BLANK()`
+- **Tableau 2024.3+ features** — dynamic parameters, Pulse metrics
+- **Plugin examples** — shipping ready-to-use plugin samples
+- **Documentation & packaging finalization** — PyPI auto-publish, multi-language support, doc refresh
+
+### Coverage Status (v8.0.0 baseline)
+
+| File | Stmts | Miss | Cover | Priority |
+|------|-------|------|-------|----------|
+| `server_client.py` | 152 | 57 | 62.5% | High — auth/download paths untested |
+| `config/migration_config.py` | 136 | 50 | 63.2% | High — config loading/validation untested |
+| `datasource_extractor.py` | 321 | 111 | 65.4% | High — core extraction logic |
+| `prep_flow_parser.py` | 537 | 186 | 65.4% | High — complex DAG/step conversion |
+| `extract_tableau_data.py` | 1,442 | 494 | 65.7% | High — largest absolute gap |
+| `plugins.py` | 79 | 24 | 69.6% | Medium — plugin loading/hooks |
+| `progress.py` | 74 | 18 | 75.7% | Medium — progress tracking |
+| `pbip_generator.py` | 1,448 | 332 | 77.1% | Medium — many visual branches |
+| `import_to_powerbi.py` | 63 | 13 | 79.4% | Low — thin orchestrator |
+| `telemetry.py` | 97 | 19 | 80.4% | Low — opt-in feature |
+| **Total** | **10,083** | **1,830** | **81.9%** | **Target: 90%+** |
+
+### Sprint 27 — Coverage Push: Extraction Layer (target: 85%+)
+
+**Goal:** Reach 85% overall coverage by filling the 5 lowest-coverage files (extraction layer + config).  
+**Focus files:** `extract_tableau_data.py` (65.7%), `datasource_extractor.py` (65.4%), `prep_flow_parser.py` (65.4%), `server_client.py` (62.5%), `config/migration_config.py` (63.2%)
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 27.1 | **`extract_tableau_data.py` coverage** | `tests/test_extraction.py` | High | Cover uncovered branches: `.twbx` ZIP extraction, multi-datasource worksheets, layout container nesting, device layout extraction, custom shape extraction, hyper metadata parsing, annotation extraction, formatting depth, dynamic zone visibility, clustering/forecasting/trend line metadata. Target: 65.7% → 80%+ |
+| 27.2 | **`datasource_extractor.py` coverage** | `tests/test_extraction.py` | Medium | Cover: connection parsing for all 10 types (Oracle TNS, SAP BW MDX, Spark, BigQuery project), relationship extraction with both `[Table].[Column]` and bare `[Column]` formats, column metadata extraction, custom SQL extraction. Target: 65.4% → 80%+ |
+| 27.3 | **`prep_flow_parser.py` coverage** | `tests/test_prep_flow_parser.py` | Medium | Cover: remaining step types (Script, Prediction, CrossJoin, PublishedDataSource), Hyper source handling, complex DAG topologies (diamond merges, multi-output nodes), expression converter edge cases. Target: 65.4% → 80%+ |
+| 27.4 | **`server_client.py` coverage** | `tests/test_server_client.py` | Medium | Cover: auth flow (PAT + password), `download_workbook()`, `batch_download()`, `search_workbooks()`, error handling (401, 403, 404, 429, timeout). All mock-based. Target: 62.5% → 85%+ |
+| 27.5 | **`config/migration_config.py` coverage** | `tests/test_infrastructure.py` | Low | Cover: `from_file()` with valid/invalid JSON, `from_args()` override precedence, `save()` round-trip, section accessors, validation errors. Target: 63.2% → 85%+ |
+| 27.6 | **Sprint 27 tests** | `tests/` | — | Target: +120 tests, overall coverage: 85%+ |
+
+### Sprint 28 — Hyper Data Loading & SCRIPT_* Visuals
+
+**Goal:** Close two hard limits from KNOWN_LIMITATIONS — Hyper data loading (B.6) and SCRIPT_* to Python/R visuals (B.2).
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 28.1 | **Hyper file data reader** | `tableau_export/hyper_reader.py` (NEW) | High | Read row-level data from `.hyper` files via SQLite interface (Hyper files are SQLite-compatible databases). Extract table schema + first N rows. Generate `#table()` M expressions with inline data for small extracts, or `Csv.Document()` references for large ones. No external dependency — use stdlib `sqlite3`. |
+| 28.2 | **Wire Hyper reader into pipeline** | `extract_tableau_data.py`, `m_query_builder.py` | Medium | When `.hyper` file is found in `.twbx` archive, call `hyper_reader.read_hyper()` to get schema + sample rows. Populate M query with actual data instead of empty `#table()`. |
+| 28.3 | **Prep flow Hyper source** | `prep_flow_parser.py` | Low | Use Hyper reader for `.hyper` file references in Prep flows — currently produces empty `#table`. |
+| 28.4 | **SCRIPT_* → Python/R visual** | `dax_converter.py`, `visual_generator.py`, `pbip_generator.py` | Medium | Detect `SCRIPT_BOOL/INT/REAL/STR` in calculations. Instead of `BLANK()`, generate a PBI Python visual container (`scriptVisual`) with the original R/Python code preserved as a comment inside the script block. Add migration note about configuring Python/R runtime in PBI Desktop. |
+| 28.5 | **SCRIPT_* assessment integration** | `assessment.py` | Low | Update assessment to flag SCRIPT_* calcs as "requires Python/R runtime setup" instead of "no DAX equivalent". Downgrade severity from `fail` to `warn`. |
+| 28.6 | **Sprint 28 tests** | `tests/` | Medium | Hyper reader unit tests (schema extraction, data reading, SQLite format detection, corrupt file handling), SCRIPT_* visual generation tests, assessment update tests. Target: +40 tests |
+
+### Sprint 29 — Tableau 2024+ Features & Multi-language
+
+**Goal:** Support modern Tableau features (B.10 dynamic params, B.1 Pulse) and add multi-language report generation.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 29.1 | **Dynamic parameters (2024.3+)** | `extract_tableau_data.py`, `tmdl_generator.py` | Medium | Extract database-query-driven parameter definitions (SQL query, connection, refresh trigger). Generate M parameter with `Value.NativeQuery()` source and `refreshPolicy` for automatic refresh. Wire into `--` CLI flow. |
+| 29.2 | **Tableau Pulse → PBI Goals** | `tableau_export/pulse_extractor.py` (NEW), `powerbi_import/goals_generator.py` (NEW) | High | Parse Tableau Pulse metric definitions (KPI name, time grain, filters, target). Generate PBI Goals/Scorecard JSON artifact (Fabric Scorecard API format). Add `--goals` CLI flag. Note: requires Fabric workspace for deployment — generate local JSON for manual import. |
+| 29.3 | **Multi-language report labels** | `pbip_generator.py`, `tmdl_generator.py` | Medium | Support `--languages en-US,fr-FR,de-DE` flag. Generate separate `cultures/{locale}.tmdl` files with translated linguistic metadata (month names, day names, number format). Use built-in locale data from Python's `locale` module for common translations. |
+| 29.4 | **Multi-culture display strings** | `tmdl_generator.py` | Low | When `--languages` is specified, generate `translatedDisplayFolders` and `translatedDescriptions` in TMDL for measures/columns using display folder names as translation keys. |
+| 29.5 | **Sprint 29 tests** | `tests/` | Medium | Dynamic param extraction + M generation tests, Pulse metric parsing tests, multi-language TMDL output tests. Target: +35 tests |
+
+### Sprint 30 — Coverage Push: Generation Layer (target: 90%+)
+
+**Goal:** Reach 90%+ overall coverage by filling generation-layer gaps.  
+**Focus files:** `pbip_generator.py` (77.1%), `tmdl_generator.py` (85.1%), `visual_generator.py` (83.7%), `plugins.py` (69.6%), `progress.py` (75.7%)
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 30.1 | **`pbip_generator.py` coverage** | `tests/test_pbip_generator.py` | High | Cover uncovered visual branches: slicer sync groups, cross-filtering disable, action button navigation, drill-through page creation, swap bookmarks, page navigator, custom shape embedding, grid layout edge cases, mobile page generation. Target: 77.1% → 88%+ |
+| 30.2 | **`tmdl_generator.py` coverage** | `tests/test_tmdl_generator.py` | High | Cover: M-based calc column generation, calculation groups, field parameters, RLS role generation (USERNAME/FULLNAME/ISMEMBEROF), cross-table relationship inference, incremental refresh policy, expression TMDL writing. Target: 85.1% → 92%+ |
+| 30.3 | **`visual_generator.py` coverage** | `tests/test_visual_generator.py` | Medium | Cover: custom visual GUID resolution, scatter axis projections, slicer mode detection, small multiples config, data bar config, combo chart role assignment, TopN filter generation. Target: 83.7% → 92%+ |
+| 30.4 | **`plugins.py` + `progress.py` coverage** | `tests/test_infrastructure.py` | Low | Cover: plugin loading from config, hook invocation chain, progress bar formatting, step timing, verbose vs quiet modes. Target: 69.6%/75.7% → 90%+ |
+| 30.5 | **Sprint 30 tests** | `tests/` | — | Target: +100 tests, overall coverage: 90%+ |
+
+### Sprint 31 — Plugins, Packaging & Automation
+
+**Goal:** Ship plugin examples (B.9), automate PyPI publishing, improve developer experience.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 31.1 | **Plugin examples** | `examples/plugins/` (NEW) | Medium | Ship 3 example plugins: (1) `custom_visual_mapper.py` — override visual type mappings, (2) `dax_post_processor.py` — apply custom DAX transformations after conversion, (3) `naming_convention.py` — enforce naming rules on tables/columns/measures. Each with docstring, registration, and README. |
+| 31.2 | **PyPI auto-publish workflow** | `.github/workflows/publish.yml` (NEW) | Low | GitHub Actions workflow: on tag push (`v*.*.*`) → build wheel → publish to PyPI via trusted publisher. Uses `pyproject.toml` metadata. |
+| 31.3 | **PBIR schema forward-compat check** | `validator.py` | Low | Add `check_pbir_schema_version()` — fetch latest schema URLs from Microsoft docs, compare with hardcoded URLs, log warning if newer version available. Run optionally via `--check-schema` flag. |
+| 31.4 | **Fractional timeouts** | `config/settings.py` | Low | Change `DEPLOYMENT_TIMEOUT` and `RETRY_DELAY` from `int` to `float` — support sub-second delays and fractional timeouts. |
+| 31.5 | **Sprint 31 tests** | `tests/` | Low | Plugin example validation tests, schema check tests, config float parsing tests. Target: +20 tests |
+
+### Sprint 32 — Documentation, Polish & Release
+
+**Goal:** Finalize v9.0.0 — update all docs, refresh gap analysis, release.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 32.1 | **GAP_ANALYSIS.md refresh** | `docs/GAP_ANALYSIS.md` | Medium | Mark all v9.0.0 closures (Hyper data, SCRIPT_*, dynamic params, Pulse). Update test counts, coverage numbers, gap status markers. |
+| 32.2 | **KNOWN_LIMITATIONS.md refresh** | `docs/KNOWN_LIMITATIONS.md` | Low | Update limitations: Hyper data → partially closed, SCRIPT_* → closed (Python/R visual), add new limitation notes for Pulse/Goals feature. |
+| 32.3 | **CHANGELOG.md v9.0.0** | `CHANGELOG.md` | Low | Sprint 27-32 changes documented. |
+| 32.4 | **copilot-instructions.md update** | `.github/copilot-instructions.md` | Low | Update test count, new modules (hyper_reader, pulse_extractor, goals_generator), new CLI flags, plugin examples. |
+| 32.5 | **Version bump to 9.0.0** | `pyproject.toml`, `powerbi_import/__init__.py` | Low | Align version strings. |
+| 32.6 | **Final test suite validation** | `tests/` | Low | Full suite run: target 2,600+ tests, 90%+ coverage, 0 failures. |
+
+---
+
+### Sprint Sequencing (v9.0.0)
+
+```
+Sprint 27 (Coverage: Extraction)  ──→  Sprint 28 (Hyper Data + SCRIPT_*)
+            ↓                                       ↓
+Sprint 29 (Tableau 2024+ Features)  ──→  Sprint 30 (Coverage: Generation)
+            ↓                                       ↓
+Sprint 31 (Plugins & Packaging)     ──→  Sprint 32 (Docs & Release)
+```
+
+- Sprint 27 comes first — better test coverage makes feature development safer
+- Sprints 28 & 29 are semi-independent (Hyper reader is self-contained; Pulse/dynamic params don't depend on it)
+- Sprint 30 after features — coverage for newly added/modified code
+- Sprint 32 is last — documentation and release after all features are stable
+
+### Success Criteria for v9.0.0
+
+| Metric | Target | v8.0.0 Baseline |
+|--------|--------|-----------------|
+| Tests | 2,600+ | 2,275 |
+| Test files | 48+ | 45 |
+| Line coverage | ≥ 90% | 81.9% |
+| Hyper data loading | Inline data from `.hyper` files | Metadata-only |
+| SCRIPT_* visuals | Python/R visual containers | `BLANK()` |
+| Dynamic parameters | Database-query-driven M params | Not extracted |
+| Tableau Pulse | Goals/Scorecard JSON | Not supported |
+| Plugin examples | 3 shipped | 0 |
+| Multi-language | `--languages` flag for culture TMDL | Single `--culture` |
+| PyPI auto-publish | Tag-triggered workflow | Manual |
+| Doc freshness | All docs reflect v9.0.0 | v8.0.0 |
+
+### Risk Register (v9.0.0)
+
+| Risk | Impact | Probability | Mitigation |
+|------|--------|-------------|------------|
+| `.hyper` files may not be pure SQLite | High | Medium | Validate with `sqlite3.connect()` — some `.hyper` v2+ files use proprietary format; fall back to metadata-only if SQLite fails |
+| Pulse API unavailable in older Tableau versions | Medium | Low | Feature-detect and skip gracefully; Pulse was introduced in 2024.1 |
+| Python/R runtime not configured in PBI Desktop | Medium | High | Generate clear migration note + link to PBI Python/R setup docs |
+| 90% coverage may require testing OS-specific paths | Medium | Medium | Use mocking for file I/O, Windows paths, and OneDrive lock handling |
+| Multi-language translations may be incomplete | Low | Medium | Use Python `locale` for common locales; generate English fallback for unsupported locales |
+
+---
+
+## v8.0.0 Feature Backlog (prioritized, not sprint-assigned)
+
+Items that may be pulled into sprints if capacity allows:
+
+| # | Feature | Priority | Effort | Details | Status |
+|---|---------|----------|--------|---------|--------|
+| B.1 | **Tableau Pulse → PBI Goals** | Medium | High | Tableau Pulse metrics → Power BI Goals/Scorecards (new Tableau 2024+ feature) | 📋 Planned → Sprint 29.2 |
+| B.2 | **SCRIPT_* → PBI Python/R visuals** | Low | Medium | Map `SCRIPT_BOOL/INT/REAL/STR` to PBI Python/R visual containers instead of `BLANK()` | 📋 Planned → Sprint 28.4 |
+| B.3 | **Data-driven alerts** | Low | Medium | Tableau data alerts → PBI alert rules on dashboards | Backlog |
+| B.4 | **Web UI / Streamlit frontend** | Low | High | Browser-based migration wizard (upload .twbx → get .pbip) using Streamlit or Flask | Backlog |
+| B.5 | **LLM-assisted DAX correction** | Low | High | Optional AI pass: send approximated DAX to GPT/Claude for semantic review (opt-in, requires API key) | Backlog |
+| B.6 | **Hyper data loading** | Low | High | Read row-level data from `.hyper` files via SQLite interface (currently metadata-only) | 📋 Planned → Sprint 28.1 |
+| B.7 | **Side-by-side screenshot comparison** | Low | High | Selenium/Playwright capture Tableau + PBI screenshots, generate visual diff report | Backlog |
+| B.8 | **PBIR schema forward-compat** | Low | Low | Monitor PBI docs for PBIR v5.0+ schema changes, update `$schema` URLs as needed | 📋 Planned → Sprint 31.3 |
+| B.9 | **Plugin examples** | Low | Low | Ship 2-3 example plugins: custom visual mapper, DAX post-processor, naming convention enforcer | 📋 Planned → Sprint 31.1 |
+| B.10 | **Tableau 2024.3+ dynamic params** | Medium | Medium | Database-query-driven parameters — extract query definition, generate M parameter with refresh | 📋 Planned → Sprint 29.1 |
 
 ---
 

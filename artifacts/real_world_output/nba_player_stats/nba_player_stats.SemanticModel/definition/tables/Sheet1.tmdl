@@ -1,18 +1,18 @@
 table Sheet1
-	lineageTag: e5b38fc1-3830-4c71-b76a-26cfba2d2597
+	lineageTag: 0bdeebe6-4a98-4749-a451-898498bac96c
 
 	measure 'p. Rebounds' = SWITCH([Rebounds], 1, AVERAGE('Sheet1'[DEF]), 2, AVERAGE('Sheet1'[OFF]), 3, AVERAGE('Sheet1'[REB]))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 88ab5966-3741-41a1-851c-0a9881144882
+		lineageTag: 3aa0d8ec-76f5-49fb-8ca7-f15dc3f73017
 
 	measure 'min(1)' = MINX('Sheet1', 1)
 		displayFolder: Measures
-		lineageTag: 13142e86-80a9-4269-9936-8e79b7ec4d94
+		lineageTag: dde008f3-2a94-47df-addb-e4543d06dffc
 
 	column Player
 		dataType: string
-		lineageTag: e94f942a-3631-4c70-86d7-5bcfd56bf3c1
+		lineageTag: 5ed356fb-b081-4d88-9cf0-545a5dc56cbf
 		summarizeBy: none
 		sourceColumn: Player
 
@@ -20,7 +20,7 @@ table Sheet1
 
 	column YR
 		dataType: int64
-		lineageTag: a8190922-b700-4d57-82aa-592790d2d3e1
+		lineageTag: f6fac639-728f-4b47-8cb1-8087abdd36cd
 		summarizeBy: sum
 		sourceColumn: YR
 
@@ -28,7 +28,7 @@ table Sheet1
 
 	column TM
 		dataType: string
-		lineageTag: c60dcc28-1d9e-4cd8-a2be-f24004d0df5a
+		lineageTag: dfa2fe02-86cd-4787-bab0-7c61d9b55923
 		summarizeBy: none
 		sourceColumn: TM
 
@@ -36,7 +36,7 @@ table Sheet1
 
 	column GP
 		dataType: int64
-		lineageTag: 0dfbd62e-4e62-4fea-9fde-21883f56db76
+		lineageTag: 7805d2a9-2525-43de-8a05-c3dc654fbcb6
 		summarizeBy: sum
 		sourceColumn: GP
 
@@ -45,7 +45,7 @@ table Sheet1
 	column MIN
 		dataType: double
 		formatString: #,0.00
-		lineageTag: f71e3516-0023-4c26-b7dc-7654d798df5c
+		lineageTag: ac009567-9a8c-493e-ac70-a91f03d3a6d7
 		summarizeBy: sum
 		sourceColumn: MIN
 
@@ -54,7 +54,7 @@ table Sheet1
 	column FGM
 		dataType: double
 		formatString: #,0.00
-		lineageTag: d2700c9c-3586-4ce6-8c2b-8c8f0466bf5d
+		lineageTag: 80624469-88d4-479f-822c-5df5935ed867
 		summarizeBy: sum
 		sourceColumn: FGM
 
@@ -63,7 +63,7 @@ table Sheet1
 	column FGA
 		dataType: double
 		formatString: #,0.00
-		lineageTag: aa10aafa-9c1b-41ec-b908-eddeb8ab0fff
+		lineageTag: 2e27db3b-2c39-4b4b-b70f-6eed56411f8f
 		summarizeBy: sum
 		sourceColumn: FGA
 
@@ -72,7 +72,7 @@ table Sheet1
 	column 'FG%'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: a9053c88-d6ca-4c65-a6be-bd4848413871
+		lineageTag: 9e5cc93d-cbea-43b3-acad-54c880eef0b7
 		summarizeBy: sum
 		sourceColumn: 'FG%'
 
@@ -81,7 +81,7 @@ table Sheet1
 	column '3PT%'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 0a90f7a7-488f-4d94-9541-64091dbebcae
+		lineageTag: da962183-14d1-4f1d-ab72-661f8880ab63
 		summarizeBy: sum
 		sourceColumn: '3PT%'
 
@@ -90,7 +90,7 @@ table Sheet1
 	column 'FT%'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 0f3c91a4-ff9f-431e-8011-aad19f8f7134
+		lineageTag: aa5df4c6-76ff-4e60-a869-adab12bed124
 		summarizeBy: sum
 		sourceColumn: 'FT%'
 
@@ -99,7 +99,7 @@ table Sheet1
 	column OFF
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 95dd246b-8873-4777-8b3c-85d256f2d143
+		lineageTag: 5bb2e937-3558-4ec6-ae25-8d551c6e6592
 		summarizeBy: sum
 		sourceColumn: OFF
 
@@ -108,7 +108,7 @@ table Sheet1
 	column DEF
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 7b3e1cb4-3267-4e05-af53-18831b3c64a8
+		lineageTag: 411bd86c-ef74-44bd-b8a7-2a804156b262
 		summarizeBy: sum
 		sourceColumn: DEF
 
@@ -117,7 +117,7 @@ table Sheet1
 	column REB
 		dataType: double
 		formatString: #,0.00
-		lineageTag: bd72b6fa-a423-45a0-993c-8bfce55879c1
+		lineageTag: 9fe0a247-6147-4518-9ff9-a520946578da
 		summarizeBy: sum
 		sourceColumn: REB
 
@@ -126,7 +126,7 @@ table Sheet1
 	column ASST
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 479ce651-4da4-4511-8d8b-dc9bb85266f4
+		lineageTag: 3ff284cf-e8b4-450d-acf3-907cf974b3a7
 		summarizeBy: sum
 		sourceColumn: ASST
 
@@ -135,7 +135,7 @@ table Sheet1
 	column STL
 		dataType: double
 		formatString: #,0.00
-		lineageTag: ed16e3be-afbd-4911-82b0-476ddf280d0a
+		lineageTag: b2ccef4c-d8eb-4b7b-8da1-9e85f2c54bb1
 		summarizeBy: sum
 		sourceColumn: STL
 
@@ -144,7 +144,7 @@ table Sheet1
 	column BLK
 		dataType: double
 		formatString: #,0.00
-		lineageTag: e86fcb6c-14cc-4747-84ef-f18b6e969972
+		lineageTag: e5f53432-1319-4f5d-b7d5-80db4c21842a
 		summarizeBy: sum
 		sourceColumn: BLK
 
@@ -153,7 +153,7 @@ table Sheet1
 	column TO
 		dataType: double
 		formatString: #,0.00
-		lineageTag: dfaf45f0-95bc-4683-802e-de13a3aa43f4
+		lineageTag: 64de3730-9d14-4504-80e5-c980da21920b
 		summarizeBy: sum
 		sourceColumn: TO
 
@@ -162,7 +162,7 @@ table Sheet1
 	column PF
 		dataType: double
 		formatString: #,0.00
-		lineageTag: b6362c70-590f-4f63-bc20-dd2e33541cfc
+		lineageTag: b00c3fb0-b4a7-4f93-9f53-de89a1d610ce
 		summarizeBy: sum
 		sourceColumn: PF
 
@@ -171,7 +171,7 @@ table Sheet1
 	column PTS
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 82245168-ece7-49b3-b21a-8e23d476860f
+		lineageTag: 6dc0ff86-344d-45b1-88b6-1b6f24fdb8be
 		summarizeBy: sum
 		sourceColumn: PTS
 
@@ -179,19 +179,25 @@ table Sheet1
 
 	column 'Action (Player)'
 		dataType: string
-		lineageTag: c7aedf07-1ffc-44ab-8a0e-1fb4f0140965
+		lineageTag: 9e537a03-ff40-4287-bcc8-0c62ff00c10b
 		summarizeBy: none
 		sourceColumn: 'Action (Player)'
 		displayFolder: Groups
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Sheet1-b834d39e-7d25-4ce9-bdf6-948e27eee6a3' = m
+	partition 'Sheet1-ccd0153e-c844-4cd2-938a-701f1669f3c2' = m
 		mode: import
 		source =
 				let
 				    // Source Excel: Data/Datasets/nba_players.xlsx
-				    Source = Excel.Workbook(File.Contents(DataFolder & "\Data\Datasets\nba_players.xlsx"), null, true),
+				    Source = try
+				
+				        Excel.Workbook(File.Contents(DataFolder & "\Data\Datasets\nba_players.xlsx"), null, true)
+				
+				    otherwise
+				
+				        #table({"Player", "YR", "TM", "GP", "MIN", "FGM", "FGA", "FG%", "3PT%", "FT%", "OFF", "DEF", "REB", "ASST", "STL", "BLK", "TO", "PF", "PTS"}, {}),
 				    #"Sheet1 Sheet" = Source{[Item="Sheet1",Kind="Sheet"]}[Data],
 				    #"Promoted Headers" = Table.PromoteHeaders(#"Sheet1 Sheet", [PromoteAllScalars=true]),
 				    #"Changed Types" = Table.TransformColumnTypes(#"Promoted Headers", {

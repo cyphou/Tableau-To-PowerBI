@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-11T22:39:38.858530",
+  "generated_at": "2026-03-12T13:07:53.354002",
   "source": "Tableau Migration",
   "report_name": "filtering",
   "objects_converted": {
@@ -20,7 +20,7 @@
   },
   "generated_output": {
     "pages": 1,
-    "visuals": 2,
+    "visuals": 4,
     "theme_applied": false,
     "theme_detail": {
       "status": "skipped",

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Report",
+    "displayName": "BigQuery_Analytics"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "6a0f12d1-0939-4aa8-a0fd-01d21154f0cd"
+  }
+}

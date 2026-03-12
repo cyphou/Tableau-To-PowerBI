@@ -1,0 +1,91 @@
+table Maintenance
+	lineageTag: 0df483f1-45cc-4d9f-b98d-906ac179c32a
+
+	column maint_id
+		dataType: int64
+		lineageTag: 6b0c109a-aa7f-482b-90d6-f7e151ff5a6a
+		summarizeBy: sum
+		sourceColumn: maint_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column machine_id
+		dataType: int64
+		lineageTag: c6b5a0ff-6f0d-41f6-86d7-8699029a83cf
+		summarizeBy: sum
+		sourceColumn: machine_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column maint_date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: a9fc215d-2c98-4d24-9aca-f11f052c7385
+		summarizeBy: none
+		sourceColumn: maint_date
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column maint_type
+		dataType: string
+		lineageTag: 19593af7-d930-4312-b016-fd0f7ce6d567
+		summarizeBy: none
+		sourceColumn: maint_type
+
+		annotation SummarizationSetBy = Automatic
+
+	column maint_cost
+		dataType: double
+		formatString: #,0.00
+		lineageTag: d9d75cc0-97a8-4c01-a9ee-01e08585b97a
+		summarizeBy: sum
+		sourceColumn: maint_cost
+
+		annotation SummarizationSetBy = Automatic
+
+	column downtime_hours
+		dataType: double
+		formatString: #,0.00
+		lineageTag: fdbae43b-6909-4a67-9cef-d3d275ccb356
+		summarizeBy: sum
+		sourceColumn: downtime_hours
+
+		annotation SummarizationSetBy = Automatic
+
+	column technician
+		dataType: string
+		lineageTag: e5c43390-0075-4651-8db8-d4e87bac054b
+		summarizeBy: none
+		sourceColumn: technician
+
+		annotation SummarizationSetBy = Automatic
+
+	column description
+		dataType: string
+		lineageTag: b9eddbb4-085a-4e8d-9c4f-fb2123b7aefb
+		summarizeBy: none
+		sourceColumn: description
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Maintenance-682fc7b8-eddf-48a1-ac9e-c4f1200d2e23' = m
+		mode: import
+		source =
+				let
+				    // Source Oracle: mfg-oracle.corp.local:1521/MFGDB
+				    Source = try
+				
+				        Oracle.Database("mfg-oracle.corp.local:1521/MFGDB")
+				
+				    otherwise
+				
+				        #table({"maint_id", "machine_id", "maint_date", "maint_type", "maint_cost", "downtime_hours", "technician", "description"}, {}),
+				    #"Maintenance Table" = Source{[Schema="DBO", Item="Maintenance"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(#"Maintenance Table", {{"maint_id", "Maint ID"}, {"machine_id", "Machine ID"}, {"maint_date", "Maint Date"}, {"maint_type", "Maint Type"}, {"maint_cost", "Maint Cost"}, {"downtime_hours", "Downtime Hours"}, {"technician", "Technician"}, {"description", "Description"}}),
+				    Result = #"Renamed Columns"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+

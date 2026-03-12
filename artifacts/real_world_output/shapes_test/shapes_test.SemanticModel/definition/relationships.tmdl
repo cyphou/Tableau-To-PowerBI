@@ -1,9 +1,9 @@
-relationship e5e23a31-6b15-4750-b086-f0cef1519dc0
+relationship 052240a8-7e3f-4492-abac-d41e635830a7
 	fromColumn: Orders.'Order Date'
 	toColumn: Calendar.Date
 	crossFilteringBehavior: oneDirection
 
-relationship 3cfeadf6-9f6b-4fc9-83ea-95dc8e9de8da
+relationship 5dd1a178-74f6-44a0-831b-0feccd7725f2
 	fromColumn: Orders.'Order ID'
 	toColumn: Returns.'Order ID'
 	crossFilteringBehavior: oneDirection

@@ -1,0 +1,6 @@
+perspective 'Full Model'
+	perspectiveTable Sensors
+	perspectiveTable Machines
+	perspectiveTable Maintenance
+	perspectiveTable Calendar
+	perspectiveTable 'Alert Threshold'

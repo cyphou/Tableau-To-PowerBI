@@ -1,9 +1,9 @@
 table Orders
-	lineageTag: 50511d94-a432-4094-8cc7-1ed9d67e6346
+	lineageTag: 9b128c5a-9ab7-49e9-9ebb-2cc23d61162c
 
 	column 'Row ID'
 		dataType: int64
-		lineageTag: b6c38fd7-23cd-4916-b4da-1b43fc1e848a
+		lineageTag: c789b23c-aeb5-43e0-98d0-9d8ff0886e69
 		summarizeBy: sum
 		sourceColumn: 'Row ID'
 
@@ -11,7 +11,7 @@ table Orders
 
 	column 'Order ID'
 		dataType: int64
-		lineageTag: ad25a1c9-383d-4d92-887d-cf0c9f2b804c
+		lineageTag: 5c0188d2-6449-4c60-8a17-c1b633bd52aa
 		summarizeBy: sum
 		sourceColumn: 'Order ID'
 
@@ -20,7 +20,7 @@ table Orders
 	column 'Order Date'
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 090deb40-f571-4381-9fb5-f891e273c8ac
+		lineageTag: 49905690-1280-40ca-aa26-4b1f9126f929
 		summarizeBy: none
 		sourceColumn: 'Order Date'
 		dataCategory: DateTime
@@ -29,7 +29,7 @@ table Orders
 
 	column 'Order Priority'
 		dataType: string
-		lineageTag: 50986fe7-a0b1-4dbf-95f1-34edcc98c093
+		lineageTag: fc0351d0-54e8-439e-a9dd-509534b1022b
 		summarizeBy: none
 		sourceColumn: 'Order Priority'
 
@@ -37,7 +37,7 @@ table Orders
 
 	column 'Order Quantity'
 		dataType: int64
-		lineageTag: 9d208cfa-477d-46fe-b73a-5b60f877f814
+		lineageTag: 8fc38afd-29ad-4b8c-8828-70b5cb74eff7
 		summarizeBy: sum
 		sourceColumn: 'Order Quantity'
 
@@ -46,7 +46,7 @@ table Orders
 	column Sales
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 36794f3e-830c-4fcf-9b12-5ba9f044d8eb
+		lineageTag: c7215e27-50ff-48b9-9411-2a314264c0f0
 		summarizeBy: sum
 		sourceColumn: Sales
 
@@ -55,7 +55,7 @@ table Orders
 	column Discount
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 28ab0a72-58a7-4e17-903b-ce733ecd5112
+		lineageTag: 1f9ca2c4-5a05-44d0-a188-98ffe6d1ee26
 		summarizeBy: sum
 		sourceColumn: Discount
 
@@ -63,7 +63,7 @@ table Orders
 
 	column 'Ship Mode'
 		dataType: string
-		lineageTag: ff5bde26-8f79-461d-ab25-7def9447b03e
+		lineageTag: 94dfcd37-973b-4b03-b10f-d7db3b4172e1
 		summarizeBy: none
 		sourceColumn: 'Ship Mode'
 
@@ -72,7 +72,7 @@ table Orders
 	column Profit
 		dataType: double
 		formatString: #,0.00
-		lineageTag: ed78d4ae-c081-402b-9ac2-fe7ad18b9b86
+		lineageTag: 3574a9c4-13ed-471c-a6b7-1a363fba4aa0
 		summarizeBy: sum
 		sourceColumn: Profit
 
@@ -81,7 +81,7 @@ table Orders
 	column 'Unit Price'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: d86139d4-7cb1-40a1-910f-a25e02a9a01e
+		lineageTag: 2eed1a4f-3d11-4af6-aea8-a082bc45b390
 		summarizeBy: sum
 		sourceColumn: 'Unit Price'
 
@@ -90,7 +90,7 @@ table Orders
 	column 'Shipping Cost'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: ccca36f9-aa28-4f19-9321-55816db2e720
+		lineageTag: 998376e4-7c5f-425a-83e6-c2198dcb2982
 		summarizeBy: sum
 		sourceColumn: 'Shipping Cost'
 
@@ -98,7 +98,7 @@ table Orders
 
 	column 'Customer Name'
 		dataType: string
-		lineageTag: 1dcdfa9b-f7d2-4752-b569-b1c7a46a6b1a
+		lineageTag: 9a5ca1f9-4bae-4bdc-a090-cf1303909321
 		summarizeBy: none
 		sourceColumn: 'Customer Name'
 
@@ -106,7 +106,7 @@ table Orders
 
 	column City
 		dataType: string
-		lineageTag: a4995b42-fb8d-4ec4-898b-d6566f7c5a48
+		lineageTag: 2a473f25-6e87-4de9-a7fd-b0d144643641
 		summarizeBy: none
 		sourceColumn: City
 		dataCategory: City
@@ -115,7 +115,7 @@ table Orders
 
 	column 'Zip Code'
 		dataType: string
-		lineageTag: 2a66c158-b41b-4f26-b99c-83f2ad53784f
+		lineageTag: 976648e4-4b56-48c5-a9f0-397c84d7bc1f
 		summarizeBy: none
 		sourceColumn: 'Zip Code'
 		dataCategory: PostalCode
@@ -124,7 +124,7 @@ table Orders
 
 	column State
 		dataType: string
-		lineageTag: cf5a7da5-4cc1-48d3-bfc4-afb1de2c3e94
+		lineageTag: 61fe101d-4fcc-4700-ad36-db56b101f8a1
 		summarizeBy: none
 		sourceColumn: State
 		dataCategory: StateOrProvince
@@ -133,7 +133,7 @@ table Orders
 
 	column Region
 		dataType: string
-		lineageTag: 1e8cddaa-6bf6-4ae2-9588-dfeb59dba1c5
+		lineageTag: 3f877f7a-2551-49a6-ba2e-9f76b76b0978
 		summarizeBy: none
 		sourceColumn: Region
 		dataCategory: StateOrProvince
@@ -142,7 +142,7 @@ table Orders
 
 	column 'Customer Segment'
 		dataType: string
-		lineageTag: 9222a305-5d9c-4475-8b6e-b37a5a814da8
+		lineageTag: 065800d1-4504-4902-9122-474d019be4b1
 		summarizeBy: none
 		sourceColumn: 'Customer Segment'
 
@@ -150,7 +150,7 @@ table Orders
 
 	column 'Product Category'
 		dataType: string
-		lineageTag: 4b2471a9-b551-4f22-b85f-604535222bed
+		lineageTag: 795dbe5f-f5dc-47ef-a6d6-6cc1af13ee13
 		summarizeBy: none
 		sourceColumn: 'Product Category'
 
@@ -158,7 +158,7 @@ table Orders
 
 	column 'Product Sub-Category'
 		dataType: string
-		lineageTag: 5661830d-f541-44a5-9d5f-f4bf8ec69747
+		lineageTag: 1125d24a-42ea-45a6-8062-185b956a67bb
 		summarizeBy: none
 		sourceColumn: 'Product Sub-Category'
 
@@ -166,7 +166,7 @@ table Orders
 
 	column 'Product Name'
 		dataType: string
-		lineageTag: 84dde565-1acb-4297-bcb3-4a45fd663991
+		lineageTag: 9a13126c-4352-4ac9-9425-d7ae3a9eaef2
 		summarizeBy: none
 		sourceColumn: 'Product Name'
 
@@ -174,7 +174,7 @@ table Orders
 
 	column 'Product Container'
 		dataType: string
-		lineageTag: b59eccf9-162f-4460-8245-5f0a88aaca27
+		lineageTag: 6fb589b2-7874-413c-951e-2519a5acd96b
 		summarizeBy: none
 		sourceColumn: 'Product Container'
 
@@ -183,7 +183,7 @@ table Orders
 	column 'Product Base Margin'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 52d0ecf0-4ad9-4f1a-81f3-445828289b6a
+		lineageTag: fba819dc-d570-48be-a100-a6d5e7fe76de
 		summarizeBy: sum
 		sourceColumn: 'Product Base Margin'
 
@@ -192,7 +192,7 @@ table Orders
 	column 'Ship Date'
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 40ff855d-af54-438a-a8f7-949f4191c5d2
+		lineageTag: a10a39c0-e317-4e32-9e7d-71db95a9136b
 		summarizeBy: none
 		sourceColumn: 'Ship Date'
 		dataCategory: DateTime
@@ -201,7 +201,7 @@ table Orders
 
 	column 'Grouping Based on Unit Price'
 		dataType: string
-		lineageTag: 0aaa0954-33d1-4576-8462-dac9d975cb07
+		lineageTag: f01b55c8-4cf5-429e-b830-55fd7bb9cde0
 		summarizeBy: none
 		sourceColumn: 'Grouping Based on Unit Price'
 
@@ -209,19 +209,25 @@ table Orders
 
 	column 'Action (Region)'
 		dataType: string
-		lineageTag: 0b5bd99a-7f66-4843-971b-c0d428f9dffa
+		lineageTag: 665cc751-59a5-41c6-8d03-c52b4a8c0363
 		summarizeBy: none
 		sourceColumn: 'Action (Region)'
 		displayFolder: Groups
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Orders-996f31c4-f0aa-4247-a2e0-a23b285e1f8f' = m
+	partition 'Orders-00542537-05c4-4657-a087-a881d4d7336e' = m
 		mode: import
 		source =
 				let
 				    // Source Excel: Orders.xlsx
-				    Source = Excel.Workbook(File.Contents(DataFolder & "\Orders.xlsx"), null, true),
+				    Source = try
+				
+				        Excel.Workbook(File.Contents(DataFolder & "\Orders.xlsx"), null, true)
+				
+				    otherwise
+				
+				        #table({"Row ID", "Order ID", "Order Date", "Order Priority", "Order Quantity", "Sales", "Discount", "Ship Mode", "Profit", "Unit Price", "Shipping Cost", "Customer Name", "City", "Zip Code", "State", "Region", "Customer Segment", "Product Category", "Product Sub-Category", "Product Name", "Product Container", "Product Base Margin", "Ship Date"}, {}),
 				    #"Orders Sheet" = Source{[Item="Orders",Kind="Sheet"]}[Data],
 				    #"Promoted Headers" = Table.PromoteHeaders(#"Orders Sheet", [PromoteAllScalars=true]),
 				    #"Changed Types" = Table.TransformColumnTypes(#"Promoted Headers", {

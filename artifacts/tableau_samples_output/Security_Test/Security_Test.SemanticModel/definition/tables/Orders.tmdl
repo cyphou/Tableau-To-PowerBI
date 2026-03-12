@@ -1,0 +1,109 @@
+table Orders
+	lineageTag: 43e2e7e5-02ca-41a6-ad72-eb39783bdbb3
+
+	measure 'Is Current User' = 'Orders'[CustomerEmail] = USERPRINCIPALNAME()
+		formatString: True/False
+		displayFolder: Dimensions
+		lineageTag: 1734b0bf-c13f-401c-bd24-45cde84efbe8
+
+	measure 'Manager Access' = TRUE() /* ISMEMBEROF("Managers"): implement via RLS role */ || TRUE() /* ISMEMBEROF("Executives"): implement via RLS role */
+		formatString: True/False
+		displayFolder: Dimensions
+		lineageTag: ea850857-9257-4e46-a521-fa8b2a0b6e15
+
+	measure 'Region Match' = 'Regions'[RegionManager] = USERPRINCIPALNAME()
+		formatString: True/False
+		displayFolder: Dimensions
+		lineageTag: 58f03a97-c8ca-48a8-85ce-49f896c149e7
+
+	measure 'Total Sales' = SUM('Orders'[Sales])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: d02ccf72-7640-46b4-ab4c-c079c53b02f1
+
+	measure 'Profit Ratio' = SUM('Orders'[Profit]) / SUM('Orders'[Sales])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: cec08cea-213b-4845-a441-9c4be706acd2
+
+	column OrderID
+		dataType: int64
+		lineageTag: 68ef5d02-6fd4-4bc5-9f7e-88f96a466b47
+		summarizeBy: sum
+		sourceColumn: OrderID
+
+		annotation SummarizationSetBy = Automatic
+
+	column Region
+		dataType: string
+		lineageTag: f09c0c93-dc49-43f9-b885-e51f7578472a
+		summarizeBy: none
+		sourceColumn: Region
+		dataCategory: StateOrProvince
+
+		annotation SummarizationSetBy = Automatic
+
+	column Sales
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 3f6fd183-d4f0-46e0-b530-741f30975768
+		summarizeBy: sum
+		sourceColumn: Sales
+
+		annotation SummarizationSetBy = Automatic
+
+	column Profit
+		dataType: double
+		formatString: #,0.00
+		lineageTag: f31c08fa-2310-48ac-89e9-1c17b99de499
+		summarizeBy: sum
+		sourceColumn: Profit
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerEmail
+		dataType: string
+		lineageTag: 4fd68b5a-657c-4f5d-bce8-c40b230432e3
+		summarizeBy: none
+		sourceColumn: CustomerEmail
+
+		annotation SummarizationSetBy = Automatic
+
+	column Category
+		dataType: string
+		lineageTag: 078fdc2f-6759-4cd8-bea6-85252198ca46
+		summarizeBy: none
+		sourceColumn: Category
+
+		annotation SummarizationSetBy = Automatic
+
+	column OrderDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: d76c8add-81c6-4190-87b8-2cae641afbef
+		summarizeBy: none
+		sourceColumn: OrderDate
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Orders-41e43c29-48b1-4a2c-873d-ea4fbe5cee3b' = m
+		mode: import
+		source =
+				let
+				    // Source SQL Server
+				    Source = try
+				
+				        Sql.Database("localhost", "SalesDB")
+				
+				    otherwise
+				
+				        #table({"OrderID", "Region", "Sales", "Profit", "CustomerEmail", "Category", "OrderDate"}, {}),
+				    #"Orders Table" = Source{[Schema="dbo", Item="Orders"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(#"Orders Table", {{"OrderID", "Order ID"}, {"CustomerEmail", "Customer Email"}, {"OrderDate", "Order Date"}}),
+				    Result = #"Renamed Columns"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+

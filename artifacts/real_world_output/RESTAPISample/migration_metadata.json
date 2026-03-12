@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-11T22:39:37.614429",
+  "generated_at": "2026-03-12T13:07:26.642110",
   "source": "Tableau Migration",
   "report_name": "RESTAPISample",
   "objects_converted": {
@@ -20,7 +20,7 @@
   },
   "generated_output": {
     "pages": 1,
-    "visuals": 3,
+    "visuals": 6,
     "theme_applied": false,
     "theme_detail": {
       "status": "skipped",

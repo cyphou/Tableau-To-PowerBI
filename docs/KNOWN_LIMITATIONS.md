@@ -2,7 +2,7 @@
 
 This document lists known limitations and approximations in the Tableau to Power BI migration tool.
 
-> **Last updated:** v7.0.0 — many previous limitations have been addressed.
+> **Last updated:** v8.0.0 — many previous limitations have been addressed. See v9.0.0 plan for upcoming closures (Hyper data, SCRIPT_*, dynamic params, Pulse).
 
 ---
 

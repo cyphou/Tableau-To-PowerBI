@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-11T22:39:39.329433",
+  "generated_at": "2026-03-12T13:07:58.961102",
   "source": "Tableau Migration",
   "report_name": "global_superstores_db",
   "objects_converted": {
@@ -19,8 +19,8 @@
     "custom_sql": 0
   },
   "generated_output": {
-    "pages": 6,
-    "visuals": 14,
+    "pages": 11,
+    "visuals": 34,
     "theme_applied": false,
     "theme_detail": {
       "status": "skipped",

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-11T22:39:37.858956",
+  "generated_at": "2026-03-12T13:07:31.988203",
   "source": "Tableau Migration",
   "report_name": "SampleWB",
   "objects_converted": {
@@ -20,7 +20,7 @@
   },
   "generated_output": {
     "pages": 1,
-    "visuals": 3,
+    "visuals": 6,
     "theme_applied": false,
     "theme_detail": {
       "status": "skipped",

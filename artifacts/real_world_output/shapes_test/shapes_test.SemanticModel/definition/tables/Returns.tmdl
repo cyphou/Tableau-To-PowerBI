@@ -1,9 +1,9 @@
 table Returns
-	lineageTag: b30c4f1e-e08f-48ae-bb68-97cb1a489955
+	lineageTag: cfd6a49b-62ca-4e25-8f53-3c1ef98ebad8
 
 	column Returned
 		dataType: string
-		lineageTag: 2aae2209-4324-461a-923e-553c19ffb08f
+		lineageTag: f876db05-c4bd-45aa-8869-63d5f3ae8bf0
 		summarizeBy: none
 		sourceColumn: Returned
 
@@ -11,18 +11,24 @@ table Returns
 
 	column 'Order ID'
 		dataType: string
-		lineageTag: 6345b1ab-b31d-4a25-8b16-569d192c0a2e
+		lineageTag: ab1cfda9-fb2d-4f3d-97fa-059001a53150
 		summarizeBy: none
 		sourceColumn: 'Order ID'
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Returns-bc8de6d8-236c-45f7-984b-125237036503' = m
+	partition 'Returns-3ed6f66b-f4ca-4fd9-beaf-34efd9c18889' = m
 		mode: import
 		source =
 				let
 				    // Source Excel: /Users/mkorotchenkov/Documents/My Tableau Repository/Datasources/2021.2/en_US-US/Sample - Superstore.xls
-				    Source = Excel.Workbook(File.Contents(DataFolder & "\\Users\mkorotchenkov\Documents\My Tableau Repository\Datasources\2021.2\en_US-US\Sample - Superstore.xls"), null, true),
+				    Source = try
+				
+				        Excel.Workbook(File.Contents(DataFolder & "\\Users\mkorotchenkov\Documents\My Tableau Repository\Datasources\2021.2\en_US-US\Sample - Superstore.xls"), null, true)
+				
+				    otherwise
+				
+				        #table({"Returned", "Order ID"}, {}),
 				    #"Returns Sheet" = Source{[Item="Returns",Kind="Sheet"]}[Data],
 				    #"Promoted Headers" = Table.PromoteHeaders(#"Returns Sheet", [PromoteAllScalars=true]),
 				    #"Changed Types" = Table.TransformColumnTypes(#"Promoted Headers", {

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-11T22:39:38.586091",
+  "generated_at": "2026-03-12T13:07:48.041370",
   "source": "Tableau Migration",
   "report_name": "ephemeral_field",
   "objects_converted": {
@@ -20,7 +20,7 @@
   },
   "generated_output": {
     "pages": 1,
-    "visuals": 2,
+    "visuals": 4,
     "theme_applied": false,
     "theme_detail": {
       "status": "skipped",

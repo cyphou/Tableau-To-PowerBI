@@ -1,0 +1,41 @@
+{
+  "generated_at": "2026-03-12T13:08:42.274181",
+  "source": "Tableau Migration",
+  "report_name": "Security_Test",
+  "objects_converted": {
+    "worksheets": 2,
+    "dashboards": 1,
+    "datasources": 1,
+    "calculations": 5,
+    "parameters": 0,
+    "filters": 0,
+    "stories": 0,
+    "sets": 0,
+    "groups": 0,
+    "bins": 0,
+    "hierarchies": 0,
+    "user_filters": 4,
+    "actions": 0,
+    "custom_sql": 0
+  },
+  "generated_output": {
+    "pages": 1,
+    "visuals": 2,
+    "theme_applied": false,
+    "theme_detail": {
+      "status": "skipped",
+      "reason": "no dashboard colors detected"
+    }
+  },
+  "tmdl_stats": {
+    "tables": 3,
+    "measures": 8,
+    "columns": 17,
+    "relationships": 1
+  },
+  "visual_type_mappings": {
+    "Sales Overview": "Automatic",
+    "Profit Analysis": "Automatic"
+  },
+  "approximations": []
+}

@@ -1,0 +1,4 @@
+perspective 'Full Model'
+	perspectiveTable sessions
+	perspectiveTable users
+	perspectiveTable Calendar
