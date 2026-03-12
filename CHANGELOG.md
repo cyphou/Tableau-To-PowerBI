@@ -1,5 +1,20 @@
 # Changelog
 
+## v9.0.0 — Coverage, Hyper Data, Modern Tableau & Polish (in progress)
+
+### Sprint 27 — Coverage Push: Extraction Layer ✅
+- **Overall coverage: 81.9% → 88.3%** (+6.4 percentage points)
+- **267 new tests** (2,275 → 2,542), 0 failures, 15 skipped
+- **5 files brought to 85%+ coverage:**
+  - `config/migration_config.py`: 63.2% → **100%** (28 new tests in `test_migration_config.py`)
+  - `prep_flow_parser.py`: 65.4% → **99.1%** (34 new tests added to `test_prep_flow_parser.py`)
+  - `datasource_extractor.py`: 65.4% → **92.5%** (54 new tests in `test_datasource_extractor.py`)
+  - `server_client.py`: 62.5% → **87.5%** (12 new tests added to `test_server_client.py`)
+  - `extract_tableau_data.py`: 65.7% → **86.2%** (125 new tests in `test_extract_tableau_data.py`)
+- 3 new test files, 2 extended test files
+
+---
+
 ## v8.0.0 — Code Quality, Enterprise Readiness
 
 ### Sprint 21 — Refactor Large Functions ✅

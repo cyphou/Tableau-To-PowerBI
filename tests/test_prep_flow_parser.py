@@ -22,12 +22,16 @@ from prep_flow_parser import _get_node_type
 from prep_flow_parser import _topological_sort
 from prep_flow_parser import _convert_prep_expression_to_m
 from prep_flow_parser import _parse_clean_actions
+from prep_flow_parser import _convert_action_to_m_step
 from prep_flow_parser import _parse_aggregate_node
 from prep_flow_parser import _parse_join_node
 from prep_flow_parser import _parse_union_node
 from prep_flow_parser import _parse_pivot_node
 from prep_flow_parser import _parse_input_node
 from prep_flow_parser import _clean_m_table_ref
+from prep_flow_parser import _process_prep_node
+from prep_flow_parser import _process_transform_node
+from prep_flow_parser import _collect_prep_datasources
 from prep_flow_parser import merge_prep_with_workbook
 from prep_flow_parser import parse_prep_flow
 from prep_flow_parser import _PREP_CONNECTION_MAP
@@ -737,6 +741,671 @@ class TestPrepTypeMaps(unittest.TestCase):
     def test_join_map_coverage(self):
         for key in ['inner', 'left', 'right', 'full', 'leftOnly', 'rightOnly']:
             self.assertIn(key, _PREP_JOIN_MAP, f'Missing join type: {key}')
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Additional clean action coverage (uncovered action types)
+# ═══════════════════════════════════════════════════════════════════
+
+class TestCleanActionsExtended(unittest.TestCase):
+    """Cover _convert_action_to_m_step paths not tested by TestCleanActions."""
+
+    def _step(self, action_type, action_dict):
+        """Call _convert_action_to_m_step directly."""
+        return _convert_action_to_m_step(action_type, action_dict, {})
+
+    # --- FilterOperation ---
+    def test_filter_operation_keep(self):
+        step = self._step('FilterOperation', {
+            'filterExpression': '[Amount] > 100', 'filterType': 'keep'})
+        self.assertIsNotNone(step)
+        _, expr = step
+        self.assertIn('Table.SelectRows', expr)
+        self.assertNotIn('not', expr)
+
+    def test_filter_operation_remove(self):
+        step = self._step('FilterOperation', {
+            'filterExpression': '[Status] = "Deleted"', 'filterType': 'remove'})
+        self.assertIsNotNone(step)
+        _, expr = step
+        self.assertIn('not', expr)
+
+    def test_filter_operation_counter_increments(self):
+        counter = {}
+        s1 = _convert_action_to_m_step('FilterOperation',
+                                        {'filterExpression': '[X]>1'}, counter)
+        s2 = _convert_action_to_m_step('FilterOperation',
+                                        {'filterExpression': '[Y]>2'}, counter)
+        self.assertIsNotNone(s1)
+        self.assertIsNotNone(s2)
+        self.assertNotEqual(s1[0], s2[0])  # distinct step names
+
+    # --- FilterRange ---
+    def test_filter_range(self):
+        step = self._step('FilterRange', {
+            'columnName': 'Price', 'min': 10, 'max': 100})
+        self.assertIsNotNone(step)
+
+    def test_filter_range_no_column(self):
+        step = self._step('FilterRange', {'min': 0, 'max': 10})
+        self.assertIsNone(step)
+
+    # --- ReplaceNulls ---
+    def test_replace_nulls(self):
+        step = self._step('ReplaceNulls', {'columnName': 'Region', 'replacement': 'Unknown'})
+        self.assertIsNotNone(step)
+
+    def test_replace_nulls_no_column(self):
+        step = self._step('ReplaceNulls', {'replacement': 'X'})
+        self.assertIsNone(step)
+
+    # --- MergeColumns ---
+    def test_merge_columns(self):
+        step = self._step('MergeColumns', {
+            'columns': ['First', 'Last'], 'separator': ' ', 'newColumnName': 'FullName'})
+        self.assertIsNotNone(step)
+
+    def test_merge_columns_no_columns(self):
+        step = self._step('MergeColumns', {'columns': [], 'separator': ','})
+        self.assertIsNone(step)
+
+    # --- CleanOperation variants ---
+    def test_clean_operation_upper(self):
+        step = self._step('CleanOperation', {'columnName': 'Name', 'operation': 'upper'})
+        self.assertIsNotNone(step)
+
+    def test_clean_operation_lower(self):
+        step = self._step('CleanOperation', {'columnName': 'Name', 'operation': 'lower'})
+        self.assertIsNotNone(step)
+
+    def test_clean_operation_proper(self):
+        step = self._step('CleanOperation', {'columnName': 'Name', 'operation': 'proper'})
+        self.assertIsNotNone(step)
+
+    def test_clean_operation_removeletters(self):
+        step = self._step('CleanOperation', {'columnName': 'Code', 'operation': 'removeletters'})
+        self.assertIsNotNone(step)
+
+    def test_clean_operation_no_column(self):
+        step = self._step('CleanOperation', {'operation': 'trim'})
+        self.assertIsNone(step)
+
+    # --- FillValues up ---
+    def test_fill_values_up(self):
+        node = _clean_node(actions=[
+            {'actionType': '.v1.FillValues', 'columnName': 'X', 'direction': 'up'},
+        ])
+        steps = _parse_clean_actions(node)
+        self.assertEqual(len(steps), 1)
+        _, expr = steps[0]
+        self.assertIn('FillUp', expr)
+
+    # --- ConditionalColumn ---
+    def test_conditional_column(self):
+        step = self._step('ConditionalColumn', {
+            'newColumnName': 'Tier',
+            'rules': [
+                {'condition': '[Amount] > 1000', 'value': 'High'},
+                {'condition': '[Amount] > 500', 'value': 'Medium'},
+            ],
+            'defaultValue': 'Low',
+        })
+        self.assertIsNotNone(step)
+
+    def test_conditional_column_no_rules(self):
+        step = self._step('ConditionalColumn', {'newColumnName': 'X', 'rules': []})
+        self.assertIsNone(step)
+
+    # --- ExtractValues ---
+    def test_extract_values(self):
+        step = self._step('ExtractValues', {
+            'columnName': 'Email', 'pattern': '@.*$', 'newColumnName': 'Domain'})
+        self.assertIsNotNone(step)
+        name, expr = step
+        self.assertIn('AddColumn', expr)
+
+    def test_extract_values_no_column(self):
+        step = self._step('ExtractValues', {'pattern': '.*'})
+        self.assertIsNone(step)
+
+    def test_extract_values_counter(self):
+        counter = {}
+        s1 = _convert_action_to_m_step('ExtractValues',
+                                        {'columnName': 'A', 'pattern': '.'}, counter)
+        s2 = _convert_action_to_m_step('ExtractValues',
+                                        {'columnName': 'B', 'pattern': '.'}, counter)
+        self.assertNotEqual(s1[0], s2[0])
+
+    # --- CustomCalculation ---
+    def test_custom_calculation(self):
+        step = self._step('CustomCalculation', {
+            'columnName': 'Profit', 'expression': '[Sales] - [Cost]'})
+        self.assertIsNotNone(step)
+
+    def test_custom_calculation_default_name(self):
+        step = self._step('CustomCalculation', {'expression': '42'})
+        self.assertIsNotNone(step)
+
+    # --- afterActionGroup ---
+    def test_after_action_group_actions(self):
+        """afterActionGroup actions should be included."""
+        node = {
+            'baseType': 'transform',
+            'nodeType': '.v2018_3_3.SuperTransform',
+            'name': 'Clean',
+            'beforeActionGroup': {'actions': [
+                {'actionType': '.v1.RemoveColumn', 'columnName': 'Drop1'},
+            ]},
+            'afterActionGroup': {'actions': [
+                {'actionType': '.v1.RemoveColumn', 'columnName': 'Drop2'},
+            ]},
+            'nextNodes': [],
+        }
+        steps = _parse_clean_actions(node)
+        self.assertEqual(len(steps), 2)
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Transform node dispatch (process_transform_node branches)
+# ═══════════════════════════════════════════════════════════════════
+
+class TestProcessTransformNode(unittest.TestCase):
+    """Test _process_transform_node and _process_prep_node dispatch branches."""
+
+    def _suppress(self):
+        """Redirect stdout to suppress print output."""
+        import io as _io
+        self._old_stdout = sys.stdout
+        sys.stdout = _io.StringIO()
+
+    def _restore(self):
+        sys.stdout = self._old_stdout
+
+    def setUp(self):
+        self._suppress()
+
+    def tearDown(self):
+        self._restore()
+
+    def _base_input_result(self, name='Input1'):
+        """Return a basic node_results entry simulating an input node."""
+        return {
+            'connection': {'type': 'textscan', 'details': {}},
+            'table': {'name': name, 'columns': []},
+            'name': name,
+            'm_query': 'let\n    Source = Csv.Document(File.Contents("data.csv"))\nin\n    Source',
+            'fields': [{'name': 'ID', 'type': 'integer'}, {'name': 'Val', 'type': 'real'}],
+        }
+
+    # --- Aggregate ---
+    def test_aggregate_transform(self):
+        nid = 'agg1'
+        node = {
+            'baseType': 'transform', 'nodeType': '.v1.Aggregate', 'name': 'GroupBy',
+            'groupByFields': [{'name': 'Region'}],
+            'aggregateFields': [{'name': 'Sales', 'aggregation': 'SUM', 'newColumnName': 'TotalSales'}],
+            'nextNodes': [],
+        }
+        nodes = {'inp': _input_node(next_ids=[nid]), nid: node}
+        node_results = {'inp': self._base_input_result()}
+        secondary = set()
+        _process_transform_node(nid, node, nodes, ['inp'], 'Aggregate',
+                                node_results, secondary, 'GroupBy')
+        self.assertIn(nid, node_results)
+        self.assertIn('Table.Group', node_results[nid]['m_query'])
+
+    # --- Join with leftNodeId / rightNodeId ---
+    def test_join_transform_with_explicit_ids(self):
+        nid = 'join1'
+        node = {
+            'baseType': 'transform', 'nodeType': '.v1.Join', 'name': 'JoinStep',
+            'leftNodeId': 'left', 'rightNodeId': 'right',
+            'joinType': 'inner',
+            'joinConditions': [{'leftColumn': 'ID', 'rightColumn': 'CID'}],
+            'nextNodes': [],
+        }
+        nodes = {'left': _input_node('Left'), 'right': _input_node('Right'), nid: node}
+        node_results = {
+            'left': self._base_input_result('Left'),
+            'right': {**self._base_input_result('Right'),
+                      'fields': [{'name': 'CID'}, {'name': 'Name'}]},
+        }
+        secondary = set()
+        _process_transform_node(nid, node, nodes, ['left', 'right'], 'Join',
+                                node_results, secondary, 'JoinStep')
+        self.assertIn(nid, node_results)
+        self.assertIn('right', secondary)  # right branch marked secondary
+
+    def test_join_transform_fallback_single_upstream(self):
+        """Join with only 1 upstream, no leftNodeId → left_id = upstream[0]."""
+        nid = 'join1'
+        node = {
+            'baseType': 'transform', 'nodeType': '.v1.Join', 'name': 'JoinStep',
+            'joinType': 'left',
+            'joinConditions': [{'leftColumn': 'ID', 'rightColumn': 'CID'}],
+            'nextNodes': [],
+        }
+        nodes = {'inp': _input_node(next_ids=[nid]), nid: node}
+        node_results = {'inp': self._base_input_result()}
+        secondary = set()
+        _process_transform_node(nid, node, nodes, ['inp'], 'Join',
+                                node_results, secondary, 'JoinStep')
+        self.assertIn(nid, node_results)
+
+    # --- Union ---
+    def test_union_transform(self):
+        nid = 'union1'
+        node = {'baseType': 'transform', 'nodeType': '.v1.Union', 'name': 'UnionStep',
+                'nextNodes': []}
+        nodes = {'a': _input_node('A'), 'b': _input_node('B'), nid: node}
+        node_results = {
+            'a': self._base_input_result('A'),
+            'b': self._base_input_result('B'),
+        }
+        secondary = set()
+        _process_transform_node(nid, node, nodes, ['a', 'b'], 'Union',
+                                node_results, secondary, 'UnionStep')
+        self.assertIn(nid, node_results)
+        self.assertIn('Table.Combine', node_results[nid]['m_query'])
+        # Union marks all upstream as secondary
+        self.assertIn('a', secondary)
+        self.assertIn('b', secondary)
+
+    # --- Pivot ---
+    def test_pivot_transform_unpivot(self):
+        nid = 'piv1'
+        node = {
+            'baseType': 'transform', 'nodeType': '.v1.Pivot', 'name': 'Unpivot',
+            'pivotType': 'columnsToRows',
+            'pivotFields': [{'name': 'Q1'}, {'name': 'Q2'}],
+            'pivotValuesName': 'Value', 'pivotNamesName': 'Quarter',
+            'nextNodes': [],
+        }
+        nodes = {'inp': _input_node(next_ids=[nid]), nid: node}
+        node_results = {'inp': self._base_input_result()}
+        secondary = set()
+        _process_transform_node(nid, node, nodes, ['inp'], 'Pivot',
+                                node_results, secondary, 'Unpivot')
+        self.assertIn(nid, node_results)
+        self.assertIn('Unpivot', node_results[nid]['m_query'])
+
+    # --- Script ---
+    def test_script_transform(self):
+        nid = 'scr1'
+        node = {
+            'baseType': 'transform', 'nodeType': '.v1.RunScript', 'name': 'PyScript',
+            'scriptLanguage': 'Python', 'nextNodes': [],
+        }
+        nodes = {'inp': _input_node(next_ids=[nid]), nid: node}
+        node_results = {'inp': self._base_input_result()}
+        secondary = set()
+        _process_transform_node(nid, node, nodes, ['inp'], 'Script',
+                                node_results, secondary, 'PyScript')
+        self.assertIn(nid, node_results)
+        self.assertIn('script_warning', node_results[nid]['m_query'])
+
+    def test_run_script_variant(self):
+        nid = 'scr2'
+        node = {'baseType': 'transform', 'nodeType': '.v1.RunCommand', 'name': 'RCmd',
+                'language': 'R', 'nextNodes': []}
+        nodes = {'inp': _input_node(next_ids=[nid]), nid: node}
+        node_results = {'inp': self._base_input_result()}
+        _process_transform_node(nid, node, nodes, ['inp'], 'RunCommand',
+                                node_results, set(), 'RCmd')
+        self.assertIn(nid, node_results)
+
+    # --- Prediction ---
+    def test_prediction_transform(self):
+        nid = 'pred1'
+        node = {'baseType': 'transform', 'nodeType': '.v1.Prediction', 'name': 'ML',
+                'nextNodes': []}
+        nodes = {'inp': _input_node(next_ids=[nid]), nid: node}
+        node_results = {'inp': self._base_input_result()}
+        _process_transform_node(nid, node, nodes, ['inp'], 'Prediction',
+                                node_results, set(), 'ML')
+        self.assertIn(nid, node_results)
+        self.assertIn('prediction_warning', node_results[nid]['m_query'])
+
+    def test_tabpy_variant(self):
+        nid = 'tp1'
+        node = {'baseType': 'transform', 'nodeType': '.v1.TabPy', 'name': 'TabPy',
+                'nextNodes': []}
+        nodes = {'inp': _input_node(next_ids=[nid]), nid: node}
+        node_results = {'inp': self._base_input_result()}
+        _process_transform_node(nid, node, nodes, ['inp'], 'TabPy',
+                                node_results, set(), 'TabPy')
+        self.assertIn(nid, node_results)
+
+    # --- CrossJoin ---
+    def test_cross_join_transform(self):
+        nid = 'cj1'
+        node = {'baseType': 'transform', 'nodeType': '.v1.CrossJoin', 'name': 'Cross',
+                'nextNodes': []}
+        nodes = {'a': _input_node('A'), 'b': _input_node('B'), nid: node}
+        node_results = {
+            'a': self._base_input_result('A'),
+            'b': self._base_input_result('B'),
+        }
+        secondary = set()
+        _process_transform_node(nid, node, nodes, ['a', 'b'], 'CrossJoin',
+                                node_results, secondary, 'Cross')
+        self.assertIn(nid, node_results)
+        self.assertIn('Table.Join', node_results[nid]['m_query'])
+        self.assertIn('b', secondary)
+
+    # --- PublishedDataSource ---
+    def test_published_datasource_transform(self):
+        nid = 'pub1'
+        node = {'baseType': 'transform', 'nodeType': '.v1.LoadPublishedDataSource',
+                'name': 'PubDS', 'publishedDatasourceName': 'SharedSales',
+                'fields': [{'name': 'Revenue', 'type': 'real'}], 'nextNodes': []}
+        nodes = {nid: node}
+        node_results = {}
+        _process_transform_node(nid, node, nodes, [], 'PublishedDataSource',
+                                node_results, set(), 'PubDS')
+        self.assertIn(nid, node_results)
+        self.assertIn('SharedSales', node_results[nid]['m_query'])
+        self.assertEqual(node_results[nid]['connection']['type'], 'published')
+
+    def test_load_published_datasource_variant(self):
+        nid = 'pub2'
+        node = {'baseType': 'transform', 'nodeType': '.v1.LoadPublishedDataSource',
+                'name': 'PDS', 'datasourceName': 'MyDS', 'nextNodes': []}
+        nodes = {nid: node}
+        node_results = {}
+        _process_transform_node(nid, node, nodes, [], 'LoadPublishedDataSource',
+                                node_results, set(), 'PDS')
+        self.assertIn(nid, node_results)
+        self.assertIn('MyDS', node_results[nid]['m_query'])
+
+    # --- Unknown transform → pass through ---
+    def test_unknown_transform_passthrough(self):
+        nid = 'unk1'
+        node = {'baseType': 'transform', 'nodeType': '.v1.FutureStep', 'name': 'Future',
+                'nextNodes': []}
+        nodes = {'inp': _input_node(next_ids=[nid]), nid: node}
+        node_results = {'inp': self._base_input_result()}
+        _process_transform_node(nid, node, nodes, ['inp'], 'FutureStep',
+                                node_results, set(), 'Future')
+        self.assertIn(nid, node_results)
+        self.assertEqual(node_results[nid]['name'], 'Future')
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Output node handling (_process_prep_node)
+# ═══════════════════════════════════════════════════════════════════
+
+class TestProcessPrepNode(unittest.TestCase):
+    """Test _process_prep_node for output nodes."""
+
+    def setUp(self):
+        self._old = sys.stdout
+        sys.stdout = io.StringIO()
+
+    def tearDown(self):
+        sys.stdout = self._old
+
+    def test_output_node_copies_upstream(self):
+        nodes = {
+            'inp': _input_node('Data', next_ids=['out']),
+            'out': _output_node('FinalOutput'),
+        }
+        connections = {'conn1': {'connectionAttributes': {'class': 'csv', 'filename': 'x.csv'}}}
+        node_results = {}
+        secondary = set()
+        # Process input first
+        _process_prep_node('inp', nodes, connections, node_results, secondary)
+        self.assertIn('inp', node_results)
+        # Then output
+        _process_prep_node('out', nodes, connections, node_results, secondary)
+        self.assertIn('out', node_results)
+        self.assertTrue(node_results['out'].get('is_output'))
+        self.assertEqual(node_results['out']['name'], 'FinalOutput')
+
+    def test_output_node_no_upstream_skipped(self):
+        """Output with no upstream in node_results is silently skipped."""
+        nodes = {'out': _output_node('Orphan')}
+        node_results = {}
+        _process_prep_node('out', nodes, {}, node_results, set())
+        self.assertNotIn('out', node_results)
+
+
+# ═══════════════════════════════════════════════════════════════════
+# _collect_prep_datasources
+# ═══════════════════════════════════════════════════════════════════
+
+class TestCollectPrepDatasources(unittest.TestCase):
+    """Test _collect_prep_datasources secondary branches, output nodes, and leaf fallback."""
+
+    def setUp(self):
+        self._old = sys.stdout
+        sys.stdout = io.StringIO()
+
+    def tearDown(self):
+        sys.stdout = self._old
+
+    def _base_result(self, name, is_output=False, fields=None):
+        return {
+            'connection': {'type': 'textscan', 'details': {}},
+            'table': {'name': name, 'columns': []},
+            'name': name,
+            'm_query': f'let Source = #"{name}" in Source',
+            'fields': fields or [{'name': 'Col1', 'type': 'string'}],
+            'is_output': is_output,
+        }
+
+    def test_secondary_branch_emitted(self):
+        """Secondary branch nodes (right side of joins) are emitted first."""
+        sorted_ids = ['left', 'right', 'join', 'out']
+        nodes = {
+            'left': _input_node('Left'),
+            'right': _input_node('Right'),
+            'join': {'baseType': 'transform', 'nextNodes': [{'nextNodeId': 'out'}]},
+            'out': _output_node('Result'),
+        }
+        node_results = {
+            'left': self._base_result('Left'),
+            'right': self._base_result('Right'),
+            'join': self._base_result('Join'),
+            'out': self._base_result('Result', is_output=True),
+        }
+        secondary = {'right'}
+        ds = _collect_prep_datasources(sorted_ids, nodes, node_results, secondary)
+        # Should have secondary (Right) + output (Result)
+        self.assertEqual(len(ds), 2)
+        names = [d['name'] for d in ds]
+        self.assertTrue(any('Right' in n for n in names))
+
+    def test_output_nodes_collected(self):
+        sorted_ids = ['inp', 'out']
+        nodes = {'inp': _input_node('Data'), 'out': _output_node('Out')}
+        node_results = {
+            'inp': self._base_result('Data'),
+            'out': self._base_result('Out', is_output=True,
+                                     fields=[{'name': 'F1', 'type': 'integer'}]),
+        }
+        ds = _collect_prep_datasources(sorted_ids, nodes, node_results, set())
+        self.assertEqual(len(ds), 1)
+        self.assertEqual(ds[0]['tables'][0]['columns'][0]['name'], 'F1')
+
+    def test_leaf_fallback_when_no_outputs(self):
+        """When no output nodes exist, leaf nodes (no nextNodes) are used."""
+        sorted_ids = ['inp', 'clean']
+        nodes = {
+            'inp': _input_node('Data', next_ids=['clean']),
+            'clean': {'baseType': 'transform', 'nextNodes': [],
+                      'nodeType': '.v1.SuperTransform', 'name': 'Clean'},
+        }
+        node_results = {
+            'inp': self._base_result('Data'),
+            'clean': self._base_result('Cleaned'),
+        }
+        ds = _collect_prep_datasources(sorted_ids, nodes, node_results, set())
+        # clean has no nextNodes and no is_output → leaf fallback
+        self.assertGreater(len(ds), 0)
+
+    def test_empty_results_returns_empty(self):
+        ds = _collect_prep_datasources(['n1'], {'n1': _input_node()}, {}, set())
+        self.assertEqual(ds, [])
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Merge prep with workbook — extended coverage
+# ═══════════════════════════════════════════════════════════════════
+
+class TestMergePrepExtended(unittest.TestCase):
+    """Extended merge_prep_with_workbook coverage."""
+
+    def _run(self, prep, twb):
+        old = sys.stdout
+        sys.stdout = io.StringIO()
+        try:
+            return merge_prep_with_workbook(prep, twb)
+        finally:
+            sys.stdout = old
+
+    def test_caption_based_matching(self):
+        """Prep table matched via caption (not just table name)."""
+        prep = [{'name': 'prep.Orders', 'caption': 'Sales Orders',
+                 'tables': [{'name': 'Orders'}],
+                 'm_query_override': 'let S = 1 in S'}]
+        twb = [{'name': 'ds1', 'tables': [{'name': 'Sales_Orders'}]}]
+        result = self._run(prep, twb)
+        # caption converted with replace(' ', '_') → 'Sales_Orders' matches
+        ds = result[0]
+        self.assertIn('m_query_overrides', ds)
+        self.assertIn('Sales_Orders', ds['m_query_overrides'])
+
+    def test_empty_prep_returns_twb(self):
+        twb = [{'name': 'ds1', 'tables': [{'name': 'T'}]}]
+        result = self._run([], twb)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]['name'], 'ds1')
+
+    def test_multiple_matches(self):
+        """Multiple TWB tables matching different Prep tables."""
+        prep = [
+            {'name': 'p1', 'caption': 'Orders', 'tables': [{'name': 'Orders'}],
+             'm_query_override': 'let O = 1 in O'},
+            {'name': 'p2', 'caption': 'Customers', 'tables': [{'name': 'Customers'}],
+             'm_query_override': 'let C = 1 in C'},
+        ]
+        twb = [
+            {'name': 'ds1', 'tables': [{'name': 'Orders'}]},
+            {'name': 'ds2', 'tables': [{'name': 'Customers'}]},
+        ]
+        result = self._run(prep, twb)
+        self.assertEqual(len(result), 2)
+        self.assertIn('m_query_overrides', result[0])
+        self.assertIn('m_query_overrides', result[1])
+
+
+# ═══════════════════════════════════════════════════════════════════
+# parse_prep_flow — extended end-to-end flows
+# ═══════════════════════════════════════════════════════════════════
+
+class TestParseFlowExtended(unittest.TestCase):
+    """End-to-end parse_prep_flow with more complex topologies."""
+
+    def _write_flow(self, flow_data):
+        f = tempfile.NamedTemporaryFile(mode='w', suffix='.tfl', delete=False,
+                                        encoding='utf-8')
+        json.dump(flow_data, f)
+        f.close()
+        return f.name
+
+    def _parse(self, path):
+        old = sys.stdout
+        sys.stdout = io.StringIO()
+        try:
+            return parse_prep_flow(path)
+        finally:
+            sys.stdout = old
+
+    def test_empty_flow_returns_empty(self):
+        path = self._write_flow({'nodes': {}, 'connections': {}})
+        try:
+            result = self._parse(path)
+            self.assertEqual(result, [])
+        finally:
+            os.unlink(path)
+
+    def test_input_clean_output_chain(self):
+        flow = {
+            'nodes': {
+                'n1': {
+                    'baseType': 'input', 'nodeType': '.v1.LoadCsv',
+                    'name': 'Data', 'connectionId': 'c1',
+                    'connectionAttributes': {'class': 'csv', 'filename': 'data.csv'},
+                    'fields': [{'name': 'A', 'type': 'string'}],
+                    'nextNodes': [{'nextNodeId': 'n2'}],
+                },
+                'n2': {
+                    'baseType': 'transform', 'nodeType': '.v2018_3_3.SuperTransform',
+                    'name': 'CleanStep',
+                    'beforeActionGroup': {'actions': [
+                        {'actionType': '.v1.RenameColumn', 'columnName': 'A', 'newColumnName': 'B'},
+                    ]},
+                    'nextNodes': [{'nextNodeId': 'n3'}],
+                },
+                'n3': {
+                    'baseType': 'output', 'nodeType': '.v1.PublishExtract',
+                    'name': 'Output', 'nextNodes': [],
+                },
+            },
+            'connections': {
+                'c1': {'connectionAttributes': {'class': 'csv', 'filename': 'data.csv'}},
+            },
+        }
+        path = self._write_flow(flow)
+        try:
+            result = self._parse(path)
+            self.assertGreater(len(result), 0)
+            # Output should have M query with rename
+            self.assertIn('RenameColumns', result[-1].get('m_query_override', ''))
+        finally:
+            os.unlink(path)
+
+    def test_join_flow_emits_secondary_table(self):
+        flow = {
+            'nodes': {
+                'left': {
+                    'baseType': 'input', 'nodeType': '.v1.LoadCsv',
+                    'name': 'Orders', 'connectionId': 'c1',
+                    'connectionAttributes': {'class': 'csv', 'filename': 'orders.csv'},
+                    'fields': [{'name': 'ID', 'type': 'integer'}, {'name': 'CustID', 'type': 'integer'}],
+                    'nextNodes': [{'nextNodeId': 'join'}],
+                },
+                'right': {
+                    'baseType': 'input', 'nodeType': '.v1.LoadCsv',
+                    'name': 'Customers', 'connectionId': 'c2',
+                    'connectionAttributes': {'class': 'csv', 'filename': 'customers.csv'},
+                    'fields': [{'name': 'CustID', 'type': 'integer'}, {'name': 'Name', 'type': 'string'}],
+                    'nextNodes': [{'nextNodeId': 'join'}],
+                },
+                'join': {
+                    'baseType': 'transform', 'nodeType': '.v1.Join', 'name': 'JoinStep',
+                    'joinType': 'inner',
+                    'joinConditions': [{'leftColumn': 'CustID', 'rightColumn': 'CustID'}],
+                    'nextNodes': [{'nextNodeId': 'out'}],
+                },
+                'out': {
+                    'baseType': 'output', 'nodeType': '.v1.PublishExtract',
+                    'name': 'JoinedOut', 'nextNodes': [],
+                },
+            },
+            'connections': {
+                'c1': {'connectionAttributes': {'class': 'csv', 'filename': 'orders.csv'}},
+                'c2': {'connectionAttributes': {'class': 'csv', 'filename': 'customers.csv'}},
+            },
+        }
+        path = self._write_flow(flow)
+        try:
+            result = self._parse(path)
+            # Should have secondary (Customers) + output (JoinedOut)
+            self.assertGreaterEqual(len(result), 2)
+        finally:
+            os.unlink(path)
 
 
 if __name__ == '__main__':
