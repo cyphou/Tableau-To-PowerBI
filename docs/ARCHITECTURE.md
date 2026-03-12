@@ -14,7 +14,7 @@ flowchart LR
     subgraph "Step 1 — Extraction"
         EXT["extract_tableau_data.py<br/>TableauExtractor"]
         DSE["datasource_extractor.py<br/>extract_datasource()"]
-        DAX["dax_converter.py<br/>convert_tableau_to_dax()"]
+        DAX["dax_converter.py<br/>convert_tableau_formula_to_dax()"]
         MQB["m_query_builder.py<br/>MQueryBuilder"]
         PFP["prep_flow_parser.py<br/>PrepFlowParser"]
     end
@@ -128,6 +128,7 @@ For environments without Mermaid rendering:
 | `dax_converter.py` | 172 Tableau → DAX formula conversions (LOD, table calcs, security, etc.) |
 | `m_query_builder.py` | Power Query M generator (26 connector types + 40+ transformation generators) |
 | `prep_flow_parser.py` | Tableau Prep flow parser (.tfl/.tflx → Power Query M) |
+| `server_client.py` | Tableau Server/Cloud REST API client (PAT/password auth, download, batch) |
 
 ### `powerbi_import/` — Generation Layer
 
@@ -197,7 +198,7 @@ Tableau XML → ET.parse → 16 extract_*() methods → 16 JSON files
 
 ## TMDL Generation Phases
 
-The semantic model is built in 12 sequential phases:
+The semantic model is built in 14 sequential phases:
 
 1. **Table deduplication** — remove duplicate table definitions
 2. **Main table identification** — identify primary table, build column metadata + DAX context
@@ -214,6 +215,8 @@ The semantic model is built in 12 sequential phases:
 10c. **RELATED→LOOKUPVALUE** — fix cross-table refs for M2M relationships
 11. **Deactivate ambiguous paths** — Union-Find cycle detection
 12. **Auto-generate perspectives** — "Full Model" perspective
+13. **Calculation groups** — Tableau param-swap actions → PBI Calculation Group tables
+14. **Field parameters** — Tableau dimension-switching params → PBI Field Parameter tables with NAMEOF
 
 ## Output Structure
 

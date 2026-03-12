@@ -77,7 +77,7 @@ This document details all mappings between Tableau and Power BI objects to facil
 | Tableau Mark/Type | Power BI visualType | Notes |
 |-------------------|-------------------|-------|
 | Square / Hex / Treemap | treemap | |
-| Sankey / Chord / Network | decompositionTree | |
+| Sankey / Chord / Network | sankeyDiagram / chordChart / networkNavigator | Custom visual GUIDs (AppSource) |
 
 ### Specialized Charts
 
@@ -104,8 +104,8 @@ This document details all mappings between Tableau and Power BI objects to facil
 | `COUNT([Orders])` | `COUNT([Orders])` | Number of orders |
 | `COUNTD([Customer ID])` | `DISTINCTCOUNT([Customer ID])` | Unique customers |
 | `MEDIAN([Value])` | `MEDIAN([Value])` | Median |
-| `STDEV([Amount])` | `STDEV.P([Amount])` | Standard deviation |
-| `VAR([Sales])` | `VAR.P([Sales])` | Variance |
+| `STDEV([Amount])` | `STDEV.S([Amount])` | Standard deviation |
+| `VAR([Sales])` | `VAR.S([Sales])` | Variance |
 
 ### Logical Functions
 
@@ -133,7 +133,7 @@ This document details all mappings between Tableau and Power BI objects to facil
 | `LEN([Text])` | `LEN([Text])` | |
 | `TRIM([Text])` | `TRIM([Text])` | |
 | `REPLACE([Text], 'old', 'new')` | `SUBSTITUTE([Text], 'old', 'new')` | |
-| `CONTAINS([Text], 'sub')` | `SEARCH('sub', [Text], 1, 0) > 0` | Boolean |
+| `CONTAINS([Text], 'sub')` | `CONTAINSSTRING([Text], 'sub')` | Boolean |
 | `[Text1] + [Text2]` | `[Text1] & [Text2]` | Concatenation |
 
 ### Date Functions
@@ -171,8 +171,8 @@ This document details all mappings between Tableau and Power BI objects to facil
 | Tableau | DAX | Usage |
 |---------|-----|-------|
 | `{ FIXED : SUM([Sales]) }` | `CALCULATE(SUM([Sales]), ALL(Table))` | Grand total |
-| `{ FIXED [Region] : SUM([Sales]) }` | `CALCULATE(SUM([Sales]), ALL(Table), VALUES([Region]))` | By region only |
-| `{ FIXED [Region], [Category] : SUM([Sales]) }` | `CALCULATE(SUM([Sales]), ALL(Table), VALUES([Region]), VALUES([Category]))` | Multi-dimension |
+| `{ FIXED [Region] : SUM([Sales]) }` | `CALCULATE(SUM([Sales]), ALLEXCEPT('Table', 'Table'[Region]))` | By region only |
+| `{ FIXED [Region], [Category] : SUM([Sales]) }` | `CALCULATE(SUM([Sales]), ALLEXCEPT('Table', 'Table'[Region], 'Table'[Category]))` | Multi-dimension |
 
 ### INCLUDE
 

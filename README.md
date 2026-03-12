@@ -2,7 +2,7 @@
 
 Automated migration tool for Tableau workbooks (`.twb`, `.twbx`) and Tableau Prep flows (`.tfl`, `.tflx`) to Power BI projects (`.pbip`) that can be opened directly in Power BI Desktop.
 
-**v6.0.0** — 1,889 tests across 37 test files — Python 3.8+ — zero external dependencies for core migration.
+**v7.0.0** — 2,057 tests across 40 test files — Python 3.9+ — zero external dependencies for core migration.
 
 ## Features
 
@@ -105,13 +105,13 @@ Automated migration tool for Tableau workbooks (`.twb`, `.twbx`) and Tableau Pre
 - **Migration metadata**: enriched `migration_metadata.json` with TMDL stats (measures, columns, relationships), visual type mappings, approximations, theme status
 - **Per-item fidelity tracking**: `MigrationReport` scores each object (exact / approximate / unsupported) and generates migration reports
 - **CI/CD pipeline**: GitHub Actions with 5-stage pipeline (lint+ruff, test, strict validate+twbx, staging deploy, production deploy)
-- **1,889 tests** across 37 test files + conftest.py shared fixtures
+- **2,057 tests** across 40 test files + conftest.py shared fixtures
 
 ## Quick Start
 
 ### Prerequisites
 
-- Python 3.8+
+- Python 3.9+
 - Power BI Desktop (December 2025 or later recommended)
 - No external dependencies for core migration (Python standard library only)
 - Optional: `azure-identity` + `requests` for deployment, `pydantic-settings` for typed config
@@ -188,6 +188,8 @@ python migrate.py your_workbook.twbx --assess
 | `--paginated` | Generate paginated report layout |
 | `--config FILE` | Load settings from a JSON configuration file |
 | `--telemetry` | Enable anonymous usage telemetry (opt-in) |
+| `--compare` | Generate comparison report (HTML) after migration |
+| `--dashboard` | Generate telemetry dashboard after migration |
 | `--server URL` | Tableau Server/Cloud URL for remote extraction |
 | `--site SITE_ID` | Tableau site content URL (empty for default site) |
 | `--workbook NAME` | Workbook name/LUID to download from server |
@@ -280,7 +282,7 @@ TableauToPowerBI/
 │       └── config/                            #     Configuration
 │           ├── settings.py                    #       Env-var based settings
 │           └── environments.py                #       Dev/staging/production configs
-├── tests/                                     # 1,889 tests (37 test files + conftest.py)
+├── tests/                                     # 2,057 tests (40 test files + conftest.py)
 ├── docs/                                      # Documentation
 ├── examples/                                  # Sample Tableau files (22 workbooks)
 ├── .github/workflows/ci.yml                   # CI/CD pipeline
@@ -612,7 +614,7 @@ The client falls back to `urllib` (stdlib) if `requests` is not installed.
 The project includes a GitHub Actions pipeline (`.github/workflows/ci.yml`) with 5 stages:
 
 1. **Lint**: `flake8` (errors only) + `ruff` (style checks)
-2. **Test**: Python 3.9–3.12 matrix, 1,889 tests
+2. **Test**: Python 3.9–3.12 matrix, 2,057 tests
 3. **Strict Validate**: Run sample .twbx migrations + artifact validation with strict mode
 4. **Staging Deploy**: Automated deployment to staging Fabric workspace
 5. **Production Deploy**: Manual approval + deployment to production Fabric workspace
@@ -620,7 +622,7 @@ The project includes a GitHub Actions pipeline (`.github/workflows/ci.yml`) with
 ## Testing
 
 ```bash
-# Run all 1,889 tests
+# Run all 2,057 tests
 python -m pytest tests/ -v
 
 # Run specific test file

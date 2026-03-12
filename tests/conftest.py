@@ -42,27 +42,6 @@ SAMPLE_DATASOURCE = {
     ],
 }
 
-SAMPLE_DATASOURCE_CSV = {
-    'name': 'CSV Source',
-    'connection': {
-        'type': 'CSV',
-        'details': {
-            'filename': 'data.csv',
-            'delimiter': ',',
-        },
-    },
-    'connection_map': {},
-    'tables': [
-        {
-            'name': 'data',
-            'columns': [
-                {'name': 'id', 'datatype': 'integer'},
-                {'name': 'value', 'datatype': 'string'},
-            ],
-        },
-    ],
-}
-
 SAMPLE_EXTRACTED = {
     'datasources': [SAMPLE_DATASOURCE],
     'worksheets': [
@@ -122,13 +101,6 @@ SAMPLE_EXTRACTED = {
     'user_filters': [],
 }
 
-SAMPLE_CUSTOM_SQL = [
-    {
-        'name': 'TopCustomers',
-        'datasource': 'Sales Data',
-        'query': 'SELECT TOP 10 * FROM Customers ORDER BY Revenue DESC',
-    },
-]
 
 
 # ── Enriched fixture with worksheets that reference DAX measures ───────

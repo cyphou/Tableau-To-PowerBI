@@ -172,7 +172,7 @@ relationship 12345678-1234-1234-1234-123456789abc = {
 
 ### Adding a New Table
 
-1. Create a file in `MyReport.Dataset/definition/tables/`
+1. Create a file in `MyReport.SemanticModel/definition/tables/`
 2. Name it: `NewTable.tmdl`
 3. Define the structure:
 
@@ -197,7 +197,7 @@ table 'NewTable'
 
 ### Adding a Measure
 
-1. Open `MyReport.Dataset/definition/measures.tmdl`
+1. Open `MyReport.SemanticModel/definition/tables/` (measures are defined inside table TMDL files)
 2. Add:
 
 ```tmdl
@@ -209,7 +209,7 @@ measure 'New Measure' =
 
 ### Adding a Relationship
 
-1. Open `MyReport.Dataset/definition/relationships.tmdl`
+1. Open `MyReport.SemanticModel/definition/relationships.tmdl`
 2. Add:
 
 ```tmdl
@@ -291,11 +291,11 @@ code artifacts/powerbi_projects/MyReport
 powerbi_projects/
 ├── SalesReport/
 │   ├── SalesReport.pbip
-│   ├── SalesReport.Dataset/
+│   ├── SalesReport.SemanticModel/
 │   └── SalesReport.Report/
 ├── MarketingReport/
 │   ├── MarketingReport.pbip
-│   ├── MarketingReport.Dataset/
+│   ├── MarketingReport.SemanticModel/
 │   └── MarketingReport.Report/
 └── README.md
 ```

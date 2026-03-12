@@ -8,7 +8,7 @@ Thank you for your interest in contributing! This guide covers the development s
 
 ### Prerequisites
 
-- Python 3.8+ (tested on 3.9–3.12)
+- Python 3.9+ (tested on 3.9–3.14)
 - Power BI Desktop (December 2025+) for validating output
 - Git
 
@@ -38,8 +38,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for a detailed architecture ove
 ```
 tableau_export/   → Extraction layer (Tableau XML → JSON)
 powerbi_import/   → Generation layer (JSON → .pbip project)
-conversion/       → Legacy converters (not used in current pipeline)
-tests/            → Unit and integration tests
+tests/            → Unit and integration tests (2,057 tests across 40 files)
 docs/             → Documentation
 examples/         → Sample Tableau workbooks
 artifacts/        → Migration output
@@ -83,13 +82,13 @@ If your change requires a new dependency, it must be behind a `try/except Import
 
 ```bash
 # All tests
-python -m unittest discover -s tests -v
+python -m pytest tests/ -v
 
 # Single test file
-python -m unittest tests.test_dax_converter -v
+python -m pytest tests/test_dax_converter.py -v
 
 # Single test method
-python -m unittest tests.test_dax_converter.TestDaxConverter.test_isnull_to_isblank -v
+python -m pytest tests/test_dax_converter.py::TestDaxConverter::test_isnull_to_isblank -v
 ```
 
 ### Test Structure
@@ -97,6 +96,7 @@ python -m unittest tests.test_dax_converter.TestDaxConverter.test_isnull_to_isbl
 | File | Focus |
 |------|-------|
 | `test_dax_converter.py` | DAX formula conversion |
+| `test_dax_coverage.py` | DAX edge cases across all categories |
 | `test_m_query_builder.py` | M query generation |
 | `test_tmdl_generator.py` | TMDL semantic model |
 | `test_visual_generator.py` | Visual container generation |
@@ -106,7 +106,9 @@ python -m unittest tests.test_dax_converter.TestDaxConverter.test_isnull_to_isbl
 | `test_extraction.py` | Tableau XML extraction |
 | `test_prep_flow_parser.py` | Prep flow parsing |
 | `test_non_regression.py` | Per-sample project regression |
-| `test_migration.py` | End-to-end migration |
+| `test_integration.py` | End-to-end pipeline tests |
+| `test_assessment.py` | Pre-migration assessment |
+| ... | 39 test files total — see [README](README.md) for full list |
 
 ### Writing Tests
 

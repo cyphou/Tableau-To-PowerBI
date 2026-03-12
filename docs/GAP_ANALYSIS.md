@@ -1,8 +1,8 @@
 # Comprehensive Gap Analysis — Tableau to Power BI Migration Tool
 
-**Date:** 2026-03-10 — updated through v6.0.0 (Sprints 13-16)  
+**Date:** 2026-03-15 — updated through v7.0.0 (Sprints 13-20)  
 **Scope:** Every source file, test file, CI/CD, docs, config, and cross-project comparison with TableauToFabric  
-**Status:** 1,889 tests passing across 37 test files
+**Status:** 2,057 tests passing across 40 test files
 
 ### Implementation Coverage
 
@@ -160,7 +160,7 @@
 ## 3. Test Coverage
 
 ### What IS implemented
-- **887 tests across 18 test files** (original) + **1,002 additional tests in v3.6–v6.0.0**, totaling **1,889 tests across 37 test files** including shared fixtures in `conftest.py`:
+- **887 tests across 18 test files** (original) + **1,147 additional tests in v3.6–v7.0.0**, totaling **2,057 tests across 40 test files** including shared fixtures in `conftest.py`:
 
 | Test File | Tests | Lines | Coverage Focus |
 |-----------|-------|-------|----------------|
@@ -391,12 +391,12 @@
 |-----|---------|
 | **No config file support** | ✅ IMPLEMENTED — `--config config.json` CLI flag with `config.example.json` template |
 | **No output format selection** | ✅ IMPLEMENTED — `--output-format` CLI flag (pbip/tmdl/pbir) |
-| **No source path parameterization** | `import_to_powerbi.py` hardcodes `tableau_export/*.json` paths — not configurable |
-| **No calendar table customization** | Date range (2020–2030), fiscal year start, included columns are all hardcoded |
-| **No locale/culture override** | Culture defaults to `en-US` unless the Tableau model specifies otherwise — no CLI flag to override |
-| **No connection string templating** | M queries embed hardcoded server/database — no config for dev/staging/prod data sources |
-| **No `.env.example` file** | No template for required environment variables |
-| **No validation of settings values** | `_FallbackSettings` doesn't validate (e.g., invalid LOG_LEVEL or negative RETRY_ATTEMPTS) |
+| **No source path parameterization** | ✅ IMPLEMENTED — `source_dir` parameter allows configurable JSON source directory |
+| **No calendar table customization** | ✅ IMPLEMENTED — `--calendar-start`/`--calendar-end` CLI flags (default 2020–2030) |
+| **No locale/culture override** | ✅ IMPLEMENTED — `--culture LOCALE` CLI flag for non-en-US linguistic metadata |
+| **No connection string templating** | ✅ IMPLEMENTED — `apply_connection_template()` replaces `${ENV.*}` placeholders in M queries |
+| **No `.env.example` file** | ✅ IMPLEMENTED — `.env.example` and `config.example.json` templates provided |
+| **No validation of settings values** | ✅ IMPLEMENTED — `_FallbackSettings` validates LOG_LEVEL, RETRY_ATTEMPTS, DEPLOYMENT_TIMEOUT |
 | **No dry-run mode** | ✅ IMPLEMENTED — `--dry-run` CLI flag previews migration without writing files |
 | **`DEPLOYMENT_TIMEOUT` and `RETRY_DELAY` are int-only** | Cannot specify sub-second delays or fractional timeouts |
 
@@ -413,7 +413,7 @@
 | **M Query** | **33 connectors** (+8: OData, Google Analytics, Azure Blob/ADLS, Vertica, Impala, Hadoop Hive, Presto), 30+ transforms, **DAX-to-M expression converter** (calc columns as M steps) | OAuth, gateway, incremental refresh | Fallback #table, BigQuery/Oracle config | Low |
 | **Prep Flow** | DAG traversal, 20+ action types, **ExtractValues**, **CustomCalculation**, **Script/Prediction/CrossJoin/PublishedDataSource** handlers, 5 new connection mappings | Hyper data loading | Prep VAR/VARP joins | Low |
 | **Pre-Migration** | **Assessment** (8-category scoring: datasource/calculation/visual/filter/data model/interactivity/extract/scope), **Strategy advisor** (Import/DirectQuery/Composite), JSON report export | — | — | Low |
-| **Test Coverage** | **1,889 tests across 37 files** (+conftest.py shared fixtures) | Perf tests, integration tests | — | Low |
+| **Test Coverage** | **2,057 tests across 40 files** (+conftest.py shared fixtures) | Perf tests, integration tests | — | Low |
 | **CI/CD** | **5-stage pipeline** (lint+ruff, test, **strict validate+twbx**, **staging deploy**, production deploy), **pip caching** | Coverage reporting, Windows CI, schema validation | — | Medium |
 | **Documentation** | **13 docs** + copilot instructions (ARCHITECTURE, KNOWN_LIMITATIONS, MIGRATION_CHECKLIST, DEPLOYMENT_GUIDE, TABLEAU_VERSION_COMPATIBILITY, CONTRIBUTING) | API docs | — | Low |
 | **Config** | 11 env vars, 3 environments, **settings validation**, **dry-run**, **calendar/culture CLI**, **.env.example** | Config file, connection templating | — | Low |

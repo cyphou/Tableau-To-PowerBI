@@ -61,9 +61,9 @@ In `artifacts/powerbi_projects/[ReportName]/[ReportName].pbip`. Double-click to 
 Some Tableau functions have no direct DAX equivalent:
 
 - `MAKEPOINT()` — no DAX equivalent; use lat/lon columns in a map visual
-- `PREVIOUS_VALUE()` — requires manual conversion
-- `LOOKUP()` — use `LOOKUPVALUE()` manually
-- Table functions (`SIZE()`, `INDEX()`) — approximated, may need adjustment
+- `PREVIOUS_VALUE()` — automatically converted to OFFSET-based DAX pattern (may need manual adjustment for complex seed logic)
+- `LOOKUP()` — automatically converted to OFFSET-based DAX pattern
+- Table functions (`SIZE()` → `COUNTROWS(ALLSELECTED())`, `INDEX()` → `RANKX()`) — approximated, may need adjustment
 
 Most complex patterns **are** handled automatically:
 - LOD expressions (`{ FIXED ... }`) → `CALCULATE` + `ALLEXCEPT` / `REMOVEFILTERS` / `ALL`
