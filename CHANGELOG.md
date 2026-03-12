@@ -49,10 +49,6 @@
 - **Coverage reached 81.9%** (up from 79.8%), passing the 80% threshold
 - Version bumped to 8.0.0
 
-### Customer Validation — EDF SA
-- 3/3 workbooks migrated at **100% fidelity** (lod_maps, TDB_DOAAT_INTER, Hypermarché)
-- Duration: 1.66s total for all 3 workbooks
-
 ### Stats
 - **2,275 tests** across 45 test files, 0 failures, 15 skipped
 - **81.9% line coverage** (10,083 statements, 1,830 missing)

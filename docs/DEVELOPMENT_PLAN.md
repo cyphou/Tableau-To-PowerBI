@@ -18,20 +18,6 @@ v7.0.0 reached feature completeness for most migration scenarios (2,057 tests, 6
 - **Enterprise scale** — handling large Tableau Server migrations with 100+ workbooks
 - **Consolidated reporting** — unified migration dashboard across multi-workbook batch runs
 
-### Customer Validation — EDF SA (2026-03-16)
-
-Full batch migration of 3 EDF workbooks at **100% fidelity** across all complexity tiers:
-
-| Workbook | Tier | Tables | Columns | Measures | Visuals | Fidelity |
-|----------|------|--------|---------|----------|---------|----------|
-| lod_maps | Complex | 3 | 56 | 8 | 3 | 100% |
-| TDB_DOAAT_INTER | Intermediate | 3 | 52 | 7 | 20 | 100% |
-| Hypermarché | Simple | 7 | 57 | 12 | 12 | 100% |
-
-Duration: 1.66s total. Consolidated `MIGRATION_DASHBOARD.html` generated.
-
----
-
 ### Sprint 21 — Refactor Large Functions ✅ COMPLETED
 
 **Goal:** Split the 5 largest functions (200+ lines) into composable sub-functions for testability and readability.  
@@ -153,7 +139,7 @@ Sprint 25 (Visual Fidelity)  ──→  Sprint 26 (Tests & Release)
 | Batch parallelism | Thread-level (`--parallel N`) | ✅ Sprint 24 completed |
 | Largest function | < 150 lines | ✅ All refactored |
 | Doc freshness | All docs reflect v8.0.0 | ✅ All updated |
-| Customer validation | 100% fidelity | ✅ **3/3 EDF workbooks at 100%** |
+| Customer validation | 100% fidelity | ✅ **Validated across multiple real-world workbooks** |
 
 ---
 

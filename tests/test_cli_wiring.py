@@ -338,7 +338,7 @@ class TestConsolidateReports(unittest.TestCase):
         """Reports in nested subdirectories are discovered."""
         from migrate import run_consolidate_reports
         with tempfile.TemporaryDirectory() as tmpdir:
-            # Simulate EDF-like structure: SIMPLE/migrated/..., COMPLEXE/migrated/...
+            # Simulate tiered structure: SIMPLE/migrated/..., COMPLEXE/migrated/...
             for folder, wb_name in [('SIMPLE', 'SalesReport'), ('COMPLEXE', 'LODMaps')]:
                 sub = os.path.join(tmpdir, folder, 'migrated')
                 os.makedirs(sub, exist_ok=True)
