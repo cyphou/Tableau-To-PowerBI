@@ -303,7 +303,7 @@ class TestDetectManyToMany(unittest.TestCase):
         model = self._make_model(rels)
         self._detect(model, [])
         self.assertEqual(rels[0]["toCardinality"], "one")
-        self.assertEqual(rels[0]["crossFilteringBehavior"], "singleDirection")
+        self.assertEqual(rels[0]["crossFilteringBehavior"], "oneDirection")
 
 
 class TestReplaceRelatedWithLookupvalue(unittest.TestCase):

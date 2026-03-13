@@ -1391,7 +1391,7 @@ def _build_relationships(relationships):
             "toTable": to_table,
             "toColumn": to_column,
             "joinType": join_type,
-            "crossFilteringBehavior": "bothDirections" if join_type == 'full' else "singleDirection"
+            "crossFilteringBehavior": "bothDirections" if join_type == 'full' else "oneDirection"
         })
 
     return result
@@ -1509,7 +1509,7 @@ def _infer_cross_table_relationships(model):
                 "fromColumn": fk_col,
                 "toTable": dim_table,
                 "toColumn": pk_col,
-                "crossFilteringBehavior": "singleDirection"
+                "crossFilteringBehavior": "oneDirection"
             })
 
             connected_pairs.add((source_table, ref_table))
@@ -1563,7 +1563,7 @@ def _infer_cross_table_relationships(model):
                     "fromColumn": best_col,
                     "toTable": dim_table,
                     "toColumn": best_col,
-                    "crossFilteringBehavior": "singleDirection"
+                    "crossFilteringBehavior": "oneDirection"
                 })
                 connected_pairs.add((t1, t2))
                 connected_pairs.add((t2, t1))
@@ -1631,7 +1631,7 @@ def _detect_many_to_many(model, datasources):
                 # Calendar.Date is guaranteed unique (generated table)
                 rel['fromCardinality'] = 'many'
                 rel['toCardinality'] = 'one'
-                rel['crossFilteringBehavior'] = 'singleDirection'
+                rel['crossFilteringBehavior'] = 'oneDirection'
                 print(f"  ✓  Relation → '{to_table}.{to_col}' set to manyToOne (Calendar table).")
             else:
                 # Default to manyToMany — we cannot verify uniqueness without data
@@ -3161,7 +3161,7 @@ def _add_date_table(model):
                         "fromColumn": date_col_name,
                         "toTable": "Calendar",
                         "toColumn": "Date",
-                        "crossFilteringBehavior": "singleDirection"
+                        "crossFilteringBehavior": "oneDirection"
                     })
                     break  # one date column per table is enough
 
@@ -3883,7 +3883,7 @@ def _write_relationships_tmdl(def_dir, relationships):
         elif from_card == 'many' and to_card == 'one':
             pass
 
-        cfb = rel.get('crossFilteringBehavior', 'singleDirection')
+        cfb = rel.get('crossFilteringBehavior', 'oneDirection')
         lines.append(f"\tcrossFilteringBehavior: {cfb}")
 
         if rel.get('isActive') == False:
