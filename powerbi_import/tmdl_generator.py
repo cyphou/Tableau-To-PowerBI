@@ -1601,11 +1601,27 @@ def _detect_many_to_many(model, datasources):
             rel['crossFilteringBehavior'] = 'bothDirections'
             print(f"  ⚠️  Relation → '{to_table}.{to_col}' set to manyToMany (full join).")
         else:
-            # Column-count ratio heuristic: peer tables → manyToMany
+            # Column-count ratio heuristic
             from_cols = table_col_counts.get(from_table, 0)
             to_cols = table_col_counts.get(to_table, 0)
 
-            if from_cols > 0 and to_cols >= 0.7 * from_cols:
+            # Check if this is an inferred relationship (Phase 10) joining on
+            # a non-key column — default to manyToMany since we can't verify
+            # uniqueness without data.
+            rel_name = rel.get('name', '')
+            is_inferred = rel_name.startswith('inferred_')
+            to_col_lower = to_col.lower()
+            _key_indicators = {'id', 'key', 'code', 'pk', 'fk', 'sk', 'no', 'number', 'num'}
+            is_key_column = any(kw in to_col_lower.split() or to_col_lower.endswith(kw) or to_col_lower.startswith(kw)
+                                for kw in _key_indicators)
+
+            if is_inferred and not is_key_column:
+                # Inferred relationship on a non-key column → manyToMany (safe default)
+                rel['fromCardinality'] = 'many'
+                rel['toCardinality'] = 'many'
+                rel['crossFilteringBehavior'] = 'bothDirections'
+                print(f"  ⚠️  Relation → '{to_table}.{to_col}' set to manyToMany (inferred, non-key column).")
+            elif from_cols > 0 and to_cols >= 0.7 * from_cols:
                 # Both tables have similar column counts → peer/fact tables
                 rel['fromCardinality'] = 'many'
                 rel['toCardinality'] = 'many'
