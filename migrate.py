@@ -239,11 +239,18 @@ def run_generation(report_name=None, output_dir=None, calendar_start=None,
                 if os.path.basename(root) == 'tables':
                     tables_dir = root
                     _stats.tmdl_tables = len([f for f in files if f.endswith('.tmdl')])
-                # Count pages and visuals
+                # Count pages: only ReportSection dirs that contain page.json
                 if os.path.basename(root) == 'pages':
-                    _stats.pages_generated = len([d for d in dirs if d.startswith('ReportSection')])
+                    _stats.pages_generated = sum(
+                        1 for d in dirs if d.startswith('ReportSection')
+                        and os.path.isfile(os.path.join(root, d, 'page.json'))
+                    )
+                # Count visuals: only UUID dirs that contain visual.json
                 if os.path.basename(root) == 'visuals':
-                    _stats.visuals_generated += len(dirs)
+                    _stats.visuals_generated += sum(
+                        1 for d in dirs
+                        if os.path.isfile(os.path.join(root, d, 'visual.json'))
+                    )
                 # Check for theme
                 if 'TableauMigrationTheme.json' in files:
                     _stats.theme_applied = True

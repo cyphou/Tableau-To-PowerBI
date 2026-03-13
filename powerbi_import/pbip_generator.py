@@ -981,17 +981,37 @@ class PowerBIProjectGenerator:
         }
         _write_json(os.path.join(pages_dir, 'pages.json'), pages_metadata)
         
-        # Post-generation cleanup: remove stale visual directories (OneDrive lock leftovers)
-        for page_name in page_names:
-            visuals_dir = os.path.join(pages_dir, page_name, 'visuals')
-            if os.path.isdir(visuals_dir):
-                for vdir in os.listdir(visuals_dir):
-                    vpath = os.path.join(visuals_dir, vdir)
-                    if os.path.isdir(vpath) and not os.path.exists(os.path.join(vpath, 'visual.json')):
-                        try:
-                            shutil.rmtree(vpath)
-                        except (PermissionError, OSError):
-                            pass  # Skip if still locked
+        # Post-generation cleanup: remove stale page and visual directories
+        # (from previous migration runs or OneDrive lock leftovers)
+        valid_page_set = set(page_names)
+        stale_count = 0
+        if os.path.isdir(pages_dir):
+            for entry in os.listdir(pages_dir):
+                entry_path = os.path.join(pages_dir, entry)
+                if not os.path.isdir(entry_path):
+                    continue
+                # Remove entire stale page directories that are not in current
+                # page_names AND don't have a page.json (i.e., truly orphaned)
+                if (entry.startswith('ReportSection')
+                        and entry not in valid_page_set
+                        and not os.path.isfile(os.path.join(entry_path, 'page.json'))):
+                    try:
+                        shutil.rmtree(entry_path)
+                    except (PermissionError, OSError):
+                        stale_count += 1
+                    continue
+                # For valid pages, remove stale visual subdirs without visual.json
+                visuals_dir = os.path.join(entry_path, 'visuals')
+                if os.path.isdir(visuals_dir):
+                    for vdir in os.listdir(visuals_dir):
+                        vpath = os.path.join(visuals_dir, vdir)
+                        if os.path.isdir(vpath) and not os.path.exists(os.path.join(vpath, 'visual.json')):
+                            try:
+                                shutil.rmtree(vpath)
+                            except (PermissionError, OSError):
+                                pass  # Skip if still locked
+        if stale_count:
+            print(f"  ⚠ {stale_count} stale page directories could not be removed (OneDrive lock)")
         
         # Add custom visual repository to report.json if any custom
         # visuals were discovered during page creation
@@ -3283,12 +3303,16 @@ class PowerBIProjectGenerator:
         if os.path.isdir(report_def):
             for entry in os.listdir(report_def):
                 entry_path = os.path.join(report_def, entry)
-                if os.path.isdir(entry_path) and entry.startswith('ReportSection'):
+                # Only count pages that have page.json (skip stale leftovers)
+                if (os.path.isdir(entry_path) and entry.startswith('ReportSection')
+                        and os.path.isfile(os.path.join(entry_path, 'page.json'))):
                     pages_count += 1
                     vis_dir = os.path.join(entry_path, 'visuals')
                     if os.path.isdir(vis_dir):
+                        # Only count visual dirs that have visual.json
                         visuals_count += len([d for d in os.listdir(vis_dir)
-                                              if os.path.isdir(os.path.join(vis_dir, d))])
+                                              if os.path.isdir(os.path.join(vis_dir, d))
+                                              and os.path.isfile(os.path.join(vis_dir, d, 'visual.json'))])
 
         # Check for theme
         theme_applied = os.path.exists(os.path.join(
