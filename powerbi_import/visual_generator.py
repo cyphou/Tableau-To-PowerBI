@@ -1088,12 +1088,16 @@ def create_visual_container(worksheet, visual_id=None, x=10, y=10,
             "disabled": True,
         }
 
-    # Add filters if present (legacy format)
-    filters = worksheet.get('filters', [])
-    if filters and 'filters' not in visual_obj:
-        container_filters = create_filters_config(filters)
-        if container_filters:
-            container["filters"] = json.dumps(container_filters)
+    # ── Visual-level filters → filterConfig ─────────────────
+    # PBIR v4.0 does not allow "filters" as a top-level property
+    # on the visual object or the container.  Filters go inside
+    # container["filterConfig"]["filters"].
+    viz_filters = worksheet.get('filters', [])
+    if viz_filters:
+        filter_list = _build_visual_filters(viz_filters, ctm)
+        if filter_list:
+            fc = container.setdefault("filterConfig", {})
+            fc.setdefault("filters", []).extend(filter_list)
 
     return container
 
@@ -1190,11 +1194,9 @@ def _apply_visual_decorations(worksheet, visual_type, pbi_type, visual_name, ctm
         }]
 
     # ── Visual-level filters ─────────────────────────────────
-    viz_filters = worksheet.get('filters', [])
-    if viz_filters:
-        filter_list = _build_visual_filters(viz_filters, ctm)
-        if filter_list:
-            visual_obj["filters"] = filter_list
+    # NOTE: visual-level filters are applied in create_visual_container()
+    # on container["filterConfig"] — PBIR v4.0 does not allow "filters"
+    # as a top-level property on the visual object.
 
     # ── Sort order ────────────────────────────────────────────
     sort_by = worksheet.get('sortBy', worksheet.get('sorting', []))

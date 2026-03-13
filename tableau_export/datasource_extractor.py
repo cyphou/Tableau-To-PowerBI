@@ -208,6 +208,19 @@ def _parse_connection_class(inner_conn, named_conn=None, twbx_path=None):
     if conn_class in _SIMPLE_CONNECTORS:
         return _build_from_dispatch(inner_conn, _SIMPLE_CONNECTORS[conn_class])
 
+    # ── sqlproxy: Tableau Server Published Datasource ──────────────────────
+    if conn_class == 'sqlproxy':
+        return {
+            'type': 'Tableau Server',
+            'details': {
+                'server': inner_conn.get('server', ''),
+                'port': inner_conn.get('port', '443'),
+                'dbname': inner_conn.get('dbname', ''),
+                'channel': inner_conn.get('channel', 'https'),
+                'server_ds_name': inner_conn.get('server-ds-friendly-name', ''),
+            }
+        }
+
     # ── Fallback for unknown connector types ────────────────────────────────
     return {
         'type': conn_class.upper(),
@@ -263,6 +276,11 @@ def extract_connection_details(datasource_elem):
         if inner_conn is not None:
             return _parse_connection_class(inner_conn, named_conn)
     
+    # Direct connection (no named-connection wrapper) — e.g. sqlproxy
+    conn_class = connection_elem.get('class', '')
+    if conn_class and conn_class != 'federated':
+        return _parse_connection_class(connection_elem)
+
     return {'type': 'Unknown', 'details': {}}
 
 

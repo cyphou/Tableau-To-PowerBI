@@ -2684,7 +2684,6 @@ class PowerBIProjectGenerator:
                     }]
                 }
             },
-            "filters": [],
         }
         _write_json(os.path.join(visual_dir, 'visual.json'), visual_json)
 

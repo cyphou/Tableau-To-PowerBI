@@ -642,6 +642,63 @@ in
     Source'''
 
 
+def _gen_m_sqlproxy(details, table_name, columns):
+    """Generate M query for a Tableau Server Published Datasource (sqlproxy).
+
+    sqlproxy is Tableau's internal connector for published datasources on
+    Tableau Server/Cloud.  The actual data lives behind the published
+    datasource — typically a database like SQL Server, Oracle, PostgreSQL, etc.
+
+    The generated M query includes:
+    - The Tableau Server URL and published datasource name as comments
+    - A placeholder SQL Server connection (most common backend)
+    - Alternative connection templates for Oracle, PostgreSQL, and Snowflake
+    - A sample #table() fallback so the report opens without errors
+    """
+    server = details.get('server', 'tableau-server')
+    ds_name = details.get('server_ds_name', '') or details.get('dbname', table_name)
+    port = details.get('port', '443')
+    channel = details.get('channel', 'https')
+
+    col_list = ', '.join([f'"{ col["name"] }"' for col in columns if 'name' in col])
+    sample1 = ', '.join(
+        [f'"Sample {i+1}"' if col.get('datatype') == 'string' else str(i + 1)
+         for i, col in enumerate(columns)])
+    sample2 = ', '.join(
+        [f'"Sample {i+2}"' if col.get('datatype') == 'string' else str(i + 2)
+         for i, col in enumerate(columns)])
+
+    return f'''let
+    // ================================================================
+    // Tableau Server Published Datasource: {ds_name}
+    // Server: {channel}://{server}:{port}
+    // ================================================================
+    // This table was sourced from a Tableau Server published datasource.
+    // Replace the sample data below with your actual database connection.
+    //
+    // Option A — SQL Server:
+    //   Source = Sql.Database("your-server", "your-database"){{[Schema="dbo", Item="{table_name}"]}}[Data]
+    //
+    // Option B — Oracle:
+    //   Source = Oracle.Database("your-server:1521/service"){{[Schema="SCHEMA", Name="{table_name.upper()}"]}}[Data]
+    //
+    // Option C — PostgreSQL:
+    //   Source = PostgreSQL.Database("your-server:5432", "your-database"){{[Schema="public", Name="{table_name}"]}}[Data]
+    //
+    // Option D — Snowflake:
+    //   Source = Snowflake.Databases("account.snowflakecomputing.com", "WAREHOUSE"){{[Name="DB"]}}[Data]{{[Schema="PUBLIC", Name="{table_name.upper()}"]}}[Data]
+    // ================================================================
+    Source = #table(
+        {{{col_list}}},
+        {{
+            {{{sample1}}},
+            {{{sample2}}}
+        }}
+    )
+in
+    Source'''
+
+
 _M_GENERATORS = {
     'Excel':            _gen_m_excel,
     'SQL Server':       _gen_m_sql_server,
@@ -692,6 +749,9 @@ _M_GENERATORS = {
     'hyper':            _gen_m_hyper,
     'Hyper':            _gen_m_hyper,
     'extract':          _gen_m_hyper,
+    'Tableau Server':   _gen_m_sqlproxy,
+    'sqlproxy':         _gen_m_sqlproxy,
+    'SQLPROXY':         _gen_m_sqlproxy,
 }
 
 
@@ -1373,14 +1433,20 @@ def wrap_source_with_try_otherwise(m_query, empty_table_columns=None):
     source_assign = match.group(2)
     after_assign = m_query[match.end():]
 
+    # Skip if Source is already wrapped with try...otherwise
+    if after_assign.strip().startswith('try'):
+        return m_query
+
     # Find the end of the Source expression (next line starting with a step name or 'in')
     lines = after_assign.split('\n')
     # Find how many lines belong to the Source expression
     source_lines = []
+    remaining_idx = len(lines)
     for idx, line in enumerate(lines):
         stripped = line.strip()
         if idx > 0 and (stripped.startswith('#"') or stripped.startswith('Result')
                         or stripped == 'in' or _re.match(r'\w+\s*=', stripped)):
+            remaining_idx = idx
             break
         source_lines.append(line)
 
@@ -1394,8 +1460,12 @@ def wrap_source_with_try_otherwise(m_query, empty_table_columns=None):
     else:
         fallback = '#table({}, {})'
 
+    # Check if there are more steps after Source (before 'in')
+    has_more_steps = remaining_idx < len(lines) and lines[remaining_idx].strip() != 'in'
+    trailing = ',' if has_more_steps else ''
+
     # Wrap with try...otherwise
-    new_source = f'{indent}{source_assign}try\n{indent}    {source_expr.strip()}\n{indent}otherwise\n{indent}    {fallback},'
+    new_source = f'{indent}{source_assign}try\n{indent}    {source_expr.strip()}\n{indent}otherwise\n{indent}    {fallback}{trailing}'
 
     return m_query[:match.start()] + new_source + after_assign[remaining_start:]
 

@@ -231,6 +231,18 @@ class TestParseConnectionClass(unittest.TestCase):
         result = _parse_connection_class(elem)
         self.assertEqual(result['type'], 'GeoJSON')
 
+    def test_sqlproxy_connection(self):
+        xml = ('<connection class="sqlproxy" channel="https" server="si-mytableau.edf.fr" '
+               'port="443" dbname="E_Formation" server-ds-friendly-name="E_Formation" />')
+        elem = ET.fromstring(xml)
+        result = _parse_connection_class(elem)
+        self.assertEqual(result['type'], 'Tableau Server')
+        self.assertEqual(result['details']['server'], 'si-mytableau.edf.fr')
+        self.assertEqual(result['details']['port'], '443')
+        self.assertEqual(result['details']['dbname'], 'E_Formation')
+        self.assertEqual(result['details']['channel'], 'https')
+        self.assertEqual(result['details']['server_ds_name'], 'E_Formation')
+
 
 # ═══════════════════════════════════════════════════════════════════
 # _build_connection_map

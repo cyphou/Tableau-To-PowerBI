@@ -897,5 +897,71 @@ class TestQueryFoldingBuffer(unittest.TestCase):
         self.assertIn("Table.Buffer(Source)", result)
 
 
+# ═══════════════════════════════════════════════════════════════════════
+# sqlproxy / Tableau Server Published Datasource
+# ═══════════════════════════════════════════════════════════════════════
+
+class TestSqlproxyConnector(unittest.TestCase):
+    """Tests for the sqlproxy (Tableau Server) connector."""
+
+    def _make_columns(self, *names_types):
+        return [{"name": n, "datatype": t} for n, t in names_types]
+
+    def test_sqlproxy_generates_valid_m(self):
+        conn = {
+            "type": "Tableau Server",
+            "details": {
+                "server": "si-mytableau.edf.fr",
+                "port": "443",
+                "dbname": "E_Formation_courbe_puissance",
+                "channel": "https",
+                "server_ds_name": "E_Formation_courbe_puissance",
+            },
+        }
+        cols = self._make_columns(("Region", "string"), ("Value", "real"))
+        table = {"name": "Extract", "columns": cols}
+        result = generate_power_query_m(conn, table)
+        self.assertIn("let", result)
+        self.assertIn("in", result)
+        self.assertIn("Tableau Server Published Datasource", result)
+        self.assertIn("si-mytableau.edf.fr", result)
+        self.assertIn("E_Formation_courbe_puissance", result)
+        # Should contain connection templates
+        self.assertIn("SQL Server", result)
+        self.assertIn("Oracle", result)
+        self.assertIn("PostgreSQL", result)
+        # Should have sample data (not empty fallback)
+        self.assertIn("#table(", result)
+        self.assertIn('"Region"', result)
+
+    def test_sqlproxy_via_type_key(self):
+        """sqlproxy and SQLPROXY type keys should also work."""
+        conn = {"type": "sqlproxy", "details": {"server": "tab.co", "dbname": "ds1"}}
+        table = {"name": "T1", "columns": self._make_columns(("A", "string"))}
+        result = generate_power_query_m(conn, table)
+        self.assertIn("Tableau Server Published Datasource", result)
+
+    def test_sqlproxy_no_trailing_comma(self):
+        """Generated M must not have a comma before 'in'."""
+        conn = {"type": "Tableau Server", "details": {"server": "s", "dbname": "d"}}
+        cols = self._make_columns(("X", "integer"))
+        table = {"name": "T", "columns": cols}
+        result = generate_power_query_m(conn, table)
+        # Find the line before 'in' — it should not end with a comma
+        lines = result.strip().split('\n')
+        for i, line in enumerate(lines):
+            if line.strip() == 'in':
+                prev = lines[i - 1].rstrip()
+                self.assertFalse(prev.endswith(','),
+                                 f"Line before 'in' ends with comma: {prev!r}")
+
+    def test_sqlproxy_empty_columns(self):
+        conn = {"type": "Tableau Server", "details": {"server": "s"}}
+        table = {"name": "T", "columns": []}
+        result = generate_power_query_m(conn, table)
+        self.assertIn("let", result)
+        self.assertIn("in", result)
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

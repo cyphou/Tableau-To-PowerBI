@@ -187,6 +187,25 @@ class TestCreateVisualContainerCrossFilter(unittest.TestCase):
         )
         self.assertNotIn("filterConfig", container)
 
+    def test_visual_filters_in_filter_config(self):
+        """Visual-level filters must go into container.filterConfig.filters (PBIR v4.0)."""
+        ws = {
+            "name": "Test",
+            "visualType": "bar",
+            "filters": [{"field": "Region", "values": ["East", "West"]}],
+            "dataFields": [],
+        }
+        container = create_visual_container(
+            worksheet=ws, visual_id="test-id",
+            x=0, y=0, width=400, height=300, z_index=0,
+            col_table_map={"Region": "Sales"},
+        )
+        self.assertIn("filterConfig", container)
+        self.assertIn("filters", container["filterConfig"])
+        self.assertGreater(len(container["filterConfig"]["filters"]), 0)
+        # Filters must NOT appear as a top-level property on the visual object
+        self.assertNotIn("filters", container["visual"])
+
 
 # ═══════════════════════════════════════════════════════════════════
 # _apply_visual_decorations — subtitle, colorBy, calendar, cond fmt
@@ -260,6 +279,7 @@ class TestApplyVisualDecorations(unittest.TestCase):
         self.assertIn("dataPoint", vo.get("objects", {}))
 
     def test_visual_level_filters(self):
+        """Filters are no longer set on visual_obj; they go to container.filterConfig."""
         ws = {
             "name": "Test",
             "filters": [{"field": "Region", "values": ["East", "West"]}],
@@ -267,8 +287,8 @@ class TestApplyVisualDecorations(unittest.TestCase):
         ctm = {"Region": "Sales"}
         vo = self._make_visual_obj()
         _apply_visual_decorations(ws, "bar", "clusteredBarChart", "Test", ctm, vo)
-        self.assertIn("filters", vo)
-        self.assertIsInstance(vo["filters"], list)
+        # PBIR v4.0: filters must NOT appear on visual_obj
+        self.assertNotIn("filters", vo)
 
     def test_sort_order(self):
         ws = {
