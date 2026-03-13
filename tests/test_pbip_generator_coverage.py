@@ -467,7 +467,7 @@ class TestBuildVisualQuery(unittest.TestCase):
         result = self._query('map', fields)
         qs = result['queryState']
         self.assertIn('Category', qs)
-        self.assertIn('Size', qs)
+        self.assertIn('Size', qs)  # map uses Category + Size
 
     def test_table_type(self):
         fields = [{'name': 'Region'}, {'name': 'Revenue'}]
@@ -513,14 +513,14 @@ class TestBuildVisualQuery(unittest.TestCase):
         fields = [{'name': 'Revenue'}]
         result = self._query('card', fields)
         qs = result['queryState']
-        self.assertIn('Values', qs)
+        self.assertIn('Fields', qs)  # PBIR card uses 'Fields' role
 
     def test_card_dims_only(self):
         """Card with no measures → uses dims."""
         fields = [{'name': 'Region'}]
         result = self._query('card', fields)
         qs = result['queryState']
-        self.assertIn('Values', qs)
+        self.assertIn('Fields', qs)  # PBIR card uses 'Fields' role
 
     def test_pie_chart(self):
         fields = [{'name': 'Region'}, {'name': 'Revenue'}]
@@ -534,6 +534,34 @@ class TestBuildVisualQuery(unittest.TestCase):
         result = self._query('donutChart', fields)
         qs = result['queryState']
         self.assertIn('Category', qs)
+
+    def test_treemap_uses_group_role(self):
+        """Treemap must use Group role (not Category) and Values (not Y)."""
+        fields = [{'name': 'Region'}, {'name': 'Revenue'}]
+        result = self._query('treemap', fields)
+        qs = result['queryState']
+        self.assertIn('Group', qs)
+        self.assertIn('Values', qs)
+        self.assertNotIn('Category', qs)
+        self.assertNotIn('Y', qs)
+
+    def test_filled_map_uses_location_role(self):
+        """Filled map must use Location role (not Category)."""
+        fields = [{'name': 'Country'}, {'name': 'Revenue'}]
+        result = self._query('filledMap', fields)
+        qs = result['queryState']
+        self.assertIn('Location', qs)
+        self.assertIn('Size', qs)
+        self.assertNotIn('Category', qs)
+
+    def test_matrix_uses_rows_columns_values(self):
+        """Matrix must use Rows/Columns/Values roles."""
+        fields = [{'name': 'Region'}, {'name': 'Month'}, {'name': 'Revenue'}]
+        result = self._query('matrix', fields)
+        qs = result['queryState']
+        self.assertIn('Rows', qs)
+        self.assertIn('Columns', qs)
+        self.assertIn('Values', qs)
 
     def test_combo_chart(self):
         fields = [{'name': 'Month'}, {'name': 'Revenue'}, {'name': 'Profit'}]
@@ -573,15 +601,15 @@ class TestBuildVisualQuery(unittest.TestCase):
         fields = [{'name': 'Revenue'}, {'name': 'Revenue'}]
         result = self._query('clusteredBarChart', fields)
         qs = result['queryState']
-        # Only one projection for Revenue; no dims → fallback to card with Values
-        self.assertIn('Values', qs)
+        # Only one projection for Revenue; no dims → fallback to card with Fields
+        self.assertIn('Fields', qs)
 
     def test_skip_tableau_internal_fields(self):
         fields = [{'name': '__tableau_internal_object_id__'}, {'name': 'Revenue'}]
         result = self._query('clusteredBarChart', fields)
         qs = result['queryState']
-        # Only Revenue remains (measure, no dims) → fallback to card with Values
-        self.assertIn('Values', qs)
+        # Only Revenue remains (measure, no dims) → fallback to card with Fields
+        self.assertIn('Fields', qs)
 
     def test_measure_value_shelf_treated_as_measure(self):
         """Fields with shelf='measure_value' (from Measure Names expansion) → measure role."""
@@ -603,9 +631,9 @@ class TestBuildVisualQuery(unittest.TestCase):
         ws = {'chart_type': 'clusteredBarChart', 'fields': fields}
         result = self.gen._build_visual_query(ws)
         qs = result['queryState']
-        self.assertIn('Values', qs)
+        self.assertIn('Fields', qs)  # card uses 'Fields' role
         # Should set override visual type
-        self.assertIn(ws.get('_override_visual_type'), ('card', 'multiRowCard'))
+        self.assertEqual(ws.get('_override_visual_type'), 'card')
 
     def test_all_measures_fallback_multirowcard(self):
         """3+ measures → multiRowCard."""
@@ -626,6 +654,35 @@ class TestBuildVisualQuery(unittest.TestCase):
         self.assertIn('Category', qs)
         self.assertIn('Y', qs)
         self.assertEqual(len(qs['Y']['projections']), 3)
+
+
+class TestFieldMappingDuplicateColumns(unittest.TestCase):
+    """Verify that duplicate column names across tables resolve to the main table."""
+
+    def test_main_table_wins_for_duplicate_columns(self):
+        """When 'Segment' exists in both main and secondary tables, main table wins."""
+        gen = _make_generator()
+        converted = {
+            'datasources': [{
+                'tables': [
+                    {'name': 'Orders', 'columns': [
+                        {'name': 'Region'}, {'name': 'Segment'}, {'name': 'Sales', 'role': 'measure'},
+                    ]},
+                    {'name': 'Targets', 'columns': [
+                        {'name': 'Segment'}, {'name': 'Goal'},
+                    ]},
+                ],
+                'columns': [],
+                'calculations': [],
+            }],
+            'calculations': [],
+            'groups': [],
+        }
+        gen._build_field_mapping(converted)
+        # 'Orders' has more columns → main table, so Segment should resolve to Orders
+        entity, prop = gen._field_map['Segment']
+        self.assertEqual(entity, 'Orders')
+        self.assertEqual(prop, 'Segment')
 
 
 # ─── _make_projection_entry ─────────────────────────────────────────

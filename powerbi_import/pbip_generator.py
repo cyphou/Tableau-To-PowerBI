@@ -1365,14 +1365,20 @@ class PowerBIProjectGenerator:
         
         # Phase 3: Map columns of each physical table
         #   Also track physical measure columns (role='measure' from Tableau)
+        #   When a column name exists in multiple tables, prefer the main table
+        #   so visual field references resolve to the primary data table.
         for tname, t in best_tables.items():
             for col in t.get('columns', []):
                 cname = col.get('name', '?')
-                self._field_map[cname] = (tname, cname)
+                # Only overwrite if: (a) not yet mapped, or
+                # (b) this IS the main table (main table wins ties)
+                if cname not in self._field_map or tname == main_table:
+                    self._field_map[cname] = (tname, cname)
                 # Also index by caption for visual references using display name
                 caption = col.get('caption', '')
-                if caption and caption not in self._field_map:
-                    self._field_map[caption] = (tname, cname)
+                if caption:
+                    if caption not in self._field_map or tname == main_table:
+                        self._field_map[caption] = (tname, cname)
         
         # Phase 4: Map Tableau calculations (rawID -> caption/friendly name)
         # Measures are on the main table
@@ -1451,12 +1457,55 @@ class PowerBIProjectGenerator:
         clean = _RE_TYPE_SUFFIX.sub('', clean)
         return clean
 
+    # ── PBIR data-role names per visual type ─────────────────────
+    # (dimension_roles, measure_roles) — must match PBI Desktop expectations
+    _VISUAL_DATA_ROLES = {
+        "card":                              ([], ["Fields"]),
+        "multiRowCard":                      ([], ["Values"]),
+        "kpi":                               ([], ["Indicator", "TrendAxis"]),
+        "clusteredBarChart":                 (["Category"], ["Y"]),
+        "stackedBarChart":                   (["Category", "Series"], ["Y"]),
+        "hundredPercentStackedBarChart":      (["Category", "Series"], ["Y"]),
+        "clusteredColumnChart":              (["Category"], ["Y"]),
+        "stackedColumnChart":                (["Category", "Series"], ["Y"]),
+        "hundredPercentStackedColumnChart":   (["Category", "Series"], ["Y"]),
+        "lineChart":                         (["Category"], ["Y"]),
+        "areaChart":                         (["Category"], ["Y"]),
+        "stackedAreaChart":                  (["Category", "Series"], ["Y"]),
+        "hundredPercentStackedAreaChart":     (["Category", "Series"], ["Y"]),
+        "pieChart":                          (["Category"], ["Y"]),
+        "donutChart":                        (["Category"], ["Y"]),
+        "waterfallChart":                    (["Category", "Breakdown"], ["Y"]),
+        "funnel":                            (["Category"], ["Y"]),
+        "gauge":                             ([], ["Y", "MinValue", "MaxValue", "TargetValue"]),
+        "treemap":                           (["Group"], ["Values"]),
+        "sunburst":                          (["Group"], ["Values"]),
+        "scatterChart":                      (["Category"], ["X", "Y", "Size"]),
+        "tableEx":                           (["Values"], ["Values"]),
+        "table":                             (["Values"], ["Values"]),
+        "matrix":                            (["Rows", "Columns"], ["Values"]),
+        "pivotTable":                        (["Rows", "Columns"], ["Values"]),
+        "slicer":                            (["Values"], []),
+        "lineStackedColumnComboChart":       (["Category"], ["ColumnY", "LineY"]),
+        "lineClusteredColumnComboChart":     (["Category"], ["ColumnY", "LineY"]),
+        "map":                               (["Category"], ["Size"]),
+        "filledMap":                         (["Location"], ["Size"]),
+        "shapeMap":                          (["Location"], ["Color"]),
+        "ribbonChart":                       (["Category", "Series"], ["Y"]),
+        "boxAndWhisker":                     (["Category", "Sampling"], ["Value"]),
+        "decompositionTree":                 (["TreeItems"], ["Values"]),
+        "wordCloud":                         (["Category"], ["Values"]),
+    }
+
     def _build_visual_query(self, ws_data):
-        """Builds a query with queryState for a visual (PBIR v4.0 format)"""
+        """Builds a query with queryState for a visual (PBIR v4.0 format).
+
+        Uses the correct PBIR data-role names for each visual type so
+        Power BI Desktop binds fields to the right data wells."""
         fields = ws_data.get('fields', [])
         if not fields:
             return None
-        
+
         # Clean field names and filter out Tableau meta-fields and generated geo fields
         skip_names = {'Measure Names', 'Measure Values', 'Multiple Values',
                       ':Measure Names', ':Measure Values',
@@ -1476,14 +1525,13 @@ class PowerBIProjectGenerator:
                 continue
             seen_names.add(clean)
             cleaned_fields.append({**f, 'name': clean})
-        
+
         if not cleaned_fields:
             return None
-        
+
         query_state = {}
-        
-        # Separate dimensions (→ Category) from measures (→ Y/Size)
-        # Use _measure_names set for accurate classification.
+
+        # Separate dimensions from measures using _measure_names set.
         # Fields on the 'measure_value' shelf (expanded from :Measure Names)
         # are always treated as measures regardless of _measure_names.
         dim_fields = []
@@ -1493,22 +1541,15 @@ class PowerBIProjectGenerator:
                 mea_fields.append(f)
             else:
                 dim_fields.append(f)
-        
+
         visual_type = ws_data.get('chart_type', 'clusteredBarChart')
-        
-        if visual_type in ('filledMap', 'map'):
-            if dim_fields:
-                query_state["Category"] = self._make_projection(dim_fields[0])
-            if mea_fields:
-                query_state["Size"] = self._make_projection(mea_fields[0])
-        elif visual_type in ('tableEx', 'table', 'matrix'):
-            all_fields = dim_fields + mea_fields
-            if all_fields:
-                query_state["Values"] = {
-                    "projections": [self._make_projection_entry(f) for f in all_fields[:10]]
-                }
-        elif visual_type == 'scatterChart':
-            # Scatter chart: dims → Category (Details), measures → X/Y (aggregated)
+
+        # ── Look up correct PBIR role names for this visual type ──
+        roles = self._VISUAL_DATA_ROLES.get(visual_type)
+
+        if visual_type == 'scatterChart':
+            # Scatter chart: dims → Category (Details grouping),
+            #                measures → X/Y (aggregated), optional Size
             if dim_fields:
                 query_state["Category"] = self._make_projection(dim_fields[0])
             if len(mea_fields) >= 2:
@@ -1516,30 +1557,74 @@ class PowerBIProjectGenerator:
                 query_state["Y"] = self._make_scatter_axis_projection(mea_fields[1])
             elif len(mea_fields) == 1:
                 query_state["Y"] = self._make_scatter_axis_projection(mea_fields[0])
-            # If 3+ measures, third becomes Size (bubble)
             if len(mea_fields) >= 3:
                 query_state["Size"] = self._make_scatter_axis_projection(mea_fields[2])
+
+        elif visual_type in ('tableEx', 'table'):
+            # Table: all fields (dims + measures) → Values
+            all_fields = dim_fields + mea_fields
+            if all_fields:
+                query_state["Values"] = {
+                    "projections": [self._make_projection_entry(f) for f in all_fields[:10]]
+                }
+
+        elif visual_type == 'matrix':
+            # Matrix: first dim → Rows, second dim → Columns, measures → Values
+            if dim_fields:
+                query_state["Rows"] = self._make_projection(dim_fields[0])
+            if len(dim_fields) >= 2:
+                query_state["Columns"] = self._make_projection(dim_fields[1])
+            if mea_fields:
+                query_state["Values"] = {
+                    "projections": [self._make_projection_entry(m) for m in mea_fields[:6]]
+                }
+
+        elif visual_type in ('card',):
+            # Card: measures → Fields
+            all_fields = mea_fields if mea_fields else dim_fields
+            if all_fields:
+                query_state["Fields"] = {
+                    "projections": [self._make_projection_entry(f) for f in all_fields[:6]]
+                }
+
+        elif visual_type in ('multiRowCard',):
+            # MultiRowCard: measures → Values
+            all_fields = mea_fields if mea_fields else dim_fields
+            if all_fields:
+                query_state["Values"] = {
+                    "projections": [self._make_projection_entry(f) for f in all_fields[:6]]
+                }
+
         elif visual_type in ('gauge', 'kpi'):
-            # Gauge/KPI: first measure → Value, second → Target
+            # Gauge/KPI: first measure → Y, second → TargetValue
             if mea_fields:
                 query_state["Y"] = self._make_projection(mea_fields[0])
             if len(mea_fields) >= 2:
                 query_state["TargetValue"] = self._make_projection(mea_fields[1])
             if dim_fields:
                 query_state["Category"] = self._make_projection(dim_fields[0])
-        elif visual_type in ('card', 'multiRowCard'):
-            # Card: measures → Values
-            all_fields = mea_fields if mea_fields else dim_fields
-            if all_fields:
-                query_state["Values"] = {
-                    "projections": [self._make_projection_entry(f) for f in all_fields[:6]]
-                }
-        elif visual_type in ('pieChart', 'donutChart', 'funnel', 'treemap'):
-            # Pie/Donut/Funnel/Treemap: dim → Category, measure → Values
+
+        elif visual_type in ('treemap', 'sunburst'):
+            # Treemap/Sunburst: dim → Group, measure → Values
+            if dim_fields:
+                query_state["Group"] = self._make_projection(dim_fields[0])
+            if mea_fields:
+                query_state["Values"] = self._make_projection(mea_fields[0])
+
+        elif visual_type in ('filledMap',):
+            # Filled map: dim → Location, measure → Size
+            if dim_fields:
+                query_state["Location"] = self._make_projection(dim_fields[0])
+            if mea_fields:
+                query_state["Size"] = self._make_projection(mea_fields[0])
+
+        elif visual_type in ('map',):
+            # Map: dim → Category, measure → Size
             if dim_fields:
                 query_state["Category"] = self._make_projection(dim_fields[0])
             if mea_fields:
-                query_state["Y"] = self._make_projection(mea_fields[0])
+                query_state["Size"] = self._make_projection(mea_fields[0])
+
         elif visual_type in ('lineClusteredColumnComboChart', 'lineStackedColumnComboChart'):
             # Combo: dim → Category, first measure → ColumnY, second → LineY
             if dim_fields:
@@ -1548,6 +1633,7 @@ class PowerBIProjectGenerator:
                 query_state["ColumnY"] = self._make_projection(mea_fields[0])
             if len(mea_fields) >= 2:
                 query_state["LineY"] = self._make_projection(mea_fields[1])
+
         elif visual_type == 'waterfallChart':
             # Waterfall: dim → Category, measure → Y, optional breakdown
             if dim_fields:
@@ -1556,14 +1642,31 @@ class PowerBIProjectGenerator:
                 query_state["Y"] = self._make_projection(mea_fields[0])
             if len(dim_fields) >= 2:
                 query_state["Breakdown"] = self._make_projection(dim_fields[1])
+
         elif visual_type == 'boxAndWhisker':
             # Box plot: dim → Category, measure → Value
             if dim_fields:
                 query_state["Category"] = self._make_projection(dim_fields[0])
             if mea_fields:
                 query_state["Value"] = self._make_projection(mea_fields[0])
+
+        elif visual_type in ('wordCloud',):
+            # Word cloud: dim → Category, measure → Values
+            if dim_fields:
+                query_state["Category"] = self._make_projection(dim_fields[0])
+            if mea_fields:
+                query_state["Values"] = self._make_projection(mea_fields[0])
+
+        elif visual_type in ('decompositionTree',):
+            # Decomposition tree: dims → TreeItems, measure → Values
+            if dim_fields:
+                query_state["TreeItems"] = self._make_projection(dim_fields[0])
+            if mea_fields:
+                query_state["Values"] = self._make_projection(mea_fields[0])
+
         else:
-            # Standard charts: dimensions → Category, measures → Y
+            # Standard charts (bar, line, area, pie, donut, funnel, ribbon, etc.)
+            # Uses Category/Y which is correct for these types.
             if dim_fields:
                 query_state["Category"] = self._make_projection(dim_fields[0])
             if mea_fields:
@@ -1574,20 +1677,24 @@ class PowerBIProjectGenerator:
             # If no measures found but we have multiple dims, use last as Y
             elif len(dim_fields) > 1:
                 query_state["Y"] = self._make_projection(dim_fields[-1])
-        
+
         # ── Fallback: only measures, no dimensions ────────────────
         # Convert to card (1-2 measures) or multiRowCard (3+) so values show up
         if mea_fields and not dim_fields and visual_type in (
             'clusteredBarChart', 'stackedBarChart', 'clusteredColumnChart',
         ):
             query_state.clear()
-            query_state["Values"] = {
-                "projections": [self._make_projection_entry(m) for m in mea_fields[:6]]
-            }
-            # The visual type override happens in _create_visual_worksheet
-            # via ws_data['_override_visual_type'] set below
-            ws_data['_override_visual_type'] = 'multiRowCard' if len(mea_fields) > 2 else 'card'
-        
+            if len(mea_fields) <= 2:
+                query_state["Fields"] = {
+                    "projections": [self._make_projection_entry(m) for m in mea_fields[:6]]
+                }
+                ws_data['_override_visual_type'] = 'card'
+            else:
+                query_state["Values"] = {
+                    "projections": [self._make_projection_entry(m) for m in mea_fields[:6]]
+                }
+                ws_data['_override_visual_type'] = 'multiRowCard'
+
         return {"queryState": query_state} if query_state else None
     
     def _make_projection(self, field):
@@ -2985,12 +3092,42 @@ class PowerBIProjectGenerator:
                 logger.warning("Could not read relationships.tmdl for stats: %s", exc)
         tmdl_stats['relationships'] = relationships_count
 
-        # Collect visual type mappings used
+        # Collect visual type mappings used (Tableau mark → PBI visual)
         visual_types_used = {}
+        visual_details = []  # per-worksheet detail for HTML report
         for ws in converted_objects.get('worksheets', []):
             ws_name = ws.get('name', 'Unknown')
             mark = ws.get('mark_type', 'Automatic')
+            pbi_type = ws.get('chart_type', 'clusteredBarChart')
             visual_types_used[ws_name] = mark
+
+            # Collect field names and classify as dim/measure
+            ws_fields = ws.get('fields', [])
+            dim_names = []
+            mea_names = []
+            for f in ws_fields:
+                fname = f.get('name', '')
+                # Strip Tableau derivation prefixes
+                fname = _RE_DERIVATION_PREFIX.sub('', fname)
+                if not fname or fname in (':Measure Names', 'Measure Names',
+                                          ':Measure Values', 'Measure Values',
+                                          'Multiple Values',
+                                          'Longitude (generated)', 'Latitude (generated)'):
+                    continue
+                if f.get('shelf') == 'measure_value' or (
+                    hasattr(self, '_measure_names') and fname in self._measure_names
+                ):
+                    mea_names.append(fname)
+                else:
+                    dim_names.append(fname)
+            visual_details.append({
+                'worksheet': ws_name,
+                'tableau_mark': mark,
+                'pbi_visual': pbi_type,
+                'dimensions': dim_names,
+                'measures': mea_names,
+                'field_count': len(dim_names) + len(mea_names),
+            })
 
         # Collect approximation warnings from visual generation
         from powerbi_import.visual_generator import get_approximation_note
@@ -3040,6 +3177,7 @@ class PowerBIProjectGenerator:
             },
             "tmdl_stats": tmdl_stats,
             "visual_type_mappings": visual_types_used,
+            "visual_details": visual_details,
             "approximations": approximations,
         }
         metadata_file = os.path.join(project_dir, 'migration_metadata.json')

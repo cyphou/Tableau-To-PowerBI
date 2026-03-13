@@ -551,10 +551,44 @@ def generate_html(assessments, reports, metadata):
                 </div>"""
             html += '</div>'
 
-        # ── Visual type mappings ───────────────────────────────────────
+        # ── Visual type mappings (Tableau visual → Power BI visual) ────
+        visual_details = m.get("visual_details", [])
         vtm = m.get("visual_type_mappings", {})
-        if vtm:
-            # Simplified mark → PBI visual mapping for display
+        if visual_details:
+            # Rich per-worksheet comparison table with fields
+            html += '<h4 style="margin-top:15px;color:{0}">&#127912; Tableau Visual &#8594; Power BI Visual</h4>'.format(pbi_dark)
+            html += """<table class="detail-table">
+<tr>
+  <th>Worksheet</th>
+  <th>Tableau Mark</th>
+  <th style="text-align:center">&#8594;</th>
+  <th>Power BI Visual</th>
+  <th>Dimensions</th>
+  <th>Measures</th>
+  <th style="text-align:center">Fields</th>
+</tr>"""
+            for vd in visual_details:
+                ws_name = vd.get('worksheet', '')
+                tab_mark = vd.get('tableau_mark', '?')
+                pbi_vis = vd.get('pbi_visual', '?')
+                dims = vd.get('dimensions', [])
+                meas = vd.get('measures', [])
+                fc = vd.get('field_count', 0)
+                dims_html = ', '.join(f'<span style="background:#e8eaf6;color:#283593;padding:1px 5px;border-radius:3px;font-size:0.8em;margin:1px">{d}</span>' for d in dims) if dims else '<span style="color:#a19f9d;font-style:italic">—</span>'
+                meas_html = ', '.join(f'<span style="background:#fce4ec;color:#b71c1c;padding:1px 5px;border-radius:3px;font-size:0.8em;margin:1px">{me}</span>' for me in meas) if meas else '<span style="color:#a19f9d;font-style:italic">—</span>'
+                # Color the PBI visual badge
+                html += f"""<tr>
+  <td><strong>{ws_name}</strong></td>
+  <td><span class="connector-tag">{tab_mark}</span></td>
+  <td style="text-align:center;color:{pbi_light_gray}">&#8594;</td>
+  <td><span class="connector-tag" style="background:#e6f4ea;color:#137333">{pbi_vis}</span></td>
+  <td style="max-width:250px">{dims_html}</td>
+  <td style="max-width:250px">{meas_html}</td>
+  <td style="text-align:center">{fc}</td>
+</tr>"""
+            html += '</table>'
+        elif vtm:
+            # Fallback: simple mark → PBI visual mapping (legacy data)
             _mark_to_pbi = {
                 "Automatic": "table", "Bar": "clusteredBarChart",
                 "Stacked Bar": "stackedBarChart", "Line": "lineChart",
