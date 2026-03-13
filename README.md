@@ -1,384 +1,202 @@
-# Tableau to Power BI Migration
+<p align="center">
+  <img src="https://img.shields.io/badge/Tableau-E97627?style=for-the-badge&logo=tableau&logoColor=white" alt="Tableau"/>
+  <img src="https://img.shields.io/badge/%E2%86%92-gray?style=for-the-badge" alt="arrow"/>
+  <img src="https://img.shields.io/badge/Power%20BI-F2C811?style=for-the-badge&logo=powerbi&logoColor=black" alt="Power BI"/>
+</p>
 
-![CI](https://github.com/cyphou/Tableau-To-PowerBI/actions/workflows/ci.yml/badge.svg)
-![Coverage](https://img.shields.io/badge/coverage-95.4%25-brightgreen)
-![Tests](https://img.shields.io/badge/tests-3%2C459%20passed-brightgreen)
-![Python](https://img.shields.io/badge/python-3.9%2B-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
-![Version](https://img.shields.io/badge/version-11.0.0-blue)
+<h1 align="center">Tableau to Power BI Migration</h1>
 
-Automated migration tool for Tableau workbooks (`.twb`, `.twbx`) and Tableau Prep flows (`.tfl`, `.tflx`) to Power BI projects (`.pbip`) that can be opened directly in Power BI Desktop.
+<p align="center">
+  <strong>Migrate your Tableau workbooks to Power BI in seconds — fully automated, zero manual rework.</strong>
+</p>
 
-**v11.0.0** — 3,459 tests across 62 test files — 95.4% coverage — Python 3.9+ — zero external dependencies for core migration.
+<p align="center">
+  <a href="https://github.com/cyphou/Tableau-To-PowerBI/actions/workflows/ci.yml"><img src="https://github.com/cyphou/Tableau-To-PowerBI/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
+  <img src="https://img.shields.io/badge/coverage-95.4%25-brightgreen?style=flat-square" alt="Coverage"/>
+  <img src="https://img.shields.io/badge/tests-3%2C459%20passed-brightgreen?style=flat-square" alt="Tests"/>
+  <img src="https://img.shields.io/badge/python-3.9%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python"/>
+  <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License"/>
+  <img src="https://img.shields.io/badge/version-11.0.0-blue?style=flat-square" alt="Version"/>
+  <img src="https://img.shields.io/badge/deps-zero-orange?style=flat-square" alt="Zero Dependencies"/>
+</p>
 
-## Features
+<p align="center">
+  <a href="#-quick-start">Quick Start</a> •
+  <a href="#-key-features">Features</a> •
+  <a href="#-how-it-works">How It Works</a> •
+  <a href="#-dax-conversions-172-functions">DAX Mappings</a> •
+  <a href="#-deployment">Deployment</a> •
+  <a href="#-documentation">Docs</a>
+</p>
 
-### Migration Engine
-- **Full extraction** of 16 object types: datasources, tables, columns, calculations, relationships, parameters, worksheets, dashboards, filters, stories, actions, sets, groups, bins, hierarchies, sort orders, aliases, custom SQL, user filters
-- **`.pbip` project generation** in PBIR v4.0 format with TMDL semantic model
-- **172+ DAX conversions** of Tableau formulas (LOD, table calcs, IF/THEN/END, ISNULL, CONTAINS, security, stats, etc.)
-- **60+ visual type mappings**: Tableau marks → Power BI visuals (bar, line, pie, scatter, map, gauge, KPI, waterfall, box plot, funnel, word cloud, combo, matrix, treemap, etc.)
-- **Custom visual GUIDs**: Sankey → `sankeyDiagram`, Chord → `chordChart`, Network → `networkNavigator`, Gantt → `ganttChart` (AppSource custom visuals)
-- **26 connector types** in Power Query M (Excel, CSV, SQL Server, PostgreSQL, BigQuery, Oracle, MySQL, Snowflake, Teradata, SAP HANA, SAP BW, Redshift, Databricks, Spark, Azure SQL/Synapse, Google Sheets, SharePoint, JSON, XML, PDF, Salesforce, Web, etc.)
-- **40+ Power Query M transformation generators**: rename, filter, aggregate, pivot/unpivot, join, union, sort, conditional columns — chainable via `inject_m_steps()`
-- **165 Tableau Prep → Power Query M** operation mappings ([reference doc](docs/TABLEAU_PREP_TO_POWERQUERY_REFERENCE.md))
-- **Tableau Prep flow parser** (`.tfl`/`.tflx`): converts Prep steps (Clean, Join, Aggregate, Union, Pivot) into chained Power Query M queries via `--prep` CLI flag
-- **M-based calculated columns**: calculated columns use Power Query M `Table.AddColumn` steps (DAX-to-M converter) with DAX fallback for cross-table references — avoids DAX calculated column limitations
-- **Calculated columns** vs measures: automatic 3-factor classification based on aggregation, column references, and Tableau role
-- **Cross-table references**: automatic `RELATED()` (manyToOne) or `LOOKUPVALUE()` (manyToMany)
-- **Relationship extraction**: handles both `[Table].[Column]` and bare `[Column]` join clause formats with table inference
-- **Smart cardinality detection**: raw column count ratio determines manyToOne vs manyToMany; cross-table inference creates relationships by scanning unconnected tables for matching column names
-- **Row-Level Security (RLS)**: user filters, USERNAME(), FULLNAME(), ISMEMBEROF() → Power BI RLS roles with `USERPRINCIPALNAME()`
-- **Parameters**: range (integer/real), list (string/boolean), and any-domain → What-If parameter tables with `GENERATESERIES` or `DATATABLE` + `SELECTEDVALUE` measures
-- **Dynamic parameters**: Tableau 2024.3+ database-query-driven parameters → M partition with `Value.NativeQuery()` for dynamic parameter refresh
-- **Hyper data loading**: `.hyper` files read via SQLite interface (`hyper_reader.py`) — column metadata + row data injected into M `#table()` expressions
-- **SCRIPT_* → Python/R visuals**: `SCRIPT_BOOL/INT/REAL/STR` Tableau functions → PBI `scriptVisual` containers (Python or R) with script text and input columns
-- **Tableau Pulse → PBI Goals**: `--goals` flag converts Tableau Pulse metric definitions to Power BI Goals/Scorecard JSON artifacts (goal name, current value measure, target, status rules, sparkline)
-- **Nested LOD cleanup**: `AGG(CALCULATE(...))` redundancy removal for LOD-inside-aggregation patterns
-- **Multi-datasource routing**: calculations tagged with source datasource and routed to the correct table by column reference density
-- **Visuals** automatically positioned based on Tableau worksheets and dashboard layouts
+---
 
-### Tableau Server / Cloud Integration
-- **Direct download**: download workbooks from Tableau Server/Cloud via REST API
-- **Authentication**: Personal Access Token (PAT) or username/password
-- **Single workbook**: `--server URL --workbook "Name"` downloads and migrates one workbook
-- **Batch by project**: `--server-batch PROJECT` downloads all workbooks from a Tableau Server project
-- **Datasource listing**: enumerate published datasources on the server
-- **Regex search**: find workbooks by name pattern
-
-### Visual Generator (PBIR-native)
-- **PBIR config templates** for 60+ visual types with data role definitions and query state builders
-- **Slicer sync groups**: cross-page slicer synchronization
-- **Slicer modes**: dropdown, list, between, relative date
-- **Cross-filtering disable**: opt-out visuals from cross-filtering
-- **Action button navigation**: page navigation and URL link buttons
-- **TopN visual filters**: visual-level TopN and categorical filters
-- **Sort state migration**: ascending/descending sort definitions
-- **Reference lines**: constant lines and dynamic lines (average, median, percentile, min, max) on value axis
-- **Conditional formatting**: color-by-measure gradients with stepped thresholds (`LessThanOrEqual`/`GreaterThan` operators)
-- **Textbox & Image objects**: dashboard text → textbox visual, image → image visual
-- **Custom theme**: Tableau dashboard colors → PBI theme JSON (`RegisteredResources/TableauMigrationTheme.json`)
-- **Tooltip pages**: worksheets with `viz_in_tooltip` → PBI Tooltip pages (480×320)
-- **Drill-through pages**: drill-through filter fields → PBI Drillthrough pages with target filters
-
-### Semantic Model Intelligence
-- **Auto Calendar table**: detects date columns, generates a Power Query M-based Calendar table with Year/Quarter/Month/Day columns and auto-relationship to fact table
-- **Auto date hierarchies**: Year → Quarter → Month → Day hierarchies for every date/dateTime column not already in a hierarchy
-- **Calculation groups**: Tableau parameters that switch between measures → PBI Calculation Group tables with `CALCULATE(SELECTEDMEASURE())`
-- **Field parameters**: Tableau parameters that switch between dimension columns → PBI Field Parameter tables with `NAMEOF()` references
-- **Number format conversion**: Tableau `###,###` / `$#,##0` / `0.0%` patterns → Power BI `formatString`
-- **Context filter promotion**: worksheet context filters automatically promoted to page-level filters
-- **Pages shelf slicer**: Tableau Pages shelf → Power BI slicer for animation playback
-- **dataCategory mapping**: Tableau semantic roles → City, Latitude, Longitude, StateOrProvince, PostalCode, Country, County
-- **isHidden**: columns hidden in Tableau → hidden in Power BI
-- **displayFolder**: measures/columns organized into Dimensions, Measures, Time Intelligence, Flags, Calculations, Groups, Sets, Bins
-- **sortByColumn**: Calendar MonthName→Month, DayName→DayOfWeek (prevents alphabetical month sorting) with cross-validation in validator
-- **Hierarchies**: Tableau drill-paths → BIM hierarchies with levels
-- **Sets**: → M-based boolean calculated columns (IN expression), with DAX fallback for cross-table refs
-- **Groups**: → M-based SWITCH calculated columns (values→groups mapping), with DAX fallback
-- **Bins**: → M-based FLOOR calculated columns (source, size), with DAX fallback
-- **Perspectives**: auto-generated "Full Model" perspective referencing all tables
-- **Cultures**: culture TMDL file with linguistic metadata for non-en-US locales
-- **Multi-language cultures**: `--languages fr-FR,de-DE,ja-JP` generates multiple culture TMDL files with translated display folders (Dimensions→Dimensionen, Measures→Mesures, etc.) and translated calendar column names
-
-### Pre-Migration Assessment
-- **`--assess` mode**: run readiness analysis before migration — checks 8 categories: datasource, calculation, visual, filter, data model, interactivity, extract, scope
-- **Scoring**: overall readiness score (0–100) with per-category severity (pass / info / warning / fail)
-- **Strategy advisor**: recommends Import, DirectQuery, or Composite connection mode based on 7 signal types (connectors, table/column count, custom SQL, LOD complexity, Prep flows, etc.)
-- **JSON report**: assessment results saved as structured JSON for CI/CD and audit trails
-
-### Deployment
-- **Power BI Service** (`--deploy WORKSPACE_ID`): package `.pbip` → `.pbix`, upload via REST API, poll import status, optional dataset refresh (`--deploy-refresh`)
-  - Azure AD auth: Service Principal, Managed Identity, or environment token
-  - Post-deploy validation: checks dataset existence and refresh history
-- **Microsoft Fabric**: deploy semantic models and reports to Fabric workspaces via REST API
-  - Service Principal or Managed Identity auth via `azure-identity`
-  - Incremental deployment with artifact caching
-  - Environment-specific configs (development / staging / production)
-- **Gateway config generation**: `GatewayConfigGenerator` produces gateway binding JSON for on-premises data sources
-
-### Infrastructure
-- **Batch migration**: `--batch DIR` to migrate all workbooks in a directory
-- **Batch config file**: `--batch-config FILE` for per-workbook overrides (prep, culture, calendar, mode)
-- **Custom output**: `--output-dir DIR` for output location
-- **Output format selection**: `--output-format pbip|tmdl|pbir` for full project, semantic model only, or report only
-- **Structured logging**: `--verbose`, `--quiet`, and `--log-file` flags
-- **Artifact validation**: validate generated `.pbip` projects (JSON, TMDL, report structure, sortByColumn cross-refs)
-- **Dry-run mode**: `--dry-run` to preview migration without writing files
-- **Incremental merge**: `--incremental DIR` to merge changes into an existing `.pbip`, preserving manual edits
-- **Rollback**: `--rollback` to backup existing projects before overwriting
-- **Calendar customization**: `--calendar-start YEAR` and `--calendar-end YEAR` to set date table range
-- **Culture/locale**: `--culture LOCALE` for non-en-US linguistic metadata (e.g., `fr-FR`)
-- **Semantic model mode**: `--mode import|directquery|composite`
-- **Interactive wizard**: `--wizard` for guided step-by-step migration prompts
-- **Paginated reports**: `--paginated` to generate paginated report layout alongside interactive report
-- **JSON config file**: `--config FILE` to load settings from a JSON file (CLI args override)
-- **Structured exit codes**: distinct codes for extraction, generation, and validation failures
-- **Migration metadata**: enriched `migration_metadata.json` with TMDL stats (measures, columns, relationships), visual type mappings, approximations, theme status
-- **Per-item fidelity tracking**: `MigrationReport` scores each object (exact / approximate / unsupported) and generates migration reports
-- **CI/CD pipeline**: GitHub Actions with 5-stage pipeline (lint+ruff, test, strict validate+twbx, staging deploy, production deploy)
-- **3,459 tests** across 62 test files + conftest.py shared fixtures (95.4% coverage)
-
-## Quick Start
-
-### Prerequisites
-
-- Python 3.9+
-- Power BI Desktop (December 2025 or later recommended)
-- No external dependencies for core migration (Python standard library only)
-- Optional: `azure-identity` + `requests` for deployment, `pydantic-settings` for typed config
-
-### One-command migration
+## ⚡ Quick Start
 
 ```bash
+# That's it. One command.
 python migrate.py your_workbook.twbx
 ```
 
-### With Tableau Prep flow
+> [!TIP]
+> The output is a `.pbip` project — just double-click to open in **Power BI Desktop** (December 2025+).
+
+<details>
+<summary><b>📦 Installation</b></summary>
 
 ```bash
-python migrate.py your_workbook.twbx --prep your_flow.tflx
+git clone https://github.com/cyphou/Tableau-To-PowerBI.git
+cd Tableau-To-PowerBI
+python migrate.py your_workbook.twbx
 ```
 
-The `--prep` flag parses the Prep flow, converts all steps to Power Query M, and merges the resulting queries into the workbook's datasources before generating the Power BI project.
+**Requirements:** Python 3.9+ • No `pip install` needed — pure standard library.
 
-### From Tableau Server
+Optional (for deployment only):
+```bash
+pip install azure-identity requests
+```
+</details>
+
+### More ways to migrate
 
 ```bash
-# Single workbook
-python migrate.py --server https://tableau.company.com --workbook "Sales Dashboard" \
+# 🔄 With a Tableau Prep flow
+python migrate.py workbook.twbx --prep flow.tflx
+
+# ☁️ Directly from Tableau Server
+python migrate.py --server https://tableau.company.com --workbook "Sales" \
     --token-name my-pat --token-secret secret123
 
-# All workbooks in a project
-python migrate.py --server https://tableau.company.com --server-batch "Marketing" \
-    --token-name my-pat --token-secret secret123 --output-dir /tmp/batch
-```
-
-### Batch migration
-
-```bash
+# 📁 Batch — migrate an entire folder
 python migrate.py --batch examples/tableau_samples/ --output-dir /tmp/output
+
+# 🔍 Pre-migration readiness check
+python migrate.py workbook.twbx --assess
+
+# 🚀 Migrate + deploy to Power BI Service in one shot
+python migrate.py workbook.twbx --deploy WORKSPACE_ID --deploy-refresh
+
+# 🧙 Interactive wizard (guided step-by-step)
+python migrate.py workbook.twbx --wizard
 ```
 
-### Deploy to Power BI Service
+---
 
-```bash
-python migrate.py your_workbook.twbx --deploy WORKSPACE_ID --deploy-refresh
+## 🎯 Key Features
+
+<table>
+<tr>
+<td width="50%">
+
+### 🔄 Complete Extraction
+Parses **16 object types** from `.twb`/`.twbx`:
+datasources, calculations, worksheets, dashboards, filters, parameters, stories, actions, sets, groups, bins, hierarchies, relationships, sort orders, aliases, custom SQL
+
+</td>
+<td width="50%">
+
+### 🧮 172+ DAX Conversions
+Translates Tableau formulas to DAX:
+LOD expressions, table calcs, IF/ELSEIF, ISNULL, CONTAINS, window functions, iterators (SUMX), cross-table RELATED/LOOKUPVALUE, RLS security
+
+</td>
+</tr>
+<tr>
+<td>
+
+### 📊 60+ Visual Types
+Maps every Tableau mark to Power BI:
+bar, line, pie, scatter, map, treemap, waterfall, funnel, gauge, KPI, box plot, word cloud, Sankey, Chord, combo charts, and more
+
+</td>
+<td>
+
+### 🔌 26 Data Connectors
+Generates Power Query M for:
+SQL Server, PostgreSQL, BigQuery, Snowflake, Oracle, MySQL, Databricks, SAP HANA, Excel, CSV, SharePoint, Salesforce, Web, and more
+
+</td>
+</tr>
+<tr>
+<td>
+
+### 🧠 Smart Semantic Model
+Auto-generates Calendar table, date hierarchies, calculation groups, field parameters, RLS roles, display folders, geographic categories, number formats, perspectives, multi-language cultures
+
+</td>
+<td>
+
+### 🚀 Deploy Anywhere
+One-command deploy to **Power BI Service** or **Microsoft Fabric** with Azure AD auth (Service Principal / Managed Identity). Gateway config generation included.
+
+</td>
+</tr>
+</table>
+
+> [!NOTE]
+> **Zero external dependencies** for core migration. The entire engine runs on Python's standard library.
+
+---
+
+## 🔧 How It Works
+
+```mermaid
+flowchart LR
+    A["📄 .twbx/.twb\nTableau Workbook"] --> B["🔍 EXTRACT\n16 JSON files"]
+    P["📋 .tfl/.tflx\nPrep Flow"] -.-> B
+    S["☁️ Tableau Server\n(optional)"] -.-> B
+    B --> C["⚙️ GENERATE\n.pbip project"]
+    C --> D["📊 Power BI Desktop\nOpen & validate"]
+    C -.-> E["🚀 DEPLOY\nPBI Service / Fabric"]
+
+    style A fill:#E97627,color:#fff,stroke:#E97627
+    style P fill:#E97627,color:#fff,stroke:#E97627
+    style S fill:#E97627,color:#fff,stroke:#E97627
+    style D fill:#F2C811,color:#000,stroke:#F2C811
+    style E fill:#F2C811,color:#000,stroke:#F2C811
+    style B fill:#4B8BBE,color:#fff,stroke:#4B8BBE
+    style C fill:#4B8BBE,color:#fff,stroke:#4B8BBE
 ```
 
-### Pre-migration assessment
+**Step 1 — Extract:** Parses Tableau XML into 16 structured JSON files (worksheets, datasources, calculations, etc.)
 
-```bash
-python migrate.py your_workbook.twbx --assess
-```
+**Step 2 — Generate:** Converts JSON into a complete `.pbip` project with PBIR v4.0 report and TMDL semantic model
 
-### CLI Options
+**Step 3 — Deploy** *(optional):* Packages and uploads to Power BI Service or Microsoft Fabric
 
-| Flag | Description |
-|------|-------------|
-| `--prep FILE` | Tableau Prep flow (.tfl/.tflx) to merge |
-| `--output-dir DIR` | Custom output directory (default: `artifacts/powerbi_projects/`) |
-| `--output-format FORMAT` | Output format: `pbip` (default), `tmdl`, or `pbir` |
-| `--verbose` / `-v` | Enable verbose (DEBUG) console logging |
-| `--quiet` / `-q` | Suppress all output except errors |
-| `--log-file FILE` | Write logs to a file |
-| `--batch DIR` | Batch-migrate all .twb/.twbx files in a directory |
-| `--batch-config FILE` | JSON batch config with per-workbook overrides |
-| `--skip-extraction` | Skip extraction, re-use existing datasources.json |
-| `--skip-conversion` | Skip DAX/M conversion, re-use existing JSON files |
-| `--dry-run` | Preview migration without writing files |
-| `--calendar-start YEAR` | Calendar table start year (default: 2020) |
-| `--calendar-end YEAR` | Calendar table end year (default: 2030) |
-| `--culture LOCALE` | Culture/locale for linguistic metadata (e.g., `fr-FR`) |
-| `--mode MODE` | Semantic model mode: `import`, `directquery`, or `composite` |
-| `--assess` | Run pre-migration assessment and strategy analysis (no generation) |
-| `--deploy WORKSPACE_ID` | Deploy to Power BI Service workspace after generation |
-| `--deploy-refresh` | Trigger dataset refresh after deploy (requires `--deploy`) |
-| `--rollback` | Backup existing .pbip project before overwriting |
-| `--incremental DIR` | Merge changes into existing .pbip, preserving manual edits |
-| `--wizard` | Launch interactive migration wizard |
-| `--paginated` | Generate paginated report layout |
-| `--config FILE` | Load settings from a JSON configuration file |
-| `--telemetry` | Enable anonymous usage telemetry (opt-in) |
-| `--compare` | Generate comparison report (HTML) after migration |
-| `--dashboard` | Generate telemetry dashboard after migration |
-| `--server URL` | Tableau Server/Cloud URL for remote extraction |
-| `--site SITE_ID` | Tableau site content URL (empty for default site) |
-| `--workbook NAME` | Workbook name/LUID to download from server |
-| `--token-name NAME` | PAT name for Tableau Server auth |
-| `--token-secret SECRET` | PAT secret for Tableau Server auth |
-| `--server-batch PROJECT` | Download all workbooks from a server project |
-| `--languages LOCALES` | Comma-separated locales for multi-language culture TMDL files (e.g., `fr-FR,de-DE,ja-JP`) |
-| `--goals` | Convert Tableau Pulse metrics to Power BI Goals/Scorecard artifacts |
-
-### Output
-
-A complete project in `artifacts/powerbi_projects/[ReportName]/`:
+### 📂 Generated Output
 
 ```
-[ReportName]/
-├── [ReportName].pbip                          # Double-click to open
-├── migration_metadata.json                    # Migration stats, fidelity, TMDL stats
-├── [ReportName].SemanticModel/
-│   ├── definition.pbism
-│   ├── .platform
+YourReport/
+├── YourReport.pbip                     ← Double-click to open in PBI Desktop
+├── migration_metadata.json             ← Stats, fidelity scores, warnings
+├── YourReport.SemanticModel/
 │   └── definition/
-│       ├── database.tmdl
-│       ├── model.tmdl
-│       ├── relationships.tmdl
-│       ├── expressions.tmdl                   # Power Query M partitions
-│       ├── perspectives.tmdl                  # "Full Model" perspective
-│       ├── roles.tmdl                         # RLS roles (if user filters exist)
-│       ├── diagramLayout.json                 # Auto-filled by PBI Desktop
-│       ├── cultures/
-│       │   └── {locale}.tmdl                  # Linguistic metadata (--culture)
+│       ├── model.tmdl                  ← Tables, measures, relationships
+│       ├── expressions.tmdl            ← Power Query M queries
+│       ├── roles.tmdl                  ← Row-Level Security
 │       └── tables/
-│           ├── Table1.tmdl                    # Columns + DAX measures
-│           ├── Calendar.tmdl                  # Auto-generated date table
-│           └── ...
-└── [ReportName].Report/
-    ├── definition.pbir
-    ├── .platform
+│           ├── Orders.tmdl             ← Columns + DAX measures
+│           └── Calendar.tmdl           ← Auto-generated date table
+└── YourReport.Report/
     └── definition/
-        ├── report.json
-        ├── version.json
-        ├── RegisteredResources/
-        │   └── TableauMigrationTheme.json     # Custom color theme
+        ├── report.json                 ← Report config + theme
         └── pages/
-            ├── pages.json
             └── ReportSection/
-                ├── page.json
+                ├── page.json           ← Layout + filters
                 └── visuals/
-                    └── [id]/visual.json
+                    └── [id]/visual.json ← Each visual
 ```
 
-### Step-by-step migration
+---
 
-```bash
-# 1. Extraction only
-python tableau_export/extract_tableau_data.py your_workbook.twbx
-
-# 2. Power BI project generation
-python powerbi_import/import_to_powerbi.py
-```
-
-## Architecture
-
-```
-TableauToPowerBI/
-├── migrate.py                                 # CLI entry point (30+ flags)
-├── tableau_export/                            # Tableau extraction
-│   ├── extract_tableau_data.py                #   TWB/TWBX parser (16 object types)
-│   ├── datasource_extractor.py                #   Connection/table/calc extractor
-│   ├── dax_converter.py                       #   172+ DAX formula conversions
-│   ├── m_query_builder.py                     #   26 connector types + 40+ transform generators
-│   ├── prep_flow_parser.py                    #   Tableau Prep flow parser (.tfl/.tflx)
-│   └── server_client.py                       #   Tableau Server REST API client
-├── powerbi_import/                            # Power BI generation
-│   ├── import_to_powerbi.py                   #   Orchestrator (supports --output-dir)
-│   ├── pbip_generator.py                      #   .pbip project + visuals + filters + bookmarks
-│   ├── visual_generator.py                    #   60+ visual types, PBIR-native configs
-│   ├── tmdl_generator.py                      #   Semantic model → TMDL
-│   ├── m_query_generator.py                   #   Sample data M query generator
-│   ├── gateway_config.py                      #   Gateway binding config generator
-│   ├── assessment.py                          #   Pre-migration readiness assessment
-│   ├── strategy_advisor.py                    #   Import/DirectQuery/Composite advisor
-│   ├── validator.py                           #   Artifact validation (JSON, TMDL, .pbip)
-│   ├── migration_report.py                    #   Per-item fidelity tracking
-│   └── deploy/                                #   Deployment subpackage
-│       ├── auth.py                            #     Azure AD auth (SP / MI)
-│       ├── client.py                          #     Fabric REST API client (retry + fallback)
-│       ├── deployer.py                        #     Fabric deployment orchestrator
-│       ├── pbi_client.py                      #     PBI Service REST API client
-│       ├── pbix_packager.py                   #     .pbip → .pbix ZIP packager
-│       ├── pbi_deployer.py                    #     PBI Service deployment orchestrator
-│       ├── utils.py                           #     DeploymentReport, ArtifactCache
-│       └── config/                            #     Configuration
-│           ├── settings.py                    #       Env-var based settings
-│           └── environments.py                #       Dev/staging/production configs
-├── tests/                                     # 3,459 tests (62 test files + conftest.py)
-├── docs/                                      # Documentation
-├── examples/                                  # Sample Tableau files (22 workbooks)
-├── .github/workflows/ci.yml                   # CI/CD pipeline
-└── artifacts/                                 # Generated output
-    └── powerbi_projects/                      #   .pbip projects
-```
-
-## Pipeline
-
-```
-.twbx/.twb --> extract_tableau_data.py --> 16 JSON files --+
-.tfl/.tflx --> prep_flow_parser.py --> M query overrides --+--> pbip_generator.py + tmdl_generator.py --> .pbip
-                                                           +-- (merge)
-```
-
-```
-              +-------------------------------+
-              |           INPUT               |
-              |  .twb / .twbx  (workbook)     |
-              |  .tfl / .tflx  (Prep, opt.)   |
-              |  Tableau Server (opt.)        |
-              +---------------+---------------+
-                              |
-                              v
-              +-------------------------------+
-              |    STEP 1 - EXTRACTION        |
-              |                               |
-              |  extract_tableau_data.py       |
-              |    +-- datasource_extractor.py |
-              |    +-- dax_converter.py        |
-              |    +-- m_query_builder.py      |
-              |    +-- prep_flow_parser.py     |
-              |    +-- server_client.py (opt.) |
-              +---------------+---------------+
-                              |
-                              v
-              +-------------------------------+
-              |      16 INTERMEDIATE JSON     |
-              |                               |
-              |  worksheets    calculations   |
-              |  dashboards    parameters     |
-              |  datasources   filters        |
-              |  stories       actions        |
-              |  sets/groups   bins           |
-              |  hierarchies   sort_orders    |
-              |  aliases       custom_sql     |
-              |  user_filters  ds_filters     |
-              +---------------+---------------+
-                              |
-                              v
-              +-------------------------------+
-              |    STEP 2 - GENERATION        |
-              |                               |
-              |  import_to_powerbi.py         |
-              |    +-- pbip_generator.py      |
-              |    +-- tmdl_generator.py      |
-              |    +-- visual_generator.py    |
-              |    +-- validator.py           |
-              +---------------+---------------+
-                              |
-                              v
-              +-------------------------------+
-              |    STEP 3 - DEPLOY (opt.)     |
-              |                               |
-              |  pbi_deployer.py (PBI Service)|
-              |  deployer.py (Fabric)         |
-              +---------------+---------------+
-                              |
-                              v
-              +-------------------------------+
-              |           OUTPUT              |
-              |                               |
-              |  .pbip project                |
-              |  PBIR v4.0 report             |
-              |  TMDL semantic model          |
-              |  migration_metadata.json      |
-              +-------------------------------+
-```
-
-## DAX Conversions (172+ functions)
+## 🧮 DAX Conversions (172+ functions)
 
 > **Full reference:** [docs/TABLEAU_TO_DAX_REFERENCE.md](docs/TABLEAU_TO_DAX_REFERENCE.md)
+
+<details>
+<summary><b>📋 Complete conversion table</b> (click to expand)</summary>
 
 | Category | Tableau | DAX |
 |----------|---------|-----|
@@ -414,7 +232,34 @@ TableauToPowerBI/
 | Security | `FULLNAME()` | `USERPRINCIPALNAME()` |
 | Security | `ISMEMBEROF("group")` | `TRUE()` + RLS role per group |
 
-## Visual Type Mapping (60+)
+</details>
+
+### Highlights
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  Tableau LOD                    →  Power BI DAX                        │
+├─────────────────────────────────────────────────────────────────────────┤
+│  {FIXED [customer] : SUM([qty] * [price])}                             │
+│  → CALCULATE(SUM('T'[qty] * 'T'[price]), ALLEXCEPT('T', 'T'[customer]))│
+│                                                                         │
+│  {EXCLUDE [channel] : SUM([revenue])}                                   │
+│  → CALCULATE(SUM([revenue]), REMOVEFILTERS('T'[channel]))               │
+│                                                                         │
+│  SUM(IF [status] != "X" THEN [qty] * [price] ELSE 0 END)               │
+│  → SUMX('Orders', IF('Orders'[status] != "X", [qty] * [price], 0))     │
+│                                                                         │
+│  RANK(SUM([revenue]))                                                   │
+│  → RANKX(ALL(SUM('Table'[revenue])))                                    │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📊 Visual Type Mapping (60+)
+
+<details>
+<summary><b>🎨 Full visual mapping table</b> (click to expand)</summary>
 
 | Tableau Mark | Power BI visualType | Notes |
 |-------------|-------------------|-------|
@@ -450,125 +295,98 @@ TableauToPowerBI/
 | Decomposition Tree | `decompositionTree` | |
 | Shape Map | `shapeMap` | |
 
-## Complex Transformation Examples
+</details>
 
-### LOD Expressions → CALCULATE
+---
 
-| Tableau LOD | Generated DAX |
-|-------------|---------------|
-| `{FIXED [customer_id] : SUM([qty] * [price])}` | `CALCULATE(SUM('Orders'[qty] * 'Orders'[price]), ALLEXCEPT('Orders', 'Orders'[customer_id]))` |
-| `{FIXED [region], [channel] : SUM(...)}` | `CALCULATE(SUM(...), ALLEXCEPT('Orders', 'Orders'[region], 'Orders'[channel]))` |
-| `{EXCLUDE [channel] : SUM(...)}` | `CALCULATE(SUM(...), REMOVEFILTERS('Orders'[channel]))` |
-| `{FIXED : SUM(IF YEAR([date]) = YEAR(TODAY()) THEN [amount] ELSE 0 END)}` | `CALCULATE(SUMX('Table', IF(YEAR(...) = YEAR(TODAY()), ...)), ALL('Table'))` |
+## 🏗️ Architecture
 
-### SUM(IF) → SUMX Iterator Conversion
+<details>
+<summary><b>📁 Project structure</b> (click to expand)</summary>
 
 ```
-Tableau:  SUM(IF [order_status] != "Cancelled" THEN [quantity] * [unit_price] * (1 - [discount]) ELSE 0 END)
-DAX:      SUMX('Orders', IF('Orders'[order_status] != "Cancelled", 'Orders'[quantity] * 'Orders'[unit_price] * (1 - 'Orders'[discount]), 0))
+TableauToPowerBI/
+├── migrate.py                                 # CLI entry point (30+ flags)
+├── tableau_export/                            # Tableau extraction
+│   ├── extract_tableau_data.py                #   TWB/TWBX parser (16 object types)
+│   ├── datasource_extractor.py                #   Connection/table/calc extractor
+│   ├── dax_converter.py                       #   172+ DAX formula conversions
+│   ├── m_query_builder.py                     #   26 connectors + 40+ transforms
+│   ├── prep_flow_parser.py                    #   Tableau Prep flow parser
+│   ├── hyper_reader.py                        #   .hyper file data loader
+│   ├── pulse_extractor.py                     #   Tableau Pulse metric extractor
+│   └── server_client.py                       #   Tableau Server REST API client
+├── powerbi_import/                            # Power BI generation
+│   ├── import_to_powerbi.py                   #   Orchestrator
+│   ├── pbip_generator.py                      #   .pbip project + visuals + filters
+│   ├── visual_generator.py                    #   60+ visual types, PBIR configs
+│   ├── tmdl_generator.py                      #   Semantic model → TMDL
+│   ├── assessment.py                          #   Pre-migration assessment
+│   ├── strategy_advisor.py                    #   Import/DQ/Composite advisor
+│   ├── validator.py                           #   Artifact validation
+│   ├── migration_report.py                    #   Per-item fidelity tracking
+│   ├── goals_generator.py                     #   Tableau Pulse → PBI Goals
+│   ├── plugins.py                             #   Plugin system
+│   └── deploy/                                #   Deploy to PBI Service / Fabric
+├── tests/                                     # 3,459 tests across 62 files
+├── docs/                                      # 12 documentation files
+└── examples/                                  # Sample Tableau workbooks
 ```
 
-Also: `AVG(IF)` → `AVERAGEX`, `MIN(IF)` → `MINX`, `MAX(IF)` → `MAXX`, `COUNT(IF)` → `COUNTX`.
+</details>
 
-### Nested IF/ELSEIF → Nested IF()
+---
 
-```
-Tableau:  IF [Revenue] > 10000 THEN "Platinum"
-          ELSEIF [Revenue] > 5000 THEN "Gold"
-          ELSEIF [Revenue] > 1000 THEN "Silver"
-          ELSE "Bronze" END
+## 📝 CLI Reference
 
-DAX:      IF([Revenue] > 10000, "Platinum", IF([Revenue] > 5000, "Gold", IF([Revenue] > 1000, "Silver", "Bronze")))
-```
+<details>
+<summary><b>🔧 All CLI flags</b> (click to expand)</summary>
 
-### Window & Table Calculations
+| Flag | Description |
+|------|-------------|
+| `--prep FILE` | Tableau Prep flow (.tfl/.tflx) to merge |
+| `--output-dir DIR` | Custom output directory (default: `artifacts/powerbi_projects/`) |
+| `--output-format FORMAT` | Output format: `pbip` (default), `tmdl`, or `pbir` |
+| `--verbose` / `-v` | Enable verbose (DEBUG) console logging |
+| `--quiet` / `-q` | Suppress all output except errors |
+| `--log-file FILE` | Write logs to a file |
+| `--batch DIR` | Batch-migrate all .twb/.twbx files in a directory |
+| `--batch-config FILE` | JSON batch config with per-workbook overrides |
+| `--skip-extraction` | Skip extraction, re-use existing datasources.json |
+| `--skip-conversion` | Skip DAX/M conversion, re-use existing JSON files |
+| `--dry-run` | Preview migration without writing files |
+| `--calendar-start YEAR` | Calendar table start year (default: 2020) |
+| `--calendar-end YEAR` | Calendar table end year (default: 2030) |
+| `--culture LOCALE` | Culture/locale for linguistic metadata (e.g., `fr-FR`) |
+| `--mode MODE` | Semantic model mode: `import`, `directquery`, or `composite` |
+| `--assess` | Run pre-migration assessment and strategy analysis |
+| `--deploy WORKSPACE_ID` | Deploy to Power BI Service workspace |
+| `--deploy-refresh` | Trigger dataset refresh after deploy |
+| `--rollback` | Backup existing .pbip project before overwriting |
+| `--incremental DIR` | Merge changes into existing .pbip |
+| `--wizard` | Launch interactive migration wizard |
+| `--paginated` | Generate paginated report layout |
+| `--config FILE` | Load settings from a JSON configuration file |
+| `--telemetry` | Enable anonymous usage telemetry (opt-in) |
+| `--compare` | Generate comparison report (HTML) |
+| `--dashboard` | Generate telemetry dashboard |
+| `--server URL` | Tableau Server/Cloud URL |
+| `--site SITE_ID` | Tableau site content URL |
+| `--workbook NAME` | Workbook name/LUID to download |
+| `--token-name NAME` | PAT name for Tableau Server auth |
+| `--token-secret SECRET` | PAT secret for Tableau Server auth |
+| `--server-batch PROJECT` | Download all workbooks from a server project |
+| `--languages LOCALES` | Multi-language culture TMDL files (e.g., `fr-FR,de-DE`) |
+| `--goals` | Convert Tableau Pulse metrics to PBI Goals |
 
-| Tableau | Generated DAX |
-|---------|---------------|
-| `WINDOW_AVG(SUM([revenue]))` | `CALCULATE(SUM('Table'[revenue]), ALL('Table'))` |
-| `RUNNING_SUM(SUM([quantity]))` | `CALCULATE(SUM(SUM('Table'[quantity])))` |
-| `RANK(SUM([revenue]))` | `RANKX(ALL(SUM('Table'[revenue])))` |
+</details>
 
-### Cross-Table References (RELATED)
+---
 
-```
-Tableau calc column:    [segment]      → where segment lives in Customers table
-DAX calculated column:  RELATED('Customers'[segment])     (manyToOne relationship)
-DAX calculated column:  LOOKUPVALUE('Customers'[segment], 'Customers'[id], [customer_id])   (manyToMany)
-```
+## 🚀 Deployment
 
-### Row-Level Security (RLS) Migration
-
-| Tableau Security | Generated Power BI RLS |
-|------------------|----------------------|
-| `<user-filter>` with user→value mappings | Role with `USERPRINCIPALNAME() = "user@co.com" && [Col] IN {"val1", "val2"}` |
-| `[Email] = USERNAME()` | Role with `[Email] = USERPRINCIPALNAME()` |
-| `ISMEMBEROF("Managers")` | Separate RLS role `Managers` (assign Azure AD group) |
-| `[Manager] = FULLNAME()` | Role with `[Manager] = USERPRINCIPALNAME()` |
-
-### Parameters → What-If Tables
-
-| Tableau Parameter | Generated Power BI |
-|-------------------|-------------------|
-| Integer range (min=2020, max=2030) | `GENERATESERIES(2020, 2030, 1)` table + `SELECTEDVALUE` measure |
-| String list ("All", "Europe", ...) | `DATATABLE("Value", STRING, {{"All"}, {"Europe"}, ...})` table + `SELECTEDVALUE` measure |
-| Real range (min=0, max=0.5, step=0.01) | `GENERATESERIES(0, 0.5, 0.01)` table + `SELECTEDVALUE` measure |
-
-### Geographic Data Categories
-
-| Tableau semantic-role | Power BI dataCategory |
-|-----------------------|----------------------|
-| `[City].[Name]` | `City` |
-| `[State].[Name]` | `StateOrProvince` |
-| `[Country].[Name]` | `Country` |
-| `[ZipCode].[Name]` | `PostalCode` |
-| `[Geographical].[Latitude]` | `Latitude` |
-| `[Geographical].[Longitude]` | `Longitude` |
-
-## Complex Example: Enterprise Sales
-
-```bash
-python migrate.py examples/tableau_samples/Enterprise_Sales.twb
-```
-
-**Input:** 2 joined tables (Orders + Customers) from Snowflake, 22 calculations, 3 parameters, 5 worksheets, RLS rules, stories
-
-**Generated output:**
-
-| Component | Count | Details |
-|-----------|-------|---------|
-| Tables | 5 | Orders, Customers, Calendar (auto), Target Margin, Top N |
-| Columns | 41 | Physical + calculated columns |
-| DAX Measures | 21 | Including SUMX, CALCULATE, LOD, window functions |
-| Relationships | 2 | Orders→Customers (manyToOne), Orders→Calendar |
-| RLS Roles | 2 | Territory Access (user mapping), Is My Account (USERNAME) |
-| Visuals | 5 | KPIs, stacked bar, line, scatter, map |
-| Bookmarks | 3 | From story points |
-
-## Validation
-
-Validate generated projects before opening in Power BI Desktop:
-
-```python
-from powerbi_import.validator import ArtifactValidator
-
-# Validate a single project
-result = ArtifactValidator.validate_project("artifacts/powerbi_projects/MyReport")
-print(result)  # {"valid": True, "files_checked": 15, "errors": []}
-
-# Validate all projects in a directory
-results = ArtifactValidator.validate_directory("artifacts/powerbi_projects/")
-```
-
-The validator checks:
-- `.pbip` file exists and is valid JSON
-- Report directory contains `report.json`, `definition.pbir`, page and visual JSONs
-- SemanticModel directory contains `model.tmdl` (starts with `model Model`), table TMDLs
-- `sortByColumn` targets reference columns that actually exist
-
-## Deployment
-
-### Power BI Service
+<details>
+<summary><b>Power BI Service</b></summary>
 
 ```bash
 # Set environment variables
@@ -576,30 +394,30 @@ export PBI_TENANT_ID="your-tenant-guid"
 export PBI_CLIENT_ID="your-app-client-id"
 export PBI_CLIENT_SECRET="your-app-secret"
 
-# Migrate and deploy in one command
+# Migrate + deploy in one command
 python migrate.py your_workbook.twbx --deploy WORKSPACE_ID --deploy-refresh
 ```
 
-Or via Python API:
+Or programmatically:
 
 ```python
 from powerbi_import.deploy.pbi_deployer import PBIWorkspaceDeployer
 
 deployer = PBIWorkspaceDeployer(workspace_id="your-workspace-guid")
 result = deployer.deploy("artifacts/powerbi_projects/MyReport", refresh=True)
-print(result)  # DeploymentResult(success=True, dataset_id="...", report_id="...")
 ```
 
-### Microsoft Fabric
+</details>
+
+<details>
+<summary><b>Microsoft Fabric</b></summary>
 
 ```bash
-# Set environment variables
 export FABRIC_WORKSPACE_ID="your-workspace-guid"
 export FABRIC_TENANT_ID="your-tenant-guid"
 export FABRIC_CLIENT_ID="your-app-client-id"
 export FABRIC_CLIENT_SECRET="your-app-secret"
 
-# Deploy via Python
 python -c "
 from powerbi_import.deploy.deployer import FabricDeployer
 deployer = FabricDeployer(workspace_id='your-workspace-guid')
@@ -607,15 +425,10 @@ deployer.deploy_artifacts_batch('artifacts/powerbi_projects/')
 "
 ```
 
-### Dependencies for deployment
+</details>
 
-```bash
-pip install azure-identity requests  # Optional, only for deployment
-```
-
-The client falls back to `urllib` (stdlib) if `requests` is not installed.
-
-### Environment configurations
+<details>
+<summary><b>Environment configurations</b></summary>
 
 | Environment | Log Level | Retry | Validate | Approval |
 |-------------|-----------|-------|----------|----------|
@@ -623,100 +436,125 @@ The client falls back to `urllib` (stdlib) if `requests` is not installed.
 | staging | INFO | 3 | Yes | No |
 | production | WARNING | 5 | Yes | Yes |
 
-## CI/CD
+</details>
 
-The project includes a GitHub Actions pipeline (`.github/workflows/ci.yml`) with 5 stages:
+---
 
-1. **Lint**: `flake8` (errors only) + `ruff` (style checks)
-2. **Test**: Python 3.9–3.12 matrix, 3,459 tests (95.4% coverage)
-3. **Strict Validate**: Run sample .twbx migrations + artifact validation with strict mode
-4. **Staging Deploy**: Automated deployment to staging Fabric workspace
-5. **Production Deploy**: Manual approval + deployment to production Fabric workspace
+## ✅ Validation
 
-## Testing
+```python
+from powerbi_import.validator import ArtifactValidator
+
+result = ArtifactValidator.validate_project("artifacts/powerbi_projects/MyReport")
+# {"valid": True, "files_checked": 15, "errors": []}
+```
+
+The validator checks `.pbip` JSON, `report.json`, `model.tmdl`, page/visual structure, and `sortByColumn` cross-references.
+
+---
+
+## 🧪 Testing
+
+<p align="center">
+  <img src="https://img.shields.io/badge/tests-3%2C459%20passed-brightgreen?style=for-the-badge" alt="Tests"/>
+  <img src="https://img.shields.io/badge/coverage-95.4%25-brightgreen?style=for-the-badge" alt="Coverage"/>
+  <img src="https://img.shields.io/badge/test%20files-62-blue?style=for-the-badge" alt="Test Files"/>
+</p>
 
 ```bash
-# Run all 3,459 tests
-python -m pytest tests/ -v
-
-# Run specific test file
-python -m pytest tests/test_dax_converter.py -v
-python -m pytest tests/test_visual_generator.py -v
-python -m pytest tests/test_non_regression.py -v
+python -m pytest tests/ -v                          # Run all 3,459 tests
+python -m pytest tests/test_dax_converter.py -v      # Run specific file
+python -m pytest tests/ --cov --cov-report=html      # Coverage report
 ```
+
+<details>
+<summary><b>📋 Test suite breakdown</b> (click to expand)</summary>
 
 | Test File | Tests | Coverage |
 |-----------|-------|----------|
-| `test_dax_coverage.py` | 168 | Edge cases across all DAX conversion categories |
+| `test_dax_coverage.py` | 168 | Edge cases across all DAX categories |
 | `test_generation_coverage.py` | 145 | TMDL/PBIR generation edge cases |
-| `test_m_query_builder.py` | 102 | Power Query M generation, 40+ transforms, connectors |
-| `test_tmdl_generator.py` | 92 | TMDL model building, Calendar table, file writers |
-| `test_dax_converter.py` | 86 | DAX formula conversions, operators, LOD, table calcs |
-| `test_error_paths.py` | 78 | Error handling, edge cases, graceful degradation |
-| `test_sprint_features.py` | 78 | Sprint feature tests (multi-DS, inference, metadata) |
-| `test_extract_coverage.py` | 75 | Extract pipeline: stories, actions, sets, bins, hierarchies |
-| `test_new_features.py` | 74 | Calc groups, field params, DAX-to-M, M-based columns |
-| `test_v5_features.py` | 72 | v5.x feature tests |
-| `test_visual_generator.py` | 65 | 60+ visual types, sync groups, action buttons, filters |
-| `test_non_regression.py` | 63 | End-to-end migration of all sample workbooks |
-| `test_prep_flow_parser.py` | 58 | Prep flow parsing, DAG traversal, step conversion |
-| `test_assessment.py` | 55 | Pre-migration assessment (8 categories + scoring) |
-| `test_phase_l_dax_coverage.py` | 55 | Window stats, date edge cases, pattern coverage |
-| `test_sprint_13.py` | 53 | Custom visuals, stepped colors, dynamic ref lines |
-| `test_v51_features.py` | 52 | v5.1 feature tests |
-| `test_gap_implementations.py` | 50 | DAX fixes, validation, slicer modes, drill-through |
-| `test_phase_c_dax_m_hardening.py` | 47 | DAX-to-M converter hardening |
-| `test_phase_d_e_coverage.py` | 46 | Visual config templates, coverage gaps |
-| `test_pbip_generator.py` | 46 | Project generation, visual objects, slicers |
-| `test_feature_gaps.py` | 44 | Reference lines, axes, legend, sort, formatting |
-| `test_pbip_coverage_push.py` | 42 | PBIR report structure, analytics, sort, theme, metadata |
-| `test_migration_report.py` | 39 | Fidelity scoring, migration status reporting |
-| `test_backlog.py` | 36 | Backlog feature tests |
-| `test_infrastructure.py` | 36 | Validator, deployment utils, config, auth, client |
-| `test_pbi_desktop_validation.py` | 34 | PBI Desktop-compatible output validation |
-| `test_pbi_service.py` | 33 | PBI Service client, packager, deploy orchestrator |
-| `test_extraction.py` | 29 | Tableau XML extraction |
-| `test_fabric_integration.py` | 27 | Fabric deployment integration tests |
-| `test_strategy_advisor.py` | 26 | Import/DirectQuery/Composite recommendations |
-| `test_server_client.py` | 26 | Tableau Server client, auth, batch download |
-| `test_migration_validation.py` | 14 | Migration validation end-to-end |
-| `test_property_based.py` | 12 | Property-based testing for converters |
-| `test_mutation.py` | 12 | Mutation testing |
-| `test_snapshot.py` | 12 | Snapshot-based regression tests |
-| `test_integration.py` | 11 | Full pipeline integration tests |
-| `test_migration.py` | 10 | Migration pipeline tests |
-| `test_performance.py` | 9 | Performance benchmarks |
-| + 24 more test files | — | Sprint, coverage, wizard, telemetry, comparison, etc. |
-| `conftest.py` | — | Shared fixtures: sample datasources, worksheets, model |
+| `test_m_query_builder.py` | 102 | Power Query M, 40+ transforms |
+| `test_tmdl_generator.py` | 92 | Semantic model, Calendar, TMDL |
+| `test_dax_converter.py` | 86 | DAX formulas, LOD, table calcs |
+| `test_error_paths.py` | 78 | Error handling, graceful degradation |
+| `test_sprint_features.py` | 78 | Multi-DS, inference, metadata |
+| `test_extract_coverage.py` | 75 | Stories, actions, sets, bins, hierarchies |
+| `test_new_features.py` | 74 | Calc groups, field params, M columns |
+| `test_v5_features.py` | 72 | v5.x features |
+| `test_visual_generator.py` | 65 | 60+ visual types, sync, buttons |
+| `test_non_regression.py` | 63 | End-to-end sample workbook migrations |
+| `test_prep_flow_parser.py` | 58 | Prep parsing, DAG, step conversion |
+| `test_assessment.py` | 55 | Pre-migration (8 categories) |
+| + 48 more files | — | Sprint, coverage, wizard, telemetry… |
 
-## Documentation
+</details>
 
-- [.pbip project guide](docs/POWERBI_PROJECT_GUIDE.md)
-- [Tableau → Power BI mapping reference](docs/MAPPING_REFERENCE.md)
-- [172 Tableau → DAX function reference](docs/TABLEAU_TO_DAX_REFERENCE.md)
-- [108 Tableau → Power Query M property reference](docs/TABLEAU_TO_POWERQUERY_REFERENCE.md)
-- [165 Tableau Prep → Power Query M transformation reference](docs/TABLEAU_PREP_TO_POWERQUERY_REFERENCE.md)
-- [Architecture overview](docs/ARCHITECTURE.md)
-- [Comprehensive gap analysis](docs/GAP_ANALYSIS.md)
-- [Known limitations](docs/KNOWN_LIMITATIONS.md)
-- [Migration checklist](docs/MIGRATION_CHECKLIST.md)
-- [Deployment guide](docs/DEPLOYMENT_GUIDE.md)
-- [Tableau version compatibility](docs/TABLEAU_VERSION_COMPATIBILITY.md)
-- [FAQ](docs/FAQ.md)
-- [Contributing guide](CONTRIBUTING.md)
-- [Changelog](CHANGELOG.md)
+### CI/CD Pipeline
 
-## Known Limitations
+```mermaid
+flowchart LR
+    L["🔍 Lint\nflake8 + ruff"] --> T["🧪 Test\n3,459 tests\nPy 3.9–3.12"]
+    T --> V["✅ Validate\nStrict .twbx\nmigrations"]
+    V --> S["📦 Staging\nFabric deploy"]
+    S --> P["🚀 Production\nManual approval"]
+    
+    style L fill:#6366f1,color:#fff
+    style T fill:#22c55e,color:#fff
+    style V fill:#3b82f6,color:#fff
+    style S fill:#f59e0b,color:#000
+    style P fill:#ef4444,color:#fff
+```
 
-- `MAKEPOINT()` (Tableau spatial) has no DAX equivalent — ignored
-- `PREVIOUS_VALUE()` / `LOOKUP()` converted via OFFSET-based DAX pattern — may need manual adjustment for complex seed logic
-- Data source paths must be reconfigured in Power Query after migration
+---
+
+## 📚 Documentation
+
+| Document | Description |
+|----------|-------------|
+| 📖 [Migration Checklist](docs/MIGRATION_CHECKLIST.md) | Step-by-step migration guide |
+| 🗺️ [Mapping Reference](docs/MAPPING_REFERENCE.md) | Tableau → Power BI mappings |
+| 🔢 [172 DAX Functions](docs/TABLEAU_TO_DAX_REFERENCE.md) | Complete formula reference |
+| ⚡ [108 Power Query M](docs/TABLEAU_TO_POWERQUERY_REFERENCE.md) | Property reference |
+| 🔄 [165 Prep → M](docs/TABLEAU_PREP_TO_POWERQUERY_REFERENCE.md) | Prep transformation reference |
+| 🏗️ [Architecture](docs/ARCHITECTURE.md) | System design overview |
+| 📊 [.pbip Guide](docs/POWERBI_PROJECT_GUIDE.md) | Output format explained |
+| 🚀 [Deployment Guide](docs/DEPLOYMENT_GUIDE.md) | PBI Service & Fabric deploy |
+| 📋 [Gap Analysis](docs/GAP_ANALYSIS.md) | Known conversion gaps |
+| ⚠️ [Known Limitations](docs/KNOWN_LIMITATIONS.md) | Current limitations |
+| 🔧 [Tableau Versions](docs/TABLEAU_VERSION_COMPATIBILITY.md) | Version compatibility |
+| ❓ [FAQ](docs/FAQ.md) | Frequently asked questions |
+| 🤝 [Contributing](CONTRIBUTING.md) | How to contribute |
+| 📝 [Changelog](CHANGELOG.md) | Release history |
+
+---
+
+## ⚠️ Known Limitations
+
+- `MAKEPOINT()` (spatial) has no DAX equivalent — skipped
+- `PREVIOUS_VALUE()` / `LOOKUP()` use OFFSET-based DAX — may need manual tuning
+- Data source connection strings must be reconfigured in Power Query after migration
 - Some table calculations (`INDEX()`, `SIZE()`) are approximated
-- Deployment requires `azure-identity` and a registered Azure AD application
-- `.hyper` file data loaded via SQLite interface — column metadata + row data injected into M expressions
-- Nested LOD expressions (LOD inside LOD) handled for common patterns, edge cases may remain
-- Tableau 2024.3+ dynamic zone visibility → bookmark-based visibility toggle; dynamic parameters → M `Value.NativeQuery()`
 - See [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md) for the full list
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+```bash
+git clone https://github.com/cyphou/Tableau-To-PowerBI.git
+cd Tableau-To-PowerBI
+python -m pytest tests/ -q  # Make sure tests pass
+```
+
+---
+
+<p align="center">
+  <sub>Built with ❤️ for the Power BI community</sub><br/>
+  <sub>If this tool saves you time, consider giving it a ⭐</sub>
+</p>
 
 ## License
 
