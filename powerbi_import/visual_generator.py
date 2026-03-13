@@ -101,8 +101,8 @@ VISUAL_TYPE_MAP = {
     "geomap": "map",
     "density": "map",
     "filledmap": "filledMap",
-    "polygon": "filledMap",
-    "multipolygon": "filledMap",
+    "polygon": "map",
+    "multipolygon": "map",
     "shapemap": "shapeMap",
 
     # ── Table / Matrix ────────────────────────────────────────

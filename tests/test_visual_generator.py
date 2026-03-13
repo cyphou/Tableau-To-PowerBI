@@ -74,7 +74,7 @@ class TestVisualTypeMapping(unittest.TestCase):
 
     def test_map_types(self):
         self.assertEqual(resolve_visual_type("map"), "map")
-        self.assertEqual(resolve_visual_type("polygon"), "filledMap")
+        self.assertEqual(resolve_visual_type("polygon"), "map")
 
     def test_table_matrix(self):
         self.assertEqual(resolve_visual_type("table"), "tableEx")

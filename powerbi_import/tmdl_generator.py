@@ -952,6 +952,11 @@ def _apply_semantic_enrichments(model, extra_objects, main_table_name, column_ta
     _create_quick_table_calc_measures(model, extra_objects.get('worksheets', []),
                                       main_table_name, column_table_map)
 
+    # Phase 9c: Auto-generate "Number of Records" COUNTROWS measure when
+    # worksheets use COUNT(*) on __tableau_internal_object_id__.
+    _create_number_of_records_measure(model, extra_objects.get('_worksheets', []),
+                                      main_table_name)
+
     # Phase 10: Infer missing relationships from cross-table DAX references
     _infer_cross_table_relationships(model)
 
@@ -1787,7 +1792,7 @@ def _map_semantic_role_to_category(semantic_role, col_name=''):
             return 'Longitude'
         if name_lower in ('city', 'ville', 'commune', 'label') and 'code' not in name_lower:
             return 'City'
-        if name_lower in ('country', 'pays'):
+        if name_lower in ('country', 'pays') or name_lower.startswith('pays/'):
             return 'Country'
         if any(x in name_lower for x in ['region', '\u00e9tat', 'state', 'province', 'd\u00e9partement']):
             return 'StateOrProvince'
@@ -2862,6 +2867,46 @@ def _deactivate_ambiguous_paths(model):
 
     for d in deactivated:
         print(f"  ⚠ Deactivated relationship (ambiguous path): {d}")
+
+
+def _create_number_of_records_measure(model, worksheets, main_table_name):
+    """Auto-generate a 'Number of Records' COUNTROWS measure.
+
+    Tableau worksheets that use COUNT(*) on ``__tableau_internal_object_id__``
+    are extracted with a synthetic field ``Number of Records`` (aggregation=cnt).
+    This function creates the corresponding DAX measure on the main table.
+    """
+    if not worksheets or not main_table_name:
+        return
+
+    # Check if any worksheet field uses "Number of Records"
+    needs_measure = False
+    for ws in worksheets:
+        for f in ws.get('fields', []):
+            if f.get('name') == 'Number of Records':
+                needs_measure = True
+                break
+        if needs_measure:
+            break
+
+    if not needs_measure:
+        return
+
+    # Find the main table and add the measure (if not already present)
+    for table in model['model']['tables']:
+        if table.get('name') == main_table_name:
+            existing = {m.get('name') for m in table.get('measures', [])}
+            if 'Number of Records' not in existing:
+                table.setdefault('measures', []).append({
+                    'name': 'Number of Records',
+                    'expression': "COUNTROWS('" + main_table_name.replace("'", "''") + "')",
+                    'displayFolder': 'Measures',
+                    'annotations': [
+                        {'name': 'MigrationNote',
+                         'value': 'Auto-generated from Tableau COUNT(*) on internal object ID.'}
+                    ]
+                })
+            break
 
 
 def _create_quick_table_calc_measures(model, worksheets, main_table_name, column_table_map):

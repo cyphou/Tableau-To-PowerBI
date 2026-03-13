@@ -466,8 +466,8 @@ class TestBuildVisualQuery(unittest.TestCase):
         fields = [{'name': 'Region'}, {'name': 'Revenue'}]
         result = self._query('map', fields)
         qs = result['queryState']
-        self.assertIn('Location', qs)
-        self.assertIn('Size', qs)  # map uses Location + Size
+        self.assertIn('Category', qs)
+        self.assertIn('Size', qs)  # map uses Category + Size
 
     def test_table_type(self):
         fields = [{'name': 'Region'}, {'name': 'Revenue'}]
@@ -546,13 +546,13 @@ class TestBuildVisualQuery(unittest.TestCase):
         self.assertNotIn('Y', qs)
 
     def test_filled_map_uses_location_role(self):
-        """Filled map must use Location role (not Category)."""
+        """Filled map must use Category role (PBIR Location well)."""
         fields = [{'name': 'Country'}, {'name': 'Revenue'}]
         result = self._query('filledMap', fields)
         qs = result['queryState']
-        self.assertIn('Location', qs)
+        self.assertIn('Category', qs)
         self.assertIn('Size', qs)
-        self.assertNotIn('Category', qs)
+        self.assertNotIn('Location', qs)
 
     def test_matrix_uses_rows_columns_values(self):
         """Matrix must use Rows/Columns/Values roles."""
@@ -711,15 +711,15 @@ class TestBuildVisualQuery(unittest.TestCase):
         self.assertEqual(len(qs['Y']['projections']), 1)
 
     def test_map_uses_location_role(self):
-        """Map visual must use Location role (not Category)."""
+        """Map visual must use Category role (PBIR Location well)."""
         fields = [{'name': 'City', 'shelf': 'rows'}, {'name': 'Revenue'}]
         result = self._query('map', fields)
         qs = result['queryState']
-        self.assertIn('Location', qs)
-        self.assertNotIn('Category', qs)
+        self.assertIn('Category', qs)
+        self.assertNotIn('Location', qs)
 
     def test_map_multiple_geo_dims_in_location(self):
-        """Map: all geo dims → Location role (multiple levels)."""
+        """Map: all geo dims → Category role (multiple levels)."""
         fields = [
             {'name': 'Country', 'shelf': 'rows'},
             {'name': 'City', 'shelf': 'rows'},
@@ -727,10 +727,10 @@ class TestBuildVisualQuery(unittest.TestCase):
         ]
         result = self._query('map', fields)
         qs = result['queryState']
-        self.assertEqual(len(qs['Location']['projections']), 2)
+        self.assertEqual(len(qs['Category']['projections']), 2)
 
     def test_filled_map_legend_from_color_dim(self):
-        """FilledMap: color dim → Legend role."""
+        """FilledMap: color dim → Series role."""
         fields = [
             {'name': 'Country', 'shelf': 'rows'},
             {'name': 'Segment', 'shelf': 'color'},
@@ -738,8 +738,8 @@ class TestBuildVisualQuery(unittest.TestCase):
         ]
         result = self._query('filledMap', fields)
         qs = result['queryState']
-        self.assertIn('Location', qs)
-        self.assertIn('Legend', qs)
+        self.assertIn('Category', qs)
+        self.assertIn('Series', qs)
 
     def test_treemap_non_date_dims_first(self):
         """Treemap: non-date dims sorted before date dims in Group role."""

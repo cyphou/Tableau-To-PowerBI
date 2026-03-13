@@ -192,7 +192,7 @@ class TestMapTableauMarkToType(unittest.TestCase):
             'Pie': 'pieChart', 'Area': 'areaChart', 'Treemap': 'treemap',
             'Funnel': 'funnel', 'Waterfall': 'waterfallChart',
             'Box Plot': 'boxAndWhisker', 'Packed Bubble': 'scatterChart',
-            'Donut': 'donutChart', 'KPI': 'card', 'Polygon': 'filledMap',
+            'Donut': 'donutChart', 'KPI': 'card', 'Polygon': 'map',
             'Word Cloud': 'wordCloud', 'Gauge': 'gauge',
         }
         for mark, expected in cases.items():

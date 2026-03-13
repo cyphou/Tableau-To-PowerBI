@@ -646,8 +646,8 @@ class TableauExtractor:
             'Map': 'map',
             'Pie': 'pieChart',
             'Gantt Bar': 'clusteredBarChart',
-            'Polygon': 'filledMap',
-            'Multipolygon': 'filledMap',
+            'Polygon': 'map',
+            'Multipolygon': 'map',
             'Density': 'map',
             # ── Extended mark/chart types (Tableau 2020+) ───────────
             'SemiCircle': 'donutChart',
@@ -711,8 +711,30 @@ class TableauExtractor:
             shelf = worksheet.find(f'./table/{shelf_tag}')
             if shelf is not None and shelf.text:
                 # Text contains refs like [datasource].[field:type]
-                refs = re.findall(r'\[([^\]]+)\]\.\[([^\]]+)\]', shelf.text)
-                for ds_ref, field_ref in refs:
+                # or three-part [datasource].[column].[aggregation:instance:suffix]
+                # Use a regex that captures 2 or 3 bracket groups.
+                three_part_re = r'\[([^\]]+)\]\.\[([^\]]+)\](?:\.\[([^\]]+)\])?'
+                refs = re.findall(three_part_re, shelf.text)
+                for match in refs:
+                    ds_ref, field_ref, instance_ref = match[0], match[1], match[2]
+
+                    # Three-part ref: [ds].[__tableau_internal_object_id__].[cnt:...:qk]
+                    # means COUNT(*) on the table rows.
+                    if '__tableau_internal' in field_ref and instance_ref:
+                        inst_agg = re.match(r'^(cnt|sum|avg|min|max|countd|median):', instance_ref)
+                        if inst_agg:
+                            fields.append({
+                                'name': 'Number of Records',
+                                'shelf': shelf_name,
+                                'datasource': ds_ref,
+                                'aggregation': inst_agg.group(1),
+                            })
+                            continue
+                        # No aggregation on internal field → skip it entirely
+                        continue
+
+                    # Detect quick table calc prefix before cleaning
+                    table_calc_match = re.match(table_calc_re, field_ref)
                     # Detect quick table calc prefix before cleaning
                     table_calc_match = re.match(table_calc_re, field_ref)
                     table_calc_type = None
@@ -720,11 +742,27 @@ class TableauExtractor:
                     if table_calc_match:
                         table_calc_type = table_calc_match.group(1)
                         table_calc_agg = table_calc_match.group(2) or 'sum'
-                    
+
+                    # Detect aggregation prefix (cnt:, sum:, avg:, etc.)
+                    agg_prefix_match = re.match(r'^(cnt|sum|avg|min|max|countd|median|attr|stdev|stdevp|var|varp):', field_ref)
+                    shelf_agg = agg_prefix_match.group(1) if agg_prefix_match else None
+
                     # Clean the field name (remove derivation prefix and type suffix)
                     clean_name = re.sub(table_calc_re, '', field_ref)
                     clean_name = re.sub(derivation_re, '', clean_name)
                     clean_name = re.sub(suffix_re, '', clean_name)
+
+                    # COUNT on __tableau_internal_object_id__ = COUNT(*)
+                    # Convert to synthetic "Number of Records" measure.
+                    if '__tableau_internal' in clean_name and shelf_agg:
+                        field_data = {
+                            'name': 'Number of Records',
+                            'shelf': shelf_name,
+                            'datasource': ds_ref,
+                            'aggregation': shelf_agg,
+                        }
+                        fields.append(field_data)
+                        continue
                     
                     field_data = {
                         'name': clean_name,
@@ -734,6 +772,8 @@ class TableauExtractor:
                     if table_calc_type:
                         field_data['table_calc'] = table_calc_type
                         field_data['table_calc_agg'] = table_calc_agg
+                    if shelf_agg:
+                        field_data['aggregation'] = shelf_agg
                     fields.append(field_data)
         
         # Extract from encodings (color, size, detail, tooltip, label, text)
