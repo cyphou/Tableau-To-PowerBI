@@ -291,6 +291,41 @@ def _dax_to_m_expression(dax_expr, table_name=''):
                 return None
             return f'{m_fn}({", ".join(converted)})'
 
+    # ── DATEDIFF(start, end, interval) → Duration.Days/Months/Years ──
+    body = _extract_function_body(expr, 'DATEDIFF')
+    if body is not None:
+        args = _split_dax_args(body)
+        if len(args) == 3:
+            start_m = _dax_to_m_expression(args[0], table_name)
+            end_m = _dax_to_m_expression(args[1], table_name)
+            interval = args[2].strip().upper()
+            if start_m is not None and end_m is not None:
+                if interval == 'DAY':
+                    return f'Duration.Days({end_m} - {start_m})'
+                elif interval == 'MONTH':
+                    return f'(Date.Year({end_m})*12 + Date.Month({end_m})) - (Date.Year({start_m})*12 + Date.Month({start_m}))'
+                elif interval == 'YEAR':
+                    return f'Date.Year({end_m}) - Date.Year({start_m})'
+                elif interval == 'QUARTER':
+                    return f'(Date.Year({end_m})*4 + Date.QuarterOfYear({end_m})) - (Date.Year({start_m})*4 + Date.QuarterOfYear({start_m}))'
+                elif interval in ('HOUR', 'MINUTE', 'SECOND'):
+                    return f'Duration.TotalSeconds({end_m} - {start_m})'
+                # Unsupported interval
+                return None
+        return None
+
+    # ── DATE(y, m, d) → #date(y, m, d) ─────────────────────────────
+    body = _extract_function_body(expr, 'DATE')
+    if body is not None:
+        args = _split_dax_args(body)
+        if len(args) == 3:
+            y = _dax_to_m_expression(args[0], table_name)
+            mo = _dax_to_m_expression(args[1], table_name)
+            d = _dax_to_m_expression(args[2], table_name)
+            if y is not None and mo is not None and d is not None:
+                return f'#date({y}, {mo}, {d})'
+        return None
+
     # ── [expr] IN {val1, val2, …} → List.Contains({…}, expr) ───────
     in_match = re.match(r'^(.+?)\s+IN\s+(\{.+\})\s*$', expr, re.IGNORECASE)
     if in_match:
@@ -1164,6 +1199,7 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
             prelim_calc_col_raws.add(_pc_name)
 
     m_calc_steps = []  # Accumulated M Table.AddColumn steps (replaces DAX calc cols)
+    dax_only_calc_cols = set()  # Names of calc columns that stayed as DAX (not converted to M)
 
     # Build set of column names belonging to *this* table so that
     # _resolve_columns prefers same-table refs over cross-table RELATED().
@@ -1262,6 +1298,15 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
 
             # ── Try to push the calculated column into Power Query M ──
             m_expr = _dax_to_m_expression(dax_formula, table_name)
+            # Dependency check: if the M expression references a calc column
+            # that stayed as DAX (not converted to M), we must fall back to DAX
+            if m_expr is not None:
+                m_step_names = {s[0] for s in m_calc_steps}  # names already in M
+                col_refs = re.findall(r'\[#?"?([^\]"]+)"?\]', m_expr)
+                for ref in col_refs:
+                    if ref in dax_only_calc_cols:
+                        m_expr = None
+                        break
             if m_expr is not None:
                 m_type = _DAX_TO_M_TYPE.get(
                     map_tableau_to_powerbi_type(datatype), 'type text')
@@ -1275,6 +1320,7 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
                 }
             else:
                 # Fallback: keep as DAX calculated column
+                dax_only_calc_cols.add(caption)
                 bim_calc_col = {
                     "name": caption,
                     "dataType": map_tableau_to_powerbi_type(datatype),
@@ -1808,11 +1854,26 @@ def _process_sets_groups_bins(model, extra_objects, main_table_name, column_tabl
 
         if group_type == 'combined' and source_fields:
             calc_map_lookup = {}
+            # Also build internal-name → caption mapping from datasource columns
+            col_caption_map = {}
             for ds in extra_objects.get('_datasources', []):
                 for calc in ds.get('calculations', []):
                     raw = calc.get('name', '').replace('[', '').replace(']', '')
                     cap = calc.get('caption', raw)
                     calc_map_lookup[raw] = cap
+                for tbl in ds.get('tables', []):
+                    for col_info in tbl.get('columns', []):
+                        col_name = col_info.get('name', '').replace('[', '').replace(']', '')
+                        col_cap = col_info.get('caption', '')
+                        if col_cap and col_name != col_cap:
+                            col_caption_map[col_name] = col_cap
+            # Also resolve from existing_cols (columns already in the BIM table)
+            for table_obj in model.get('model', {}).get('tables', []):
+                for col in table_obj.get('columns', []):
+                    col_name = col.get('name', '')
+                    src_col = col.get('sourceColumn', '')
+                    if src_col and src_col != col_name:
+                        col_caption_map[src_col] = col_name
             for table_obj in model.get('model', {}).get('tables', []):
                 for col in table_obj.get('columns', []):
                     if col.get('isCalculated'):
@@ -1830,6 +1891,15 @@ def _process_sets_groups_bins(model, extra_objects, main_table_name, column_tabl
                 sf = _clean_tableau_field_ref(sf)
                 resolved = calc_map_lookup.get(sf, sf)
                 resolved = _clean_tableau_field_ref(resolved)
+                # Resolve internal Tableau field name to caption (e.g. "Postal Code" → "Code postal")
+                resolved = col_caption_map.get(resolved, resolved)
+                # Also check if the resolved name exists in existing columns
+                if resolved not in existing_cols and sf in col_caption_map:
+                    resolved = col_caption_map[sf]
+                # Validate: skip fields that don't exist in any known column set
+                if resolved not in existing_cols and resolved not in column_table_map:
+                    print(f"  ⚠ Group '{group_name}': skipping unknown source field '{sf}' (resolved='{resolved}')")
+                    continue
                 table_ref = column_table_map.get(resolved, column_table_map.get(sf, main_table_name))
                 escaped_col = resolved.replace(']', ']]')
                 ref = f"'{table_ref}'[{escaped_col}]"
@@ -1837,6 +1907,10 @@ def _process_sets_groups_bins(model, extra_objects, main_table_name, column_tabl
                     ref = f"RELATED({ref})"
                 parts.append(ref)
 
+            if not parts:
+                # All source fields were unknown — skip this group entirely
+                print(f"  ⚠ Group '{group_name}': no valid source fields found, skipping")
+                continue
             if len(parts) == 1:
                 dax_expr = parts[0]
             else:

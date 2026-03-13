@@ -433,6 +433,73 @@ def generate_html(assessments, reports, metadata):
 </div>
 </div>"""
 
+    # ── Converted Items — Split by Report ──────────────────────────────
+    all_items_by_report = []
+    for name in all_names:
+        r = reports.get(name, {})
+        for item in r.get("items", []):
+            all_items_by_report.append((name, item))
+
+    if all_items_by_report:
+        html += f"""
+<h2 onclick="toggleSection('converted')"><span class="section-icon">&#128221;</span>Converted Items by Report <span class="toggle-icon" id="converted-icon">&#9660;</span></h2>
+<div id="converted" class="collapsible">"""
+
+        # Build tabs per report
+        report_tabs = {}
+        for name in all_names:
+            r = reports.get(name, {})
+            ritems = r.get("items", [])
+            if ritems:
+                report_tabs[name] = ritems
+
+        conv_tab_id = "conv-report"
+        # Tab bar
+        html += f'<div class="tab-bar">'
+        html += f'<div class="tab active" onclick="switchTab(\'{conv_tab_id}\', \'all\')">All ({len(all_items_by_report)})</div>'
+        for rname, ritems in report_tabs.items():
+            safe_rname = rname.replace(" ", "_").replace("'", "").replace("\\", "_")
+            exact_count = sum(1 for i in ritems if i.get("status") == "exact")
+            html += f'<div class="tab" onclick="switchTab(\'{conv_tab_id}\', \'{safe_rname}\')">{rname.split(chr(92))[-1]} ({len(ritems)})</div>'
+        html += '</div>'
+
+        def _render_conv_table(item_tuples, tid, show_report_col=True):
+            """Render items table with optional report column."""
+            out = f'<div class="tab-content{" active" if tid == "all" else ""}" id="{conv_tab_id}-{tid}">'
+            if not item_tuples:
+                out += '<p style="color:#a19f9d;font-style:italic">No items.</p></div>'
+                return out
+            out += '<table class="detail-table"><tr>'
+            if show_report_col:
+                out += '<th>Report</th>'
+            out += '<th>Category</th><th>Name</th><th>Status</th><th>Source Formula / Note</th><th>DAX / Target</th></tr>'
+            for rpt_name, item in item_tuples:
+                status = item.get("status", "")
+                st_color = success_green if status == "exact" else warn_yellow if status == "approximate" else fail_red
+                src = (item.get("source_formula") or item.get("note") or "").replace("<", "&lt;").replace(">", "&gt;")
+                dax = (item.get("dax") or "").replace("<", "&lt;").replace(">", "&gt;")
+                short_rpt = rpt_name.split("\\")[-1] if "\\" in rpt_name else rpt_name
+                out += '<tr>'
+                if show_report_col:
+                    out += f'<td style="white-space:nowrap"><strong>{short_rpt}</strong></td>'
+                out += f"""<td><span class="connector-tag">{item.get('category','')}</span></td>
+    <td><strong>{item.get('name','')}</strong></td>
+    <td style="color:{st_color};font-weight:bold">{status}</td>
+    <td style="font-family:'Cascadia Code','Consolas',monospace;font-size:0.8em;max-width:350px;word-break:break-all">{src}</td>
+    <td style="font-family:'Cascadia Code','Consolas',monospace;font-size:0.8em;max-width:350px;word-break:break-all">{dax}</td>
+</tr>"""
+            out += '</table></div>'
+            return out
+
+        # "All" tab with report column
+        html += _render_conv_table(all_items_by_report, "all", show_report_col=True)
+        # Per-report tabs without report column
+        for rname, ritems in report_tabs.items():
+            safe_rname = rname.replace(" ", "_").replace("'", "").replace("\\", "_")
+            html += _render_conv_table([(rname, i) for i in ritems], safe_rname, show_report_col=False)
+
+        html += "</div>"  # close converted section
+
     # ── Per-Workbook Detail Sections ───────────────────────────────────
     html += """
 <h2 onclick="toggleSection('details')"><span class="section-icon">&#128221;</span>Per-Workbook Details <span class="toggle-icon" id="details-icon">&#9660;</span></h2>
@@ -487,10 +554,25 @@ def generate_html(assessments, reports, metadata):
         # ── Visual type mappings ───────────────────────────────────────
         vtm = m.get("visual_type_mappings", {})
         if vtm:
+            # Simplified mark → PBI visual mapping for display
+            _mark_to_pbi = {
+                "Automatic": "table", "Bar": "clusteredBarChart",
+                "Stacked Bar": "stackedBarChart", "Line": "lineChart",
+                "Area": "areaChart", "Pie": "pieChart", "Circle": "scatterChart",
+                "Square": "treemap", "Text": "tableEx", "Map": "map",
+                "Polygon": "filledMap", "Gantt Bar": "clusteredBarChart",
+                "Shape": "scatterChart", "SemiCircle": "donutChart",
+                "Histogram": "clusteredColumnChart", "Box Plot": "boxAndWhisker",
+                "Waterfall": "waterfallChart", "Funnel": "funnel",
+                "Heat Map": "matrix", "Packed Bubble": "scatterChart",
+                "Dual Axis": "lineClusteredColumnComboChart",
+                "Density": "map", "Treemap": "treemap",
+            }
             html += '<p style="font-size:0.85em;color:{0}"><strong>&#127912; Visual mappings:</strong></p>'.format(pbi_gray)
-            html += '<table class="detail-table"><tr><th>Worksheet</th><th>Tableau Mark Type</th></tr>'
+            html += '<table class="detail-table"><tr><th>Worksheet</th><th>Tableau Mark</th><th style="text-align:center">&#8594;</th><th>Power BI Visual</th></tr>'
             for ws, mark in vtm.items():
-                html += f'<tr><td>{ws}</td><td><span class="connector-tag">{mark}</span></td></tr>'
+                pbi_vis = _mark_to_pbi.get(mark, mark.lower().replace(" ", ""))
+                html += f'<tr><td>{ws}</td><td><span class="connector-tag">{mark}</span></td><td style="text-align:center;color:{pbi_light_gray}">&#8594;</td><td><span class="connector-tag" style="background:#e6f4ea;color:#137333">{pbi_vis}</span></td></tr>'
             html += '</table>'
 
         # ── Table mapping ──────────────────────────────────────────────
