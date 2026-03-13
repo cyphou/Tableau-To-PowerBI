@@ -3305,11 +3305,20 @@ def _write_tmdl_files(model_data, output_dir):
     roles = model.get('roles', [])
     culture = model.get('culture', 'en-US')
 
+    # Pre-assign stable UUIDs to relationships for consistency between
+    # model.tmdl (ref relationship <id>) and relationships.tmdl (relationship <id>)
+    for rel in relationships:
+        rel_name = rel.get('name', '')
+        try:
+            uuid.UUID(rel_name)
+        except (ValueError, AttributeError):
+            rel['name'] = str(uuid.uuid4())
+
     # 1. database.tmdl
     _write_database_tmdl(def_dir, model)
 
     # 2. model.tmdl
-    _write_model_tmdl(def_dir, model, tables, roles)
+    _write_model_tmdl(def_dir, model, tables, roles, relationships)
 
     # 3. relationships.tmdl
     _write_relationships_tmdl(def_dir, relationships)
@@ -3638,7 +3647,7 @@ def _write_database_tmdl(def_dir, model):
         f.write(content)
 
 
-def _write_model_tmdl(def_dir, model, tables, roles=None):
+def _write_model_tmdl(def_dir, model, tables, roles=None, relationships=None):
     """Generate model.tmdl."""
     culture = model.get('culture', 'en-US')
     perspectives = model.get('perspectives', [])
@@ -3665,6 +3674,13 @@ def _write_model_tmdl(def_dir, model, tables, roles=None):
         lines.append(f"ref table {tname}")
 
     lines.append("")
+
+    # Ref relationships
+    if relationships:
+        for rel in relationships:
+            rel_id = rel.get('name', str(uuid.uuid4()))
+            lines.append(f"ref relationship {rel_id}")
+        lines.append("")
 
     # Ref expression for the DataFolder parameter
     lines.append("ref expression DataFolder")

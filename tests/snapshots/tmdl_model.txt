@@ -12,6 +12,8 @@ ref table '[dbo].[Orders]'
 ref table Products
 ref table Calendar
 
+ref relationship 25c83108-b128-464c-b432-60c8565b4233
+
 ref expression DataFolder
 
 ref perspective 'Full Model'

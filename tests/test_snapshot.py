@@ -16,6 +16,7 @@ import sys
 import os
 import json
 import copy
+import re
 import tempfile
 import shutil
 
@@ -32,6 +33,15 @@ from tmdl_generator import generate_tmdl
 
 SNAPSHOTS_DIR = os.path.join(os.path.dirname(__file__), 'snapshots')
 UPDATE_SNAPSHOTS = os.environ.get('UPDATE_SNAPSHOTS', '').lower() in ('1', 'true', 'yes')
+
+# Regex to match UUIDs (8-4-4-4-12 hex)
+_UUID_RE = re.compile(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', re.IGNORECASE)
+_UUID_PLACEHOLDER = '00000000-0000-0000-0000-000000000000'
+
+
+def _normalize_uuids(text):
+    """Replace all UUIDs with a stable placeholder for snapshot comparison."""
+    return _UUID_RE.sub(_UUID_PLACEHOLDER, text)
 
 
 def _ensure_snapshots_dir():
@@ -73,11 +83,13 @@ class SnapshotTestCase(unittest.TestCase):
                 self.skipTest(f"Snapshot '{snapshot_name}' created — re-run to verify")
             return
 
-        # Compare with stored snapshot
-        if content != existing:
+        # Compare with stored snapshot (UUIDs normalized to avoid non-determinism)
+        norm_content = _normalize_uuids(content)
+        norm_existing = _normalize_uuids(existing)
+        if norm_content != norm_existing:
             # Find first difference for helpful error message
-            content_lines = content.splitlines(keepends=True)
-            existing_lines = existing.splitlines(keepends=True)
+            content_lines = norm_content.splitlines(keepends=True)
+            existing_lines = norm_existing.splitlines(keepends=True)
             for i, (a, b) in enumerate(zip(content_lines, existing_lines), 1):
                 if a != b:
                     self.fail(
