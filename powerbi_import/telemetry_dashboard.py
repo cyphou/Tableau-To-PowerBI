@@ -12,9 +12,12 @@ Usage::
 import json
 import os
 import glob
+import logging
 import argparse
 import html as html_mod
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 
 _CSS = """
@@ -55,8 +58,8 @@ def _load_reports(artifacts_dir):
                 data = json.load(fh)
             data['_file'] = f
             reports.append(data)
-        except (OSError, json.JSONDecodeError):
-            pass
+        except (OSError, json.JSONDecodeError) as exc:
+            logger.warning("Skipping unreadable migration report %s: %s", f, exc)
     return reports
 
 

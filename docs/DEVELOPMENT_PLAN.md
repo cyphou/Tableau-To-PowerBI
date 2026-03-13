@@ -1,9 +1,48 @@
 # Development Plan — Tableau to Power BI Migration Tool
 
-**Version:** v10.0.0  
-**Date:** 2026-07-16  
-**Current state:** Sprint 34 done — **3,342 tests** across 60 test files (+conftest.py), 0 failures, 93.08% coverage  
-**Previous baseline:** v3.5.0 — 887 → v4.0.0 — 1,387 → v5.0.0 — 1,543 → v5.1.0 — 1,595 → v5.5.0 — 1,777 → v6.0.0 — 1,889 → v6.1.0 — 1,997 → v7.0.0 — 2,057 → Sprint 21 — 2,066 → v8.0.0 — 2,275 → Sprint 27 — 2,542 → Sprint 28 — 2,616 → Sprint 29 — 2,666 → v9.0.0 — 3,196 → **v10.0.0 — 3,342**
+**Version:** v12.0.0  
+**Date:** 2026-03-13  
+**Current state:** Sprint 39 done — **3,729 tests** across 64 test files (+conftest.py), 0 failures, 96.2% coverage  
+**Previous baseline:** v3.5.0 — 887 → v4.0.0 — 1,387 → v5.0.0 — 1,543 → v5.1.0 — 1,595 → v5.5.0 — 1,777 → v6.0.0 — 1,889 → v6.1.0 — 1,997 → v7.0.0 — 2,057 → Sprint 21 — 2,066 → v8.0.0 — 2,275 → Sprint 27 — 2,542 → Sprint 28 — 2,616 → Sprint 29 — 2,666 → v9.0.0 — 3,196 → v10.0.0 — 3,342 → v11.0.0 — 3,459 → **v12.0.0 — 3,729**
+
+---
+
+## v12.0.0 — Hardening, Coverage Push to 96%+
+
+### Motivation
+
+v11.0.0 reached 3,459 tests and 95.4% coverage across 62 test files. v12.0.0 focuses on three tracks: (1) hardening & robustness (silent error cleanup), (2) coverage push to 96%+ (tmdl_generator, dax_converter), and (3) upcoming new features.
+
+### Sprint 37 — Silent Error Cleanup ✅ COMPLETED
+
+**Goal:** Replace bare `pass` in `except` blocks with proper logging across all source files.  
+**Result:** 11 fixes across 5 files, 1 exception type narrowed, zero regressions.
+
+| # | Item | File(s) | Status | Details |
+|---|------|---------|--------|--------|
+| 37.1 | **incremental.py** | `powerbi_import/incremental.py` | ✅ Done | 1 bare `pass` → `logger.debug()` (JSON parse fallback) |
+| 37.2 | **pbip_generator.py** | `powerbi_import/pbip_generator.py` | ✅ Done | 4 bare `pass` → `logger.debug()`/`logger.warning()` (cleanup + TMDL stats) |
+| 37.3 | **telemetry.py** | `powerbi_import/telemetry.py` | ✅ Done | 1 `except Exception` narrowed to `(OSError, IndexError, ValueError)` + `logger.debug()` |
+| 37.4 | **telemetry_dashboard.py** | `powerbi_import/telemetry_dashboard.py` | ✅ Done | Added `import logging` + `logger`, 1 bare `pass` → `logger.warning()` |
+| 37.5 | **validator.py** | `powerbi_import/validator.py` | ✅ Done | 3 bare `pass` → `logger.debug()` (PBIR validation blocks) |
+
+### Sprint 38 — Coverage Push tmdl_generator.py ✅ COMPLETED
+
+**Goal:** Push `tmdl_generator.py` coverage from 94.7% to 97%+.  
+**Result:** 87 new tests, coverage 94.7% → **97.6%**.
+
+| # | Item | File(s) | Status | Details |
+|---|------|---------|--------|--------|
+| 38.1 | **test_tmdl_coverage_push.py** | `tests/test_tmdl_coverage_push.py` | ✅ Done | 87 tests across 25 classes — function body extraction, DAX-to-M edge cases, semantic context, relationships, calc classification, cross-table inference, sets/groups/bins, parameter tables, RLS roles, format conversion, TMDL file writing, cultures |
+
+### Sprint 39 — Coverage Push dax_converter.py ✅ COMPLETED
+
+**Goal:** Push `dax_converter.py` coverage from 73.7% to 90%+.  
+**Result:** 183 new tests, coverage 73.7% → **96.7%**.
+
+| # | Item | File(s) | Status | Details |
+|---|------|---------|--------|--------|
+| 39.1 | **test_dax_converter_coverage_push.py** | `tests/test_dax_converter_coverage_push.py` | ✅ Done | 183 tests across 32 classes — REGEXP_MATCH/EXTRACT/REPLACE, LOD expressions, window functions with frames, RANK variants, RUNNING functions, TOTAL, column resolution, AGG→AGGX, script detection, combined field DAX |
 
 ---
 

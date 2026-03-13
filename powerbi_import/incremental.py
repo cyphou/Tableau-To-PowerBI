@@ -241,8 +241,8 @@ class IncrementalMerger:
                     if changed:
                         parts.append(f'~{changed} keys changed')
                     return ', '.join(parts) if parts else 'content differs'
-            except (json.JSONDecodeError, OSError):
-                pass
+            except (json.JSONDecodeError, OSError) as exc:
+                logger.debug("Could not parse file as JSON for detailed diff: %s", exc)
         return 'content differs'
 
     @classmethod

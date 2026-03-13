@@ -2,7 +2,7 @@
 
 This document lists known limitations and approximations in the Tableau to Power BI migration tool.
 
-> **Last updated:** v9.0.0 (Sprint 32) — many previous limitations have been addressed in Sprints 27-32. See below for current status.
+> **Last updated:** v12.0.0 (Sprint 39) — many previous limitations have been addressed in Sprints 27-39. See below for current status.
 
 ---
 

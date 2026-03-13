@@ -784,13 +784,13 @@ class PowerBIProjectGenerator:
                             for name in files:
                                 try:
                                     os.remove(os.path.join(root, name))
-                                except PermissionError:
-                                    pass
+                                except PermissionError as exc:
+                                    logger.debug("Could not remove locked file %s: %s", os.path.join(root, name), exc)
                             for name in dirs:
                                 try:
                                     os.rmdir(os.path.join(root, name))
-                                except (PermissionError, OSError):
-                                    pass
+                                except (PermissionError, OSError) as exc:
+                                    logger.debug("Could not remove directory %s: %s", os.path.join(root, name), exc)
         os.makedirs(report_dir, exist_ok=True)
         
         # 1. .platform
@@ -2945,8 +2945,8 @@ class PowerBIProjectGenerator:
                             content = f.read()
                         measures_count += content.count('\n\tmeasure ')
                         columns_count += content.count('\n\tcolumn ')
-                    except (IOError, OSError):
-                        pass
+                    except (IOError, OSError) as exc:
+                        logger.warning("Could not read TMDL file %s for stats: %s", tmdl_file, exc)
         tmdl_stats['measures'] = measures_count
         tmdl_stats['columns'] = columns_count
 
@@ -2958,8 +2958,8 @@ class PowerBIProjectGenerator:
                 with open(rels_path, 'r', encoding='utf-8') as f:
                     content = f.read()
                 relationships_count = content.count('\nrelationship ')
-            except (IOError, OSError):
-                pass
+            except (IOError, OSError) as exc:
+                logger.warning("Could not read relationships.tmdl for stats: %s", exc)
         tmdl_stats['relationships'] = relationships_count
 
         # Collect visual type mappings used

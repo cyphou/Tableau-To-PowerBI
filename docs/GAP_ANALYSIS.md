@@ -1,8 +1,8 @@
 # Comprehensive Gap Analysis — Tableau to Power BI Migration Tool
 
-**Date:** 2026-07-16 — updated through v10.0.0 (Sprints 13-34)  
+**Date:** 2026-03-13 — updated through v12.0.0 (Sprints 13-39)  
 **Scope:** Every source file, test file, CI/CD, docs, config, and cross-project comparison with TableauToFabric  
-**Status:** 3,342 tests passing across 60 test files, 93.08% coverage
+**Status:** 3,729 tests passing across 64 test files, 96.2% coverage
 
 ### Implementation Coverage
 
@@ -10,7 +10,7 @@
  EXTRACTION          GENERATION         INFRA / CI         DOCUMENTATION
 +----------------+  +----------------+  +----------------+  +----------------+
 | 20 object types|  | PBIR v4.0      |  | 5-stage CI/CD  |  | 13 doc files   |
-| .twb/.twbx/.tfl|  | TMDL semantic  |  | 3,342 tests    |  | DAX reference  |
+| .twb/.twbx/.tfl|  | TMDL semantic  |  | 3,729 tests    |  | DAX reference  |
 | 180+ DAX conv  |  | 60+ visuals    |  | Artifact valid |  | M query ref    |
 | 33 connectors  |  | Drill-through  |  | Fabric deploy  |  | Prep ref       |
 | 40+ transforms |  | Slicer modes   |  | Env configs    |  | Architecture   |
@@ -22,7 +22,7 @@
         |                    |                    |                    |
         +--------------------+--------------------+--------------------+
                                      |
-                           v9.0.0 → v10.0.0
+                          v9.0.0 → v12.0.0
                      +-------------------------------+
                      | Plugin system & examples      |
                      | PyPI auto-publish workflow    |

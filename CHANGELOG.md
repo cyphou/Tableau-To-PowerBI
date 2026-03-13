@@ -1,5 +1,27 @@
 # Changelog
 
+## v12.0.0 — Hardening, Coverage Push to 96%+
+
+### Sprint 39 — Coverage Push dax_converter.py ✅
+- **dax_converter.py**: 73.7% → **96.7%** (302 → 38 missed lines)
+- **183 new tests** in `test_dax_converter_coverage_push.py` across 32 test classes
+- Coverage areas: `_reverse_tableau_bracket_escape` body, federated prefix strip, CASE/WHEN→SWITCH parsing, `_extract_balanced_call`, REGEXP_MATCH (12 branches), REGEXP_EXTRACT (5 branches), REGEXP_EXTRACT_NTH (6 branches), REGEXP_REPLACE (6 branches), LOD expressions (FIXED/INCLUDE/EXCLUDE, no-dims, nested, AGG cleanup), window functions with frame bounds, WINDOW_CORR/COVAR/COVARP, RANK_DENSE/MODIFIED/PERCENTILE, RUNNING_COUNT/MAX/MIN, TOTAL, column resolution internals, AGG(IF/SWITCH)→AGGX, STDEV→STDEVX, `generate_combined_field_dax`, `detect_script_functions`, `_detect_script_language`, `has_script_functions`
+- **Overall: 3,546 → 3,729 tests**, coverage 95.9% → **96.2%**
+
+### Sprint 38 — Coverage Push tmdl_generator.py ✅
+- **tmdl_generator.py**: 94.7% → **97.6%** (103 → 47 missed lines)
+- **87 new tests** in `test_tmdl_coverage_push.py` across 25 test classes
+- Coverage areas: `_extract_function_body`, `_dax_to_m_expression` (SWITCH/FLOOR/IN), `resolve_table_for_formula`, `_collect_semantic_context` (Unknown table, Parameters DS, date params, multi-table DS), `_create_and_validate_relationships`, calc classification (security funcs, inline literals, geo, descriptions), `_infer_cross_table_relationships`, type mismatch fixing, sets/groups/bins, date hierarchy skip, parameter tables, field parameters, RLS roles, format conversion, ambiguous path deactivation, quick table calc measures, TMDL file writing, culture translations, multi-language support
+- **Overall: 3,459 → 3,546 tests**, coverage 95.4% → **95.9%**
+
+### Sprint 37 — Silent Error Cleanup ✅
+- **11 bare `pass` statements** in `except` blocks replaced with proper `logger.debug()`/`logger.warning()` across 5 files
+- **1 exception type narrowed**: `except Exception` → `except (OSError, IndexError, ValueError)` in `telemetry.py`
+- Files modified: `incremental.py`, `pbip_generator.py`, `telemetry.py`, `telemetry_dashboard.py`, `validator.py`
+- All 3,459 tests pass after changes — zero regressions
+
+---
+
 ## v11.0.0 — Coverage Push to 95% & README Overhaul
 
 ### Sprint 36 — README Overhaul & Release ✅

@@ -182,8 +182,8 @@ class TelemetryCollector:
                 for line in f:
                     if line.startswith('## v'):
                         return line.strip().split()[1].lstrip('v').split('—')[0].strip()
-        except Exception:
-            pass
+        except (OSError, IndexError, ValueError) as exc:
+            logger.debug("Could not determine version from CHANGELOG.md: %s", exc)
         return 'unknown'
 
     @classmethod

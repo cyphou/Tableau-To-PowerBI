@@ -655,8 +655,8 @@ class ArtifactValidator:
                         if schema_url:
                             pbir_errs = cls.validate_pbir_structure(rj, schema_url)
                             warnings.extend(pbir_errs)
-                    except (json.JSONDecodeError, OSError):
-                        pass
+                    except (json.JSONDecodeError, OSError) as exc:
+                        logger.debug("PBIR structural validation skipped for report.json: %s", exc)
             else:
                 errors.append('Missing report.json in Report directory')
 
@@ -693,8 +693,8 @@ class ArtifactValidator:
                                     if schema_url:
                                         pbir_errs = cls.validate_pbir_structure(pj, schema_url)
                                         warnings.extend(pbir_errs)
-                                except (json.JSONDecodeError, OSError):
-                                    pass
+                                except (json.JSONDecodeError, OSError) as exc:
+                                    logger.debug("PBIR structural validation skipped for %s: %s", page_json, exc)
 
                         # Validate visuals
                         visuals_dir = page_dir / 'visuals'
@@ -716,8 +716,8 @@ class ArtifactValidator:
                                                 if schema_url:
                                                     pbir_errs = cls.validate_pbir_structure(vj, schema_url)
                                                     warnings.extend(pbir_errs)
-                                            except (json.JSONDecodeError, OSError):
-                                                pass
+                                            except (json.JSONDecodeError, OSError) as exc:
+                                                logger.debug("PBIR structural validation skipped for %s: %s", visual_json, exc)
         else:
             errors.append(f'Missing Report directory: {report_dir.name}')
 
