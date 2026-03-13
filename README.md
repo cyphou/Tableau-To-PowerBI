@@ -1,8 +1,15 @@
 # Tableau to Power BI Migration
 
+![CI](https://github.com/cyphou/Tableau-To-PowerBI/actions/workflows/ci.yml/badge.svg)
+![Coverage](https://img.shields.io/badge/coverage-95.4%25-brightgreen)
+![Tests](https://img.shields.io/badge/tests-3%2C459%20passed-brightgreen)
+![Python](https://img.shields.io/badge/python-3.9%2B-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-11.0.0-blue)
+
 Automated migration tool for Tableau workbooks (`.twb`, `.twbx`) and Tableau Prep flows (`.tfl`, `.tflx`) to Power BI projects (`.pbip`) that can be opened directly in Power BI Desktop.
 
-**v9.0.0** — 2,666 tests across 48 test files — Python 3.9+ — zero external dependencies for core migration.
+**v11.0.0** — 3,459 tests across 62 test files — 95.4% coverage — Python 3.9+ — zero external dependencies for core migration.
 
 ## Features
 
@@ -110,7 +117,7 @@ Automated migration tool for Tableau workbooks (`.twb`, `.twbx`) and Tableau Pre
 - **Migration metadata**: enriched `migration_metadata.json` with TMDL stats (measures, columns, relationships), visual type mappings, approximations, theme status
 - **Per-item fidelity tracking**: `MigrationReport` scores each object (exact / approximate / unsupported) and generates migration reports
 - **CI/CD pipeline**: GitHub Actions with 5-stage pipeline (lint+ruff, test, strict validate+twbx, staging deploy, production deploy)
-- **2,666 tests** across 48 test files + conftest.py shared fixtures
+- **3,459 tests** across 62 test files + conftest.py shared fixtures (95.4% coverage)
 
 ## Quick Start
 
@@ -289,7 +296,7 @@ TableauToPowerBI/
 │       └── config/                            #     Configuration
 │           ├── settings.py                    #       Env-var based settings
 │           └── environments.py                #       Dev/staging/production configs
-├── tests/                                     # 2,057 tests (40 test files + conftest.py)
+├── tests/                                     # 3,459 tests (62 test files + conftest.py)
 ├── docs/                                      # Documentation
 ├── examples/                                  # Sample Tableau files (22 workbooks)
 ├── .github/workflows/ci.yml                   # CI/CD pipeline
@@ -621,7 +628,7 @@ The client falls back to `urllib` (stdlib) if `requests` is not installed.
 The project includes a GitHub Actions pipeline (`.github/workflows/ci.yml`) with 5 stages:
 
 1. **Lint**: `flake8` (errors only) + `ruff` (style checks)
-2. **Test**: Python 3.9–3.12 matrix, 2,057 tests
+2. **Test**: Python 3.9–3.12 matrix, 3,459 tests (95.4% coverage)
 3. **Strict Validate**: Run sample .twbx migrations + artifact validation with strict mode
 4. **Staging Deploy**: Automated deployment to staging Fabric workspace
 5. **Production Deploy**: Manual approval + deployment to production Fabric workspace
@@ -629,7 +636,7 @@ The project includes a GitHub Actions pipeline (`.github/workflows/ci.yml`) with
 ## Testing
 
 ```bash
-# Run all 2,057 tests
+# Run all 3,459 tests
 python -m pytest tests/ -v
 
 # Run specific test file
@@ -640,13 +647,14 @@ python -m pytest tests/test_non_regression.py -v
 
 | Test File | Tests | Coverage |
 |-----------|-------|----------|
-| `test_dax_converter.py` | 86 | DAX formula conversions, operators, LOD, table calcs |
 | `test_dax_coverage.py` | 168 | Edge cases across all DAX conversion categories |
 | `test_generation_coverage.py` | 145 | TMDL/PBIR generation edge cases |
 | `test_m_query_builder.py` | 102 | Power Query M generation, 40+ transforms, connectors |
 | `test_tmdl_generator.py` | 92 | TMDL model building, Calendar table, file writers |
-| `test_sprint_features.py` | 78 | Sprint feature tests (multi-DS, inference, metadata) |
+| `test_dax_converter.py` | 86 | DAX formula conversions, operators, LOD, table calcs |
 | `test_error_paths.py` | 78 | Error handling, edge cases, graceful degradation |
+| `test_sprint_features.py` | 78 | Sprint feature tests (multi-DS, inference, metadata) |
+| `test_extract_coverage.py` | 75 | Extract pipeline: stories, actions, sets, bins, hierarchies |
 | `test_new_features.py` | 74 | Calc groups, field params, DAX-to-M, M-based columns |
 | `test_v5_features.py` | 72 | v5.x feature tests |
 | `test_visual_generator.py` | 65 | 60+ visual types, sync groups, action buttons, filters |
@@ -658,9 +666,10 @@ python -m pytest tests/test_non_regression.py -v
 | `test_v51_features.py` | 52 | v5.1 feature tests |
 | `test_gap_implementations.py` | 50 | DAX fixes, validation, slicer modes, drill-through |
 | `test_phase_c_dax_m_hardening.py` | 47 | DAX-to-M converter hardening |
-| `test_pbip_generator.py` | 46 | Project generation, visual objects, slicers |
 | `test_phase_d_e_coverage.py` | 46 | Visual config templates, coverage gaps |
+| `test_pbip_generator.py` | 46 | Project generation, visual objects, slicers |
 | `test_feature_gaps.py` | 44 | Reference lines, axes, legend, sort, formatting |
+| `test_pbip_coverage_push.py` | 42 | PBIR report structure, analytics, sort, theme, metadata |
 | `test_migration_report.py` | 39 | Fidelity scoring, migration status reporting |
 | `test_backlog.py` | 36 | Backlog feature tests |
 | `test_infrastructure.py` | 36 | Validator, deployment utils, config, auth, client |
@@ -677,6 +686,7 @@ python -m pytest tests/test_non_regression.py -v
 | `test_integration.py` | 11 | Full pipeline integration tests |
 | `test_migration.py` | 10 | Migration pipeline tests |
 | `test_performance.py` | 9 | Performance benchmarks |
+| + 24 more test files | — | Sprint, coverage, wizard, telemetry, comparison, etc. |
 | `conftest.py` | — | Shared fixtures: sample datasources, worksheets, model |
 
 ## Documentation
@@ -703,9 +713,9 @@ python -m pytest tests/test_non_regression.py -v
 - Data source paths must be reconfigured in Power Query after migration
 - Some table calculations (`INDEX()`, `SIZE()`) are approximated
 - Deployment requires `azure-identity` and a registered Azure AD application
-- `.hyper` file data is not read (only XML metadata)
+- `.hyper` file data loaded via SQLite interface — column metadata + row data injected into M expressions
 - Nested LOD expressions (LOD inside LOD) handled for common patterns, edge cases may remain
-- Tableau 2024.3+ features (dynamic zone visibility, dynamic parameters) are not extracted
+- Tableau 2024.3+ dynamic zone visibility → bookmark-based visibility toggle; dynamic parameters → M `Value.NativeQuery()`
 - See [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md) for the full list
 
 ## License

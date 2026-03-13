@@ -1,5 +1,21 @@
 # Changelog
 
+## v11.0.0 — Coverage Push to 95% & README Overhaul
+
+### Sprint 36 — README Overhaul & Release ✅
+- **36.1: README badges**: Added CI, coverage (95.4%), tests (3,459), Python, license, and version badges.
+- **36.2: README stats update**: Updated all stats from v9/v10 to v11 (3,459 tests, 62 test files, 95.4% coverage).
+- **36.3: Test table refresh**: Added `test_extract_coverage.py` (75 tests) and `test_pbip_coverage_push.py` (42 tests), "+24 more" rollup row for remaining files.
+- **36.4: Known limitations refresh**: Updated hyper data (now loaded), dynamic zone visibility (now bookmark-based), dynamic parameters (now M-based).
+- **36.5: Version bump**: `pyproject.toml` and `powerbi_import/__init__.py` bumped from 10.0.0 → 11.0.0.
+
+### Sprint 35 — Coverage Push (93.08% → 95.4%) ✅
+- **35.1: test_extract_coverage.py** (75 tests): Coverage-push tests for `extract_tableau_data.py` — stories, actions, sets, groups, bins, hierarchies, sort orders, aliases, custom SQL, user filters, datasource filters, hyper files, published datasources, custom geocoding, data blending. Coverage 85.2% → **95.2%**.
+- **35.2: test_pbip_coverage_push.py** (42 tests): Coverage-push tests for `pbip_generator.py` — OneDrive retry logic, theme references, report-level filters, swap bookmarks, custom visual GUIDs, context filters, action buttons, pages shelf slicers, tooltip pages, custom shapes copy, field entity resolution, padding/border, sort definitions, rich text formatting, reference lines, number formats, dual axis sync, axes label rotation, continuous/discrete axis, DS column inheritance, migration metadata, stale visual cleanup, script visual detection, page navigator. Coverage 90.3% → **96.8%**.
+- **Overall: 3,342 → 3,459 tests** (+117), coverage **93.08% → 95.4%**, 2 new test files, 62 total test files.
+
+---
+
 ## v10.0.0 — Test Coverage Push & Quality
 
 ### Sprint 34 — Documentation, Version Bump & Release ✅
