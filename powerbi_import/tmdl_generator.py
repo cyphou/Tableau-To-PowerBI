@@ -1885,10 +1885,54 @@ def _process_sets_groups_bins(model, extra_objects, main_table_name, column_tabl
                     if meas_name and meas_name not in column_table_map:
                         column_table_map[meas_name] = table_obj.get('name', main_table_name)
 
-            parts = []
-            for sf in source_fields:
-                # Clean any Tableau derivation prefixes (yr:, tyr:, etc.)
-                sf = _clean_tableau_field_ref(sf)
+            # Date-part derivation prefix → M date function mapping
+            _DATE_PART_M_FUNC = {
+                'yr': 'Date.Year', 'tyr': 'Date.Year',
+                'mn': 'Date.Month', 'tmn': 'Date.Month',
+                'dy': 'Date.Day', 'tdy': 'Date.Day',
+                'qr': 'Date.QuarterOfYear', 'tqr': 'Date.QuarterOfYear',
+                'wk': 'Date.WeekOfYear', 'twk': 'Date.WeekOfYear',
+                'hr': 'Time.Hour', 'mt': 'Time.Minute', 'sc': 'Time.Second',
+            }
+            # Also map function names from group name (e.g. YEAR, MONTH)
+            _FUNC_NAME_M = {
+                'YEAR': 'Date.Year', 'MONTH': 'Date.Month', 'DAY': 'Date.Day',
+                'QUARTER': 'Date.QuarterOfYear', 'WEEK': 'Date.WeekOfYear',
+                'HOUR': 'Time.Hour', 'MINUTE': 'Time.Minute', 'SECOND': 'Time.Second',
+            }
+            # Parse group name to extract function wrappers per position
+            # e.g. "Action (Category,YEAR(Order Date),MONTH(Order Date))"
+            #  → [None, 'Date.Year', 'Date.Month']
+            name_func_map = []
+            _gn_match = re.match(r'^.*?\((.+)\)\s*$', group_name)
+            if _gn_match:
+                _gn_inner = _gn_match.group(1)
+                _gn_parts, _gn_depth, _gn_cur = [], 0, []
+                for _ch in _gn_inner:
+                    if _ch == '(':
+                        _gn_depth += 1
+                        _gn_cur.append(_ch)
+                    elif _ch == ')':
+                        _gn_depth -= 1
+                        _gn_cur.append(_ch)
+                    elif _ch == ',' and _gn_depth == 0:
+                        _gn_parts.append(''.join(_gn_cur).strip())
+                        _gn_cur = []
+                    else:
+                        _gn_cur.append(_ch)
+                _gn_parts.append(''.join(_gn_cur).strip())
+                for _gp in _gn_parts:
+                    _fm = re.match(r'^(YEAR|MONTH|DAY|QUARTER|WEEK|HOUR|MINUTE|SECOND)\(', _gp, re.IGNORECASE)
+                    name_func_map.append(_FUNC_NAME_M.get(_fm.group(1).upper()) if _fm else None)
+
+            m_parts = []
+            dax_parts = []
+            for idx, sf_raw in enumerate(source_fields):
+                # 1. Extract derivation prefix before cleaning
+                prefix_match = _RE_TMDL_DERIVATION_PREFIX.match(sf_raw)
+                date_prefix = prefix_match.group(1) if prefix_match else None
+                # 2. Clean and resolve field name
+                sf = _clean_tableau_field_ref(sf_raw)
                 resolved = calc_map_lookup.get(sf, sf)
                 resolved = _clean_tableau_field_ref(resolved)
                 # Resolve internal Tableau field name to caption (e.g. "Postal Code" → "Code postal")
@@ -1898,23 +1942,49 @@ def _process_sets_groups_bins(model, extra_objects, main_table_name, column_tabl
                     resolved = col_caption_map[sf]
                 # Validate: skip fields that don't exist in any known column set
                 if resolved not in existing_cols and resolved not in column_table_map:
-                    print(f"  ⚠ Group '{group_name}': skipping unknown source field '{sf}' (resolved='{resolved}')")
+                    print(f"  ⚠ Group '{group_name}': skipping unknown source field '{sf_raw}' (resolved='{resolved}')")
                     continue
+                # 3. Build M column reference
+                escaped_m = resolved.replace('"', '""')
+                m_ref = f'[#"{escaped_m}"]'
+                # 4. Apply date-part function: first from derivation prefix, then from group name
+                m_func = None
+                if date_prefix and date_prefix in _DATE_PART_M_FUNC:
+                    m_func = _DATE_PART_M_FUNC[date_prefix]
+                elif idx < len(name_func_map) and name_func_map[idx]:
+                    m_func = name_func_map[idx]
+                if m_func:
+                    m_ref = f'{m_func}({m_ref})'
+                # 5. Wrap in Text.From() for safe text concatenation
+                m_ref = f'Text.From({m_ref})'
+                m_parts.append(m_ref)
+                # Also build DAX parts for fallback
                 table_ref = column_table_map.get(resolved, column_table_map.get(sf, main_table_name))
                 escaped_col = resolved.replace(']', ']]')
                 ref = f"'{table_ref}'[{escaped_col}]"
                 if table_ref != main_table_name:
                     ref = f"RELATED({ref})"
-                parts.append(ref)
+                dax_parts.append(ref)
 
-            if not parts:
+            if not m_parts:
                 # All source fields were unknown — skip this group entirely
                 print(f"  ⚠ Group '{group_name}': no valid source fields found, skipping")
                 continue
-            if len(parts) == 1:
-                dax_expr = parts[0]
+            # Build M expression directly (type-safe concatenation)
+            if len(m_parts) == 1:
+                m_concat_expr = m_parts[0]
             else:
-                dax_expr = ' & " | " & '.join(parts)
+                m_concat_expr = ' & " | " & '.join(m_parts)
+            m_steps.append(m_transform_add_column(group_name, f'each {m_concat_expr}', 'type text'))
+            main_table["columns"].append({
+                "name": group_name,
+                "dataType": "String",
+                "sourceColumn": group_name,
+                "summarizeBy": "none",
+                "displayFolder": "Groups"
+            })
+            existing_cols.add(group_name)
+            continue
 
         elif members and source_field:
             table_ref = column_table_map.get(source_field, main_table_name)
