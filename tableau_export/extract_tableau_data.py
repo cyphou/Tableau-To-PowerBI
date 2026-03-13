@@ -886,13 +886,36 @@ class TableauExtractor:
                         if val:
                             filter_values.append(val.replace('&quot;', '"'))
                 elif func == 'range':
-                    filter_type = 'range'
                     from_val = groupfilter.get('from', '')
                     to_val = groupfilter.get('to', '')
-                    filter_min = from_val if from_val else None
-                    filter_max = to_val if to_val else None
+                    # Detect text-range vs numeric/date range.
+                    # Tableau uses func="range" on categorical text fields
+                    # (e.g. from="Shipped Early" to="Shipped On Time")
+                    # to mean "keep only these categories".  In PBI this
+                    # should be a categorical In filter, not an Advanced >=/<= filter.
+                    _is_numeric_range = False
+                    for _rv in (from_val, to_val):
+                        if _rv:
+                            try:
+                                float(_rv)
+                                _is_numeric_range = True
+                            except (ValueError, TypeError):
+                                pass
+                    if _is_numeric_range:
+                        filter_type = 'range'
+                        filter_min = from_val if from_val else None
+                        filter_max = to_val if to_val else None
+                    else:
+                        # Text range → categorical with from/to as values
+                        filter_type = 'categorical'
+                        if from_val:
+                            filter_values.append(from_val.replace('&quot;', '"'))
+                        if to_val and to_val != from_val:
+                            filter_values.append(to_val.replace('&quot;', '"'))
                 elif func == 'level-members':
                     filter_type = 'all'  # filter "all selected"
+                elif func == 'crossjoin':
+                    filter_type = 'all'  # multi-field action filter → skip
                 elif func == 'except' or func == 'not':
                     exclude_mode = True
                     filter_type = 'categorical'

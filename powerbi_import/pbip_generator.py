@@ -2240,6 +2240,12 @@ class PowerBIProjectGenerator:
             # a DateTime column with categorical date-part string values
             if f.get('date_part'):
                 continue
+
+            # Skip "all selected" and action filters (no data filtering needed)
+            if f.get('type') == 'all':
+                continue
+            if clean_field.startswith('Action '):
+                continue
             
             # Resolve Entity (table) and Property (column) via mapping
             entity, prop = self._resolve_field_entity(clean_field)
