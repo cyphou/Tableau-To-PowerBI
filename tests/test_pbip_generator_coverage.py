@@ -466,8 +466,8 @@ class TestBuildVisualQuery(unittest.TestCase):
         fields = [{'name': 'Region'}, {'name': 'Revenue'}]
         result = self._query('map', fields)
         qs = result['queryState']
-        self.assertIn('Category', qs)
-        self.assertIn('Size', qs)  # map uses Category + Size
+        self.assertIn('Location', qs)
+        self.assertIn('Size', qs)  # map uses Location + Size
 
     def test_table_type(self):
         fields = [{'name': 'Region'}, {'name': 'Revenue'}]
@@ -654,6 +654,154 @@ class TestBuildVisualQuery(unittest.TestCase):
         self.assertIn('Category', qs)
         self.assertIn('Y', qs)
         self.assertEqual(len(qs['Y']['projections']), 3)
+
+    # ── Shelf-aware tests ────────────────────────────────────────
+
+    def test_color_dim_becomes_series(self):
+        """A dimension on the color shelf → Series role."""
+        fields = [
+            {'name': 'Date', 'shelf': 'columns'},
+            {'name': 'Segment', 'shelf': 'rows'},
+            {'name': 'Revenue', 'shelf': 'rows'},
+        ]
+        result = self._query('areaChart', fields)
+        qs = result['queryState']
+        self.assertIn('Category', qs)
+        self.assertIn('Series', qs)
+        self.assertIn('Y', qs)
+
+    def test_color_shelf_dim_overrides_axis_series(self):
+        """Color dim has priority for Series over second axis dim."""
+        fields = [
+            {'name': 'Date', 'shelf': 'columns'},
+            {'name': 'Region', 'shelf': 'rows'},
+            {'name': 'Segment', 'shelf': 'color'},
+            {'name': 'Revenue', 'shelf': 'rows'},
+        ]
+        result = self._query('areaChart', fields)
+        qs = result['queryState']
+        self.assertIn('Series', qs)
+        # Segment (color) wins Series, not Region (2nd axis dim)
+        prop = qs['Series']['projections'][0]['field']['Column']['Property']
+        self.assertEqual(prop, 'Segment')
+
+    def test_tooltip_shelf_becomes_tooltips_role(self):
+        """Tooltip fields → Tooltips PBIR role (not Y)."""
+        fields = [
+            {'name': 'Region', 'shelf': 'rows'},
+            {'name': 'Revenue', 'shelf': 'columns'},
+            {'name': 'Profit', 'shelf': 'tooltip'},
+        ]
+        result = self._query('clusteredBarChart', fields)
+        qs = result['queryState']
+        self.assertIn('Tooltips', qs)
+        self.assertEqual(len(qs['Y']['projections']), 1)  # Only Revenue in Y
+
+    def test_color_measure_goes_to_tooltips(self):
+        """A measure on the color shelf → Tooltips (not Y)."""
+        fields = [
+            {'name': 'Region', 'shelf': 'rows'},
+            {'name': 'Revenue', 'shelf': 'columns'},
+            {'name': 'Profit', 'shelf': 'color'},  # Profit is a measure
+        ]
+        result = self._query('clusteredBarChart', fields)
+        qs = result['queryState']
+        self.assertIn('Tooltips', qs)
+        # Only Revenue should be in Y (not Profit)
+        self.assertEqual(len(qs['Y']['projections']), 1)
+
+    def test_map_uses_location_role(self):
+        """Map visual must use Location role (not Category)."""
+        fields = [{'name': 'City', 'shelf': 'rows'}, {'name': 'Revenue'}]
+        result = self._query('map', fields)
+        qs = result['queryState']
+        self.assertIn('Location', qs)
+        self.assertNotIn('Category', qs)
+
+    def test_map_multiple_geo_dims_in_location(self):
+        """Map: all geo dims → Location role (multiple levels)."""
+        fields = [
+            {'name': 'Country', 'shelf': 'rows'},
+            {'name': 'City', 'shelf': 'rows'},
+            {'name': 'Revenue'},
+        ]
+        result = self._query('map', fields)
+        qs = result['queryState']
+        self.assertEqual(len(qs['Location']['projections']), 2)
+
+    def test_filled_map_legend_from_color_dim(self):
+        """FilledMap: color dim → Legend role."""
+        fields = [
+            {'name': 'Country', 'shelf': 'rows'},
+            {'name': 'Segment', 'shelf': 'color'},
+            {'name': 'Revenue'},
+        ]
+        result = self._query('filledMap', fields)
+        qs = result['queryState']
+        self.assertIn('Location', qs)
+        self.assertIn('Legend', qs)
+
+    def test_treemap_non_date_dims_first(self):
+        """Treemap: non-date dims sorted before date dims in Group role."""
+        fields = [
+            {'name': 'Date', 'shelf': 'columns'},
+            {'name': 'Category', 'shelf': 'rows'},
+            {'name': 'Revenue'},
+        ]
+        result = self._query('treemap', fields)
+        qs = result['queryState']
+        projs = qs['Group']['projections']
+        self.assertEqual(len(projs), 2)
+        # Category (non-date) should be first
+        self.assertEqual(projs[0]['field']['Column']['Property'], 'Category')
+
+    def test_treemap_multiple_group_levels(self):
+        """Treemap: all dims become Group hierarchy levels."""
+        fields = [
+            {'name': 'Region', 'shelf': 'rows'},
+            {'name': 'Category', 'shelf': 'rows'},
+            {'name': 'Revenue'},
+        ]
+        result = self._query('treemap', fields)
+        qs = result['queryState']
+        self.assertEqual(len(qs['Group']['projections']), 2)
+
+    def test_series_not_set_without_measures(self):
+        """Without measures, 2nd axis dim falls back to Y (not Series)."""
+        self.gen._measure_names.clear()
+        self.gen._bim_measure_names.clear()
+        fields = [{'name': 'Region'}, {'name': 'State'}]
+        result = self._query('clusteredBarChart', fields)
+        qs = result['queryState']
+        self.assertIn('Category', qs)
+        self.assertIn('Y', qs)
+        self.assertNotIn('Series', qs)
+
+    def test_scatter_all_dims_in_category(self):
+        """Scatter: all dims (axis + color) → Category."""
+        fields = [
+            {'name': 'Region', 'shelf': 'rows'},
+            {'name': 'Segment', 'shelf': 'color'},
+            {'name': 'Revenue', 'shelf': 'columns'},
+            {'name': 'Profit', 'shelf': 'columns'},
+        ]
+        result = self._query('scatterChart', fields)
+        qs = result['queryState']
+        self.assertEqual(len(qs['Category']['projections']), 2)
+
+    def test_combo_chart_with_series(self):
+        """Combo chart: color dim → Series, 2 measures → ColumnY + LineY."""
+        fields = [
+            {'name': 'Month', 'shelf': 'columns'},
+            {'name': 'Segment', 'shelf': 'color'},
+            {'name': 'Revenue', 'shelf': 'rows'},
+            {'name': 'Profit', 'shelf': 'rows'},
+        ]
+        result = self._query('lineClusteredColumnComboChart', fields)
+        qs = result['queryState']
+        self.assertIn('Series', qs)
+        self.assertIn('ColumnY', qs)
+        self.assertIn('LineY', qs)
 
 
 class TestFieldMappingDuplicateColumns(unittest.TestCase):

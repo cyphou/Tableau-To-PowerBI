@@ -1463,14 +1463,14 @@ class PowerBIProjectGenerator:
         "card":                              ([], ["Fields"]),
         "multiRowCard":                      ([], ["Values"]),
         "kpi":                               ([], ["Indicator", "TrendAxis"]),
-        "clusteredBarChart":                 (["Category"], ["Y"]),
+        "clusteredBarChart":                 (["Category", "Series"], ["Y"]),
         "stackedBarChart":                   (["Category", "Series"], ["Y"]),
         "hundredPercentStackedBarChart":      (["Category", "Series"], ["Y"]),
-        "clusteredColumnChart":              (["Category"], ["Y"]),
+        "clusteredColumnChart":              (["Category", "Series"], ["Y"]),
         "stackedColumnChart":                (["Category", "Series"], ["Y"]),
         "hundredPercentStackedColumnChart":   (["Category", "Series"], ["Y"]),
-        "lineChart":                         (["Category"], ["Y"]),
-        "areaChart":                         (["Category"], ["Y"]),
+        "lineChart":                         (["Category", "Series"], ["Y"]),
+        "areaChart":                         (["Category", "Series"], ["Y"]),
         "stackedAreaChart":                  (["Category", "Series"], ["Y"]),
         "hundredPercentStackedAreaChart":     (["Category", "Series"], ["Y"]),
         "pieChart":                          (["Category"], ["Y"]),
@@ -1486,10 +1486,10 @@ class PowerBIProjectGenerator:
         "matrix":                            (["Rows", "Columns"], ["Values"]),
         "pivotTable":                        (["Rows", "Columns"], ["Values"]),
         "slicer":                            (["Values"], []),
-        "lineStackedColumnComboChart":       (["Category"], ["ColumnY", "LineY"]),
-        "lineClusteredColumnComboChart":     (["Category"], ["ColumnY", "LineY"]),
-        "map":                               (["Category"], ["Size"]),
-        "filledMap":                         (["Location"], ["Size"]),
+        "lineStackedColumnComboChart":       (["Category", "Series"], ["ColumnY", "LineY"]),
+        "lineClusteredColumnComboChart":     (["Category", "Series"], ["ColumnY", "LineY"]),
+        "map":                               (["Location", "Legend"], ["Size"]),
+        "filledMap":                         (["Location", "Legend"], ["Size"]),
         "shapeMap":                          (["Location"], ["Color"]),
         "ribbonChart":                       (["Category", "Series"], ["Y"]),
         "boxAndWhisker":                     (["Category", "Sampling"], ["Value"]),
@@ -1497,16 +1497,39 @@ class PowerBIProjectGenerator:
         "wordCloud":                         (["Category"], ["Values"]),
     }
 
+    # Date-related words for treemap Group ordering (prefer non-date dims)
+    _DATE_WORDS = frozenset({
+        'date', 'time', 'datetime', 'timestamp',
+        'year', 'month', 'quarter', 'week', 'day',
+        'heure', 'année', 'mois', 'trimestre', 'semaine', 'jour',
+    })
+
+    def _is_date_field(self, name):
+        """Heuristic: does *name* look like a date / time column?"""
+        lower = name.lower()
+        return any(w in lower for w in self._DATE_WORDS)
+
     def _build_visual_query(self, ws_data):
         """Builds a query with queryState for a visual (PBIR v4.0 format).
 
-        Uses the correct PBIR data-role names for each visual type so
-        Power BI Desktop binds fields to the right data wells."""
+        Uses shelf-aware field classification to assign Tableau fields to
+        the correct PBIR data roles for each visual type so Power BI Desktop
+        binds fields to the right data wells.
+
+        Shelf mapping logic:
+        - rows/columns dims  → primary axis (Category/Group/Location/Rows)
+        - rows/columns meas  → value axis (Y/Values/Size)
+        - color dims         → Series / Legend (secondary grouping)
+        - color meas         → Tooltips (data for conditional formatting)
+        - tooltip fields     → Tooltips
+        - size fields        → Size
+        - measure_value      → expanded measures (from :Measure Names)
+        """
         fields = ws_data.get('fields', [])
         if not fields:
             return None
 
-        # Clean field names and filter out Tableau meta-fields and generated geo fields
+        # ── Clean & de-duplicate field names ─────────────────────
         skip_names = {'Measure Names', 'Measure Values', 'Multiple Values',
                       ':Measure Names', ':Measure Values',
                       'Longitude (generated)', 'Latitude (generated)'}
@@ -1529,169 +1552,312 @@ class PowerBIProjectGenerator:
         if not cleaned_fields:
             return None
 
-        query_state = {}
+        # ── Shelf-aware field classification ──────────────────────
+        rows_dims = []
+        rows_meas = []
+        cols_dims = []
+        cols_meas = []
+        color_dims = []
+        color_meas = []
+        size_fields = []
+        tooltip_fields = []
+        text_fields = []
+        expanded_meas = []
+        other_dims = []
+        other_meas = []
 
-        # Separate dimensions from measures using _measure_names set.
-        # Fields on the 'measure_value' shelf (expanded from :Measure Names)
-        # are always treated as measures regardless of _measure_names.
-        dim_fields = []
-        mea_fields = []
         for f in cleaned_fields:
-            if f.get('shelf') == 'measure_value' or self._is_measure_field(f['name']):
-                mea_fields.append(f)
+            shelf = f.get('shelf', '')
+            is_mea = (shelf == 'measure_value'
+                      or self._is_measure_field(f['name']))
+
+            if shelf == 'measure_value':
+                expanded_meas.append(f)
+            elif shelf == 'tooltip':
+                tooltip_fields.append(f)
+            elif shelf == 'size':
+                size_fields.append(f)
+            elif shelf == 'text':
+                text_fields.append(f)
+            elif shelf == 'color':
+                (color_meas if is_mea else color_dims).append(f)
+            elif shelf == 'rows':
+                (rows_meas if is_mea else rows_dims).append(f)
+            elif shelf == 'columns':
+                (cols_meas if is_mea else cols_dims).append(f)
             else:
-                dim_fields.append(f)
+                # No shelf info (e.g. tests) → classify by measure/dim
+                (other_meas if is_mea else other_dims).append(f)
+
+        # Combined views (order matters for role assignment)
+        # Default ordering: columns dims first (typically x-axis), then rows
+        axis_dims = cols_dims + rows_dims + other_dims
+        # For treemap: rows dims first (primary hierarchy grouping)
+        hier_dims = rows_dims + cols_dims + other_dims
+        # All axis measures (rows + columns + expanded from :Measure Names)
+        axis_meas = rows_meas + cols_meas + expanded_meas + other_meas
+        # Tooltip-grade fields: explicit tooltips + color measures
+        tip_fields = tooltip_fields + color_meas + text_fields
+        # Legacy combined lists (for fallback logic)
+        all_dims = axis_dims + color_dims
+        all_meas = axis_meas + size_fields
 
         visual_type = ws_data.get('chart_type', 'clusteredBarChart')
+        query_state = {}
 
-        # ── Look up correct PBIR role names for this visual type ──
-        roles = self._VISUAL_DATA_ROLES.get(visual_type)
+        # ── Per-visual-type role assignment ───────────────────────
 
         if visual_type == 'scatterChart':
-            # Scatter chart: dims → Category (Details grouping),
-            #                measures → X/Y (aggregated), optional Size
-            if dim_fields:
-                query_state["Category"] = self._make_projection(dim_fields[0])
-            if len(mea_fields) >= 2:
-                query_state["X"] = self._make_scatter_axis_projection(mea_fields[0])
-                query_state["Y"] = self._make_scatter_axis_projection(mea_fields[1])
-            elif len(mea_fields) == 1:
-                query_state["Y"] = self._make_scatter_axis_projection(mea_fields[0])
-            if len(mea_fields) >= 3:
-                query_state["Size"] = self._make_scatter_axis_projection(mea_fields[2])
+            # Scatter: all dims → Category (detail grouping)
+            #          cols measures → X, rows measures → Y, 3rd → Size
+            scatter_dims = axis_dims + color_dims
+            if scatter_dims:
+                query_state["Category"] = {
+                    "projections": [self._make_projection_entry(d)
+                                    for d in scatter_dims]
+                }
+            # In Tableau: columns = X-axis, rows = Y-axis.
+            # Use cols_meas first for X, rows_meas for Y.
+            scatter_meas = (cols_meas + rows_meas + expanded_meas
+                            + other_meas + size_fields)
+            if len(scatter_meas) >= 2:
+                query_state["X"] = self._make_scatter_axis_projection(scatter_meas[0])
+                query_state["Y"] = self._make_scatter_axis_projection(scatter_meas[1])
+            elif len(scatter_meas) == 1:
+                query_state["Y"] = self._make_scatter_axis_projection(scatter_meas[0])
+            # Size: 3rd axis measure or explicit size field or color measure
+            size_f = scatter_meas[2:3] or color_meas[:1]
+            if size_f:
+                query_state["Size"] = self._make_scatter_axis_projection(size_f[0])
+            if tip_fields:
+                query_state["Tooltips"] = {
+                    "projections": [self._make_projection_entry(f)
+                                    for f in tip_fields[:5]]
+                }
 
         elif visual_type in ('tableEx', 'table'):
             # Table: all fields (dims + measures) → Values
-            all_fields = dim_fields + mea_fields
-            if all_fields:
+            table_fields = all_dims + all_meas
+            if table_fields:
                 query_state["Values"] = {
-                    "projections": [self._make_projection_entry(f) for f in all_fields[:10]]
+                    "projections": [self._make_projection_entry(f)
+                                    for f in table_fields[:10]]
                 }
 
         elif visual_type == 'matrix':
-            # Matrix: first dim → Rows, second dim → Columns, measures → Values
-            if dim_fields:
-                query_state["Rows"] = self._make_projection(dim_fields[0])
-            if len(dim_fields) >= 2:
-                query_state["Columns"] = self._make_projection(dim_fields[1])
-            if mea_fields:
+            # Matrix: first dim → Rows, second dim or color dim → Columns,
+            #         measures → Values
+            matrix_dims = axis_dims + color_dims
+            if matrix_dims:
+                query_state["Rows"] = self._make_projection(matrix_dims[0])
+            if len(matrix_dims) >= 2:
+                query_state["Columns"] = self._make_projection(matrix_dims[1])
+            if axis_meas:
                 query_state["Values"] = {
-                    "projections": [self._make_projection_entry(m) for m in mea_fields[:6]]
+                    "projections": [self._make_projection_entry(m)
+                                    for m in axis_meas[:6]]
                 }
 
-        elif visual_type in ('card',):
-            # Card: measures → Fields
-            all_fields = mea_fields if mea_fields else dim_fields
-            if all_fields:
+        elif visual_type == 'card':
+            targets = axis_meas if axis_meas else all_dims
+            if targets:
                 query_state["Fields"] = {
-                    "projections": [self._make_projection_entry(f) for f in all_fields[:6]]
+                    "projections": [self._make_projection_entry(f)
+                                    for f in targets[:6]]
                 }
 
-        elif visual_type in ('multiRowCard',):
-            # MultiRowCard: measures → Values
-            all_fields = mea_fields if mea_fields else dim_fields
-            if all_fields:
+        elif visual_type == 'multiRowCard':
+            targets = axis_meas if axis_meas else all_dims
+            if targets:
                 query_state["Values"] = {
-                    "projections": [self._make_projection_entry(f) for f in all_fields[:6]]
+                    "projections": [self._make_projection_entry(f)
+                                    for f in targets[:6]]
                 }
 
         elif visual_type in ('gauge', 'kpi'):
-            # Gauge/KPI: first measure → Y, second → TargetValue
-            if mea_fields:
-                query_state["Y"] = self._make_projection(mea_fields[0])
-            if len(mea_fields) >= 2:
-                query_state["TargetValue"] = self._make_projection(mea_fields[1])
-            if dim_fields:
-                query_state["Category"] = self._make_projection(dim_fields[0])
+            if axis_meas:
+                query_state["Y"] = self._make_projection(axis_meas[0])
+            if len(axis_meas) >= 2:
+                query_state["TargetValue"] = self._make_projection(axis_meas[1])
+            if axis_dims:
+                query_state["Category"] = self._make_projection(axis_dims[0])
 
         elif visual_type in ('treemap', 'sunburst'):
-            # Treemap/Sunburst: dim → Group, measure → Values
-            if dim_fields:
-                query_state["Group"] = self._make_projection(dim_fields[0])
-            if mea_fields:
-                query_state["Values"] = self._make_projection(mea_fields[0])
+            # Treemap: dims → Group (multiple levels, non-date first)
+            tree_dims = hier_dims + color_dims
+            non_date = [d for d in tree_dims
+                        if not self._is_date_field(d['name'])]
+            date = [d for d in tree_dims
+                    if self._is_date_field(d['name'])]
+            ordered = non_date + date
+            if ordered:
+                query_state["Group"] = {
+                    "projections": [self._make_projection_entry(d)
+                                    for d in ordered]
+                }
+            # Values: axis measures, or color measures (Tableau uses color
+            # encoding for value on treemaps), or size fields
+            tree_meas = axis_meas or color_meas or size_fields
+            if tree_meas:
+                query_state["Values"] = self._make_projection(tree_meas[0])
+                # Remove used measure from tip_fields to avoid duplicate
+                used = tree_meas[0]
+                tip_fields = [f for f in tip_fields if f is not used]
+            if tip_fields:
+                query_state["Tooltips"] = {
+                    "projections": [self._make_projection_entry(f)
+                                    for f in tip_fields[:5]]
+                }
 
-        elif visual_type in ('filledMap',):
-            # Filled map: dim → Location, measure → Size
-            if dim_fields:
-                query_state["Location"] = self._make_projection(dim_fields[0])
-            if mea_fields:
-                query_state["Size"] = self._make_projection(mea_fields[0])
+        elif visual_type in ('filledMap', 'shapeMap'):
+            # Filled/shape map: dims → Location, color dim → Legend,
+            #                   measure → Size/Color.
+            # Tableau maps often use generated Lat/Lon (which we skip)
+            # and put the real geo field on the tooltip shelf.
+            loc_dims = axis_dims
+            if not loc_dims:
+                # Pull non-measure tooltip fields as Location fallback
+                loc_dims = [f for f in tooltip_fields
+                            if not self._is_measure_field(f['name'])]
+                # Remove them from tip_fields so they're not duplicated
+                tip_fields = [f for f in tip_fields if f not in loc_dims]
+            if loc_dims:
+                query_state["Location"] = {
+                    "projections": [self._make_projection_entry(d)
+                                    for d in loc_dims]
+                }
+            if color_dims:
+                query_state["Legend"] = self._make_projection(color_dims[0])
+            value_role = "Color" if visual_type == 'shapeMap' else "Size"
+            if axis_meas:
+                query_state[value_role] = self._make_projection(axis_meas[0])
+            elif color_meas:
+                query_state[value_role] = self._make_projection(color_meas[0])
+            if tip_fields:
+                query_state["Tooltips"] = {
+                    "projections": [self._make_projection_entry(f)
+                                    for f in tip_fields[:5]]
+                }
 
-        elif visual_type in ('map',):
-            # Map: dim → Category, measure → Size
-            if dim_fields:
-                query_state["Category"] = self._make_projection(dim_fields[0])
-            if mea_fields:
-                query_state["Size"] = self._make_projection(mea_fields[0])
+        elif visual_type == 'map':
+            # Bubble map: dims → Location, color dim → Legend,
+            #             measure → Size.
+            # Same fallback as filledMap for generated Lat/Lon.
+            loc_dims = axis_dims
+            if not loc_dims:
+                loc_dims = [f for f in tooltip_fields
+                            if not self._is_measure_field(f['name'])]
+                tip_fields = [f for f in tip_fields if f not in loc_dims]
+            if loc_dims:
+                query_state["Location"] = {
+                    "projections": [self._make_projection_entry(d)
+                                    for d in loc_dims]
+                }
+            if color_dims:
+                query_state["Legend"] = self._make_projection(color_dims[0])
+            sz = axis_meas or size_fields
+            if sz:
+                query_state["Size"] = self._make_projection(sz[0])
+            if tip_fields:
+                query_state["Tooltips"] = {
+                    "projections": [self._make_projection_entry(f)
+                                    for f in tip_fields[:5]]
+                }
 
-        elif visual_type in ('lineClusteredColumnComboChart', 'lineStackedColumnComboChart'):
-            # Combo: dim → Category, first measure → ColumnY, second → LineY
-            if dim_fields:
-                query_state["Category"] = self._make_projection(dim_fields[0])
-            if mea_fields:
-                query_state["ColumnY"] = self._make_projection(mea_fields[0])
-            if len(mea_fields) >= 2:
-                query_state["LineY"] = self._make_projection(mea_fields[1])
+        elif visual_type in ('lineClusteredColumnComboChart',
+                             'lineStackedColumnComboChart'):
+            if axis_dims:
+                query_state["Category"] = self._make_projection(axis_dims[0])
+            if color_dims:
+                query_state["Series"] = self._make_projection(color_dims[0])
+            elif len(axis_dims) >= 2:
+                query_state["Series"] = self._make_projection(axis_dims[1])
+            if axis_meas:
+                query_state["ColumnY"] = self._make_projection(axis_meas[0])
+            if len(axis_meas) >= 2:
+                query_state["LineY"] = self._make_projection(axis_meas[1])
 
         elif visual_type == 'waterfallChart':
-            # Waterfall: dim → Category, measure → Y, optional breakdown
-            if dim_fields:
-                query_state["Category"] = self._make_projection(dim_fields[0])
-            if mea_fields:
-                query_state["Y"] = self._make_projection(mea_fields[0])
-            if len(dim_fields) >= 2:
-                query_state["Breakdown"] = self._make_projection(dim_fields[1])
+            if axis_dims:
+                query_state["Category"] = self._make_projection(axis_dims[0])
+            if axis_meas:
+                query_state["Y"] = self._make_projection(axis_meas[0])
+            if len(axis_dims) >= 2:
+                query_state["Breakdown"] = self._make_projection(axis_dims[1])
 
         elif visual_type == 'boxAndWhisker':
-            # Box plot: dim → Category, measure → Value
-            if dim_fields:
-                query_state["Category"] = self._make_projection(dim_fields[0])
-            if mea_fields:
-                query_state["Value"] = self._make_projection(mea_fields[0])
+            if axis_dims:
+                query_state["Category"] = self._make_projection(axis_dims[0])
+            if axis_meas:
+                query_state["Value"] = self._make_projection(axis_meas[0])
 
-        elif visual_type in ('wordCloud',):
-            # Word cloud: dim → Category, measure → Values
-            if dim_fields:
-                query_state["Category"] = self._make_projection(dim_fields[0])
-            if mea_fields:
-                query_state["Values"] = self._make_projection(mea_fields[0])
+        elif visual_type == 'wordCloud':
+            if axis_dims:
+                query_state["Category"] = self._make_projection(axis_dims[0])
+            if axis_meas:
+                query_state["Values"] = self._make_projection(axis_meas[0])
 
-        elif visual_type in ('decompositionTree',):
-            # Decomposition tree: dims → TreeItems, measure → Values
-            if dim_fields:
-                query_state["TreeItems"] = self._make_projection(dim_fields[0])
-            if mea_fields:
-                query_state["Values"] = self._make_projection(mea_fields[0])
+        elif visual_type == 'decompositionTree':
+            if axis_dims:
+                query_state["TreeItems"] = self._make_projection(axis_dims[0])
+            if axis_meas:
+                query_state["Values"] = self._make_projection(axis_meas[0])
 
         else:
-            # Standard charts (bar, line, area, pie, donut, funnel, ribbon, etc.)
-            # Uses Category/Y which is correct for these types.
-            if dim_fields:
-                query_state["Category"] = self._make_projection(dim_fields[0])
-            if mea_fields:
-                # Include ALL measures in the Y role so PBI shows them all
+            # ── Standard charts (bar, column, line, area, pie, donut,
+            #    funnel, ribbon, stacked variants) ────────────────
+            if axis_dims:
+                query_state["Category"] = self._make_projection(axis_dims[0])
+            elif color_dims:
+                # No axis dims — promote first color dim to Category
+                query_state["Category"] = self._make_projection(color_dims[0])
+                color_dims = color_dims[1:]  # consume it
+
+            # Series: color dim (highest priority) or second axis dim
+            # that isn't a date when the first dim already is.
+            # Only promote axis dim to Series when there are measures for Y.
+            if color_dims:
+                query_state["Series"] = self._make_projection(color_dims[0])
+            elif len(axis_dims) >= 2 and axis_meas:
+                candidates = axis_dims[1:]
+                non_date = [d for d in candidates
+                            if not self._is_date_field(d['name'])]
+                series_dim = non_date[0] if non_date else candidates[0]
+                query_state["Series"] = self._make_projection(series_dim)
+
+            if axis_meas:
                 query_state["Y"] = {
-                    "projections": [self._make_projection_entry(m) for m in mea_fields]
+                    "projections": [self._make_projection_entry(m)
+                                    for m in axis_meas]
                 }
-            # If no measures found but we have multiple dims, use last as Y
-            elif len(dim_fields) > 1:
-                query_state["Y"] = self._make_projection(dim_fields[-1])
+            # If no measures, use last dim as pseudo-measure (only when
+            # Series hasn't consumed it yet)
+            elif len(axis_dims) > 1 and "Series" not in query_state:
+                query_state["Y"] = self._make_projection(axis_dims[-1])
+
+            if tip_fields:
+                query_state["Tooltips"] = {
+                    "projections": [self._make_projection_entry(f)
+                                    for f in tip_fields[:5]]
+                }
 
         # ── Fallback: only measures, no dimensions ────────────────
-        # Convert to card (1-2 measures) or multiRowCard (3+) so values show up
-        if mea_fields and not dim_fields and visual_type in (
+        # Convert to card (1-2 measures) or multiRowCard (3+)
+        if axis_meas and not axis_dims and visual_type in (
             'clusteredBarChart', 'stackedBarChart', 'clusteredColumnChart',
         ):
             query_state.clear()
-            if len(mea_fields) <= 2:
+            card_meas = axis_meas + color_meas
+            if len(card_meas) <= 2:
                 query_state["Fields"] = {
-                    "projections": [self._make_projection_entry(m) for m in mea_fields[:6]]
+                    "projections": [self._make_projection_entry(m)
+                                    for m in card_meas[:6]]
                 }
                 ws_data['_override_visual_type'] = 'card'
             else:
                 query_state["Values"] = {
-                    "projections": [self._make_projection_entry(m) for m in mea_fields[:6]]
+                    "projections": [self._make_projection_entry(m)
+                                    for m in card_meas[:6]]
                 }
                 ws_data['_override_visual_type'] = 'multiRowCard'
 
