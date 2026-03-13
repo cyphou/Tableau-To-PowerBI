@@ -705,6 +705,25 @@ class TestMakeProjectionEntry(unittest.TestCase):
         entry = self.gen._make_projection_entry({'name': 'Region'})
         self.assertIn('Column', entry['field'])
 
+    def test_physical_measure_aggregation_wrapper(self):
+        """Physical numeric columns in _measure_names get Aggregation(Sum)."""
+        _init_field_map(self.gen, {'Amount': ('Sales', 'Amount')},
+                        measure_names=['Amount'])
+        entry = self.gen._make_projection_entry({'name': 'Amount'})
+        self.assertIn('Aggregation', entry['field'])
+        self.assertEqual(entry['field']['Aggregation']['Function'], 0)
+        self.assertEqual(
+            entry['field']['Aggregation']['Expression']['Column']['Property'],
+            'Amount')
+
+    def test_physical_measure_not_overridden_by_bim(self):
+        """When in both _measure_names and _bim_measure_names, Measure wins."""
+        _init_field_map(self.gen, {'Revenue': ('Sales', 'Revenue')},
+                        measure_names=['Revenue'],
+                        bim_measure_names=['Revenue'])
+        entry = self.gen._make_projection_entry({'name': 'Revenue'})
+        self.assertIn('Measure', entry['field'])
+
     def test_fallback_resolution_via_datasource_calcs(self):
         """Resolves via datasources_ref calculations when not in field_map."""
         _init_field_map(self.gen, main_table='Facts',

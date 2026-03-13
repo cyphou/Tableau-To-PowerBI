@@ -1764,13 +1764,19 @@ class PowerBIProjectGenerator:
     
     def _make_projection_entry(self, field):
         """Creates a projection entry for a field, resolved to the Power BI model.
-        Uses 'Measure' wrapper for named BIM measures, 'Column' wrapper for
-        physical columns (PBI Desktop auto-aggregates numeric columns in value buckets)."""
+
+        Wrapper selection:
+        - Named DAX measures (in _bim_measure_names) → ``Measure`` wrapper
+        - Physical numeric columns treated as measures by Tableau
+          (in _measure_names but NOT in _bim_measure_names) → ``Aggregation``
+          wrapper with Function 0 (Sum) so PBI shows explicit aggregation
+        - Everything else (dimension columns) → ``Column`` wrapper
+        """
         raw_name = field.get('name', 'Field')
-        
+
         # Clean all known Tableau prefixes
         clean_name = self._clean_field_name(raw_name)
-        
+
         # Resolve via mapping
         if hasattr(self, '_field_map') and clean_name in self._field_map:
             entity, prop = self._field_map[clean_name]
@@ -1786,25 +1792,49 @@ class PowerBIProjectGenerator:
                         prop = calc.get('caption', clean_name)
                         self._field_map[clean_name] = (entity, prop)
                         break
-        
-        # Use Measure wrapper ONLY for named BIM measures (DAX definitions),
-        # Column wrapper for everything else (PBI auto-aggregates numeric columns)
+
+        # Determine wrapper type
         is_bim_measure = hasattr(self, '_bim_measure_names') and (
             clean_name in self._bim_measure_names or prop in self._bim_measure_names
         )
-        field_type = "Measure" if is_bim_measure else "Column"
-        
-        return {
-            "field": {
-                field_type: {
-                    "Expression": {
-                        "SourceRef": {
-                            "Entity": entity
-                        }
-                    },
+        is_physical_measure = (
+            not is_bim_measure
+            and hasattr(self, '_measure_names')
+            and (clean_name in self._measure_names or prop in self._measure_names)
+        )
+
+        if is_bim_measure:
+            # Named DAX measure → Measure wrapper
+            field_ref = {
+                "Measure": {
+                    "Expression": {"SourceRef": {"Entity": entity}},
                     "Property": prop
                 }
-            },
+            }
+        elif is_physical_measure:
+            # Physical numeric column (role='measure') → Aggregation(Sum)
+            field_ref = {
+                "Aggregation": {
+                    "Expression": {
+                        "Column": {
+                            "Expression": {"SourceRef": {"Entity": entity}},
+                            "Property": prop
+                        }
+                    },
+                    "Function": 0
+                }
+            }
+        else:
+            # Dimension column → Column wrapper
+            field_ref = {
+                "Column": {
+                    "Expression": {"SourceRef": {"Entity": entity}},
+                    "Property": prop
+                }
+            }
+
+        return {
+            "field": field_ref,
             "queryRef": f"{entity}.{prop}",
             "active": True
         }
