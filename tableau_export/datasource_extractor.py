@@ -674,9 +674,20 @@ def extract_relationships(datasource_elem):
     # --- New format: Object Model relationships (modern Tableau) ---
     for elem in datasource_elem.iter():
         if elem.tag and elem.tag.endswith('object-graph'):
+            # Build object-id → table caption map
+            obj_id_to_name = {}
+            for obj_elem in elem.findall('.//object'):
+                obj_id = obj_elem.get('id', '')
+                obj_caption = obj_elem.get('caption', '')
+                if obj_id and obj_caption:
+                    obj_id_to_name[obj_id] = obj_caption
+
             for rel_elem in elem.findall('.//relationship'):
+                # Try attribute-based expression (some formats)
                 expr = rel_elem.get('expression', '')
                 join_type = rel_elem.get('type', 'Left').lower()
+
+                # Method 1: expression attribute with [Table].[Column] format
                 matches = re.findall(r'\[([^\]]+)\]\.\[([^\]]+)\]', expr)
                 if len(matches) >= 2:
                     left_table, left_col = matches[0]
@@ -689,6 +700,55 @@ def extract_relationships(datasource_elem):
                             'left': {'table': left_table, 'column': left_col},
                             'right': {'table': right_table, 'column': right_col}
                         })
+                    continue
+
+                # Method 2: nested <expression> child elements + endpoint object-ids
+                expr_elem = rel_elem.find('expression')
+                if expr_elem is None:
+                    continue
+                col_ops = []
+                for sub_expr in expr_elem.findall('expression'):
+                    op = sub_expr.get('op', '')
+                    col_match = re.findall(r'\[([^\]]+)\]', op)
+                    if col_match:
+                        col_ops.append(col_match[0])
+                if len(col_ops) < 2:
+                    continue
+
+                # Resolve endpoint object-ids to table names
+                first_ep = rel_elem.find('first-end-point')
+                second_ep = rel_elem.find('second-end-point')
+                if first_ep is None or second_ep is None:
+                    continue
+                first_table = obj_id_to_name.get(first_ep.get('object-id', ''), '')
+                second_table = obj_id_to_name.get(second_ep.get('object-id', ''), '')
+                if not first_table or not second_table:
+                    continue
+
+                # Column names may have "(TableName)" suffix — strip it
+                left_col = col_ops[0]
+                right_col = col_ops[1]
+                # Strip " (TableName)" suffix if it matches the endpoint table
+                suffix_first = f' ({first_table})'
+                suffix_second = f' ({second_table})'
+                if left_col.endswith(suffix_first):
+                    left_col = left_col[:-len(suffix_first)]
+                if right_col.endswith(suffix_second):
+                    right_col = right_col[:-len(suffix_second)]
+                # Also strip the other table's suffix (in case of reversed naming)
+                if left_col.endswith(suffix_second):
+                    left_col = left_col[:-len(suffix_second)]
+                if right_col.endswith(suffix_first):
+                    right_col = right_col[:-len(suffix_first)]
+
+                key = (first_table, left_col, second_table, right_col)
+                if key not in seen:
+                    seen.add(key)
+                    relationships.append({
+                        'type': join_type,
+                        'left': {'table': first_table, 'column': left_col},
+                        'right': {'table': second_table, 'column': right_col}
+                    })
     
     return relationships
 
