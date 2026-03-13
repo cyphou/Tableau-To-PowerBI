@@ -407,6 +407,12 @@ class PowerBIProjectGenerator:
         if ws_data and ws_data.get('fields'):
             query = self._build_visual_query(ws_data)
             if query:
+                # If _build_visual_query detected an all-measures worksheet
+                # and set an override visual type, apply it
+                override_vt = ws_data.pop('_override_visual_type', None)
+                if override_vt:
+                    visual_type = override_vt
+                    visual_json["visual"]["visualType"] = visual_type
                 visual_json["visual"]["query"] = query
                 # Apply sort state from extraction
                 sort_orders = ws_data.get('sort_orders', [])
@@ -1477,11 +1483,13 @@ class PowerBIProjectGenerator:
         query_state = {}
         
         # Separate dimensions (→ Category) from measures (→ Y/Size)
-        # Use _measure_names set for accurate classification
+        # Use _measure_names set for accurate classification.
+        # Fields on the 'measure_value' shelf (expanded from :Measure Names)
+        # are always treated as measures regardless of _measure_names.
         dim_fields = []
         mea_fields = []
         for f in cleaned_fields:
-            if self._is_measure_field(f['name']):
+            if f.get('shelf') == 'measure_value' or self._is_measure_field(f['name']):
                 mea_fields.append(f)
             else:
                 dim_fields.append(f)
@@ -1559,10 +1567,26 @@ class PowerBIProjectGenerator:
             if dim_fields:
                 query_state["Category"] = self._make_projection(dim_fields[0])
             if mea_fields:
-                query_state["Y"] = self._make_projection(mea_fields[0])
+                # Include ALL measures in the Y role so PBI shows them all
+                query_state["Y"] = {
+                    "projections": [self._make_projection_entry(m) for m in mea_fields]
+                }
             # If no measures found but we have multiple dims, use last as Y
             elif len(dim_fields) > 1:
                 query_state["Y"] = self._make_projection(dim_fields[-1])
+        
+        # ── Fallback: only measures, no dimensions ────────────────
+        # Convert to card (1-2 measures) or multiRowCard (3+) so values show up
+        if mea_fields and not dim_fields and visual_type in (
+            'clusteredBarChart', 'stackedBarChart', 'clusteredColumnChart',
+        ):
+            query_state.clear()
+            query_state["Values"] = {
+                "projections": [self._make_projection_entry(m) for m in mea_fields[:6]]
+            }
+            # The visual type override happens in _create_visual_worksheet
+            # via ws_data['_override_visual_type'] set below
+            ws_data['_override_visual_type'] = 'multiRowCard' if len(mea_fields) > 2 else 'card'
         
         return {"queryState": query_state} if query_state else None
     

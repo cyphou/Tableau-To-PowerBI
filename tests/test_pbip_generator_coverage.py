@@ -573,14 +573,59 @@ class TestBuildVisualQuery(unittest.TestCase):
         fields = [{'name': 'Revenue'}, {'name': 'Revenue'}]
         result = self._query('clusteredBarChart', fields)
         qs = result['queryState']
-        # Only one projection for Revenue
-        self.assertIn('Y', qs)
+        # Only one projection for Revenue; no dims → fallback to card with Values
+        self.assertIn('Values', qs)
 
     def test_skip_tableau_internal_fields(self):
         fields = [{'name': '__tableau_internal_object_id__'}, {'name': 'Revenue'}]
         result = self._query('clusteredBarChart', fields)
         qs = result['queryState']
+        # Only Revenue remains (measure, no dims) → fallback to card with Values
+        self.assertIn('Values', qs)
+
+    def test_measure_value_shelf_treated_as_measure(self):
+        """Fields with shelf='measure_value' (from Measure Names expansion) → measure role."""
+        fields = [
+            {'name': 'Region'},
+            {'name': 'Revenue', 'shelf': 'measure_value'},
+            {'name': 'Profit', 'shelf': 'measure_value'},
+        ]
+        result = self._query('clusteredBarChart', fields)
+        qs = result['queryState']
+        self.assertIn('Category', qs)
         self.assertIn('Y', qs)
+        # Both measures should be in Y projections
+        self.assertEqual(len(qs['Y']['projections']), 2)
+
+    def test_all_measures_fallback_to_card(self):
+        """Only measures (no dims) in a bar chart → fallback to card/multiRowCard."""
+        fields = [{'name': 'Revenue'}, {'name': 'Profit'}]
+        ws = {'chart_type': 'clusteredBarChart', 'fields': fields}
+        result = self.gen._build_visual_query(ws)
+        qs = result['queryState']
+        self.assertIn('Values', qs)
+        # Should set override visual type
+        self.assertIn(ws.get('_override_visual_type'), ('card', 'multiRowCard'))
+
+    def test_all_measures_fallback_multirowcard(self):
+        """3+ measures → multiRowCard."""
+        self.gen._measure_names.add('Quantity')
+        self.gen._bim_measure_names.add('Quantity')
+        fields = [{'name': 'Revenue'}, {'name': 'Profit'}, {'name': 'Quantity'}]
+        ws = {'chart_type': 'clusteredBarChart', 'fields': fields}
+        result = self.gen._build_visual_query(ws)
+        self.assertEqual(ws.get('_override_visual_type'), 'multiRowCard')
+
+    def test_multiple_measures_in_y_role(self):
+        """Standard chart with dim + multiple measures → all measures in Y."""
+        self.gen._measure_names.add('Quantity')
+        self.gen._bim_measure_names.add('Quantity')
+        fields = [{'name': 'Region'}, {'name': 'Revenue'}, {'name': 'Profit'}, {'name': 'Quantity'}]
+        result = self._query('areaChart', fields)
+        qs = result['queryState']
+        self.assertIn('Category', qs)
+        self.assertIn('Y', qs)
+        self.assertEqual(len(qs['Y']['projections']), 3)
 
 
 # ─── _make_projection_entry ─────────────────────────────────────────

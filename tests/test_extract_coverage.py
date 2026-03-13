@@ -426,6 +426,99 @@ class TestInferAutoChartType(unittest.TestCase):
         result = ext.determine_chart_type(ws)
         self.assertEqual(result, 'bar')
 
+    def test_auto_french_measures_gives_scatter(self):
+        """Two French measure words (Ventes/Profit) on both axes → scatter."""
+        xml = '''<worksheet name="S">
+          <table>
+            <cols>[DS].[Ventes]</cols>
+            <rows>[DS].[Profit]</rows>
+          </table>
+        </worksheet>'''
+        ext, _ = _make_extractor()
+        ws = ET.fromstring(xml)
+        result = ext._infer_automatic_chart_type(ws)
+        self.assertEqual(result, 'scatterChart')
+
+    def test_auto_french_date_col_gives_line(self):
+        """French date word 'Date de commande' on cols → lineChart."""
+        xml = '''<worksheet name="S">
+          <table>
+            <cols>[DS].[Date de commande]</cols>
+            <rows>[DS].[Ventes]</rows>
+          </table>
+        </worksheet>'''
+        ext, _ = _make_extractor()
+        ws = ET.fromstring(xml)
+        result = ext._infer_automatic_chart_type(ws)
+        self.assertEqual(result, 'lineChart')
+
+    def test_measure_names_expansion(self):
+        """Worksheets with :Measure Names expand to actual measure columns."""
+        xml = '''<worksheet name="S">
+          <table>
+            <cols>[DS].[:Measure Names]</cols>
+            <rows>[DS].[Zone]</rows>
+          </table>
+          <datasource-dependencies datasource="DS">
+            <column name="[Ventes]" role="measure"/>
+            <column name="[Profit]" role="measure"/>
+            <column name="[Zone]" role="dimension"/>
+            <column-instance column="[Ventes]" derivation="Sum" name="[sum:Ventes:qk]"/>
+            <column-instance column="[Profit]" derivation="Sum" name="[sum:Profit:qk]"/>
+            <column-instance column="[Zone]" derivation="None" name="[none:Zone:nk]"/>
+          </datasource-dependencies>
+        </worksheet>'''
+        ext, _ = _make_extractor()
+        ws = ET.fromstring(xml)
+        fields = ext.extract_worksheet_fields(ws)
+        names = [f['name'] for f in fields]
+        shelves = [f['shelf'] for f in fields]
+        # Should have :Measure Names, Zone, plus expanded Ventes and Profit
+        self.assertIn('Ventes', names)
+        self.assertIn('Profit', names)
+        # Expanded measures should have shelf='measure_value'
+        mv_fields = [f for f in fields if f['shelf'] == 'measure_value']
+        self.assertEqual(len(mv_fields), 2)
+        mv_names = {f['name'] for f in mv_fields}
+        self.assertEqual(mv_names, {'Ventes', 'Profit'})
+
+    def test_measure_names_no_dimension_columns(self):
+        """Only measure columns in dependencies → all added as measure_value."""
+        xml = '''<worksheet name="S">
+          <table>
+            <cols>[DS].[:Measure Names]</cols>
+            <rows>[DS].[Multiple Values]</rows>
+          </table>
+          <datasource-dependencies datasource="DS">
+            <column name="[Revenue]" role="measure"/>
+            <column name="[Cost]" role="measure"/>
+            <column-instance column="[Revenue]" derivation="Sum" name="[sum:Revenue:qk]"/>
+            <column-instance column="[Cost]" derivation="Avg" name="[avg:Cost:qk]"/>
+          </datasource-dependencies>
+        </worksheet>'''
+        ext, _ = _make_extractor()
+        ws = ET.fromstring(xml)
+        fields = ext.extract_worksheet_fields(ws)
+        mv_names = {f['name'] for f in fields if f['shelf'] == 'measure_value'}
+        self.assertEqual(mv_names, {'Revenue', 'Cost'})
+
+    def test_measure_names_user_derivation_included(self):
+        """User-derived column-instances (calculations) included."""
+        xml = '''<worksheet name="S">
+          <table>
+            <cols>[DS].[:Measure Names]</cols>
+          </table>
+          <datasource-dependencies datasource="DS">
+            <column name="[Calc1]" role="measure"/>
+            <column-instance column="[Calc1]" derivation="User" name="[usr:Calc1:qk]"/>
+          </datasource-dependencies>
+        </worksheet>'''
+        ext, _ = _make_extractor()
+        ws = ET.fromstring(xml)
+        fields = ext.extract_worksheet_fields(ws)
+        mv_names = {f['name'] for f in fields if f['shelf'] == 'measure_value'}
+        self.assertIn('Calc1', mv_names)
+
 
 # ═══════════════════════════════════════════════════════════════════
 # extract_formatting

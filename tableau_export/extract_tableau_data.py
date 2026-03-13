@@ -556,12 +556,20 @@ class TableauExtractor:
         determine the most appropriate Power BI visual type.
         """
         date_words = {'date', 'time', 'year', 'month', 'day', 'week', 'quarter',
-                      'datetime', 'timestamp', 'period', 'yr', 'mois'}
+                      'datetime', 'timestamp', 'period', 'yr', 'mois',
+                      # French
+                      'année', 'annee', 'jour', 'semaine', 'trimestre',
+                      'commande', 'expédition', 'expedition', 'livraison'}
         measure_words = {'sales', 'profit', 'revenue', 'amount', 'quantity', 'qty',
                          'count', 'sum', 'total', 'price', 'cost', 'margin',
                          'budget', 'forecast', 'actual', 'target', 'value',
                          'weight', 'height', 'distance', 'rate', 'ratio',
-                         'score', 'index', 'number', 'num', 'avg', 'average'}
+                         'score', 'index', 'number', 'num', 'avg', 'average',
+                         # French
+                         'ventes', 'vente', 'bénéfice', 'bénéfices', 'benefice',
+                         'coût', 'cout', 'quantité', 'quantite', 'montant',
+                         'prix', 'marge', 'remise', 'objectif', 'prévision',
+                         'prevision', 'chiffre', 'recette', 'dépense', 'depense'}
         geo_words = {'latitude', 'longitude', 'lat', 'lon', 'lng',
                      'zip', 'postal', 'geo', 'geolocation'}
         # Geographic pairs that strongly indicate a map
@@ -744,7 +752,53 @@ class TableauExtractor:
                                 'shelf': enc_type,
                                 'datasource': col_refs[0][0]
                             })
-        
+
+        # ── Expand :Measure Names / Multiple Values ───────────────
+        # When a worksheet uses these virtual fields, the actual measures
+        # are listed in <datasource-dependencies> <column-instance> entries
+        # with aggregation derivations (Sum, Avg, Count, CountD, User, ...).
+        # We cross-reference with <column role='measure'> to only include
+        # columns that are truly measures (not CountD on dimension columns).
+        has_measure_names = any(
+            f.get('name', '') in (':Measure Names', 'Measure Names')
+            for f in fields
+        )
+        if has_measure_names:
+            agg_derivations = {
+                'Sum', 'Avg', 'Count', 'CountD', 'Min', 'Max',
+                'Median', 'Stdev', 'Var', 'User', 'Attribute',
+            }
+            # Collect existing field names to avoid duplicates
+            existing_names = {f.get('name', '') for f in fields}
+            for dep in worksheet.findall('.//datasource-dependencies'):
+                ds_ref = dep.get('datasource', '')
+                # Build a set of column names with role='measure'
+                measure_cols = set()
+                for col_elem in dep.findall('column'):
+                    if col_elem.get('role', '') == 'measure':
+                        measure_cols.add(col_elem.get('name', '').strip('[]'))
+                # Also include calculation columns (User derivation) —
+                # they may have role='measure' in column definition
+                for ci in dep.findall('column-instance'):
+                    deriv = ci.get('derivation', '')
+                    if deriv not in agg_derivations:
+                        continue
+                    col_name = ci.get('column', '').strip('[]')
+                    # Skip internal Tableau columns
+                    if col_name.startswith('__tableau_internal'):
+                        continue
+                    # Only include columns that are measures (or User-derived calcs)
+                    if col_name not in measure_cols and deriv != 'User':
+                        continue
+                    if col_name in existing_names:
+                        continue
+                    existing_names.add(col_name)
+                    fields.append({
+                        'name': col_name,
+                        'shelf': 'measure_value',
+                        'datasource': ds_ref,
+                    })
+
         return fields
     
     def extract_worksheet_filters(self, worksheet):
