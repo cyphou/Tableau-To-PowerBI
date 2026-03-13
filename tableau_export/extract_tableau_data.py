@@ -906,12 +906,11 @@ class TableauExtractor:
                         filter_min = from_val if from_val else None
                         filter_max = to_val if to_val else None
                     else:
-                        # Text range → categorical with from/to as values
-                        filter_type = 'categorical'
-                        if from_val:
-                            filter_values.append(from_val.replace('&quot;', '"'))
-                        if to_val and to_val != from_val:
-                            filter_values.append(to_val.replace('&quot;', '"'))
+                        # Text range → effectively "all selected" on a
+                        # categorical field.  Tableau uses an alphabetical
+                        # range (from="A" to="Z") to keep all values.
+                        # Skip: no real filtering intended.
+                        filter_type = 'all'
                 elif func == 'level-members':
                     filter_type = 'all'  # filter "all selected"
                 elif func == 'crossjoin':
