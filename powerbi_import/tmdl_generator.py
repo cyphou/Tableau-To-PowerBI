@@ -1391,7 +1391,7 @@ def _build_relationships(relationships):
             "toTable": to_table,
             "toColumn": to_column,
             "joinType": join_type,
-            "crossFilteringBehavior": "bothDirections" if join_type == 'full' else "oneDirection"
+            "crossFilteringBehavior": "bothDirections" if join_type == 'full' else "singleDirection"
         })
 
     return result
@@ -1509,7 +1509,7 @@ def _infer_cross_table_relationships(model):
                 "fromColumn": fk_col,
                 "toTable": dim_table,
                 "toColumn": pk_col,
-                "crossFilteringBehavior": "oneDirection"
+                "crossFilteringBehavior": "singleDirection"
             })
 
             connected_pairs.add((source_table, ref_table))
@@ -1563,7 +1563,7 @@ def _infer_cross_table_relationships(model):
                     "fromColumn": best_col,
                     "toTable": dim_table,
                     "toColumn": best_col,
-                    "crossFilteringBehavior": "oneDirection"
+                    "crossFilteringBehavior": "singleDirection"
                 })
                 connected_pairs.add((t1, t2))
                 connected_pairs.add((t2, t1))
@@ -1627,12 +1627,19 @@ def _detect_many_to_many(model, datasources):
                 rel['toCardinality'] = 'many'
                 rel['crossFilteringBehavior'] = 'bothDirections'
                 print(f"  ⚠️  Relation → '{to_table}.{to_col}' set to manyToMany (peer table, {to_cols}/{from_cols} cols ≥ 70%).")
-            else:
-                # to-table has fewer columns → lookup/dimension table
+            elif to_table == 'Calendar':
+                # Calendar.Date is guaranteed unique (generated table)
                 rel['fromCardinality'] = 'many'
                 rel['toCardinality'] = 'one'
-                rel['crossFilteringBehavior'] = 'oneDirection'
-                print(f"  ✓  Relation → '{to_table}.{to_col}' set to manyToOne (lookup table, {to_cols}/{from_cols} cols < 70%).")
+                rel['crossFilteringBehavior'] = 'singleDirection'
+                print(f"  ✓  Relation → '{to_table}.{to_col}' set to manyToOne (Calendar table).")
+            else:
+                # Default to manyToMany — we cannot verify uniqueness without data
+                # PBI silently drops manyToOne relationships if the "one" side has duplicates
+                rel['fromCardinality'] = 'many'
+                rel['toCardinality'] = 'many'
+                rel['crossFilteringBehavior'] = 'bothDirections'
+                print(f"  ⚠️  Relation → '{to_table}.{to_col}' set to manyToMany (cannot verify uniqueness).")
 
 
 def _fix_related_for_many_to_many(model):
@@ -3154,7 +3161,7 @@ def _add_date_table(model):
                         "fromColumn": date_col_name,
                         "toTable": "Calendar",
                         "toColumn": "Date",
-                        "crossFilteringBehavior": "oneDirection"
+                        "crossFilteringBehavior": "singleDirection"
                     })
                     break  # one date column per table is enough
 
@@ -3876,7 +3883,7 @@ def _write_relationships_tmdl(def_dir, relationships):
         elif from_card == 'many' and to_card == 'one':
             pass
 
-        cfb = rel.get('crossFilteringBehavior', 'oneDirection')
+        cfb = rel.get('crossFilteringBehavior', 'singleDirection')
         lines.append(f"\tcrossFilteringBehavior: {cfb}")
 
         if rel.get('isActive') == False:

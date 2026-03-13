@@ -274,26 +274,36 @@ class TestDetectManyToMany(unittest.TestCase):
         self.assertEqual(rels[0]["toCardinality"], "many")
         self.assertEqual(rels[0]["crossFilteringBehavior"], "bothDirections")
 
-    def test_left_join_sets_many_to_one(self):
+    def test_left_join_sets_many_to_many(self):
+        """Non-Calendar tables default to manyToMany (cannot verify uniqueness)."""
         rels = [{"fromTable": "A", "toTable": "B", "toColumn": "id", "joinType": "left"}]
         model = self._make_model(rels)
         self._detect(model, [])
         self.assertEqual(rels[0]["fromCardinality"], "many")
-        self.assertEqual(rels[0]["toCardinality"], "one")
-        self.assertEqual(rels[0]["crossFilteringBehavior"], "oneDirection")
+        self.assertEqual(rels[0]["toCardinality"], "many")
+        self.assertEqual(rels[0]["crossFilteringBehavior"], "bothDirections")
 
-    def test_inner_join_sets_many_to_one(self):
+    def test_inner_join_sets_many_to_many(self):
+        """Non-Calendar tables default to manyToMany (cannot verify uniqueness)."""
         rels = [{"fromTable": "A", "toTable": "B", "toColumn": "id", "joinType": "inner"}]
         model = self._make_model(rels)
         self._detect(model, [])
-        self.assertEqual(rels[0]["toCardinality"], "one")
+        self.assertEqual(rels[0]["toCardinality"], "many")
 
     def test_default_join_type(self):
         rels = [{"fromTable": "A", "toTable": "B", "toColumn": "id"}]
         model = self._make_model(rels)
         self._detect(model, [])
-        # Default joinType is 'left' → manyToOne
+        # Default: manyToMany (cannot verify uniqueness without data)
+        self.assertEqual(rels[0]["toCardinality"], "many")
+
+    def test_calendar_table_sets_many_to_one(self):
+        """Calendar table is guaranteed unique — keeps manyToOne."""
+        rels = [{"fromTable": "Orders", "toTable": "Calendar", "toColumn": "Date", "joinType": "left"}]
+        model = self._make_model(rels)
+        self._detect(model, [])
         self.assertEqual(rels[0]["toCardinality"], "one")
+        self.assertEqual(rels[0]["crossFilteringBehavior"], "singleDirection")
 
 
 class TestReplaceRelatedWithLookupvalue(unittest.TestCase):
