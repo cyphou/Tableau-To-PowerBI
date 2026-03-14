@@ -1895,7 +1895,17 @@ def _resolve_columns(dax, table_name, column_table_map, measure_names,
             return f"'{col_table}'[{_dax_escape_col(col)}]"
         return f"'{table_name}'[{_dax_escape_col(col)}]"
     
-    return _RE_COLUMN_RESOLVE.sub(resolve_column, dax)
+    # Apply column resolution ONLY outside of string literals ("..." in DAX)
+    # to avoid mangling regex patterns or other bracketed content inside strings.
+    parts = re.split(r'("(?:[^"\\]|\\.)*")', dax)
+    resolved = []
+    for idx, part in enumerate(parts):
+        if idx % 2 == 1:
+            # Inside a double-quoted string literal — keep as-is
+            resolved.append(part)
+        else:
+            resolved.append(_RE_COLUMN_RESOLVE.sub(resolve_column, part))
+    return ''.join(resolved)
 
 
 # ── Phase 5b: AGG(IF) → AGGX ─────────────────────────────────────────────────
@@ -2063,12 +2073,23 @@ def _normalize_spaces_outside_identifiers(text):
 # ── Utility ───────────────────────────────────────────────────────────────────
 
 def _split_args(inner):
-    """Split function arguments respecting nested parentheses."""
+    """Split function arguments respecting nested parentheses and string literals."""
     args = []
     depth = 0
     current = []
+    in_string = False
+    string_char = None
     for ch in inner:
-        if ch == '(':
+        if in_string:
+            current.append(ch)
+            if ch == string_char:
+                in_string = False
+                string_char = None
+        elif ch == '"' or ch == "'":
+            in_string = True
+            string_char = ch
+            current.append(ch)
+        elif ch == '(':
             depth += 1
             current.append(ch)
         elif ch == ')':

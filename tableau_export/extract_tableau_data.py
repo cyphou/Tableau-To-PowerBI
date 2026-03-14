@@ -18,6 +18,14 @@ from hyper_reader import read_hyper_from_twbx
 
 logger = logging.getLogger(__name__)
 
+
+def _safe_int(val, default=0):
+    """Safely convert a value to int, handling floats and non-numeric strings."""
+    try:
+        return int(float(val))
+    except (ValueError, TypeError):
+        return default
+
 # Ensure Unicode output on Windows consoles (✓, →, ❌, etc.)
 if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
     try:
@@ -243,8 +251,8 @@ class TableauExtractor:
                 'name': dashboard.get('name', ''),
                 'title': dashboard.findtext('.//title', ''),
                 'size': {
-                    'width': int(dashboard.get('width', 1280)),
-                    'height': int(dashboard.get('height', 720)),
+                    'width': _safe_int(dashboard.get('width', 1280)),
+                    'height': _safe_int(dashboard.get('height', 720)),
                 },
                 'objects': self.extract_dashboard_objects(dashboard),
                 'filters': self.extract_dashboard_filters(dashboard),
@@ -474,7 +482,7 @@ class TableauExtractor:
             filter_data = {
                 'field': filt.get('column', ''),
                 'type': filt.get('type', ''),
-                'values': [v.text for v in filt.findall('.//value')],
+                'values': [v.text for v in filt.findall('.//value') if v.text is not None],
             }
             filters.append(filter_data)
         
@@ -733,8 +741,6 @@ class TableauExtractor:
                         # No aggregation on internal field → skip it entirely
                         continue
 
-                    # Detect quick table calc prefix before cleaning
-                    table_calc_match = re.match(table_calc_re, field_ref)
                     # Detect quick table calc prefix before cleaning
                     table_calc_match = re.match(table_calc_re, field_ref)
                     table_calc_type = None
@@ -1076,10 +1082,10 @@ class TableauExtractor:
             is_floating = zone.get('is-floating') == 'true'
             
             pos = {
-                'x': int(zone.get('x', 0)),
-                'y': int(zone.get('y', 0)),
-                'w': int(zone.get('w', 300)),
-                'h': int(zone.get('h', 200)),
+                'x': _safe_int(zone.get('x', 0)),
+                'y': _safe_int(zone.get('y', 0)),
+                'w': _safe_int(zone.get('w', 300)),
+                'h': _safe_int(zone.get('h', 200)),
             }
             
             layout_mode = 'floating' if is_floating else ('fixed' if is_fixed else 'tiled')
@@ -1286,10 +1292,10 @@ class TableauExtractor:
                     'name': param_ref,
                     'zone_name': zone.get('name', ''),
                     'position': {
-                        'x': int(zone.get('x', 0)),
-                        'y': int(zone.get('y', 0)),
-                        'w': int(zone.get('w', 200)),
-                        'h': int(zone.get('h', 30)),
+                        'x': _safe_int(zone.get('x', 0)),
+                        'y': _safe_int(zone.get('y', 0)),
+                        'w': _safe_int(zone.get('w', 200)),
+                        'h': _safe_int(zone.get('h', 30)),
                     }
                 })
         return params
@@ -1305,10 +1311,10 @@ class TableauExtractor:
             container = {
                 'orientation': lc.get('orientation', 'vertical'),  # horizontal or vertical
                 'position': {
-                    'x': int(lc.get('x', 0)),
-                    'y': int(lc.get('y', 0)),
-                    'w': int(lc.get('w', 0)),
-                    'h': int(lc.get('h', 0)),
+                    'x': _safe_int(lc.get('x', 0)),
+                    'y': _safe_int(lc.get('y', 0)),
+                    'w': _safe_int(lc.get('w', 0)),
+                    'h': _safe_int(lc.get('h', 0)),
                 },
                 'children': [],
             }
@@ -1338,10 +1344,10 @@ class TableauExtractor:
                     visible_zones.append({
                         'name': zone_name,
                         'position': {
-                            'x': int(zone.get('x', 0)),
-                            'y': int(zone.get('y', 0)),
-                            'w': int(zone.get('w', 0)),
-                            'h': int(zone.get('h', 0)),
+                            'x': _safe_int(zone.get('x', 0)),
+                            'y': _safe_int(zone.get('y', 0)),
+                            'w': _safe_int(zone.get('w', 0)),
+                            'h': _safe_int(zone.get('h', 0)),
                         }
                     })
             
@@ -2310,16 +2316,16 @@ class TableauExtractor:
                 'orientation': orientation,
                 'name': lc.get('name', ''),
                 'position': {
-                    'x': int(lc.get('x', 0)),
-                    'y': int(lc.get('y', 0)),
-                    'w': int(lc.get('w', 0)),
-                    'h': int(lc.get('h', 0)),
+                    'x': _safe_int(lc.get('x', 0)),
+                    'y': _safe_int(lc.get('y', 0)),
+                    'w': _safe_int(lc.get('w', 0)),
+                    'h': _safe_int(lc.get('h', 0)),
                 },
                 'padding': {
-                    'top': int(lc.get('padding-top', lc.get('margin-top', 0))),
-                    'bottom': int(lc.get('padding-bottom', lc.get('margin-bottom', 0))),
-                    'left': int(lc.get('padding-left', lc.get('margin-left', 0))),
-                    'right': int(lc.get('padding-right', lc.get('margin-right', 0))),
+                    'top': _safe_int(lc.get('padding-top', lc.get('margin-top', 0))),
+                    'bottom': _safe_int(lc.get('padding-bottom', lc.get('margin-bottom', 0))),
+                    'left': _safe_int(lc.get('padding-left', lc.get('margin-left', 0))),
+                    'right': _safe_int(lc.get('padding-right', lc.get('margin-right', 0))),
                 },
                 'children': [],
             }
@@ -2329,10 +2335,10 @@ class TableauExtractor:
                         'type': 'zone',
                         'name': child.get('name', ''),
                         'position': {
-                            'x': int(child.get('x', 0)),
-                            'y': int(child.get('y', 0)),
-                            'w': int(child.get('w', 0)),
-                            'h': int(child.get('h', 0)),
+                            'x': _safe_int(child.get('x', 0)),
+                            'y': _safe_int(child.get('y', 0)),
+                            'w': _safe_int(child.get('w', 0)),
+                            'h': _safe_int(child.get('h', 0)),
                         }
                     })
             containers.append(container)
@@ -2344,8 +2350,8 @@ class TableauExtractor:
         for fc in worksheet.findall('.//forecast'):
             forecasts.append({
                 'enabled': True,
-                'periods': int(fc.get('forecast-forward', fc.get('periods', 5))),
-                'periods_back': int(fc.get('forecast-backward', 0)),
+                'periods': _safe_int(fc.get('forecast-forward', fc.get('periods', 5))),
+                'periods_back': _safe_int(fc.get('forecast-backward', 0)),
                 'prediction_interval': fc.get('prediction-interval', '95'),
                 'ignore_last': fc.get('ignore-last', '0'),
                 'model': fc.get('model', 'automatic'),
@@ -2357,7 +2363,7 @@ class TableauExtractor:
             if not forecasts:
                 forecasts.append({
                     'enabled': True,
-                    'periods': int(fm.get('periods', 5)),
+                    'periods': _safe_int(fm.get('periods', 5)),
                     'periods_back': 0,
                     'prediction_interval': fm.get('prediction-interval', '95'),
                     'ignore_last': '0',
@@ -2878,10 +2884,10 @@ class TableauExtractor:
                 'zone_name': zone.get('name', ''),
                 'zone_id': zone.get('id', ''),
                 'is_floating': is_floating,
-                'x': int(zone.get('x', 0)),
-                'y': int(zone.get('y', 0)),
-                'w': int(zone.get('w', 0)),
-                'h': int(zone.get('h', 0)),
+                'x': _safe_int(zone.get('x', 0)),
+                'y': _safe_int(zone.get('y', 0)),
+                'w': _safe_int(zone.get('w', 0)),
+                'h': _safe_int(zone.get('h', 0)),
             })
         return layout_info
 

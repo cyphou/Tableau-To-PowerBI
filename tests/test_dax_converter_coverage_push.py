@@ -475,6 +475,24 @@ class TestRegexpMatch(unittest.TestCase):
         )
         self.assertIn('verify manually', result)
 
+    def test_string_literal_brackets_not_resolved_as_columns(self):
+        """Ensure bracket patterns inside string literals are not resolved as columns.
+        
+        Regression test: [a-z0-9_-] inside a regex string literal was being
+        resolved as a column reference (e.g., 'Table'[a-z0-9_-]).
+        """
+        result = convert_tableau_formula_to_dax(
+            'REGEXP_MATCH([utm_campaign], "^[a-z0-9_-]+$")',
+            table_name='Campaigns',
+            column_table_map={'utm_campaign': 'Campaigns'},
+        )
+        # The regex pattern inside the string must be preserved as-is
+        self.assertIn('"^[a-z0-9_-]+$"', result)
+        # The column reference should be table-qualified
+        self.assertIn("'Campaigns'[utm_campaign]", result)
+        # The table name must NOT appear inside the string literal
+        self.assertNotIn("'Campaigns'[a-z0-9_-]", result)
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #  12. REGEXP_EXTRACT all branches (L1152-1208)

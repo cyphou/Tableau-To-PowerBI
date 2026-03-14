@@ -1090,6 +1090,20 @@ class TestSplitArgs(unittest.TestCase):
         result = _split_args("")
         self.assertEqual(result, [])
 
+    def test_comma_inside_string_literal(self):
+        """Commas inside quoted strings must not split arguments."""
+        result = _split_args('[field], "hello, world", "c"')
+        self.assertEqual(len(result), 3)
+        self.assertEqual(result[0], "[field]")
+        self.assertEqual(result[1], '"hello, world"')
+        self.assertEqual(result[2], '"c"')
+
+    def test_single_quoted_string_with_comma(self):
+        """Single-quoted strings with commas should also be preserved."""
+        result = _split_args("[col], 'a, b', 'c'")
+        self.assertEqual(len(result), 3)
+        self.assertEqual(result[1], "'a, b'")
+
 
 class TestNormalizeSpaces(unittest.TestCase):
     """Test _normalize_spaces_outside_identifiers."""

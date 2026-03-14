@@ -29,7 +29,7 @@ _M_TYPE_MAP = {
 
 def map_tableau_to_m_type(datatype):
     """Maps Tableau/BIM types to Power Query M types."""
-    return _M_TYPE_MAP.get(datatype.lower(), 'type text')
+    return _M_TYPE_MAP.get((datatype or '').lower(), 'type text')
 
 
 def _m_escape_col_name(name):
@@ -611,9 +611,10 @@ def _gen_m_hyper(details, table_name, columns):
     an inline #table() with the column list.
     """
     try:
+        import os as _os
         from hyper_reader import read_hyper, generate_m_for_hyper_table
         filename = details.get('filename', '')
-        if filename and os.path.isfile(filename):
+        if filename and _os.path.isfile(filename):
             result = read_hyper(filename, max_rows=20)
             tables = result.get('tables', [])
             # Find matching table or use the first
@@ -626,7 +627,7 @@ def _gen_m_hyper(details, table_name, columns):
                 target = tables[0]
             if target and target.get('columns'):
                 return generate_m_for_hyper_table(target)
-    except Exception:
+    except (ImportError, OSError, KeyError, ValueError):
         pass
 
     # Fallback: structured #table() with column names from metadata
@@ -1318,11 +1319,6 @@ def m_transform_skip_rows(n):
 def m_transform_remove_last_rows(n):
     """Remove last N rows."""
     return ('#"Removed Last Rows"', f'Table.RemoveLastN({{prev}}, {n})')
-
-
-def m_transform_remove_errors():
-    """Remove rows with errors."""
-    return ('#"Removed Errors"', 'Table.RemoveRowsWithErrors({prev})')
 
 
 def m_transform_promote_headers():
