@@ -85,6 +85,18 @@ Use this checklist after running the migration tool to validate the generated Po
 - [ ] Create a Power BI app for distribution (if needed)
 - [ ] Compare key metrics between Tableau and Power BI outputs
 
+## 11. Shared Semantic Model (Multi-Workbook)
+
+If you used `--shared-model` to merge multiple workbooks:
+
+- [ ] Open each `.pbip` thin report in Power BI Desktop and verify it loads
+- [ ] Confirm all thin reports point to the same `.SemanticModel` folder
+- [ ] In Model View, verify merged tables have all columns from all workbooks
+- [ ] Check for namespaced measures (e.g., `Total Sales (WorkbookA)`) and verify correctness
+- [ ] Review `merge_assessment.json` for conflict details
+- [ ] If measures were namespaced, update visuals to use the correct measure
+- [ ] Test cross-report consistency — same filter should produce same results in all thin reports
+
 ## Quick Reference
 
 | Tableau Feature | Where to Check in PBI |
@@ -98,3 +110,4 @@ Use this checklist after running the migration tool to validate the generated Po
 | User filters | Manage Roles (RLS) |
 | Custom SQL | Transform Data → Advanced Editor |
 | Actions | Action buttons, drill-through pages |
+| Shared Semantic Model | All thin reports reference the same `.SemanticModel` folder via `definition.pbir` → `byPath` |

@@ -12,11 +12,11 @@
 
 <p align="center">
   <a href="https://github.com/cyphou/Tableau-To-PowerBI/actions/workflows/ci.yml"><img src="https://github.com/cyphou/Tableau-To-PowerBI/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
-  <img src="https://img.shields.io/badge/coverage-95.4%25-brightgreen?style=flat-square" alt="Coverage"/>
-  <img src="https://img.shields.io/badge/tests-3%2C459%20passed-brightgreen?style=flat-square" alt="Tests"/>
+  <img src="https://img.shields.io/badge/coverage-96.2%25-brightgreen?style=flat-square" alt="Coverage"/>
+  <img src="https://img.shields.io/badge/tests-3%2C847%20passed-brightgreen?style=flat-square" alt="Tests"/>
   <img src="https://img.shields.io/badge/python-3.9%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python"/>
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License"/>
-  <img src="https://img.shields.io/badge/version-11.0.0-blue?style=flat-square" alt="Version"/>
+  <img src="https://img.shields.io/badge/version-13.0.0-blue?style=flat-square" alt="Version"/>
   <img src="https://img.shields.io/badge/deps-zero-orange?style=flat-square" alt="Zero Dependencies"/>
 </p>
 
@@ -79,6 +79,12 @@ python migrate.py workbook.twbx --deploy WORKSPACE_ID --deploy-refresh
 
 # 🧙 Interactive wizard (guided step-by-step)
 python migrate.py workbook.twbx --wizard
+
+# 🔗 Shared Semantic Model — merge multiple workbooks
+python migrate.py --shared-model wb1.twbx wb2.twbx --model-name "Shared Sales"
+
+# 🔍 Pre-merge assessment (assess without generating)
+python migrate.py --shared-model wb1.twbx wb2.twbx --assess-merge
 ```
 
 ---
@@ -132,6 +138,14 @@ One-command deploy to **Power BI Service** or **Microsoft Fabric** with Azure AD
 
 </td>
 </tr>
+<tr>
+<td colspan="2">
+
+### 🔗 Shared Semantic Model
+Merge multiple Tableau workbooks into **one shared semantic model** with thin reports. Fingerprint-based table matching, Jaccard column overlap scoring, measure conflict resolution, merge assessment with 0–100 scoring, and automatic `byPath` report wiring.
+
+</td>
+</tr>
 </table>
 
 > [!NOTE]
@@ -165,7 +179,39 @@ flowchart LR
 
 **Step 3 — Deploy** *(optional):* Packages and uploads to Power BI Service or Microsoft Fabric
 
-### 📂 Generated Output
+### � Shared Semantic Model Mode
+
+When migrating multiple workbooks that share the same data sources, use `--shared-model` to produce **one shared semantic model** + **N thin reports**:
+
+```mermaid
+flowchart LR
+    A1["📄 Workbook A"] --> E["🔍 EXTRACT\n(isolated)"]
+    A2["📄 Workbook B"] --> E
+    A3["📄 Workbook C"] --> E
+    E --> M["🔗 MERGE\nfingerprint matching"]
+    M --> SM["📦 Shared\nSemanticModel"]
+    M --> R1["📊 Report A\n(thin)"]
+    M --> R2["📊 Report B\n(thin)"]
+    M --> R3["📊 Report C\n(thin)"]
+    R1 -.->|byPath| SM
+    R2 -.->|byPath| SM
+    R3 -.->|byPath| SM
+
+    style SM fill:#4B8BBE,color:#fff
+    style R1 fill:#F2C811,color:#000
+    style R2 fill:#F2C811,color:#000
+    style R3 fill:#F2C811,color:#000
+```
+
+```bash
+# Assess merge feasibility first
+python migrate.py --shared-model wb1.twbx wb2.twbx wb3.twbx --assess-merge
+
+# Generate shared model + thin reports
+python migrate.py --shared-model wb1.twbx wb2.twbx wb3.twbx --model-name "Shared Sales"
+```
+
+### �📂 Generated Output
 
 ```
 YourReport/
@@ -188,6 +234,39 @@ YourReport/
                 └── visuals/
                     └── [id]/visual.json ← Each visual
 ```
+
+<details>
+<summary><b>📂 Shared Semantic Model output</b> (click to expand)</summary>
+
+When using `--shared-model`, the output is a single directory with one shared model and N thin reports:
+
+```
+SharedSales/
+├── SharedSales.SemanticModel/            ← ONE shared semantic model
+│   ├── .platform
+│   ├── definition.pbism
+│   └── definition/
+│       ├── model.tmdl                    ← Merged tables, measures, relationships
+│       ├── expressions.tmdl
+│       ├── relationships.tmdl
+│       └── tables/
+│           ├── Orders.tmdl               ← Deduplicated across workbooks
+│           ├── Customers.tmdl
+│           └── Calendar.tmdl
+├── WorkbookA.pbip                        ← Thin report A
+├── WorkbookA.Report/
+│   ├── definition.pbir                   ← byPath → ../SharedSales.SemanticModel
+│   └── definition/
+│       └── pages/
+├── WorkbookB.pbip                        ← Thin report B
+├── WorkbookB.Report/
+│   ├── definition.pbir                   ← byPath → ../SharedSales.SemanticModel
+│   └── definition/
+│       └── pages/
+└── merge_assessment.json                 ← Merge score, conflicts, recommendations
+```
+
+</details>
 
 ---
 
@@ -326,10 +405,13 @@ TableauToPowerBI/
 │   ├── validator.py                           #   Artifact validation
 │   ├── migration_report.py                    #   Per-item fidelity tracking
 │   ├── goals_generator.py                     #   Tableau Pulse → PBI Goals
+│   ├── shared_model.py                        #   Multi-workbook merge engine
+│   ├── merge_assessment.py                    #   Merge assessment reporter
+│   ├── thin_report_generator.py               #   Thin report (byPath) generator
 │   ├── plugins.py                             #   Plugin system
 │   └── deploy/                                #   Deploy to PBI Service / Fabric
-├── tests/                                     # 3,459 tests across 62 files
-├── docs/                                      # 12 documentation files
+├── tests/                                     # 3,847 tests across 65 files
+├── docs/                                      # 14 documentation files
 └── examples/                                  # Sample Tableau workbooks
 ```
 
@@ -378,6 +460,10 @@ TableauToPowerBI/
 | `--server-batch PROJECT` | Download all workbooks from a server project |
 | `--languages LOCALES` | Multi-language culture TMDL files (e.g., `fr-FR,de-DE`) |
 | `--goals` | Convert Tableau Pulse metrics to PBI Goals |
+| `--shared-model WB [WB ...]` | Merge multiple workbooks into one shared semantic model |
+| `--model-name NAME` | Name for the shared semantic model (default: `SharedModel`) |
+| `--assess-merge` | Only assess merge feasibility for `--shared-model` |
+| `--force-merge` | Force merge even if score is below threshold |
 
 </details>
 
@@ -456,13 +542,13 @@ The validator checks `.pbip` JSON, `report.json`, `model.tmdl`, page/visual stru
 ## 🧪 Testing
 
 <p align="center">
-  <img src="https://img.shields.io/badge/tests-3%2C459%20passed-brightgreen?style=for-the-badge" alt="Tests"/>
-  <img src="https://img.shields.io/badge/coverage-95.4%25-brightgreen?style=for-the-badge" alt="Coverage"/>
-  <img src="https://img.shields.io/badge/test%20files-62-blue?style=for-the-badge" alt="Test Files"/>
+  <img src="https://img.shields.io/badge/tests-3%2C847%20passed-brightgreen?style=for-the-badge" alt="Tests"/>
+  <img src="https://img.shields.io/badge/coverage-96.2%25-brightgreen?style=for-the-badge" alt="Coverage"/>
+  <img src="https://img.shields.io/badge/test%20files-65-blue?style=for-the-badge" alt="Test Files"/>
 </p>
 
 ```bash
-python -m pytest tests/ -v                          # Run all 3,459 tests
+python -m pytest tests/ -v                          # Run all 3,847 tests
 python -m pytest tests/test_dax_converter.py -v      # Run specific file
 python -m pytest tests/ --cov --cov-report=html      # Coverage report
 ```
@@ -494,7 +580,7 @@ python -m pytest tests/ --cov --cov-report=html      # Coverage report
 
 ```mermaid
 flowchart LR
-    L["🔍 Lint\nflake8 + ruff"] --> T["🧪 Test\n3,459 tests\nPy 3.9–3.12"]
+    L["🔍 Lint\nflake8 + ruff"] --> T["🧪 Test\n3,847 tests\nPy 3.9–3.12"]
     T --> V["✅ Validate\nStrict .twbx\nmigrations"]
     V --> S["📦 Staging\nFabric deploy"]
     S --> P["🚀 Production\nManual approval"]
@@ -505,6 +591,17 @@ flowchart LR
     style S fill:#f59e0b,color:#000
     style P fill:#ef4444,color:#fff
 ```
+
+### 📊 Migration Report
+
+After batch migration, run `python generate_report.py` to produce an HTML Migration & Assessment Report with per-workbook fidelity scores:
+
+![Migration Results](docs/images/migration_results.png)
+
+The report shows for each migrated workbook:
+- **Fidelity** — percentage of items migrated successfully (100% = everything converted)
+- **Total Items / Exact / Approximate / Unsupported** — breakdown of migration quality per item
+- **Tables / Measures / Visuals** — counts of generated artifacts in the output .pbip project
 
 ---
 
@@ -526,6 +623,7 @@ flowchart LR
 | ❓ [FAQ](docs/FAQ.md) | Frequently asked questions |
 | 🤝 [Contributing](CONTRIBUTING.md) | How to contribute |
 | 📝 [Changelog](CHANGELOG.md) | Release history |
+| 🔗 [Shared Model Plan](docs/SHARED_SEMANTIC_MODEL_PLAN.md) | Multi-workbook merge architecture |
 
 ---
 

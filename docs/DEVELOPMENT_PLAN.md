@@ -1,9 +1,32 @@
 # Development Plan — Tableau to Power BI Migration Tool
 
-**Version:** v12.0.0  
-**Date:** 2026-03-13  
-**Current state:** Sprint 39 done — **3,729 tests** across 64 test files (+conftest.py), 0 failures, 96.2% coverage  
-**Previous baseline:** v3.5.0 — 887 → v4.0.0 — 1,387 → v5.0.0 — 1,543 → v5.1.0 — 1,595 → v5.5.0 — 1,777 → v6.0.0 — 1,889 → v6.1.0 — 1,997 → v7.0.0 — 2,057 → Sprint 21 — 2,066 → v8.0.0 — 2,275 → Sprint 27 — 2,542 → Sprint 28 — 2,616 → Sprint 29 — 2,666 → v9.0.0 — 3,196 → v10.0.0 — 3,342 → v11.0.0 — 3,459 → **v12.0.0 — 3,729**
+**Version:** v13.0.0  
+**Date:** 2026-03-16  
+**Current state:** Sprint 40 done — **3,847 tests** across 65 test files (+conftest.py), 0 failures, 96.2% coverage  
+**Previous baseline:** v3.5.0 — 887 → v4.0.0 — 1,387 → v5.0.0 — 1,543 → v5.1.0 — 1,595 → v5.5.0 — 1,777 → v6.0.0 — 1,889 → v6.1.0 — 1,997 → v7.0.0 — 2,057 → Sprint 21 — 2,066 → v8.0.0 — 2,275 → Sprint 27 — 2,542 → Sprint 28 — 2,616 → Sprint 29 — 2,666 → v9.0.0 — 3,196 → v10.0.0 — 3,342 → v11.0.0 — 3,459 → v12.0.0 — 3,729 → **v13.0.0 — 3,847**
+
+---
+
+## v13.0.0 — Shared Semantic Model (Multi-Workbook Merge)
+
+### Motivation
+
+v12.0.0 reached 3,729 tests and 96.2% coverage. v13.0.0 introduces the **shared semantic model** feature: when multiple Tableau workbooks connect to the same data sources, they can be merged into a single Power BI semantic model with thin reports.
+
+### Sprint 40 — Shared Semantic Model Extension ✅ COMPLETED
+
+**Goal:** Build a multi-workbook merge pipeline that produces 1 shared SemanticModel + N thin Reports.  
+**Result:** 3 new modules, 3 modified files, 81 new tests.
+
+| # | Item | File(s) | Status | Details |
+|---|------|---------|--------|---------|
+| 40.1 | **Merge engine** | `powerbi_import/shared_model.py` | ✅ Done | TableFingerprint (SHA-256), Jaccard column overlap, merge scoring (0–100), measure/column/relationship/parameter deduplication and conflict resolution |
+| 40.2 | **Assessment reporter** | `powerbi_import/merge_assessment.py` | ✅ Done | JSON + console report, table overlap analysis, per-table column overlap %, conflict listing |
+| 40.3 | **Thin report generator** | `powerbi_import/thin_report_generator.py` | ✅ Done | PBIR byPath wiring, field remapping for namespaced measures, delegates to PBIPGenerator for page/visual content |
+| 40.4 | **Report content extraction** | `powerbi_import/pbip_generator.py` | ✅ Done | Added `_generate_report_definition_content()` for reuse by thin reports |
+| 40.5 | **Orchestration** | `powerbi_import/import_to_powerbi.py` | ✅ Done | Added `import_shared_model()` — 5-step flow: assess → merge → SemanticModel → N thin reports → assessment JSON |
+| 40.6 | **CLI wiring** | `migrate.py` | ✅ Done | `--shared-model`, `--model-name`, `--assess-merge`, `--force-merge`, `--batch DIR --shared-model` combo |
+| 40.7 | **Tests** | `tests/test_shared_model.py` | ✅ Done | 81 tests across 19 classes: fingerprinting, column overlap, merge candidates, measure conflicts, relationship dedup, parameter merge, column merge, type width, merge score, full merge, field mapping, assessment report, thin report generator, CLI arguments |
 
 ---
 

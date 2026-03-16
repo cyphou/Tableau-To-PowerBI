@@ -35,6 +35,9 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
   - `validator.py`: Artifact validator — validates .pbip projects (JSON, TMDL, report structure) before opening in PBI Desktop
   - `migration_report.py`: Per-item fidelity tracking and migration status reporting
   - `goals_generator.py`: PBI Goals/Scorecard generator — converts Tableau Pulse metrics to Power BI Goals JSON (goal name, current value measure, target, status rules, sparkline)
+  - `shared_model.py`: Multi-workbook merge engine — fingerprint-based table matching (SHA-256), Jaccard column overlap scoring, 4-dimension merge scoring (0–100), measure/column/relationship/parameter conflict resolution and deduplication
+  - `merge_assessment.py`: Merge assessment reporter — JSON + console output with table overlap analysis, conflict listing, merge/partial/separate recommendation
+  - `thin_report_generator.py`: Thin report generator — PBIR `byPath` wiring to shared SemanticModel, field remapping for namespaced measures, delegates to PBIPGenerator for page/visual content
   - `plugins.py`: Plugin system — auto-discovers and loads plugins from `examples/plugins/` via `importlib`, hook-based extension points for visual mapping, DAX post-processing, naming conventions
   - `deploy/`: Fabric deployment subpackage
     - `auth.py`: Azure AD authentication — Service Principal + Managed Identity (optional `azure-identity`)
@@ -46,7 +49,7 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
     - `pbi_client.py`: Power BI Service REST API client — Azure AD auth (SP/MI/token), import .pbix, refresh, list/delete datasets/reports
     - `pbix_packager.py`: .pbip → .pbix ZIP packager with OPC content types
     - `pbi_deployer.py`: PBI Service deployment orchestrator — package, upload, poll, refresh, validate
-- **tests/**: Unit and integration tests (3,729+ tests across 64 test files + conftest.py shared fixtures)
+- **tests/**: Unit and integration tests (3,847+ tests across 65 test files + conftest.py shared fixtures)
 - **docs/**: FAQ, PBI project guide, mapping reference
 - **.github/workflows/ci.yml**: CI/CD pipeline (lint → test → validate → deploy)
 - **.github/workflows/publish.yml**: PyPI auto-publish workflow (tag-triggered, OIDC trusted publisher)
@@ -78,6 +81,10 @@ python migrate.py --server https://tableau.company.com --server-batch Marketing 
 python migrate.py path/to/workbook.twbx --languages fr-FR,de-DE,ja-JP
 python migrate.py path/to/workbook.twbx --goals
 python migrate.py path/to/workbook.twbx --check-schema
+python migrate.py --shared-model wb1.twbx wb2.twbx --model-name "Shared Sales"
+python migrate.py --shared-model wb1.twbx wb2.twbx --assess-merge
+python migrate.py --shared-model wb1.twbx wb2.twbx --force-merge
+python migrate.py --batch examples/tableau_samples/ --shared-model
 ```
 
 ## Extracted Objects (16 types)

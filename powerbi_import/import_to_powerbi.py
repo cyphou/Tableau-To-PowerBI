@@ -153,6 +153,107 @@ class PowerBIImporter:
         except Exception as e:
             print(f"  [WARN] Error generating Power BI Project: {str(e)}")
 
+    def import_shared_model(self, model_name, all_converted_objects,
+                            workbook_names, output_dir=None,
+                            calendar_start=None, calendar_end=None,
+                            culture=None, model_mode='import',
+                            languages=None, force_merge=False):
+        """Generate a shared semantic model + thin reports.
+
+        Args:
+            model_name: Name for the shared semantic model.
+            all_converted_objects: List of converted_objects dicts (one per workbook).
+            workbook_names: List of workbook names (parallel with all_converted_objects).
+            output_dir: Custom output directory.
+            calendar_start: Start year for Calendar table.
+            calendar_end: End year for Calendar table.
+            culture: Override culture/locale.
+            model_mode: Semantic model mode (import/directquery/composite).
+            languages: Additional locale strings.
+            force_merge: Force merge even with low score.
+
+        Returns:
+            dict with 'assessment', 'model_path', 'report_paths'.
+        """
+        from powerbi_import.shared_model import assess_merge, merge_semantic_models, build_field_mapping
+        from powerbi_import.merge_assessment import generate_merge_report, print_merge_summary
+        from powerbi_import.thin_report_generator import ThinReportGenerator
+
+        print("=" * 64)
+        print("  SHARED SEMANTIC MODEL MIGRATION")
+        print("=" * 64)
+
+        # 1. Assess merge feasibility
+        print("\n  Step 1: Analyzing merge candidates...")
+        assessment = assess_merge(all_converted_objects, workbook_names)
+        print_merge_summary(assessment)
+
+        if assessment.recommendation == 'separate' and not force_merge:
+            print("  Merge not recommended (score too low). Use --force-merge to override.")
+            return {'assessment': assessment, 'model_path': None, 'report_paths': []}
+
+        # 2. Merge into unified dataset
+        print("\n  Step 2: Merging semantic models...")
+        merged = merge_semantic_models(all_converted_objects, assessment, model_name)
+
+        # 3. Determine output directory
+        if output_dir:
+            projects_dir = os.path.abspath(output_dir)
+        else:
+            projects_dir = os.path.abspath(
+                os.path.join('artifacts', 'powerbi_projects', 'shared')
+            )
+        os.makedirs(projects_dir, exist_ok=True)
+
+        # 4. Generate the shared semantic model
+        print(f"\n  Step 3: Generating shared semantic model '{model_name}'...")
+        generator = PowerBIProjectGenerator(output_dir=projects_dir)
+
+        # Store generation options
+        generator._calendar_start = calendar_start
+        generator._calendar_end = calendar_end
+        generator._culture = culture
+        generator._model_mode = model_mode or 'import'
+        generator._languages = languages
+
+        # Create the project directory
+        project_dir = os.path.join(projects_dir, model_name)
+        os.makedirs(project_dir, exist_ok=True)
+
+        # Generate SemanticModel
+        sm_dir = generator.create_semantic_model_structure(
+            project_dir, model_name, merged
+        )
+        print(f"  [OK] Shared SemanticModel created: {sm_dir}")
+
+        # 5. Generate thin reports for each workbook
+        print(f"\n  Step 4: Generating {len(workbook_names)} thin reports...")
+        report_paths = []
+
+        thin_gen = ThinReportGenerator(model_name, project_dir)
+
+        for wb_name, wb_data in zip(workbook_names, all_converted_objects):
+            field_mapping = build_field_mapping(assessment, wb_name)
+            report_path = thin_gen.generate_thin_report(
+                wb_name, wb_data, field_mapping=field_mapping
+            )
+            report_paths.append(report_path)
+            print(f"    [OK] Thin report: {wb_name}")
+
+        # 6. Write merge assessment report
+        assess_path = os.path.join(project_dir, 'merge_assessment.json')
+        generate_merge_report(assessment, output_path=assess_path)
+        print(f"\n  [OK] Merge assessment saved: {assess_path}")
+
+        print(f"\n  Shared Semantic Model migration complete!")
+        print(f"  Output: {project_dir}")
+
+        return {
+            'assessment': assessment,
+            'model_path': sm_dir,
+            'report_paths': report_paths,
+        }
+
 
 def main():
     """Main entry point"""

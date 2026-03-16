@@ -1488,6 +1488,39 @@ def _build_argument_parser():
         help='Check PBIR schema versions for updates and exit'
     )
 
+    # ── Shared Semantic Model arguments ───────────────────────
+    parser.add_argument(
+        '--shared-model',
+        nargs='*',
+        metavar='WORKBOOK',
+        default=None,
+        help=(
+            'Merge multiple workbooks into a shared semantic model with thin reports. '
+            'Provide workbook paths as positional args, or combine with --batch.'
+        )
+    )
+
+    parser.add_argument(
+        '--model-name',
+        metavar='NAME',
+        default=None,
+        help='Name for the shared semantic model (default: "SharedModel")'
+    )
+
+    parser.add_argument(
+        '--assess-merge',
+        action='store_true',
+        default=False,
+        help='Only assess merge feasibility for --shared-model, do not generate'
+    )
+
+    parser.add_argument(
+        '--force-merge',
+        action='store_true',
+        default=False,
+        help='Force merge even with low overlap score (use with --shared-model)'
+    )
+
     return parser
 
 
@@ -1719,6 +1752,142 @@ def _print_migration_summary(results, report_summary, start_time):
     return all_success
 
 
+# ── Shared Semantic Model migration ─────────────────────────────────────────
+
+def run_shared_model_migration(workbook_paths, model_name=None, output_dir=None,
+                               assess_only=False, force_merge=False,
+                               calendar_start=None, calendar_end=None,
+                               culture=None, model_mode='import',
+                               languages=None):
+    """Orchestrate shared semantic model migration for multiple workbooks.
+
+    Steps:
+        1. Extract each workbook to an isolated temp directory
+        2. Load all converted_objects into memory
+        3. Delegate to PowerBIImporter.import_shared_model()
+
+    Returns:
+        ExitCode
+    """
+    import tempfile
+    import shutil
+
+    if not workbook_paths:
+        print("Error: No workbooks specified for --shared-model")
+        return ExitCode.GENERAL_ERROR
+
+    # Validate all files exist
+    for wb_path in workbook_paths:
+        if not os.path.exists(wb_path):
+            print(f"Error: Workbook not found: {wb_path}")
+            return ExitCode.GENERAL_ERROR
+
+    model_name = model_name or 'SharedModel'
+    print_header("SHARED SEMANTIC MODEL MIGRATION")
+    print(f"  Workbooks:    {len(workbook_paths)}")
+    print(f"  Model name:   {model_name}")
+    if assess_only:
+        print(f"  Mode:         Assessment only")
+    print()
+
+    # Step 1: Extract each workbook to an isolated temp directory
+    all_converted = []
+    workbook_names = []
+    temp_dirs = []
+
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'tableau_export'))
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'powerbi_import'))
+
+    try:
+        from extract_tableau_data import TableauExtractor
+        from import_to_powerbi import PowerBIImporter
+
+        for wb_path in workbook_paths:
+            basename = os.path.splitext(os.path.basename(wb_path))[0]
+            workbook_names.append(basename)
+
+            print(f"  Extracting: {basename}...")
+            temp_dir = tempfile.mkdtemp(prefix=f'tableau_{basename}_')
+            temp_dirs.append(temp_dir)
+
+            extractor = TableauExtractor(wb_path, output_dir=temp_dir)
+            success = extractor.extract_all()
+
+            if not success:
+                print(f"  Warning: Extraction failed for {basename}, skipping")
+                all_converted.append(_empty_converted_objects())
+                continue
+
+            # Load the extracted data
+            importer = PowerBIImporter(source_dir=temp_dir)
+            converted = importer._load_converted_objects()
+            all_converted.append(converted)
+
+        if not any(c.get('datasources') for c in all_converted):
+            print("\nError: No datasources extracted from any workbook")
+            return ExitCode.EXTRACTION_FAILED
+
+        # Step 2: Assess or full migration
+        if assess_only:
+            from powerbi_import.shared_model import assess_merge
+            from powerbi_import.merge_assessment import print_merge_summary, generate_merge_report
+
+            assessment = assess_merge(all_converted, workbook_names)
+            print_merge_summary(assessment)
+
+            # Save assessment JSON
+            out = output_dir or os.path.join('artifacts', 'powerbi_projects', 'assessments')
+            os.makedirs(out, exist_ok=True)
+            assess_path = os.path.join(out, f'merge_assessment_{model_name}.json')
+            generate_merge_report(assessment, output_path=assess_path)
+            print(f"  Assessment saved: {assess_path}")
+
+            return ExitCode.SUCCESS
+        else:
+            importer = PowerBIImporter()
+            result = importer.import_shared_model(
+                model_name=model_name,
+                all_converted_objects=all_converted,
+                workbook_names=workbook_names,
+                output_dir=output_dir,
+                calendar_start=calendar_start,
+                calendar_end=calendar_end,
+                culture=culture,
+                model_mode=model_mode,
+                languages=languages,
+                force_merge=force_merge,
+            )
+
+            if result.get('model_path'):
+                return ExitCode.SUCCESS
+            else:
+                return ExitCode.GENERAL_ERROR
+
+    except Exception as e:
+        logger.error("Shared model migration failed: %s", e, exc_info=True)
+        print(f"\nError: {e}")
+        return ExitCode.GENERAL_ERROR
+
+    finally:
+        # Clean up temp directories
+        for td in temp_dirs:
+            try:
+                shutil.rmtree(td, ignore_errors=True)
+            except Exception:
+                pass
+
+
+def _empty_converted_objects():
+    """Return an empty converted_objects dict."""
+    return {
+        'datasources': [], 'worksheets': [], 'dashboards': [],
+        'calculations': [], 'parameters': [], 'filters': [],
+        'stories': [], 'actions': [], 'sets': [], 'groups': [],
+        'bins': [], 'hierarchies': [], 'sort_orders': [],
+        'aliases': {}, 'custom_sql': [], 'user_filters': [],
+    }
+
+
 # ── Assessment mode ──────────────────────────────────────────────────────────
 
 def _run_assessment_mode(args, results):
@@ -1811,6 +1980,32 @@ def main():
     if getattr(args, 'consolidate', None):
         result = run_consolidate_reports(args.consolidate)
         return ExitCode.SUCCESS if result == 0 else ExitCode.GENERAL_ERROR
+
+    # ── Shared Semantic Model mode ────────────────────────────
+    if getattr(args, 'shared_model', None) is not None:
+        workbook_paths = list(args.shared_model or [])
+
+        # If --batch is also given, discover workbooks from directory
+        if args.batch and not workbook_paths:
+            import glob
+            for ext in ('*.twb', '*.twbx'):
+                workbook_paths.extend(
+                    glob.glob(os.path.join(args.batch, '**', ext), recursive=True)
+                )
+            workbook_paths.sort()
+
+        return run_shared_model_migration(
+            workbook_paths=workbook_paths,
+            model_name=getattr(args, 'model_name', None),
+            output_dir=args.output_dir,
+            assess_only=getattr(args, 'assess_merge', False),
+            force_merge=getattr(args, 'force_merge', False),
+            calendar_start=args.calendar_start,
+            calendar_end=args.calendar_end,
+            culture=args.culture,
+            model_mode=getattr(args, 'mode', 'import'),
+            languages=getattr(args, 'languages', None),
+        )
 
     # ── Manifest-based batch migration ─────────────────────────
     manifest_data = None

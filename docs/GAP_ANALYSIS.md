@@ -1,16 +1,16 @@
 # Comprehensive Gap Analysis — Tableau to Power BI Migration Tool
 
-**Date:** 2026-03-13 — updated through v12.0.0 (Sprints 13-39)  
+**Date:** 2026-03-16 — updated through v13.0.0 (Sprints 13-40)  
 **Scope:** Every source file, test file, CI/CD, docs, config, and cross-project comparison with TableauToFabric  
-**Status:** 3,729 tests passing across 64 test files, 96.2% coverage
+**Status:** 3,847 tests passing across 65 test files, 96.2% coverage
 
 ### Implementation Coverage
 
 ```
  EXTRACTION          GENERATION         INFRA / CI         DOCUMENTATION
 +----------------+  +----------------+  +----------------+  +----------------+
-| 20 object types|  | PBIR v4.0      |  | 5-stage CI/CD  |  | 13 doc files   |
-| .twb/.twbx/.tfl|  | TMDL semantic  |  | 3,729 tests    |  | DAX reference  |
+| 20 object types|  | PBIR v4.0      |  | 5-stage CI/CD  |  | 14 doc files   |
+| .twb/.twbx/.tfl|  | TMDL semantic  |  | 3,847 tests    |  | DAX reference  |
 | 180+ DAX conv  |  | 60+ visuals    |  | Artifact valid |  | M query ref    |
 | 33 connectors  |  | Drill-through  |  | Fabric deploy  |  | Prep ref       |
 | 40+ transforms |  | Slicer modes   |  | Env configs    |  | Architecture   |
@@ -18,12 +18,14 @@
 | Ref lines/bands|  | RLS roles      |  | --dry-run      |  | Migration guide|
 | Datasrc filters|  | Calendar/culture|  | --culture      |  | FAQ + more     |
 | 22 new methods |  | Quick table cal|  | --assess       |  |                |
-+-------+--------+  +-------+--------+  +-------+--------+  +-------+--------+
-        |                    |                    |                    |
++-------+--------+  | Shared model   |  +-------+--------+  +-------+--------+
+        |            +-------+--------+          |                    |
         +--------------------+--------------------+--------------------+
                                      |
-                          v9.0.0 → v12.0.0
+                          v9.0.0 → v13.0.0
                      +-------------------------------+
+                     | Shared semantic model merge   |
+                     | Multi-workbook thin reports   |
                      | Plugin system & examples      |
                      | PyPI auto-publish workflow    |
                      | PBIR schema forward-compat    |
@@ -138,6 +140,7 @@
 - **Deployment not end-to-end tested**: Integration test structure added in v5.0 (`test_fabric_integration.py`) — opt-in with `@pytest.mark.integration`
 - **Stale file cleanup race conditions**: OneDrive lock leftovers handled via try/except but may still leave artifacts on Windows
 - **`import_to_powerbi.py` loads JSON from hardcoded paths**: ✅ IMPLEMENTED — `source_dir` parameter allows configurable JSON source directory
+- **No shared semantic model**: ✅ IMPLEMENTED — `--shared-model` CLI flag merges multiple workbooks into one shared SemanticModel + N thin Reports; fingerprint-based table matching, Jaccard column overlap scoring, measure conflict resolution, merge assessment with 0–100 scoring
 - **No composite model support**: ✅ IMPLEMENTED — `--mode composite` enables DirectQuery + Import hybrid
 - **No Small Multiples**: ✅ IMPLEMENTED — `_build_small_multiples_config()` auto-detects suitable fields
 ### What is APPROXIMATED

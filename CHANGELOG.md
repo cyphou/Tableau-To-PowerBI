@@ -1,5 +1,22 @@
 # Changelog
 
+## v13.0.0 — Shared Semantic Model (Multi-Workbook Merge)
+
+### Sprint 40 — Shared Semantic Model Extension ✅
+- **Shared semantic model**: Merge multiple Tableau workbooks into one shared Power BI semantic model with N thin reports
+- **New modules**: `shared_model.py` (merge engine), `merge_assessment.py` (assessment reporter), `thin_report_generator.py` (thin report generator)
+- **Merge engine**: Fingerprint-based table matching (SHA-256 hash of connection_type|server|database|schema|table), Jaccard similarity for column overlap, 4-dimension merge scoring (0–100)
+- **Conflict resolution**: Measures — identical formula = deduplicate, different formula = namespace as `Measure (Workbook)`; Columns — union with wider type wins; Relationships — deduplicated by (from,to) key; Parameters — same logic as measures
+- **Thin reports**: PBIR `definition.pbir` with `byPath` reference to `../SharedModel.SemanticModel`; each report gets its own pages/visuals from the original workbook
+- **Merge assessment**: JSON + console report with table overlap analysis, measure/column/parameter conflicts, merge score with thresholds (≥60 = merge, 30–59 = partial, <30 = separate)
+- **CLI flags**: `--shared-model WB [WB ...]`, `--model-name NAME`, `--assess-merge`, `--force-merge`
+- **Batch support**: `--batch DIR --shared-model` auto-discovers and merges all .twb/.twbx in a directory
+- **Modified modules**: `pbip_generator.py` (added `_generate_report_definition_content()`), `import_to_powerbi.py` (added `import_shared_model()`), `migrate.py` (CLI wiring + `run_shared_model_migration()`)
+- **81 new tests** in `test_shared_model.py` across 19 test classes
+- **Overall: 3,729 → 3,847 tests**, coverage maintained at **96.2%**
+
+---
+
 ## v12.0.0 — Hardening, Coverage Push to 96%+
 
 ### Sprint 39 — Coverage Push dax_converter.py ✅

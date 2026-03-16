@@ -1029,6 +1029,140 @@ class PowerBIProjectGenerator:
         
         return report_dir
     
+    def _generate_report_definition_content(self, report_dir, report_name,
+                                              converted_objects):
+        """Generate report definition content (pages, visuals, theme) inside an
+        existing report directory.
+
+        This is the content-only portion of ``create_report_structure`` — it does
+        **not** write ``.platform`` or ``definition.pbir``, making it suitable for
+        thin reports that already have those files pointing to a shared semantic model.
+        """
+        def_dir = os.path.join(report_dir, 'definition')
+        os.makedirs(def_dir, exist_ok=True)
+
+        # version.json
+        version_json = {
+            "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/versionMetadata/1.0.0/schema.json",
+            "version": "2.0.0",
+        }
+        _write_json(os.path.join(def_dir, 'version.json'), version_json)
+
+        # Theme extraction
+        theme_data = None
+        dashboards = converted_objects.get('dashboards', [])
+        for db in dashboards:
+            t = db.get('theme')
+            if t and t.get('colors'):
+                theme_data = t
+                break
+
+        custom_theme = tmdl_generator.generate_theme_json(theme_data)
+
+        report_json = {
+            "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/3.1.0/schema.json",
+            "themeCollection": {
+                "baseTheme": {
+                    "name": "CY24SU06",
+                    "reportVersionAtImport": {
+                        "visual": "1.8.50", "report": "2.0.50", "page": "1.3.50",
+                    },
+                    "type": "SharedResources",
+                },
+            },
+            "resourcePackages": [
+                {
+                    "name": "SharedResources",
+                    "type": "SharedResources",
+                    "items": [{"name": "CY24SU06", "path": "BaseThemes/CY24SU06.json", "type": "BaseTheme"}],
+                },
+            ],
+            "settings": {
+                "hideVisualContainerHeader": True,
+                "useStylableVisualContainerHeader": True,
+                "exportDataMode": "None",
+                "defaultDrillFilterOtherVisuals": True,
+                "allowChangeFilterTypes": True,
+                "useEnhancedTooltips": True,
+            },
+        }
+
+        if theme_data:
+            report_json["resourcePackages"].append({
+                "name": "MigrationTheme", "type": "CustomTheme",
+                "items": [{"name": "TableauMigrationTheme",
+                           "path": "RegisteredResources/TableauMigrationTheme.json",
+                           "type": "CustomTheme"}],
+            })
+            report_json["themeCollection"]["customTheme"] = {
+                "name": "TableauMigrationTheme",
+                "reportVersionAtImport": {"visual": "1.8.50", "report": "2.0.50", "page": "1.3.50"},
+                "type": "CustomTheme",
+            }
+            res_dir = os.path.join(def_dir, 'RegisteredResources')
+            _write_json(os.path.join(res_dir, 'TableauMigrationTheme.json'), custom_theme)
+
+        # Report-level filters
+        all_report_filters = list(converted_objects.get('filters', []))
+        all_report_filters += list(converted_objects.get('datasource_filters', []))
+        if all_report_filters:
+            report_level_filters = self._create_visual_filters(all_report_filters)
+            if report_level_filters:
+                report_json["filterConfig"] = {"filters": report_level_filters}
+
+        self._used_custom_guids = {}
+
+        # Pages
+        pages_dir = os.path.join(def_dir, 'pages')
+        os.makedirs(pages_dir, exist_ok=True)
+        worksheets = converted_objects.get('worksheets', [])
+        page_names = []
+        tooltip_page_map = {}
+
+        if dashboards:
+            page_names = self._create_dashboard_pages(
+                pages_dir, dashboards, worksheets, converted_objects, tooltip_page_map)
+
+        # Bookmarks
+        all_bookmarks = []
+        stories = converted_objects.get('stories', [])
+        if stories:
+            all_bookmarks.extend(self._create_bookmarks(stories))
+        if dashboards:
+            for db_idx, db in enumerate(dashboards):
+                dz_vis = db.get('dynamic_zone_visibility', [])
+                if dz_vis:
+                    pg_name = page_names[db_idx] if db_idx < len(page_names) else ''
+                    all_bookmarks.extend(self._create_swap_bookmarks(dz_vis, pg_name))
+        if all_bookmarks:
+            report_json["bookmarks"] = all_bookmarks
+
+        if not page_names or (dashboards and all(len(d.get('objects', [])) == 0 for d in dashboards)):
+            page_names = self._create_fallback_page(pages_dir, worksheets, converted_objects)
+
+        self._create_tooltip_pages(pages_dir, page_names, worksheets, converted_objects)
+        if dashboards:
+            self._create_mobile_pages(pages_dir, page_names, dashboards, worksheets, converted_objects)
+        self._create_drillthrough_pages(pages_dir, page_names, worksheets, converted_objects)
+
+        pages_metadata = {
+            "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/pagesMetadata/1.0.0/schema.json",
+            "pageOrder": page_names,
+            "activePageName": page_names[0] if page_names else "",
+        }
+        _write_json(os.path.join(pages_dir, 'pages.json'), pages_metadata)
+
+        if self._used_custom_guids:
+            custom_vis_list = []
+            for key, info in self._used_custom_guids.items():
+                custom_vis_list.append({
+                    "name": info["guid"], "displayName": info["name"],
+                    "visualType": info.get("class", key),
+                })
+            report_json["customVisualsRepository"] = custom_vis_list
+
+        _write_json(os.path.join(def_dir, 'report.json'), report_json)
+
     # ── Report page sub-methods (extracted from create_report_structure) ──
 
     def _create_dashboard_pages(self, pages_dir, dashboards, worksheets, converted_objects,

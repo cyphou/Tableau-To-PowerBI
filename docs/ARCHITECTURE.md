@@ -141,6 +141,9 @@ For environments without Mermaid rendering:
 | `m_query_generator.py` | Sample data M query generator |
 | `validator.py` | Artifact validator (JSON, TMDL, DAX semantic validation) |
 | `migration_report.py` | Per-item fidelity tracking and migration status reporting |
+| `shared_model.py` | Multi-workbook merge engine: fingerprint-based table matching, column overlap scoring, measure/column/parameter conflict resolution |
+| `merge_assessment.py` | Merge assessment reporter: JSON + console output, scoring (0–100), merge/partial/separate recommendation |
+| `thin_report_generator.py` | Thin report generator: PBIR `byPath` wiring, field remapping for namespaced measures |
 
 ### `powerbi_import/deploy/` — Fabric Deployment
 
@@ -253,4 +256,49 @@ The semantic model is built in 14 sequential phases:
         │   └── {locale}.tmdl
         └── tables/
             └── {TableName}.tmdl
+```
+
+## Shared Semantic Model Pipeline
+
+When using `--shared-model`, the pipeline extends with a merge step:
+
+```
+  Workbook A ──→ Extract A ──→ 16 JSON files (A)  ──┐
+  Workbook B ──→ Extract B ──→ 16 JSON files (B)  ──┤── MERGE ──→ Shared SemanticModel
+  Workbook C ──→ Extract C ──→ 16 JSON files (C)  ──┘       ├──→ Thin Report A
+                                                              ├──→ Thin Report B
+                                                              └──→ Thin Report C
+```
+
+### Merge Algorithm
+
+1. **Fingerprinting**: Each table gets a SHA-256 fingerprint from `connection_type|server|database|schema|table_name`
+2. **Candidate detection**: Tables with identical fingerprints across workbooks are merge candidates
+3. **Column overlap scoring**: Jaccard similarity (`|intersection| / |union|`) per table pair
+4. **Merge scoring**: 0–100 across 4 dimensions: table overlap (40pts), column quality (20pts), measure conflicts (20pts), connection homogeneity (20pts)
+5. **Conflict resolution**: Identical measures deduplicated; conflicting measures namespaced as `Measure (Workbook)`; columns unioned with wider type; relationships deduplicated
+6. **Generation**: One shared SemanticModel + N thin Reports with `byPath` PBIR reference
+
+### Shared Model Output Structure
+
+```
+{ModelName}/
+├── {ModelName}.SemanticModel/           ← ONE shared semantic model
+│   ├── .platform
+│   ├── definition.pbism
+│   └── definition/
+│       ├── model.tmdl                   ← Merged tables, measures, relationships
+│       ├── expressions.tmdl
+│       ├── relationships.tmdl
+│       └── tables/
+│           └── {TableName}.tmdl         ← Deduplicated across workbooks
+├── {WorkbookA}.pbip                     ← Thin report A
+├── {WorkbookA}.Report/
+│   ├── definition.pbir                  ← byPath → ../{ModelName}.SemanticModel
+│   └── definition/pages/
+├── {WorkbookB}.pbip                     ← Thin report B
+├── {WorkbookB}.Report/
+│   ├── definition.pbir                  ← byPath → ../{ModelName}.SemanticModel
+│   └── definition/pages/
+└── merge_assessment.json                ← Merge score, conflicts, recommendations
 ```

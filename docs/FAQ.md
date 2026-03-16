@@ -219,6 +219,55 @@ python migrate.py --batch /path/to/tableau/files/ --output-dir /tmp/output
 
 This processes all `.twb` and `.twbx` files in the directory and generates separate .pbip projects for each.
 
+### How do I merge multiple workbooks into a shared semantic model?
+
+Use `--shared-model` to merge workbooks that share the same data sources into one Power BI semantic model with thin reports:
+
+```bash
+# Pre-assessment (see merge score before generating)
+python migrate.py --shared-model wb1.twbx wb2.twbx --assess-merge
+
+# Generate shared model + thin reports
+python migrate.py --shared-model wb1.twbx wb2.twbx --model-name "Sales Model"
+
+# Batch all workbooks in a directory
+python migrate.py --batch /path/to/workbooks/ --shared-model
+
+# Force merge even with low overlap score
+python migrate.py --shared-model wb1.twbx wb2.twbx --force-merge
+```
+
+The merge engine uses fingerprint-based table matching — tables are matched by `connection_type|server|database|table_name`, so workbooks connecting to the same physical database tables are automatically detected as merge candidates.
+
+**Merge scores:**
+- **≥60** — MERGE RECOMMENDED: high table overlap, few conflicts
+- **30–59** — PARTIAL: some overlap but significant differences
+- **<30** — KEEP SEPARATE: different data sources, use `--force-merge` to override
+
+### What is a thin report?
+
+A thin report is a Power BI report (`.pbip`) that doesn’t contain its own semantic model. Instead, it references a shared semantic model via a `byPath` pointer in `definition.pbir`:
+
+```json
+{
+  "datasetReference": {
+    "byPath": {
+      "path": "../SharedModel.SemanticModel"
+    }
+  }
+}
+```
+
+This allows multiple reports to share one data model — changes to the model (tables, measures, relationships) are reflected in all thin reports automatically.
+
+### How are measure conflicts resolved during merge?
+
+- **Identical measures** (same name + same DAX formula) → deduplicated (kept once)
+- **Conflicting measures** (same name, different formula) → namespaced as `MeasureName (WorkbookName)` in the shared model
+- **Unique measures** (name only in one workbook) → kept as-is
+
+The `merge_assessment.json` file lists all conflicts detected.
+
 ### How do I run the tests?
 
 ```bash

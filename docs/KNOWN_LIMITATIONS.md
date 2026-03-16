@@ -94,6 +94,16 @@ This document lists known limitations and approximations in the Tableau to Power
 |------|------------|
 | **PBIR schema versions** | Generated output targets PBIR v4.0 schemas. Use `--check-schema` to verify forward-compatibility with newer Power BI Desktop versions |
 
+## Shared Semantic Model Limitations
+
+| Area | Limitation |
+|------|------------|
+| **Table matching** | Tables are matched by physical fingerprint (`connection_type\|server\|database\|table_name`) — tables with the same name but from different servers are NOT merged |
+| **Column type conflicts** | When the same column has different types across workbooks, the wider type is used (e.g., integer → string). Data may need type casting after migration |
+| **Measure namespacing** | Conflicting measures (same name, different formula) are namespaced as `Measure (Workbook)`. Visuals referencing the original measure name may need manual update |
+| **Custom SQL tables** | Tables defined by custom SQL are not matched by fingerprint (no table name) |
+| **Cross-workbook RLS** | RLS roles from multiple workbooks are merged but may have overlapping rules. Review `Manage Roles` in PBI Desktop |
+
 ## Workarounds
 
 For most limitations, the recommended workflow is:
@@ -111,3 +121,5 @@ For most limitations, the recommended workflow is:
 11. Use `--languages fr-FR,de-DE` to generate multi-language culture TMDL files with translated display folders
 12. Use `--goals` to convert Tableau Pulse metrics to Power BI Goals/Scorecard artifacts
 13. Use `--check-schema` to verify PBIR schema forward-compatibility before opening in newer PBI Desktop versions
+14. Use `--shared-model wb1.twbx wb2.twbx` to merge multiple workbooks into a shared semantic model with thin reports
+15. Use `--assess-merge` to preview merge feasibility before generating
