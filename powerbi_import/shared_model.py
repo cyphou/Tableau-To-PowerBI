@@ -350,7 +350,7 @@ def _detect_measure_conflicts(
                     continue
                 caption = calc.get('caption', calc.get('name', ''))
                 formula = calc.get('formula', '').strip()
-                key = (caption, ds_name)
+                key = caption
                 if key not in measure_map:
                     measure_map[key] = {}
                 measure_map[key][wb_name] = formula
@@ -362,8 +362,7 @@ def _detect_measure_conflicts(
                 continue
             caption = calc.get('caption', calc.get('name', ''))
             formula = calc.get('formula', '').strip()
-            ds_name = calc.get('datasource_name', '')
-            key = (caption, ds_name)
+            key = caption
             if key not in measure_map:
                 measure_map[key] = {}
             measure_map[key][wb_name] = formula
@@ -371,7 +370,7 @@ def _detect_measure_conflicts(
     conflicts = []
     duplicates = 0
 
-    for (name, ds_name), wb_formulas in measure_map.items():
+    for name, wb_formulas in measure_map.items():
         if len(wb_formulas) <= 1:
             continue
         unique_formulas = set(wb_formulas.values())
@@ -379,7 +378,7 @@ def _detect_measure_conflicts(
             duplicates += 1
         else:
             conflicts.append(MeasureConflict(
-                name=name, table=ds_name, variants=wb_formulas
+                name=name, table='', variants=wb_formulas
             ))
 
     return conflicts, duplicates
@@ -605,6 +604,9 @@ def _merge_datasources(all_extracted: List[dict],
     # Track relationships for deduplication
     rel_keys_seen = set()
 
+    # Track datasource-level calculations for deduplication
+    _ds_calc_seen = set()  # (caption, formula)
+
     for wb_name, extracted in zip(workbook_names, all_extracted):
         for ds in extracted.get('datasources', []):
             # Adopt connection info from first datasource
@@ -636,9 +638,27 @@ def _merge_datasources(all_extracted: List[dict],
                     rel_keys_seen.add(key)
                     merged_ds['relationships'].append(copy.deepcopy(rel))
 
-            # Merge datasource-level calculations
+            # Merge datasource-level calculations (dedup + namespace conflicts)
+            conflict_names = {mc.name for mc in assessment.measure_conflicts}
             for calc in ds.get('calculations', []):
-                merged_ds['calculations'].append(copy.deepcopy(calc))
+                caption = calc.get('caption', calc.get('name', ''))
+                formula = calc.get('formula', '').strip()
+                role = calc.get('role', 'measure')
+
+                if caption in conflict_names and role == 'measure':
+                    # Namespace conflicting measure
+                    namespaced = copy.deepcopy(calc)
+                    new_caption = f"{caption} ({wb_name})"
+                    namespaced['caption'] = new_caption
+                    namespaced['_original_caption'] = caption
+                    namespaced['_source_workbook'] = wb_name
+                    merged_ds['calculations'].append(namespaced)
+                else:
+                    # Deduplicate by (caption, formula)
+                    dup_key = (caption, formula)
+                    if dup_key not in _ds_calc_seen:
+                        _ds_calc_seen.add(dup_key)
+                        merged_ds['calculations'].append(copy.deepcopy(calc))
 
     return merged_ds
 

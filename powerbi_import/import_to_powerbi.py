@@ -245,6 +245,23 @@ class PowerBIImporter:
         generate_merge_report(assessment, output_path=assess_path)
         print(f"\n  [OK] Merge assessment saved: {assess_path}")
 
+        # 7. Generate HTML merge report
+        try:
+            from powerbi_import.merge_report_html import generate_merge_html_report
+        except ImportError:
+            from merge_report_html import generate_merge_html_report
+
+        html_path = os.path.join(project_dir, 'MERGE_REPORT.html')
+        generate_merge_html_report(
+            assessment=assessment,
+            all_extracted=all_converted_objects,
+            workbook_names=workbook_names,
+            merged=merged,
+            model_name=model_name,
+            output_path=html_path,
+        )
+        print(f"  [OK] HTML merge report: {html_path}")
+
         print(f"\n  Shared Semantic Model migration complete!")
         print(f"  Output: {project_dir}")
 
