@@ -735,5 +735,136 @@ class TestImportSharedModelEnhanced(unittest.TestCase):
         self.assertTrue(os.path.isfile(lineage_path))
 
 
+# ═══════════════════════════════════════════════════════════════════
+#  Table Isolation Detection Tests
+# ═══════════════════════════════════════════════════════════════════
+
+class TestTableIsolationDetection(unittest.TestCase):
+    """Tests for intelligent table linkage / isolation classification."""
+
+    def test_shared_tables_not_isolated(self):
+        """Two workbooks sharing the same table → no isolation."""
+        all_extracted, names = _two_workbooks_with_conflict()
+        assessment = assess_merge(all_extracted, names)
+        # Both share [dbo].[Orders] → no isolated tables
+        total_isolated = sum(len(v) for v in assessment.isolated_tables.values())
+        self.assertEqual(total_isolated, 0)
+
+    def test_unlinked_unique_tables_are_isolated(self):
+        """Unique tables with no relationships or column overlap → isolated."""
+        wb_a = _make_wb([_make_datasource(
+            'DS_A', 'sqlserver', 'srv1', 'db1',
+            tables=[_make_table('Widgets', ['widget_id', 'color'])],
+        )])
+        wb_b = _make_wb([_make_datasource(
+            'DS_B', 'postgres', 'srv2', 'db2',
+            tables=[_make_table('Gadgets', ['gadget_id', 'size'])],
+        )])
+        assessment = assess_merge([wb_a, wb_b], ['WB_A', 'WB_B'])
+        total_isolated = sum(len(v) for v in assessment.isolated_tables.values())
+        self.assertEqual(total_isolated, 2)
+
+    def test_linked_by_relationship_not_isolated(self):
+        """Unique table linked via relationship to shared table → not isolated."""
+        shared_table = _make_table('[dbo].[Orders]', ['OrderID', 'Amount'])
+        detail_table = _make_table('[dbo].[OrderDetails]', ['DetailID', 'OrderID', 'Qty'])
+        rel = {'left': {'table': 'Orders', 'column': 'OrderID'},
+               'right': {'table': 'OrderDetails', 'column': 'OrderID'}}
+
+        wb_a = _make_wb([_make_datasource(
+            'DS_A', 'sqlserver', 'srv1', 'db1',
+            tables=[shared_table, detail_table], rels=[rel],
+        )])
+        wb_b = _make_wb([_make_datasource(
+            'DS_B', 'sqlserver', 'srv1', 'db1',
+            tables=[_make_table('[dbo].[Orders]', ['OrderID', 'Amount', 'Date'])],
+        )])
+        assessment = assess_merge([wb_a, wb_b], ['WB_A', 'WB_B'])
+        # OrderDetails is unique to WB_A but linked via relationship to shared Orders
+        linked_tables = assessment.linked_unique_tables.get('WB_A', [])
+        self.assertIn('[dbo].[OrderDetails]', linked_tables)
+        # It should NOT be in isolated
+        isolated_tables = assessment.isolated_tables.get('WB_A', [])
+        self.assertNotIn('[dbo].[OrderDetails]', isolated_tables)
+
+    def test_linked_by_key_column_not_isolated(self):
+        """Unique table sharing a key-like column name with shared table → not isolated."""
+        wb_a = _make_wb([_make_datasource(
+            'DS_A', 'sqlserver', 'srv1', 'db1',
+            tables=[_make_table('[dbo].[Orders]', ['order_id', 'amount', 'customer_id'])],
+        )])
+        wb_b = _make_wb([_make_datasource(
+            'DS_B', 'sqlserver', 'srv1', 'db1',
+            tables=[
+                _make_table('[dbo].[Orders]', ['order_id', 'amount']),
+                _make_table('[dbo].[Customers]', ['customer_id', 'name', 'email']),
+            ],
+        )])
+        assessment = assess_merge([wb_a, wb_b], ['WB_A', 'WB_B'])
+        # Customers is unique to WB_B but shares customer_id (key-like) with shared Orders
+        linked_tables = assessment.linked_unique_tables.get('WB_B', [])
+        self.assertIn('[dbo].[Customers]', linked_tables)
+
+    def test_isolated_tables_excluded_from_merge(self):
+        """Isolated tables should not appear in the merged model."""
+        wb_a = _make_wb([_make_datasource(
+            'DS_A', 'sqlserver', 'srv1', 'db1',
+            tables=[_make_table('[dbo].[Orders]', ['OrderID', 'Amount'])],
+        )])
+        wb_b = _make_wb([_make_datasource(
+            'DS_B', 'postgres', 'srv2', 'db2',
+            tables=[_make_table('widgets', ['widget_id', 'color'])],
+        )])
+        assessment = assess_merge([wb_a, wb_b], ['WB_A', 'WB_B'])
+        merged = merge_semantic_models([wb_a, wb_b], assessment, 'Test')
+        # Only non-isolated tables should be in merged model
+        merged_table_names = [t['name'] for t in merged['datasources'][0]['tables']]
+        self.assertNotIn('widgets', merged_table_names)
+
+    def test_assessment_has_both_fields(self):
+        """MergeAssessment should always have linked_unique and isolated dicts."""
+        assessment = assess_merge([_make_wb([])], ['WB1'])
+        self.assertIsInstance(assessment.linked_unique_tables, dict)
+        self.assertIsInstance(assessment.isolated_tables, dict)
+
+    def test_to_dict_includes_isolation(self):
+        """Serialized assessment includes isolation data."""
+        wb_a = _make_wb([_make_datasource(
+            'DS_A', 'sqlserver', 'srv1', 'db1',
+            tables=[_make_table('A', ['x'])],
+        )])
+        wb_b = _make_wb([_make_datasource(
+            'DS_B', 'postgres', 'srv2', 'db2',
+            tables=[_make_table('B', ['y'])],
+        )])
+        assessment = assess_merge([wb_a, wb_b], ['WB_A', 'WB_B'])
+        d = assessment.to_dict()
+        self.assertIn('isolated_tables', d)
+        self.assertIn('linked_unique_tables', d)
+
+    def test_mixed_linked_and_isolated(self):
+        """Some unique tables linked, others isolated."""
+        shared = _make_table('[dbo].[Orders]', ['order_id', 'customer_id'])
+        lookup = _make_table('[dbo].[Customers]', ['customer_id', 'name'])
+        orphan = _make_table('[dbo].[Logs]', ['log_id', 'message'])
+        rel = {'left': {'table': 'Orders', 'column': 'customer_id'},
+               'right': {'table': 'Customers', 'column': 'customer_id'}}
+
+        wb_a = _make_wb([_make_datasource(
+            'DS_A', 'sqlserver', 'srv1', 'db1',
+            tables=[shared, lookup, orphan], rels=[rel],
+        )])
+        wb_b = _make_wb([_make_datasource(
+            'DS_B', 'sqlserver', 'srv1', 'db1',
+            tables=[_make_table('[dbo].[Orders]', ['order_id', 'amount'])],
+        )])
+        assessment = assess_merge([wb_a, wb_b], ['WB_A', 'WB_B'])
+        # Customers linked via relationship, Logs isolated
+        linked = assessment.linked_unique_tables.get('WB_A', [])
+        isolated = assessment.isolated_tables.get('WB_A', [])
+        self.assertIn('[dbo].[Customers]', linked)
+        self.assertIn('[dbo].[Logs]', isolated)
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -1,13 +1,13 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
-  "name": "200cfcfb9a3f4102bc9e",
+  "name": "227c4269794a457f9223",
   "position": {
-    "x": 330,
+    "x": 10,
     "y": 10,
-    "z": 1000,
+    "z": 0,
     "height": 200,
     "width": 300,
-    "tabOrder": 1000
+    "tabOrder": 0
   },
   "visual": {
     "visualType": "clusteredBarChart",
@@ -15,24 +15,6 @@
     "query": {
       "queryState": {
         "Category": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Table"
-                    }
-                  },
-                  "Property": "x"
-                }
-              },
-              "queryRef": "Table.x",
-              "active": true
-            }
-          ]
-        },
-        "Y": {
           "projections": [
             {
               "field": {

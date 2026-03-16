@@ -216,19 +216,27 @@ class PowerBIImporter:
             print("  Merge not recommended (score too low). Use --force-merge to override.")
             return {'assessment': assessment, 'model_path': None, 'report_paths': []}
 
-        # 1c. Analyze measure risks
+        # 1c. Report isolated tables (excluded from shared model)
+        if assessment.isolated_tables:
+            total_isolated = sum(len(v) for v in assessment.isolated_tables.values())
+            print(f"\n  Step 1c: {total_isolated} isolated table(s) excluded from shared model")
+            for wb, tables in assessment.isolated_tables.items():
+                for t in tables:
+                    print(f"    [skip] {t} — no link to other workbooks (stays in {wb} report only)")
+
+        # 1d. Analyze measure risks
         risk_analysis = []
         if assessment.measure_conflicts:
-            print("\n  Step 1c: Analyzing measure conflict risks...")
+            print("\n  Step 1d: Analyzing measure conflict risks...")
             risk_analysis = analyze_measure_risk(assessment.measure_conflicts)
             for ra in risk_analysis:
                 icon = {"low": "✓", "medium": "⚠", "high": "✗"}.get(ra.risk_level, "?")
                 print(f"    [{icon}] {ra.measure_name}: {ra.risk_level} — {ra.reason}")
 
-        # 1d. Consolidate RLS roles
+        # 1e. Consolidate RLS roles
         rls_consolidations = consolidate_rls_roles(all_converted_objects, workbook_names)
         if rls_consolidations:
-            print(f"\n  Step 1d: RLS role consolidation ({len(rls_consolidations)} roles)...")
+            print(f"\n  Step 1e: RLS role consolidation ({len(rls_consolidations)} roles)...")
             for cons in rls_consolidations:
                 print(f"    [{cons.action}] {cons.role_name} from {', '.join(cons.source_workbooks)}")
 

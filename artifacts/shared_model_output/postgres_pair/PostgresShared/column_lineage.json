@@ -1,0 +1,22 @@
+{
+  "xy": {
+    "source_workbooks": [
+      "datasource_test",
+      "ephemeral_field"
+    ],
+    "columns": {
+      "a": [
+        "datasource_test",
+        "ephemeral_field"
+      ],
+      "x": [
+        "datasource_test",
+        "ephemeral_field"
+      ],
+      "y": [
+        "datasource_test",
+        "ephemeral_field"
+      ]
+    }
+  }
+}

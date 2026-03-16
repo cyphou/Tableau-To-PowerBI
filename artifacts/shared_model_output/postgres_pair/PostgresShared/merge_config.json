@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "workbooks": [
+    "datasource_test",
+    "ephemeral_field"
+  ],
+  "merge_score": 80,
+  "recommendation": "merge",
+  "table_decisions": [
+    {
+      "table_name": "xy",
+      "action": "merge",
+      "workbooks": [
+        "datasource_test",
+        "ephemeral_field"
+      ],
+      "column_overlap": 1.0,
+      "conflicts": []
+    }
+  ],
+  "measure_decisions": [],
+  "parameter_decisions": [],
+  "options": {
+    "force_merge": false,
+    "column_overlap_threshold": 0.7,
+    "auto_namespace": true,
+    "keep_hidden_columns": true,
+    "calendar_merge_strategy": "widest_range"
+  }
+}

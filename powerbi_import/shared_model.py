@@ -102,6 +102,10 @@ class MergeAssessment:
     unique_table_count: int = 0
     merge_score: int = 0
     recommendation: str = "separate"
+    # Tables unique to one workbook but linked (via relationships or shared columns)
+    linked_unique_tables: Dict[str, List[str]] = field(default_factory=dict)
+    # Tables with no links to any other table in the merged model
+    isolated_tables: Dict[str, List[str]] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         """Serialize to a JSON-friendly dictionary."""
@@ -131,6 +135,8 @@ class MergeAssessment:
             "rls_conflicts": self.rls_conflicts,
             "merge_score": self.merge_score,
             "recommendation": self.recommendation,
+            "linked_unique_tables": self.linked_unique_tables,
+            "isolated_tables": self.isolated_tables,
         }
 
 
@@ -296,6 +302,9 @@ def assess_merge(all_extracted: List[dict],
     assessment.parameter_conflicts = param_conflicts
     assessment.parameter_duplicates_removed = param_dupes
 
+    # 5b. Classify unique tables as linked vs isolated
+    _classify_unique_tables(assessment, all_extracted, workbook_names, fp_map)
+
     # 6. Calculate merge score
     assessment.merge_score = calculate_merge_score(assessment)
 
@@ -460,6 +469,122 @@ def _detect_parameter_conflicts(
 
 
 # ═══════════════════════════════════════════════════════════════════
+#  Table linkage classification
+# ═══════════════════════════════════════════════════════════════════
+
+def _classify_unique_tables(assessment: MergeAssessment,
+                            all_extracted: List[dict],
+                            workbook_names: List[str],
+                            fp_map: Dict[str, list]):
+    """Classify unique tables as linked (have relationships to other tables) or isolated.
+
+    A unique table is "linked" if:
+    - It participates in a relationship with another table in the merged model, OR
+    - It shares column names with a shared (merge-candidate) table (suggesting a join key)
+
+    A unique table is "isolated" if none of the above apply — meaning it has no
+    connection to any other workbook's data and should NOT be included in the merged model.
+    """
+    # Build the set of all table names in the merged model (shared + unique)
+    shared_table_names = set()
+    for mc in assessment.merge_candidates:
+        shared_table_names.add(_normalize_table_key(mc.table_name))
+
+    # Collect all relationship endpoints from all workbooks
+    all_rel_tables = set()  # normalized table names that appear in relationships
+    rel_pairs = []  # (table_a, table_b) pairs
+    for extracted in all_extracted:
+        for ds in extracted.get('datasources', []):
+            for rel in ds.get('relationships', []):
+                if 'left' in rel:
+                    t_a = _normalize_table_key(rel['left'].get('table', ''))
+                    t_b = _normalize_table_key(rel['right'].get('table', ''))
+                else:
+                    t_a = _normalize_table_key(rel.get('from_table', ''))
+                    t_b = _normalize_table_key(rel.get('to_table', ''))
+                if t_a and t_b:
+                    all_rel_tables.add(t_a)
+                    all_rel_tables.add(t_b)
+                    rel_pairs.append((t_a, t_b))
+
+    # Collect column sets for shared tables (for column-name-based linkage detection)
+    shared_columns = set()
+    for mc in assessment.merge_candidates:
+        for _wb_name, table, _conn in mc.sources:
+            for col in table.get('columns', []):
+                shared_columns.add(col.get('name', '').lower())
+
+    # Classify each unique table
+    linked: Dict[str, List[str]] = {}
+    isolated: Dict[str, List[str]] = {}
+
+    for wb_name, table_names in assessment.unique_tables.items():
+        for tname in table_names:
+            norm_key = _normalize_table_key(tname)
+            is_linked = False
+
+            # Check 1: Does this table participate in a relationship with another table?
+            for t_a, t_b in rel_pairs:
+                if t_a == norm_key and t_b != norm_key:
+                    # The other table exists in the model (shared or from same workbook)
+                    if t_b in shared_table_names:
+                        is_linked = True
+                        break
+                elif t_b == norm_key and t_a != norm_key:
+                    if t_a in shared_table_names:
+                        is_linked = True
+                        break
+
+            # Check 2: Does this table share column names with any shared table?
+            # (suggesting a potential join key like customer_id, order_id, etc.)
+            if not is_linked:
+                unique_cols = _get_table_columns(tname, wb_name, all_extracted, workbook_names)
+                # Require at least one column name match AND the column looks like a key
+                key_patterns = {'id', '_id', 'key', '_key', 'code', '_code', 'no', '_no', 'num'}
+                for col in unique_cols:
+                    col_lower = col.lower()
+                    if col_lower in shared_columns:
+                        # Check if it looks like a join key
+                        if any(p in col_lower for p in key_patterns):
+                            is_linked = True
+                            break
+
+            if is_linked:
+                linked.setdefault(wb_name, []).append(tname)
+            else:
+                isolated.setdefault(wb_name, []).append(tname)
+
+    assessment.linked_unique_tables = linked
+    assessment.isolated_tables = isolated
+
+
+def _normalize_table_key(name: str) -> str:
+    """Normalize a table name for comparison."""
+    # Strip schema prefix and brackets
+    clean = name.strip().strip('[]')
+    if '.' in clean:
+        parts = clean.rsplit('.', 1)
+        clean = parts[-1].strip('[]')
+    return clean.lower()
+
+
+def _get_table_columns(table_name: str, wb_name: str,
+                       all_extracted: List[dict],
+                       workbook_names: List[str]) -> List[str]:
+    """Get column names for a specific table in a specific workbook."""
+    idx = workbook_names.index(wb_name) if wb_name in workbook_names else -1
+    if idx < 0:
+        return []
+    extracted = all_extracted[idx]
+    norm_target = _normalize_table_key(table_name)
+    for ds in extracted.get('datasources', []):
+        for table in ds.get('tables', []):
+            if _normalize_table_key(table.get('name', '')) == norm_target:
+                return [c.get('name', '') for c in table.get('columns', [])]
+    return []
+
+
+# ═══════════════════════════════════════════════════════════════════
 #  Merge score
 # ═══════════════════════════════════════════════════════════════════
 
@@ -607,6 +732,12 @@ def _merge_datasources(all_extracted: List[dict],
     # Track datasource-level calculations for deduplication
     _ds_calc_seen = set()  # (caption, formula)
 
+    # Build set of isolated table names (normalized) to skip
+    _isolated_set = set()
+    for _wb, tnames in assessment.isolated_tables.items():
+        for t in tnames:
+            _isolated_set.add(_normalize_table_key(t))
+
     for wb_name, extracted in zip(workbook_names, all_extracted):
         for ds in extracted.get('datasources', []):
             # Adopt connection info from first datasource
@@ -618,9 +749,13 @@ def _merge_datasources(all_extracted: List[dict],
                 if k not in merged_ds['connection_map']:
                     merged_ds['connection_map'][k] = copy.deepcopy(v)
 
-            # Process tables
+            # Process tables — skip isolated tables
             fps = build_table_fingerprints([ds])
             for raw_name, (fp, table, _conn) in fps.items():
+                # Skip tables classified as isolated (no links to merged model)
+                if _normalize_table_key(raw_name) in _isolated_set:
+                    continue
+
                 fp_hash = fp.fingerprint()
                 if fp_hash in added_tables:
                     # Merge columns into existing table

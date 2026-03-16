@@ -103,13 +103,23 @@ def print_merge_summary(assessment: MergeAssessment):
             print(f"      -> Will create [{mc.name} (workbook)] per variant")
         print()
 
-    # Unique tables
+    # Unique tables — split into linked and isolated
     if assessment.unique_tables:
-        print("  UNIQUE TABLES (no merge possible):")
-        for wb, tables in assessment.unique_tables.items():
-            for t in tables:
-                print(f"    {t:<25} — only in {wb}")
-        print()
+        # Show linked unique tables (will be included in merged model)
+        if assessment.linked_unique_tables:
+            print("  LINKED UNIQUE TABLES (included in shared model):")
+            for wb, tables in assessment.linked_unique_tables.items():
+                for t in tables:
+                    print(f"    ✓ {t:<25} — only in {wb}, but linked to shared tables")
+            print()
+
+        # Show isolated tables (will NOT be included in merged model)
+        if assessment.isolated_tables:
+            print("  ISOLATED TABLES (excluded from shared model — no links):")
+            for wb, tables in assessment.isolated_tables.items():
+                for t in tables:
+                    print(f"    ✗ {t:<25} — only in {wb}, no relationships to other tables")
+            print()
 
     # Stats
     print("-" * w)

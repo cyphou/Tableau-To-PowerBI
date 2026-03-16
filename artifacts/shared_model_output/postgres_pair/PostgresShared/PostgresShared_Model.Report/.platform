@@ -2,10 +2,10 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
   "metadata": {
     "type": "Report",
-    "displayName": "datasource_test"
+    "displayName": "PostgresShared_Model"
   },
   "config": {
     "version": "2.0",
-    "logicalId": "43f2723f-0c37-4c8b-80b5-19085995a299"
+    "logicalId": "ca396ac5-7c35-40f1-944c-2e633eae331c"
   }
 }

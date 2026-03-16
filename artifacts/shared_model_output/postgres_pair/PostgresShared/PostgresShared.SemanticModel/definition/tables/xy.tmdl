@@ -1,13 +1,13 @@
 table xy
-	lineageTag: 1e7ec471-9e99-4313-9253-f144fc3ca88b
+	lineageTag: e7683f28-de9a-44d4-8302-147bb7add4ab
 
 	measure 'SUM(X) + SUM(Y)' = SUM('xy'[x]) + SUM('xy'[y])
 		displayFolder: Measures
-		lineageTag: 3ba5e23a-5f4c-46ac-9677-78c202255675
+		lineageTag: 5290309a-bf84-4376-8bae-49569523db0b
 
 	column a
 		dataType: string
-		lineageTag: 2a6ea317-7fad-4bd8-b07e-413617506afa
+		lineageTag: ba3b8cc7-9e18-4367-853b-d255886ca68a
 		summarizeBy: none
 		sourceColumn: a
 
@@ -15,7 +15,7 @@ table xy
 
 	column x
 		dataType: int64
-		lineageTag: eb24e02a-caef-41de-8083-90922eb92121
+		lineageTag: f7b1e147-23b4-45a3-b0ec-2bdea5262fc3
 		summarizeBy: sum
 		sourceColumn: x
 
@@ -23,13 +23,13 @@ table xy
 
 	column y
 		dataType: int64
-		lineageTag: 7e52deb6-bded-4c14-b6db-b7894d3f8b37
+		lineageTag: 296de088-a708-4d09-a182-43121e28722a
 		summarizeBy: sum
 		sourceColumn: y
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'xy-5468f6d2-f60f-4092-8cbe-ece6b024251d' = m
+	partition 'xy-5e8a2a7d-2c88-4e86-af74-3ba7b32cccf5' = m
 		mode: import
 		source =
 				let
