@@ -2,32 +2,146 @@
 
 **Version:** v15.0.0  
 **Date:** 2026-03-16  
-**Current state:** Sprint 43 done — **3,988 tests** across 69 test files (+conftest.py), 0 failures, 96.2% coverage  
-**Previous baseline:** v3.5.0 — 887 → v4.0.0 — 1,387 → v5.0.0 — 1,543 → v5.1.0 — 1,595 → v5.5.0 — 1,777 → v6.0.0 — 1,889 → v6.1.0 — 1,997 → v7.0.0 — 2,057 → Sprint 21 — 2,066 → v8.0.0 — 2,275 → Sprint 27 — 2,542 → Sprint 28 — 2,616 → Sprint 29 — 2,666 → v9.0.0 — 3,196 → v10.0.0 — 3,342 → v11.0.0 — 3,459 → v12.0.0 — 3,729 → v13.0.0 — 3,847 → v14.0.0 — 3,925 → **v15.0.0 — 3,988**
+**Current state:** Sprint 43 done + bug-bash — **3,996 tests** across 69 test files (+conftest.py), 0 failures, 96.2% coverage  
+**Previous baseline:** v3.5.0 — 887 → v4.0.0 — 1,387 → v5.0.0 — 1,543 → v5.1.0 — 1,595 → v5.5.0 — 1,777 → v6.0.0 — 1,889 → v6.1.0 — 1,997 → v7.0.0 — 2,057 → Sprint 21 — 2,066 → v8.0.0 — 2,275 → Sprint 27 — 2,542 → Sprint 28 — 2,616 → Sprint 29 — 2,666 → v9.0.0 — 3,196 → v10.0.0 — 3,342 → v11.0.0 — 3,459 → v12.0.0 — 3,729 → v13.0.0 — 3,847 → v14.0.0 — 3,925 → v15.0.0 — 3,988 → **v15.0.1 — 3,996**
 
 ---
 
-## v15.0.0 — Global Assessment & Fabric Bundle Deployment
+## v16.0.0 — Hardening, Code Health & New Capabilities
 
 ### Motivation
 
-v14.0.0 reached 3,925 tests. v15.0.0 adds two major features: (1) **global assessment** for cross-workbook merge analysis with interactive HTML reports, and (2) **Fabric bundle deployment** for deploying shared semantic model projects as atomic bundles.
+v15.0.0 completed Fabric bundle deployment and global assessment with 3,996 tests (96.2% coverage). A comprehensive codebase audit revealed:
+- **5 `except Exception: pass`** blocks silently swallowing errors (4 in migrate.py, 1 in prep_flow_parser.py)
+- **55 broad `except Exception`** catches across 20+ files — many in migrate.py (21) and deploy/ (17)
+- **23 additional bare `pass`** in narrower except blocks (generate_report.py, extract_tableau_data.py, etc.)
+- **12 functions exceeding 200 lines** (worst: `main()` at 410 lines, `_build_argument_parser()` at 391 lines)
+- **0 TODO/FIXME in source** (all 8 TODOs are user-facing placeholders in generated output — acceptable)
+- **No Windows CI** — all CI runs on ubuntu-latest; Windows path handling is untested
+- **No API documentation** — no auto-generated docs for any module
+- Outstanding backlog items: data-driven alerts, Web UI, LLM-assisted DAX, side-by-side screenshots
 
-### Sprint 43 — Fabric Bundle Deployment ✅ COMPLETED
+v16.0.0 addresses these across 5 sprints: code health, CLI refactoring, new features, testing, and documentation.
 
-**Goal:** Deploy shared model + thin reports as a single Fabric workspace bundle.  
-**Result:** 1 new module, 2 modified files, 30 new tests.
+---
 
-| # | Item | File(s) | Status | Details |
-|---|------|---------|--------|---------|
-| 43.1 | **Bundle deployer** | `powerbi_import/deploy/bundle_deployer.py` | ✅ Done | `BundleDeployer` — discover artifacts, deploy model first, deploy reports with error isolation, rebind, refresh |
-| 43.2 | **Deployment result** | `powerbi_import/deploy/bundle_deployer.py` | ✅ Done | `BundleDeploymentResult` — per-artifact status, timing, JSON export, console summary |
-| 43.3 | **CLI wiring** | `migrate.py` | ✅ Done | `--deploy-bundle WORKSPACE_ID`, `--bundle-refresh`, `_run_bundle_deploy()` helper |
-| 43.4 | **Pipeline integration** | `migrate.py` | ✅ Done | Auto-deploy after `--shared-model`, standalone mode with `--output-dir` |
-| 43.5 | **Package exports** | `powerbi_import/deploy/__init__.py` | ✅ Done | `BundleDeployer`, `BundleDeploymentResult`, `deploy_bundle_from_cli` |
-| 43.6 | **Tests** | `tests/test_bundle_deployer.py` | ✅ Done | 30 tests across 8 classes |
+### Sprint 44 — Silent Error Cleanup Phase 2
 
-### Sprint 42 — Global Assessment & Table Isolation ✅ COMPLETED
+**Goal:** Eliminate the remaining 5 `except Exception: pass` blocks and narrow the 21 broad catches in migrate.py. Add logging to the 23 remaining bare `pass` blocks in other files.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 44.1 | **Fix 4 `except Exception: pass` in migrate.py** | `migrate.py` L1954, L2082, L2330, L2548 | Medium | Narrow to specific exceptions + add `logger.debug()` — analyze what each block guards |
+| 44.2 | **Fix 1 `except Exception: pass` in prep_flow_parser** | `tableau_export/prep_flow_parser.py` L816 | Low | Narrow to `(KeyError, ValueError)` + `logger.debug()` |
+| 44.3 | **Narrow broad catches in migrate.py** | `migrate.py` (21 sites) | Medium | Split `except Exception` into specific types where feasible — at minimum add `exc_info=True` to logged errors |
+| 44.4 | **Add logging to bare-pass in extraction** | `extract_tableau_data.py` (5), `datasource_extractor.py` (2), `hyper_reader.py` (3), `m_query_builder.py` (1) | Low | Replace `pass` with `logger.debug('...')` in all 11 sites |
+| 44.5 | **Add logging to bare-pass in generation** | `pbip_generator.py` (1), `generate_report.py` (6), `wizard.py` (1), `server_client.py` (1) | Low | Replace `pass` with `logger.debug('...')` in all 9 sites |
+| 44.6 | **Narrow deploy/ broad catches** | `deploy/*.py` (17 sites) | Medium | Narrow `except Exception` to `(ConnectionError, TimeoutError, OSError, json.JSONDecodeError)` where applicable |
+| 44.7 | **Tests** | `tests/test_error_handling_v2.py` | Medium | 25+ tests verifying error paths produce log output, not silent swallowing |
+
+### Sprint 45 — CLI Refactoring & migrate.py Decomposition
+
+**Goal:** Break apart the 3 oversized functions in migrate.py (main=410, _build_argument_parser=391, run_batch_migration=282) and extract reusable CLI modules.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 45.1 | **Split `main()` (410 lines)** | `migrate.py` | High | Extract into: `_handle_server_mode()`, `_handle_shared_model_mode()`, `_handle_batch_mode()`, `_handle_single_migration()`, `_handle_deploy_modes()`, `_handle_post_migration()` — main becomes dispatcher (~50 lines) |
+| 45.2 | **Split `_build_argument_parser()` (391 lines)** | `migrate.py` | Medium | Extract argument groups into: `_add_source_args()`, `_add_output_args()`, `_add_migration_args()`, `_add_deploy_args()`, `_add_shared_model_args()`, `_add_advanced_args()` |
+| 45.3 | **Split `run_batch_migration()` (282 lines)** | `migrate.py` | Medium | Extract: `_run_single_batch_item()`, `_collect_batch_results()`, `_generate_batch_summary()` |
+| 45.4 | **Split `import_shared_model()` (248 lines)** | `powerbi_import/import_to_powerbi.py` | Medium | Extract: `_assess_and_merge()`, `_generate_shared_artifacts()`, `_save_shared_model_assessment()` |
+| 45.5 | **Split remaining large functions** | `pbip_generator.py`, `tmdl_generator.py`, `visual_generator.py`, `validator.py`, `datasource_extractor.py` | Medium | Split 7 more functions > 200 lines into composable sub-functions |
+| 45.6 | **Tests** | `tests/test_cli_refactor.py` | Medium | 20+ regression tests — same behavior, new structure |
+
+### Sprint 46 — New Features: Data Alerts, Comparison Report & Semantic Validation
+
+**Goal:** Implement remaining high-value backlog items that improve migration quality and user experience.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 46.1 | **Data-driven alerts** | `powerbi_import/alerts_generator.py` (new) | Medium | Tableau data alerts → PBI alert rules JSON — extract alert conditions from TWB XML (`<alert>` elements), generate PBI alert config with threshold, frequency, notification targets |
+| 46.2 | **Visual diff report** | `powerbi_import/visual_diff.py` (new) | Medium | Side-by-side HTML report showing Tableau visual → PBI visual mapping with field assignments, highlighting gaps (fields not mapped, approximated types, missing encodings) |
+| 46.3 | **Enhanced semantic validation** | `powerbi_import/validator.py` | Medium | Add: (1) circular dependency detection in relationships, (2) orphan table detection (no relationships + not used by any measure), (3) measure reference validation (all `'Table'[Column]` refs exist), (4) unused parameter detection |
+| 46.4 | **Migration completeness scoring** | `powerbi_import/migration_report.py` | Low | Add per-category fidelity breakdown: extraction fidelity %, DAX conversion %, visual mapping %, data model %, overall weighted score |
+| 46.5 | **Connection string audit** | `powerbi_import/assessment.py` | Low | Auto-detect sensitive data in connection strings (passwords, tokens) and warn before output generation |
+| 46.6 | **Tests** | `tests/test_sprint46.py` | Medium | 30+ tests for alerts, visual diff, enhanced validation, completeness scoring |
+
+### Sprint 47 — Windows CI, Cross-Platform Hardening & Performance
+
+**Goal:** Add Windows CI testing, fix Windows-specific path issues, optimize performance for large workbooks.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 47.1 | **Windows CI matrix** | `.github/workflows/ci.yml` | Medium | Add `windows-latest` to CI matrix — test on Python 3.11+3.12 on Windows. Fix any path separator issues (`os.path.join` vs hardcoded `/`) |
+| 47.2 | **Path normalization audit** | All source files | Medium | Grep for hardcoded `/` in file paths, replace with `os.sep` or `pathlib.Path`; ensure `.twbx` extraction handles Windows temp dirs |
+| 47.3 | **OneDrive lock handling** | `migrate.py`, `pbip_generator.py` | Low | Improve stale lock file cleanup — retry with backoff instead of silent ignore; log warning when files can't be cleaned |
+| 47.4 | **Performance profiling** | `tests/test_performance.py` | Medium | Add benchmarks for: 50-table workbook, 100-measure workbook, 10-workbook batch, shared-model merge of 5 workbooks; set regression thresholds |
+| 47.5 | **Memory optimization** | `tmdl_generator.py`, `pbip_generator.py` | Medium | Stream TMDL/PBIR file writes instead of building complete dict structures in memory; measure peak memory before/after |
+| 47.6 | **Tests** | `tests/test_windows_compat.py` | Medium | 15+ tests for path handling, temp dir cleanup, Unicode filenames, long paths (>260 chars) |
+
+### Sprint 48 — Documentation, API Docs & Release
+
+**Goal:** Generate API documentation, update all docs to v16.0.0, release.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 48.1 | **Auto-generated API docs** | `docs/generate_api_docs.py`, `docs/api/` | Medium | Use `pdoc` or custom introspection to generate module → class → function documentation from docstrings. Cover all 25+ source modules |
+| 48.2 | **Update GAP_ANALYSIS.md** | `docs/GAP_ANALYSIS.md` | Low | Refresh all sections with v16.0.0 counts, mark newly closed gaps |
+| 48.3 | **Update KNOWN_LIMITATIONS.md** | `docs/KNOWN_LIMITATIONS.md` | Low | Remove resolved limitations, add any new ones from Sprint 46-47 |
+| 48.4 | **Update CHANGELOG.md** | `CHANGELOG.md` | Low | v16.0.0 entry with all sprint details |
+| 48.5 | **Update copilot-instructions.md** | `.github/copilot-instructions.md` | Low | Test count, new modules, new CLI flags |
+| 48.6 | **Update README.md** | `README.md` | Low | New features, CLI examples, contributor guide link |
+| 48.7 | **Version bump** | `pyproject.toml`, `powerbi_import/__init__.py` | Low | 15.0.0 → 16.0.0 |
+| 48.8 | **Final validation & push** | — | Low | Full test suite, git commit + push |
+
+---
+
+### Sprint Sequencing (v16.0.0)
+
+```
+Sprint 44 (Error Handling)  ──→  Sprint 45 (CLI Refactor)
+         ↓                              ↓
+Sprint 46 (New Features)    ──→  Sprint 47 (Windows CI + Perf)
+                                        ↓
+                              Sprint 48 (Docs & Release)
+```
+
+- Sprint 44 first — clean error handling makes refactoring safer
+- Sprint 45 after 44 — refactored code is more maintainable and testable
+- Sprint 46 is independent — new features on clean foundation
+- Sprint 47 after 45 — CI improvements benefit from cleaner code paths
+- Sprint 48 last — docs and release after all features stable
+
+### Success Criteria for v16.0.0
+
+| Metric | Current | Target |
+|--------|---------|--------|
+| Tests | 3,996 | **4,200+** |
+| `except Exception: pass` blocks | 5 | **0** |
+| Broad `except Exception` (migrate.py) | 21 | **≤ 8** (top-level handlers only) |
+| Bare `pass` in except blocks | 28 | **0** |
+| Functions > 200 lines | 12 | **≤ 3** |
+| Windows CI | ❌ | **✅** |
+| API documentation | ❌ | **✅** |
+| Coverage | 96.2% | **≥ 96%** (maintained) |
+
+---
+
+### v16.0.0 Feature Backlog (not sprint-assigned)
+
+Items that may be pulled into sprints if capacity allows:
+
+| # | Feature | Priority | Effort | Details | Status |
+|---|---------|----------|--------|---------|--------|
+| B.1 | **Web UI / Streamlit frontend** | Low | High | Browser-based migration wizard (upload .twbx → get .pbip) | Backlog |
+| B.2 | **LLM-assisted DAX correction** | Low | High | Optional AI pass: send approximated DAX to GPT/Claude for semantic review (opt-in, API key) | Backlog |
+| B.3 | **Side-by-side screenshot comparison** | Low | High | Selenium/Playwright capture Tableau + PBI screenshots, generate visual diff report | Backlog |
+| B.4 | **PR preview / diff report** | Low | Medium | Generate migration diff report on PRs for review in CI | Backlog |
+| B.5 | **Notebook-based migration** | Low | Medium | Jupyter notebook interface for interactive migration with cell-by-cell control | Backlog |
+| B.6 | **Composite model enhancements** | Low | Medium | Mixed Import+DirectQuery per table, with `StorageMode` annotation in TMDL | Backlog |
+| B.7 | **Tableau Cloud scheduled refresh** | Low | Medium | Extract refresh schedule from Tableau Server API → PBI refresh schedule config | Backlog |
+| B.8 | **Multi-tenant deployment** | Low | Medium | Deploy same shared model to multiple Fabric workspaces with config matrix | Backlog |
+
+---
 
 **Goal:** Cross-workbook merge analysis with interactive HTML report; intelligent table isolation.  
 **Result:** 1 new module, 3 modified files, 33 new tests.
