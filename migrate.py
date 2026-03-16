@@ -1535,6 +1535,18 @@ def _build_argument_parser():
         help='Save merge decisions to merge_config.json for later reuse'
     )
 
+    parser.add_argument(
+        '--global-assess',
+        nargs='*',
+        metavar='WORKBOOK',
+        default=None,
+        help=(
+            'Run a global cross-workbook assessment to find merge candidates. '
+            'Provide workbook paths or combine with --batch DIR. '
+            'Generates an HTML report with merge clusters and pairwise scores.'
+        )
+    )
+
     return parser
 
 
@@ -1764,6 +1776,126 @@ def _print_migration_summary(results, report_summary, start_time):
         print("\n✗ Migration completed with errors")
 
     return all_success
+
+
+# ── Global Assessment mode ──────────────────────────────────────────────────
+
+def run_global_assessment_mode(args):
+    """Run cross-workbook global assessment and generate HTML report.
+
+    Discovers workbooks from --global-assess paths or --batch directory,
+    extracts each, runs pairwise merge analysis, and outputs HTML + JSON.
+
+    Returns:
+        ExitCode
+    """
+    import tempfile
+    import shutil
+
+    workbook_paths = list(args.global_assess or [])
+
+    # If --batch is also given, discover workbooks from directory
+    if args.batch and not workbook_paths:
+        import glob
+        for ext in ('*.twb', '*.twbx'):
+            workbook_paths.extend(
+                glob.glob(os.path.join(args.batch, '**', ext), recursive=True)
+            )
+        workbook_paths.sort()
+
+    if len(workbook_paths) < 2:
+        print("Error: --global-assess requires at least 2 workbooks "
+              "(or use --batch DIR)")
+        return ExitCode.GENERAL_ERROR
+
+    # Validate all files exist
+    for wb_path in workbook_paths:
+        if not os.path.exists(wb_path):
+            print(f"Error: Workbook not found: {wb_path}")
+            return ExitCode.GENERAL_ERROR
+
+    print_header("GLOBAL CROSS-WORKBOOK ASSESSMENT")
+    print(f"  Workbooks:  {len(workbook_paths)}")
+    for wp in workbook_paths:
+        print(f"    - {os.path.basename(wp)}")
+    print()
+
+    all_converted = []
+    workbook_names = []
+    temp_dirs = []
+
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'tableau_export'))
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'powerbi_import'))
+
+    try:
+        from extract_tableau_data import TableauExtractor
+        from import_to_powerbi import PowerBIImporter
+        from powerbi_import.global_assessment import (
+            run_global_assessment,
+            print_global_summary,
+            generate_global_html_report,
+            save_global_assessment_json,
+        )
+
+        # Extract each workbook
+        for wb_path in workbook_paths:
+            basename = os.path.splitext(os.path.basename(wb_path))[0]
+            workbook_names.append(basename)
+
+            print(f"  Extracting: {basename}...")
+            temp_dir = tempfile.mkdtemp(prefix=f'tableau_{basename}_')
+            temp_dirs.append(temp_dir)
+
+            extractor = TableauExtractor(wb_path, output_dir=temp_dir)
+            success = extractor.extract_all()
+
+            if not success:
+                print(f"  Warning: Extraction failed for {basename}, skipping")
+                all_converted.append(_empty_converted_objects())
+                continue
+
+            importer = PowerBIImporter(source_dir=temp_dir)
+            converted = importer._load_converted_objects()
+            all_converted.append(converted)
+
+        if sum(1 for c in all_converted if c.get('datasources')) < 2:
+            print("\nError: Need at least 2 workbooks with datasources")
+            return ExitCode.EXTRACTION_FAILED
+
+        # Run global assessment
+        print("\n  Analyzing pairwise merge scores...")
+        result = run_global_assessment(all_converted, workbook_names)
+
+        # Print console summary
+        print_global_summary(result)
+
+        # Save outputs
+        out = args.output_dir or os.path.join(
+            'artifacts', 'powerbi_projects', 'assessments'
+        )
+        os.makedirs(out, exist_ok=True)
+
+        html_path = os.path.join(out, 'global_assessment.html')
+        generate_global_html_report(result, output_path=html_path)
+        print(f"  HTML report: {html_path}")
+
+        json_path = os.path.join(out, 'global_assessment.json')
+        save_global_assessment_json(result, output_path=json_path)
+        print(f"  JSON report: {json_path}")
+
+        return ExitCode.SUCCESS
+
+    except Exception as e:
+        logger.error("Global assessment failed: %s", e, exc_info=True)
+        print(f"\nError: {e}")
+        return ExitCode.GENERAL_ERROR
+
+    finally:
+        for td in temp_dirs:
+            try:
+                shutil.rmtree(td, ignore_errors=True)
+            except Exception:
+                pass
 
 
 # ── Shared Semantic Model migration ─────────────────────────────────────────
@@ -1997,6 +2129,10 @@ def main():
     if getattr(args, 'consolidate', None):
         result = run_consolidate_reports(args.consolidate)
         return ExitCode.SUCCESS if result == 0 else ExitCode.GENERAL_ERROR
+
+    # ── Global Assessment mode ─────────────────────────────────
+    if getattr(args, 'global_assess', None) is not None:
+        return run_global_assessment_mode(args)
 
     # ── Shared Semantic Model mode ────────────────────────────
     if getattr(args, 'shared_model', None) is not None:
