@@ -7,8 +7,15 @@ generation pipeline (BIM model + TMDL + PBIR report).
 
 import os
 import json
+import uuid
 from datetime import datetime
 from pbip_generator import PowerBIProjectGenerator
+
+
+def _write_json_file(path, data):
+    """Write a JSON file with consistent formatting."""
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
 
 
 class PowerBIImporter:
@@ -272,25 +279,49 @@ class PowerBIImporter:
         )
         print(f"  [OK] Shared SemanticModel created: {sm_dir}")
 
-        # Create a standalone .pbip for the SemanticModel
-        sm_pbip = {
+        # Create a model-explorer report so the model can be opened in PBI Desktop
+        # PBI Desktop requires a .Report artifact to open a .pbip file
+        model_report_name = f"{model_name}_Model"
+        model_report_dir = os.path.join(project_dir, f"{model_report_name}.Report")
+        os.makedirs(os.path.join(model_report_dir, 'definition'), exist_ok=True)
+
+        # .platform
+        _write_json_file(os.path.join(model_report_dir, '.platform'), {
+            "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+            "metadata": {"type": "Report", "displayName": model_report_name},
+            "config": {"version": "2.0", "logicalId": str(uuid.uuid4())},
+        })
+
+        # definition.pbir → byPath to the shared model
+        _write_json_file(os.path.join(model_report_dir, 'definition.pbir'), {
+            "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definitionProperties/2.0.0/schema.json",
+            "version": "4.0",
+            "datasetReference": {
+                "byPath": {"path": f"../{model_name}.SemanticModel"},
+            },
+        })
+
+        # Minimal report.json (empty report — user opens Model view)
+        _write_json_file(os.path.join(model_report_dir, 'definition', 'report.json'), {
+            "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/3.1.0/schema.json",
+            "name": model_report_name,
+            "description": f"Model explorer for shared semantic model '{model_name}'. Open this to view and edit the data model.",
+        })
+
+        # version.json
+        _write_json_file(os.path.join(model_report_dir, 'definition', 'version.json'), {
+            "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/versionMetadata/1.0.0/schema.json",
+            "dataFormatVersion": "2.0",
+        })
+
+        # .pbip pointing to the model-explorer report
+        _write_json_file(os.path.join(project_dir, f"{model_name}.pbip"), {
             "$schema": "https://developer.microsoft.com/json-schemas/fabric/pbip/pbipProperties/1.0.0/schema.json",
             "version": "1.0",
-            "artifacts": [
-                {
-                    "report": {
-                        "path": f"{model_name}.SemanticModel",
-                    },
-                },
-            ],
-            "settings": {
-                "enableAutoRecovery": True,
-            },
-        }
-        sm_pbip_path = os.path.join(project_dir, f"{model_name}.pbip")
-        with open(sm_pbip_path, 'w', encoding='utf-8') as f:
-            json.dump(sm_pbip, f, indent=2, ensure_ascii=False)
-        print(f"  [OK] SemanticModel .pbip: {sm_pbip_path}")
+            "artifacts": [{"report": {"path": f"{model_report_name}.Report"}}],
+            "settings": {"enableAutoRecovery": True},
+        })
+        print(f"  [OK] Model explorer .pbip: {model_name}.pbip → {model_report_name}.Report")
 
         # 5. Generate thin reports for each workbook
         print(f"\n  Step 4: Generating {len(workbook_names)} thin reports...")

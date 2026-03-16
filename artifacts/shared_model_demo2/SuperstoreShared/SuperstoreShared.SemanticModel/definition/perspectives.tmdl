@@ -1,8 +1,0 @@
-perspective 'Full Model'
-	perspectiveTable Orders
-	perspectiveTable Returns
-	perspectiveTable People
-	perspectiveTable Customers
-	perspectiveTable Calendar
-	perspectiveTable 'Target Margin'
-	perspectiveTable 'Top N'
