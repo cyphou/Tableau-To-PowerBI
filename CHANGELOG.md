@@ -1,5 +1,28 @@
 # Changelog
 
+## v15.0.0 — Global Assessment & Fabric Bundle Deployment
+
+### Sprint 43 — Fabric Bundle Deployment ✅
+- **Bundle deployer** (`deploy/bundle_deployer.py`): New module for deploying shared semantic model projects as a Fabric bundle — discovers `.SemanticModel` + `.Report` artifacts, deploys model first, then each report with error isolation, rebinds reports to model, optional dataset refresh
+- **`BundleDeploymentResult`**: Rich result object with per-artifact status, timing, JSON export, and console summary
+- **`BundleDeployer`**: Orchestrator class — `discover_artifacts()`, `deploy_bundle()`, `_rebind_report()`, `_trigger_refresh()`, report filtering
+- **`deploy_bundle_from_cli()`**: CLI entry point with auto-save of `deployment_report.json`
+- **CLI flags**: `--deploy-bundle WORKSPACE_ID`, `--bundle-refresh`
+- **Pipeline integration**: Auto-deploys after `--shared-model` migration; standalone mode with `--output-dir`
+- **30 new tests** in `test_bundle_deployer.py` across 8 test classes
+- **Overall: 3,958 → 3,988 tests**, 0 failures
+
+### Sprint 42 — Global Assessment & Table Isolation ✅
+- **Global assessment** (`global_assessment.py`): Cross-workbook merge analysis with pairwise scoring, BFS cluster detection, and interactive HTML report — executive summary, workbook inventory, N×N heatmap matrix, merge cluster cards with CLI commands, isolated workbooks section
+- **CLI flag**: `--global-assess` with `--batch` directory support
+- **Intelligent table isolation**: `_classify_unique_tables()` in `shared_model.py` — classifies unique tables as linked or isolated by checking relationships and key-column overlaps; isolated tables excluded from shared model
+- **SemanticModel .pbip generation**: Model-explorer report pattern so shared models can be opened in PBI Desktop
+- **25 + 8 new tests** in `test_global_assessment.py` and `test_shared_model_v2.py`
+- **Documentation**: README.md updated with `--global-assess` examples and screenshot; `SHARED_SEMANTIC_MODEL_PLAN.md` Section 10 added
+- **Overall: 3,925 → 3,958 tests**, 0 failures
+
+---
+
 ## v14.0.0 — Shared Semantic Model v2 (Advanced Merge Features)
 
 ### Sprint 41 — Shared Semantic Model Enhancements ✅

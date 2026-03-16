@@ -766,12 +766,71 @@ Key data classes:
 
 ---
 
-## 11. Future Extensions (Out of Scope)
+## 11. Fabric Bundle Deployment (`--deploy-bundle`)
+
+Deploy the shared semantic model project (SemanticModel + thin reports) to a Fabric workspace as an atomic bundle.
+
+### 11.1 How It Works
+
+```
+Project Directory ──→ [Discover Artifacts] ──→ [Deploy SemanticModel] ──→ [Deploy Reports] ──→ [Rebind] ──→ [Refresh]
+```
+
+1. **Discover** `.SemanticModel` and `.Report` directories in the project
+2. **Deploy semantic model** first (reports depend on it)
+3. **Deploy each report** with per-report error isolation
+4. **Rebind** each report to the deployed semantic model
+5. **Optional refresh** — trigger dataset refresh on the semantic model
+
+### 11.2 CLI Usage
+
+```bash
+# Deploy after shared model migration
+python migrate.py --shared-model wb1.twbx wb2.twbx --deploy-bundle WORKSPACE_ID
+
+# Deploy with dataset refresh
+python migrate.py --shared-model wb1.twbx wb2.twbx --deploy-bundle WORKSPACE_ID --bundle-refresh
+
+# Deploy an existing project directory
+python migrate.py --deploy-bundle WORKSPACE_ID --output-dir artifacts/shared/MyModel
+```
+
+### 11.3 Environment Variables
+
+Required for authentication:
+- `FABRIC_TENANT_ID` — Azure AD tenant ID
+- `FABRIC_CLIENT_ID` — Service Principal client ID
+- `FABRIC_CLIENT_SECRET` — Service Principal client secret
+
+Or set `USE_MANAGED_IDENTITY=true` for Azure-hosted environments.
+
+### 11.4 Module: `powerbi_import/deploy/bundle_deployer.py`
+
+```python
+from powerbi_import.deploy.bundle_deployer import (
+    BundleDeployer,
+    BundleDeploymentResult,
+    deploy_bundle_from_cli,
+)
+
+deployer = BundleDeployer(workspace_id='your-workspace-id')
+result = deployer.deploy_bundle('/path/to/project', refresh=True)
+result.print_summary()
+result.save('deployment_report.json')
+```
+
+Key classes:
+- `BundleDeployer` — orchestrator with `discover_artifacts()`, `deploy_bundle()`, `_rebind_report()`, `_trigger_refresh()`
+- `BundleDeploymentResult` — per-artifact status, timing, JSON export, console summary
+- `deploy_bundle_from_cli()` — CLI entry point with auto-save
+
+---
+
+## 12. Future Extensions (Out of Scope)
 
 These are **not** in the current plan but could follow:
 
-1. **Fabric workspace deployment** — deploy shared model + thin reports as a bundle
-2. **Live connection mode** — thin reports via `byConnection` (Fabric workspace reference) instead of `byPath`
-3. **Interactive merge UI** — web-based UI for reviewing and adjusting merge decisions
-4. **Semantic model versioning** — track changes to the shared model over time
-5. **Cross-workbook lineage** — visual showing which workbooks contributed what to the shared model
+1. **Live connection mode** — thin reports via `byConnection` (Fabric workspace reference) instead of `byPath`
+2. **Interactive merge UI** — web-based UI for reviewing and adjusting merge decisions
+3. **Semantic model versioning** — track changes to the shared model over time
+4. **Cross-workbook lineage** — visual showing which workbooks contributed what to the shared model

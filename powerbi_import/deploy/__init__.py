@@ -13,6 +13,7 @@ from .utils import DeploymentReport, ArtifactCache
 from .pbi_client import PBIServiceClient
 from .pbix_packager import PBIXPackager
 from .pbi_deployer import PBIWorkspaceDeployer, DeploymentResult
+from .bundle_deployer import BundleDeployer, BundleDeploymentResult, deploy_bundle_from_cli
 
 __all__ = [
     'FabricAuthenticator',
@@ -24,4 +25,7 @@ __all__ = [
     'PBIXPackager',
     'PBIWorkspaceDeployer',
     'DeploymentResult',
+    'BundleDeployer',
+    'BundleDeploymentResult',
+    'deploy_bundle_from_cli',
 ]

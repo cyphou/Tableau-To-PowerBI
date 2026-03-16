@@ -1,9 +1,46 @@
 # Development Plan — Tableau to Power BI Migration Tool
 
-**Version:** v13.0.0  
+**Version:** v15.0.0  
 **Date:** 2026-03-16  
-**Current state:** Sprint 40 done — **3,847 tests** across 65 test files (+conftest.py), 0 failures, 96.2% coverage  
-**Previous baseline:** v3.5.0 — 887 → v4.0.0 — 1,387 → v5.0.0 — 1,543 → v5.1.0 — 1,595 → v5.5.0 — 1,777 → v6.0.0 — 1,889 → v6.1.0 — 1,997 → v7.0.0 — 2,057 → Sprint 21 — 2,066 → v8.0.0 — 2,275 → Sprint 27 — 2,542 → Sprint 28 — 2,616 → Sprint 29 — 2,666 → v9.0.0 — 3,196 → v10.0.0 — 3,342 → v11.0.0 — 3,459 → v12.0.0 — 3,729 → **v13.0.0 — 3,847**
+**Current state:** Sprint 43 done — **3,988 tests** across 69 test files (+conftest.py), 0 failures, 96.2% coverage  
+**Previous baseline:** v3.5.0 — 887 → v4.0.0 — 1,387 → v5.0.0 — 1,543 → v5.1.0 — 1,595 → v5.5.0 — 1,777 → v6.0.0 — 1,889 → v6.1.0 — 1,997 → v7.0.0 — 2,057 → Sprint 21 — 2,066 → v8.0.0 — 2,275 → Sprint 27 — 2,542 → Sprint 28 — 2,616 → Sprint 29 — 2,666 → v9.0.0 — 3,196 → v10.0.0 — 3,342 → v11.0.0 — 3,459 → v12.0.0 — 3,729 → v13.0.0 — 3,847 → v14.0.0 — 3,925 → **v15.0.0 — 3,988**
+
+---
+
+## v15.0.0 — Global Assessment & Fabric Bundle Deployment
+
+### Motivation
+
+v14.0.0 reached 3,925 tests. v15.0.0 adds two major features: (1) **global assessment** for cross-workbook merge analysis with interactive HTML reports, and (2) **Fabric bundle deployment** for deploying shared semantic model projects as atomic bundles.
+
+### Sprint 43 — Fabric Bundle Deployment ✅ COMPLETED
+
+**Goal:** Deploy shared model + thin reports as a single Fabric workspace bundle.  
+**Result:** 1 new module, 2 modified files, 30 new tests.
+
+| # | Item | File(s) | Status | Details |
+|---|------|---------|--------|---------|
+| 43.1 | **Bundle deployer** | `powerbi_import/deploy/bundle_deployer.py` | ✅ Done | `BundleDeployer` — discover artifacts, deploy model first, deploy reports with error isolation, rebind, refresh |
+| 43.2 | **Deployment result** | `powerbi_import/deploy/bundle_deployer.py` | ✅ Done | `BundleDeploymentResult` — per-artifact status, timing, JSON export, console summary |
+| 43.3 | **CLI wiring** | `migrate.py` | ✅ Done | `--deploy-bundle WORKSPACE_ID`, `--bundle-refresh`, `_run_bundle_deploy()` helper |
+| 43.4 | **Pipeline integration** | `migrate.py` | ✅ Done | Auto-deploy after `--shared-model`, standalone mode with `--output-dir` |
+| 43.5 | **Package exports** | `powerbi_import/deploy/__init__.py` | ✅ Done | `BundleDeployer`, `BundleDeploymentResult`, `deploy_bundle_from_cli` |
+| 43.6 | **Tests** | `tests/test_bundle_deployer.py` | ✅ Done | 30 tests across 8 classes |
+
+### Sprint 42 — Global Assessment & Table Isolation ✅ COMPLETED
+
+**Goal:** Cross-workbook merge analysis with interactive HTML report; intelligent table isolation.  
+**Result:** 1 new module, 3 modified files, 33 new tests.
+
+| # | Item | File(s) | Status | Details |
+|---|------|---------|--------|---------|
+| 42.1 | **Global assessment** | `powerbi_import/global_assessment.py` | ✅ Done | `run_global_assessment()` — pairwise scoring + BFS cluster detection |
+| 42.2 | **HTML report** | `powerbi_import/global_assessment.py` | ✅ Done | `generate_global_html_report()` — executive summary, N×N heatmap, cluster cards, CLI commands |
+| 42.3 | **CLI flag** | `migrate.py` | ✅ Done | `--global-assess` with `--batch` directory support |
+| 42.4 | **Table isolation** | `powerbi_import/shared_model.py` | ✅ Done | `_classify_unique_tables()` — relationship/key-column analysis to skip isolated tables |
+| 42.5 | **Model .pbip** | `powerbi_import/import_to_powerbi.py` | ✅ Done | SemanticModel + model-explorer report pattern for PBI Desktop |
+| 42.6 | **Tests** | `tests/test_global_assessment.py` | ✅ Done | 25 tests across 6 classes |
+| 42.7 | **Docs** | `README.md`, `SHARED_SEMANTIC_MODEL_PLAN.md` | ✅ Done | Screenshot, CLI examples, Section 10 |
 
 ---
 

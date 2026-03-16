@@ -1405,6 +1405,25 @@ def _build_argument_parser():
         help='Trigger a dataset refresh after deploying to Power BI Service (requires --deploy)'
     )
 
+    parser.add_argument(
+        '--deploy-bundle',
+        metavar='WORKSPACE_ID',
+        default=None,
+        help=(
+            'Deploy a shared semantic model project as a Fabric bundle '
+            '(SemanticModel + thin reports). Requires FABRIC_TENANT_ID, '
+            'FABRIC_CLIENT_ID, FABRIC_CLIENT_SECRET env vars. '
+            'Use with --shared-model or point --output-dir to an existing project.'
+        )
+    )
+
+    parser.add_argument(
+        '--bundle-refresh',
+        action='store_true',
+        default=False,
+        help='Trigger a dataset refresh after bundle deployment (requires --deploy-bundle)'
+    )
+
     # ── Tableau Server extraction arguments ───────────────────
     parser.add_argument(
         '--server',
@@ -1778,6 +1797,43 @@ def _print_migration_summary(results, report_summary, start_time):
     return all_success
 
 
+# ── Bundle deployment helper ────────────────────────────────────────────────
+
+def _run_bundle_deploy(project_dir, workspace_id, refresh=False):
+    """Deploy a shared model project as a Fabric bundle.
+
+    Args:
+        project_dir: Root project directory with .SemanticModel + .Report dirs.
+        workspace_id: Target Fabric workspace ID.
+        refresh: Trigger dataset refresh after deployment.
+
+    Returns:
+        ExitCode
+    """
+    try:
+        from powerbi_import.deploy.bundle_deployer import deploy_bundle_from_cli
+
+        print_header("FABRIC BUNDLE DEPLOYMENT")
+        print(f"  Workspace: {workspace_id}")
+        print(f"  Project:   {project_dir}")
+
+        result = deploy_bundle_from_cli(
+            project_dir=project_dir,
+            workspace_id=workspace_id,
+            refresh=refresh,
+        )
+
+        if result.success:
+            return ExitCode.SUCCESS
+        else:
+            return ExitCode.GENERAL_ERROR
+
+    except Exception as exc:
+        logger.error("Bundle deployment failed: %s", exc, exc_info=True)
+        print(f"\n  ✗ Bundle deployment error: {exc}")
+        return ExitCode.GENERAL_ERROR
+
+
 # ── Global Assessment mode ──────────────────────────────────────────────────
 
 def run_global_assessment_mode(args):
@@ -2147,7 +2203,7 @@ def main():
                 )
             workbook_paths.sort()
 
-        return run_shared_model_migration(
+        exit_code = run_shared_model_migration(
             workbook_paths=workbook_paths,
             model_name=getattr(args, 'model_name', None),
             output_dir=args.output_dir,
@@ -2160,6 +2216,31 @@ def main():
             languages=getattr(args, 'languages', None),
             merge_config_path=getattr(args, 'merge_config', None),
             save_config=getattr(args, 'save_merge_config', False),
+        )
+
+        # Auto-deploy bundle if --deploy-bundle is given alongside --shared-model
+        if exit_code == ExitCode.SUCCESS and getattr(args, 'deploy_bundle', None):
+            model_name = getattr(args, 'model_name', None) or 'SharedModel'
+            project_dir = os.path.join(
+                args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'shared'),
+                model_name,
+            )
+            exit_code = _run_bundle_deploy(
+                project_dir, args.deploy_bundle,
+                refresh=getattr(args, 'bundle_refresh', False),
+            )
+
+        return exit_code
+
+    # ── Standalone bundle deployment mode ─────────────────────
+    if getattr(args, 'deploy_bundle', None) and not getattr(args, 'shared_model', None):
+        project_dir = args.output_dir
+        if not project_dir:
+            print("Error: --deploy-bundle requires --output-dir pointing to a project directory")
+            return ExitCode.GENERAL_ERROR
+        return _run_bundle_deploy(
+            project_dir, args.deploy_bundle,
+            refresh=getattr(args, 'bundle_refresh', False),
         )
 
     # ── Manifest-based batch migration ─────────────────────────

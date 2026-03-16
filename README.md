@@ -87,7 +87,11 @@ python migrate.py --shared-model wb1.twbx wb2.twbx --model-name "Shared Sales"
 python migrate.py --global-assess --batch examples/tableau_samples/
 python migrate.py --global-assess wb1.twbx wb2.twbx wb3.twbx wb4.twbx
 
-# 🔍 Pre-merge assessment (assess without generating)
+# � Deploy shared model to Fabric workspace as a bundle
+python migrate.py --shared-model wb1.twbx wb2.twbx --deploy-bundle WORKSPACE_ID
+python migrate.py --deploy-bundle WORKSPACE_ID --output-dir artifacts/shared/MyModel --bundle-refresh
+
+# �🔍 Pre-merge assessment (assess without generating)
 python migrate.py --shared-model wb1.twbx wb2.twbx --assess-merge
 ```
 
@@ -146,7 +150,7 @@ One-command deploy to **Power BI Service** or **Microsoft Fabric** with Azure AD
 <td colspan="2">
 
 ### 🔗 Shared Semantic Model
-Merge multiple Tableau workbooks into **one shared semantic model** with thin reports. Fingerprint-based table matching, Jaccard column overlap scoring, measure conflict resolution, merge assessment with 0–100 scoring, and automatic `byPath` report wiring. **Global assessment** (`--global-assess`) analyzes all workbooks pairwise to find merge clusters and generates an HTML report with a score heatmap matrix.
+Merge multiple Tableau workbooks into **one shared semantic model** with thin reports. Fingerprint-based table matching, Jaccard column overlap scoring, measure conflict resolution, merge assessment with 0–100 scoring, and automatic `byPath` report wiring. **Global assessment** (`--global-assess`) analyzes all workbooks pairwise to find merge clusters and generates an HTML report with a score heatmap matrix. **Fabric bundle deployment** (`--deploy-bundle`) deploys the shared model + thin reports as an atomic unit.
 
 </td>
 </tr>
@@ -217,6 +221,12 @@ python migrate.py --shared-model wb1.twbx wb2.twbx wb3.twbx --assess-merge
 
 # Generate shared model + thin reports
 python migrate.py --shared-model wb1.twbx wb2.twbx wb3.twbx --model-name "Shared Sales"
+
+# Deploy shared model to Fabric workspace as a bundle
+python migrate.py --shared-model wb1.twbx wb2.twbx --deploy-bundle WORKSPACE_ID --bundle-refresh
+
+# Deploy an existing shared model project to Fabric
+python migrate.py --deploy-bundle WORKSPACE_ID --output-dir artifacts/shared/SharedSales
 ```
 
 The `--global-assess` flag generates an interactive HTML report with pairwise merge scores, merge clusters, and ready-to-run commands:
@@ -637,6 +647,7 @@ The report shows for each migrated workbook:
 | 📝 [Changelog](CHANGELOG.md) | Release history |
 | 🔗 [Shared Model Plan](docs/SHARED_SEMANTIC_MODEL_PLAN.md) | Multi-workbook merge architecture |
 | 🌐 Global Assessment | Cross-workbook merge analysis with HTML heatmap (`--global-assess`) |
+| 🚀 Bundle Deployment | Deploy shared model + reports to Fabric (`--deploy-bundle`) |
 
 ---
 

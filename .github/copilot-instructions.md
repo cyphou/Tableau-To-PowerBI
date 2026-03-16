@@ -49,7 +49,8 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
     - `pbi_client.py`: Power BI Service REST API client — Azure AD auth (SP/MI/token), import .pbix, refresh, list/delete datasets/reports
     - `pbix_packager.py`: .pbip → .pbix ZIP packager with OPC content types
     - `pbi_deployer.py`: PBI Service deployment orchestrator — package, upload, poll, refresh, validate
-- **tests/**: Unit and integration tests (3,847+ tests across 65 test files + conftest.py shared fixtures)
+    - `bundle_deployer.py`: Fabric bundle deployer — deploy shared model + thin reports as atomic bundle, artifact discovery, per-report error isolation, rebind, refresh, `BundleDeploymentResult`
+- **tests/**: Unit and integration tests (3,988+ tests across 69 test files + conftest.py shared fixtures)
 - **docs/**: FAQ, PBI project guide, mapping reference
 - **.github/workflows/ci.yml**: CI/CD pipeline (lint → test → validate → deploy)
 - **.github/workflows/publish.yml**: PyPI auto-publish workflow (tag-triggered, OIDC trusted publisher)
@@ -85,6 +86,9 @@ python migrate.py --shared-model wb1.twbx wb2.twbx --model-name "Shared Sales"
 python migrate.py --shared-model wb1.twbx wb2.twbx --assess-merge
 python migrate.py --shared-model wb1.twbx wb2.twbx --force-merge
 python migrate.py --batch examples/tableau_samples/ --shared-model
+python migrate.py --global-assess --batch examples/tableau_samples/
+python migrate.py --shared-model wb1.twbx wb2.twbx --deploy-bundle WORKSPACE_ID --bundle-refresh
+python migrate.py --deploy-bundle WORKSPACE_ID --output-dir artifacts/shared/MyModel
 ```
 
 ## Extracted Objects (16 types)

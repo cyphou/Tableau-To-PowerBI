@@ -127,6 +127,7 @@
 - **Deployment** (`deployer.py`): Fabric REST API deployment with retry logic, batch deployment, `FabricClient` with requests/urllib fallback
 - **Authentication** (`auth.py`): Service Principal (ClientSecretCredential) + Managed Identity (DefaultAzureCredential), lazy import of azure-identity
 - **Configuration** (`config/`): Environment-based (dev/staging/production), `_FallbackSettings` (stdlib) + optional pydantic-settings, .env file support
+- **Bundle deployment** (`bundle_deployer.py`): Deploy shared semantic model projects as atomic Fabric bundles — model first, then reports with error isolation, rebind, optional refresh, deployment report JSON
 - **Validation** (`validator.py`): Validates .pbip file, report directory, JSON validity, TMDL syntax
 
 ### What is MISSING or INCOMPLETE
@@ -140,7 +141,7 @@
 - **Deployment not end-to-end tested**: Integration test structure added in v5.0 (`test_fabric_integration.py`) — opt-in with `@pytest.mark.integration`
 - **Stale file cleanup race conditions**: OneDrive lock leftovers handled via try/except but may still leave artifacts on Windows
 - **`import_to_powerbi.py` loads JSON from hardcoded paths**: ✅ IMPLEMENTED — `source_dir` parameter allows configurable JSON source directory
-- **No shared semantic model**: ✅ IMPLEMENTED — `--shared-model` CLI flag merges multiple workbooks into one shared SemanticModel + N thin Reports; fingerprint-based table matching, Jaccard column overlap scoring, measure conflict resolution, merge assessment with 0–100 scoring
+- **No shared semantic model**: ✅ IMPLEMENTED — `--shared-model` CLI flag merges multiple workbooks into one shared SemanticModel + N thin Reports; fingerprint-based table matching, Jaccard column overlap scoring, measure conflict resolution, merge assessment with 0–100 scoring, `--global-assess` cross-workbook analysis with HTML heatmap, `--deploy-bundle` Fabric bundle deployment
 - **No composite model support**: ✅ IMPLEMENTED — `--mode composite` enables DirectQuery + Import hybrid
 - **No Small Multiples**: ✅ IMPLEMENTED — `_build_small_multiples_config()` auto-detects suitable fields
 ### What is APPROXIMATED
@@ -413,8 +414,9 @@
 | **DAX Conversion** | ~180+ patterns, ALLEXCEPT for partitioned calcs, **CORR/COVAR/COVARP**, **ATTR→SELECTEDVALUE**, **LOD balanced braces**, **PREVIOUS_VALUE→OFFSET**, **LOOKUP→OFFSET**, **RUNNING_*→CALCULATE+FILTER(ALLSELECTED)**, **TOTAL→CALCULATE+ALL**, **SCRIPT_* → scriptVisual** | Spatial (6), SPLIT | REGEX (4), WINDOW_* frames | Medium |
 | **M Query** | **33 connectors** (+8: OData, Google Analytics, Azure Blob/ADLS, Vertica, Impala, Hadoop Hive, Presto), 30+ transforms, **DAX-to-M expression converter** (calc columns as M steps), **Hyper data → M #table()** | OAuth, gateway, incremental refresh | Fallback #table, BigQuery/Oracle config | Low |
 | **Prep Flow** | DAG traversal, 20+ action types, **ExtractValues**, **CustomCalculation**, **Script/Prediction/CrossJoin/PublishedDataSource** handlers, 5 new connection mappings, **Hyper data loading** | — | Prep VAR/VARP joins | Low |
-| **Pre-Migration** | **Assessment** (8-category scoring: datasource/calculation/visual/filter/data model/interactivity/extract/scope), **Strategy advisor** (Import/DirectQuery/Composite), JSON report export | — | — | Low |
-| **Test Coverage** | **3,342 tests across 60 files** (+conftest.py shared fixtures), 93.08% coverage | Perf tests, integration tests | — | Low |
+| **Pre-Migration** | **Assessment** (8-category scoring), **Strategy advisor** (Import/DQ/Composite), **Global assessment** (`--global-assess`, N×N heatmap, BFS clustering), JSON + HTML reports | — | — | Low |
+| **Shared Model** | **Merge engine** (fingerprint, Jaccard, 0–100 scoring), **thin reports** (byPath), **merge config**, **field validation**, **column lineage**, **RLS consolidation**, **measure risk analyzer**, **global assessment** (cross-workbook clusters), **table isolation**, **Fabric bundle deployment** (`--deploy-bundle`) | — | — | Low |
+| **Test Coverage** | **3,988 tests across 69 files** (+conftest.py shared fixtures), 96.2% coverage | — | — | Low |
 | **CI/CD** | **5-stage pipeline** (lint+ruff, test, **strict validate+twbx**, **staging deploy**, production deploy), **pip caching**, **PBIR schema forward-compat check** (`--check-schema`), **PyPI auto-publish workflow** (`publish.yml`), **plugin system** (`plugins.py` + `examples/plugins/`) | Coverage reporting, Windows CI | — | Low |
 | **Documentation** | **13 docs** + copilot instructions (ARCHITECTURE, KNOWN_LIMITATIONS, MIGRATION_CHECKLIST, DEPLOYMENT_GUIDE, TABLEAU_VERSION_COMPATIBILITY, CONTRIBUTING) | API docs | — | Low |
 | **Config** | 11 env vars, 3 environments, **settings validation**, **dry-run**, **calendar/culture CLI**, **.env.example** | Config file, connection templating | — | Low |
