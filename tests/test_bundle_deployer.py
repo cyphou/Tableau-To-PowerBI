@@ -512,5 +512,79 @@ class TestMigrateBundleDeploy(unittest.TestCase):
                 self.assertEqual(code, ExitCode.GENERAL_ERROR)
 
 
+# ---------------------------------------------------------------------------
+# Bug-bash fixes – rebind failure tracking
+# ---------------------------------------------------------------------------
+
+class TestRebindFailureTracking(unittest.TestCase):
+    """Verify rebind failures are tracked in the result (bug-bash fix #1)."""
+
+    def _make_project_and_deployer(self, td):
+        from powerbi_import.deploy.bundle_deployer import BundleDeployer
+
+        project = os.path.join(td, 'project')
+        os.makedirs(project)
+
+        sm = os.path.join(project, 'Model.SemanticModel', 'definition')
+        os.makedirs(sm)
+        with open(os.path.join(sm, 'model.tmdl'), 'w') as f:
+            f.write('model\n')
+
+        rd = os.path.join(project, 'R1.Report', 'definition')
+        os.makedirs(rd)
+        with open(os.path.join(rd, 'report.json'), 'w') as f:
+            json.dump({'name': 'R1'}, f)
+
+        mock_client = MagicMock()
+        deployer = BundleDeployer.__new__(BundleDeployer)
+        deployer.workspace_id = 'ws-1'
+        deployer.client = mock_client
+        deployer._deployer = MagicMock()
+        deployer._deployer.deploy_dataset.return_value = {'id': 'sm-1'}
+        deployer._deployer.deploy_report.return_value = {'id': 'rpt-1'}
+        return project, deployer
+
+    def test_rebind_success_tracked(self):
+        """Successful rebind is recorded as 'success'."""
+        with tempfile.TemporaryDirectory() as td:
+            project, deployer = self._make_project_and_deployer(td)
+            deployer.client.post.return_value = {}  # rebind OK
+            result = deployer.deploy_bundle(project)
+
+            rpt = result.reports[0]
+            self.assertEqual(rpt['status'], 'deployed')
+            self.assertEqual(rpt['rebind'], 'success')
+
+    def test_rebind_failure_marks_unbound(self):
+        """Failed rebind sets status to 'deployed_unbound'."""
+        with tempfile.TemporaryDirectory() as td:
+            project, deployer = self._make_project_and_deployer(td)
+            deployer.client.post.side_effect = Exception('rebind 403')
+            result = deployer.deploy_bundle(project)
+
+            rpt = result.reports[0]
+            self.assertEqual(rpt['status'], 'deployed_unbound')
+            self.assertEqual(rpt['rebind'], 'failed')
+
+
+# ---------------------------------------------------------------------------
+# Bug-bash fixes – standalone deploy-bundle dir validation
+# ---------------------------------------------------------------------------
+
+class TestStandaloneDeployDirValidation(unittest.TestCase):
+    """Verify standalone --deploy-bundle validates directory existence."""
+
+    def test_nonexistent_dir_returns_error(self):
+        import sys
+        sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+        from migrate import main, ExitCode
+
+        with patch('sys.argv', ['migrate.py',
+                                '--deploy-bundle', 'ws-fake',
+                                '--output-dir', '/nonexistent/path/xyz']):
+            code = main()
+            self.assertEqual(code, ExitCode.GENERAL_ERROR)
+
+
 if __name__ == '__main__':
     unittest.main()

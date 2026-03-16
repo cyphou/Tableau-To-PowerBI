@@ -375,5 +375,26 @@ class TestDataclassSerialize(unittest.TestCase):
         self.assertEqual(d["isolated_workbooks"], ["X"])
 
 
+# ---------------------------------------------------------------------------
+# Bug-bash fix — HTML escaping of single quotes
+# ---------------------------------------------------------------------------
+
+class TestHtmlEscaping(unittest.TestCase):
+    """Verify _esc() escapes single quotes (bug-bash fix)."""
+
+    def test_esc_single_quote(self):
+        from powerbi_import.global_assessment import _esc
+        self.assertEqual(_esc("O'Reilly"), "O&#39;Reilly")
+
+    def test_esc_all_entities(self):
+        from powerbi_import.global_assessment import _esc
+        result = _esc('<b>"Hello" & \'World\'</b>')
+        self.assertNotIn('<', result)
+        self.assertNotIn('>', result)
+        self.assertNotIn('&', result.replace('&amp;', '').replace('&lt;', '').replace('&gt;', '').replace('&quot;', '').replace('&#39;', ''))
+        self.assertNotIn("'", result)
+        self.assertNotIn('"', result.replace('&quot;', ''))
+
+
 if __name__ == '__main__':
     unittest.main()

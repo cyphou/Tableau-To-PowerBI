@@ -866,5 +866,68 @@ class TestTableIsolationDetection(unittest.TestCase):
         self.assertIn('[dbo].[Logs]', isolated)
 
 
+# ---------------------------------------------------------------------------
+# Bug-bash fix — key_patterns word-boundary matching
+# ---------------------------------------------------------------------------
+
+class TestKeyPatternWordBoundary(unittest.TestCase):
+    """Ensure key_patterns like 'id' don't match inside words like 'grid'."""
+
+    def test_grid_not_matched_as_key(self):
+        """Column named 'grid_data' should NOT match key pattern 'id'."""
+        # Shared table: Orders with order_id, amount
+        shared_t = _make_table('Orders', ['order_id', 'amount'])
+        # Unique table: GridLayout with 'grid_data' and 'rapidly'
+        # 'grid_data' contains 'id' as substring; 'rapidly' contains 'id' too
+        grid_t = _make_table('GridLayout', ['grid_data', 'rapidly'])
+
+        wb_a = _make_wb([_make_datasource(
+            'DS_A', 'sqlserver', 'srv1', 'db1',
+            tables=[_make_table('Orders', ['order_id', 'amount'])],
+        )])
+        wb_b = _make_wb([_make_datasource(
+            'DS_B', 'sqlserver', 'srv1', 'db1',
+            tables=[_make_table('Orders', ['order_id', 'amount']),
+                    grid_t],
+        )])
+
+        assessment = assess_merge([wb_a, wb_b], ['WB_A', 'WB_B'])
+        linked = assessment.linked_unique_tables.get('WB_B', [])
+        # 'grid_data' contains 'id' as substring but not at word boundary
+        self.assertNotIn('GridLayout', linked)
+
+    def test_customer_id_matched_as_key(self):
+        """Column named 'customer_id' SHOULD match key pattern '_id'."""
+        wb_a = _make_wb([_make_datasource(
+            'DS_A', 'sqlserver', 'srv1', 'db1',
+            tables=[_make_table('Orders', ['customer_id', 'amount'])],
+        )])
+        wb_b = _make_wb([_make_datasource(
+            'DS_B', 'sqlserver', 'srv1', 'db1',
+            tables=[_make_table('Orders', ['customer_id', 'amount']),
+                    _make_table('Addresses', ['customer_id', 'city'])],
+        )])
+
+        assessment = assess_merge([wb_a, wb_b], ['WB_A', 'WB_B'])
+        linked = assessment.linked_unique_tables.get('WB_B', [])
+        self.assertIn('Addresses', linked)
+
+    def test_exact_id_column_matched(self):
+        """Column named exactly 'id' SHOULD match."""
+        wb_a = _make_wb([_make_datasource(
+            'DS_A', 'sqlserver', 'srv1', 'db1',
+            tables=[_make_table('Products', ['id', 'name'])],
+        )])
+        wb_b = _make_wb([_make_datasource(
+            'DS_B', 'sqlserver', 'srv1', 'db1',
+            tables=[_make_table('Products', ['id', 'name']),
+                    _make_table('Reviews', ['id', 'rating'])],
+        )])
+
+        assessment = assess_merge([wb_a, wb_b], ['WB_A', 'WB_B'])
+        linked = assessment.linked_unique_tables.get('WB_B', [])
+        self.assertIn('Reviews', linked)
+
+
 if __name__ == '__main__':
     unittest.main()

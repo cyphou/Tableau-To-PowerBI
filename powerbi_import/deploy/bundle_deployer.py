@@ -375,7 +375,10 @@ class BundleDeployer:
 
             # 3b. Rebind report to semantic model
             if rpt_result['status'] == 'deployed' and rpt_result.get('id'):
-                self._rebind_report(rpt_result['id'], model_id)
+                rebind_ok = self._rebind_report(rpt_result['id'], model_id)
+                rpt_result['rebind'] = 'success' if rebind_ok else 'failed'
+                if not rebind_ok:
+                    rpt_result['status'] = 'deployed_unbound'
 
             result.reports.append(rpt_result)
 

@@ -544,8 +544,13 @@ def _classify_unique_tables(assessment: MergeAssessment,
                 for col in unique_cols:
                     col_lower = col.lower()
                     if col_lower in shared_columns:
-                        # Check if it looks like a join key
-                        if any(p in col_lower for p in key_patterns):
+                        # Check if it looks like a join key (word-boundary match)
+                        if any(
+                            col_lower == p
+                            or col_lower.endswith(f'_{p}')
+                            or col_lower.startswith(f'{p}_')
+                            for p in key_patterns
+                        ):
                             is_linked = True
                             break
 

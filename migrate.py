@@ -2238,6 +2238,9 @@ def main():
         if not project_dir:
             print("Error: --deploy-bundle requires --output-dir pointing to a project directory")
             return ExitCode.GENERAL_ERROR
+        if not os.path.isdir(project_dir):
+            print(f"Error: project directory not found: {project_dir}")
+            return ExitCode.GENERAL_ERROR
         return _run_bundle_deploy(
             project_dir, args.deploy_bundle,
             refresh=getattr(args, 'bundle_refresh', False),

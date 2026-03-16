@@ -386,7 +386,8 @@ def _esc(text: str) -> str:
             .replace("&", "&amp;")
             .replace("<", "&lt;")
             .replace(">", "&gt;")
-            .replace('"', "&quot;"))
+            .replace('"', "&quot;")
+            .replace("'", "&#39;"))
 
 
 def _score_bg(score: int) -> str:
