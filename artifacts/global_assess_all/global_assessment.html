@@ -1,0 +1,1797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Global Assessment — Merge Analysis</title>
+<style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+           margin: 0; padding: 20px; background: #f5f5f5; color: #323130; }
+    .container { max-width: 1500px; margin: 0 auto; }
+    h1 { color: #0078d4; border-bottom: 3px solid #0078d4;
+         padding-bottom: 10px; font-size: 1.6em; }
+    h2 { color: #323130; margin-top: 30px; font-size: 1.25em;
+         cursor: pointer; }
+    h2:hover { color: #0078d4; }
+    h3 { color: #605e5c; margin-top: 20px; }
+    .card { background: #fff; border-radius: 8px; padding: 20px;
+            margin: 15px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .stats { display: grid;
+             grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+             gap: 12px; }
+    .stat { background: #fff; border-radius: 8px; padding: 16px;
+            text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.15s; }
+    .stat:hover { transform: translateY(-2px);
+                  box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+    .stat .number { font-size: 2em; font-weight: bold; color: #0078d4; }
+    .stat .label { font-size: 0.85em; color: #605e5c; margin-top: 4px; }
+    table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+    th { background: #0078d4; color: #fff; padding: 10px 12px;
+         text-align: left; font-size: 0.85em; position: sticky; top: 0; }
+    td { padding: 8px 12px; border-bottom: 1px solid #e1dfdd;
+         font-size: 0.85em; }
+    tr:hover { background: #f3f2f1; }
+    .detail-table th { background: #605e5c; }
+    .connector-tag { background: #e8f0fe; color: #1a73e8;
+                     padding: 2px 6px; border-radius: 3px;
+                     font-size: 0.82em; white-space: nowrap; }
+    .success-tag { background: #d4edda; color: #155724;
+                   padding: 2px 6px; border-radius: 3px; font-size: 0.82em; }
+    .warn-tag { background: #fff3cd; color: #856404;
+                padding: 2px 6px; border-radius: 3px; font-size: 0.82em; }
+    .danger-tag { background: #f8d7da; color: #721c24;
+                  padding: 2px 6px; border-radius: 3px; font-size: 0.82em; }
+    .isolated-tag { background: #e2e3e5; color: #383d41;
+                    padding: 2px 6px; border-radius: 3px; font-size: 0.82em; }
+    .cluster-card { background: #fff; border-radius: 8px; padding: 20px;
+                    margin: 12px 0; box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+                    border-left: 5px solid #0078d4; }
+    .cluster-card.merge { border-left-color: #28a745; }
+    .cluster-card.partial { border-left-color: #ffc107; }
+    .cluster-card.separate { border-left-color: #dc3545; }
+    .matrix-cell { text-align: center; font-weight: bold; font-size: 0.85em;
+                   min-width: 80px; }
+    .mono { font-family: 'Cascadia Code', 'Consolas', monospace;
+            font-size: 0.82em; }
+    .section-icon { font-size: 1.2em; margin-right: 4px; }
+    .collapsible { overflow: hidden; transition: max-height 0.3s ease-out;
+                   max-height: 5000px; }
+    .collapsed { max-height: 0 !important; }
+    .toggle-icon { float: right; font-size: 0.8em; color: #a19f9d; }
+    .footer { text-align: center; color: #a19f9d;
+              font-size: 0.85em; margin-top: 40px; padding: 20px; }
+    .cmd-box { background: #1e1e1e; color: #d4d4d4; padding: 14px 18px;
+               border-radius: 6px; font-family: 'Cascadia Code', Consolas, monospace;
+               font-size: 0.85em; overflow-x: auto; white-space: pre; }
+    @media print {
+        .collapsible { max-height: none !important; }
+        h2 { cursor: default; }
+        .toggle-icon { display: none; }
+    }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>&#128202; Global Assessment — Cross-Workbook Merge Analysis</h1>
+<p style="color:#605e5c;font-size:0.9em">
+    Generated: 2026-03-16 16:53 &nbsp;|&nbsp; Tool: v13.0.0 &nbsp;|&nbsp;
+    Workbooks: 22
+</p>
+
+<h2 onclick="toggleSection('exec')"><span class="section-icon">&#128200;</span>
+Executive Summary <span class="toggle-icon" id="exec-icon">&#9660;</span></h2>
+<div id="exec" class="collapsible">
+<div class="stats">
+    <div class="stat"><div class="number">22</div>
+        <div class="label">Workbooks</div></div>
+    <div class="stat"><div class="number">35</div>
+        <div class="label">Total Tables</div></div>
+    <div class="stat"><div class="number">195</div>
+        <div class="label">Total Measures</div></div>
+    <div class="stat"><div class="number" style="color:#28a745">3</div>
+        <div class="label">Merge Clusters</div></div>
+    <div class="stat"><div class="number" style="color:#28a745">9</div>
+        <div class="label">Workbooks in Clusters</div></div>
+    <div class="stat"><div class="number" style="color:#605e5c">13</div>
+        <div class="label">Isolated Workbooks</div></div>
+</div>
+<div class="card" style="margin-top:15px"><h3>Recommended Actions</h3><ul><li><span style="background:#28a745;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">MERGE</span> &nbsp; <strong>Cache</strong>, <strong>RESTAPISample</strong>, <strong>SampleWB</strong> &nbsp; (score: 67/100, 1 shared tables)</li><li><span style="background:#28a745;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">MERGE</span> &nbsp; <strong>datasource_test</strong>, <strong>ephemeral_field</strong> &nbsp; (score: 80/100, 1 shared tables)</li><li><span style="background:#28a745;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">MERGE</span> &nbsp; <strong>global_superstores_db</strong>, <strong>Superstore_Sales</strong>, <strong>shapes_test</strong>, <strong>superstore_sales_dashboard</strong> &nbsp; (score: 61/100, 3 shared tables)</li><li><span class="isolated-tag">STANDALONE</span> &nbsp; <strong>TABLEAU_10_TWB</strong>, <strong>TABLEAU_10_TWBX</strong>, <strong>filtering</strong>, <strong>multiple_connections</strong>, <strong>nba_player_stats</strong>, <strong>sample-superstore</strong>, <strong>BigQuery_Analytics</strong>, <strong>Enterprise_Sales</strong>, <strong>Financial_Report</strong>, <strong>HR_Analytics</strong>, <strong>Manufacturing_IoT</strong>, <strong>Marketing_Campaign</strong>, <strong>Security_Test</strong> &nbsp; (migrate individually)</li></ul></div></div>
+<h2 onclick="toggleSection('inv')"><span class="section-icon">&#128214;</span>
+Workbook Inventory <span class="toggle-icon" id="inv-icon">&#9660;</span></h2>
+<div id="inv" class="collapsible">
+<div class="card">
+<table>
+<tr>
+    <th>Workbook</th><th>Connectors</th><th>Tables</th><th>Columns</th>
+    <th>Measures</th><th>Calc Columns</th><th>Relationships</th>
+    <th>Worksheets</th><th>Dashboards</th><th>Status</th>
+</tr>
+<tr>
+    <td><strong>Cache</strong></td>
+    <td><span class="connector-tag">DATAENGINE</span> <span class="connector-tag">Unknown</span></td>
+    <td>1</td><td>5</td>
+    <td>14</td><td>0</td>
+    <td>0</td>
+    <td>1</td><td>0</td>
+    <td><span class="success-tag">Cluster #1</span></td>
+</tr><tr>
+    <td><strong>RESTAPISample</strong></td>
+    <td><span class="connector-tag">DATAENGINE</span></td>
+    <td>1</td><td>13</td>
+    <td>8</td><td>0</td>
+    <td>0</td>
+    <td>7</td><td>1</td>
+    <td><span class="success-tag">Cluster #1</span></td>
+</tr><tr>
+    <td><strong>SampleWB</strong></td>
+    <td><span class="connector-tag">DATAENGINE</span></td>
+    <td>1</td><td>13</td>
+    <td>8</td><td>0</td>
+    <td>0</td>
+    <td>7</td><td>1</td>
+    <td><span class="success-tag">Cluster #1</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWB</strong></td>
+    <td>—</td>
+    <td>0</td><td>0</td>
+    <td>0</td><td>0</td>
+    <td>0</td>
+    <td>0</td><td>0</td>
+    <td><span class="isolated-tag">Standalone</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWBX</strong></td>
+    <td><span class="connector-tag">SQL Server</span></td>
+    <td>2</td><td>7</td>
+    <td>2</td><td>0</td>
+    <td>0</td>
+    <td>1</td><td>0</td>
+    <td><span class="isolated-tag">Standalone</span></td>
+</tr><tr>
+    <td><strong>datasource_test</strong></td>
+    <td><span class="connector-tag">PostgreSQL</span></td>
+    <td>1</td><td>3</td>
+    <td>2</td><td>0</td>
+    <td>0</td>
+    <td>2</td><td>0</td>
+    <td><span class="success-tag">Cluster #2</span></td>
+</tr><tr>
+    <td><strong>ephemeral_field</strong></td>
+    <td><span class="connector-tag">PostgreSQL</span></td>
+    <td>1</td><td>3</td>
+    <td>4</td><td>0</td>
+    <td>0</td>
+    <td>2</td><td>0</td>
+    <td><span class="success-tag">Cluster #2</span></td>
+</tr><tr>
+    <td><strong>filtering</strong></td>
+    <td><span class="connector-tag">SQL Server</span></td>
+    <td>1</td><td>40</td>
+    <td>0</td><td>2</td>
+    <td>0</td>
+    <td>2</td><td>1</td>
+    <td><span class="isolated-tag">Standalone</span></td>
+</tr><tr>
+    <td><strong>global_superstores_db</strong></td>
+    <td><span class="connector-tag">Excel</span></td>
+    <td>1</td><td>24</td>
+    <td>4</td><td>2</td>
+    <td>0</td>
+    <td>20</td><td>6</td>
+    <td><span class="success-tag">Cluster #3</span></td>
+</tr><tr>
+    <td><strong>multiple_connections</strong></td>
+    <td><span class="connector-tag">MySQL</span> <span class="connector-tag">Tableau Server</span></td>
+    <td>3</td><td>0</td>
+    <td>0</td><td>0</td>
+    <td>1</td>
+    <td>0</td><td>0</td>
+    <td><span class="isolated-tag">Standalone</span></td>
+</tr><tr>
+    <td><strong>nba_player_stats</strong></td>
+    <td><span class="connector-tag">Excel</span> <span class="connector-tag">Unknown</span></td>
+    <td>1</td><td>19</td>
+    <td>9</td><td>0</td>
+    <td>0</td>
+    <td>5</td><td>1</td>
+    <td><span class="isolated-tag">Standalone</span></td>
+</tr><tr>
+    <td><strong>sample-superstore</strong></td>
+    <td><span class="connector-tag">SQL Server</span></td>
+    <td>1</td><td>24</td>
+    <td>2</td><td>0</td>
+    <td>0</td>
+    <td>1</td><td>0</td>
+    <td><span class="isolated-tag">Standalone</span></td>
+</tr><tr>
+    <td><strong>shapes_test</strong></td>
+    <td><span class="connector-tag">Excel</span> <span class="connector-tag">Unknown</span></td>
+    <td>3</td><td>25</td>
+    <td>8</td><td>2</td>
+    <td>2</td>
+    <td>1</td><td>0</td>
+    <td><span class="success-tag">Cluster #3</span></td>
+</tr><tr>
+    <td><strong>superstore_sales_dashboard</strong></td>
+    <td><span class="connector-tag">Excel</span></td>
+    <td>2</td><td>46</td>
+    <td>0</td><td>2</td>
+    <td>0</td>
+    <td>4</td><td>1</td>
+    <td><span class="success-tag">Cluster #3</span></td>
+</tr><tr>
+    <td><strong>BigQuery_Analytics</strong></td>
+    <td><span class="connector-tag">BigQuery</span></td>
+    <td>2</td><td>16</td>
+    <td>14</td><td>6</td>
+    <td>1</td>
+    <td>4</td><td>1</td>
+    <td><span class="isolated-tag">Standalone</span></td>
+</tr><tr>
+    <td><strong>Enterprise_Sales</strong></td>
+    <td><span class="connector-tag">Snowflake</span></td>
+    <td>2</td><td>24</td>
+    <td>30</td><td>14</td>
+    <td>1</td>
+    <td>5</td><td>1</td>
+    <td><span class="isolated-tag">Standalone</span></td>
+</tr><tr>
+    <td><strong>Financial_Report</strong></td>
+    <td><span class="connector-tag">PostgreSQL</span></td>
+    <td>1</td><td>8</td>
+    <td>12</td><td>0</td>
+    <td>0</td>
+    <td>4</td><td>1</td>
+    <td><span class="isolated-tag">Standalone</span></td>
+</tr><tr>
+    <td><strong>HR_Analytics</strong></td>
+    <td><span class="connector-tag">SQL Server</span></td>
+    <td>1</td><td>11</td>
+    <td>6</td><td>2</td>
+    <td>0</td>
+    <td>4</td><td>1</td>
+    <td><span class="isolated-tag">Standalone</span></td>
+</tr><tr>
+    <td><strong>Manufacturing_IoT</strong></td>
+    <td><span class="connector-tag">Oracle</span></td>
+    <td>3</td><td>28</td>
+    <td>40</td><td>10</td>
+    <td>2</td>
+    <td>6</td><td>2</td>
+    <td><span class="isolated-tag">Standalone</span></td>
+</tr><tr>
+    <td><strong>Marketing_Campaign</strong></td>
+    <td><span class="connector-tag">MySQL</span></td>
+    <td>2</td><td>26</td>
+    <td>20</td><td>30</td>
+    <td>1</td>
+    <td>5</td><td>1</td>
+    <td><span class="isolated-tag">Standalone</span></td>
+</tr><tr>
+    <td><strong>Security_Test</strong></td>
+    <td><span class="connector-tag">SQL Server</span></td>
+    <td>2</td><td>9</td>
+    <td>4</td><td>6</td>
+    <td>0</td>
+    <td>2</td><td>1</td>
+    <td><span class="isolated-tag">Standalone</span></td>
+</tr><tr>
+    <td><strong>Superstore_Sales</strong></td>
+    <td><span class="connector-tag">Excel</span></td>
+    <td>3</td><td>25</td>
+    <td>8</td><td>0</td>
+    <td>2</td>
+    <td>3</td><td>1</td>
+    <td><span class="success-tag">Cluster #3</span></td>
+</tr><tr style="background:#e8f0fe;font-weight:bold">
+    <td>TOTAL</td><td></td>
+    <td>35</td>
+    <td>369</td>
+    <td>195</td>
+    <td>76</td>
+    <td>10</td>
+    <td>86</td>
+    <td>20</td>
+    <td></td>
+</tr></table></div></div>
+<h2 onclick="toggleSection('matrix')"><span class="section-icon">&#127922;</span>
+Pairwise Merge Score Matrix <span class="toggle-icon" id="matrix-icon">&#9660;</span></h2>
+<div id="matrix" class="collapsible">
+<div class="card" style="overflow-x:auto">
+<table>
+<tr><th style="min-width:150px"></th><th class="matrix-cell">Cache</th><th class="matrix-cell">RESTAPISample</th><th class="matrix-cell">SampleWB</th><th class="matrix-cell">TABLEAU_10_TWB</th><th class="matrix-cell">TABLEAU_10_TWBX</th><th class="matrix-cell">datasource_test</th><th class="matrix-cell">ephemeral_field</th><th class="matrix-cell">filtering</th><th class="matrix-cell">global_superstores..</th><th class="matrix-cell">multiple_connections</th><th class="matrix-cell">nba_player_stats</th><th class="matrix-cell">sample-superstore</th><th class="matrix-cell">shapes_test</th><th class="matrix-cell">superstore_sales_d..</th><th class="matrix-cell">BigQuery_Analytics</th><th class="matrix-cell">Enterprise_Sales</th><th class="matrix-cell">Financial_Report</th><th class="matrix-cell">HR_Analytics</th><th class="matrix-cell">Manufacturing_IoT</th><th class="matrix-cell">Marketing_Campaign</th><th class="matrix-cell">Security_Test</th><th class="matrix-cell">Superstore_Sales</th></tr><tr><td><strong>Cache</strong></td><td class="matrix-cell" style="background:#e8f0fe;color:#0078d4">—</td><td class="matrix-cell" style="background:#d4edda" title="Cache &lt;-&gt; RESTAPISample: 1 shared tables">61</td><td class="matrix-cell" style="background:#d4edda" title="Cache &lt;-&gt; SampleWB: 1 shared tables">61</td><td class="matrix-cell" style="background:#f8d7da" title="Cache &lt;-&gt; TABLEAU_10_TWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Cache &lt;-&gt; TABLEAU_10_TWBX: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Cache &lt;-&gt; datasource_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Cache &lt;-&gt; ephemeral_field: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Cache &lt;-&gt; filtering: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Cache &lt;-&gt; global_superstores_db: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Cache &lt;-&gt; multiple_connections: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Cache &lt;-&gt; nba_player_stats: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Cache &lt;-&gt; sample-superstore: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Cache &lt;-&gt; shapes_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Cache &lt;-&gt; superstore_sales_dashboard: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Cache &lt;-&gt; BigQuery_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Cache &lt;-&gt; Enterprise_Sales: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Cache &lt;-&gt; Financial_Report: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Cache &lt;-&gt; HR_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Cache &lt;-&gt; Manufacturing_IoT: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Cache &lt;-&gt; Marketing_Campaign: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Cache &lt;-&gt; Security_Test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Cache &lt;-&gt; Superstore_Sales: 0 shared tables">20</td></tr><tr><td><strong>RESTAPISample</strong></td><td class="matrix-cell" style="background:#d4edda" title="RESTAPISample &lt;-&gt; Cache: 1 shared tables">61</td><td class="matrix-cell" style="background:#e8f0fe;color:#0078d4">—</td><td class="matrix-cell" style="background:#d4edda" title="RESTAPISample &lt;-&gt; SampleWB: 1 shared tables">80</td><td class="matrix-cell" style="background:#f8d7da" title="RESTAPISample &lt;-&gt; TABLEAU_10_TWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="RESTAPISample &lt;-&gt; TABLEAU_10_TWBX: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="RESTAPISample &lt;-&gt; datasource_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="RESTAPISample &lt;-&gt; ephemeral_field: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="RESTAPISample &lt;-&gt; filtering: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="RESTAPISample &lt;-&gt; global_superstores_db: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="RESTAPISample &lt;-&gt; multiple_connections: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="RESTAPISample &lt;-&gt; nba_player_stats: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="RESTAPISample &lt;-&gt; sample-superstore: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="RESTAPISample &lt;-&gt; shapes_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="RESTAPISample &lt;-&gt; superstore_sales_dashboard: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="RESTAPISample &lt;-&gt; BigQuery_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="RESTAPISample &lt;-&gt; Enterprise_Sales: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="RESTAPISample &lt;-&gt; Financial_Report: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="RESTAPISample &lt;-&gt; HR_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="RESTAPISample &lt;-&gt; Manufacturing_IoT: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="RESTAPISample &lt;-&gt; Marketing_Campaign: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="RESTAPISample &lt;-&gt; Security_Test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="RESTAPISample &lt;-&gt; Superstore_Sales: 0 shared tables">20</td></tr><tr><td><strong>SampleWB</strong></td><td class="matrix-cell" style="background:#d4edda" title="SampleWB &lt;-&gt; Cache: 1 shared tables">61</td><td class="matrix-cell" style="background:#d4edda" title="SampleWB &lt;-&gt; RESTAPISample: 1 shared tables">80</td><td class="matrix-cell" style="background:#e8f0fe;color:#0078d4">—</td><td class="matrix-cell" style="background:#f8d7da" title="SampleWB &lt;-&gt; TABLEAU_10_TWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="SampleWB &lt;-&gt; TABLEAU_10_TWBX: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="SampleWB &lt;-&gt; datasource_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="SampleWB &lt;-&gt; ephemeral_field: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="SampleWB &lt;-&gt; filtering: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="SampleWB &lt;-&gt; global_superstores_db: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="SampleWB &lt;-&gt; multiple_connections: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="SampleWB &lt;-&gt; nba_player_stats: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="SampleWB &lt;-&gt; sample-superstore: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="SampleWB &lt;-&gt; shapes_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="SampleWB &lt;-&gt; superstore_sales_dashboard: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="SampleWB &lt;-&gt; BigQuery_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="SampleWB &lt;-&gt; Enterprise_Sales: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="SampleWB &lt;-&gt; Financial_Report: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="SampleWB &lt;-&gt; HR_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="SampleWB &lt;-&gt; Manufacturing_IoT: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="SampleWB &lt;-&gt; Marketing_Campaign: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="SampleWB &lt;-&gt; Security_Test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="SampleWB &lt;-&gt; Superstore_Sales: 0 shared tables">20</td></tr><tr><td><strong>TABLEAU_10_TWB</strong></td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWB &lt;-&gt; Cache: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWB &lt;-&gt; RESTAPISample: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWB &lt;-&gt; SampleWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#e8f0fe;color:#0078d4">—</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWB &lt;-&gt; TABLEAU_10_TWBX: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWB &lt;-&gt; datasource_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWB &lt;-&gt; ephemeral_field: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWB &lt;-&gt; filtering: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWB &lt;-&gt; global_superstores_db: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWB &lt;-&gt; multiple_connections: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWB &lt;-&gt; nba_player_stats: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWB &lt;-&gt; sample-superstore: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWB &lt;-&gt; shapes_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWB &lt;-&gt; superstore_sales_dashboard: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWB &lt;-&gt; BigQuery_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWB &lt;-&gt; Enterprise_Sales: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWB &lt;-&gt; Financial_Report: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWB &lt;-&gt; HR_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWB &lt;-&gt; Manufacturing_IoT: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWB &lt;-&gt; Marketing_Campaign: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWB &lt;-&gt; Security_Test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWB &lt;-&gt; Superstore_Sales: 0 shared tables">20</td></tr><tr><td><strong>TABLEAU_10_TWBX</strong></td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWBX &lt;-&gt; Cache: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWBX &lt;-&gt; RESTAPISample: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWBX &lt;-&gt; SampleWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWBX &lt;-&gt; TABLEAU_10_TWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#e8f0fe;color:#0078d4">—</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWBX &lt;-&gt; datasource_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWBX &lt;-&gt; ephemeral_field: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWBX &lt;-&gt; filtering: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWBX &lt;-&gt; global_superstores_db: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWBX &lt;-&gt; multiple_connections: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWBX &lt;-&gt; nba_player_stats: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWBX &lt;-&gt; sample-superstore: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWBX &lt;-&gt; shapes_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWBX &lt;-&gt; superstore_sales_dashboard: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWBX &lt;-&gt; BigQuery_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWBX &lt;-&gt; Enterprise_Sales: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWBX &lt;-&gt; Financial_Report: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWBX &lt;-&gt; HR_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWBX &lt;-&gt; Manufacturing_IoT: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWBX &lt;-&gt; Marketing_Campaign: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWBX &lt;-&gt; Security_Test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="TABLEAU_10_TWBX &lt;-&gt; Superstore_Sales: 0 shared tables">20</td></tr><tr><td><strong>datasource_test</strong></td><td class="matrix-cell" style="background:#f8d7da" title="datasource_test &lt;-&gt; Cache: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="datasource_test &lt;-&gt; RESTAPISample: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="datasource_test &lt;-&gt; SampleWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="datasource_test &lt;-&gt; TABLEAU_10_TWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="datasource_test &lt;-&gt; TABLEAU_10_TWBX: 0 shared tables">20</td><td class="matrix-cell" style="background:#e8f0fe;color:#0078d4">—</td><td class="matrix-cell" style="background:#d4edda" title="datasource_test &lt;-&gt; ephemeral_field: 1 shared tables">80</td><td class="matrix-cell" style="background:#f8d7da" title="datasource_test &lt;-&gt; filtering: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="datasource_test &lt;-&gt; global_superstores_db: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="datasource_test &lt;-&gt; multiple_connections: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="datasource_test &lt;-&gt; nba_player_stats: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="datasource_test &lt;-&gt; sample-superstore: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="datasource_test &lt;-&gt; shapes_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="datasource_test &lt;-&gt; superstore_sales_dashboard: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="datasource_test &lt;-&gt; BigQuery_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="datasource_test &lt;-&gt; Enterprise_Sales: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="datasource_test &lt;-&gt; Financial_Report: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="datasource_test &lt;-&gt; HR_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="datasource_test &lt;-&gt; Manufacturing_IoT: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="datasource_test &lt;-&gt; Marketing_Campaign: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="datasource_test &lt;-&gt; Security_Test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="datasource_test &lt;-&gt; Superstore_Sales: 0 shared tables">20</td></tr><tr><td><strong>ephemeral_field</strong></td><td class="matrix-cell" style="background:#f8d7da" title="ephemeral_field &lt;-&gt; Cache: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="ephemeral_field &lt;-&gt; RESTAPISample: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="ephemeral_field &lt;-&gt; SampleWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="ephemeral_field &lt;-&gt; TABLEAU_10_TWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="ephemeral_field &lt;-&gt; TABLEAU_10_TWBX: 0 shared tables">20</td><td class="matrix-cell" style="background:#d4edda" title="ephemeral_field &lt;-&gt; datasource_test: 1 shared tables">80</td><td class="matrix-cell" style="background:#e8f0fe;color:#0078d4">—</td><td class="matrix-cell" style="background:#f8d7da" title="ephemeral_field &lt;-&gt; filtering: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="ephemeral_field &lt;-&gt; global_superstores_db: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="ephemeral_field &lt;-&gt; multiple_connections: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="ephemeral_field &lt;-&gt; nba_player_stats: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="ephemeral_field &lt;-&gt; sample-superstore: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="ephemeral_field &lt;-&gt; shapes_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="ephemeral_field &lt;-&gt; superstore_sales_dashboard: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="ephemeral_field &lt;-&gt; BigQuery_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="ephemeral_field &lt;-&gt; Enterprise_Sales: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="ephemeral_field &lt;-&gt; Financial_Report: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="ephemeral_field &lt;-&gt; HR_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="ephemeral_field &lt;-&gt; Manufacturing_IoT: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="ephemeral_field &lt;-&gt; Marketing_Campaign: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="ephemeral_field &lt;-&gt; Security_Test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="ephemeral_field &lt;-&gt; Superstore_Sales: 0 shared tables">20</td></tr><tr><td><strong>filtering</strong></td><td class="matrix-cell" style="background:#f8d7da" title="filtering &lt;-&gt; Cache: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="filtering &lt;-&gt; RESTAPISample: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="filtering &lt;-&gt; SampleWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="filtering &lt;-&gt; TABLEAU_10_TWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="filtering &lt;-&gt; TABLEAU_10_TWBX: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="filtering &lt;-&gt; datasource_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="filtering &lt;-&gt; ephemeral_field: 0 shared tables">20</td><td class="matrix-cell" style="background:#e8f0fe;color:#0078d4">—</td><td class="matrix-cell" style="background:#f8d7da" title="filtering &lt;-&gt; global_superstores_db: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="filtering &lt;-&gt; multiple_connections: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="filtering &lt;-&gt; nba_player_stats: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="filtering &lt;-&gt; sample-superstore: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="filtering &lt;-&gt; shapes_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="filtering &lt;-&gt; superstore_sales_dashboard: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="filtering &lt;-&gt; BigQuery_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="filtering &lt;-&gt; Enterprise_Sales: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="filtering &lt;-&gt; Financial_Report: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="filtering &lt;-&gt; HR_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="filtering &lt;-&gt; Manufacturing_IoT: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="filtering &lt;-&gt; Marketing_Campaign: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="filtering &lt;-&gt; Security_Test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="filtering &lt;-&gt; Superstore_Sales: 0 shared tables">20</td></tr><tr><td><strong>global_superstores..</strong></td><td class="matrix-cell" style="background:#f8d7da" title="global_superstores_db &lt;-&gt; Cache: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="global_superstores_db &lt;-&gt; RESTAPISample: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="global_superstores_db &lt;-&gt; SampleWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="global_superstores_db &lt;-&gt; TABLEAU_10_TWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="global_superstores_db &lt;-&gt; TABLEAU_10_TWBX: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="global_superstores_db &lt;-&gt; datasource_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="global_superstores_db &lt;-&gt; ephemeral_field: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="global_superstores_db &lt;-&gt; filtering: 0 shared tables">20</td><td class="matrix-cell" style="background:#e8f0fe;color:#0078d4">—</td><td class="matrix-cell" style="background:#f8d7da" title="global_superstores_db &lt;-&gt; multiple_connections: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="global_superstores_db &lt;-&gt; nba_player_stats: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="global_superstores_db &lt;-&gt; sample-superstore: 0 shared tables">20</td><td class="matrix-cell" style="background:#d4edda" title="global_superstores_db &lt;-&gt; shapes_test: 1 shared tables">66</td><td class="matrix-cell" style="background:#d4edda" title="global_superstores_db &lt;-&gt; superstore_sales_dashboard: 1 shared tables">62</td><td class="matrix-cell" style="background:#f8d7da" title="global_superstores_db &lt;-&gt; BigQuery_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="global_superstores_db &lt;-&gt; Enterprise_Sales: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="global_superstores_db &lt;-&gt; Financial_Report: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="global_superstores_db &lt;-&gt; HR_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="global_superstores_db &lt;-&gt; Manufacturing_IoT: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="global_superstores_db &lt;-&gt; Marketing_Campaign: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="global_superstores_db &lt;-&gt; Security_Test: 0 shared tables">20</td><td class="matrix-cell" style="background:#d4edda" title="global_superstores_db &lt;-&gt; Superstore_Sales: 1 shared tables">67</td></tr><tr><td><strong>multiple_connections</strong></td><td class="matrix-cell" style="background:#f8d7da" title="multiple_connections &lt;-&gt; Cache: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="multiple_connections &lt;-&gt; RESTAPISample: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="multiple_connections &lt;-&gt; SampleWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="multiple_connections &lt;-&gt; TABLEAU_10_TWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="multiple_connections &lt;-&gt; TABLEAU_10_TWBX: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="multiple_connections &lt;-&gt; datasource_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="multiple_connections &lt;-&gt; ephemeral_field: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="multiple_connections &lt;-&gt; filtering: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="multiple_connections &lt;-&gt; global_superstores_db: 0 shared tables">20</td><td class="matrix-cell" style="background:#e8f0fe;color:#0078d4">—</td><td class="matrix-cell" style="background:#f8d7da" title="multiple_connections &lt;-&gt; nba_player_stats: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="multiple_connections &lt;-&gt; sample-superstore: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="multiple_connections &lt;-&gt; shapes_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="multiple_connections &lt;-&gt; superstore_sales_dashboard: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="multiple_connections &lt;-&gt; BigQuery_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="multiple_connections &lt;-&gt; Enterprise_Sales: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="multiple_connections &lt;-&gt; Financial_Report: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="multiple_connections &lt;-&gt; HR_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="multiple_connections &lt;-&gt; Manufacturing_IoT: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="multiple_connections &lt;-&gt; Marketing_Campaign: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="multiple_connections &lt;-&gt; Security_Test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="multiple_connections &lt;-&gt; Superstore_Sales: 0 shared tables">20</td></tr><tr><td><strong>nba_player_stats</strong></td><td class="matrix-cell" style="background:#f8d7da" title="nba_player_stats &lt;-&gt; Cache: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="nba_player_stats &lt;-&gt; RESTAPISample: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="nba_player_stats &lt;-&gt; SampleWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="nba_player_stats &lt;-&gt; TABLEAU_10_TWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="nba_player_stats &lt;-&gt; TABLEAU_10_TWBX: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="nba_player_stats &lt;-&gt; datasource_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="nba_player_stats &lt;-&gt; ephemeral_field: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="nba_player_stats &lt;-&gt; filtering: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="nba_player_stats &lt;-&gt; global_superstores_db: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="nba_player_stats &lt;-&gt; multiple_connections: 0 shared tables">20</td><td class="matrix-cell" style="background:#e8f0fe;color:#0078d4">—</td><td class="matrix-cell" style="background:#f8d7da" title="nba_player_stats &lt;-&gt; sample-superstore: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="nba_player_stats &lt;-&gt; shapes_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="nba_player_stats &lt;-&gt; superstore_sales_dashboard: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="nba_player_stats &lt;-&gt; BigQuery_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="nba_player_stats &lt;-&gt; Enterprise_Sales: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="nba_player_stats &lt;-&gt; Financial_Report: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="nba_player_stats &lt;-&gt; HR_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="nba_player_stats &lt;-&gt; Manufacturing_IoT: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="nba_player_stats &lt;-&gt; Marketing_Campaign: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="nba_player_stats &lt;-&gt; Security_Test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="nba_player_stats &lt;-&gt; Superstore_Sales: 0 shared tables">20</td></tr><tr><td><strong>sample-superstore</strong></td><td class="matrix-cell" style="background:#f8d7da" title="sample-superstore &lt;-&gt; Cache: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="sample-superstore &lt;-&gt; RESTAPISample: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="sample-superstore &lt;-&gt; SampleWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="sample-superstore &lt;-&gt; TABLEAU_10_TWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="sample-superstore &lt;-&gt; TABLEAU_10_TWBX: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="sample-superstore &lt;-&gt; datasource_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="sample-superstore &lt;-&gt; ephemeral_field: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="sample-superstore &lt;-&gt; filtering: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="sample-superstore &lt;-&gt; global_superstores_db: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="sample-superstore &lt;-&gt; multiple_connections: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="sample-superstore &lt;-&gt; nba_player_stats: 0 shared tables">20</td><td class="matrix-cell" style="background:#e8f0fe;color:#0078d4">—</td><td class="matrix-cell" style="background:#f8d7da" title="sample-superstore &lt;-&gt; shapes_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="sample-superstore &lt;-&gt; superstore_sales_dashboard: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="sample-superstore &lt;-&gt; BigQuery_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="sample-superstore &lt;-&gt; Enterprise_Sales: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="sample-superstore &lt;-&gt; Financial_Report: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="sample-superstore &lt;-&gt; HR_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="sample-superstore &lt;-&gt; Manufacturing_IoT: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="sample-superstore &lt;-&gt; Marketing_Campaign: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="sample-superstore &lt;-&gt; Security_Test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="sample-superstore &lt;-&gt; Superstore_Sales: 0 shared tables">20</td></tr><tr><td><strong>shapes_test</strong></td><td class="matrix-cell" style="background:#f8d7da" title="shapes_test &lt;-&gt; Cache: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="shapes_test &lt;-&gt; RESTAPISample: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="shapes_test &lt;-&gt; SampleWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="shapes_test &lt;-&gt; TABLEAU_10_TWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="shapes_test &lt;-&gt; TABLEAU_10_TWBX: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="shapes_test &lt;-&gt; datasource_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="shapes_test &lt;-&gt; ephemeral_field: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="shapes_test &lt;-&gt; filtering: 0 shared tables">20</td><td class="matrix-cell" style="background:#d4edda" title="shapes_test &lt;-&gt; global_superstores_db: 1 shared tables">66</td><td class="matrix-cell" style="background:#f8d7da" title="shapes_test &lt;-&gt; multiple_connections: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="shapes_test &lt;-&gt; nba_player_stats: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="shapes_test &lt;-&gt; sample-superstore: 0 shared tables">20</td><td class="matrix-cell" style="background:#e8f0fe;color:#0078d4">—</td><td class="matrix-cell" style="background:#fff3cd" title="shapes_test &lt;-&gt; superstore_sales_dashboard: 1 shared tables">56</td><td class="matrix-cell" style="background:#f8d7da" title="shapes_test &lt;-&gt; BigQuery_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="shapes_test &lt;-&gt; Enterprise_Sales: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="shapes_test &lt;-&gt; Financial_Report: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="shapes_test &lt;-&gt; HR_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="shapes_test &lt;-&gt; Manufacturing_IoT: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="shapes_test &lt;-&gt; Marketing_Campaign: 0 shared tables">20</td><td class="matrix-cell" style="background:#f5f5f5" title="shapes_test &lt;-&gt; Security_Test: 0 shared tables">0</td><td class="matrix-cell" style="background:#fff3cd" title="shapes_test &lt;-&gt; Superstore_Sales: 3 shared tables">59</td></tr><tr><td><strong>superstore_sales_d..</strong></td><td class="matrix-cell" style="background:#f8d7da" title="superstore_sales_dashboard &lt;-&gt; Cache: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="superstore_sales_dashboard &lt;-&gt; RESTAPISample: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="superstore_sales_dashboard &lt;-&gt; SampleWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="superstore_sales_dashboard &lt;-&gt; TABLEAU_10_TWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="superstore_sales_dashboard &lt;-&gt; TABLEAU_10_TWBX: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="superstore_sales_dashboard &lt;-&gt; datasource_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="superstore_sales_dashboard &lt;-&gt; ephemeral_field: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="superstore_sales_dashboard &lt;-&gt; filtering: 0 shared tables">20</td><td class="matrix-cell" style="background:#d4edda" title="superstore_sales_dashboard &lt;-&gt; global_superstores_db: 1 shared tables">62</td><td class="matrix-cell" style="background:#f8d7da" title="superstore_sales_dashboard &lt;-&gt; multiple_connections: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="superstore_sales_dashboard &lt;-&gt; nba_player_stats: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="superstore_sales_dashboard &lt;-&gt; sample-superstore: 0 shared tables">20</td><td class="matrix-cell" style="background:#fff3cd" title="superstore_sales_dashboard &lt;-&gt; shapes_test: 1 shared tables">56</td><td class="matrix-cell" style="background:#e8f0fe;color:#0078d4">—</td><td class="matrix-cell" style="background:#f8d7da" title="superstore_sales_dashboard &lt;-&gt; BigQuery_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="superstore_sales_dashboard &lt;-&gt; Enterprise_Sales: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="superstore_sales_dashboard &lt;-&gt; Financial_Report: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="superstore_sales_dashboard &lt;-&gt; HR_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="superstore_sales_dashboard &lt;-&gt; Manufacturing_IoT: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="superstore_sales_dashboard &lt;-&gt; Marketing_Campaign: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="superstore_sales_dashboard &lt;-&gt; Security_Test: 0 shared tables">20</td><td class="matrix-cell" style="background:#fff3cd" title="superstore_sales_dashboard &lt;-&gt; Superstore_Sales: 1 shared tables">56</td></tr><tr><td><strong>BigQuery_Analytics</strong></td><td class="matrix-cell" style="background:#f8d7da" title="BigQuery_Analytics &lt;-&gt; Cache: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="BigQuery_Analytics &lt;-&gt; RESTAPISample: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="BigQuery_Analytics &lt;-&gt; SampleWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="BigQuery_Analytics &lt;-&gt; TABLEAU_10_TWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="BigQuery_Analytics &lt;-&gt; TABLEAU_10_TWBX: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="BigQuery_Analytics &lt;-&gt; datasource_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="BigQuery_Analytics &lt;-&gt; ephemeral_field: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="BigQuery_Analytics &lt;-&gt; filtering: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="BigQuery_Analytics &lt;-&gt; global_superstores_db: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="BigQuery_Analytics &lt;-&gt; multiple_connections: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="BigQuery_Analytics &lt;-&gt; nba_player_stats: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="BigQuery_Analytics &lt;-&gt; sample-superstore: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="BigQuery_Analytics &lt;-&gt; shapes_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="BigQuery_Analytics &lt;-&gt; superstore_sales_dashboard: 0 shared tables">20</td><td class="matrix-cell" style="background:#e8f0fe;color:#0078d4">—</td><td class="matrix-cell" style="background:#f8d7da" title="BigQuery_Analytics &lt;-&gt; Enterprise_Sales: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="BigQuery_Analytics &lt;-&gt; Financial_Report: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="BigQuery_Analytics &lt;-&gt; HR_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="BigQuery_Analytics &lt;-&gt; Manufacturing_IoT: 0 shared tables">20</td><td class="matrix-cell" style="background:#f5f5f5" title="BigQuery_Analytics &lt;-&gt; Marketing_Campaign: 0 shared tables">0</td><td class="matrix-cell" style="background:#f8d7da" title="BigQuery_Analytics &lt;-&gt; Security_Test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="BigQuery_Analytics &lt;-&gt; Superstore_Sales: 0 shared tables">20</td></tr><tr><td><strong>Enterprise_Sales</strong></td><td class="matrix-cell" style="background:#f8d7da" title="Enterprise_Sales &lt;-&gt; Cache: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Enterprise_Sales &lt;-&gt; RESTAPISample: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Enterprise_Sales &lt;-&gt; SampleWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Enterprise_Sales &lt;-&gt; TABLEAU_10_TWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Enterprise_Sales &lt;-&gt; TABLEAU_10_TWBX: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Enterprise_Sales &lt;-&gt; datasource_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Enterprise_Sales &lt;-&gt; ephemeral_field: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Enterprise_Sales &lt;-&gt; filtering: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Enterprise_Sales &lt;-&gt; global_superstores_db: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Enterprise_Sales &lt;-&gt; multiple_connections: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Enterprise_Sales &lt;-&gt; nba_player_stats: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Enterprise_Sales &lt;-&gt; sample-superstore: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Enterprise_Sales &lt;-&gt; shapes_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Enterprise_Sales &lt;-&gt; superstore_sales_dashboard: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Enterprise_Sales &lt;-&gt; BigQuery_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#e8f0fe;color:#0078d4">—</td><td class="matrix-cell" style="background:#f5f5f5" title="Enterprise_Sales &lt;-&gt; Financial_Report: 0 shared tables">0</td><td class="matrix-cell" style="background:#f8d7da" title="Enterprise_Sales &lt;-&gt; HR_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Enterprise_Sales &lt;-&gt; Manufacturing_IoT: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Enterprise_Sales &lt;-&gt; Marketing_Campaign: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Enterprise_Sales &lt;-&gt; Security_Test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Enterprise_Sales &lt;-&gt; Superstore_Sales: 0 shared tables">20</td></tr><tr><td><strong>Financial_Report</strong></td><td class="matrix-cell" style="background:#f8d7da" title="Financial_Report &lt;-&gt; Cache: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Financial_Report &lt;-&gt; RESTAPISample: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Financial_Report &lt;-&gt; SampleWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Financial_Report &lt;-&gt; TABLEAU_10_TWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Financial_Report &lt;-&gt; TABLEAU_10_TWBX: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Financial_Report &lt;-&gt; datasource_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Financial_Report &lt;-&gt; ephemeral_field: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Financial_Report &lt;-&gt; filtering: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Financial_Report &lt;-&gt; global_superstores_db: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Financial_Report &lt;-&gt; multiple_connections: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Financial_Report &lt;-&gt; nba_player_stats: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Financial_Report &lt;-&gt; sample-superstore: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Financial_Report &lt;-&gt; shapes_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Financial_Report &lt;-&gt; superstore_sales_dashboard: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Financial_Report &lt;-&gt; BigQuery_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f5f5f5" title="Financial_Report &lt;-&gt; Enterprise_Sales: 0 shared tables">0</td><td class="matrix-cell" style="background:#e8f0fe;color:#0078d4">—</td><td class="matrix-cell" style="background:#f8d7da" title="Financial_Report &lt;-&gt; HR_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Financial_Report &lt;-&gt; Manufacturing_IoT: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Financial_Report &lt;-&gt; Marketing_Campaign: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Financial_Report &lt;-&gt; Security_Test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Financial_Report &lt;-&gt; Superstore_Sales: 0 shared tables">20</td></tr><tr><td><strong>HR_Analytics</strong></td><td class="matrix-cell" style="background:#f8d7da" title="HR_Analytics &lt;-&gt; Cache: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="HR_Analytics &lt;-&gt; RESTAPISample: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="HR_Analytics &lt;-&gt; SampleWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="HR_Analytics &lt;-&gt; TABLEAU_10_TWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="HR_Analytics &lt;-&gt; TABLEAU_10_TWBX: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="HR_Analytics &lt;-&gt; datasource_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="HR_Analytics &lt;-&gt; ephemeral_field: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="HR_Analytics &lt;-&gt; filtering: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="HR_Analytics &lt;-&gt; global_superstores_db: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="HR_Analytics &lt;-&gt; multiple_connections: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="HR_Analytics &lt;-&gt; nba_player_stats: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="HR_Analytics &lt;-&gt; sample-superstore: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="HR_Analytics &lt;-&gt; shapes_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="HR_Analytics &lt;-&gt; superstore_sales_dashboard: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="HR_Analytics &lt;-&gt; BigQuery_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="HR_Analytics &lt;-&gt; Enterprise_Sales: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="HR_Analytics &lt;-&gt; Financial_Report: 0 shared tables">20</td><td class="matrix-cell" style="background:#e8f0fe;color:#0078d4">—</td><td class="matrix-cell" style="background:#f8d7da" title="HR_Analytics &lt;-&gt; Manufacturing_IoT: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="HR_Analytics &lt;-&gt; Marketing_Campaign: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="HR_Analytics &lt;-&gt; Security_Test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="HR_Analytics &lt;-&gt; Superstore_Sales: 0 shared tables">20</td></tr><tr><td><strong>Manufacturing_IoT</strong></td><td class="matrix-cell" style="background:#f8d7da" title="Manufacturing_IoT &lt;-&gt; Cache: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Manufacturing_IoT &lt;-&gt; RESTAPISample: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Manufacturing_IoT &lt;-&gt; SampleWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Manufacturing_IoT &lt;-&gt; TABLEAU_10_TWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Manufacturing_IoT &lt;-&gt; TABLEAU_10_TWBX: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Manufacturing_IoT &lt;-&gt; datasource_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Manufacturing_IoT &lt;-&gt; ephemeral_field: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Manufacturing_IoT &lt;-&gt; filtering: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Manufacturing_IoT &lt;-&gt; global_superstores_db: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Manufacturing_IoT &lt;-&gt; multiple_connections: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Manufacturing_IoT &lt;-&gt; nba_player_stats: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Manufacturing_IoT &lt;-&gt; sample-superstore: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Manufacturing_IoT &lt;-&gt; shapes_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Manufacturing_IoT &lt;-&gt; superstore_sales_dashboard: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Manufacturing_IoT &lt;-&gt; BigQuery_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Manufacturing_IoT &lt;-&gt; Enterprise_Sales: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Manufacturing_IoT &lt;-&gt; Financial_Report: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Manufacturing_IoT &lt;-&gt; HR_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#e8f0fe;color:#0078d4">—</td><td class="matrix-cell" style="background:#f8d7da" title="Manufacturing_IoT &lt;-&gt; Marketing_Campaign: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Manufacturing_IoT &lt;-&gt; Security_Test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Manufacturing_IoT &lt;-&gt; Superstore_Sales: 0 shared tables">20</td></tr><tr><td><strong>Marketing_Campaign</strong></td><td class="matrix-cell" style="background:#f8d7da" title="Marketing_Campaign &lt;-&gt; Cache: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Marketing_Campaign &lt;-&gt; RESTAPISample: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Marketing_Campaign &lt;-&gt; SampleWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Marketing_Campaign &lt;-&gt; TABLEAU_10_TWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Marketing_Campaign &lt;-&gt; TABLEAU_10_TWBX: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Marketing_Campaign &lt;-&gt; datasource_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Marketing_Campaign &lt;-&gt; ephemeral_field: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Marketing_Campaign &lt;-&gt; filtering: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Marketing_Campaign &lt;-&gt; global_superstores_db: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Marketing_Campaign &lt;-&gt; multiple_connections: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Marketing_Campaign &lt;-&gt; nba_player_stats: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Marketing_Campaign &lt;-&gt; sample-superstore: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Marketing_Campaign &lt;-&gt; shapes_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Marketing_Campaign &lt;-&gt; superstore_sales_dashboard: 0 shared tables">20</td><td class="matrix-cell" style="background:#f5f5f5" title="Marketing_Campaign &lt;-&gt; BigQuery_Analytics: 0 shared tables">0</td><td class="matrix-cell" style="background:#f8d7da" title="Marketing_Campaign &lt;-&gt; Enterprise_Sales: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Marketing_Campaign &lt;-&gt; Financial_Report: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Marketing_Campaign &lt;-&gt; HR_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Marketing_Campaign &lt;-&gt; Manufacturing_IoT: 0 shared tables">20</td><td class="matrix-cell" style="background:#e8f0fe;color:#0078d4">—</td><td class="matrix-cell" style="background:#f8d7da" title="Marketing_Campaign &lt;-&gt; Security_Test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Marketing_Campaign &lt;-&gt; Superstore_Sales: 0 shared tables">20</td></tr><tr><td><strong>Security_Test</strong></td><td class="matrix-cell" style="background:#f8d7da" title="Security_Test &lt;-&gt; Cache: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Security_Test &lt;-&gt; RESTAPISample: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Security_Test &lt;-&gt; SampleWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Security_Test &lt;-&gt; TABLEAU_10_TWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Security_Test &lt;-&gt; TABLEAU_10_TWBX: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Security_Test &lt;-&gt; datasource_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Security_Test &lt;-&gt; ephemeral_field: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Security_Test &lt;-&gt; filtering: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Security_Test &lt;-&gt; global_superstores_db: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Security_Test &lt;-&gt; multiple_connections: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Security_Test &lt;-&gt; nba_player_stats: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Security_Test &lt;-&gt; sample-superstore: 0 shared tables">20</td><td class="matrix-cell" style="background:#f5f5f5" title="Security_Test &lt;-&gt; shapes_test: 0 shared tables">0</td><td class="matrix-cell" style="background:#f8d7da" title="Security_Test &lt;-&gt; superstore_sales_dashboard: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Security_Test &lt;-&gt; BigQuery_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Security_Test &lt;-&gt; Enterprise_Sales: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Security_Test &lt;-&gt; Financial_Report: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Security_Test &lt;-&gt; HR_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Security_Test &lt;-&gt; Manufacturing_IoT: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Security_Test &lt;-&gt; Marketing_Campaign: 0 shared tables">20</td><td class="matrix-cell" style="background:#e8f0fe;color:#0078d4">—</td><td class="matrix-cell" style="background:#f8d7da" title="Security_Test &lt;-&gt; Superstore_Sales: 0 shared tables">20</td></tr><tr><td><strong>Superstore_Sales</strong></td><td class="matrix-cell" style="background:#f8d7da" title="Superstore_Sales &lt;-&gt; Cache: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Superstore_Sales &lt;-&gt; RESTAPISample: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Superstore_Sales &lt;-&gt; SampleWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Superstore_Sales &lt;-&gt; TABLEAU_10_TWB: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Superstore_Sales &lt;-&gt; TABLEAU_10_TWBX: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Superstore_Sales &lt;-&gt; datasource_test: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Superstore_Sales &lt;-&gt; ephemeral_field: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Superstore_Sales &lt;-&gt; filtering: 0 shared tables">20</td><td class="matrix-cell" style="background:#d4edda" title="Superstore_Sales &lt;-&gt; global_superstores_db: 1 shared tables">67</td><td class="matrix-cell" style="background:#f8d7da" title="Superstore_Sales &lt;-&gt; multiple_connections: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Superstore_Sales &lt;-&gt; nba_player_stats: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Superstore_Sales &lt;-&gt; sample-superstore: 0 shared tables">20</td><td class="matrix-cell" style="background:#fff3cd" title="Superstore_Sales &lt;-&gt; shapes_test: 3 shared tables">59</td><td class="matrix-cell" style="background:#fff3cd" title="Superstore_Sales &lt;-&gt; superstore_sales_dashboard: 1 shared tables">56</td><td class="matrix-cell" style="background:#f8d7da" title="Superstore_Sales &lt;-&gt; BigQuery_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Superstore_Sales &lt;-&gt; Enterprise_Sales: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Superstore_Sales &lt;-&gt; Financial_Report: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Superstore_Sales &lt;-&gt; HR_Analytics: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Superstore_Sales &lt;-&gt; Manufacturing_IoT: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Superstore_Sales &lt;-&gt; Marketing_Campaign: 0 shared tables">20</td><td class="matrix-cell" style="background:#f8d7da" title="Superstore_Sales &lt;-&gt; Security_Test: 0 shared tables">20</td><td class="matrix-cell" style="background:#e8f0fe;color:#0078d4">—</td></tr></table><p style="font-size:0.8em;color:#a19f9d;margin-top:8px">Green = merge recommended (60+) &nbsp;|&nbsp; Yellow = partial merge (30-59) &nbsp;|&nbsp; Red = keep separate (&lt;30) &nbsp;|&nbsp; Hover for details</p></div></div>
+<h2 onclick="toggleSection('clusters')"><span class="section-icon">&#128279;</span>
+Merge Clusters <span class="toggle-icon" id="clusters-icon">&#9660;</span></h2>
+<div id="clusters" class="collapsible">
+<div class="cluster-card merge"><h3 style="margin-top:0">Cluster #1 — <span style="background:#28a745;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">MERGE</span> &nbsp; avg score: <span style="color:#28a745">67/100</span></h3><p><strong>Workbooks:</strong> <span class="connector-tag">Cache</span> <span class="connector-tag">RESTAPISample</span> <span class="connector-tag">SampleWB</span></p><p><strong>Shared tables:</strong> <span class="success-tag">Extract</span></p><p style="margin-top:10px"><strong>Run:</strong></p><div class="cmd-box">python migrate.py --shared-model Cache.twbx RESTAPISample.twbx SampleWB.twbx --model-name &quot;Cluster1Model&quot;</div><div style="margin-top:15px"><table class="detail-table"><tr><th>Table</th><th>Workbooks</th><th>Column Overlap</th><th>Conflicts</th></tr><tr><td><strong>Extract</strong></td><td>Cache, RESTAPISample, SampleWB</td><td><div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle"><div style="background:#dc3545;width:5%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">5%</div></div></td><td><span class="success-tag">None</span></td></tr></table><p style="font-size:0.85em;color:#605e5c;margin-top:10px">Measures deduped: 4 &nbsp;|&nbsp; Relationships deduped: 0 &nbsp;|&nbsp; Parameters deduped: 0</p></div></div><div class="cluster-card merge"><h3 style="margin-top:0">Cluster #2 — <span style="background:#28a745;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">MERGE</span> &nbsp; avg score: <span style="color:#28a745">80/100</span></h3><p><strong>Workbooks:</strong> <span class="connector-tag">datasource_test</span> <span class="connector-tag">ephemeral_field</span></p><p><strong>Shared tables:</strong> <span class="success-tag">xy</span></p><p style="margin-top:10px"><strong>Run:</strong></p><div class="cmd-box">python migrate.py --shared-model datasource_test.twbx ephemeral_field.twbx --model-name &quot;Cluster2Model&quot;</div><div style="margin-top:15px"><table class="detail-table"><tr><th>Table</th><th>Workbooks</th><th>Column Overlap</th><th>Conflicts</th></tr><tr><td><strong>xy</strong></td><td>datasource_test, ephemeral_field</td><td><div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle"><div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100%</div></div></td><td><span class="success-tag">None</span></td></tr></table><p style="font-size:0.85em;color:#605e5c;margin-top:10px">Measures deduped: 1 &nbsp;|&nbsp; Relationships deduped: 0 &nbsp;|&nbsp; Parameters deduped: 0</p></div></div><div class="cluster-card merge"><h3 style="margin-top:0">Cluster #3 — <span style="background:#28a745;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">MERGE</span> &nbsp; avg score: <span style="color:#28a745">61/100</span></h3><p><strong>Workbooks:</strong> <span class="connector-tag">global_superstores_db</span> <span class="connector-tag">Superstore_Sales</span> <span class="connector-tag">shapes_test</span> <span class="connector-tag">superstore_sales_dashboard</span></p><p><strong>Shared tables:</strong> <span class="success-tag">Orders</span>, <span class="success-tag">People</span>, <span class="success-tag">Returns</span></p><p style="margin-top:10px"><strong>Run:</strong></p><div class="cmd-box">python migrate.py --shared-model global_superstores_db.twbx Superstore_Sales.twbx shapes_test.twbx superstore_sales_dashboard.twbx --model-name &quot;Cluster3Model&quot;</div><div style="margin-top:15px"><table class="detail-table"><tr><th>Table</th><th>Workbooks</th><th>Column Overlap</th><th>Conflicts</th></tr><tr><td><strong>Orders</strong></td><td>global_superstores_db, Superstore_Sales, shapes_test, superstore_sales_dashboard</td><td><div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle"><div style="background:#28a745;width:87%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">87%</div></div></td><td><span class="danger-tag">Column 'Order ID': type mismatch — global_superstores_db=string, Superstore_Sales=string, shapes_test=string, superstore_sales_dashboard=integer</span><br><span class="danger-tag">Column 'Postal Code': type mismatch — global_superstores_db=string, Superstore_Sales=integer, shapes_test=integer</span></td></tr><tr><td><strong>Returns</strong></td><td>Superstore_Sales, shapes_test</td><td><div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle"><div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100%</div></div></td><td><span class="success-tag">None</span></td></tr><tr><td><strong>People</strong></td><td>Superstore_Sales, shapes_test</td><td><div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle"><div style="background:#28a745;width:100%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">100%</div></div></td><td><span class="success-tag">None</span></td></tr></table><h4 style="margin-top:12px">Measure Conflicts</h4><table class="detail-table"><tr><th>Measure</th><th>Workbook</th><th>Formula</th></tr><tr><td rowspan="2"><strong>Profit Ratio</strong><br><span class="danger-tag">CONFLICT</span></td><td><span class="connector-tag">Superstore_Sales</span></td><td class="mono">SUM([Profit]) / SUM([Sales])</td></tr><tr><td><span class="connector-tag">shapes_test</span></td><td class="mono">SUM([Profit])/SUM([Sales])</td></tr></table><p style="font-size:0.85em;color:#605e5c;margin-top:10px">Measures deduped: 0 &nbsp;|&nbsp; Relationships deduped: 2 &nbsp;|&nbsp; Parameters deduped: 0</p></div></div></div>
+<h2 onclick="toggleSection('isolated')"><span class="section-icon">&#128683;</span>
+Isolated Workbooks <span class="toggle-icon" id="isolated-icon">&#9660;</span></h2>
+<div id="isolated" class="collapsible">
+<div class="card">
+<p>These workbooks share no tables with others and should be migrated
+individually.</p>
+<table class="detail-table">
+<tr><th>Workbook</th><th>Tables</th><th>Measures</th><th>Worksheets</th>
+    <th>Connectors</th><th>Command</th></tr>
+<tr>
+    <td><strong>TABLEAU_10_TWB</strong></td>
+    <td>0</td><td>0</td><td>0</td>
+    <td>—</td>
+    <td class="mono">python migrate.py TABLEAU_10_TWB.twbx</td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWBX</strong></td>
+    <td>2</td><td>2</td><td>1</td>
+    <td><span class="connector-tag">SQL Server</span></td>
+    <td class="mono">python migrate.py TABLEAU_10_TWBX.twbx</td>
+</tr><tr>
+    <td><strong>filtering</strong></td>
+    <td>1</td><td>0</td><td>2</td>
+    <td><span class="connector-tag">SQL Server</span></td>
+    <td class="mono">python migrate.py filtering.twbx</td>
+</tr><tr>
+    <td><strong>multiple_connections</strong></td>
+    <td>3</td><td>0</td><td>0</td>
+    <td><span class="connector-tag">MySQL</span> <span class="connector-tag">Tableau Server</span></td>
+    <td class="mono">python migrate.py multiple_connections.twbx</td>
+</tr><tr>
+    <td><strong>nba_player_stats</strong></td>
+    <td>1</td><td>9</td><td>5</td>
+    <td><span class="connector-tag">Excel</span> <span class="connector-tag">Unknown</span></td>
+    <td class="mono">python migrate.py nba_player_stats.twbx</td>
+</tr><tr>
+    <td><strong>sample-superstore</strong></td>
+    <td>1</td><td>2</td><td>1</td>
+    <td><span class="connector-tag">SQL Server</span></td>
+    <td class="mono">python migrate.py sample-superstore.twbx</td>
+</tr><tr>
+    <td><strong>BigQuery_Analytics</strong></td>
+    <td>2</td><td>14</td><td>4</td>
+    <td><span class="connector-tag">BigQuery</span></td>
+    <td class="mono">python migrate.py BigQuery_Analytics.twbx</td>
+</tr><tr>
+    <td><strong>Enterprise_Sales</strong></td>
+    <td>2</td><td>30</td><td>5</td>
+    <td><span class="connector-tag">Snowflake</span></td>
+    <td class="mono">python migrate.py Enterprise_Sales.twbx</td>
+</tr><tr>
+    <td><strong>Financial_Report</strong></td>
+    <td>1</td><td>12</td><td>4</td>
+    <td><span class="connector-tag">PostgreSQL</span></td>
+    <td class="mono">python migrate.py Financial_Report.twbx</td>
+</tr><tr>
+    <td><strong>HR_Analytics</strong></td>
+    <td>1</td><td>6</td><td>4</td>
+    <td><span class="connector-tag">SQL Server</span></td>
+    <td class="mono">python migrate.py HR_Analytics.twbx</td>
+</tr><tr>
+    <td><strong>Manufacturing_IoT</strong></td>
+    <td>3</td><td>40</td><td>6</td>
+    <td><span class="connector-tag">Oracle</span></td>
+    <td class="mono">python migrate.py Manufacturing_IoT.twbx</td>
+</tr><tr>
+    <td><strong>Marketing_Campaign</strong></td>
+    <td>2</td><td>20</td><td>5</td>
+    <td><span class="connector-tag">MySQL</span></td>
+    <td class="mono">python migrate.py Marketing_Campaign.twbx</td>
+</tr><tr>
+    <td><strong>Security_Test</strong></td>
+    <td>2</td><td>4</td><td>2</td>
+    <td><span class="connector-tag">SQL Server</span></td>
+    <td class="mono">python migrate.py Security_Test.twbx</td>
+</tr></table></div></div>
+<h2 onclick="toggleSection('pairs')"><span class="section-icon">&#128295;</span>
+Pairwise Detail <span class="toggle-icon" id="pairs-icon">&#9660;</span></h2>
+<div id="pairs" class="collapsible">
+<div class="card">
+<table>
+<tr><th>Workbook A</th><th>Workbook B</th><th>Score</th>
+    <th>Shared Tables</th><th>Recommendation</th></tr>
+<tr>
+    <td><strong>RESTAPISample</strong></td>
+    <td><strong>SampleWB</strong></td>
+    <td class="matrix-cell" style="background:#d4edda">80</td>
+    <td>1</td>
+    <td><span style="background:#28a745;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">MERGE</span></td>
+</tr><tr>
+    <td><strong>datasource_test</strong></td>
+    <td><strong>ephemeral_field</strong></td>
+    <td class="matrix-cell" style="background:#d4edda">80</td>
+    <td>1</td>
+    <td><span style="background:#28a745;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">MERGE</span></td>
+</tr><tr>
+    <td><strong>global_superstores_db</strong></td>
+    <td><strong>Superstore_Sales</strong></td>
+    <td class="matrix-cell" style="background:#d4edda">67</td>
+    <td>1</td>
+    <td><span style="background:#28a745;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">MERGE</span></td>
+</tr><tr>
+    <td><strong>global_superstores_db</strong></td>
+    <td><strong>shapes_test</strong></td>
+    <td class="matrix-cell" style="background:#d4edda">66</td>
+    <td>1</td>
+    <td><span style="background:#28a745;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">MERGE</span></td>
+</tr><tr>
+    <td><strong>global_superstores_db</strong></td>
+    <td><strong>superstore_sales_dashboard</strong></td>
+    <td class="matrix-cell" style="background:#d4edda">62</td>
+    <td>1</td>
+    <td><span style="background:#28a745;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">MERGE</span></td>
+</tr><tr>
+    <td><strong>Cache</strong></td>
+    <td><strong>RESTAPISample</strong></td>
+    <td class="matrix-cell" style="background:#d4edda">61</td>
+    <td>1</td>
+    <td><span style="background:#28a745;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">MERGE</span></td>
+</tr><tr>
+    <td><strong>Cache</strong></td>
+    <td><strong>SampleWB</strong></td>
+    <td class="matrix-cell" style="background:#d4edda">61</td>
+    <td>1</td>
+    <td><span style="background:#28a745;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">MERGE</span></td>
+</tr><tr>
+    <td><strong>shapes_test</strong></td>
+    <td><strong>Superstore_Sales</strong></td>
+    <td class="matrix-cell" style="background:#fff3cd">59</td>
+    <td>3</td>
+    <td><span style="background:#ffc107;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">PARTIAL</span></td>
+</tr><tr>
+    <td><strong>shapes_test</strong></td>
+    <td><strong>superstore_sales_dashboard</strong></td>
+    <td class="matrix-cell" style="background:#fff3cd">56</td>
+    <td>1</td>
+    <td><span style="background:#ffc107;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">PARTIAL</span></td>
+</tr><tr>
+    <td><strong>superstore_sales_dashboard</strong></td>
+    <td><strong>Superstore_Sales</strong></td>
+    <td class="matrix-cell" style="background:#fff3cd">56</td>
+    <td>1</td>
+    <td><span style="background:#ffc107;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">PARTIAL</span></td>
+</tr><tr>
+    <td><strong>Cache</strong></td>
+    <td><strong>TABLEAU_10_TWB</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Cache</strong></td>
+    <td><strong>TABLEAU_10_TWBX</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Cache</strong></td>
+    <td><strong>datasource_test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Cache</strong></td>
+    <td><strong>ephemeral_field</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Cache</strong></td>
+    <td><strong>filtering</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Cache</strong></td>
+    <td><strong>global_superstores_db</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Cache</strong></td>
+    <td><strong>multiple_connections</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Cache</strong></td>
+    <td><strong>nba_player_stats</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Cache</strong></td>
+    <td><strong>sample-superstore</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Cache</strong></td>
+    <td><strong>shapes_test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Cache</strong></td>
+    <td><strong>superstore_sales_dashboard</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Cache</strong></td>
+    <td><strong>BigQuery_Analytics</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Cache</strong></td>
+    <td><strong>Enterprise_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Cache</strong></td>
+    <td><strong>Financial_Report</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Cache</strong></td>
+    <td><strong>HR_Analytics</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Cache</strong></td>
+    <td><strong>Manufacturing_IoT</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Cache</strong></td>
+    <td><strong>Marketing_Campaign</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Cache</strong></td>
+    <td><strong>Security_Test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Cache</strong></td>
+    <td><strong>Superstore_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>RESTAPISample</strong></td>
+    <td><strong>TABLEAU_10_TWB</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>RESTAPISample</strong></td>
+    <td><strong>TABLEAU_10_TWBX</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>RESTAPISample</strong></td>
+    <td><strong>datasource_test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>RESTAPISample</strong></td>
+    <td><strong>ephemeral_field</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>RESTAPISample</strong></td>
+    <td><strong>filtering</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>RESTAPISample</strong></td>
+    <td><strong>global_superstores_db</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>RESTAPISample</strong></td>
+    <td><strong>multiple_connections</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>RESTAPISample</strong></td>
+    <td><strong>nba_player_stats</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>RESTAPISample</strong></td>
+    <td><strong>sample-superstore</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>RESTAPISample</strong></td>
+    <td><strong>shapes_test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>RESTAPISample</strong></td>
+    <td><strong>superstore_sales_dashboard</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>RESTAPISample</strong></td>
+    <td><strong>BigQuery_Analytics</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>RESTAPISample</strong></td>
+    <td><strong>Enterprise_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>RESTAPISample</strong></td>
+    <td><strong>Financial_Report</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>RESTAPISample</strong></td>
+    <td><strong>HR_Analytics</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>RESTAPISample</strong></td>
+    <td><strong>Manufacturing_IoT</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>RESTAPISample</strong></td>
+    <td><strong>Marketing_Campaign</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>RESTAPISample</strong></td>
+    <td><strong>Security_Test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>RESTAPISample</strong></td>
+    <td><strong>Superstore_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>SampleWB</strong></td>
+    <td><strong>TABLEAU_10_TWB</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>SampleWB</strong></td>
+    <td><strong>TABLEAU_10_TWBX</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>SampleWB</strong></td>
+    <td><strong>datasource_test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>SampleWB</strong></td>
+    <td><strong>ephemeral_field</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>SampleWB</strong></td>
+    <td><strong>filtering</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>SampleWB</strong></td>
+    <td><strong>global_superstores_db</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>SampleWB</strong></td>
+    <td><strong>multiple_connections</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>SampleWB</strong></td>
+    <td><strong>nba_player_stats</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>SampleWB</strong></td>
+    <td><strong>sample-superstore</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>SampleWB</strong></td>
+    <td><strong>shapes_test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>SampleWB</strong></td>
+    <td><strong>superstore_sales_dashboard</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>SampleWB</strong></td>
+    <td><strong>BigQuery_Analytics</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>SampleWB</strong></td>
+    <td><strong>Enterprise_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>SampleWB</strong></td>
+    <td><strong>Financial_Report</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>SampleWB</strong></td>
+    <td><strong>HR_Analytics</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>SampleWB</strong></td>
+    <td><strong>Manufacturing_IoT</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>SampleWB</strong></td>
+    <td><strong>Marketing_Campaign</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>SampleWB</strong></td>
+    <td><strong>Security_Test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>SampleWB</strong></td>
+    <td><strong>Superstore_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWB</strong></td>
+    <td><strong>TABLEAU_10_TWBX</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWB</strong></td>
+    <td><strong>datasource_test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWB</strong></td>
+    <td><strong>ephemeral_field</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWB</strong></td>
+    <td><strong>filtering</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWB</strong></td>
+    <td><strong>global_superstores_db</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWB</strong></td>
+    <td><strong>multiple_connections</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWB</strong></td>
+    <td><strong>nba_player_stats</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWB</strong></td>
+    <td><strong>sample-superstore</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWB</strong></td>
+    <td><strong>shapes_test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWB</strong></td>
+    <td><strong>superstore_sales_dashboard</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWB</strong></td>
+    <td><strong>BigQuery_Analytics</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWB</strong></td>
+    <td><strong>Enterprise_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWB</strong></td>
+    <td><strong>Financial_Report</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWB</strong></td>
+    <td><strong>HR_Analytics</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWB</strong></td>
+    <td><strong>Manufacturing_IoT</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWB</strong></td>
+    <td><strong>Marketing_Campaign</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWB</strong></td>
+    <td><strong>Security_Test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWB</strong></td>
+    <td><strong>Superstore_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWBX</strong></td>
+    <td><strong>datasource_test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWBX</strong></td>
+    <td><strong>ephemeral_field</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWBX</strong></td>
+    <td><strong>filtering</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWBX</strong></td>
+    <td><strong>global_superstores_db</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWBX</strong></td>
+    <td><strong>multiple_connections</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWBX</strong></td>
+    <td><strong>nba_player_stats</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWBX</strong></td>
+    <td><strong>sample-superstore</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWBX</strong></td>
+    <td><strong>shapes_test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWBX</strong></td>
+    <td><strong>superstore_sales_dashboard</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWBX</strong></td>
+    <td><strong>BigQuery_Analytics</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWBX</strong></td>
+    <td><strong>Enterprise_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWBX</strong></td>
+    <td><strong>Financial_Report</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWBX</strong></td>
+    <td><strong>HR_Analytics</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWBX</strong></td>
+    <td><strong>Manufacturing_IoT</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWBX</strong></td>
+    <td><strong>Marketing_Campaign</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWBX</strong></td>
+    <td><strong>Security_Test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>TABLEAU_10_TWBX</strong></td>
+    <td><strong>Superstore_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>datasource_test</strong></td>
+    <td><strong>filtering</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>datasource_test</strong></td>
+    <td><strong>global_superstores_db</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>datasource_test</strong></td>
+    <td><strong>multiple_connections</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>datasource_test</strong></td>
+    <td><strong>nba_player_stats</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>datasource_test</strong></td>
+    <td><strong>sample-superstore</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>datasource_test</strong></td>
+    <td><strong>shapes_test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>datasource_test</strong></td>
+    <td><strong>superstore_sales_dashboard</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>datasource_test</strong></td>
+    <td><strong>BigQuery_Analytics</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>datasource_test</strong></td>
+    <td><strong>Enterprise_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>datasource_test</strong></td>
+    <td><strong>Financial_Report</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>datasource_test</strong></td>
+    <td><strong>HR_Analytics</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>datasource_test</strong></td>
+    <td><strong>Manufacturing_IoT</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>datasource_test</strong></td>
+    <td><strong>Marketing_Campaign</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>datasource_test</strong></td>
+    <td><strong>Security_Test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>datasource_test</strong></td>
+    <td><strong>Superstore_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>ephemeral_field</strong></td>
+    <td><strong>filtering</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>ephemeral_field</strong></td>
+    <td><strong>global_superstores_db</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>ephemeral_field</strong></td>
+    <td><strong>multiple_connections</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>ephemeral_field</strong></td>
+    <td><strong>nba_player_stats</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>ephemeral_field</strong></td>
+    <td><strong>sample-superstore</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>ephemeral_field</strong></td>
+    <td><strong>shapes_test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>ephemeral_field</strong></td>
+    <td><strong>superstore_sales_dashboard</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>ephemeral_field</strong></td>
+    <td><strong>BigQuery_Analytics</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>ephemeral_field</strong></td>
+    <td><strong>Enterprise_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>ephemeral_field</strong></td>
+    <td><strong>Financial_Report</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>ephemeral_field</strong></td>
+    <td><strong>HR_Analytics</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>ephemeral_field</strong></td>
+    <td><strong>Manufacturing_IoT</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>ephemeral_field</strong></td>
+    <td><strong>Marketing_Campaign</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>ephemeral_field</strong></td>
+    <td><strong>Security_Test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>ephemeral_field</strong></td>
+    <td><strong>Superstore_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>filtering</strong></td>
+    <td><strong>global_superstores_db</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>filtering</strong></td>
+    <td><strong>multiple_connections</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>filtering</strong></td>
+    <td><strong>nba_player_stats</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>filtering</strong></td>
+    <td><strong>sample-superstore</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>filtering</strong></td>
+    <td><strong>shapes_test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>filtering</strong></td>
+    <td><strong>superstore_sales_dashboard</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>filtering</strong></td>
+    <td><strong>BigQuery_Analytics</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>filtering</strong></td>
+    <td><strong>Enterprise_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>filtering</strong></td>
+    <td><strong>Financial_Report</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>filtering</strong></td>
+    <td><strong>HR_Analytics</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>filtering</strong></td>
+    <td><strong>Manufacturing_IoT</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>filtering</strong></td>
+    <td><strong>Marketing_Campaign</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>filtering</strong></td>
+    <td><strong>Security_Test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>filtering</strong></td>
+    <td><strong>Superstore_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>global_superstores_db</strong></td>
+    <td><strong>multiple_connections</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>global_superstores_db</strong></td>
+    <td><strong>nba_player_stats</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>global_superstores_db</strong></td>
+    <td><strong>sample-superstore</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>global_superstores_db</strong></td>
+    <td><strong>BigQuery_Analytics</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>global_superstores_db</strong></td>
+    <td><strong>Enterprise_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>global_superstores_db</strong></td>
+    <td><strong>Financial_Report</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>global_superstores_db</strong></td>
+    <td><strong>HR_Analytics</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>global_superstores_db</strong></td>
+    <td><strong>Manufacturing_IoT</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>global_superstores_db</strong></td>
+    <td><strong>Marketing_Campaign</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>global_superstores_db</strong></td>
+    <td><strong>Security_Test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>multiple_connections</strong></td>
+    <td><strong>nba_player_stats</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>multiple_connections</strong></td>
+    <td><strong>sample-superstore</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>multiple_connections</strong></td>
+    <td><strong>shapes_test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>multiple_connections</strong></td>
+    <td><strong>superstore_sales_dashboard</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>multiple_connections</strong></td>
+    <td><strong>BigQuery_Analytics</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>multiple_connections</strong></td>
+    <td><strong>Enterprise_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>multiple_connections</strong></td>
+    <td><strong>Financial_Report</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>multiple_connections</strong></td>
+    <td><strong>HR_Analytics</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>multiple_connections</strong></td>
+    <td><strong>Manufacturing_IoT</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>multiple_connections</strong></td>
+    <td><strong>Marketing_Campaign</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>multiple_connections</strong></td>
+    <td><strong>Security_Test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>multiple_connections</strong></td>
+    <td><strong>Superstore_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>nba_player_stats</strong></td>
+    <td><strong>sample-superstore</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>nba_player_stats</strong></td>
+    <td><strong>shapes_test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>nba_player_stats</strong></td>
+    <td><strong>superstore_sales_dashboard</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>nba_player_stats</strong></td>
+    <td><strong>BigQuery_Analytics</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>nba_player_stats</strong></td>
+    <td><strong>Enterprise_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>nba_player_stats</strong></td>
+    <td><strong>Financial_Report</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>nba_player_stats</strong></td>
+    <td><strong>HR_Analytics</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>nba_player_stats</strong></td>
+    <td><strong>Manufacturing_IoT</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>nba_player_stats</strong></td>
+    <td><strong>Marketing_Campaign</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>nba_player_stats</strong></td>
+    <td><strong>Security_Test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>nba_player_stats</strong></td>
+    <td><strong>Superstore_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>sample-superstore</strong></td>
+    <td><strong>shapes_test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>sample-superstore</strong></td>
+    <td><strong>superstore_sales_dashboard</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>sample-superstore</strong></td>
+    <td><strong>BigQuery_Analytics</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>sample-superstore</strong></td>
+    <td><strong>Enterprise_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>sample-superstore</strong></td>
+    <td><strong>Financial_Report</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>sample-superstore</strong></td>
+    <td><strong>HR_Analytics</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>sample-superstore</strong></td>
+    <td><strong>Manufacturing_IoT</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>sample-superstore</strong></td>
+    <td><strong>Marketing_Campaign</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>sample-superstore</strong></td>
+    <td><strong>Security_Test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>sample-superstore</strong></td>
+    <td><strong>Superstore_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>shapes_test</strong></td>
+    <td><strong>BigQuery_Analytics</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>shapes_test</strong></td>
+    <td><strong>Enterprise_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>shapes_test</strong></td>
+    <td><strong>Financial_Report</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>shapes_test</strong></td>
+    <td><strong>HR_Analytics</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>shapes_test</strong></td>
+    <td><strong>Manufacturing_IoT</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>shapes_test</strong></td>
+    <td><strong>Marketing_Campaign</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>superstore_sales_dashboard</strong></td>
+    <td><strong>BigQuery_Analytics</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>superstore_sales_dashboard</strong></td>
+    <td><strong>Enterprise_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>superstore_sales_dashboard</strong></td>
+    <td><strong>Financial_Report</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>superstore_sales_dashboard</strong></td>
+    <td><strong>HR_Analytics</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>superstore_sales_dashboard</strong></td>
+    <td><strong>Manufacturing_IoT</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>superstore_sales_dashboard</strong></td>
+    <td><strong>Marketing_Campaign</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>superstore_sales_dashboard</strong></td>
+    <td><strong>Security_Test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>BigQuery_Analytics</strong></td>
+    <td><strong>Enterprise_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>BigQuery_Analytics</strong></td>
+    <td><strong>Financial_Report</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>BigQuery_Analytics</strong></td>
+    <td><strong>HR_Analytics</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>BigQuery_Analytics</strong></td>
+    <td><strong>Manufacturing_IoT</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>BigQuery_Analytics</strong></td>
+    <td><strong>Security_Test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>BigQuery_Analytics</strong></td>
+    <td><strong>Superstore_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Enterprise_Sales</strong></td>
+    <td><strong>HR_Analytics</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Enterprise_Sales</strong></td>
+    <td><strong>Manufacturing_IoT</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Enterprise_Sales</strong></td>
+    <td><strong>Marketing_Campaign</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Enterprise_Sales</strong></td>
+    <td><strong>Security_Test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Enterprise_Sales</strong></td>
+    <td><strong>Superstore_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Financial_Report</strong></td>
+    <td><strong>HR_Analytics</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Financial_Report</strong></td>
+    <td><strong>Manufacturing_IoT</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Financial_Report</strong></td>
+    <td><strong>Marketing_Campaign</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Financial_Report</strong></td>
+    <td><strong>Security_Test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Financial_Report</strong></td>
+    <td><strong>Superstore_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>HR_Analytics</strong></td>
+    <td><strong>Manufacturing_IoT</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>HR_Analytics</strong></td>
+    <td><strong>Marketing_Campaign</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>HR_Analytics</strong></td>
+    <td><strong>Security_Test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>HR_Analytics</strong></td>
+    <td><strong>Superstore_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Manufacturing_IoT</strong></td>
+    <td><strong>Marketing_Campaign</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Manufacturing_IoT</strong></td>
+    <td><strong>Security_Test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Manufacturing_IoT</strong></td>
+    <td><strong>Superstore_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Marketing_Campaign</strong></td>
+    <td><strong>Security_Test</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Marketing_Campaign</strong></td>
+    <td><strong>Superstore_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Security_Test</strong></td>
+    <td><strong>Superstore_Sales</strong></td>
+    <td class="matrix-cell" style="background:#f8d7da">20</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>shapes_test</strong></td>
+    <td><strong>Security_Test</strong></td>
+    <td class="matrix-cell" style="background:#f5f5f5">0</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>BigQuery_Analytics</strong></td>
+    <td><strong>Marketing_Campaign</strong></td>
+    <td class="matrix-cell" style="background:#f5f5f5">0</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr><tr>
+    <td><strong>Enterprise_Sales</strong></td>
+    <td><strong>Financial_Report</strong></td>
+    <td class="matrix-cell" style="background:#f5f5f5">0</td>
+    <td>0</td>
+    <td><span style="background:#dc3545;color:#fff;padding:4px 12px;border-radius:4px;font-weight:bold;font-size:0.9em">SEPARATE</span></td>
+</tr></table></div></div>
+<div class="footer">
+    Tableau &#8594; Power BI Migration Tool v13.0.0 &nbsp;|&nbsp;
+    Global Assessment generated: 2026-03-16 16:53 &nbsp;|&nbsp;
+    22 workbooks analyzed
+</div>
+
+</div><!-- /.container -->
+
+<script>
+function toggleSection(id) {
+    var el = document.getElementById(id);
+    el.classList.toggle('collapsed');
+    var icon = document.getElementById(id + '-icon');
+    if (icon) {
+        icon.innerHTML = el.classList.contains('collapsed')
+            ? '&#9654;' : '&#9660;';
+    }
+}
+</script>
+</body>
+</html>

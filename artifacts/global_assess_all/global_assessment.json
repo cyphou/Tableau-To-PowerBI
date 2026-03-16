@@ -1,0 +1,2210 @@
+{
+  "total_workbooks": 22,
+  "total_tables": 35,
+  "total_measures": 195,
+  "merge_clusters": [
+    {
+      "cluster_id": 0,
+      "workbooks": [
+        "Cache",
+        "RESTAPISample",
+        "SampleWB"
+      ],
+      "shared_tables": [
+        "Extract"
+      ],
+      "avg_score": 67,
+      "recommendation": "merge",
+      "merge_details": {
+        "workbooks": [
+          "Cache",
+          "RESTAPISample",
+          "SampleWB"
+        ],
+        "total_tables": 3,
+        "unique_table_count": 1,
+        "tables_saved": 2,
+        "merge_candidates": [
+          {
+            "table_name": "Extract",
+            "workbooks": [
+              "Cache",
+              "RESTAPISample",
+              "SampleWB"
+            ],
+            "column_overlap": 0.06,
+            "conflicts": []
+          }
+        ],
+        "unique_tables": {},
+        "measure_conflicts": [],
+        "measure_duplicates_removed": 4,
+        "relationship_duplicates_removed": 0,
+        "parameter_conflicts": [],
+        "parameter_duplicates_removed": 0,
+        "rls_conflicts": [],
+        "merge_score": 67,
+        "recommendation": "merge",
+        "linked_unique_tables": {},
+        "isolated_tables": {}
+      }
+    },
+    {
+      "cluster_id": 1,
+      "workbooks": [
+        "datasource_test",
+        "ephemeral_field"
+      ],
+      "shared_tables": [
+        "xy"
+      ],
+      "avg_score": 80,
+      "recommendation": "merge",
+      "merge_details": {
+        "workbooks": [
+          "datasource_test",
+          "ephemeral_field"
+        ],
+        "total_tables": 2,
+        "unique_table_count": 1,
+        "tables_saved": 1,
+        "merge_candidates": [
+          {
+            "table_name": "xy",
+            "workbooks": [
+              "datasource_test",
+              "ephemeral_field"
+            ],
+            "column_overlap": 1.0,
+            "conflicts": []
+          }
+        ],
+        "unique_tables": {},
+        "measure_conflicts": [],
+        "measure_duplicates_removed": 1,
+        "relationship_duplicates_removed": 0,
+        "parameter_conflicts": [],
+        "parameter_duplicates_removed": 0,
+        "rls_conflicts": [],
+        "merge_score": 80,
+        "recommendation": "merge",
+        "linked_unique_tables": {},
+        "isolated_tables": {}
+      }
+    },
+    {
+      "cluster_id": 2,
+      "workbooks": [
+        "global_superstores_db",
+        "Superstore_Sales",
+        "shapes_test",
+        "superstore_sales_dashboard"
+      ],
+      "shared_tables": [
+        "Orders",
+        "People",
+        "Returns"
+      ],
+      "avg_score": 61,
+      "recommendation": "merge",
+      "merge_details": {
+        "workbooks": [
+          "global_superstores_db",
+          "Superstore_Sales",
+          "shapes_test",
+          "superstore_sales_dashboard"
+        ],
+        "total_tables": 9,
+        "unique_table_count": 4,
+        "tables_saved": 5,
+        "merge_candidates": [
+          {
+            "table_name": "Orders",
+            "workbooks": [
+              "global_superstores_db",
+              "Superstore_Sales",
+              "shapes_test",
+              "superstore_sales_dashboard"
+            ],
+            "column_overlap": 0.88,
+            "conflicts": [
+              "Column 'Order ID': type mismatch — global_superstores_db=string, Superstore_Sales=string, shapes_test=string, superstore_sales_dashboard=integer",
+              "Column 'Postal Code': type mismatch — global_superstores_db=string, Superstore_Sales=integer, shapes_test=integer"
+            ]
+          },
+          {
+            "table_name": "Returns",
+            "workbooks": [
+              "Superstore_Sales",
+              "shapes_test"
+            ],
+            "column_overlap": 1.0,
+            "conflicts": []
+          },
+          {
+            "table_name": "People",
+            "workbooks": [
+              "Superstore_Sales",
+              "shapes_test"
+            ],
+            "column_overlap": 1.0,
+            "conflicts": []
+          }
+        ],
+        "unique_tables": {
+          "superstore_sales_dashboard": [
+            "Extract"
+          ]
+        },
+        "measure_conflicts": [
+          {
+            "name": "Profit Ratio",
+            "table": "",
+            "variants": {
+              "Superstore_Sales": "SUM([Profit]) / SUM([Sales])",
+              "shapes_test": "SUM([Profit])/SUM([Sales])"
+            }
+          }
+        ],
+        "measure_duplicates_removed": 0,
+        "relationship_duplicates_removed": 2,
+        "parameter_conflicts": [],
+        "parameter_duplicates_removed": 0,
+        "rls_conflicts": [],
+        "merge_score": 61,
+        "recommendation": "merge",
+        "linked_unique_tables": {
+          "superstore_sales_dashboard": [
+            "Extract"
+          ]
+        },
+        "isolated_tables": {}
+      }
+    }
+  ],
+  "isolated_workbooks": [
+    "TABLEAU_10_TWB",
+    "TABLEAU_10_TWBX",
+    "filtering",
+    "multiple_connections",
+    "nba_player_stats",
+    "sample-superstore",
+    "BigQuery_Analytics",
+    "Enterprise_Sales",
+    "Financial_Report",
+    "HR_Analytics",
+    "Manufacturing_IoT",
+    "Marketing_Campaign",
+    "Security_Test"
+  ],
+  "pairwise_scores": [
+    {
+      "workbook_a": "Cache",
+      "workbook_b": "RESTAPISample",
+      "merge_score": 61,
+      "shared_tables": 1,
+      "recommendation": "merge"
+    },
+    {
+      "workbook_a": "Cache",
+      "workbook_b": "SampleWB",
+      "merge_score": 61,
+      "shared_tables": 1,
+      "recommendation": "merge"
+    },
+    {
+      "workbook_a": "Cache",
+      "workbook_b": "TABLEAU_10_TWB",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Cache",
+      "workbook_b": "TABLEAU_10_TWBX",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Cache",
+      "workbook_b": "datasource_test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Cache",
+      "workbook_b": "ephemeral_field",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Cache",
+      "workbook_b": "filtering",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Cache",
+      "workbook_b": "global_superstores_db",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Cache",
+      "workbook_b": "multiple_connections",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Cache",
+      "workbook_b": "nba_player_stats",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Cache",
+      "workbook_b": "sample-superstore",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Cache",
+      "workbook_b": "shapes_test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Cache",
+      "workbook_b": "superstore_sales_dashboard",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Cache",
+      "workbook_b": "BigQuery_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Cache",
+      "workbook_b": "Enterprise_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Cache",
+      "workbook_b": "Financial_Report",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Cache",
+      "workbook_b": "HR_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Cache",
+      "workbook_b": "Manufacturing_IoT",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Cache",
+      "workbook_b": "Marketing_Campaign",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Cache",
+      "workbook_b": "Security_Test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Cache",
+      "workbook_b": "Superstore_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "RESTAPISample",
+      "workbook_b": "SampleWB",
+      "merge_score": 80,
+      "shared_tables": 1,
+      "recommendation": "merge"
+    },
+    {
+      "workbook_a": "RESTAPISample",
+      "workbook_b": "TABLEAU_10_TWB",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "RESTAPISample",
+      "workbook_b": "TABLEAU_10_TWBX",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "RESTAPISample",
+      "workbook_b": "datasource_test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "RESTAPISample",
+      "workbook_b": "ephemeral_field",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "RESTAPISample",
+      "workbook_b": "filtering",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "RESTAPISample",
+      "workbook_b": "global_superstores_db",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "RESTAPISample",
+      "workbook_b": "multiple_connections",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "RESTAPISample",
+      "workbook_b": "nba_player_stats",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "RESTAPISample",
+      "workbook_b": "sample-superstore",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "RESTAPISample",
+      "workbook_b": "shapes_test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "RESTAPISample",
+      "workbook_b": "superstore_sales_dashboard",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "RESTAPISample",
+      "workbook_b": "BigQuery_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "RESTAPISample",
+      "workbook_b": "Enterprise_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "RESTAPISample",
+      "workbook_b": "Financial_Report",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "RESTAPISample",
+      "workbook_b": "HR_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "RESTAPISample",
+      "workbook_b": "Manufacturing_IoT",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "RESTAPISample",
+      "workbook_b": "Marketing_Campaign",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "RESTAPISample",
+      "workbook_b": "Security_Test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "RESTAPISample",
+      "workbook_b": "Superstore_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "SampleWB",
+      "workbook_b": "TABLEAU_10_TWB",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "SampleWB",
+      "workbook_b": "TABLEAU_10_TWBX",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "SampleWB",
+      "workbook_b": "datasource_test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "SampleWB",
+      "workbook_b": "ephemeral_field",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "SampleWB",
+      "workbook_b": "filtering",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "SampleWB",
+      "workbook_b": "global_superstores_db",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "SampleWB",
+      "workbook_b": "multiple_connections",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "SampleWB",
+      "workbook_b": "nba_player_stats",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "SampleWB",
+      "workbook_b": "sample-superstore",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "SampleWB",
+      "workbook_b": "shapes_test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "SampleWB",
+      "workbook_b": "superstore_sales_dashboard",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "SampleWB",
+      "workbook_b": "BigQuery_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "SampleWB",
+      "workbook_b": "Enterprise_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "SampleWB",
+      "workbook_b": "Financial_Report",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "SampleWB",
+      "workbook_b": "HR_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "SampleWB",
+      "workbook_b": "Manufacturing_IoT",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "SampleWB",
+      "workbook_b": "Marketing_Campaign",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "SampleWB",
+      "workbook_b": "Security_Test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "SampleWB",
+      "workbook_b": "Superstore_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWB",
+      "workbook_b": "TABLEAU_10_TWBX",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWB",
+      "workbook_b": "datasource_test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWB",
+      "workbook_b": "ephemeral_field",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWB",
+      "workbook_b": "filtering",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWB",
+      "workbook_b": "global_superstores_db",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWB",
+      "workbook_b": "multiple_connections",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWB",
+      "workbook_b": "nba_player_stats",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWB",
+      "workbook_b": "sample-superstore",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWB",
+      "workbook_b": "shapes_test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWB",
+      "workbook_b": "superstore_sales_dashboard",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWB",
+      "workbook_b": "BigQuery_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWB",
+      "workbook_b": "Enterprise_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWB",
+      "workbook_b": "Financial_Report",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWB",
+      "workbook_b": "HR_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWB",
+      "workbook_b": "Manufacturing_IoT",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWB",
+      "workbook_b": "Marketing_Campaign",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWB",
+      "workbook_b": "Security_Test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWB",
+      "workbook_b": "Superstore_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWBX",
+      "workbook_b": "datasource_test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWBX",
+      "workbook_b": "ephemeral_field",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWBX",
+      "workbook_b": "filtering",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWBX",
+      "workbook_b": "global_superstores_db",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWBX",
+      "workbook_b": "multiple_connections",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWBX",
+      "workbook_b": "nba_player_stats",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWBX",
+      "workbook_b": "sample-superstore",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWBX",
+      "workbook_b": "shapes_test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWBX",
+      "workbook_b": "superstore_sales_dashboard",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWBX",
+      "workbook_b": "BigQuery_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWBX",
+      "workbook_b": "Enterprise_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWBX",
+      "workbook_b": "Financial_Report",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWBX",
+      "workbook_b": "HR_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWBX",
+      "workbook_b": "Manufacturing_IoT",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWBX",
+      "workbook_b": "Marketing_Campaign",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWBX",
+      "workbook_b": "Security_Test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "TABLEAU_10_TWBX",
+      "workbook_b": "Superstore_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "datasource_test",
+      "workbook_b": "ephemeral_field",
+      "merge_score": 80,
+      "shared_tables": 1,
+      "recommendation": "merge"
+    },
+    {
+      "workbook_a": "datasource_test",
+      "workbook_b": "filtering",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "datasource_test",
+      "workbook_b": "global_superstores_db",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "datasource_test",
+      "workbook_b": "multiple_connections",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "datasource_test",
+      "workbook_b": "nba_player_stats",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "datasource_test",
+      "workbook_b": "sample-superstore",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "datasource_test",
+      "workbook_b": "shapes_test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "datasource_test",
+      "workbook_b": "superstore_sales_dashboard",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "datasource_test",
+      "workbook_b": "BigQuery_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "datasource_test",
+      "workbook_b": "Enterprise_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "datasource_test",
+      "workbook_b": "Financial_Report",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "datasource_test",
+      "workbook_b": "HR_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "datasource_test",
+      "workbook_b": "Manufacturing_IoT",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "datasource_test",
+      "workbook_b": "Marketing_Campaign",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "datasource_test",
+      "workbook_b": "Security_Test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "datasource_test",
+      "workbook_b": "Superstore_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "ephemeral_field",
+      "workbook_b": "filtering",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "ephemeral_field",
+      "workbook_b": "global_superstores_db",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "ephemeral_field",
+      "workbook_b": "multiple_connections",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "ephemeral_field",
+      "workbook_b": "nba_player_stats",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "ephemeral_field",
+      "workbook_b": "sample-superstore",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "ephemeral_field",
+      "workbook_b": "shapes_test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "ephemeral_field",
+      "workbook_b": "superstore_sales_dashboard",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "ephemeral_field",
+      "workbook_b": "BigQuery_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "ephemeral_field",
+      "workbook_b": "Enterprise_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "ephemeral_field",
+      "workbook_b": "Financial_Report",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "ephemeral_field",
+      "workbook_b": "HR_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "ephemeral_field",
+      "workbook_b": "Manufacturing_IoT",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "ephemeral_field",
+      "workbook_b": "Marketing_Campaign",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "ephemeral_field",
+      "workbook_b": "Security_Test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "ephemeral_field",
+      "workbook_b": "Superstore_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "filtering",
+      "workbook_b": "global_superstores_db",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "filtering",
+      "workbook_b": "multiple_connections",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "filtering",
+      "workbook_b": "nba_player_stats",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "filtering",
+      "workbook_b": "sample-superstore",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "filtering",
+      "workbook_b": "shapes_test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "filtering",
+      "workbook_b": "superstore_sales_dashboard",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "filtering",
+      "workbook_b": "BigQuery_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "filtering",
+      "workbook_b": "Enterprise_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "filtering",
+      "workbook_b": "Financial_Report",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "filtering",
+      "workbook_b": "HR_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "filtering",
+      "workbook_b": "Manufacturing_IoT",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "filtering",
+      "workbook_b": "Marketing_Campaign",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "filtering",
+      "workbook_b": "Security_Test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "filtering",
+      "workbook_b": "Superstore_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "global_superstores_db",
+      "workbook_b": "multiple_connections",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "global_superstores_db",
+      "workbook_b": "nba_player_stats",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "global_superstores_db",
+      "workbook_b": "sample-superstore",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "global_superstores_db",
+      "workbook_b": "shapes_test",
+      "merge_score": 66,
+      "shared_tables": 1,
+      "recommendation": "merge"
+    },
+    {
+      "workbook_a": "global_superstores_db",
+      "workbook_b": "superstore_sales_dashboard",
+      "merge_score": 62,
+      "shared_tables": 1,
+      "recommendation": "merge"
+    },
+    {
+      "workbook_a": "global_superstores_db",
+      "workbook_b": "BigQuery_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "global_superstores_db",
+      "workbook_b": "Enterprise_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "global_superstores_db",
+      "workbook_b": "Financial_Report",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "global_superstores_db",
+      "workbook_b": "HR_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "global_superstores_db",
+      "workbook_b": "Manufacturing_IoT",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "global_superstores_db",
+      "workbook_b": "Marketing_Campaign",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "global_superstores_db",
+      "workbook_b": "Security_Test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "global_superstores_db",
+      "workbook_b": "Superstore_Sales",
+      "merge_score": 67,
+      "shared_tables": 1,
+      "recommendation": "merge"
+    },
+    {
+      "workbook_a": "multiple_connections",
+      "workbook_b": "nba_player_stats",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "multiple_connections",
+      "workbook_b": "sample-superstore",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "multiple_connections",
+      "workbook_b": "shapes_test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "multiple_connections",
+      "workbook_b": "superstore_sales_dashboard",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "multiple_connections",
+      "workbook_b": "BigQuery_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "multiple_connections",
+      "workbook_b": "Enterprise_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "multiple_connections",
+      "workbook_b": "Financial_Report",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "multiple_connections",
+      "workbook_b": "HR_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "multiple_connections",
+      "workbook_b": "Manufacturing_IoT",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "multiple_connections",
+      "workbook_b": "Marketing_Campaign",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "multiple_connections",
+      "workbook_b": "Security_Test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "multiple_connections",
+      "workbook_b": "Superstore_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "nba_player_stats",
+      "workbook_b": "sample-superstore",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "nba_player_stats",
+      "workbook_b": "shapes_test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "nba_player_stats",
+      "workbook_b": "superstore_sales_dashboard",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "nba_player_stats",
+      "workbook_b": "BigQuery_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "nba_player_stats",
+      "workbook_b": "Enterprise_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "nba_player_stats",
+      "workbook_b": "Financial_Report",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "nba_player_stats",
+      "workbook_b": "HR_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "nba_player_stats",
+      "workbook_b": "Manufacturing_IoT",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "nba_player_stats",
+      "workbook_b": "Marketing_Campaign",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "nba_player_stats",
+      "workbook_b": "Security_Test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "nba_player_stats",
+      "workbook_b": "Superstore_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "sample-superstore",
+      "workbook_b": "shapes_test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "sample-superstore",
+      "workbook_b": "superstore_sales_dashboard",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "sample-superstore",
+      "workbook_b": "BigQuery_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "sample-superstore",
+      "workbook_b": "Enterprise_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "sample-superstore",
+      "workbook_b": "Financial_Report",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "sample-superstore",
+      "workbook_b": "HR_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "sample-superstore",
+      "workbook_b": "Manufacturing_IoT",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "sample-superstore",
+      "workbook_b": "Marketing_Campaign",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "sample-superstore",
+      "workbook_b": "Security_Test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "sample-superstore",
+      "workbook_b": "Superstore_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "shapes_test",
+      "workbook_b": "superstore_sales_dashboard",
+      "merge_score": 56,
+      "shared_tables": 1,
+      "recommendation": "partial"
+    },
+    {
+      "workbook_a": "shapes_test",
+      "workbook_b": "BigQuery_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "shapes_test",
+      "workbook_b": "Enterprise_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "shapes_test",
+      "workbook_b": "Financial_Report",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "shapes_test",
+      "workbook_b": "HR_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "shapes_test",
+      "workbook_b": "Manufacturing_IoT",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "shapes_test",
+      "workbook_b": "Marketing_Campaign",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "shapes_test",
+      "workbook_b": "Security_Test",
+      "merge_score": 0,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "shapes_test",
+      "workbook_b": "Superstore_Sales",
+      "merge_score": 59,
+      "shared_tables": 3,
+      "recommendation": "partial"
+    },
+    {
+      "workbook_a": "superstore_sales_dashboard",
+      "workbook_b": "BigQuery_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "superstore_sales_dashboard",
+      "workbook_b": "Enterprise_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "superstore_sales_dashboard",
+      "workbook_b": "Financial_Report",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "superstore_sales_dashboard",
+      "workbook_b": "HR_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "superstore_sales_dashboard",
+      "workbook_b": "Manufacturing_IoT",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "superstore_sales_dashboard",
+      "workbook_b": "Marketing_Campaign",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "superstore_sales_dashboard",
+      "workbook_b": "Security_Test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "superstore_sales_dashboard",
+      "workbook_b": "Superstore_Sales",
+      "merge_score": 56,
+      "shared_tables": 1,
+      "recommendation": "partial"
+    },
+    {
+      "workbook_a": "BigQuery_Analytics",
+      "workbook_b": "Enterprise_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "BigQuery_Analytics",
+      "workbook_b": "Financial_Report",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "BigQuery_Analytics",
+      "workbook_b": "HR_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "BigQuery_Analytics",
+      "workbook_b": "Manufacturing_IoT",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "BigQuery_Analytics",
+      "workbook_b": "Marketing_Campaign",
+      "merge_score": 0,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "BigQuery_Analytics",
+      "workbook_b": "Security_Test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "BigQuery_Analytics",
+      "workbook_b": "Superstore_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Enterprise_Sales",
+      "workbook_b": "Financial_Report",
+      "merge_score": 0,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Enterprise_Sales",
+      "workbook_b": "HR_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Enterprise_Sales",
+      "workbook_b": "Manufacturing_IoT",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Enterprise_Sales",
+      "workbook_b": "Marketing_Campaign",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Enterprise_Sales",
+      "workbook_b": "Security_Test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Enterprise_Sales",
+      "workbook_b": "Superstore_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Financial_Report",
+      "workbook_b": "HR_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Financial_Report",
+      "workbook_b": "Manufacturing_IoT",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Financial_Report",
+      "workbook_b": "Marketing_Campaign",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Financial_Report",
+      "workbook_b": "Security_Test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Financial_Report",
+      "workbook_b": "Superstore_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "HR_Analytics",
+      "workbook_b": "Manufacturing_IoT",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "HR_Analytics",
+      "workbook_b": "Marketing_Campaign",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "HR_Analytics",
+      "workbook_b": "Security_Test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "HR_Analytics",
+      "workbook_b": "Superstore_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Manufacturing_IoT",
+      "workbook_b": "Marketing_Campaign",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Manufacturing_IoT",
+      "workbook_b": "Security_Test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Manufacturing_IoT",
+      "workbook_b": "Superstore_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Marketing_Campaign",
+      "workbook_b": "Security_Test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Marketing_Campaign",
+      "workbook_b": "Superstore_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Security_Test",
+      "workbook_b": "Superstore_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    }
+  ],
+  "workbook_profiles": [
+    {
+      "name": "Cache",
+      "tables": 1,
+      "columns": 5,
+      "measures": 14,
+      "calc_columns": 0,
+      "relationships": 0,
+      "worksheets": 1,
+      "dashboards": 0,
+      "parameters": 7,
+      "connection_types": [
+        "DATAENGINE",
+        "Unknown"
+      ],
+      "table_names": [
+        "Extract"
+      ]
+    },
+    {
+      "name": "RESTAPISample",
+      "tables": 1,
+      "columns": 13,
+      "measures": 8,
+      "calc_columns": 0,
+      "relationships": 0,
+      "worksheets": 7,
+      "dashboards": 1,
+      "parameters": 0,
+      "connection_types": [
+        "DATAENGINE"
+      ],
+      "table_names": [
+        "Extract"
+      ]
+    },
+    {
+      "name": "SampleWB",
+      "tables": 1,
+      "columns": 13,
+      "measures": 8,
+      "calc_columns": 0,
+      "relationships": 0,
+      "worksheets": 7,
+      "dashboards": 1,
+      "parameters": 0,
+      "connection_types": [
+        "DATAENGINE"
+      ],
+      "table_names": [
+        "Extract"
+      ]
+    },
+    {
+      "name": "TABLEAU_10_TWB",
+      "tables": 0,
+      "columns": 0,
+      "measures": 0,
+      "calc_columns": 0,
+      "relationships": 0,
+      "worksheets": 0,
+      "dashboards": 0,
+      "parameters": 0,
+      "connection_types": [],
+      "table_names": []
+    },
+    {
+      "name": "TABLEAU_10_TWBX",
+      "tables": 2,
+      "columns": 7,
+      "measures": 2,
+      "calc_columns": 0,
+      "relationships": 0,
+      "worksheets": 1,
+      "dashboards": 0,
+      "parameters": 0,
+      "connection_types": [
+        "SQL Server"
+      ],
+      "table_names": [
+        "xy",
+        "Extract"
+      ]
+    },
+    {
+      "name": "datasource_test",
+      "tables": 1,
+      "columns": 3,
+      "measures": 2,
+      "calc_columns": 0,
+      "relationships": 0,
+      "worksheets": 2,
+      "dashboards": 0,
+      "parameters": 0,
+      "connection_types": [
+        "PostgreSQL"
+      ],
+      "table_names": [
+        "xy"
+      ]
+    },
+    {
+      "name": "ephemeral_field",
+      "tables": 1,
+      "columns": 3,
+      "measures": 4,
+      "calc_columns": 0,
+      "relationships": 0,
+      "worksheets": 2,
+      "dashboards": 0,
+      "parameters": 0,
+      "connection_types": [
+        "PostgreSQL"
+      ],
+      "table_names": [
+        "xy"
+      ]
+    },
+    {
+      "name": "filtering",
+      "tables": 1,
+      "columns": 40,
+      "measures": 0,
+      "calc_columns": 2,
+      "relationships": 0,
+      "worksheets": 2,
+      "dashboards": 1,
+      "parameters": 0,
+      "connection_types": [
+        "SQL Server"
+      ],
+      "table_names": [
+        "TestData"
+      ]
+    },
+    {
+      "name": "global_superstores_db",
+      "tables": 1,
+      "columns": 24,
+      "measures": 4,
+      "calc_columns": 2,
+      "relationships": 0,
+      "worksheets": 20,
+      "dashboards": 6,
+      "parameters": 0,
+      "connection_types": [
+        "Excel"
+      ],
+      "table_names": [
+        "Orders"
+      ]
+    },
+    {
+      "name": "multiple_connections",
+      "tables": 3,
+      "columns": 0,
+      "measures": 0,
+      "calc_columns": 0,
+      "relationships": 1,
+      "worksheets": 0,
+      "dashboards": 0,
+      "parameters": 0,
+      "connection_types": [
+        "MySQL",
+        "Tableau Server"
+      ],
+      "table_names": [
+        "sqlproxy",
+        "xy",
+        "xy1"
+      ]
+    },
+    {
+      "name": "nba_player_stats",
+      "tables": 1,
+      "columns": 19,
+      "measures": 9,
+      "calc_columns": 0,
+      "relationships": 0,
+      "worksheets": 5,
+      "dashboards": 1,
+      "parameters": 1,
+      "connection_types": [
+        "Excel",
+        "Unknown"
+      ],
+      "table_names": [
+        "Sheet1"
+      ]
+    },
+    {
+      "name": "sample-superstore",
+      "tables": 1,
+      "columns": 24,
+      "measures": 2,
+      "calc_columns": 0,
+      "relationships": 0,
+      "worksheets": 1,
+      "dashboards": 0,
+      "parameters": 0,
+      "connection_types": [
+        "SQL Server"
+      ],
+      "table_names": [
+        "Orders"
+      ]
+    },
+    {
+      "name": "shapes_test",
+      "tables": 3,
+      "columns": 25,
+      "measures": 8,
+      "calc_columns": 2,
+      "relationships": 2,
+      "worksheets": 1,
+      "dashboards": 0,
+      "parameters": 2,
+      "connection_types": [
+        "Excel",
+        "Unknown"
+      ],
+      "table_names": [
+        "Orders",
+        "People",
+        "Returns"
+      ]
+    },
+    {
+      "name": "superstore_sales_dashboard",
+      "tables": 2,
+      "columns": 46,
+      "measures": 0,
+      "calc_columns": 2,
+      "relationships": 0,
+      "worksheets": 4,
+      "dashboards": 1,
+      "parameters": 0,
+      "connection_types": [
+        "Excel"
+      ],
+      "table_names": [
+        "Orders",
+        "Extract"
+      ]
+    },
+    {
+      "name": "BigQuery_Analytics",
+      "tables": 2,
+      "columns": 16,
+      "measures": 14,
+      "calc_columns": 6,
+      "relationships": 1,
+      "worksheets": 4,
+      "dashboards": 1,
+      "parameters": 0,
+      "connection_types": [
+        "BigQuery"
+      ],
+      "table_names": [
+        "sessions",
+        "users"
+      ]
+    },
+    {
+      "name": "Enterprise_Sales",
+      "tables": 2,
+      "columns": 24,
+      "measures": 30,
+      "calc_columns": 14,
+      "relationships": 1,
+      "worksheets": 5,
+      "dashboards": 1,
+      "parameters": 3,
+      "connection_types": [
+        "Snowflake"
+      ],
+      "table_names": [
+        "Orders",
+        "Customers"
+      ]
+    },
+    {
+      "name": "Financial_Report",
+      "tables": 1,
+      "columns": 8,
+      "measures": 12,
+      "calc_columns": 0,
+      "relationships": 0,
+      "worksheets": 4,
+      "dashboards": 1,
+      "parameters": 2,
+      "connection_types": [
+        "PostgreSQL"
+      ],
+      "table_names": [
+        "transactions"
+      ]
+    },
+    {
+      "name": "HR_Analytics",
+      "tables": 1,
+      "columns": 11,
+      "measures": 6,
+      "calc_columns": 2,
+      "relationships": 0,
+      "worksheets": 4,
+      "dashboards": 1,
+      "parameters": 0,
+      "connection_types": [
+        "SQL Server"
+      ],
+      "table_names": [
+        "Employees"
+      ]
+    },
+    {
+      "name": "Manufacturing_IoT",
+      "tables": 3,
+      "columns": 28,
+      "measures": 40,
+      "calc_columns": 10,
+      "relationships": 2,
+      "worksheets": 6,
+      "dashboards": 2,
+      "parameters": 2,
+      "connection_types": [
+        "Oracle"
+      ],
+      "table_names": [
+        "Sensors",
+        "Machines",
+        "Maintenance"
+      ]
+    },
+    {
+      "name": "Marketing_Campaign",
+      "tables": 2,
+      "columns": 26,
+      "measures": 20,
+      "calc_columns": 30,
+      "relationships": 1,
+      "worksheets": 5,
+      "dashboards": 1,
+      "parameters": 2,
+      "connection_types": [
+        "MySQL"
+      ],
+      "table_names": [
+        "Campaigns",
+        "Leads"
+      ]
+    },
+    {
+      "name": "Security_Test",
+      "tables": 2,
+      "columns": 9,
+      "measures": 4,
+      "calc_columns": 6,
+      "relationships": 0,
+      "worksheets": 2,
+      "dashboards": 1,
+      "parameters": 0,
+      "connection_types": [
+        "SQL Server"
+      ],
+      "table_names": [
+        "Orders",
+        "Regions"
+      ]
+    },
+    {
+      "name": "Superstore_Sales",
+      "tables": 3,
+      "columns": 25,
+      "measures": 8,
+      "calc_columns": 0,
+      "relationships": 2,
+      "worksheets": 3,
+      "dashboards": 1,
+      "parameters": 0,
+      "connection_types": [
+        "Excel"
+      ],
+      "table_names": [
+        "Orders",
+        "Returns",
+        "People"
+      ]
+    }
+  ],
+  "timestamp": "2026-03-16T15:53:14.538134+00:00"
+}

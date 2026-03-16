@@ -83,6 +83,10 @@ python migrate.py workbook.twbx --wizard
 # 🔗 Shared Semantic Model — merge multiple workbooks
 python migrate.py --shared-model wb1.twbx wb2.twbx --model-name "Shared Sales"
 
+# 🌐 Global assessment — find merge candidates across ALL workbooks
+python migrate.py --global-assess --batch examples/tableau_samples/
+python migrate.py --global-assess wb1.twbx wb2.twbx wb3.twbx wb4.twbx
+
 # 🔍 Pre-merge assessment (assess without generating)
 python migrate.py --shared-model wb1.twbx wb2.twbx --assess-merge
 ```
@@ -142,7 +146,7 @@ One-command deploy to **Power BI Service** or **Microsoft Fabric** with Azure AD
 <td colspan="2">
 
 ### 🔗 Shared Semantic Model
-Merge multiple Tableau workbooks into **one shared semantic model** with thin reports. Fingerprint-based table matching, Jaccard column overlap scoring, measure conflict resolution, merge assessment with 0–100 scoring, and automatic `byPath` report wiring.
+Merge multiple Tableau workbooks into **one shared semantic model** with thin reports. Fingerprint-based table matching, Jaccard column overlap scoring, measure conflict resolution, merge assessment with 0–100 scoring, and automatic `byPath` report wiring. **Global assessment** (`--global-assess`) analyzes all workbooks pairwise to find merge clusters and generates an HTML report with a score heatmap matrix.
 
 </td>
 </tr>
@@ -204,12 +208,20 @@ flowchart LR
 ```
 
 ```bash
-# Assess merge feasibility first
+# Global assessment — identify merge clusters across ALL workbooks
+python migrate.py --global-assess --batch examples/tableau_samples/
+python migrate.py --global-assess wb1.twbx wb2.twbx wb3.twbx wb4.twbx
+
+# Assess merge feasibility for a specific group
 python migrate.py --shared-model wb1.twbx wb2.twbx wb3.twbx --assess-merge
 
 # Generate shared model + thin reports
 python migrate.py --shared-model wb1.twbx wb2.twbx wb3.twbx --model-name "Shared Sales"
 ```
+
+The `--global-assess` flag generates an interactive HTML report with pairwise merge scores, merge clusters, and ready-to-run commands:
+
+![Global Assessment — Cross-Workbook Merge Analysis](docs/images/share_assessment.png)
 
 ### �📂 Generated Output
 
@@ -624,6 +636,7 @@ The report shows for each migrated workbook:
 | 🤝 [Contributing](CONTRIBUTING.md) | How to contribute |
 | 📝 [Changelog](CHANGELOG.md) | Release history |
 | 🔗 [Shared Model Plan](docs/SHARED_SEMANTIC_MODEL_PLAN.md) | Multi-workbook merge architecture |
+| 🌐 Global Assessment | Cross-workbook merge analysis with HTML heatmap (`--global-assess`) |
 
 ---
 

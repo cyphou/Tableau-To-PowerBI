@@ -703,7 +703,70 @@ class TestThinReportGenerator(unittest.TestCase):
 
 ---
 
-## 10. Future Extensions (Out of Scope)
+## 10. Global Assessment (`--global-assess`)
+
+When migrating a large portfolio of Tableau workbooks, use the **Global Assessment** to automatically identify which workbooks should be merged together.
+
+### 10.1 How It Works
+
+```
+N workbooks ──→ [Extract All] ──→ [Pairwise Scoring N×(N-1)/2] ──→ [Cluster Detection (BFS)] ──→ HTML Report
+```
+
+1. **Extract** each workbook to build table fingerprints
+2. **Pairwise scoring** — compute merge scores for every pair of workbooks using `assess_merge()`
+3. **Cluster detection** — build connected components via BFS (edges = pairs with score ≥ 30)
+4. **Classify** workbooks as clustered (merge candidates) or isolated (migrate individually)
+
+### 10.2 CLI Usage
+
+```bash
+# Assess all workbooks in a directory
+python migrate.py --global-assess --batch examples/tableau_samples/
+
+# Assess specific workbooks
+python migrate.py --global-assess wb1.twbx wb2.twbx wb3.twbx wb4.twbx
+
+# Custom output directory
+python migrate.py --global-assess --batch folder/ --output-dir /tmp/assessment
+```
+
+### 10.3 HTML Report
+
+The generated HTML report includes:
+- **Executive Summary** — cluster count, isolated count, total tables/measures
+- **Workbook Inventory** — per-workbook stats (tables, measures, connectors, cluster status)
+- **Pairwise Merge Score Matrix** — N×N color-coded heatmap (green ≥60, yellow ≥30, red <30)
+- **Merge Cluster Cards** — shared tables, column overlap bars, conflicts, ready-to-run CLI commands
+- **Isolated Workbooks** — table with individual migration commands
+- **Pairwise Detail** — sorted list of all pair scores with recommendations
+
+![Global Assessment Report](images/share_assessment.png)
+
+### 10.4 Module: `powerbi_import/global_assessment.py`
+
+```python
+from powerbi_import.global_assessment import (
+    run_global_assessment,
+    print_global_summary,
+    generate_global_html_report,
+    save_global_assessment_json,
+)
+
+result = run_global_assessment(all_extracted, workbook_names)
+print_global_summary(result)
+generate_global_html_report(result, output_path="global_assessment.html")
+```
+
+Key data classes:
+- `WorkbookProfile` — per-workbook stats (tables, measures, relationships, connectors)
+- `PairwiseScore` — merge score between two workbooks (score, shared tables, recommendation)
+- `MergeCluster` — group of workbooks recommended for merging (shared tables, avg score, full assessment)
+- `GlobalAssessment` — top-level result (profiles, pairwise scores, clusters, isolated workbooks)
+
+---
+
+## 11. Future Extensions (Out of Scope)
 
 These are **not** in the current plan but could follow:
 
