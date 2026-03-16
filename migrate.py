@@ -1772,7 +1772,8 @@ def run_shared_model_migration(workbook_paths, model_name=None, output_dir=None,
                                assess_only=False, force_merge=False,
                                calendar_start=None, calendar_end=None,
                                culture=None, model_mode='import',
-                               languages=None):
+                               languages=None, merge_config_path=None,
+                               save_config=False):
     """Orchestrate shared semantic model migration for multiple workbooks.
 
     Steps:
@@ -1870,8 +1871,8 @@ def run_shared_model_migration(workbook_paths, model_name=None, output_dir=None,
                 model_mode=model_mode,
                 languages=languages,
                 force_merge=force_merge,
-                merge_config_path=getattr(args, 'merge_config', None),
-                save_config=getattr(args, 'save_merge_config', False),
+                merge_config_path=merge_config_path,
+                save_config=save_config,
             )
 
             if result.get('model_path'):
@@ -2021,6 +2022,8 @@ def main():
             culture=args.culture,
             model_mode=getattr(args, 'mode', 'import'),
             languages=getattr(args, 'languages', None),
+            merge_config_path=getattr(args, 'merge_config', None),
+            save_config=getattr(args, 'save_merge_config', False),
         )
 
     # ── Manifest-based batch migration ─────────────────────────
