@@ -272,6 +272,26 @@ class PowerBIImporter:
         )
         print(f"  [OK] Shared SemanticModel created: {sm_dir}")
 
+        # Create a standalone .pbip for the SemanticModel
+        sm_pbip = {
+            "$schema": "https://developer.microsoft.com/json-schemas/fabric/pbip/pbipProperties/1.0.0/schema.json",
+            "version": "1.0",
+            "artifacts": [
+                {
+                    "report": {
+                        "path": f"{model_name}.SemanticModel",
+                    },
+                },
+            ],
+            "settings": {
+                "enableAutoRecovery": True,
+            },
+        }
+        sm_pbip_path = os.path.join(project_dir, f"{model_name}.pbip")
+        with open(sm_pbip_path, 'w', encoding='utf-8') as f:
+            json.dump(sm_pbip, f, indent=2, ensure_ascii=False)
+        print(f"  [OK] SemanticModel .pbip: {sm_pbip_path}")
+
         # 5. Generate thin reports for each workbook
         print(f"\n  Step 4: Generating {len(workbook_names)} thin reports...")
         report_paths = []
@@ -312,7 +332,6 @@ class PowerBIImporter:
 
         # 6c. Save lineage report
         if lineage:
-            import json
             lineage_path = os.path.join(project_dir, 'column_lineage.json')
             with open(lineage_path, 'w', encoding='utf-8') as f:
                 json.dump(lineage, f, indent=2, ensure_ascii=False)

@@ -1,0 +1,34 @@
+relationship c824f003-309f-41e8-a71f-f0f537eab396
+	fromColumn: Orders.Region
+	toColumn: People.Region
+	fromCardinality: many
+	toCardinality: many
+	crossFilteringBehavior: bothDirections
+
+relationship 9d67829b-bd1c-43a6-91b1-0c789292171b
+	fromColumn: Orders.'Order ID'
+	toColumn: Returns.'Order ID'
+	fromCardinality: many
+	toCardinality: many
+	crossFilteringBehavior: bothDirections
+
+relationship 4f6415fb-22b3-4e61-9d19-be1e3a8d65dd
+	fromColumn: Orders.customer_id
+	toColumn: Customers.customer_id
+	fromCardinality: many
+	toCardinality: many
+	crossFilteringBehavior: bothDirections
+
+relationship bbf03f4f-7cea-41ad-83c0-f0fe874f5162
+	fromColumn: Orders.'Order Date'
+	toColumn: Calendar.Date
+	crossFilteringBehavior: oneDirection
+
+relationship 1e2af156-d70f-47a0-a419-695ff24140e5
+	fromColumn: Customers.first_purchase_date
+	toColumn: Calendar.Date
+	fromCardinality: many
+	toCardinality: many
+	crossFilteringBehavior: bothDirections
+	isActive: false
+
