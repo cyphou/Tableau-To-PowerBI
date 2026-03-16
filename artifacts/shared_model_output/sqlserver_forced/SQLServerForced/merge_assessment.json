@@ -1,0 +1,28 @@
+{
+  "workbooks": [
+    "Security_Test",
+    "sample-superstore"
+  ],
+  "total_tables": 3,
+  "unique_table_count": 3,
+  "tables_saved": 0,
+  "merge_candidates": [],
+  "unique_tables": {
+    "Security_Test": [
+      "Orders",
+      "Regions"
+    ],
+    "sample-superstore": [
+      "Orders"
+    ]
+  },
+  "measure_conflicts": [],
+  "measure_duplicates_removed": 0,
+  "relationship_duplicates_removed": 0,
+  "parameter_conflicts": [],
+  "parameter_duplicates_removed": 0,
+  "rls_conflicts": [],
+  "merge_score": 20,
+  "recommendation": "separate",
+  "timestamp": "2026-03-16T13:58:09.261456+00:00"
+}

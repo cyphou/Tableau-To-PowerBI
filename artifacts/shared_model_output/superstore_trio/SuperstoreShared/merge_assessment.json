@@ -1,0 +1,52 @@
+{
+  "workbooks": [
+    "Superstore_Sales",
+    "shapes_test",
+    "global_superstores_db"
+  ],
+  "total_tables": 7,
+  "unique_table_count": 3,
+  "tables_saved": 4,
+  "merge_candidates": [
+    {
+      "table_name": "Orders",
+      "workbooks": [
+        "Superstore_Sales",
+        "shapes_test",
+        "global_superstores_db"
+      ],
+      "column_overlap": 0.91,
+      "conflicts": [
+        "Column 'Postal Code': type mismatch — Superstore_Sales=integer, shapes_test=integer, global_superstores_db=string"
+      ]
+    },
+    {
+      "table_name": "Returns",
+      "workbooks": [
+        "Superstore_Sales",
+        "shapes_test"
+      ],
+      "column_overlap": 1.0,
+      "conflicts": []
+    },
+    {
+      "table_name": "People",
+      "workbooks": [
+        "Superstore_Sales",
+        "shapes_test"
+      ],
+      "column_overlap": 1.0,
+      "conflicts": []
+    }
+  ],
+  "unique_tables": {},
+  "measure_conflicts": [],
+  "measure_duplicates_removed": 0,
+  "relationship_duplicates_removed": 2,
+  "parameter_conflicts": [],
+  "parameter_duplicates_removed": 0,
+  "rls_conflicts": [],
+  "merge_score": 81,
+  "recommendation": "merge",
+  "timestamp": "2026-03-16T13:57:28.141478+00:00"
+}

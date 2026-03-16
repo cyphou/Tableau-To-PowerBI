@@ -1,5 +1,23 @@
 # Changelog
 
+## v14.0.0 — Shared Semantic Model v2 (Advanced Merge Features)
+
+### Sprint 41 — Shared Semantic Model Enhancements ✅
+- **Merge config save/load** (`merge_config.py`): Export/import merge decisions to JSON for reproducible migrations — `save_merge_config()`, `load_merge_config()`, `apply_merge_config()`, force-merge override, table/measure/parameter-level decisions
+- **Visual field validation**: `validate_thin_report_fields()` detects orphaned columns, filters, and mark encodings in thin reports before generation — prevents broken visuals referencing missing fields
+- **Column lineage annotations**: `build_column_lineage()` + `generate_lineage_annotations()` track which workbooks contributed each table and column — TMDL-ready annotation strings for provenance tracking
+- **Measure expression risk analyzer**: `analyze_measure_risk()` with `MeasureRiskAssessment` dataclass — parses DAX to classify conflicts as low/medium/high risk based on aggregation type and column references
+- **RLS role consolidation**: `consolidate_rls_roles()` + `merge_rls_roles()` with `RLSConsolidation` dataclass — deduplicates identical roles, merges different filters with OR logic, keeps unique roles
+- **Cross-report navigation**: `build_cross_report_navigation()` auto-generates navigation button configs between thin reports within a shared model
+- **Plugin merge hooks**: 3 new hooks on `PluginBase` — `on_merge_conflict()`, `on_merge_complete()`, `transform_merged_dax()` for extensible conflict resolution
+- **Fabric deployment orchestration**: `deploy_shared_model()` on `FabricDeployer` — deploys SemanticModel first, then each thin report, with per-report error isolation
+- **CLI flags**: `--merge-config FILE`, `--save-merge-config`
+- **Pipeline integration**: All features wired into `import_shared_model()` — risk analysis, RLS consolidation, lineage tracking, field validation, navigation, config save/load
+- **54 new tests** in `test_shared_model_v2.py` across 9 test classes
+- **Overall: 3,871 → 3,925 tests**, 0 failures
+
+---
+
 ## v13.0.0 — Shared Semantic Model (Multi-Workbook Merge)
 
 ### Sprint 40 — Shared Semantic Model Extension ✅

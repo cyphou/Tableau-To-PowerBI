@@ -1,0 +1,30 @@
+{
+  "workbooks": [
+    "datasource_test",
+    "ephemeral_field"
+  ],
+  "total_tables": 2,
+  "unique_table_count": 1,
+  "tables_saved": 1,
+  "merge_candidates": [
+    {
+      "table_name": "xy",
+      "workbooks": [
+        "datasource_test",
+        "ephemeral_field"
+      ],
+      "column_overlap": 1.0,
+      "conflicts": []
+    }
+  ],
+  "unique_tables": {},
+  "measure_conflicts": [],
+  "measure_duplicates_removed": 1,
+  "relationship_duplicates_removed": 0,
+  "parameter_conflicts": [],
+  "parameter_duplicates_removed": 0,
+  "rls_conflicts": [],
+  "merge_score": 80,
+  "recommendation": "merge",
+  "timestamp": "2026-03-16T13:56:49.106134+00:00"
+}

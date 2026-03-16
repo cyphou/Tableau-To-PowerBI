@@ -1,0 +1,50 @@
+table xy
+	lineageTag: 1e7ec471-9e99-4313-9253-f144fc3ca88b
+
+	measure 'SUM(X) + SUM(Y)' = SUM('xy'[x]) + SUM('xy'[y])
+		displayFolder: Measures
+		lineageTag: 3ba5e23a-5f4c-46ac-9677-78c202255675
+
+	column a
+		dataType: string
+		lineageTag: 2a6ea317-7fad-4bd8-b07e-413617506afa
+		summarizeBy: none
+		sourceColumn: a
+
+		annotation SummarizationSetBy = Automatic
+
+	column x
+		dataType: int64
+		lineageTag: eb24e02a-caef-41de-8083-90922eb92121
+		summarizeBy: sum
+		sourceColumn: x
+
+		annotation SummarizationSetBy = Automatic
+
+	column y
+		dataType: int64
+		lineageTag: 7e52deb6-bded-4c14-b6db-b7894d3f8b37
+		summarizeBy: sum
+		sourceColumn: y
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'xy-5468f6d2-f60f-4092-8cbe-ece6b024251d' = m
+		mode: import
+		source =
+				let
+				    // Source PostgreSQL
+				    Source = try
+				
+				        PostgreSQL.Database("postgres91.test.tsi.lan:5432", "TestV1")
+				
+				    otherwise
+				
+				        #table({"a", "x", "y"}, {}),
+				    #"xy Table" = Source{[Schema="public", Item="xy"]}[Data],
+				    Result = #"xy Table"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+

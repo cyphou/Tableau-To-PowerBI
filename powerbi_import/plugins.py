@@ -117,6 +117,45 @@ class PluginBase:
         """
         return None
 
+    # ── Shared model merge hooks ──
+
+    def on_merge_conflict(self, conflict_type, name, variants):
+        """Called when a merge conflict is detected (measure, parameter, column).
+
+        Args:
+            conflict_type: "measure", "parameter", or "column"
+            name: Name of the conflicting item
+            variants: dict {workbook_name: value/formula}
+
+        Returns:
+            str | None: Resolution action ("namespace", "keep_first", "skip")
+                        or None to use default behavior
+        """
+        return None
+
+    def on_merge_complete(self, assessment, merged, model_name):
+        """Called after merge is complete, before TMDL generation.
+
+        Args:
+            assessment: MergeAssessment object
+            merged: Merged converted_objects dict
+            model_name: Shared semantic model name
+        """
+        pass
+
+    def transform_merged_dax(self, measure_name, dax_formula, source_workbook):
+        """Transform a DAX formula during merge (post-namespace).
+
+        Args:
+            measure_name: The measure name (possibly namespaced)
+            dax_formula: The DAX formula
+            source_workbook: Source workbook name (or None if shared)
+
+        Returns:
+            str: Modified DAX formula
+        """
+        return dax_formula
+
 
 class PluginManager:
     """Manages plugin lifecycle and hook dispatch.

@@ -1521,6 +1521,20 @@ def _build_argument_parser():
         help='Force merge even with low overlap score (use with --shared-model)'
     )
 
+    parser.add_argument(
+        '--merge-config',
+        metavar='FILE',
+        default=None,
+        help='Load merge decisions from a JSON config file (reproducible migrations)'
+    )
+
+    parser.add_argument(
+        '--save-merge-config',
+        action='store_true',
+        default=False,
+        help='Save merge decisions to merge_config.json for later reuse'
+    )
+
     return parser
 
 
@@ -1856,6 +1870,8 @@ def run_shared_model_migration(workbook_paths, model_name=None, output_dir=None,
                 model_mode=model_mode,
                 languages=languages,
                 force_merge=force_merge,
+                merge_config_path=getattr(args, 'merge_config', None),
+                save_config=getattr(args, 'save_merge_config', False),
             )
 
             if result.get('model_path'):

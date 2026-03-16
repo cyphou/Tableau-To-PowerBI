@@ -824,3 +824,396 @@ def build_field_mapping(assessment: MergeAssessment,
         if workbook_name in conflict.variants:
             mapping[conflict.name] = f"{conflict.name} ({workbook_name})"
     return mapping
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  Visual field validation
+# ═══════════════════════════════════════════════════════════════════
+
+def validate_thin_report_fields(converted_objects: dict,
+                                 merged: dict,
+                                 field_mapping: dict = None) -> List[dict]:
+    """Validate that all fields referenced by a thin report exist in the merged model.
+
+    Checks worksheet columns, filters, mark encoding fields against the merged
+    model's tables, columns, and measures.
+
+    Args:
+        converted_objects: The workbook's original extracted objects.
+        merged: The merged converted_objects dict.
+        field_mapping: Active field mapping (original → namespaced).
+
+    Returns:
+        List of validation issues: [{"field": str, "location": str, "issue": str}]
+    """
+    # Build set of available fields from merged model
+    available = set()
+    for ds in merged.get('datasources', []):
+        for table in ds.get('tables', []):
+            for col in table.get('columns', []):
+                available.add(col.get('name', '').lower())
+        for calc in ds.get('calculations', []):
+            available.add(calc.get('caption', calc.get('name', '')).lower())
+
+    for calc in merged.get('calculations', []):
+        available.add(calc.get('caption', calc.get('name', '')).lower())
+
+    for param in merged.get('parameters', []):
+        available.add(param.get('name', param.get('caption', '')).lower())
+
+    mapping = field_mapping or {}
+    issues = []
+
+    for ws in converted_objects.get('worksheets', []):
+        ws_name = ws.get('name', 'unknown')
+
+        # Check columns
+        for col in ws.get('columns', []):
+            field_name = col.get('name', '')
+            mapped = mapping.get(field_name, field_name)
+            if mapped.lower() not in available and field_name.lower() not in available:
+                issues.append({
+                    "field": field_name,
+                    "location": f"worksheet '{ws_name}' columns",
+                    "issue": "orphaned_field",
+                })
+
+        # Check filters
+        for f in ws.get('filters', []):
+            field_name = f.get('field', '')
+            mapped = mapping.get(field_name, field_name)
+            if field_name and mapped.lower() not in available and field_name.lower() not in available:
+                issues.append({
+                    "field": field_name,
+                    "location": f"worksheet '{ws_name}' filters",
+                    "issue": "orphaned_filter",
+                })
+
+        # Check mark encoding
+        for channel, enc in ws.get('mark_encoding', {}).items():
+            if isinstance(enc, dict):
+                field_name = enc.get('field', '')
+                mapped = mapping.get(field_name, field_name)
+                if field_name and mapped.lower() not in available and field_name.lower() not in available:
+                    issues.append({
+                        "field": field_name,
+                        "location": f"worksheet '{ws_name}' mark_encoding.{channel}",
+                        "issue": "orphaned_encoding",
+                    })
+
+    return issues
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  Column lineage tracking
+# ═══════════════════════════════════════════════════════════════════
+
+def build_column_lineage(all_extracted: List[dict],
+                         workbook_names: List[str],
+                         assessment: MergeAssessment) -> Dict[str, Dict[str, list]]:
+    """Build lineage metadata showing which workbooks contributed each table/column.
+
+    Returns:
+        {table_name: {"source_workbooks": [str], "columns": {col_name: [source_wbs]}}}
+    """
+    lineage: Dict[str, Dict] = {}
+
+    for mc in assessment.merge_candidates:
+        table_name = mc.table_name
+        source_wbs = [s[0] for s in mc.sources]
+        col_sources: Dict[str, list] = {}
+
+        for wb_name, table, _ in mc.sources:
+            for col in table.get('columns', []):
+                cname = col.get('name', '')
+                if cname not in col_sources:
+                    col_sources[cname] = []
+                if wb_name not in col_sources[cname]:
+                    col_sources[cname].append(wb_name)
+
+        lineage[table_name] = {
+            "source_workbooks": source_wbs,
+            "columns": col_sources,
+        }
+
+    # Also capture unique tables
+    for wb, tables in assessment.unique_tables.items():
+        for tname in tables:
+            lineage[tname] = {
+                "source_workbooks": [wb],
+                "columns": {},
+            }
+            # Find the table's columns
+            for extracted in all_extracted:
+                for ds in extracted.get('datasources', []):
+                    for t in ds.get('tables', []):
+                        if t.get('name', '') == tname:
+                            for col in t.get('columns', []):
+                                lineage[tname]["columns"][col.get('name', '')] = [wb]
+
+    return lineage
+
+
+def generate_lineage_annotations(lineage: Dict[str, Dict[str, list]]) -> Dict[str, str]:
+    """Generate TMDL annotation strings for column lineage.
+
+    Returns:
+        {table_name: annotation_text} — ready to embed in TMDL table files.
+    """
+    annotations = {}
+    for table_name, info in lineage.items():
+        sources = info.get("source_workbooks", [])
+        lines = [f"Source workbooks: {', '.join(sources)}"]
+        col_info = info.get("columns", {})
+        multi_source = [c for c, wbs in col_info.items() if len(wbs) > 1]
+        single_source = [c for c, wbs in col_info.items() if len(wbs) == 1]
+        if multi_source:
+            lines.append(f"Shared columns ({len(multi_source)}): {', '.join(sorted(multi_source)[:10])}")
+        if single_source:
+            lines.append(f"Unique columns ({len(single_source)}): {', '.join(sorted(single_source)[:10])}")
+        annotations[table_name] = " | ".join(lines)
+    return annotations
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  Measure expression risk analyzer
+# ═══════════════════════════════════════════════════════════════════
+
+@dataclass
+class MeasureRiskAssessment:
+    """Risk analysis for a measure conflict."""
+    measure_name: str
+    risk_level: str   # "low", "medium", "high"
+    reason: str
+    variants: Dict[str, str]  # {wb_name: formula}
+    aggregation_types: Dict[str, str]  # {wb_name: detected_agg}
+
+
+def analyze_measure_risk(conflicts: List[MeasureConflict]) -> List[MeasureRiskAssessment]:
+    """Analyze semantic risk of measure conflicts by parsing DAX patterns.
+
+    A conflict where both formulas use the same aggregation on the same column
+    is LOW risk (likely formatting/alias difference). A conflict using different
+    aggregation functions (SUM vs COUNT) on different columns is HIGH risk.
+
+    Returns:
+        List of MeasureRiskAssessment for each conflict.
+    """
+    results = []
+    for mc in conflicts:
+        agg_types = {}
+        columns_ref = {}
+        for wb, formula in mc.variants.items():
+            agg = _detect_aggregation(formula)
+            agg_types[wb] = agg
+            columns_ref[wb] = _extract_column_refs(formula)
+
+        unique_aggs = set(agg_types.values()) - {'unknown'}
+        unique_cols = set()
+        for cols in columns_ref.values():
+            unique_cols.update(cols)
+
+        if len(unique_aggs) <= 1 and len(unique_cols) <= 1:
+            risk = "low"
+            reason = "Same aggregation pattern, likely formatting difference"
+        elif len(unique_aggs) <= 1:
+            risk = "medium"
+            reason = f"Same aggregation ({', '.join(unique_aggs or {'?'})}), different columns"
+        else:
+            risk = "high"
+            reason = f"Different aggregations: {', '.join(unique_aggs)}"
+
+        results.append(MeasureRiskAssessment(
+            measure_name=mc.name,
+            risk_level=risk,
+            reason=reason,
+            variants=mc.variants,
+            aggregation_types=agg_types,
+        ))
+
+    return results
+
+
+_AGG_PATTERN = re.compile(
+    r'\b(SUM|SUMX|COUNT|COUNTA|COUNTX|COUNTROWS|DISTINCTCOUNT|'
+    r'AVERAGE|AVERAGEX|MIN|MINX|MAX|MAXX|'
+    r'CALCULATE|CALCULATETABLE|MEDIAN|PERCENTILE)\s*\(',
+    re.IGNORECASE,
+)
+
+_COL_REF_PATTERN = re.compile(r"\[([^\]]+)\]")
+
+
+def _detect_aggregation(formula: str) -> str:
+    """Detect the primary aggregation function in a DAX formula."""
+    m = _AGG_PATTERN.search(formula)
+    return m.group(1).upper() if m else 'unknown'
+
+
+def _extract_column_refs(formula: str) -> List[str]:
+    """Extract column references [ColumnName] from a DAX formula."""
+    return _COL_REF_PATTERN.findall(formula)
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  RLS role consolidation
+# ═══════════════════════════════════════════════════════════════════
+
+@dataclass
+class RLSConsolidation:
+    """Analysis of RLS role consolidation across workbooks."""
+    role_name: str
+    source_workbooks: List[str]
+    tables_affected: List[str]
+    filter_expressions: Dict[str, str]  # {wb_name: dax_filter}
+    action: str  # "keep", "merge", "namespace"
+    merged_expression: Optional[str] = None
+
+
+def consolidate_rls_roles(all_extracted: List[dict],
+                          workbook_names: List[str]) -> List[RLSConsolidation]:
+    """Analyze and consolidate RLS roles across workbooks.
+
+    Rules:
+    - Same role name + same filter expression → deduplicate (keep one)
+    - Same role name + different table → keep both (different scope)
+    - Same role name + same table + different filters → merge with OR
+    - Different role names → keep all
+
+    Returns:
+        List of RLSConsolidation recommendations.
+    """
+    # Collect all roles: role_name → [(wb_name, table, filter_expr)]
+    role_map: Dict[str, list] = {}
+
+    for wb_name, extracted in zip(workbook_names, all_extracted):
+        for uf in extracted.get('user_filters', []):
+            role_name = uf.get('name', uf.get('field', 'default'))
+            table = uf.get('table', '')
+            filter_expr = uf.get('filter_expression', uf.get('formula', ''))
+            if role_name not in role_map:
+                role_map[role_name] = []
+            role_map[role_name].append((wb_name, table, filter_expr))
+
+    results = []
+    for role_name, entries in role_map.items():
+        source_wbs = list(set(e[0] for e in entries))
+        tables = list(set(e[1] for e in entries if e[1]))
+        filters = {e[0]: e[2] for e in entries if e[2]}
+
+        if len(source_wbs) == 1:
+            # Unique to one workbook — keep as-is
+            results.append(RLSConsolidation(
+                role_name=role_name,
+                source_workbooks=source_wbs,
+                tables_affected=tables,
+                filter_expressions=filters,
+                action="keep",
+            ))
+        else:
+            unique_filters = set(filters.values())
+            if len(unique_filters) <= 1:
+                # Same filter across workbooks — deduplicate
+                results.append(RLSConsolidation(
+                    role_name=role_name,
+                    source_workbooks=source_wbs,
+                    tables_affected=tables,
+                    filter_expressions=filters,
+                    action="merge",
+                    merged_expression=next(iter(unique_filters), None),
+                ))
+            else:
+                # Different filters — merge with OR
+                combined = " || ".join(
+                    f"({expr})" for expr in unique_filters if expr
+                )
+                results.append(RLSConsolidation(
+                    role_name=role_name,
+                    source_workbooks=source_wbs,
+                    tables_affected=tables,
+                    filter_expressions=filters,
+                    action="merge",
+                    merged_expression=combined,
+                ))
+
+    return results
+
+
+def merge_rls_roles(all_extracted: List[dict],
+                    workbook_names: List[str]) -> List[dict]:
+    """Merge RLS roles across workbooks with deduplication.
+
+    Returns:
+        Merged list of user_filter dicts ready for TMDL generation.
+    """
+    consolidations = consolidate_rls_roles(all_extracted, workbook_names)
+    merged_roles = []
+    seen_names = set()
+
+    for cons in consolidations:
+        if cons.role_name in seen_names:
+            continue
+        seen_names.add(cons.role_name)
+
+        if cons.action == "keep":
+            # Find original and keep it
+            for wb_name, extracted in zip(workbook_names, all_extracted):
+                for uf in extracted.get('user_filters', []):
+                    rn = uf.get('name', uf.get('field', ''))
+                    if rn == cons.role_name:
+                        merged_roles.append(copy.deepcopy(uf))
+                        break
+                else:
+                    continue
+                break
+        elif cons.action == "merge" and cons.merged_expression:
+            # Create merged role
+            role = {
+                'name': cons.role_name,
+                'table': cons.tables_affected[0] if cons.tables_affected else '',
+                'filter_expression': cons.merged_expression,
+                '_source_workbooks': cons.source_workbooks,
+                '_consolidation': 'merged',
+            }
+            merged_roles.append(role)
+
+    return merged_roles
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  Cross-report navigation
+# ═══════════════════════════════════════════════════════════════════
+
+def build_cross_report_navigation(workbook_names: List[str],
+                                   model_name: str) -> List[dict]:
+    """Generate navigation button definitions for cross-report linking.
+
+    Creates action button configs that allow users to navigate between
+    sibling thin reports referencing the same shared semantic model.
+
+    Args:
+        workbook_names: Names of all thin reports.
+        model_name: Name of the shared semantic model.
+
+    Returns:
+        List of navigation button definitions (one per report, containing
+        links to all other reports).
+    """
+    nav_configs = []
+    for current_wb in workbook_names:
+        buttons = []
+        for target_wb in workbook_names:
+            if target_wb == current_wb:
+                continue
+            buttons.append({
+                "label": target_wb,
+                "target_report": f"{target_wb}.Report",
+                "tooltip": f"Navigate to {target_wb}",
+                "type": "navigation",
+            })
+        nav_configs.append({
+            "report_name": current_wb,
+            "model_name": model_name,
+            "navigation_buttons": buttons,
+        })
+    return nav_configs

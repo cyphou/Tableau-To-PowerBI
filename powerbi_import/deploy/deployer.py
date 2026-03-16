@@ -225,3 +225,136 @@ class FabricDeployer:
         return self.client.get(
             f'/workspaces/{workspace_id}/items/{item_id}'
         )
+
+    def deploy_shared_model(self, workspace_id, project_dir,
+                             model_name, report_names,
+                             overwrite=True):
+        """Deploy a shared semantic model + thin reports atomically.
+
+        Deploys the semantic model first, then each thin report.
+        If any report fails, logs the error and continues with remaining.
+
+        Args:
+            workspace_id: Target workspace ID.
+            project_dir: Root project directory containing model + reports.
+            model_name: Name of the shared semantic model.
+            report_names: List of thin report names to deploy.
+            overwrite: Overwrite existing artifacts.
+
+        Returns:
+            DeploymentResult dict with status per artifact.
+        """
+        from pathlib import Path
+
+        result = {
+            'model_name': model_name,
+            'workspace_id': workspace_id,
+            'model_status': 'pending',
+            'model_id': None,
+            'reports': [],
+            'success': True,
+        }
+
+        project_path = Path(project_dir)
+
+        # Step 1: Deploy the semantic model first
+        logger.info(
+            "Deploying shared semantic model '%s' to workspace %s",
+            model_name, workspace_id,
+        )
+        sm_dir = project_path / f"{model_name}.SemanticModel"
+        if sm_dir.is_dir():
+            try:
+                sm_config = self._read_artifact_config(sm_dir)
+                sm_result = self.deploy_dataset(
+                    workspace_id, model_name, sm_config, overwrite,
+                )
+                result['model_status'] = 'deployed'
+                result['model_id'] = sm_result.get('id')
+                logger.info("Semantic model deployed: %s", result['model_id'])
+            except Exception as e:
+                logger.error("Failed to deploy semantic model: %s", e)
+                result['model_status'] = 'failed'
+                result['model_error'] = str(e)
+                result['success'] = False
+                return result  # Can't deploy reports without model
+        else:
+            logger.warning("SemanticModel directory not found: %s", sm_dir)
+            result['model_status'] = 'not_found'
+            result['success'] = False
+            return result
+
+        # Step 2: Deploy each thin report
+        for report_name in report_names:
+            report_result = {
+                'name': report_name,
+                'status': 'pending',
+                'id': None,
+            }
+
+            report_dir = project_path / f"{report_name}.Report"
+            if not report_dir.is_dir():
+                report_result['status'] = 'not_found'
+                result['reports'].append(report_result)
+                logger.warning("Report directory not found: %s", report_dir)
+                continue
+
+            try:
+                rpt_config = self._read_artifact_config(report_dir)
+                rpt_result = self.deploy_report(
+                    workspace_id, report_name, rpt_config, overwrite,
+                )
+                report_result['status'] = 'deployed'
+                report_result['id'] = rpt_result.get('id')
+                logger.info("Report deployed: %s (%s)",
+                            report_name, report_result['id'])
+            except Exception as e:
+                logger.error(
+                    "Failed to deploy report '%s': %s", report_name, e,
+                )
+                report_result['status'] = 'failed'
+                report_result['error'] = str(e)
+                result['success'] = False
+
+            result['reports'].append(report_result)
+
+        deployed_count = sum(
+            1 for r in result['reports'] if r['status'] == 'deployed'
+        )
+        logger.info(
+            "Shared model deployment: model=%s, reports=%d/%d",
+            result['model_status'], deployed_count, len(report_names),
+        )
+        return result
+
+    def _read_artifact_config(self, artifact_dir):
+        """Read artifact configuration from a directory.
+
+        Looks for definition files (*.json, *.pbir, *.pbism) in the directory.
+
+        Args:
+            artifact_dir: Path to the artifact directory.
+
+        Returns:
+            dict: Configuration suitable for deployment API.
+        """
+        from pathlib import Path
+
+        artifact_dir = Path(artifact_dir)
+        config = {'displayName': artifact_dir.stem.replace('.SemanticModel', '')
+                                               .replace('.Report', '')}
+
+        # Read definition files
+        definition_dir = artifact_dir / 'definition'
+        if definition_dir.is_dir():
+            parts = {}
+            for f in sorted(definition_dir.rglob('*')):
+                if f.is_file():
+                    rel = str(f.relative_to(definition_dir)).replace('\\', '/')
+                    try:
+                        parts[rel] = f.read_text(encoding='utf-8')
+                    except Exception:
+                        parts[rel] = f.read_bytes().hex()
+            config['definition'] = parts
+
+        return config

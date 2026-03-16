@@ -157,7 +157,8 @@ class PowerBIImporter:
                             workbook_names, output_dir=None,
                             calendar_start=None, calendar_end=None,
                             culture=None, model_mode='import',
-                            languages=None, force_merge=False):
+                            languages=None, force_merge=False,
+                            merge_config_path=None, save_config=False):
         """Generate a shared semantic model + thin reports.
 
         Args:
@@ -171,11 +172,19 @@ class PowerBIImporter:
             model_mode: Semantic model mode (import/directquery/composite).
             languages: Additional locale strings.
             force_merge: Force merge even with low score.
+            merge_config_path: Path to merge config JSON (load saved decisions).
+            save_config: Save merge decisions to config file.
 
         Returns:
-            dict with 'assessment', 'model_path', 'report_paths'.
+            dict with 'assessment', 'model_path', 'report_paths', plus new fields.
         """
-        from powerbi_import.shared_model import assess_merge, merge_semantic_models, build_field_mapping
+        from powerbi_import.shared_model import (
+            assess_merge, merge_semantic_models, build_field_mapping,
+            validate_thin_report_fields, build_column_lineage,
+            generate_lineage_annotations, analyze_measure_risk,
+            consolidate_rls_roles, merge_rls_roles,
+            build_cross_report_navigation,
+        )
         from powerbi_import.merge_assessment import generate_merge_report, print_merge_summary
         from powerbi_import.thin_report_generator import ThinReportGenerator
 
@@ -186,15 +195,52 @@ class PowerBIImporter:
         # 1. Assess merge feasibility
         print("\n  Step 1: Analyzing merge candidates...")
         assessment = assess_merge(all_converted_objects, workbook_names)
+
+        # 1b. Load merge config if provided
+        if merge_config_path:
+            from powerbi_import.merge_config import load_merge_config, apply_merge_config
+            print(f"  Loading merge config: {merge_config_path}")
+            config = load_merge_config(merge_config_path)
+            assessment = apply_merge_config(assessment, config)
+
         print_merge_summary(assessment)
 
         if assessment.recommendation == 'separate' and not force_merge:
             print("  Merge not recommended (score too low). Use --force-merge to override.")
             return {'assessment': assessment, 'model_path': None, 'report_paths': []}
 
+        # 1c. Analyze measure risks
+        risk_analysis = []
+        if assessment.measure_conflicts:
+            print("\n  Step 1c: Analyzing measure conflict risks...")
+            risk_analysis = analyze_measure_risk(assessment.measure_conflicts)
+            for ra in risk_analysis:
+                icon = {"low": "✓", "medium": "⚠", "high": "✗"}.get(ra.risk_level, "?")
+                print(f"    [{icon}] {ra.measure_name}: {ra.risk_level} — {ra.reason}")
+
+        # 1d. Consolidate RLS roles
+        rls_consolidations = consolidate_rls_roles(all_converted_objects, workbook_names)
+        if rls_consolidations:
+            print(f"\n  Step 1d: RLS role consolidation ({len(rls_consolidations)} roles)...")
+            for cons in rls_consolidations:
+                print(f"    [{cons.action}] {cons.role_name} from {', '.join(cons.source_workbooks)}")
+
         # 2. Merge into unified dataset
         print("\n  Step 2: Merging semantic models...")
         merged = merge_semantic_models(all_converted_objects, assessment, model_name)
+
+        # 2b. Apply RLS consolidation
+        merged_rls = merge_rls_roles(all_converted_objects, workbook_names)
+        if merged_rls:
+            merged['user_filters'] = merged_rls
+
+        # 2c. Build column lineage
+        lineage = build_column_lineage(all_converted_objects, workbook_names, assessment)
+        lineage_annotations = generate_lineage_annotations(lineage)
+
+        # Store lineage annotations in merged data for TMDL generator
+        if lineage_annotations:
+            merged['_lineage_annotations'] = lineage_annotations
 
         # 3. Determine output directory
         if output_dir:
@@ -229,11 +275,23 @@ class PowerBIImporter:
         # 5. Generate thin reports for each workbook
         print(f"\n  Step 4: Generating {len(workbook_names)} thin reports...")
         report_paths = []
+        validation_issues = []
 
         thin_gen = ThinReportGenerator(model_name, project_dir)
 
+        # Build cross-report navigation
+        nav_configs = build_cross_report_navigation(workbook_names, model_name)
+
         for wb_name, wb_data in zip(workbook_names, all_converted_objects):
             field_mapping = build_field_mapping(assessment, wb_name)
+
+            # Validate fields before generating
+            issues = validate_thin_report_fields(wb_data, merged, field_mapping)
+            if issues:
+                validation_issues.extend(issues)
+                for issue in issues[:3]:
+                    print(f"    [WARN] {wb_name}: orphaned field '{issue['field']}' in {issue['location']}")
+
             report_path = thin_gen.generate_thin_report(
                 wb_name, wb_data, field_mapping=field_mapping
             )
@@ -244,6 +302,21 @@ class PowerBIImporter:
         assess_path = os.path.join(project_dir, 'merge_assessment.json')
         generate_merge_report(assessment, output_path=assess_path)
         print(f"\n  [OK] Merge assessment saved: {assess_path}")
+
+        # 6b. Save merge config if requested
+        if save_config:
+            from powerbi_import.merge_config import save_merge_config
+            config_path = os.path.join(project_dir, 'merge_config.json')
+            save_merge_config(assessment, workbook_names, config_path, merged)
+            print(f"  [OK] Merge config saved: {config_path}")
+
+        # 6c. Save lineage report
+        if lineage:
+            import json
+            lineage_path = os.path.join(project_dir, 'column_lineage.json')
+            with open(lineage_path, 'w', encoding='utf-8') as f:
+                json.dump(lineage, f, indent=2, ensure_ascii=False)
+            print(f"  [OK] Column lineage saved: {lineage_path}")
 
         # 7. Generate HTML merge report
         try:
@@ -269,6 +342,11 @@ class PowerBIImporter:
             'assessment': assessment,
             'model_path': sm_dir,
             'report_paths': report_paths,
+            'validation_issues': validation_issues,
+            'risk_analysis': risk_analysis,
+            'rls_consolidations': rls_consolidations,
+            'lineage': lineage,
+            'navigation': nav_configs,
         }
 
 
