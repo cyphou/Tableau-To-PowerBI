@@ -1008,6 +1008,87 @@ def _check_migration_scope(extracted: Dict) -> CategoryResult:
     return cat
 
 
+# ── Sensitive credential patterns (connection string audit) ─────
+
+_SENSITIVE_PATTERNS = [
+    (re.compile(r'(?:password|passwd|pwd)\s*=\s*\S+', re.IGNORECASE), 'password'),
+    (re.compile(r'(?:secret|token|apikey|api_key|api-key)\s*=\s*\S+', re.IGNORECASE), 'secret/token'),
+    (re.compile(r'(?:access.?key|account.?key)\s*=\s*\S+', re.IGNORECASE), 'access key'),
+    (re.compile(r'(?:private.?key)\s*=\s*\S+', re.IGNORECASE), 'private key'),
+    (re.compile(r'Bearer\s+[A-Za-z0-9\-._~+/]+=*', re.IGNORECASE), 'bearer token'),
+    (re.compile(r'Basic\s+[A-Za-z0-9+/]+=*', re.IGNORECASE), 'basic auth'),
+]
+
+
+def _check_connection_strings(extracted: Dict) -> CategoryResult:
+    """Category 9: Connection String Security Audit."""
+    cat = CategoryResult(name="Connection String Security")
+    datasources = extracted.get("datasources", [])
+
+    if not datasources:
+        cat.checks.append(CheckItem(
+            cat.name, "No datasources", PASS,
+            "No datasource connections to audit.",
+        ))
+        return cat
+
+    sensitive_found = []
+
+    for ds in datasources:
+        ds_name = ds.get("name") or ds.get("caption", "?")
+        conn = ds.get("connection", {})
+
+        # Check all connection properties for sensitive data
+        fields_to_check = [
+            ('connection_string', conn.get('connection_string', '')),
+            ('server', conn.get('server', '')),
+            ('filename', conn.get('filename', '')),
+            ('authentication', conn.get('authentication', '')),
+            ('sslmode', conn.get('sslmode', '')),
+        ]
+        # Also check any additional connection attributes
+        for key, val in conn.items():
+            if key not in ('class', 'type', 'server', 'port', 'dbname',
+                           'schema', 'filename', 'connection_string',
+                           'authentication', 'sslmode', 'tables',
+                           'named-connections', 'connection_map'):
+                fields_to_check.append((key, str(val) if val else ''))
+
+        for field_name, field_value in fields_to_check:
+            if not field_value:
+                continue
+            for pattern, cred_type in _SENSITIVE_PATTERNS:
+                if pattern.search(str(field_value)):
+                    sensitive_found.append({
+                        'datasource': ds_name,
+                        'field': field_name,
+                        'type': cred_type,
+                    })
+
+    if sensitive_found:
+        details = "; ".join(
+            f"{s['datasource']}: {s['type']} in {s['field']}"
+            for s in sensitive_found[:5]
+        )
+        if len(sensitive_found) > 5:
+            details += f" ... and {len(sensitive_found) - 5} more"
+        cat.checks.append(CheckItem(
+            cat.name, "Sensitive credentials detected", FAIL,
+            f"{len(sensitive_found)} potential credential(s) found in connection "
+            f"strings: {details}",
+            "Remove sensitive data from connection strings before sharing "
+            "the migration output. Use Power BI gateway or parameterized "
+            "connections instead of embedded credentials.",
+        ))
+    else:
+        cat.checks.append(CheckItem(
+            cat.name, "Connection string audit", PASS,
+            "No sensitive credentials detected in connection strings.",
+        ))
+
+    return cat
+
+
 # ═══════════════════════════════════════════════════════════════════
 #  Main assessment orchestrator
 # ═══════════════════════════════════════════════════════════════════
@@ -1041,6 +1122,7 @@ def run_assessment(
         _check_interactivity(extracted),
         _check_extract_and_packaging(extracted),
         _check_migration_scope(extracted),
+        _check_connection_strings(extracted),
     ]
 
     # Build summary

@@ -2,6 +2,15 @@
 
 ## v16.0.0 — Code Quality & Maintainability
 
+### Sprint 46 — New Features: Data Alerts, Visual Diff & Semantic Validation ✅
+- **Data-driven alerts** (`alerts_generator.py`, new): Extracts alert conditions from Tableau parameters (threshold/alert/target keywords), calculations with IF/threshold patterns, and reference lines with target labels → generates PBI alert rules JSON with operator, threshold, frequency, measure
+- **Visual diff report** (`visual_diff.py`, new): Side-by-side HTML report comparing Tableau visuals to PBI visuals — visual type mapping status (exact/approximate/unmapped), per-field coverage tracking, encoding gap detection (color, size, tooltip, label, detail, path), summary table with coverage percentages
+- **Enhanced semantic validation** (`validator.py`): 3 new validation methods: `detect_circular_relationships()` (DFS cycle detection in relationship graph), `detect_orphan_tables()` (tables with no relationships and no DAX references, excluding Calendar/Date), `detect_unused_parameters()` (parameter tables whose measures are never referenced) — all integrated into `validate_project()`
+- **Migration completeness scoring** (`migration_report.py`): `get_completeness_score()` method with per-category fidelity breakdown (weighted: calculation 30%, visual 25%, datasource 15%, relationship 10%, etc.), overall weighted score 0–100, letter grade (A/B/C/D/F), included in `to_dict()` and `print_summary()`
+- **Connection string audit** (`assessment.py`): New `_check_connection_strings()` assessment category detecting sensitive credentials (passwords, tokens, API keys, bearer auth, basic auth) in datasource connection properties — 6 regex patterns, integrated as 9th category in `run_assessment()`
+- **51 new tests** in `test_sprint46.py` across 12 test classes
+- **Overall: 4,060 → 4,111 tests**, 0 failures
+
 ### Sprint 45 — CLI Refactoring & Function Decomposition ✅
 - **`_build_argument_parser()`** decomposed into 9 focused helpers (`_add_source_args`, `_add_output_args`, `_add_batch_args`, `_add_migration_args`, `_add_report_args`, `_add_deploy_args`, `_add_server_args`, `_add_enterprise_args`, `_add_shared_model_args`) + 12-line dispatcher
 - **`main()`** decomposed: single-file pipeline extracted into `_run_single_migration(args)` + 7 helper functions (`_print_single_migration_header`, `_init_telemetry`, `_finalize_telemetry`, `_run_incremental_merge`, `_run_goals_generation`, `_run_post_generation_reports`, `_run_deploy_to_pbi_service`)

@@ -52,18 +52,18 @@ v16.0.0 addresses these across 5 sprints: code health, CLI refactoring, new feat
 | 45.5 | **Split remaining large functions** | `pbip_generator.py` | ✅ Done | Extracted `_classify_shelf_fields()` from `_build_visual_query()` (377 lines). Other functions (_build_table, _get_config_template) are deeply interdependent or static data — forced extraction would worsen readability. |
 | 45.6 | **Tests** | `tests/test_cli_refactor.py` | ✅ Done | 31 regression tests across 6 test classes. 4,029 → 4,060 tests. |
 
-### Sprint 46 — New Features: Data Alerts, Comparison Report & Semantic Validation
+### Sprint 46 — New Features: Data Alerts, Comparison Report & Semantic Validation ✅
 
 **Goal:** Implement remaining high-value backlog items that improve migration quality and user experience.
 
-| # | Item | File(s) | Est. | Details |
-|---|------|---------|------|---------|
-| 46.1 | **Data-driven alerts** | `powerbi_import/alerts_generator.py` (new) | Medium | Tableau data alerts → PBI alert rules JSON — extract alert conditions from TWB XML (`<alert>` elements), generate PBI alert config with threshold, frequency, notification targets |
-| 46.2 | **Visual diff report** | `powerbi_import/visual_diff.py` (new) | Medium | Side-by-side HTML report showing Tableau visual → PBI visual mapping with field assignments, highlighting gaps (fields not mapped, approximated types, missing encodings) |
-| 46.3 | **Enhanced semantic validation** | `powerbi_import/validator.py` | Medium | Add: (1) circular dependency detection in relationships, (2) orphan table detection (no relationships + not used by any measure), (3) measure reference validation (all `'Table'[Column]` refs exist), (4) unused parameter detection |
-| 46.4 | **Migration completeness scoring** | `powerbi_import/migration_report.py` | Low | Add per-category fidelity breakdown: extraction fidelity %, DAX conversion %, visual mapping %, data model %, overall weighted score |
-| 46.5 | **Connection string audit** | `powerbi_import/assessment.py` | Low | Auto-detect sensitive data in connection strings (passwords, tokens) and warn before output generation |
-| 46.6 | **Tests** | `tests/test_sprint46.py` | Medium | 30+ tests for alerts, visual diff, enhanced validation, completeness scoring |
+| # | Item | File(s) | Status | Details |
+|---|------|---------|--------|---------|
+| 46.1 | **Data-driven alerts** | `powerbi_import/alerts_generator.py` (new) | ✅ Done | Extracts alert conditions from TWB parameters/calculations/reference lines, generates PBI alert rules JSON with operator, threshold, frequency, measure |
+| 46.2 | **Visual diff report** | `powerbi_import/visual_diff.py` (new) | ✅ Done | Side-by-side HTML report: visual type mapping (exact/approx/unmapped), per-field coverage, encoding gap detection, summary table |
+| 46.3 | **Enhanced semantic validation** | `powerbi_import/validator.py` | ✅ Done | Added `detect_circular_relationships()`, `detect_orphan_tables()`, `detect_unused_parameters()` — all integrated into `validate_project()` |
+| 46.4 | **Migration completeness scoring** | `powerbi_import/migration_report.py` | ✅ Done | `get_completeness_score()` with per-category fidelity breakdown, weighted overall score 0–100, letter grade (A–F), included in `to_dict()` and `print_summary()` |
+| 46.5 | **Connection string audit** | `powerbi_import/assessment.py` | ✅ Done | `_check_connection_strings()` detecting passwords/tokens/API keys/bearer/basic auth — 9th assessment category |
+| 46.6 | **Tests** | `tests/test_sprint46.py` | ✅ Done | 51 tests across 12 test classes. 4,060 → 4,111 tests. |
 
 ### Sprint 47 — Windows CI, Cross-Platform Hardening & Performance
 

@@ -766,6 +766,19 @@ class ArtifactValidator:
             if sem_warnings:
                 warnings.extend(sem_warnings)
 
+            # Enhanced semantic validation (Sprint 46)
+            cycles = cls.detect_circular_relationships(str(sm_dir))
+            for cycle in cycles:
+                warnings.append(f'Circular relationship: {cycle}')
+
+            orphans = cls.detect_orphan_tables(str(sm_dir))
+            for orphan in orphans:
+                warnings.append(f'Orphan table (no relationships or DAX references): {orphan}')
+
+            unused_params = cls.detect_unused_parameters(str(sm_dir))
+            for param in unused_params:
+                warnings.append(f'Unused parameter table: {param}')
+
         # Visual → TMDL cross-validation (check Entity+Property in visuals)
         if sm_dir.exists() and report_dir.exists():
             visual_errors = cls.validate_visual_references(project_dir)
@@ -1025,6 +1038,244 @@ class ArtifactValidator:
                 return resp.status == 200
         except Exception:
             return False
+
+    # ── Enhanced semantic validation (Sprint 46) ─────────────────
+
+    # Regex to extract TMDL relationship definitions
+    _RE_TMDL_RELATIONSHIP = re.compile(
+        r"relationship\s+\S+\s*\n"
+        r"(?:.*?\n)*?"
+        r"\s*fromTable:\s*'?((?:[^'\n]|'')+)'?\s*\n"
+        r"(?:.*?\n)*?"
+        r"\s*toTable:\s*'?((?:[^'\n]|'')+)'?\s*\n",
+        re.MULTILINE,
+    )
+
+    @classmethod
+    def detect_circular_relationships(cls, sm_dir):
+        """Detect circular dependency chains in TMDL relationships.
+
+        Builds a directed graph from ``fromTable → toTable`` in
+        relationship definitions and searches for cycles using DFS.
+
+        Args:
+            sm_dir: Path to ``{name}.SemanticModel`` directory.
+
+        Returns:
+            list of cycle descriptions (empty = no cycles).
+        """
+        sm_path = Path(sm_dir)
+        def_dir = sm_path / 'definition'
+        model_tmdl = def_dir / 'model.tmdl'
+
+        if not model_tmdl.exists():
+            return []
+
+        try:
+            content = model_tmdl.read_text(encoding='utf-8')
+        except OSError:
+            return []
+
+        # Parse relationships from model.tmdl
+        graph = {}  # table -> set of target tables
+        lines = content.splitlines()
+        i = 0
+        while i < len(lines):
+            stripped = lines[i].strip()
+            if stripped.startswith('relationship '):
+                from_table = None
+                to_table = None
+                j = i + 1
+                while j < len(lines) and not lines[j].strip().startswith('relationship ') and lines[j].strip() != '':
+                    ln = lines[j].strip()
+                    if ln.startswith('fromTable:'):
+                        from_table = ln.split(':', 1)[1].strip().strip("'").replace("''", "'")
+                    elif ln.startswith('toTable:'):
+                        to_table = ln.split(':', 1)[1].strip().strip("'").replace("''", "'")
+                    j += 1
+                if from_table and to_table:
+                    graph.setdefault(from_table, set()).add(to_table)
+                i = j
+            else:
+                i += 1
+
+        # DFS cycle detection
+        cycles = []
+        visited = set()
+        rec_stack = set()
+
+        def _dfs(node, path):
+            visited.add(node)
+            rec_stack.add(node)
+            for neighbor in graph.get(node, set()):
+                if neighbor in rec_stack:
+                    cycle_start = path.index(neighbor) if neighbor in path else len(path)
+                    cycle = path[cycle_start:] + [neighbor]
+                    cycles.append(' → '.join(cycle))
+                elif neighbor not in visited:
+                    _dfs(neighbor, path + [neighbor])
+            rec_stack.discard(node)
+
+        for node in graph:
+            if node not in visited:
+                _dfs(node, [node])
+
+        return cycles
+
+    @classmethod
+    def detect_orphan_tables(cls, sm_dir):
+        """Detect tables with no relationships and no measure references.
+
+        Orphan tables are tables that are:
+        - Not referenced in any relationship (fromTable or toTable)
+        - Not referenced by any ``'Table'[Column]`` DAX expression
+          in other tables
+
+        Args:
+            sm_dir: Path to ``{name}.SemanticModel`` directory.
+
+        Returns:
+            list of orphan table names.
+        """
+        sm_path = Path(sm_dir)
+        def_dir = sm_path / 'definition'
+
+        symbols = cls._collect_model_symbols(sm_dir)
+        all_tables = symbols['tables']
+
+        if len(all_tables) <= 1:
+            return []  # Single table is not orphaned
+
+        # Find tables referenced in relationships
+        relationship_tables = set()
+        model_tmdl = def_dir / 'model.tmdl'
+        if model_tmdl.exists():
+            try:
+                content = model_tmdl.read_text(encoding='utf-8')
+                for line in content.splitlines():
+                    stripped = line.strip()
+                    if stripped.startswith('fromTable:') or stripped.startswith('toTable:'):
+                        table_name = stripped.split(':', 1)[1].strip().strip("'").replace("''", "'")
+                        relationship_tables.add(table_name)
+            except OSError:
+                pass
+
+        # Find tables referenced in DAX expressions in other tables
+        dax_referenced_tables = set()
+        tables_dir = def_dir / 'tables'
+        if tables_dir and tables_dir.exists():
+            for tmdl_f in tables_dir.glob('*.tmdl'):
+                try:
+                    content = tmdl_f.read_text(encoding='utf-8')
+                except OSError:
+                    continue
+                for match in cls._RE_DAX_REF.finditer(content):
+                    ref_table = cls._unescape_tmdl_name(match.group(1))
+                    dax_referenced_tables.add(ref_table)
+
+        # Orphans = tables not in relationships AND not referenced by DAX
+        referenced = relationship_tables | dax_referenced_tables
+        # Exclude well-known utility tables
+        utility_tables = {'Calendar', 'Date', 'DateTable'}
+        orphans = [
+            t for t in sorted(all_tables)
+            if t not in referenced and t not in utility_tables
+        ]
+
+        return orphans
+
+    @classmethod
+    def detect_unused_parameters(cls, sm_dir):
+        """Detect parameter tables/measures not referenced anywhere.
+
+        Parameter tables in PBI follow the naming pattern containing
+        'Parameter' or have a GENERATESERIES/DATATABLE partition.
+        This method finds parameter-like tables whose measures are
+        never referenced by other tables' DAX expressions.
+
+        Args:
+            sm_dir: Path to ``{name}.SemanticModel`` directory.
+
+        Returns:
+            list of unused parameter names.
+        """
+        sm_path = Path(sm_dir)
+        def_dir = sm_path / 'definition'
+        tables_dir = def_dir / 'tables'
+
+        if not tables_dir or not tables_dir.exists():
+            return []
+
+        # Identify parameter tables (name contains 'Parameter' or has
+        # GENERATESERIES/DATATABLE in partition)
+        param_tables = {}  # table_name -> set of measure names
+        all_content = {}  # table_name -> file content
+
+        for tmdl_f in tables_dir.glob('*.tmdl'):
+            try:
+                content = tmdl_f.read_text(encoding='utf-8')
+            except OSError:
+                continue
+
+            # Extract table name
+            for line in content.splitlines():
+                stripped = line.strip()
+                tm = cls._RE_TABLE_DEF.match(stripped)
+                if tm:
+                    raw = tm.group(1) if tm.group(1) is not None else tm.group(2)
+                    table_name = cls._unescape_tmdl_name(raw)
+                    all_content[table_name] = content
+
+                    is_param = (
+                        'parameter' in table_name.lower()
+                        or 'GENERATESERIES' in content
+                        or 'DATATABLE' in content
+                    )
+                    if is_param:
+                        # Collect measure names
+                        measures = set()
+                        for mline in content.splitlines():
+                            mm = cls._RE_MEASURE_DEF.match(mline.strip())
+                            if mm:
+                                raw_m = mm.group(1) if mm.group(1) is not None else mm.group(2)
+                                measures.add(cls._unescape_tmdl_name(raw_m))
+                        param_tables[table_name] = measures
+                    break
+
+        if not param_tables:
+            return []
+
+        # Check if parameter measures are referenced in other tables
+        unused = []
+        for param_table, param_measures in param_tables.items():
+            referenced = False
+            for other_table, content in all_content.items():
+                if other_table == param_table:
+                    continue
+                for measure in param_measures:
+                    if f'[{measure}]' in content:
+                        referenced = True
+                        break
+                if referenced:
+                    break
+
+            # Also check model.tmdl
+            if not referenced:
+                model_tmdl = def_dir / 'model.tmdl'
+                if model_tmdl.exists():
+                    try:
+                        model_content = model_tmdl.read_text(encoding='utf-8')
+                        for measure in param_measures:
+                            if f'[{measure}]' in model_content:
+                                referenced = True
+                                break
+                    except OSError:
+                        pass
+
+            if not referenced:
+                unused.append(param_table)
+
+        return unused
 
     @classmethod
     def validate_directory(cls, artifacts_dir):

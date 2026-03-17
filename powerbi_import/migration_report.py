@@ -355,6 +355,84 @@ class MigrationReport:
         }
         return self._summary
 
+    # ── Per-category completeness scoring ────────────────────────
+
+    # Category weights for overall completeness
+    _CATEGORY_WEIGHTS = {
+        'calculation': 0.30,
+        'visual': 0.25,
+        'datasource': 0.15,
+        'relationship': 0.10,
+        'parameter': 0.05,
+        'filter': 0.05,
+        'hierarchy': 0.03,
+        'set': 0.02,
+        'group': 0.02,
+        'bin': 0.01,
+        'bookmark': 0.01,
+        'rls_role': 0.01,
+    }
+
+    def get_completeness_score(self):
+        """Compute per-category fidelity breakdown and weighted overall score.
+
+        Returns:
+            dict with keys:
+            - ``categories``: dict of category → {total, exact, approximate,
+              unsupported, skipped, fidelity_pct}
+            - ``overall_score``: weighted score 0–100
+            - ``grade``: letter grade (A/B/C/D/F)
+        """
+        summary = self.get_summary()
+        by_cat = summary.get('by_category', {})
+
+        categories = {}
+        for cat, counts in by_cat.items():
+            total = counts.get('total', 0)
+            exact = counts.get(self.EXACT, 0)
+            approx = counts.get(self.APPROXIMATE, 0)
+            if total > 0:
+                fidelity = round((exact * 100 + approx * 50) / total, 1)
+            else:
+                fidelity = 100.0
+            categories[cat] = {
+                'total': total,
+                'exact': exact,
+                'approximate': approx,
+                'placeholder': counts.get(self.PLACEHOLDER, 0),
+                'unsupported': counts.get(self.UNSUPPORTED, 0),
+                'skipped': counts.get(self.SKIPPED, 0),
+                'fidelity_pct': fidelity,
+            }
+
+        # Weighted overall score
+        weighted_sum = 0.0
+        weight_sum = 0.0
+        for cat, info in categories.items():
+            w = self._CATEGORY_WEIGHTS.get(cat, 0.01)
+            weighted_sum += info['fidelity_pct'] * w
+            weight_sum += w
+
+        overall = round(weighted_sum / weight_sum, 1) if weight_sum > 0 else 100.0
+
+        # Grade
+        if overall >= 90:
+            grade = 'A'
+        elif overall >= 75:
+            grade = 'B'
+        elif overall >= 60:
+            grade = 'C'
+        elif overall >= 40:
+            grade = 'D'
+        else:
+            grade = 'F'
+
+        return {
+            'categories': categories,
+            'overall_score': overall,
+            'grade': grade,
+        }
+
     # ── Serialisation ────────────────────────────────────────────
 
     def to_dict(self):
@@ -363,6 +441,7 @@ class MigrationReport:
             'report_name': self.report_name,
             'created_at': self.created_at,
             'summary': self.get_summary(),
+            'completeness': self.get_completeness_score(),
             'table_mapping': self.table_mapping,
             'items': self.items,
         }
@@ -412,6 +491,15 @@ class MigrationReport:
                 exact = counts.get('exact', 0)
                 pct = round(exact / total * 100) if total else 0
                 print(f'    {cat:<20} {total:>4} items  ({pct}% exact)')
+
+        # Completeness score
+        cs = self.get_completeness_score()
+        print()
+        print(f'  Completeness grade:    {cs["grade"]} ({cs["overall_score"]}%)')
+        if cs['categories']:
+            print('  Per-category fidelity:')
+            for cat, info in sorted(cs['categories'].items()):
+                print(f'    {cat:<20} {info["fidelity_pct"]:>5.1f}%  ({info["total"]} items)')
 
         # Table mapping
         if self.table_mapping:
