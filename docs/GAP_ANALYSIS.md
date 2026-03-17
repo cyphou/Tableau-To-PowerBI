@@ -1,8 +1,8 @@
 # Comprehensive Gap Analysis — Tableau to Power BI Migration Tool
 
-**Date:** 2026-03-16 — updated through v13.0.0 (Sprints 13-40)  
+**Date:** 2026-03-17 — updated through v16.0.0 (Sprints 44-48)  
 **Scope:** Every source file, test file, CI/CD, docs, config, and cross-project comparison with TableauToFabric  
-**Status:** 3,847 tests passing across 65 test files, 96.2% coverage
+**Status:** 4,131 tests passing across 73 test files
 
 ### Implementation Coverage
 
@@ -10,10 +10,10 @@
  EXTRACTION          GENERATION         INFRA / CI         DOCUMENTATION
 +----------------+  +----------------+  +----------------+  +----------------+
 | 20 object types|  | PBIR v4.0      |  | 5-stage CI/CD  |  | 14 doc files   |
-| .twb/.twbx/.tfl|  | TMDL semantic  |  | 3,847 tests    |  | DAX reference  |
-| 180+ DAX conv  |  | 60+ visuals    |  | Artifact valid |  | M query ref    |
+| .twb/.twbx/.tfl|  | TMDL semantic  |  | 4,131 tests    |  | DAX reference  |
+| 180+ DAX conv  |  | 118 visuals    |  | Artifact valid |  | M query ref    |
 | 33 connectors  |  | Drill-through  |  | Fabric deploy  |  | Prep ref       |
-| 40+ transforms |  | Slicer modes   |  | Env configs    |  | Architecture   |
+| 43 transforms  |  | Slicer modes   |  | Env configs    |  | Architecture   |
 | Prep flow DAG  |  | Cond. format   |  | Settings valid |  | Gap analysis   |
 | Ref lines/bands|  | RLS roles      |  | --dry-run      |  | Migration guide|
 | Datasrc filters|  | Calendar/culture|  | --culture      |  | FAQ + more     |
@@ -22,14 +22,16 @@
         |            +-------+--------+          |                    |
         +--------------------+--------------------+--------------------+
                                      |
-                          v9.0.0 → v13.0.0
+                          v9.0.0 → v16.0.0
                      +-------------------------------+
                      | Shared semantic model merge   |
                      | Multi-workbook thin reports   |
                      | Plugin system & examples      |
                      | PyPI auto-publish workflow    |
                      | PBIR schema forward-compat    |
-                     | Fractional deploy timeouts    |
+                     | Data alerts & visual diff     |
+                     | OneDrive lock retry/backoff   |
+                     | Memory optimization (TMDL)    |
                      +-------------------------------+
 ```
 
@@ -88,7 +90,7 @@
 
 ### What IS implemented
 - **Complete .pbip project structure**: `.pbip`, `.gitignore`, SemanticModel (`.platform`, `definition.pbism`, TMDL), Report (PBIR v4.0), migration metadata JSON
-- **12-phase TMDL model** (`tmdl_generator.py`, 2741 lines):
+- **12-phase TMDL model** (`tmdl_generator.py`, 4267 lines):
   1. Table deduplication
   2. Main table identification, column metadata, DAX context
   3. Tables with columns, M queries, measures, calculated columns — **M-first approach**: calculated columns use Power Query M `Table.AddColumn` steps via `_dax_to_m_expression()` converter with DAX fallback for cross-table references
@@ -109,10 +111,10 @@
 - **DAX-to-M expression converter** (`_dax_to_m_expression()`, `_split_dax_args()`, `_extract_function_body()`): Converts DAX calculated column expressions to Power Query M `Table.AddColumn` steps — supports IF, SWITCH, UPPER/LOWER/TRIM/LEN/LEFT/RIGHT/MID, ISBLANK, INT/VALUE, CONCATENATE, IN, &, arithmetic operators, column references
 - **M step injection** (`_inject_m_steps_into_partition()`, `_build_m_transform_steps()`): Composes multiple M column steps into the table's M partition expression, chaining via `{prev}` placeholder
 - **TMDL file writers**: database.tmdl, model.tmdl, relationships.tmdl, expressions.tmdl, roles.tmdl, tables/*.tmdl, perspectives.tmdl, cultures/*.tmdl, diagramLayout.json
-- **Visual generation** (`visual_generator.py`, 938 lines): 60+ visual type mappings, 30+ PBIR config templates, data role definitions for 30+ types, queryState builder, slicer sync groups, cross-filtering disable, action button navigation (page + URL), TopN/categorical visual-level filters, sort state, reference lines, **axis config** (range min/max, log scale, reversed)
-- **PBIP generator** (`pbip_generator.py`, 2326 lines): Dashboard → pages, worksheet → visuals, text → textbox, image → image, filter_control → slicer, tooltip pages **with binding to parent visuals** (tooltip_page_map), bookmarks from stories, theme generation, **action button visuals** (URL WebUrl + sheet-navigate PageNavigation), **pages shelf slicer**, **number format conversion** (`_convert_number_format()`)
-- **Power Query M generation** (`m_query_builder.py` in extraction layer): 25 connector types + 30+ transform functions
-- **Pre-migration assessment** (`assessment.py`, 912 lines): 8-category readiness assessment (datasource compatibility, calculation readiness, visual coverage, filter complexity, data model complexity, interactivity, extract/packaging, migration scope) with pass/warn/fail severity scoring
+- **Visual generation** (`visual_generator.py`, 1722 lines): 118 visual type mappings, 30+ PBIR config templates, data role definitions for 30+ types, queryState builder, slicer sync groups, cross-filtering disable, action button navigation (page + URL), TopN/categorical visual-level filters, sort state, reference lines, **axis config** (range min/max, log scale, reversed)
+- **PBIP generator** (`pbip_generator.py`, 3745 lines): Dashboard → pages, worksheet → visuals, text → textbox, image → image, filter_control → slicer, tooltip pages **with binding to parent visuals** (tooltip_page_map), bookmarks from stories, theme generation, **action button visuals** (URL WebUrl + sheet-navigate PageNavigation), **pages shelf slicer**, **number format conversion** (`_convert_number_format()`)
+- **Power Query M generation** (`m_query_builder.py` in extraction layer): 33 connector types + 43 transform functions
+- **Pre-migration assessment** (`assessment.py`, 1235 lines): 9-category readiness assessment (datasource compatibility, calculation readiness, visual coverage, filter complexity, data model complexity, interactivity, extract/packaging, migration scope, connection string audit) with pass/warn/fail severity scoring
 - **Strategy advisor** (`strategy_advisor.py`, 334 lines): Recommends Import/DirectQuery/Composite connection mode based on 7 signals (datasource type, data volume, calculation complexity, real-time needs, cross-source joins, parameter usage, user count); classifies calculations by portability
 - **Theme migration**: Tableau dashboard color palettes → PBI theme JSON (`RegisteredResources/TableauMigrationTheme.json`)
 - **Conditional formatting**: Quantitative color encoding → PBI dataPoint gradient rules with **multi-stop support** (2-color min/max, 3+ color min/mid/max), proper `inputRole` structure
@@ -156,7 +158,7 @@
 ## 3. Test Coverage
 
 ### What IS implemented
-- **887 tests across 18 test files** (original) + **2,455 additional tests in v3.6–v10.0.0**, totaling **3,342 tests across 60 test files** including shared fixtures in `conftest.py`:
+- **887 tests across 18 test files** (original) + **3,244 additional tests in v3.6–v16.0.0**, totaling **4,131 tests across 73 test files** including shared fixtures in `conftest.py`:
 
 | Test File | Tests | Lines | Coverage Focus |
 |-----------|-------|-------|----------------|
@@ -410,15 +412,15 @@
 |------|------------|-------------------|-------------|----------|
 | **Extraction** | 20 object types (+4), 10+ connectors, 22 new methods, annotations, layout containers, device layouts, formatting depth, legend, axes, sort depth, **datasource filters**, **reference bands/distributions**, **number formatting**, **custom shapes/fonts/geocoding/hyper metadata**, **dynamic zone visibility**, **clustering/forecasting/trend lines**, **Hyper data loading** (sqlite3), **Tableau 2024.3+ dynamic params**, **Pulse metric extraction** | Composite connectors | Prep VAR/VARP, layout nesting depth | Low |
 | **TMDL Generation** | 14 phases, full model, date hierarchy, quick table calcs, partition addressing, **semantic validation**, **calendar customization**, **culture config**, **M-based calc columns** (DAX→M converter), **calculation groups**, **field parameters**, **multi-language cultures** (`--languages`), **Goals/Scorecard** (`--goals`), **dynamic parameter M partitions** | Incremental, composite model | — | Low |
-| **PBIR Generation** | 60+ visuals, filters, themes, mobile layout, tooltip binding, action buttons, conditional formatting, axis config, legend, sort state, table formatting, padding, **drill-through pages**, **slicer type variety**, **pages shelf**, **number format conversion**, **SCRIPT_* → Python/R script visuals** | Small Multiples | Position scaling | Low |
+| **PBIR Generation** | 118 visuals, filters, themes, mobile layout, tooltip binding, action buttons, conditional formatting, axis config, legend, sort state, table formatting, padding, **drill-through pages**, **slicer type variety**, **pages shelf**, **number format conversion**, **SCRIPT_* → Python/R script visuals**, **visual diff report**, **data-driven alerts** | Small Multiples | Position scaling | Low |
 | **DAX Conversion** | ~180+ patterns, ALLEXCEPT for partitioned calcs, **CORR/COVAR/COVARP**, **ATTR→SELECTEDVALUE**, **LOD balanced braces**, **PREVIOUS_VALUE→OFFSET**, **LOOKUP→OFFSET**, **RUNNING_*→CALCULATE+FILTER(ALLSELECTED)**, **TOTAL→CALCULATE+ALL**, **SCRIPT_* → scriptVisual** | Spatial (6), SPLIT | REGEX (4), WINDOW_* frames | Medium |
-| **M Query** | **33 connectors** (+8: OData, Google Analytics, Azure Blob/ADLS, Vertica, Impala, Hadoop Hive, Presto), 30+ transforms, **DAX-to-M expression converter** (calc columns as M steps), **Hyper data → M #table()** | OAuth, gateway, incremental refresh | Fallback #table, BigQuery/Oracle config | Low |
+| **M Query** | **33 connectors** (+8: OData, Google Analytics, Azure Blob/ADLS, Vertica, Impala, Hadoop Hive, Presto), 43 transforms, **DAX-to-M expression converter** (calc columns as M steps), **Hyper data → M #table()** | OAuth, gateway, incremental refresh | Fallback #table, BigQuery/Oracle config | Low |
 | **Prep Flow** | DAG traversal, 20+ action types, **ExtractValues**, **CustomCalculation**, **Script/Prediction/CrossJoin/PublishedDataSource** handlers, 5 new connection mappings, **Hyper data loading** | — | Prep VAR/VARP joins | Low |
-| **Pre-Migration** | **Assessment** (8-category scoring), **Strategy advisor** (Import/DQ/Composite), **Global assessment** (`--global-assess`, N×N heatmap, BFS clustering), JSON + HTML reports | — | — | Low |
+| **Pre-Migration** | **Assessment** (9-category scoring + connection string audit), **Strategy advisor** (Import/DQ/Composite), **Global assessment** (`--global-assess`, N×N heatmap, BFS clustering), **Migration completeness scoring** (0–100, letter grade), JSON + HTML reports | — | — | Low |
 | **Shared Model** | **Merge engine** (fingerprint, Jaccard, 0–100 scoring), **thin reports** (byPath), **merge config**, **field validation**, **column lineage**, **RLS consolidation**, **measure risk analyzer**, **global assessment** (cross-workbook clusters), **table isolation**, **Fabric bundle deployment** (`--deploy-bundle`) | — | — | Low |
-| **Test Coverage** | **3,988 tests across 69 files** (+conftest.py shared fixtures), 96.2% coverage | — | — | Low |
-| **CI/CD** | **5-stage pipeline** (lint+ruff, test, **strict validate+twbx**, **staging deploy**, production deploy), **pip caching**, **PBIR schema forward-compat check** (`--check-schema`), **PyPI auto-publish workflow** (`publish.yml`), **plugin system** (`plugins.py` + `examples/plugins/`) | Coverage reporting, Windows CI | — | Low |
-| **Documentation** | **13 docs** + copilot instructions (ARCHITECTURE, KNOWN_LIMITATIONS, MIGRATION_CHECKLIST, DEPLOYMENT_GUIDE, TABLEAU_VERSION_COMPATIBILITY, CONTRIBUTING) | API docs | — | Low |
+| **Test Coverage** | **4,131 tests across 73 files** (+conftest.py shared fixtures) | — | — | Low |
+| **CI/CD** | **5-stage pipeline** (lint+ruff, test, **strict validate+twbx**, **staging deploy**, production deploy), **pip caching**, **PBIR schema forward-compat check** (`--check-schema`), **PyPI auto-publish workflow** (`publish.yml`), **plugin system** (`plugins.py` + `examples/plugins/`), **Windows/macOS/Linux CI matrix** (3 OS × 6 Python versions) | Coverage reporting | — | Low |
+| **Documentation** | **14 docs** + copilot instructions (ARCHITECTURE, KNOWN_LIMITATIONS, MIGRATION_CHECKLIST, DEPLOYMENT_GUIDE, TABLEAU_VERSION_COMPATIBILITY, CONTRIBUTING), **auto-generated API docs** (42 modules) | — | — | Low |
 | **Config** | 11 env vars, 3 environments, **settings validation**, **dry-run**, **calendar/culture CLI**, **.env.example** | Config file, connection templating | — | Low |
 
 ---

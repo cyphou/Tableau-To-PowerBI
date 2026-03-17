@@ -2,6 +2,15 @@
 
 ## v16.0.0 — Code Quality & Maintainability
 
+### Sprint 48 — Documentation, API Docs & Release ✅
+- **Auto-generated API docs** (`docs/generate_api_docs.py`): MODULES list expanded from 15 to 42 modules covering all source files (8 tableau + 26 powerbi + 8 deploy), with deploy section separator in index.html
+- **GAP_ANALYSIS.md updated**: v16.0.0 counts — 4,131 tests, 73 test files, 118 visual map entries, 33 connectors, 43 M transforms, 9-category assessment, Windows/macOS/Linux CI matrix
+- **KNOWN_LIMITATIONS.md updated**: v16.0.0 — OneDrive lock retry now documented, Windows paths limitation resolved
+- **README.md updated**: Badges → v16.0.0, 4,131 tests, 180+ DAX, 33 connectors, 20 object types, 118 visuals; new v16 features section
+- **copilot-instructions.md updated**: Test count, new modules (alerts_generator, visual_diff, comparison_report), 43 M transform generators
+- **Version bump**: 15.0.0 → 16.0.0 in `pyproject.toml` and `powerbi_import/__init__.py`
+- **Overall: 4,131 tests**, 0 failures
+
 ### Sprint 47 — Windows CI, Cross-Platform Hardening & Performance ✅
 - **OneDrive lock retry** (`pbip_generator.py`): New `_rmtree_with_retry(path, attempts=3, delay=0.5)` helper with exponential backoff for stale directory cleanup — replaces bare `except (PermissionError, OSError): pass` blocks
 - **Stale TMDL retry** (`tmdl_generator.py`): Stale `.tmdl` file removal now retries 3 times with 0.3s×2^n backoff on PermissionError, with `logger.debug`/`logger.warning` messages

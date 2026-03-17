@@ -22,21 +22,51 @@ import html as html_module
 
 # Modules to document
 MODULES = [
+    # ── Extraction (tableau_export/) ──
     'tableau_export.dax_converter',
     'tableau_export.extract_tableau_data',
     'tableau_export.datasource_extractor',
     'tableau_export.m_query_builder',
     'tableau_export.prep_flow_parser',
+    'tableau_export.hyper_reader',
+    'tableau_export.server_client',
+    'tableau_export.pulse_extractor',
+    # ── Generation (powerbi_import/) ──
     'powerbi_import.pbip_generator',
     'powerbi_import.tmdl_generator',
     'powerbi_import.visual_generator',
+    'powerbi_import.import_to_powerbi',
+    'powerbi_import.m_query_generator',
     'powerbi_import.validator',
     'powerbi_import.assessment',
     'powerbi_import.strategy_advisor',
     'powerbi_import.migration_report',
     'powerbi_import.incremental',
-    'powerbi_import.m_query_generator',
-    'powerbi_import.import_to_powerbi',
+    'powerbi_import.shared_model',
+    'powerbi_import.thin_report_generator',
+    'powerbi_import.merge_assessment',
+    'powerbi_import.merge_config',
+    'powerbi_import.merge_report_html',
+    'powerbi_import.global_assessment',
+    'powerbi_import.goals_generator',
+    'powerbi_import.alerts_generator',
+    'powerbi_import.visual_diff',
+    'powerbi_import.comparison_report',
+    'powerbi_import.gateway_config',
+    'powerbi_import.plugins',
+    'powerbi_import.telemetry',
+    'powerbi_import.telemetry_dashboard',
+    'powerbi_import.progress',
+    'powerbi_import.wizard',
+    # ── Deployment (powerbi_import/deploy/) ──
+    'powerbi_import.deploy.auth',
+    'powerbi_import.deploy.client',
+    'powerbi_import.deploy.deployer',
+    'powerbi_import.deploy.utils',
+    'powerbi_import.deploy.pbix_packager',
+    'powerbi_import.deploy.pbi_client',
+    'powerbi_import.deploy.pbi_deployer',
+    'powerbi_import.deploy.bundle_deployer',
 ]
 
 
@@ -192,9 +222,14 @@ def _write_index(output_dir):
         '<p class="section">Extraction (tableau_export/)</p><ul>',
     ]
 
+    current_section = ''
     for mod_name in MODULES:
-        if mod_name.startswith('powerbi_import') and 'tableau_export' in parts[-1]:
+        if mod_name.startswith('powerbi_import.deploy') and current_section != 'deploy':
+            parts.append('</ul><p class="section">Deployment (powerbi_import/deploy/)</p><ul>')
+            current_section = 'deploy'
+        elif mod_name.startswith('powerbi_import') and current_section != 'pbi':
             parts.append('</ul><p class="section">Generation (powerbi_import/)</p><ul>')
+            current_section = 'pbi'
         filename = f'{mod_name}.html'
         parts.append(f'<li><a href="{filename}">{mod_name}</a></li>')
 

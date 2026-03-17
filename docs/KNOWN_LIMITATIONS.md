@@ -2,7 +2,7 @@
 
 This document lists known limitations and approximations in the Tableau to Power BI migration tool.
 
-> **Last updated:** v15.0.0 (Sprint 43) — many previous limitations have been addressed in Sprints 27-43. See below for current status.
+> **Last updated:** v16.0.0 (Sprint 48) — many previous limitations have been addressed in Sprints 27-48. See below for current status.
 
 ---
 
@@ -79,7 +79,7 @@ This document lists known limitations and approximations in the Tableau to Power
 |------|-----------|
 | **PBI Service deployment** | ✅ `--deploy WORKSPACE_ID` deploys via REST API (Azure AD auth required). Integration tests are opt-in (`@pytest.mark.integration`) — not run in standard CI |
 | **Fabric deployment** | Fabric deployment is structurally tested but not against a real workspace |
-| **Windows paths** | OneDrive file locks may leave stale artifacts (handled via try/except) |
+| **Windows paths** | ✅ OneDrive file locks handled via `_rmtree_with_retry()` with exponential backoff (3 attempts). Stale TMDL files retried with 0.3s backoff |
 
 ## Plugin System Limitations
 

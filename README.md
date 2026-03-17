@@ -13,10 +13,10 @@
 <p align="center">
   <a href="https://github.com/cyphou/Tableau-To-PowerBI/actions/workflows/ci.yml"><img src="https://github.com/cyphou/Tableau-To-PowerBI/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
   <img src="https://img.shields.io/badge/coverage-96.2%25-brightgreen?style=flat-square" alt="Coverage"/>
-  <img src="https://img.shields.io/badge/tests-3%2C847%20passed-brightgreen?style=flat-square" alt="Tests"/>
+  <img src="https://img.shields.io/badge/tests-4%2C131%20passed-brightgreen?style=flat-square" alt="Tests"/>
   <img src="https://img.shields.io/badge/python-3.9%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python"/>
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License"/>
-  <img src="https://img.shields.io/badge/version-13.0.0-blue?style=flat-square" alt="Version"/>
+  <img src="https://img.shields.io/badge/version-16.0.0-blue?style=flat-square" alt="Version"/>
   <img src="https://img.shields.io/badge/deps-zero-orange?style=flat-square" alt="Zero Dependencies"/>
 </p>
 
@@ -24,7 +24,7 @@
   <a href="#-quick-start">Quick Start</a> •
   <a href="#-key-features">Features</a> •
   <a href="#-how-it-works">How It Works</a> •
-  <a href="#-dax-conversions-172-functions">DAX Mappings</a> •
+  <a href="#-dax-conversions-180-functions">DAX Mappings</a> •
   <a href="#-deployment">Deployment</a> •
   <a href="#-documentation">Docs</a>
 </p>
@@ -104,13 +104,13 @@ python migrate.py --shared-model wb1.twbx wb2.twbx --assess-merge
 <td width="50%">
 
 ### 🔄 Complete Extraction
-Parses **16 object types** from `.twb`/`.twbx`:
-datasources, calculations, worksheets, dashboards, filters, parameters, stories, actions, sets, groups, bins, hierarchies, relationships, sort orders, aliases, custom SQL
+Parses **20 object types** from `.twb`/`.twbx`:
+datasources, calculations, worksheets, dashboards, filters, parameters, stories, actions, sets, groups, bins, hierarchies, relationships, sort orders, aliases, custom SQL, custom geocoding, published datasources, data blending, hyper metadata
 
 </td>
 <td width="50%">
 
-### 🧮 172+ DAX Conversions
+### 🧮 180+ DAX Conversions
 Translates Tableau formulas to DAX:
 LOD expressions, table calcs, IF/ELSEIF, ISNULL, CONTAINS, window functions, iterators (SUMX), cross-table RELATED/LOOKUPVALUE, RLS security
 
@@ -119,16 +119,16 @@ LOD expressions, table calcs, IF/ELSEIF, ISNULL, CONTAINS, window functions, ite
 <tr>
 <td>
 
-### 📊 60+ Visual Types
+### 📊 118 Visual Types
 Maps every Tableau mark to Power BI:
 bar, line, pie, scatter, map, treemap, waterfall, funnel, gauge, KPI, box plot, word cloud, Sankey, Chord, combo charts, and more
 
 </td>
 <td>
 
-### 🔌 26 Data Connectors
+### 🔌 33 Data Connectors
 Generates Power Query M for:
-SQL Server, PostgreSQL, BigQuery, Snowflake, Oracle, MySQL, Databricks, SAP HANA, Excel, CSV, SharePoint, Salesforce, Web, and more
+SQL Server, PostgreSQL, BigQuery, Snowflake, Oracle, MySQL, Databricks, SAP HANA, Excel, CSV, SharePoint, Salesforce, Web, OData, Azure Blob, Vertica, Impala, Presto, Fabric Lakehouse, and more
 
 </td>
 </tr>
@@ -292,7 +292,7 @@ SharedSales/
 
 ---
 
-## 🧮 DAX Conversions (172+ functions)
+## 🧮 DAX Conversions (180+ functions)
 
 > **Full reference:** [docs/TABLEAU_TO_DAX_REFERENCE.md](docs/TABLEAU_TO_DAX_REFERENCE.md)
 
@@ -602,7 +602,7 @@ python -m pytest tests/ --cov --cov-report=html      # Coverage report
 
 ```mermaid
 flowchart LR
-    L["🔍 Lint\nflake8 + ruff"] --> T["🧪 Test\n3,847 tests\nPy 3.9–3.12"]
+    L["🔍 Lint\nflake8 + ruff"] --> T["🧪 Test\n4,131 tests\nPy 3.9–3.14"]
     T --> V["✅ Validate\nStrict .twbx\nmigrations"]
     V --> S["📦 Staging\nFabric deploy"]
     S --> P["🚀 Production\nManual approval"]
@@ -633,7 +633,7 @@ The report shows for each migrated workbook:
 |----------|-------------|
 | 📖 [Migration Checklist](docs/MIGRATION_CHECKLIST.md) | Step-by-step migration guide |
 | 🗺️ [Mapping Reference](docs/MAPPING_REFERENCE.md) | Tableau → Power BI mappings |
-| 🔢 [172 DAX Functions](docs/TABLEAU_TO_DAX_REFERENCE.md) | Complete formula reference |
+| 🔢 [180+ DAX Functions](docs/TABLEAU_TO_DAX_REFERENCE.md) | Complete formula reference |
 | ⚡ [108 Power Query M](docs/TABLEAU_TO_POWERQUERY_REFERENCE.md) | Property reference |
 | 🔄 [165 Prep → M](docs/TABLEAU_PREP_TO_POWERQUERY_REFERENCE.md) | Prep transformation reference |
 | 🏗️ [Architecture](docs/ARCHITECTURE.md) | System design overview |

@@ -82,16 +82,16 @@ v16.0.0 addresses these across 5 sprints: code health, CLI refactoring, new feat
 
 **Goal:** Generate API documentation, update all docs to v16.0.0, release.
 
-| # | Item | File(s) | Est. | Details |
-|---|------|---------|------|---------|
-| 48.1 | **Auto-generated API docs** | `docs/generate_api_docs.py`, `docs/api/` | Medium | Use `pdoc` or custom introspection to generate module → class → function documentation from docstrings. Cover all 25+ source modules |
-| 48.2 | **Update GAP_ANALYSIS.md** | `docs/GAP_ANALYSIS.md` | Low | Refresh all sections with v16.0.0 counts, mark newly closed gaps |
-| 48.3 | **Update KNOWN_LIMITATIONS.md** | `docs/KNOWN_LIMITATIONS.md` | Low | Remove resolved limitations, add any new ones from Sprint 46-47 |
-| 48.4 | **Update CHANGELOG.md** | `CHANGELOG.md` | Low | v16.0.0 entry with all sprint details |
-| 48.5 | **Update copilot-instructions.md** | `.github/copilot-instructions.md` | Low | Test count, new modules, new CLI flags |
-| 48.6 | **Update README.md** | `README.md` | Low | New features, CLI examples, contributor guide link |
-| 48.7 | **Version bump** | `pyproject.toml`, `powerbi_import/__init__.py` | Low | 15.0.0 → 16.0.0 |
-| 48.8 | **Final validation & push** | — | Low | Full test suite, git commit + push |
+| # | Item | File(s) | Status | Details |
+|---|------|---------|--------|---------|
+| 48.1 | **Auto-generated API docs** | `docs/generate_api_docs.py` | ✅ Done | MODULES list expanded from 15 to 42 modules (8 tableau + 26 pbi + 8 deploy), deploy section separator in index.html |
+| 48.2 | **Update GAP_ANALYSIS.md** | `docs/GAP_ANALYSIS.md` | ✅ Done | v16.0.0 counts: 4,131 tests, 73 files, 118 visuals, 33 connectors, 43 M transforms, 9-category assessment |
+| 48.3 | **Update KNOWN_LIMITATIONS.md** | `docs/KNOWN_LIMITATIONS.md` | ✅ Done | v16.0.0 header, OneDrive lock retry documented, Windows paths limitation resolved |
+| 48.4 | **Update CHANGELOG.md** | `CHANGELOG.md` | ✅ Done | Sprint 48 entry with all documentation updates |
+| 48.5 | **Update copilot-instructions.md** | `.github/copilot-instructions.md` | ✅ Done | 4,131 tests, 73 files, 180+ DAX, 33 connectors, 43 M transforms, 118 visuals, 13 new module entries |
+| 48.6 | **Update README.md** | `README.md` | ✅ Done | Badges: v16.0.0, 4,131 tests, 180+ DAX, 33 connectors, 20 object types, 118 visuals |
+| 48.7 | **Version bump** | `pyproject.toml`, `powerbi_import/__init__.py` | ✅ Done | 15.0.0 → 16.0.0 |
+| 48.8 | **Final validation & push** | — | ✅ Done | 4,131 tests passed, committed + pushed |
 
 ---
 
