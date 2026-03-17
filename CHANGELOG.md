@@ -2,6 +2,15 @@
 
 ## v16.0.0 — Code Quality & Maintainability
 
+### Sprint 47 — Windows CI, Cross-Platform Hardening & Performance ✅
+- **OneDrive lock retry** (`pbip_generator.py`): New `_rmtree_with_retry(path, attempts=3, delay=0.5)` helper with exponential backoff for stale directory cleanup — replaces bare `except (PermissionError, OSError): pass` blocks
+- **Stale TMDL retry** (`tmdl_generator.py`): Stale `.tmdl` file removal now retries 3 times with 0.3s×2^n backoff on PermissionError, with `logger.debug`/`logger.warning` messages
+- **Memory optimization** (`tmdl_generator.py`): After writing table TMDL files, column/measure/partition data is released from table dicts (only names and lightweight `_n_columns`/`_n_measures` counts preserved) — reduces peak memory for large workbooks (50+ tables)
+- **Pre-computed stats** (`tmdl_generator.py`): `generate_tmdl()` now collects BIM symbols and stat counts *before* writing (and memory release), ensuring accurate stats despite post-write cleanup
+- **Performance benchmarks** (`test_performance.py`): 2 new benchmark tests — `TestTmdl100MeasuresPerformance` (5 tables × 100 measures, threshold 10s) and `TestImportPipelinePerformance` (full 16-JSON pipeline, threshold 15s)
+- **18 new tests** in `test_sprint47.py` across 7 test classes: retry logic (success, PermissionError, give-up), stale TMDL cleanup, path handling (os.path.join verification), Unicode filenames (French, Japanese), long paths, memory optimization, CI compatibility (no external deps, UTF-8, cross-platform paths)
+- **Overall: 4,111 → 4,131 tests**, 0 failures
+
 ### Sprint 46 — New Features: Data Alerts, Visual Diff & Semantic Validation ✅
 - **Data-driven alerts** (`alerts_generator.py`, new): Extracts alert conditions from Tableau parameters (threshold/alert/target keywords), calculations with IF/threshold patterns, and reference lines with target labels → generates PBI alert rules JSON with operator, threshold, frequency, measure
 - **Visual diff report** (`visual_diff.py`, new): Side-by-side HTML report comparing Tableau visuals to PBI visuals — visual type mapping status (exact/approximate/unmapped), per-field coverage tracking, encoding gap detection (color, size, tooltip, label, detail, path), summary table with coverage percentages

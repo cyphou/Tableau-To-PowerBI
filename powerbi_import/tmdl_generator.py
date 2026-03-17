@@ -30,6 +30,11 @@ import os
 import re
 import uuid
 import json
+import logging
+import shutil
+import time
+
+logger = logging.getLogger(__name__)
 
 # Add path to import from tableau_export
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'tableau_export'))
@@ -457,20 +462,16 @@ def generate_tmdl(datasources, report_name, extra_objects, output_dir,
     if languages:
         model['model']['_languages'] = languages
 
-    # Step 2: Write TMDL files
-    _write_tmdl_files(model, output_dir)
-
-    # Step 3: Compute and return stats
+    # Step 2a: Collect stats and symbols BEFORE writing (the writer
+    #          clears column/measure data from tables to free memory).
     tables = model.get('model', {}).get('tables', [])
     rels = model.get('model', {}).get('relationships', [])
 
-    # Collect actual BIM measure names (captions) from the generated model
-    # so that the report generator can distinguish real DAX measures from
-    # calculated columns that Tableau marks as role='measure'.
     actual_bim_measures = set()
-    # Full symbol set: (table_name, field_name) tuples for cross-validation
-    # between visual field references and the semantic model.
     actual_bim_symbols = set()
+    total_columns = 0
+    total_measures = 0
+    total_hierarchies = 0
     for t in tables:
         tname = t.get('name', '')
         for m in t.get('measures', []):
@@ -482,13 +483,20 @@ def generate_tmdl(datasources, report_name, extra_objects, output_dir,
             cname = c.get('name', '')
             if cname:
                 actual_bim_symbols.add((tname, cname))
+        total_columns += len(t.get('columns', []))
+        total_measures += len(t.get('measures', []))
+        total_hierarchies += len(t.get('hierarchies', []))
 
+    # Step 2b: Write TMDL files (clears column/measure data afterward)
+    _write_tmdl_files(model, output_dir)
+
+    # Step 3: Return pre-computed stats
     stats = {
         'tables': len(tables),
-        'columns': sum(len(t.get('columns', [])) for t in tables),
-        'measures': sum(len(t.get('measures', [])) for t in tables),
+        'columns': total_columns,
+        'measures': total_measures,
         'relationships': len(rels),
-        'hierarchies': sum(len(t.get('hierarchies', [])) for t in tables),
+        'hierarchies': total_hierarchies,
         'roles': len(model.get('model', {}).get('roles', [])),
         'actual_bim_measures': actual_bim_measures,
         'actual_bim_symbols': actual_bim_symbols,
@@ -3393,10 +3401,38 @@ def _write_tmdl_files(model_data, output_dir):
         expected_files.add(tname + '.tmdl')
     for existing in os.listdir(tables_dir):
         if existing.endswith('.tmdl') and existing not in expected_files:
-            os.remove(os.path.join(tables_dir, existing))
+            stale_path = os.path.join(tables_dir, existing)
+            for _attempt in range(3):
+                try:
+                    os.remove(stale_path)
+                    break
+                except PermissionError:
+                    time.sleep(0.3 * (2 ** _attempt))
+                    logger.debug("Retry removing stale TMDL: %s", stale_path)
+                except OSError as exc:
+                    logger.debug("Cannot remove stale TMDL %s: %s", stale_path, exc)
+                    break
+            else:
+                logger.warning("Cannot remove stale TMDL %s after retries (locked)", stale_path)
 
     for table in tables:
         _write_table_tmdl(tables_dir, table)
+
+    # Collect table names before releasing table data from memory.
+    # Post-write steps (perspectives, cultures) only need names, not
+    # full column/measure data — freeing the heavy dicts reduces peak
+    # memory for large workbooks (50+ tables).
+    # Preserve lightweight summaries so callers (generate_tmdl) can still
+    # compute stats without holding the full column/measure lists.
+    table_names = [t.get('name', '') for t in tables]
+    table_count = len(tables)
+    for t in tables:
+        t['_n_columns'] = len(t.get('columns', []))
+        t['_n_measures'] = len(t.get('measures', []))
+        # Clear column/measure/partition data (heaviest part) but keep names
+        t.pop('columns', None)
+        t.pop('measures', None)
+        t.pop('partitions', None)
 
     # 7. diagramLayout.json (empty — Power BI Desktop fills it on first open)
     diagram_path = os.path.join(def_dir, 'diagramLayout.json')

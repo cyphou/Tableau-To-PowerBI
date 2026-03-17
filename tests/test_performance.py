@@ -25,6 +25,7 @@ from m_query_builder import generate_power_query_m, inject_m_steps
 from m_query_builder import m_transform_rename, m_transform_filter_values
 from tmdl_generator import generate_tmdl
 from visual_generator import generate_visual_containers
+from import_to_powerbi import PowerBIImporter
 
 
 # ── Performance thresholds (seconds) ─────────────────────────────────
@@ -38,6 +39,8 @@ THRESHOLD_M_QUERY_BATCH_100 = 2.0  # 100 M queries
 THRESHOLD_TMDL_SMALL = 5.0         # Small model TMDL generation
 THRESHOLD_TMDL_LARGE = 30.0        # Large model (50 tables) TMDL generation
 THRESHOLD_VISUAL_BATCH_20 = 2.0    # 20 visual containers
+THRESHOLD_TMDL_100_MEASURES = 10.0 # 100 measures TMDL generation
+THRESHOLD_IMPORT_PIPELINE = 15.0   # Full import pipeline (small workbook)
 
 
 class TestDaxConverterPerformance(unittest.TestCase):
@@ -197,6 +200,117 @@ class TestVisualPerformance(unittest.TestCase):
             self.assertLess(elapsed, THRESHOLD_VISUAL_BATCH_20)
         finally:
             cleanup_dir(temp_dir)
+
+
+class TestTmdl100MeasuresPerformance(unittest.TestCase):
+    """Benchmark 100-measure workbook TMDL generation."""
+
+    def test_100_measures(self):
+        tables = []
+        for t in range(5):
+            cols = [{'name': f'col_{t}_{c}', 'datatype': 'string'} for c in range(10)]
+            cols[0]['datatype'] = 'integer'
+            tables.append({'name': f'Table_{t}', 'columns': cols})
+        ds = {
+            'name': 'BigDS',
+            'connection': {'type': 'SQL Server', 'details': {'server': 's', 'database': 'd'}},
+            'connection_map': {},
+            'tables': tables,
+        }
+        # 100 calculations
+        calc_map = {}
+        for i in range(100):
+            calc_map[f'Measure_{i}'] = f'SUM([col_0_{i % 10}])'
+
+        temp_dir = make_temp_dir()
+        try:
+            start = time.perf_counter()
+            generate_tmdl([ds], 'PerfMeasures', calc_map, temp_dir)
+            elapsed = time.perf_counter() - start
+            self.assertLess(elapsed, THRESHOLD_TMDL_100_MEASURES,
+                            f"100-measure TMDL took {elapsed:.2f}s")
+        finally:
+            cleanup_dir(temp_dir)
+
+
+class TestImportPipelinePerformance(unittest.TestCase):
+    """Benchmark the full import pipeline end-to-end."""
+
+    def _create_source_dir(self, temp_dir, n_worksheets=5, n_tables=3, n_calcs=10):
+        """Write extracted JSON files to simulate a small Tableau export."""
+        import json as _json
+
+        tables = []
+        for t in range(n_tables):
+            cols = [{'name': f'col{c}', 'datatype': 'string'} for c in range(8)]
+            cols[0]['datatype'] = 'integer'
+            cols[1]['datatype'] = 'datetime'
+            tables.append({'name': f'Table{t}', 'columns': cols})
+
+        datasources = [{
+            'name': 'DS',
+            'connection': {'type': 'SQL Server', 'details': {'server': 's', 'database': 'd'}},
+            'connection_map': {},
+            'tables': tables,
+        }]
+
+        worksheets = []
+        for i in range(n_worksheets):
+            worksheets.append({
+                'name': f'Sheet{i}',
+                'mark_type': 'bar',
+                'fields': [{'name': f'col{j}'} for j in range(3)],
+                'mark_encoding': {},
+                'filters': [],
+                'datasource': 'DS',
+            })
+
+        calculations = [
+            {'name': f'Calc{i}', 'caption': f'Calc{i}', 'formula': f'SUM([col{i % 8}])'}
+            for i in range(n_calcs)
+        ]
+
+        files = {
+            'datasources.json': datasources,
+            'worksheets.json': worksheets,
+            'calculations.json': calculations,
+            'dashboards.json': [],
+            'parameters.json': [],
+            'filters.json': [],
+            'stories.json': [],
+            'actions.json': [],
+            'sets.json': [],
+            'groups.json': [],
+            'bins.json': [],
+            'hierarchies.json': [],
+            'sort_orders.json': [],
+            'aliases.json': [],
+            'custom_sql.json': [],
+            'user_filters.json': [],
+        }
+        for fname, data in files.items():
+            with open(os.path.join(temp_dir, fname), 'w', encoding='utf-8') as f:
+                _json.dump(data, f)
+
+    def test_full_pipeline_small_workbook(self):
+        """Full import pipeline for a small workbook should be fast."""
+        src_dir = make_temp_dir()
+        out_dir = make_temp_dir()
+        try:
+            self._create_source_dir(src_dir)
+            importer = PowerBIImporter(source_dir=src_dir)
+            start = time.perf_counter()
+            importer.import_all(
+                generate_pbip=True,
+                report_name='PerfTest',
+                output_dir=out_dir,
+            )
+            elapsed = time.perf_counter() - start
+            self.assertLess(elapsed, THRESHOLD_IMPORT_PIPELINE,
+                            f"Full pipeline took {elapsed:.2f}s")
+        finally:
+            cleanup_dir(src_dir)
+            cleanup_dir(out_dir)
 
 
 if __name__ == '__main__':

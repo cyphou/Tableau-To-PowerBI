@@ -8,6 +8,8 @@ including all the files needed to open the project in Power BI Desktop.
 import os
 import json
 import logging
+import shutil
+import time
 from datetime import datetime
 import uuid
 import re
@@ -34,6 +36,36 @@ def _write_json(filepath, data, ensure_ascii=True):
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
     with open(filepath, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=2, ensure_ascii=ensure_ascii)
+
+
+def _rmtree_with_retry(path, attempts=3, delay=0.5):
+    """Remove a directory tree with retry and exponential backoff.
+
+    OneDrive and other sync tools may hold brief locks on files,
+    causing ``PermissionError`` during cleanup.  This function
+    retries up to *attempts* times with increasing delay.
+
+    Returns:
+        True if successfully removed, False otherwise.
+    """
+    for attempt in range(attempts):
+        try:
+            shutil.rmtree(path)
+            return True
+        except PermissionError:
+            if attempt < attempts - 1:
+                time.sleep(delay * (2 ** attempt))
+                logger.debug(
+                    "Retry %d/%d removing %s (PermissionError)",
+                    attempt + 1, attempts, path,
+                )
+            else:
+                logger.warning("Cannot remove %s after %d attempts (locked)", path, attempts)
+                return False
+        except OSError as exc:
+            logger.debug("Cannot remove %s: %s", path, exc)
+            return False
+    return False
 
 
 def _L(v):
@@ -995,9 +1027,7 @@ class PowerBIProjectGenerator:
                 if (entry.startswith('ReportSection')
                         and entry not in valid_page_set
                         and not os.path.isfile(os.path.join(entry_path, 'page.json'))):
-                    try:
-                        shutil.rmtree(entry_path)
-                    except (PermissionError, OSError):
+                    if not _rmtree_with_retry(entry_path):
                         stale_count += 1
                     continue
                 # For valid pages, remove stale visual subdirs without visual.json
@@ -1006,11 +1036,12 @@ class PowerBIProjectGenerator:
                     for vdir in os.listdir(visuals_dir):
                         vpath = os.path.join(visuals_dir, vdir)
                         if os.path.isdir(vpath) and not os.path.exists(os.path.join(vpath, 'visual.json')):
-                            try:
-                                shutil.rmtree(vpath)
-                            except (PermissionError, OSError):
-                                pass  # Skip if still locked
+                            _rmtree_with_retry(vpath)
         if stale_count:
+            logger.warning(
+                "%d stale page directories could not be removed "
+                "(OneDrive lock or permission issue)", stale_count
+            )
             print(f"  ⚠ {stale_count} stale page directories could not be removed (OneDrive lock)")
         
         # Add custom visual repository to report.json if any custom
