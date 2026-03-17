@@ -1593,6 +1593,36 @@ def _add_shared_model_args(parser):
         )
     )
 
+    parser.add_argument(
+        '--merge-preview',
+        action='store_true',
+        default=False,
+        help=(
+            'Dry-run merge: show what would be merged, renamed, and conflicted '
+            'without writing any files (use with --shared-model)'
+        )
+    )
+
+    parser.add_argument(
+        '--bulk-assess',
+        metavar='DIR',
+        default=None,
+        help=(
+            'Scan a folder of .twb/.twbx files and produce a portfolio-level '
+            'readiness report (HTML dashboard) without migrating'
+        )
+    )
+
+    parser.add_argument(
+        '--server-assess',
+        action='store_true',
+        default=False,
+        help=(
+            'Assess all workbooks on a Tableau Server site and produce a '
+            'portfolio readiness report (requires --server)'
+        )
+    )
+
 
 def _build_argument_parser():
     """Build and return the CLI argument parser."""

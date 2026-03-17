@@ -21,7 +21,7 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
   - `dax_converter.py`: 180+ Tableau → DAX formula conversions (LOD, table calcs, security, etc.)
   - `m_query_builder.py`: Power Query M generator (33 connector types + 43 transformation generators: rename, filter, aggregate, pivot/unpivot, join, union, sort, conditional columns — chainable via `inject_m_steps()`)
   - `prep_flow_parser.py`: Tableau Prep flow parser (.tfl/.tflx → Power Query M) — DAG traversal, Clean/Join/Aggregate/Union/Pivot steps, expression converter, merge with TWB datasources
-  - `server_client.py`: Tableau Server/Cloud REST API client — PAT/password auth, workbook download, datasource listing, batch download, regex search, context manager
+  - `server_client.py`: Tableau Server/Cloud REST API client — PAT/password auth, workbook download, datasource listing, batch download, regex search, context manager, paginated API fetching (`_paginated_get`), 9 new endpoints: `list_users`, `list_groups`, `list_views`, `get_workbook_connections`, `list_schedules`, `get_site_info`, `list_prep_flows`, `download_prep_flow`, `get_server_summary`
   - `hyper_reader.py`: Hyper file data loader — reads `.hyper` files via SQLite interface (column metadata + row data), schema discovery, type mapping to M/TMDL types
   - `pulse_extractor.py`: Tableau Pulse metric extractor — parses Pulse metric definitions from TWB XML (metric name, measure, time dimension, filters, goals)
 - **powerbi_import/**: Power BI project generation
@@ -31,12 +31,13 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
   - `import_to_powerbi.py`: Generation pipeline orchestrator (supports `--output-dir`)
   - `m_query_generator.py`: Sample data M query generator
   - `assessment.py`: Pre-migration readiness assessment — 9 categories (datasource, calculation, visual, filter, data model, interactivity, extract, scope, connection string audit), pass/warn/fail scoring
+  - `server_assessment.py`: Server-level portfolio assessment — per-workbook GREEN/YELLOW/RED classification, 8-axis complexity computation, effort estimation, migration wave planning, connector census, HTML executive dashboard
   - `strategy_advisor.py`: Migration strategy advisor — recommends Import/DirectQuery/Composite based on 7 signals
   - `validator.py`: Artifact validator — validates .pbip projects (JSON, TMDL, report structure) before opening in PBI Desktop
   - `migration_report.py`: Per-item fidelity tracking and migration status reporting
   - `goals_generator.py`: PBI Goals/Scorecard generator — converts Tableau Pulse metrics to Power BI Goals JSON (goal name, current value measure, target, status rules, sparkline)
-  - `shared_model.py`: Multi-workbook merge engine — fingerprint-based table matching (SHA-256), Jaccard column overlap scoring, 4-dimension merge scoring (0–100), measure/column/relationship/parameter conflict resolution and deduplication
-  - `merge_assessment.py`: Merge assessment reporter — JSON + console output with table overlap analysis, conflict listing, merge/partial/separate recommendation
+  - `shared_model.py`: Multi-workbook merge engine — fingerprint-based table matching (SHA-256), Jaccard column overlap scoring, 4-dimension merge scoring (0–100), measure/column/relationship/parameter conflict resolution and deduplication, custom SQL fingerprinting, fuzzy table matching, RLS conflict detection, cross-workbook relationship suggestions, merge preview
+  - `merge_assessment.py`: Merge assessment reporter — JSON + console + HTML output with table overlap analysis, conflict listing, merge/partial/separate recommendation, RLS conflict table, relationship suggestions
   - `thin_report_generator.py`: Thin report generator — PBIR `byPath` wiring to shared SemanticModel, field remapping for namespaced measures, delegates to PBIPGenerator for page/visual content
   - `plugins.py`: Plugin system — auto-discovers and loads plugins from `examples/plugins/` via `importlib`, hook-based extension points for visual mapping, DAX post-processing, naming conventions
   - `alerts_generator.py`: Data-driven alert generator — extracts threshold/alert conditions from parameters, calculations, and reference lines → PBI alert rules JSON
@@ -62,7 +63,7 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
     - `pbix_packager.py`: .pbip → .pbix ZIP packager with OPC content types
     - `pbi_deployer.py`: PBI Service deployment orchestrator — package, upload, poll, refresh, validate
     - `bundle_deployer.py`: Fabric bundle deployer — deploy shared model + thin reports as atomic bundle, artifact discovery, per-report error isolation, rebind, refresh, `BundleDeploymentResult`
-- **tests/**: Unit and integration tests (4,131+ tests across 73 test files + conftest.py shared fixtures)
+- **tests/**: Unit and integration tests (4,219+ tests across 77 test files + conftest.py shared fixtures)
 - **docs/**: FAQ, PBI project guide, mapping reference
 - **.github/workflows/ci.yml**: CI/CD pipeline (lint → test → validate → deploy)
 - **.github/workflows/publish.yml**: PyPI auto-publish workflow (tag-triggered, OIDC trusted publisher)

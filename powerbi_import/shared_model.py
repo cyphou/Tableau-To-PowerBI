@@ -1129,6 +1129,260 @@ class MeasureRiskAssessment:
     aggregation_types: Dict[str, str]  # {wb_name: detected_agg}
 
 
+# ═══════════════════════════════════════════════════════════════════
+#  Sprint 51 — Merge extensions
+# ═══════════════════════════════════════════════════════════════════
+
+def _normalize_sql(sql: str) -> str:
+    """Normalize SQL text for comparison (case-fold, collapse whitespace)."""
+    if not sql:
+        return ''
+    normalized = re.sub(r'\s+', ' ', sql.strip().lower())
+    # Remove trailing semicolons
+    return normalized.rstrip(';').strip()
+
+
+def _hash_sql(sql: str) -> str:
+    """Hash normalized SQL text for fingerprint comparison."""
+    return hashlib.sha256(_normalize_sql(sql).encode('utf-8')).hexdigest()[:16]
+
+
+def build_custom_sql_fingerprints(
+    datasources: list,
+) -> Dict[str, Tuple[str, dict, dict]]:
+    """Build fingerprints for custom SQL tables based on query text hash.
+
+    Returns:
+        {sql_hash: (sql_text, table_dict, connection_dict)}
+    """
+    result = {}
+    for ds in datasources:
+        conn = ds.get('connection', {})
+        for table in ds.get('tables', []):
+            sql = table.get('custom_sql', table.get('query', ''))
+            if not sql:
+                continue
+            sql_hash = _hash_sql(sql)
+            if sql_hash not in result:
+                result[sql_hash] = (sql, table, conn)
+    return result
+
+
+def _normalize_table_name_fuzzy(name: str) -> str:
+    """Normalize a table name for fuzzy matching.
+
+    Strips schema prefix, removes brackets, folds case, removes
+    common separators (underscore, hyphen, space).
+    """
+    # Strip schema prefix
+    clean = name.strip().strip('[]')
+    if '.' in clean:
+        parts = clean.rsplit('.', 1)
+        clean = parts[-1].strip('[]')
+    # Case fold and remove separators
+    clean = clean.lower().replace('_', '').replace('-', '').replace(' ', '')
+    return clean
+
+
+def fuzzy_table_match(name_a: str, name_b: str) -> float:
+    """Compute fuzzy similarity between two table names.
+
+    Uses normalized string comparison: exact match = 1.0, prefix/suffix
+    overlap as secondary signal.
+
+    Returns:
+        Float 0.0–1.0 representing name similarity.
+    """
+    norm_a = _normalize_table_name_fuzzy(name_a)
+    norm_b = _normalize_table_name_fuzzy(name_b)
+
+    if not norm_a or not norm_b:
+        return 0.0
+
+    if norm_a == norm_b:
+        return 1.0
+
+    # Check containment
+    if norm_a in norm_b or norm_b in norm_a:
+        shorter = min(len(norm_a), len(norm_b))
+        longer = max(len(norm_a), len(norm_b))
+        return shorter / longer
+
+    # Character-level Jaccard on bigrams
+    def _bigrams(s):
+        return set(s[i:i+2] for i in range(len(s) - 1)) if len(s) > 1 else {s}
+
+    bg_a = _bigrams(norm_a)
+    bg_b = _bigrams(norm_b)
+    if not bg_a or not bg_b:
+        return 0.0
+    return len(bg_a & bg_b) / len(bg_a | bg_b)
+
+
+def detect_rls_conflicts(
+    all_extracted: List[dict],
+    workbook_names: List[str],
+) -> List[dict]:
+    """Detect overlapping RLS roles across workbooks.
+
+    When merging models, detects roles that target the same table but
+    have different filter expressions.
+
+    Returns:
+        List of conflict dicts: [{table, role_name, variants: {wb: expression}}]
+    """
+    # role_key (table, role_name) → {wb: expression}
+    role_map: Dict[Tuple[str, str], Dict[str, str]] = {}
+
+    for wb_name, extracted in zip(workbook_names, all_extracted):
+        for uf in extracted.get('user_filters', []):
+            table = uf.get('table', uf.get('datasource', 'default')).lower()
+            role_name = uf.get('name', uf.get('field', 'unknown'))
+            expression = uf.get('formula', uf.get('values', ''))
+            if isinstance(expression, list):
+                expression = str(sorted(expression))
+            key = (table, role_name)
+            if key not in role_map:
+                role_map[key] = {}
+            role_map[key][wb_name] = str(expression)
+
+    conflicts = []
+    for (table, role_name), variants in role_map.items():
+        if len(variants) <= 1:
+            continue
+        unique_expressions = set(variants.values())
+        if len(unique_expressions) > 1:
+            conflicts.append({
+                'table': table,
+                'role_name': role_name,
+                'variants': variants,
+            })
+
+    return conflicts
+
+
+def suggest_cross_workbook_relationships(
+    merged: dict,
+) -> List[dict]:
+    """Suggest potential relationships between tables in a merged model.
+
+    Scans all table column names for matching patterns (e.g., customer_id
+    in different tables) and suggests relationships.
+
+    Returns:
+        List of suggestion dicts: [{from_table, from_column, to_table, to_column, confidence}]
+    """
+    tables = []
+    for ds in merged.get('datasources', []):
+        for table in ds.get('tables', []):
+            tname = table.get('name', '')
+            cols = {c.get('name', '').lower(): c for c in table.get('columns', [])}
+            tables.append((tname, cols))
+
+    # Build existing relationship set
+    existing_rels = set()
+    for ds in merged.get('datasources', []):
+        for rel in ds.get('relationships', []):
+            if 'left' in rel:
+                existing_rels.add((
+                    rel['left'].get('table', '').lower(),
+                    rel['right'].get('table', '').lower(),
+                ))
+                existing_rels.add((
+                    rel['right'].get('table', '').lower(),
+                    rel['left'].get('table', '').lower(),
+                ))
+            else:
+                existing_rels.add((
+                    rel.get('from_table', '').lower(),
+                    rel.get('to_table', '').lower(),
+                ))
+                existing_rels.add((
+                    rel.get('to_table', '').lower(),
+                    rel.get('from_table', '').lower(),
+                ))
+
+    suggestions = []
+    key_suffixes = ('_id', '_key', '_code', 'id', 'key', 'code')
+
+    for i, (t1_name, t1_cols) in enumerate(tables):
+        for j, (t2_name, t2_cols) in enumerate(tables):
+            if i >= j:
+                continue
+            if (t1_name.lower(), t2_name.lower()) in existing_rels:
+                continue
+
+            for col_name in t1_cols:
+                if not any(col_name.endswith(s) for s in key_suffixes):
+                    continue
+                if col_name in t2_cols:
+                    suggestions.append({
+                        'from_table': t1_name,
+                        'from_column': col_name,
+                        'to_table': t2_name,
+                        'to_column': col_name,
+                        'confidence': 'high' if col_name.endswith('_id') else 'medium',
+                    })
+
+    return suggestions
+
+
+def merge_preview(
+    all_extracted: List[dict],
+    workbook_names: List[str],
+) -> dict:
+    """Run a dry-run merge assessment and return detailed preview.
+
+    Does not write any files — just reports what would happen.
+
+    Returns:
+        Dict with keys: assessment, suggestions, rls_conflicts, actions
+    """
+    assessment = assess_merge(all_extracted, workbook_names)
+
+    # Detect RLS conflicts
+    rls_conflicts = detect_rls_conflicts(all_extracted, workbook_names)
+
+    # Build merged model in memory for relationship suggestions
+    merged = merge_semantic_models(all_extracted, assessment, "PreviewModel")
+    suggestions = suggest_cross_workbook_relationships(merged)
+
+    # Build action log
+    actions = []
+    for mc in assessment.merge_candidates:
+        actions.append({
+            'action': 'merge_table',
+            'table': mc.table_name,
+            'sources': [s[0] for s in mc.sources],
+            'overlap': round(mc.column_overlap, 2),
+        })
+
+    for conflict in assessment.measure_conflicts:
+        for wb, formula in conflict.variants.items():
+            actions.append({
+                'action': 'namespace_measure',
+                'measure': conflict.name,
+                'workbook': wb,
+                'new_name': f"{conflict.name} ({wb})",
+            })
+
+    for wb, tables in assessment.isolated_tables.items():
+        for t in tables:
+            actions.append({
+                'action': 'skip_isolated_table',
+                'table': t,
+                'workbook': wb,
+            })
+
+    return {
+        'assessment': assessment.to_dict(),
+        'rls_conflicts': rls_conflicts,
+        'relationship_suggestions': suggestions,
+        'actions': actions,
+        'total_actions': len(actions),
+    }
+
+
 def analyze_measure_risk(conflicts: List[MeasureConflict]) -> List[MeasureRiskAssessment]:
     """Analyze semantic risk of measure conflicts by parsing DAX patterns.
 

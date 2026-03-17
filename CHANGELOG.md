@@ -1,5 +1,51 @@
 # Changelog
 
+## v17.0.0 — Server Assessment & Merge Intelligence
+
+### Sprint 53 — Documentation & Release ✅
+- **CHANGELOG.md**: Full v17.0.0 release notes across 5 sprints (49–53)
+- **Version bump**: 16.0.0 → 17.0.0 in `pyproject.toml` and `powerbi_import/__init__.py`
+- **GAP_ANALYSIS.md updated**: v17.0.0 counts — 4,219 tests, 77 test files
+- **KNOWN_LIMITATIONS.md updated**: v17.0.0 — VAR/VARP M approximation documented
+- **copilot-instructions.md updated**: New modules (server_assessment, server_client v2), CLI flags, merge extensions
+- **Overall: 4,219 tests**, 0 failures
+
+### Sprint 52 — Extraction & DAX Gap Closure ✅
+- **VAR/VARP in M query builder**: Added `var` and `varp` entries to `_M_AGG_MAP` (approximated via `List.StandardDeviation`)
+- **Verified existing mappings**: INDEX→RANKX comment, LTRIM→TRIM, RTRIM→TRIM already implemented; nested LOD with `_find_lod_braces()` already handles innermost-first; `notInner→leftanti` in prep flow parser
+- **8 new tests** in `test_extraction_gaps.py` validating M aggregation map, DAX conversions, and prep flow mappings
+- **Overall: 4,219 tests**, 0 failures
+
+### Sprint 51 — Semantic Model Merge Extensions ✅
+- **Custom SQL fingerprinting** (`shared_model.py`): `_normalize_sql()`, `_hash_sql()`, `build_custom_sql_fingerprints()` — SHA-256 fingerprint-based deduplication of custom SQL tables across workbooks
+- **Fuzzy table matching** (`shared_model.py`): `_normalize_table_name_fuzzy()`, `fuzzy_table_match()` — schema-strip, separator-fold, bigram Jaccard similarity scoring (0.0–1.0)
+- **RLS conflict detection** (`shared_model.py`): `detect_rls_conflicts()` — finds overlapping RLS roles with divergent filter expressions across workbooks
+- **Cross-workbook relationship suggestions** (`shared_model.py`): `suggest_cross_workbook_relationships()` — scans `_id`/`_key`/`_code` columns for matches, skips existing relationships, returns high/medium confidence
+- **Merge preview** (`shared_model.py`): `merge_preview()` — dry-run merge returning assessment + RLS conflicts + relationship suggestions + action plan
+- **HTML merge report** (`merge_assessment.py`): `generate_merge_html_report()` — full HTML dashboard with candidate table, measure conflict table, RLS conflict table, relationship suggestions
+- **Enhanced field remapping** (`thin_report_generator.py`): `_remap_fields()` now handles list-type mark encodings, sort field remapping, action target field remapping
+- **CLI flags** (`migrate.py`): `--merge-preview`, `--bulk-assess DIR`, `--server-assess`
+- **40 new tests** in `test_merge_extensions.py` across 11 test classes
+- **Overall: 4,219 tests**, 0 failures
+
+### Sprint 50 — Server-Level Assessment Pipeline ✅
+- **Server assessment module** (`server_assessment.py`, new): Enterprise portfolio assessment for Tableau Server or local workbook folders
+- **Data classes**: `WorkbookReadiness` (GREEN/YELLOW/RED + complexity + effort), `MigrationWave` (wave_number, label, workbooks, total_effort), `ServerAssessment` (aggregated results + readiness_pct)
+- **Complexity computation** (`_compute_complexity()`): 8-axis analysis — visuals, dashboards, calculations, tables, LOD expressions, table calcs, filters, actions
+- **Effort estimation** (`_estimate_effort()`): Weighted hours — base 1.0h + 0.15h/visual + 0.2h/calc + 0.5h/LOD + 0.4h/table_calc + 0.3h/datasource + 0.1h/table
+- **Migration wave planning** (`_build_migration_waves()`): Automatic grouping into Easy/Medium/Complex waves based on complexity score
+- **HTML dashboard** (`generate_server_html_report()`): Executive report with pie chart, connector census, wave table, workbook detail grid
+- **21 new tests** in `test_server_assessment.py` across 9 test classes
+- **Overall: 4,219 tests**, 0 failures
+
+### Sprint 49 — Tableau Server Client Enhancement ✅
+- **Pagination** (`server_client.py`): `_paginated_get()` helper auto-handles Tableau REST API pagination metadata (`totalAvailable`, `pageNumber`, `pageSize`)
+- **Existing methods upgraded**: `list_workbooks()`, `list_datasources()`, `list_projects()` now use paginated fetching
+- **9 new endpoints**: `list_users()`, `list_groups()`, `list_views()`, `get_workbook_connections(workbook_id)`, `list_schedules()`, `get_site_info()`, `list_prep_flows()`, `download_prep_flow(flow_id, output_path)`, `get_server_summary()`
+- **`get_server_summary()`**: Aggregates all counts (workbooks, datasources, users, groups, views, projects, prep flows) + site info in a single call
+- **19 new tests** in `test_server_client_v2.py` across 13 test classes
+- **Overall: 4,219 tests**, 0 failures
+
 ## v16.0.0 — Code Quality & Maintainability
 
 ### Sprint 48 — Documentation, API Docs & Release ✅

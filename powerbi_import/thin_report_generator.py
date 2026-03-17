@@ -145,7 +145,12 @@ class ThinReportGenerator:
 
     def _remap_fields(self, converted_objects: dict,
                       field_mapping: dict) -> dict:
-        """Remap field names in worksheets, dashboards, and filters."""
+        """Remap field names in worksheets, dashboards, and filters.
+
+        Handles namespaced measure references after merge conflicts,
+        including nested mark encoding, dashboard zone references,
+        and action target fields.
+        """
         if not field_mapping:
             return converted_objects
 
@@ -168,6 +173,18 @@ class ThinReportGenerator:
                     efield = enc.get('field', '')
                     if efield in field_mapping:
                         enc['field'] = field_mapping[efield]
+                elif isinstance(enc, list):
+                    for item in enc:
+                        if isinstance(item, dict):
+                            efield = item.get('field', '')
+                            if efield in field_mapping:
+                                item['field'] = field_mapping[efield]
+            # Remap sort fields
+            for sort in ws.get('sort_fields', ws.get('sorts', [])):
+                if isinstance(sort, dict):
+                    sfield = sort.get('field', '')
+                    if sfield in field_mapping:
+                        sort['field'] = field_mapping[sfield]
 
         # Remap calculation references in standalone calculations
         for calc in remapped.get('calculations', []):
@@ -180,6 +197,13 @@ class ThinReportGenerator:
             fname = f.get('field', '')
             if fname in field_mapping:
                 f['field'] = field_mapping[fname]
+
+        # Remap action target fields
+        for action in remapped.get('actions', []):
+            for target_field_key in ('source_field', 'target_field', 'field'):
+                afield = action.get(target_field_key, '')
+                if afield in field_mapping:
+                    action[target_field_key] = field_mapping[afield]
 
         return remapped
 

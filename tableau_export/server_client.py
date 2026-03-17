@@ -30,6 +30,9 @@ logger = logging.getLogger(__name__)
 # Tableau REST API version
 DEFAULT_API_VERSION = '3.21'
 
+# Default page size for paginated requests
+DEFAULT_PAGE_SIZE = 100
+
 
 class TableauServerClient:
     """Lightweight Tableau Server REST API client (stdlib only)."""
@@ -152,6 +155,43 @@ class TableauServerClient:
                 f'Tableau API error {e.code}: {body_text}'
             ) from e
 
+    # ── Pagination helper ─────────────────────────────────────
+
+    def _paginated_get(self, url, root_key, item_key,
+                       page_size=DEFAULT_PAGE_SIZE):
+        """Fetch all pages of a paginated REST API endpoint.
+
+        Tableau REST API returns pagination metadata as:
+            {"pagination": {"pageNumber": "1", "pageSize": "100", "totalAvailable": "250"}}
+
+        Args:
+            url: Base URL (without pageSize/pageNumber params).
+            root_key: Top-level JSON key (e.g., 'workbooks').
+            item_key: Nested key containing items (e.g., 'workbook').
+            page_size: Items per page.
+
+        Returns:
+            list[dict]: All items across all pages.
+        """
+        all_items = []
+        page_number = 1
+        separator = '&' if '?' in url else '?'
+
+        while True:
+            paged_url = f'{url}{separator}pageSize={page_size}&pageNumber={page_number}'
+            resp = self._request('GET', paged_url)
+
+            items = resp.get(root_key, {}).get(item_key, [])
+            all_items.extend(items)
+
+            pagination = resp.get('pagination', {})
+            total = int(pagination.get('totalAvailable', len(items)))
+            if len(all_items) >= total or not items:
+                break
+            page_number += 1
+
+        return all_items
+
     # ── Authentication ────────────────────────────────────────
 
     def sign_in(self):
@@ -211,10 +251,22 @@ class TableauServerClient:
                 self._auth_token = None
                 self._site_luid = None
 
+    # ── Site info ─────────────────────────────────────────────
+
+    def get_site_info(self):
+        """Get site metadata.
+
+        Returns:
+            dict: Site info (id, name, contentUrl, state, etc.)
+        """
+        url = f'{self.base_url}/sites/{self._site_luid}'
+        resp = self._request('GET', url)
+        return resp.get('site', resp)
+
     # ── Workbooks ─────────────────────────────────────────────
 
     def list_workbooks(self, project_name=None):
-        """List workbooks on the site.
+        """List workbooks on the site (paginated).
 
         Args:
             project_name: Optional — filter by project name.
@@ -226,8 +278,7 @@ class TableauServerClient:
         if project_name:
             url += f'?filter=projectName:eq:{project_name}'
 
-        resp = self._request('GET', url)
-        workbooks = resp.get('workbooks', {}).get('workbook', [])
+        workbooks = self._paginated_get(url, 'workbooks', 'workbook')
         logger.info(f'Found {len(workbooks)} workbooks')
         return workbooks
 
@@ -243,6 +294,20 @@ class TableauServerClient:
         url = f'{self.site_url}/workbooks/{workbook_id}'
         resp = self._request('GET', url)
         return resp.get('workbook', resp)
+
+    def get_workbook_connections(self, workbook_id):
+        """Get data connections for a workbook.
+
+        Args:
+            workbook_id: Workbook LUID.
+
+        Returns:
+            list[dict]: Connection metadata (type, serverAddress, serverPort,
+                        userName, dbClass, etc.)
+        """
+        url = f'{self.site_url}/workbooks/{workbook_id}/connections'
+        resp = self._request('GET', url)
+        return resp.get('connections', {}).get('connection', [])
 
     def download_workbook(self, workbook_id, output_path,
                           include_extract=True):
@@ -280,17 +345,27 @@ class TableauServerClient:
         matches = [w for w in all_wb if pattern.search(w.get('name', ''))]
         return matches
 
+    # ── Views ─────────────────────────────────────────────────
+
+    def list_views(self):
+        """List all views (sheets) on the site (paginated).
+
+        Returns:
+            list[dict]: View metadata (id, name, contentUrl, workbook, etc.)
+        """
+        url = f'{self.site_url}/views'
+        return self._paginated_get(url, 'views', 'view')
+
     # ── Datasources ───────────────────────────────────────────
 
     def list_datasources(self):
-        """List published datasources on the site.
+        """List published datasources on the site (paginated).
 
         Returns:
             list[dict]: Datasource metadata.
         """
         url = f'{self.site_url}/datasources'
-        resp = self._request('GET', url)
-        return resp.get('datasources', {}).get('datasource', [])
+        return self._paginated_get(url, 'datasources', 'datasource')
 
     def download_datasource(self, datasource_id, output_path):
         """Download a published datasource as .tdsx.
@@ -311,14 +386,111 @@ class TableauServerClient:
     # ── Projects ──────────────────────────────────────────────
 
     def list_projects(self):
-        """List projects on the site.
+        """List projects on the site (paginated).
 
         Returns:
             list[dict]: Project metadata.
         """
         url = f'{self.site_url}/projects'
-        resp = self._request('GET', url)
-        return resp.get('projects', {}).get('project', [])
+        return self._paginated_get(url, 'projects', 'project')
+
+    # ── Users ─────────────────────────────────────────────────
+
+    def list_users(self):
+        """List all users on the site (paginated).
+
+        Returns:
+            list[dict]: User metadata (id, name, siteRole, lastLogin, etc.)
+        """
+        url = f'{self.site_url}/users'
+        return self._paginated_get(url, 'users', 'user')
+
+    # ── Groups ────────────────────────────────────────────────
+
+    def list_groups(self):
+        """List all groups on the site (paginated).
+
+        Returns:
+            list[dict]: Group metadata (id, name, domain, etc.)
+        """
+        url = f'{self.site_url}/groups'
+        return self._paginated_get(url, 'groups', 'group')
+
+    # ── Schedules ─────────────────────────────────────────────
+
+    def list_schedules(self):
+        """List all schedules on the server (paginated).
+
+        Returns:
+            list[dict]: Schedule metadata (id, name, type, frequency, etc.)
+        """
+        url = f'{self.base_url}/schedules'
+        return self._paginated_get(url, 'schedules', 'schedule')
+
+    # ── Prep Flows ────────────────────────────────────────────
+
+    def list_prep_flows(self):
+        """List Prep flows on the site (paginated).
+
+        Returns:
+            list[dict]: Flow metadata (id, name, project, etc.)
+        """
+        url = f'{self.site_url}/flows'
+        return self._paginated_get(url, 'flows', 'flow')
+
+    def download_prep_flow(self, flow_id, output_path):
+        """Download a Prep flow file.
+
+        Args:
+            flow_id: Flow LUID.
+            output_path: Local file path to save the .tfl / .tflx.
+
+        Returns:
+            str: Path to the downloaded file.
+        """
+        url = f'{self.site_url}/flows/{flow_id}/content'
+        os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
+        self._request('GET', url, stream_to=output_path)
+        logger.info(f'Downloaded flow {flow_id} → {output_path}')
+        return output_path
+
+    # ── Server summary ────────────────────────────────────────
+
+    def get_server_summary(self):
+        """Collect a high-level summary of the Tableau Server site.
+
+        Returns:
+            dict: {workbook_count, datasource_count, user_count, group_count,
+                   project_count, flow_count, schedule_count, view_count,
+                   site_info}
+        """
+        site_info = self.get_site_info()
+        workbooks = self.list_workbooks()
+        datasources = self.list_datasources()
+        users = self.list_users()
+        groups = self.list_groups()
+        projects = self.list_projects()
+        flows = self.list_prep_flows()
+        schedules = self.list_schedules()
+        views = self.list_views()
+
+        summary = {
+            'site_info': site_info,
+            'workbook_count': len(workbooks),
+            'datasource_count': len(datasources),
+            'user_count': len(users),
+            'group_count': len(groups),
+            'project_count': len(projects),
+            'flow_count': len(flows),
+            'schedule_count': len(schedules),
+            'view_count': len(views),
+        }
+        logger.info(
+            f"Server summary: {summary['workbook_count']} workbooks, "
+            f"{summary['datasource_count']} datasources, "
+            f"{summary['user_count']} users"
+        )
+        return summary
 
     # ── Batch download ────────────────────────────────────────
 

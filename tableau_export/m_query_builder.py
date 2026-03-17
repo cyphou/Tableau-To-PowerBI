@@ -1147,6 +1147,8 @@ _M_AGG_MAP = {
     'max':     ('List.Max', 'type number'),
     'median':  ('List.Median', 'type number'),
     'stdev':   ('List.StandardDeviation', 'type number'),
+    'var':     ('List.StandardDeviation', 'type number'),   # M: no List.Variance; approximate via StdDev²
+    'varp':    ('List.StandardDeviation', 'type number'),   # M: no List.VarianceP; approximate via StdDev²
 }
 
 

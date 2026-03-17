@@ -31,6 +31,14 @@ try:
 except ImportError:
     from shared_model import MergeAssessment
 
+# HTML report colors
+_PBI_BLUE = "#0078d4"
+_PBI_DARK = "#323130"
+_PBI_BG = "#f5f5f5"
+_GREEN = "#107c10"
+_YELLOW = "#ffb900"
+_RED = "#d13438"
+
 
 def generate_merge_report(assessment: MergeAssessment,
                           output_path: str = None) -> dict:
@@ -147,3 +155,166 @@ def print_merge_summary(assessment: MergeAssessment):
     print(f"  Recommendation:   {rec}")
     print("=" * w)
     print()
+
+
+def generate_merge_html_report(
+    assessment: MergeAssessment,
+    output_path: str = "merge_assessment.html",
+    rls_conflicts: list = None,
+    relationship_suggestions: list = None,
+) -> str:
+    """Generate an HTML merge assessment report.
+
+    Args:
+        assessment: MergeAssessment result.
+        output_path: Path to write the HTML file.
+        rls_conflicts: Optional list of RLS conflicts from detect_rls_conflicts().
+        relationship_suggestions: Optional list from suggest_cross_workbook_relationships().
+
+    Returns:
+        Path to the generated HTML file.
+    """
+    rls_conflicts = rls_conflicts or []
+    relationship_suggestions = relationship_suggestions or []
+
+    # Candidate rows
+    candidate_rows = ""
+    for mc in assessment.merge_candidates:
+        overlap_pct = int(mc.column_overlap * 100)
+        color = _GREEN if overlap_pct >= 70 else (_YELLOW if overlap_pct >= 40 else _RED)
+        sources = ", ".join(s[0] for s in mc.sources)
+        conflicts_html = "<br>".join(mc.conflicts[:3]) if mc.conflicts else "None"
+        candidate_rows += f"""
+            <tr>
+                <td>{mc.table_name}</td>
+                <td>{sources}</td>
+                <td><span style="color:{color};font-weight:bold">{overlap_pct}%</span></td>
+                <td>{conflicts_html}</td>
+            </tr>"""
+
+    # Measure conflict rows
+    measure_rows = ""
+    for mc in assessment.measure_conflicts:
+        for wb, formula in mc.variants.items():
+            short = formula[:80] + '...' if len(formula) > 80 else formula
+            measure_rows += f"""
+                <tr>
+                    <td>{mc.name}</td>
+                    <td>{wb}</td>
+                    <td><code>{short}</code></td>
+                </tr>"""
+
+    # RLS conflict rows
+    rls_rows = ""
+    for rc in rls_conflicts:
+        for wb, expr in rc.get('variants', {}).items():
+            short = str(expr)[:80] + '...' if len(str(expr)) > 80 else str(expr)
+            rls_rows += f"""
+                <tr>
+                    <td>{rc.get('role_name', 'N/A')}</td>
+                    <td>{rc.get('table', 'N/A')}</td>
+                    <td>{wb}</td>
+                    <td><code>{short}</code></td>
+                </tr>"""
+
+    # Relationship suggestion rows
+    rel_rows = ""
+    for rs in relationship_suggestions:
+        color = _GREEN if rs.get('confidence') == 'high' else _YELLOW
+        rel_rows += f"""
+            <tr>
+                <td>{rs.get('from_table', '')}</td>
+                <td>{rs.get('from_column', '')}</td>
+                <td>{rs.get('to_table', '')}</td>
+                <td>{rs.get('to_column', '')}</td>
+                <td><span style="color:{color}">{rs.get('confidence', 'medium')}</span></td>
+            </tr>"""
+
+    # Score color
+    score = assessment.merge_score
+    score_color = _GREEN if score >= 60 else (_YELLOW if score >= 30 else _RED)
+    rec_labels = {
+        "merge": "MERGE RECOMMENDED",
+        "partial": "PARTIAL MERGE (review conflicts)",
+        "separate": "KEEP SEPARATE (low overlap)",
+    }
+    rec = rec_labels.get(assessment.recommendation, assessment.recommendation)
+    tables_saved = assessment.total_tables - assessment.unique_table_count
+
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Merge Assessment Report</title>
+<style>
+    body {{ font-family: 'Segoe UI', sans-serif; margin: 20px; background: {_PBI_BG}; color: {_PBI_DARK}; }}
+    h1 {{ color: {_PBI_BLUE}; }}
+    h2 {{ color: {_PBI_DARK}; border-bottom: 2px solid {_PBI_BLUE}; padding-bottom: 6px; }}
+    table {{ border-collapse: collapse; width: 100%; margin-bottom: 20px; background: white; }}
+    th, td {{ padding: 8px 12px; border: 1px solid #e0e0e0; text-align: left; }}
+    th {{ background: {_PBI_BLUE}; color: white; }}
+    code {{ background: #f0f0f0; padding: 2px 4px; border-radius: 3px; font-size: 0.9em; }}
+    .box {{ display: inline-block; padding: 16px 24px; margin: 8px; background: white;
+            border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); text-align: center; }}
+    .box .num {{ font-size: 2em; font-weight: bold; }}
+</style>
+</head>
+<body>
+<h1>Shared Semantic Model — Merge Assessment</h1>
+<p>Workbooks: {', '.join(assessment.workbooks)}</p>
+
+<div>
+    <div class="box">
+        <div class="num" style="color:{score_color}">{score}/100</div>
+        <div>Merge Score</div>
+    </div>
+    <div class="box">
+        <div class="num">{assessment.total_tables}</div>
+        <div>Total Tables</div>
+    </div>
+    <div class="box">
+        <div class="num" style="color:{_GREEN}">{tables_saved}</div>
+        <div>Tables Saved</div>
+    </div>
+    <div class="box">
+        <div class="num">{len(assessment.measure_conflicts)}</div>
+        <div>Measure Conflicts</div>
+    </div>
+    <div class="box">
+        <div class="num">{rec}</div>
+        <div>Recommendation</div>
+    </div>
+</div>
+
+<h2>Merge Candidates</h2>
+<table>
+    <tr><th>Table</th><th>Workbooks</th><th>Column Overlap</th><th>Conflicts</th></tr>
+    {candidate_rows if candidate_rows else '<tr><td colspan="4">No merge candidates found</td></tr>'}
+</table>
+
+<h2>Measure Conflicts</h2>
+<table>
+    <tr><th>Measure</th><th>Workbook</th><th>Formula</th></tr>
+    {measure_rows if measure_rows else '<tr><td colspan="3">No measure conflicts</td></tr>'}
+</table>
+
+<h2>RLS Conflicts</h2>
+<table>
+    <tr><th>Role</th><th>Table</th><th>Workbook</th><th>Expression</th></tr>
+    {rls_rows if rls_rows else '<tr><td colspan="4">No RLS conflicts detected</td></tr>'}
+</table>
+
+<h2>Suggested Relationships</h2>
+<table>
+    <tr><th>From Table</th><th>From Column</th><th>To Table</th><th>To Column</th><th>Confidence</th></tr>
+    {rel_rows if rel_rows else '<tr><td colspan="5">No relationship suggestions</td></tr>'}
+</table>
+
+</body>
+</html>"""
+
+    os.makedirs(os.path.dirname(os.path.abspath(output_path)) or '.', exist_ok=True)
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(html)
+    logger.info("Merge HTML report saved to %s", output_path)
+    return output_path

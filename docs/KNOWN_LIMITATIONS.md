@@ -2,7 +2,9 @@
 
 This document lists known limitations and approximations in the Tableau to Power BI migration tool.
 
-> **Last updated:** v16.0.0 (Sprint 48) — many previous limitations have been addressed in Sprints 27-48. See below for current status.
+> **Last updated:** v17.0.0 (Sprint 53) — many previous limitations have been addressed in Sprints 27-53. See below for current status.
+>
+> **v17.0.0 notes:** VAR/VARP aggregation in M queries approximated via `List.StandardDeviation` (M has no native variance function). Server-level assessment, merge preview, and RLS conflict detection are new capabilities.
 
 ---
 
