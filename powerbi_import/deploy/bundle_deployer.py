@@ -197,7 +197,7 @@ class BundleDeployer:
                     rel = str(f.relative_to(definition_dir)).replace('\\', '/')
                     try:
                         parts[rel] = f.read_text(encoding='utf-8')
-                    except Exception:
+                    except (UnicodeDecodeError, ValueError):
                         logger.debug('Binary file, hex-encoding: %s', f)
                         parts[rel] = f.read_bytes().hex()
 

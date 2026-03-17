@@ -159,8 +159,8 @@ def _read_hyper_sqlite(file_path, max_rows=20):
                         for i, col in enumerate(columns):
                             sample[col['name']] = row[i] if i < len(row) else None
                         sample_rows.append(sample)
-                except sqlite3.DatabaseError:
-                    pass
+                except sqlite3.DatabaseError as e:
+                    logger.debug('Failed to read sample rows from %s: %s', tname, e)
 
             tables.append({
                 'table': tname,
@@ -331,8 +331,8 @@ def read_hyper(file_path, max_rows=20):
             result['tables'] = tables
             if result['format'] == 'unknown':
                 result['format'] = 'hyper'
-    except OSError:
-        pass
+    except OSError as e:
+        logger.debug('Hyper header scan failed for %s: %s', file_path, e)
 
     return result
 

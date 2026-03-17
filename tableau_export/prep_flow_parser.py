@@ -21,8 +21,11 @@ Supported step types:
 - Output: PublishExtract, SaveToFile, SaveToDatabase
 """
 
+import logging
 import os
 import json
+
+logger = logging.getLogger(__name__)
 import zipfile
 import re
 from collections import OrderedDict
@@ -813,8 +816,8 @@ def _process_input_node(nid, node, connections, node_results, node_name):
                 if hyper_tables:
                     m_query = generate_m_from_hyper(
                         hyper_tables, table.get('name'))
-            except Exception:
-                pass  # Fall through to normal generation
+            except (ImportError, OSError, KeyError, ValueError) as exc:
+                logger.debug('Hyper read failed for %s: %s', node_name, exc)
 
     if m_query is None:
         m_query = generate_power_query_m(connection, table)

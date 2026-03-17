@@ -154,7 +154,7 @@ def get_settings():
     try:
         _settings_instance = _make_pydantic_settings()
         logger.debug('Settings loaded via pydantic-settings')
-    except Exception:
+    except (ImportError, ValueError, TypeError):
         _settings_instance = _FallbackSettings()
         logger.debug('Settings loaded via environment fallback')
 

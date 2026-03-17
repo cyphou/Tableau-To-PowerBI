@@ -11,7 +11,10 @@ import zipfile
 import os
 import csv
 import re
+import logging
 from dax_converter import _reverse_tableau_bracket_escape
+
+logger = logging.getLogger(__name__)
 
 def _detect_csv_delimiter(header_line):
     """Detects the CSV delimiter from the first line (header).
@@ -66,8 +69,8 @@ def _read_csv_header_from_twbx(twbx_path, directory, filename):
                     with z.open(name) as f:
                         first_line = f.readline().decode('utf-8', errors='replace').strip()
                         return first_line
-    except (zipfile.BadZipFile, OSError):
-        pass
+    except (zipfile.BadZipFile, OSError) as e:
+        logger.debug('Could not read CSV from archive %s: %s', twbx_path, e)
     return None
 
 

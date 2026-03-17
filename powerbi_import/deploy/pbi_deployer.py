@@ -255,6 +255,7 @@ class PBIWorkspaceDeployer:
                 'passed': found,
             })
         except Exception as e:
+            logger.debug('Dataset existence check failed: %s', e)
             validation['checks'].append({
                 'check': 'dataset_exists',
                 'passed': False,
@@ -281,6 +282,7 @@ class PBIWorkspaceDeployer:
                     'status': 'NoRefreshHistory',
                 })
         except Exception as e:
+            logger.debug('Refresh history check failed: %s', e)
             validation['checks'].append({
                 'check': 'latest_refresh',
                 'passed': False,

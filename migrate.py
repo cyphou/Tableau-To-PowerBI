@@ -391,7 +391,7 @@ def run_migration_report(report_name, output_dir=None):
         return report.get_summary()
 
     except Exception as e:
-        logger.warning(f"Migration report generation failed: {e}")
+        logger.warning(f"Migration report generation failed: {e}", exc_info=True)
         return None
 
 
@@ -1603,7 +1603,7 @@ def _apply_config_file(args):
             if not args.log_file and config.log_file:
                 args.log_file = config.log_file
             logger.info(f"Configuration loaded from: {args.config}")
-    except Exception as e:
+    except (OSError, json.JSONDecodeError, ValueError) as e:
         print(f"Warning: Failed to load config file: {e}")
 
 
@@ -1950,8 +1950,8 @@ def run_global_assessment_mode(args):
         for td in temp_dirs:
             try:
                 shutil.rmtree(td, ignore_errors=True)
-            except Exception:
-                pass
+            except OSError as e:
+                logger.debug('Temp dir cleanup failed: %s', e)
 
 
 # ── Shared Semantic Model migration ─────────────────────────────────────────
@@ -2078,8 +2078,8 @@ def run_shared_model_migration(workbook_paths, model_name=None, output_dir=None,
         for td in temp_dirs:
             try:
                 shutil.rmtree(td, ignore_errors=True)
-            except Exception:
-                pass
+            except OSError as e:
+                logger.debug('Temp dir cleanup failed: %s', e)
 
 
 def _empty_converted_objects():
@@ -2326,8 +2326,8 @@ def main():
             from powerbi_import.telemetry import TelemetryCollector
             telemetry = TelemetryCollector(enabled=True)
             telemetry.start()
-        except Exception:
-            pass
+        except (ImportError, OSError, ValueError) as e:
+            logger.debug('Telemetry init failed: %s', e)
 
     # Step 1: Extraction
     progress.start("Extracting Tableau data")
@@ -2422,7 +2422,7 @@ def main():
                         print(f"    ⚠ {c}")
             else:
                 print(f"  ⚠ Incremental merge skipped: directory not found")
-        except Exception as exc:
+        except (ImportError, OSError, ValueError) as exc:
             print(f"  ⚠ Incremental merge failed: {exc}")
 
     # Step 3b: Goals/Scorecard generation (optional, --goals flag)
@@ -2460,7 +2460,7 @@ def main():
                     print("  ⚠ No Pulse metrics found in workbook")
             else:
                 print("  ⚠ No Pulse metrics found in workbook")
-        except Exception as exc:
+        except (ImportError, OSError, ValueError) as exc:
             print(f"  ⚠ Goals generation failed: {exc}")
 
     # Step 4: Migration report
@@ -2490,7 +2490,7 @@ def main():
             html_path = generate_comparison_report(extract_dir, pbip_dir, output_path=cmp_path)
             if html_path:
                 print(f"\n📋 Comparison report: {html_path}")
-        except Exception as exc:
+        except (ImportError, OSError, ValueError) as exc:
             logger.warning(f"Comparison report generation failed: {exc}")
 
     # Step 4d: Telemetry dashboard (optional)
@@ -2501,7 +2501,7 @@ def main():
             dash_path = gen_telem_dashboard(out_base)
             if dash_path:
                 print(f"\n📊 Telemetry dashboard: {dash_path}")
-        except Exception as exc:
+        except (ImportError, OSError, ValueError) as exc:
             logger.warning(f"Telemetry dashboard generation failed: {exc}")
 
     # Step 5: Deploy to Power BI Service (optional)
@@ -2528,7 +2528,7 @@ def main():
                 print(f"  ✗ Deploy failed: {deploy_result.error}")
         except Exception as exc:
             print(f"  ✗ Deployment error: {exc}")
-            logger.error(f"Deployment failed: {exc}", exc_info=True)
+            logger.error("Deployment failed: %s", exc, exc_info=True)
 
     # Final report
     all_success = _print_migration_summary(results, report_summary, start_time)
@@ -2544,8 +2544,8 @@ def main():
             telemetry.finish()
             telemetry.save()
             telemetry.send()
-        except Exception:
-            pass
+        except (OSError, ValueError) as e:
+            logger.debug('Telemetry finalization failed: %s', e)
 
     return ExitCode.SUCCESS if all_success else ExitCode.GENERAL_ERROR
 

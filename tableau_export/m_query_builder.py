@@ -5,6 +5,9 @@ Extracted from datasource_extractor.py for maintainability.
 Each connector type has its own generator function dispatched via _M_GENERATORS.
 """
 
+import logging
+
+logger = logging.getLogger(__name__)
 
 # ── Type mapping ──────────────────────────────────────────────────────────────
 
@@ -627,8 +630,8 @@ def _gen_m_hyper(details, table_name, columns):
                 target = tables[0]
             if target and target.get('columns'):
                 return generate_m_for_hyper_table(target)
-    except (ImportError, OSError, KeyError, ValueError):
-        pass
+    except (ImportError, OSError, KeyError, ValueError) as exc:
+        logger.debug('Hyper read failed for %s: %s', table_name, exc)
 
     # Fallback: structured #table() with column names from metadata
     col_list = ', '.join([f'"{ col["name"] }"' for col in columns if 'name' in col])
