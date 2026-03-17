@@ -1,9 +1,9 @@
 # Development Plan — Tableau to Power BI Migration Tool
 
-**Version:** v15.0.0  
-**Date:** 2026-03-16  
-**Current state:** Sprint 43 done + bug-bash — **3,996 tests** across 69 test files (+conftest.py), 0 failures, 96.2% coverage  
-**Previous baseline:** v3.5.0 — 887 → v4.0.0 — 1,387 → v5.0.0 — 1,543 → v5.1.0 — 1,595 → v5.5.0 — 1,777 → v6.0.0 — 1,889 → v6.1.0 — 1,997 → v7.0.0 — 2,057 → Sprint 21 — 2,066 → v8.0.0 — 2,275 → Sprint 27 — 2,542 → Sprint 28 — 2,616 → Sprint 29 — 2,666 → v9.0.0 — 3,196 → v10.0.0 — 3,342 → v11.0.0 — 3,459 → v12.0.0 — 3,729 → v13.0.0 — 3,847 → v14.0.0 — 3,925 → v15.0.0 — 3,988 → **v15.0.1 — 3,996**
+**Version:** v16.0.0 → v17.0.0 (planning)  
+**Date:** 2025-07-16  
+**Current state:** v16.0.0 released — **4,131 tests** across 73 test files (+conftest.py), 0 failures  
+**Previous baseline:** v3.5.0 — 887 → v4.0.0 — 1,387 → v5.0.0 — 1,543 → v5.1.0 — 1,595 → v5.5.0 — 1,777 → v6.0.0 — 1,889 → v6.1.0 — 1,997 → v7.0.0 — 2,057 → Sprint 21 — 2,066 → v8.0.0 — 2,275 → Sprint 27 — 2,542 → Sprint 28 — 2,616 → Sprint 29 — 2,666 → v9.0.0 — 3,196 → v10.0.0 — 3,342 → v11.0.0 — 3,459 → v12.0.0 — 3,729 → v13.0.0 — 3,847 → v14.0.0 — 3,925 → v15.0.0 — 3,988 → v15.0.1 — 3,996 → **v16.0.0 — 4,131**
 
 ---
 
@@ -123,6 +123,130 @@ Sprint 46 (New Features)    ──→  Sprint 47 (Windows CI + Perf)
 | Windows CI | ❌ | **✅** |
 | API documentation | ❌ | **✅** |
 | Coverage | 96.2% | **≥ 96%** (maintained) |
+
+---
+
+## v17.0.0 — Server Assessment, Bulk Analysis & Merge Extensions
+
+### Motivation
+
+v16.0.0 shipped with 4,131 tests, clean error handling, decomposed CLI, Windows CI, API docs, and new features (alerts, visual diff, enhanced validation). The migration pipeline now handles individual workbooks robustly. However, enterprise customers need:
+
+1. **Full Tableau Server assessment** — assess an entire Tableau Server site before migrating (portfolio-level readiness, connector census, migration wave planning, effort estimation)
+2. **Bulk folder assessment** — scan a local folder of .twbx files and produce an aggregated readiness report without migrating
+3. **Semantic model merge extensions** — improve merge quality with custom SQL table matching, fuzzy name comparison, RLS conflict detection, auto-remap visual field references, and merge preview mode
+4. **Extraction & DAX gap closure** — fix nested LOD edge cases, add missing DAX functions (INDEX, LTRIM/RTRIM), improve Prep flow mapping
+
+v17.0.0 addresses these across 5 sprints focused on server-scale tooling, smarter merging, and gap closure.
+
+---
+
+### Sprint 49 — Tableau Server Client Enhancement
+
+**Goal:** Expand `server_client.py` with pagination, missing endpoints, and server metadata collection to support server-level assessment.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 49.1 | **Pagination for all list methods** | `tableau_export/server_client.py` | Medium | Add `_paginated_get(url)` helper; refactor `list_workbooks()`, `list_datasources()`, `list_projects()` to use it; handle `<pagination>` element (pageNumber, pageSize, totalAvailable) |
+| 49.2 | **`list_users()` and `list_groups()`** | `tableau_export/server_client.py` | Low | REST API `/api/{version}/sites/{siteId}/users` and `/groups`; return list of dicts with id, name, role, lastLogin |
+| 49.3 | **`list_views()` and `get_workbook_connections()`** | `tableau_export/server_client.py` | Low | `/workbooks/{id}/views` and `/workbooks/{id}/connections`; return connection type, server, database, username |
+| 49.4 | **`list_schedules()` and `get_site_info()`** | `tableau_export/server_client.py` | Low | `/schedules` (extract refresh, subscription) and `/sites/{siteId}`; return schedule frequency, site name, content URL |
+| 49.5 | **`list_prep_flows()` and `download_prep_flow()`** | `tableau_export/server_client.py` | Medium | `/flows` list + `/flows/{id}/content` download; returns .tfl file content |
+| 49.6 | **Server metadata summary** | `tableau_export/server_client.py` | Low | `get_server_summary()` → dict with workbook_count, datasource_count, user_count, group_count, schedule_count, project_count, flow_count |
+| 49.7 | **Tests** | `tests/test_server_client_v2.py` | Medium | 25+ tests: pagination mock, all new endpoints, error handling, summary aggregation |
+
+### Sprint 50 — Server-Level Assessment Pipeline
+
+**Goal:** New `server_assessment.py` module — assess an entire Tableau Server site or a local folder of .twbx files, producing portfolio-level readiness reports with migration wave planning.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 50.1 | **`ServerAssessment` class** | `powerbi_import/server_assessment.py` (new) | High | Accepts list of extracted workbook data (from server or local folder); runs `AssessmentReport` per workbook; aggregates results |
+| 50.2 | **Portfolio readiness scoring** | `powerbi_import/server_assessment.py` | Medium | Per-workbook RED/YELLOW/GREEN classification based on assessment pass/warn/fail ratios; overall site readiness percentage |
+| 50.3 | **Connector census** | `powerbi_import/server_assessment.py` | Low | Histogram of connector types across all workbooks (e.g., 40% PostgreSQL, 30% SQL Server, 20% Excel, 10% Snowflake); identifies unsupported connectors |
+| 50.4 | **Complexity heatmap** | `powerbi_import/server_assessment.py` | Medium | Score each workbook on 5 axes (data sources, calculations, visuals, filters, interactivity); generate sortable matrix |
+| 50.5 | **Migration wave planning** | `powerbi_import/server_assessment.py` | Medium | Group workbooks into waves based on shared data sources + complexity (easy-first, then medium, then complex); output ordered wave list with dependency notes |
+| 50.6 | **Effort estimation** | `powerbi_import/server_assessment.py` | Medium | Estimate hours-to-migrate per workbook based on calculation count, visual count, datasource complexity, LOD usage; produce total portfolio estimate |
+| 50.7 | **HTML dashboard report** | `powerbi_import/server_assessment.py` | Medium | Executive HTML report: site overview, readiness pie chart, connector census bar chart, complexity heatmap table, wave plan, effort summary |
+| 50.8 | **Bulk folder assessment CLI** | `migrate.py` | Low | `--bulk-assess DIR` flag: scan folder for .twbx/.twb, extract each, run server assessment pipeline, output HTML report |
+| 50.9 | **Server assessment CLI** | `migrate.py` | Low | `--server-assess` flag (with `--server`): download all workbooks, assess, generate portfolio report |
+| 50.10 | **Tests** | `tests/test_server_assessment.py` | Medium | 30+ tests: per-workbook scoring, wave grouping, effort estimation, HTML output, CLI integration |
+
+### Sprint 51 — Semantic Model Merge Extensions
+
+**Goal:** Improve merge quality for enterprise multi-workbook scenarios: better table matching, conflict detection, visual field remapping, and merge preview mode.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 51.1 | **Custom SQL table fingerprinting** | `powerbi_import/shared_model.py` | Medium | Hash normalized SQL text (whitespace/case-insensitive) for fingerprint comparison; tables with identical queries → merge candidates even with different names |
+| 51.2 | **Fuzzy table name matching** | `powerbi_import/shared_model.py` | Medium | Normalize table names (strip schema prefix, case-fold, remove underscores/hyphens); Levenshtein-like similarity score as secondary signal when column overlap is inconclusive |
+| 51.3 | **RLS conflict detection** | `powerbi_import/shared_model.py` | Medium | When merging models, detect overlapping RLS roles (same table, different filter expressions); report conflicts with resolution options (keep-first, keep-strictest, manual) |
+| 51.4 | **Auto-remap visual references** | `powerbi_import/thin_report_generator.py` | Medium | After merge renames measures (e.g., `[Sales]` → `[WB1_Sales]`), scan thin report visuals and update all field references to use namespaced names |
+| 51.5 | **Merge preview / dry-run** | `powerbi_import/shared_model.py`, `migrate.py` | Low | `--merge-preview` flag: run full merge pipeline but write nothing; output detailed log of what would be merged, renamed, or conflicted |
+| 51.6 | **Cross-workbook relationship inference** | `powerbi_import/shared_model.py` | Medium | After merge, scan all tables for potential relationships not present in source (column name + type matching between newly combined tables); suggest but don't auto-create |
+| 51.7 | **Enhanced merge HTML report** | `powerbi_import/merge_assessment.py` | Medium | Upgrade from JSON+console to full HTML report: table overlap matrix, conflict detail cards, merge action log, cluster visualization |
+| 51.8 | **Tests** | `tests/test_merge_extensions.py` | Medium | 25+ tests: custom SQL matching, fuzzy names, RLS conflicts, visual remapping, dry-run, relationship suggestions, HTML report |
+
+### Sprint 52 — Extraction & DAX Gap Closure
+
+**Goal:** Close known gaps in extraction and DAX conversion from `KNOWN_LIMITATIONS.md` and `GAP_ANALYSIS.md`.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 52.1 | **Nested LOD expressions** | `tableau_export/dax_converter.py` | Medium | Handle LOD-inside-LOD: `{FIXED [Region] : SUM({FIXED [Customer] : SUM([Sales])})}` → nested CALCULATE with inner/outer ALLEXCEPT |
+| 52.2 | **INDEX() function** | `tableau_export/dax_converter.py` | Low | Map Tableau `INDEX()` → `ROWNUMBER()` DAX (available in recent PBI versions) |
+| 52.3 | **LTRIM/RTRIM** | `tableau_export/dax_converter.py` | Low | Map `LTRIM()` → `TRIM()` (PBI TRIM handles both); `RTRIM()` → `TRIM()` |
+| 52.4 | **Prep VAR/VARP correct mapping** | `tableau_export/prep_flow_parser.py` | Low | Fix `VAR()` → `VAR.S` and `VARP()` → `VAR.P` (currently may map variance incorrectly) |
+| 52.5 | **Prep notInner join type** | `tableau_export/prep_flow_parser.py` | Low | Map Prep `notInner` join → `leftanti` in M query (currently falls back to left outer) |
+| 52.6 | **Bump chart ranking injection** | `powerbi_import/visual_generator.py` | Medium | For bump chart → lineChart mapping, auto-inject a RANKX measure as secondary Y axis based on the dimension and measure fields |
+| 52.7 | **Multi-datasource context in DAX** | `tableau_export/dax_converter.py` | Medium | When converting formulas referencing columns from multiple datasources, inject RELATED/LOOKUPVALUE based on available relationships |
+| 52.8 | **Tests** | `tests/test_extraction_gaps.py` | Medium | 20+ tests: nested LOD, INDEX, LTRIM/RTRIM, Prep VAR/VARP, notInner, bump chart, multi-datasource DAX |
+
+### Sprint 53 — Documentation, Tests & v17.0.0 Release
+
+**Goal:** Update all documentation, boost test count, version bump, final validation, and release.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 53.1 | **Update KNOWN_LIMITATIONS.md** | `docs/KNOWN_LIMITATIONS.md` | Low | Mark resolved items from Sprint 52, add any new limitations discovered |
+| 53.2 | **Update GAP_ANALYSIS.md** | `docs/GAP_ANALYSIS.md` | Low | Refresh test count, module count, new capabilities (server assessment, merge extensions) |
+| 53.3 | **Update README.md** | `README.md` | Low | Add server assessment section, bulk assessment CLI examples, merge preview flag |
+| 53.4 | **Update copilot-instructions.md** | `.github/copilot-instructions.md` | Low | Add new modules (`server_assessment.py`), new CLI flags, updated test count |
+| 53.5 | **Update CHANGELOG.md** | `CHANGELOG.md` | Low | Full v17.0.0 changelog with all 5 sprints |
+| 53.6 | **Update DEPLOYMENT_GUIDE.md** | `docs/DEPLOYMENT_GUIDE.md` | Low | Add server assessment deployment workflow section |
+| 53.7 | **Version bump** | `pyproject.toml`, `powerbi_import/__init__.py` | Low | 16.0.0 → 17.0.0 |
+| 53.8 | **Final validation & push** | — | Low | Full test suite, lint check, commit + push |
+
+---
+
+### Sprint Sequencing (v17.0.0)
+
+```
+Sprint 49 (Server Client)  ──→  Sprint 50 (Server Assessment)
+                                        ↓
+Sprint 51 (Merge Extensions) ──→  Sprint 52 (DAX/Extraction Gaps)
+                                        ↓
+                              Sprint 53 (Docs & Release)
+```
+
+- Sprint 49 first — server client endpoints are prerequisites for server-level assessment
+- Sprint 50 after 49 — server assessment pipeline consumes the new server client APIs
+- Sprint 51 independent — merge extensions can proceed in parallel with Sprint 50
+- Sprint 52 after 51 — gap closure benefits from merge improvements (multi-datasource context)
+- Sprint 53 last — docs and release after all features stable
+
+### Success Criteria for v17.0.0
+
+| Metric | Current (v16.0.0) | Target |
+|--------|-------------------|--------|
+| Tests | 4,131 | **4,300+** |
+| Server client endpoints | 7 | **14+** |
+| Assessment modes | 3 (single, global, connection audit) | **5+** (+ server, bulk folder) |
+| Merge capabilities | 4 (fingerprint, overlap, score, merge) | **8+** (+ SQL match, fuzzy, RLS, preview) |
+| Known limitations resolved | — | **6+** (nested LOD, INDEX, LTRIM/RTRIM, VAR/VARP, notInner, bump chart) |
+| New modules | 0 | **2** (server_assessment.py, test files) |
+| Server-level HTML report | ❌ | **✅** |
+| Merge preview/dry-run | ❌ | **✅** |
 
 ---
 
