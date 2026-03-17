@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "SemanticModel",
+    "displayName": "BigQuery_Analytics"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "f3dd55c4-77df-4152-91aa-eb60c774b394"
+  }
+}

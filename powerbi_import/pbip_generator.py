@@ -1676,6 +1676,43 @@ class PowerBIProjectGenerator:
         lower = name.lower()
         return any(w in lower for w in self._DATE_WORDS)
 
+    def _classify_shelf_fields(self, cleaned_fields):
+        """Classify cleaned fields by shelf into role buckets.
+
+        Returns a dict with keys: rows_dims, rows_meas, cols_dims, cols_meas,
+        color_dims, color_meas, size_fields, tooltip_fields, text_fields,
+        expanded_meas, other_dims, other_meas.
+        """
+        result = {
+            'rows_dims': [], 'rows_meas': [],
+            'cols_dims': [], 'cols_meas': [],
+            'color_dims': [], 'color_meas': [],
+            'size_fields': [], 'tooltip_fields': [], 'text_fields': [],
+            'expanded_meas': [], 'other_dims': [], 'other_meas': [],
+        }
+        for f in cleaned_fields:
+            shelf = f.get('shelf', '')
+            is_mea = (shelf == 'measure_value'
+                      or self._is_measure_field(f['name']))
+
+            if shelf == 'measure_value':
+                result['expanded_meas'].append(f)
+            elif shelf == 'tooltip':
+                result['tooltip_fields'].append(f)
+            elif shelf == 'size':
+                result['size_fields'].append(f)
+            elif shelf == 'text':
+                result['text_fields'].append(f)
+            elif shelf == 'color':
+                (result['color_meas'] if is_mea else result['color_dims']).append(f)
+            elif shelf == 'rows':
+                (result['rows_meas'] if is_mea else result['rows_dims']).append(f)
+            elif shelf == 'columns':
+                (result['cols_meas'] if is_mea else result['cols_dims']).append(f)
+            else:
+                (result['other_meas'] if is_mea else result['other_dims']).append(f)
+        return result
+
     def _build_visual_query(self, ws_data):
         """Builds a query with queryState for a visual (PBIR v4.0 format).
 
@@ -1720,41 +1757,19 @@ class PowerBIProjectGenerator:
             return None
 
         # ── Shelf-aware field classification ──────────────────────
-        rows_dims = []
-        rows_meas = []
-        cols_dims = []
-        cols_meas = []
-        color_dims = []
-        color_meas = []
-        size_fields = []
-        tooltip_fields = []
-        text_fields = []
-        expanded_meas = []
-        other_dims = []
-        other_meas = []
-
-        for f in cleaned_fields:
-            shelf = f.get('shelf', '')
-            is_mea = (shelf == 'measure_value'
-                      or self._is_measure_field(f['name']))
-
-            if shelf == 'measure_value':
-                expanded_meas.append(f)
-            elif shelf == 'tooltip':
-                tooltip_fields.append(f)
-            elif shelf == 'size':
-                size_fields.append(f)
-            elif shelf == 'text':
-                text_fields.append(f)
-            elif shelf == 'color':
-                (color_meas if is_mea else color_dims).append(f)
-            elif shelf == 'rows':
-                (rows_meas if is_mea else rows_dims).append(f)
-            elif shelf == 'columns':
-                (cols_meas if is_mea else cols_dims).append(f)
-            else:
-                # No shelf info (e.g. tests) → classify by measure/dim
-                (other_meas if is_mea else other_dims).append(f)
+        classified = self._classify_shelf_fields(cleaned_fields)
+        rows_dims = classified['rows_dims']
+        rows_meas = classified['rows_meas']
+        cols_dims = classified['cols_dims']
+        cols_meas = classified['cols_meas']
+        color_dims = classified['color_dims']
+        color_meas = classified['color_meas']
+        size_fields = classified['size_fields']
+        tooltip_fields = classified['tooltip_fields']
+        text_fields = classified['text_fields']
+        expanded_meas = classified['expanded_meas']
+        other_dims = classified['other_dims']
+        other_meas = classified['other_meas']
 
         # Combined views (order matters for role assignment)
         # Default ordering: columns dims first (typically x-axis), then rows

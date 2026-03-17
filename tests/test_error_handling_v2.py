@@ -319,14 +319,14 @@ class TestMigrateSourceNarrowing(unittest.TestCase):
     def test_telemetry_init_narrowed(self):
         """Telemetry init uses (ImportError, OSError, ValueError)."""
         self.assertIn(
-            "except (ImportError, OSError, ValueError) as e:\n            logger.debug('Telemetry init",
+            "except (ImportError, OSError, ValueError) as e:\n        logger.debug('Telemetry init",
             self.source,
         )
 
     def test_telemetry_finalize_narrowed(self):
         """Telemetry finalization uses (OSError, ValueError)."""
         self.assertIn(
-            "except (OSError, ValueError) as e:\n            logger.debug('Telemetry finalization",
+            "except (OSError, ValueError) as e:\n        logger.debug('Telemetry finalization",
             self.source,
         )
 

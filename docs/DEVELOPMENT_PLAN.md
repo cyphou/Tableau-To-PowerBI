@@ -39,18 +39,18 @@ v16.0.0 addresses these across 5 sprints: code health, CLI refactoring, new feat
 | 44.6 | **Narrow deploy/ broad catches** | `deploy/*.py` (17 sites) | Medium | Narrow `except Exception` to `(ConnectionError, TimeoutError, OSError, json.JSONDecodeError)` where applicable |
 | 44.7 | **Tests** | `tests/test_error_handling_v2.py` | Medium | 25+ tests verifying error paths produce log output, not silent swallowing |
 
-### Sprint 45 — CLI Refactoring & migrate.py Decomposition
+### Sprint 45 — CLI Refactoring & migrate.py Decomposition ✅
 
 **Goal:** Break apart the 3 oversized functions in migrate.py (main=410, _build_argument_parser=391, run_batch_migration=282) and extract reusable CLI modules.
 
-| # | Item | File(s) | Est. | Details |
-|---|------|---------|------|---------|
-| 45.1 | **Split `main()` (410 lines)** | `migrate.py` | High | Extract into: `_handle_server_mode()`, `_handle_shared_model_mode()`, `_handle_batch_mode()`, `_handle_single_migration()`, `_handle_deploy_modes()`, `_handle_post_migration()` — main becomes dispatcher (~50 lines) |
-| 45.2 | **Split `_build_argument_parser()` (391 lines)** | `migrate.py` | Medium | Extract argument groups into: `_add_source_args()`, `_add_output_args()`, `_add_migration_args()`, `_add_deploy_args()`, `_add_shared_model_args()`, `_add_advanced_args()` |
-| 45.3 | **Split `run_batch_migration()` (282 lines)** | `migrate.py` | Medium | Extract: `_run_single_batch_item()`, `_collect_batch_results()`, `_generate_batch_summary()` |
-| 45.4 | **Split `import_shared_model()` (248 lines)** | `powerbi_import/import_to_powerbi.py` | Medium | Extract: `_assess_and_merge()`, `_generate_shared_artifacts()`, `_save_shared_model_assessment()` |
-| 45.5 | **Split remaining large functions** | `pbip_generator.py`, `tmdl_generator.py`, `visual_generator.py`, `validator.py`, `datasource_extractor.py` | Medium | Split 7 more functions > 200 lines into composable sub-functions |
-| 45.6 | **Tests** | `tests/test_cli_refactor.py` | Medium | 20+ regression tests — same behavior, new structure |
+| # | Item | File(s) | Status | Details |
+|---|------|---------|--------|---------|
+| 45.1 | **Split `main()` (410 lines)** | `migrate.py` | ✅ Done | Extracted `_run_single_migration(args)` + 7 helpers: `_print_single_migration_header`, `_init_telemetry`, `_finalize_telemetry`, `_run_incremental_merge`, `_run_goals_generation`, `_run_post_generation_reports`, `_run_deploy_to_pbi_service` |
+| 45.2 | **Split `_build_argument_parser()` (391 lines)** | `migrate.py` | ✅ Done | Split into 9 helpers: `_add_source_args`, `_add_output_args`, `_add_batch_args`, `_add_migration_args`, `_add_report_args`, `_add_deploy_args`, `_add_server_args`, `_add_enterprise_args`, `_add_shared_model_args` |
+| 45.3 | **Split `run_batch_migration()` (282 lines)** | `migrate.py` | ✅ Done | Extracted `_print_batch_summary()` |
+| 45.4 | **Split `import_shared_model()` (248 lines)** | `powerbi_import/import_to_powerbi.py` | ✅ Done | Extracted `_create_model_explorer_report()` + `_save_shared_model_artifacts()` |
+| 45.5 | **Split remaining large functions** | `pbip_generator.py` | ✅ Done | Extracted `_classify_shelf_fields()` from `_build_visual_query()` (377 lines). Other functions (_build_table, _get_config_template) are deeply interdependent or static data — forced extraction would worsen readability. |
+| 45.6 | **Tests** | `tests/test_cli_refactor.py` | ✅ Done | 31 regression tests across 6 test classes. 4,029 → 4,060 tests. |
 
 ### Sprint 46 — New Features: Data Alerts, Comparison Report & Semantic Validation
 

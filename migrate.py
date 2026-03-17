@@ -898,6 +898,65 @@ def _migrate_single_workbook(tableau_file, basename, workbook_output_dir, displa
     }
 
 
+def _print_batch_summary(batch_results, batch_duration, migrated_root):
+    """Print formatted batch summary and consolidated HTML dashboard.
+
+    Returns:
+        Tuple of (succeeded_count, failed_count).
+    """
+    succeeded = sum(1 for r in batch_results.values() if r['success'])
+    failed = len(batch_results) - succeeded
+
+    # Single consolidated HTML dashboard at root output level
+    wb_paths = {}
+    for display_name, res in batch_results.items():
+        if res.get('success'):
+            name = res.get('report_name', display_name)
+            out = res.get('output_dir', migrated_root)
+            wb_paths[name] = {
+                'metadata_path': res.get('metadata_path'),
+            }
+            pattern = os.path.join(out, f'migration_report_{name}_*.json')
+            candidates = sorted(glob.glob(pattern))
+            if candidates:
+                wb_paths[name]['migration_report_path'] = candidates[-1]
+    if wb_paths:
+        run_batch_html_dashboard(migrated_root, wb_paths)
+
+    print_header("BATCH MIGRATION SUMMARY")
+    print(f"  Total workbooks: {len(batch_results)}")
+    print(f"  Succeeded:       {succeeded}")
+    print(f"  Failed:          {failed}")
+    print(f"  Duration:        {batch_duration}")
+    print()
+
+    # Formatted summary table
+    name_width = max((len(n) for n in batch_results), default=20)
+    name_width = max(name_width, 20)
+    header = f"  {'Workbook':<{name_width}}  {'Status':>8}  {'Fidelity':>9}  {'Tables':>7}  {'Visuals':>8}"
+    print(header)
+    print(f"  {'-' * name_width}  {'--------':>8}  {'---------':>9}  {'-------':>7}  {'--------':>8}")
+    for name, result in batch_results.items():
+        status = "OK" if result['success'] else "FAIL"
+        fidelity = result.get('fidelity')
+        fid_str = f"{fidelity}%" if fidelity is not None else "—"
+        stats = result.get('stats', {})
+        tables = stats.get('tmdl_tables', '—')
+        visuals = stats.get('visuals_generated', '—')
+        print(f"  {name:<{name_width}}  {status:>8}  {fid_str:>9}  {str(tables):>7}  {str(visuals):>8}")
+    print()
+
+    # Aggregate stats
+    fidelities = [r['fidelity'] for r in batch_results.values() if r.get('fidelity') is not None]
+    if fidelities:
+        avg_fid = round(sum(fidelities) / len(fidelities), 1)
+        min_fid = min(fidelities)
+        max_fid = max(fidelities)
+        print(f"  Fidelity: avg {avg_fid}% | min {min_fid}% | max {max_fid}%")
+
+    return succeeded, failed
+
+
 def run_batch_migration(batch_dir, output_dir=None, prep_file=None, skip_extraction=False,
                         calendar_start=None, calendar_end=None, culture=None,
                         parallel=None, resume=False, jsonl_log=None, manifest=None):
@@ -1111,60 +1170,11 @@ def run_batch_migration(batch_dir, output_dir=None, prep_file=None, skip_extract
             display_name, wb_result = _run_task(task)
             batch_results[display_name] = wb_result
 
-    # Batch summary
     batch_duration = datetime.now() - batch_start
-    succeeded = sum(1 for r in batch_results.values() if r['success'])
-    failed = len(batch_results) - succeeded
-
-    # Single consolidated HTML dashboard at root output level
-    wb_paths = {}
-    for display_name, res in batch_results.items():
-        if res.get('success'):
-            name = res.get('report_name', display_name)
-            out = res.get('output_dir', migrated_root)
-            wb_paths[name] = {
-                'metadata_path': res.get('metadata_path'),
-            }
-            # Auto-discover migration report JSON in the workbook's output dir
-            pattern = os.path.join(out, f'migration_report_{name}_*.json')
-            candidates = sorted(glob.glob(pattern))
-            if candidates:
-                wb_paths[name]['migration_report_path'] = candidates[-1]
-    if wb_paths:
-        run_batch_html_dashboard(migrated_root, wb_paths)
-
-    print_header("BATCH MIGRATION SUMMARY")
-    print(f"  Total workbooks: {len(batch_results)}")
-    print(f"  Succeeded:       {succeeded}")
-    print(f"  Failed:          {failed}")
-    print(f"  Duration:        {batch_duration}")
-    print()
-
-    # Formatted summary table
-    name_width = max((len(n) for n in batch_results), default=20)
-    name_width = max(name_width, 20)
-    header = f"  {'Workbook':<{name_width}}  {'Status':>8}  {'Fidelity':>9}  {'Tables':>7}  {'Visuals':>8}"
-    print(header)
-    print(f"  {'-' * name_width}  {'--------':>8}  {'---------':>9}  {'-------':>7}  {'--------':>8}")
-    for name, result in batch_results.items():
-        status = "OK" if result['success'] else "FAIL"
-        fidelity = result.get('fidelity')
-        fid_str = f"{fidelity}%" if fidelity is not None else "—"
-        stats = result.get('stats', {})
-        tables = stats.get('tmdl_tables', '—')
-        visuals = stats.get('visuals_generated', '—')
-        print(f"  {name:<{name_width}}  {status:>8}  {fid_str:>9}  {str(tables):>7}  {str(visuals):>8}")
-    print()
-
-    # Aggregate stats
-    fidelities = [r['fidelity'] for r in batch_results.values() if r.get('fidelity') is not None]
-    if fidelities:
-        avg_fid = round(sum(fidelities) / len(fidelities), 1)
-        min_fid = min(fidelities)
-        max_fid = max(fidelities)
-        print(f"  Fidelity: avg {avg_fid}% | min {min_fid}% | max {max_fid}%")
+    succeeded, failed = _print_batch_summary(batch_results, batch_duration, migrated_root)
 
     # ── Close JSONL log ────────────────────────────────────
+    fidelities = [r['fidelity'] for r in batch_results.values() if r.get('fidelity') is not None]
     _write_jsonl('batch_end', {
         'total': len(batch_results),
         'succeeded': succeeded,
@@ -1180,12 +1190,8 @@ def run_batch_migration(batch_dir, output_dir=None, prep_file=None, skip_extract
 
 # ── Argument parser ──────────────────────────────────────────────────────────
 
-def _build_argument_parser():
-    """Build and return the CLI argument parser."""
-    parser = argparse.ArgumentParser(
-        description='Migrate a Tableau workbook to a Power BI project (.pbip)'
-    )
-
+def _add_source_args(parser):
+    """Add source file and extraction arguments."""
     parser.add_argument(
         'tableau_file',
         nargs='?',
@@ -1218,6 +1224,9 @@ def _build_argument_parser():
         help='Skip DAX/M conversion step (use existing intermediate files)'
     )
 
+
+def _add_output_args(parser):
+    """Add output directory and logging arguments."""
     parser.add_argument(
         '--output-dir',
         metavar='DIR',
@@ -1244,6 +1253,9 @@ def _build_argument_parser():
         help='Write logs to a file in addition to console'
     )
 
+
+def _add_batch_args(parser):
+    """Add batch migration and consolidation arguments."""
     parser.add_argument(
         '--batch',
         metavar='DIR',
@@ -1263,6 +1275,22 @@ def _build_argument_parser():
         )
     )
 
+    parser.add_argument(
+        '--batch-config',
+        metavar='FILE',
+        default=None,
+        help=(
+            'Path to a JSON batch configuration file.  The file should '
+            'contain a list of objects, each with at least a "file" key '
+            'and optional per-workbook overrides (prep, culture, '
+            'calendar_start, calendar_end, mode, paginated, output_dir).  '
+            'Example: [{"file": "sales.twbx", "culture": "fr-FR"}]'
+        )
+    )
+
+
+def _add_migration_args(parser):
+    """Add migration options (calendar, culture, format, etc.)."""
     parser.add_argument(
         '--dry-run',
         action='store_true',
@@ -1346,6 +1374,9 @@ def _build_argument_parser():
         help='Path to an existing .pbip project — merge changes incrementally, preserving manual edits'
     )
 
+
+def _add_report_args(parser):
+    """Add report, dashboard, and telemetry arguments."""
     parser.add_argument(
         '--compare',
         action='store_true',
@@ -1374,19 +1405,9 @@ def _build_argument_parser():
         help='Generate a paginated report layout alongside the interactive report'
     )
 
-    parser.add_argument(
-        '--batch-config',
-        metavar='FILE',
-        default=None,
-        help=(
-            'Path to a JSON batch configuration file.  The file should '
-            'contain a list of objects, each with at least a "file" key '
-            'and optional per-workbook overrides (prep, culture, '
-            'calendar_start, calendar_end, mode, paginated, output_dir).  '
-            'Example: [{"file": "sales.twbx", "culture": "fr-FR"}]'
-        )
-    )
 
+def _add_deploy_args(parser):
+    """Add deployment arguments (PBI Service, Fabric bundle)."""
     parser.add_argument(
         '--deploy',
         metavar='WORKSPACE_ID',
@@ -1424,7 +1445,9 @@ def _build_argument_parser():
         help='Trigger a dataset refresh after bundle deployment (requires --deploy-bundle)'
     )
 
-    # ── Tableau Server extraction arguments ───────────────────
+
+def _add_server_args(parser):
+    """Add Tableau Server extraction arguments."""
     parser.add_argument(
         '--server',
         metavar='URL',
@@ -1467,7 +1490,9 @@ def _build_argument_parser():
         help='Download and migrate all workbooks from a Tableau Server project (requires --server)'
     )
 
-    # ── Sprint 24: Enterprise & Scale features ────────────────
+
+def _add_enterprise_args(parser):
+    """Add enterprise and scale arguments (parallel, resume, manifest, etc.)."""
     parser.add_argument(
         '--parallel',
         metavar='N',
@@ -1507,7 +1532,9 @@ def _build_argument_parser():
         help='Check PBIR schema versions for updates and exit'
     )
 
-    # ── Shared Semantic Model arguments ───────────────────────
+
+def _add_shared_model_args(parser):
+    """Add shared semantic model arguments."""
     parser.add_argument(
         '--shared-model',
         nargs='*',
@@ -1565,6 +1592,23 @@ def _build_argument_parser():
             'Generates an HTML report with merge clusters and pairwise scores.'
         )
     )
+
+
+def _build_argument_parser():
+    """Build and return the CLI argument parser."""
+    parser = argparse.ArgumentParser(
+        description='Migrate a Tableau workbook to a Power BI project (.pbip)'
+    )
+
+    _add_source_args(parser)
+    _add_output_args(parser)
+    _add_batch_args(parser)
+    _add_migration_args(parser)
+    _add_report_args(parser)
+    _add_deploy_args(parser)
+    _add_server_args(parser)
+    _add_enterprise_args(parser)
+    _add_shared_model_args(parser)
 
     return parser
 
@@ -2280,6 +2324,11 @@ def main():
     if not args.tableau_file:
         parser.error('tableau_file is required (or use --batch DIR)')
 
+    return _run_single_migration(args)
+
+
+def _print_single_migration_header(args):
+    """Print the header with migration options for a single file."""
     print_header("TABLEAU TO POWER BI MIGRATION")
     print(f"Source file: {args.tableau_file}")
     if args.prep:
@@ -2304,6 +2353,165 @@ def main():
         print(f"Telemetry:   enabled")
     print()
 
+
+def _init_telemetry(args):
+    """Initialize telemetry collector if opt-in. Returns collector or None."""
+    if not getattr(args, 'telemetry', False):
+        return None
+    try:
+        from powerbi_import.telemetry import TelemetryCollector
+        telemetry = TelemetryCollector(enabled=True)
+        telemetry.start()
+        return telemetry
+    except (ImportError, OSError, ValueError) as e:
+        logger.debug('Telemetry init failed: %s', e)
+        return None
+
+
+def _finalize_telemetry(telemetry, all_success, results):
+    """Finalize and send telemetry data."""
+    if not telemetry:
+        return
+    try:
+        telemetry.record_stats(
+            success=all_success,
+            extraction=bool(results.get('extraction')),
+            generation=bool(results.get('generation')),
+        )
+        telemetry.finish()
+        telemetry.save()
+        telemetry.send()
+    except (OSError, ValueError) as e:
+        logger.debug('Telemetry finalization failed: %s', e)
+
+
+def _run_incremental_merge(args, source_basename):
+    """Run optional incremental merge step."""
+    try:
+        from powerbi_import.incremental import IncrementalMerger
+        out_dir = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
+        generated_dir = os.path.join(out_dir, source_basename)
+        existing_dir = args.incremental
+        if os.path.isdir(existing_dir) and os.path.isdir(generated_dir):
+            print_header("INCREMENTAL MERGE")
+            merge_stats = IncrementalMerger.merge(
+                existing_dir=existing_dir,
+                incoming_dir=generated_dir,
+                output_dir=generated_dir,
+            )
+            print(f"  Added: {merge_stats['added']}")
+            print(f"  Merged: {merge_stats['merged']}")
+            print(f"  Removed: {merge_stats['removed']}")
+            print(f"  Preserved: {merge_stats['preserved']}")
+            if merge_stats['conflicts']:
+                print(f"  Conflicts: {len(merge_stats['conflicts'])}")
+                for c in merge_stats['conflicts']:
+                    print(f"    ⚠ {c}")
+        else:
+            print(f"  ⚠ Incremental merge skipped: directory not found")
+    except (ImportError, OSError, ValueError) as exc:
+        print(f"  ⚠ Incremental merge failed: {exc}")
+
+
+def _run_goals_generation(args, source_basename):
+    """Run optional Pulse → Goals/Scorecard generation."""
+    try:
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'tableau_export'))
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'powerbi_import'))
+        from pulse_extractor import extract_pulse_metrics, has_pulse_metrics
+        from goals_generator import generate_goals_json, write_goals_artifact
+        import xml.etree.ElementTree as _ET
+
+        twb_path = args.workbook
+        pulse_root = None
+        if twb_path and os.path.isfile(twb_path):
+            if twb_path.endswith('.twbx'):
+                import zipfile
+                with zipfile.ZipFile(twb_path, 'r') as z:
+                    for name in z.namelist():
+                        if name.endswith('.twb'):
+                            with z.open(name) as f:
+                                pulse_root = _ET.parse(f).getroot()
+                            break
+            else:
+                pulse_root = _ET.parse(twb_path).getroot()
+
+        if pulse_root is not None and has_pulse_metrics(pulse_root):
+            metrics = extract_pulse_metrics(pulse_root)
+            if metrics:
+                scorecard = generate_goals_json(metrics, report_name=source_basename)
+                out_dir = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
+                project_dir = os.path.join(out_dir, source_basename)
+                filepath = write_goals_artifact(scorecard, project_dir)
+                print(f"  ✓ Goals scorecard: {filepath} ({len(metrics)} goals)")
+            else:
+                print("  ⚠ No Pulse metrics found in workbook")
+        else:
+            print("  ⚠ No Pulse metrics found in workbook")
+    except (ImportError, OSError, ValueError) as exc:
+        print(f"  ⚠ Goals generation failed: {exc}")
+
+
+def _run_post_generation_reports(args, source_basename, results):
+    """Run comparison report and telemetry dashboard if requested."""
+    if getattr(args, 'compare', False) and results.get('generation') and not args.dry_run:
+        try:
+            from powerbi_import.comparison_report import generate_comparison_report
+            extract_dir = os.path.join(os.path.dirname(__file__), 'tableau_export')
+            out_base = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
+            pbip_dir = os.path.join(out_base, source_basename)
+            cmp_path = os.path.join(out_base, f'comparison_{source_basename}.html')
+            html_path = generate_comparison_report(extract_dir, pbip_dir, output_path=cmp_path)
+            if html_path:
+                print(f"\n📋 Comparison report: {html_path}")
+        except (ImportError, OSError, ValueError) as exc:
+            logger.warning(f"Comparison report generation failed: {exc}")
+
+    if getattr(args, 'dashboard', False) and results.get('generation') and not args.dry_run:
+        try:
+            from powerbi_import.telemetry_dashboard import generate_dashboard as gen_telem_dashboard
+            out_base = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
+            dash_path = gen_telem_dashboard(out_base)
+            if dash_path:
+                print(f"\n📊 Telemetry dashboard: {dash_path}")
+        except (ImportError, OSError, ValueError) as exc:
+            logger.warning(f"Telemetry dashboard generation failed: {exc}")
+
+
+def _run_deploy_to_pbi_service(args, source_basename):
+    """Deploy generated project to Power BI Service."""
+    try:
+        from powerbi_import.deploy.pbi_deployer import PBIWorkspaceDeployer
+        print_header("DEPLOYING TO POWER BI SERVICE")
+        deployer = PBIWorkspaceDeployer(workspace_id=args.deploy)
+        out_dir = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
+        project_dir = os.path.join(out_dir, source_basename)
+        print(f"  Workspace: {args.deploy}")
+        print(f"  Project:   {project_dir}")
+        deploy_result = deployer.deploy_project(
+            project_dir,
+            dataset_name=source_basename,
+            refresh=getattr(args, 'deploy_refresh', False),
+        )
+        if deploy_result.status == 'succeeded':
+            print(f"  ✓ Deployed — dataset={deploy_result.dataset_id}")
+            if deploy_result.report_id:
+                print(f"  ✓ Report  — id={deploy_result.report_id}")
+        else:
+            print(f"  ✗ Deploy failed: {deploy_result.error}")
+    except Exception as exc:
+        print(f"  ✗ Deployment error: {exc}")
+        logger.error("Deployment failed: %s", exc, exc_info=True)
+
+
+def _run_single_migration(args):
+    """Execute the full single-file migration pipeline.
+
+    Handles extraction, generation, incremental merge, goals, reports,
+    and optional deployment for a single Tableau workbook.
+    """
+    _print_single_migration_header(args)
+
     start_time = datetime.now()
     results = {}
 
@@ -2319,15 +2527,7 @@ def main():
         total_steps += 1
     progress = MigrationProgress(total_steps=total_steps, show_bar=show_progress) if show_progress else NullProgress()
 
-    # Initialize telemetry (opt-in)
-    telemetry = None
-    if getattr(args, 'telemetry', False):
-        try:
-            from powerbi_import.telemetry import TelemetryCollector
-            telemetry = TelemetryCollector(enabled=True)
-            telemetry.start()
-        except (ImportError, OSError, ValueError) as e:
-            logger.debug('Telemetry init failed: %s', e)
+    telemetry = _init_telemetry(args)
 
     # Step 1: Extraction
     progress.start("Extracting Tableau data")
@@ -2357,7 +2557,6 @@ def main():
         return _run_assessment_mode(args, results)
 
     # Step 2: Generate .pbip project
-    # Derive report name from the source filename
     source_basename = os.path.splitext(os.path.basename(args.tableau_file))[0]
 
     # Rollback: backup existing output if requested
@@ -2400,68 +2599,11 @@ def main():
 
     # Step 3: Incremental merge (optional)
     if getattr(args, 'incremental', None) and results.get('generation'):
-        try:
-            from powerbi_import.incremental import IncrementalMerger
-            out_dir = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
-            generated_dir = os.path.join(out_dir, source_basename)
-            existing_dir = args.incremental
-            if os.path.isdir(existing_dir) and os.path.isdir(generated_dir):
-                print_header("INCREMENTAL MERGE")
-                merge_stats = IncrementalMerger.merge(
-                    existing_dir=existing_dir,
-                    incoming_dir=generated_dir,
-                    output_dir=generated_dir,
-                )
-                print(f"  Added: {merge_stats['added']}")
-                print(f"  Merged: {merge_stats['merged']}")
-                print(f"  Removed: {merge_stats['removed']}")
-                print(f"  Preserved: {merge_stats['preserved']}")
-                if merge_stats['conflicts']:
-                    print(f"  Conflicts: {len(merge_stats['conflicts'])}")
-                    for c in merge_stats['conflicts']:
-                        print(f"    ⚠ {c}")
-            else:
-                print(f"  ⚠ Incremental merge skipped: directory not found")
-        except (ImportError, OSError, ValueError) as exc:
-            print(f"  ⚠ Incremental merge failed: {exc}")
+        _run_incremental_merge(args, source_basename)
 
     # Step 3b: Goals/Scorecard generation (optional, --goals flag)
     if getattr(args, 'goals', False) and results.get('generation'):
-        try:
-            sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'tableau_export'))
-            sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'powerbi_import'))
-            from pulse_extractor import extract_pulse_metrics, has_pulse_metrics
-            from goals_generator import generate_goals_json, write_goals_artifact
-            import xml.etree.ElementTree as _ET
-
-            twb_path = args.workbook
-            pulse_root = None
-            if twb_path and os.path.isfile(twb_path):
-                if twb_path.endswith('.twbx'):
-                    import zipfile
-                    with zipfile.ZipFile(twb_path, 'r') as z:
-                        for name in z.namelist():
-                            if name.endswith('.twb'):
-                                with z.open(name) as f:
-                                    pulse_root = _ET.parse(f).getroot()
-                                break
-                else:
-                    pulse_root = _ET.parse(twb_path).getroot()
-
-            if pulse_root is not None and has_pulse_metrics(pulse_root):
-                metrics = extract_pulse_metrics(pulse_root)
-                if metrics:
-                    scorecard = generate_goals_json(metrics, report_name=source_basename)
-                    out_dir = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
-                    project_dir = os.path.join(out_dir, source_basename)
-                    filepath = write_goals_artifact(scorecard, project_dir)
-                    print(f"  ✓ Goals scorecard: {filepath} ({len(metrics)} goals)")
-                else:
-                    print("  ⚠ No Pulse metrics found in workbook")
-            else:
-                print("  ⚠ No Pulse metrics found in workbook")
-        except (ImportError, OSError, ValueError) as exc:
-            print(f"  ⚠ Goals generation failed: {exc}")
+        _run_goals_generation(args, source_basename)
 
     # Step 4: Migration report
     progress.start("Generating migration report")
@@ -2479,73 +2621,17 @@ def main():
         dashboard_dir = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
         run_html_dashboard(source_basename, dashboard_dir)
 
-    # Step 4c: Comparison report (optional)
-    if getattr(args, 'compare', False) and results.get('generation') and not args.dry_run:
-        try:
-            from powerbi_import.comparison_report import generate_comparison_report
-            extract_dir = os.path.join(os.path.dirname(__file__), 'tableau_export')
-            out_base = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
-            pbip_dir = os.path.join(out_base, source_basename)
-            cmp_path = os.path.join(out_base, f'comparison_{source_basename}.html')
-            html_path = generate_comparison_report(extract_dir, pbip_dir, output_path=cmp_path)
-            if html_path:
-                print(f"\n📋 Comparison report: {html_path}")
-        except (ImportError, OSError, ValueError) as exc:
-            logger.warning(f"Comparison report generation failed: {exc}")
-
-    # Step 4d: Telemetry dashboard (optional)
-    if getattr(args, 'dashboard', False) and results.get('generation') and not args.dry_run:
-        try:
-            from powerbi_import.telemetry_dashboard import generate_dashboard as gen_telem_dashboard
-            out_base = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
-            dash_path = gen_telem_dashboard(out_base)
-            if dash_path:
-                print(f"\n📊 Telemetry dashboard: {dash_path}")
-        except (ImportError, OSError, ValueError) as exc:
-            logger.warning(f"Telemetry dashboard generation failed: {exc}")
+    # Step 4c–4d: Comparison report and telemetry dashboard (optional)
+    _run_post_generation_reports(args, source_basename, results)
 
     # Step 5: Deploy to Power BI Service (optional)
-    deploy_result = None
     if getattr(args, 'deploy', None) and results.get('generation') and not args.dry_run:
-        try:
-            from powerbi_import.deploy.pbi_deployer import PBIWorkspaceDeployer
-            print_header("DEPLOYING TO POWER BI SERVICE")
-            deployer = PBIWorkspaceDeployer(workspace_id=args.deploy)
-            out_dir = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
-            project_dir = os.path.join(out_dir, source_basename)
-            print(f"  Workspace: {args.deploy}")
-            print(f"  Project:   {project_dir}")
-            deploy_result = deployer.deploy_project(
-                project_dir,
-                dataset_name=source_basename,
-                refresh=getattr(args, 'deploy_refresh', False),
-            )
-            if deploy_result.status == 'succeeded':
-                print(f"  ✓ Deployed — dataset={deploy_result.dataset_id}")
-                if deploy_result.report_id:
-                    print(f"  ✓ Report  — id={deploy_result.report_id}")
-            else:
-                print(f"  ✗ Deploy failed: {deploy_result.error}")
-        except Exception as exc:
-            print(f"  ✗ Deployment error: {exc}")
-            logger.error("Deployment failed: %s", exc, exc_info=True)
+        _run_deploy_to_pbi_service(args, source_basename)
 
     # Final report
     all_success = _print_migration_summary(results, report_summary, start_time)
 
-    # Finalize telemetry
-    if telemetry:
-        try:
-            telemetry.record_stats(
-                success=all_success,
-                extraction=bool(results.get('extraction')),
-                generation=bool(results.get('generation')),
-            )
-            telemetry.finish()
-            telemetry.save()
-            telemetry.send()
-        except (OSError, ValueError) as e:
-            logger.debug('Telemetry finalization failed: %s', e)
+    _finalize_telemetry(telemetry, all_success, results)
 
     return ExitCode.SUCCESS if all_success else ExitCode.GENERAL_ERROR
 

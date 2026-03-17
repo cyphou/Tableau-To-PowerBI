@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "SemanticModel",
+    "displayName": "BugBashModel"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "3ebc3b8a-53aa-4eac-9012-efeea595a164"
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/3.1.0/schema.json",
+  "name": "TestBundle_Model",
+  "description": "Model explorer for shared semantic model 'TestBundle'. Open this to view and edit the data model."
+}

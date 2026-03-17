@@ -1,5 +1,24 @@
 # Changelog
 
+## v16.0.0 — Code Quality & Maintainability
+
+### Sprint 45 — CLI Refactoring & Function Decomposition ✅
+- **`_build_argument_parser()`** decomposed into 9 focused helpers (`_add_source_args`, `_add_output_args`, `_add_batch_args`, `_add_migration_args`, `_add_report_args`, `_add_deploy_args`, `_add_server_args`, `_add_enterprise_args`, `_add_shared_model_args`) + 12-line dispatcher
+- **`main()`** decomposed: single-file pipeline extracted into `_run_single_migration(args)` + 7 helper functions (`_print_single_migration_header`, `_init_telemetry`, `_finalize_telemetry`, `_run_incremental_merge`, `_run_goals_generation`, `_run_post_generation_reports`, `_run_deploy_to_pbi_service`)
+- **`run_batch_migration()`**: batch summary printing extracted into `_print_batch_summary()`
+- **`import_shared_model()`**: model-explorer report creation extracted into `_create_model_explorer_report()`, artifact saving extracted into `_save_shared_model_artifacts()`
+- **`_build_visual_query()`**: shelf field classification extracted into `_classify_shelf_fields()`
+- **31 new regression tests** in `test_cli_refactor.py` covering all extracted helpers
+- **Overall: 4,029 → 4,060 tests**, 0 failures
+
+### Sprint 44 — Silent Error Cleanup Phase 2 ✅
+- Eliminated all 5 `except Exception: pass` blocks across migrate.py and deploy/
+- Narrowed broad `except Exception` catches to specific types
+- Added logging to bare-pass exception handlers
+- Added `logger` to `m_query_builder.py`
+- **33 new error-path tests** validating narrowed exception handling
+- **Overall: 3,996 → 4,029 tests**, 0 failures
+
 ## v15.0.0 — Global Assessment & Fabric Bundle Deployment
 
 ### Sprint 43 — Fabric Bundle Deployment ✅

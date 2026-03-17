@@ -1,0 +1,99 @@
+{
+  "generated_at": "2026-03-16T18:20:05.108525",
+  "source": "Tableau Migration",
+  "report_name": "Financial_Report",
+  "objects_converted": {
+    "worksheets": 4,
+    "dashboards": 1,
+    "datasources": 1,
+    "calculations": 6,
+    "parameters": 2,
+    "filters": 4,
+    "stories": 1,
+    "sets": 0,
+    "groups": 0,
+    "bins": 0,
+    "hierarchies": 0,
+    "user_filters": 0,
+    "actions": 0,
+    "custom_sql": 0
+  },
+  "generated_output": {
+    "pages": 1,
+    "visuals": 4,
+    "theme_applied": false,
+    "theme_detail": {
+      "status": "skipped",
+      "reason": "no dashboard colors detected"
+    }
+  },
+  "tmdl_stats": {
+    "tables": 4,
+    "measures": 11,
+    "columns": 18,
+    "relationships": 0
+  },
+  "visual_type_mappings": {
+    "Revenue vs Expenses": "Automatic",
+    "Category Breakdown": "Automatic",
+    "Business Unit Performance": "Automatic",
+    "Top 10 Accounts": "Automatic"
+  },
+  "visual_details": [
+    {
+      "worksheet": "Revenue vs Expenses",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "lineChart",
+      "dimensions": [
+        "transaction_date"
+      ],
+      "measures": [
+        "Revenue",
+        "Expenses"
+      ],
+      "field_count": 3
+    },
+    {
+      "worksheet": "Category Breakdown",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "category"
+      ],
+      "measures": [
+        "Net_Income",
+        "Net_Income"
+      ],
+      "field_count": 3
+    },
+    {
+      "worksheet": "Business Unit Performance",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "scatterChart",
+      "dimensions": [
+        "business_unit",
+        "business_unit"
+      ],
+      "measures": [
+        "Profit_Margin",
+        "Profit_Margin",
+        "Revenue"
+      ],
+      "field_count": 5
+    },
+    {
+      "worksheet": "Top 10 Accounts",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "account"
+      ],
+      "measures": [
+        "amount",
+        "amount"
+      ],
+      "field_count": 3
+    }
+  ],
+  "approximations": []
+}

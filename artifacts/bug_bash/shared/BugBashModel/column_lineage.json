@@ -1,0 +1,203 @@
+{
+  "Orders": {
+    "source_workbooks": [
+      "Superstore_Sales"
+    ],
+    "columns": {
+      "Row ID": [
+        "Superstore_Sales"
+      ],
+      "Order ID": [
+        "Superstore_Sales"
+      ],
+      "Order Date": [
+        "Superstore_Sales"
+      ],
+      "Ship Date": [
+        "Superstore_Sales"
+      ],
+      "Ship Mode": [
+        "Superstore_Sales"
+      ],
+      "Customer ID": [
+        "Superstore_Sales"
+      ],
+      "Customer Name": [
+        "Superstore_Sales"
+      ],
+      "Segment": [
+        "Superstore_Sales"
+      ],
+      "Country": [
+        "Superstore_Sales"
+      ],
+      "City": [
+        "Superstore_Sales"
+      ],
+      "State": [
+        "Superstore_Sales"
+      ],
+      "Postal Code": [
+        "Superstore_Sales"
+      ],
+      "Region": [
+        "Superstore_Sales"
+      ],
+      "Product ID": [
+        "Superstore_Sales"
+      ],
+      "Category": [
+        "Superstore_Sales"
+      ],
+      "Sub-Category": [
+        "Superstore_Sales"
+      ],
+      "Product Name": [
+        "Superstore_Sales"
+      ],
+      "Sales": [
+        "Superstore_Sales"
+      ],
+      "Quantity": [
+        "Superstore_Sales"
+      ],
+      "Discount": [
+        "Superstore_Sales"
+      ],
+      "Profit": [
+        "Superstore_Sales"
+      ]
+    }
+  },
+  "Returns": {
+    "source_workbooks": [
+      "Superstore_Sales"
+    ],
+    "columns": {
+      "Returned": [
+        "Superstore_Sales"
+      ],
+      "Order ID": [
+        "Superstore_Sales"
+      ]
+    }
+  },
+  "People": {
+    "source_workbooks": [
+      "Superstore_Sales"
+    ],
+    "columns": {
+      "Regional Manager": [
+        "Superstore_Sales"
+      ],
+      "Region": [
+        "Superstore_Sales"
+      ]
+    }
+  },
+  "Sensors": {
+    "source_workbooks": [
+      "Manufacturing_IoT"
+    ],
+    "columns": {
+      "reading_id": [
+        "Manufacturing_IoT"
+      ],
+      "reading_time": [
+        "Manufacturing_IoT"
+      ],
+      "machine_id": [
+        "Manufacturing_IoT"
+      ],
+      "sensor_type": [
+        "Manufacturing_IoT"
+      ],
+      "value": [
+        "Manufacturing_IoT"
+      ],
+      "threshold_min": [
+        "Manufacturing_IoT"
+      ],
+      "threshold_max": [
+        "Manufacturing_IoT"
+      ],
+      "unit": [
+        "Manufacturing_IoT"
+      ],
+      "quality_score": [
+        "Manufacturing_IoT"
+      ],
+      "plant_id": [
+        "Manufacturing_IoT"
+      ],
+      "delta_value": [
+        "Manufacturing_IoT"
+      ],
+      "angle_degrees": [
+        "Manufacturing_IoT"
+      ],
+      "power_watts": [
+        "Manufacturing_IoT"
+      ]
+    }
+  },
+  "Machines": {
+    "source_workbooks": [
+      "Manufacturing_IoT"
+    ],
+    "columns": {
+      "machine_id": [
+        "Manufacturing_IoT"
+      ],
+      "machine_name": [
+        "Manufacturing_IoT"
+      ],
+      "machine_type": [
+        "Manufacturing_IoT"
+      ],
+      "install_date": [
+        "Manufacturing_IoT"
+      ],
+      "location": [
+        "Manufacturing_IoT"
+      ],
+      "line_id": [
+        "Manufacturing_IoT"
+      ],
+      "rated_capacity": [
+        "Manufacturing_IoT"
+      ]
+    }
+  },
+  "Maintenance": {
+    "source_workbooks": [
+      "Manufacturing_IoT"
+    ],
+    "columns": {
+      "maint_id": [
+        "Manufacturing_IoT"
+      ],
+      "machine_id": [
+        "Manufacturing_IoT"
+      ],
+      "maint_date": [
+        "Manufacturing_IoT"
+      ],
+      "maint_type": [
+        "Manufacturing_IoT"
+      ],
+      "maint_cost": [
+        "Manufacturing_IoT"
+      ],
+      "downtime_hours": [
+        "Manufacturing_IoT"
+      ],
+      "technician": [
+        "Manufacturing_IoT"
+      ],
+      "description": [
+        "Manufacturing_IoT"
+      ]
+    }
+  }
+}

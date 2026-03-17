@@ -1,0 +1,20 @@
+table 'Top N'
+	lineageTag: 344a0195-6a0b-47f1-bde2-8cafc31aa8f4
+
+	measure 'Top N' = SELECTEDVALUE('Top N'[Value], 10)
+		lineageTag: 23efa0ad-f1f7-4dc9-bbca-f4e7bf3a3ef4
+
+	column Value
+		dataType: int64
+		lineageTag: 41a9c30a-2a56-4bba-80e0-30b19605af4c
+		summarizeBy: none
+		sourceColumn: Value
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Top N-b17d0cd1-3c8f-46c6-807c-6095d0291991' = calculated
+		mode: import
+		source = GENERATESERIES(1, 50, 1)
+
+	annotation PBI_ResultType = Table
+

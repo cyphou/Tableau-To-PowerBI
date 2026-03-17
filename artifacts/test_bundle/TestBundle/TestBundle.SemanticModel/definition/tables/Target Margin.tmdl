@@ -1,0 +1,20 @@
+table 'Target Margin'
+	lineageTag: 394ba0e7-5cd2-44e5-91ec-37dcb8c9dd46
+
+	measure 'Target Margin' = SELECTEDVALUE('Target Margin'[Value], 0.2)
+		lineageTag: 17a6af18-c58d-4942-95ea-705784f1b03d
+
+	column Value
+		dataType: double
+		lineageTag: 0b3e4480-6cd5-454c-9f6f-35f9b62a2b03
+		summarizeBy: none
+		sourceColumn: Value
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Target Margin-4666bfbf-9f0b-4fc3-b9f5-3b4ead2305ab' = calculated
+		mode: import
+		source = GENERATESERIES(0, 0.5, 0.01)
+
+	annotation PBI_ResultType = Table
+

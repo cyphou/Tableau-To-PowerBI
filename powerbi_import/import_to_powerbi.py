@@ -288,48 +288,7 @@ class PowerBIImporter:
         print(f"  [OK] Shared SemanticModel created: {sm_dir}")
 
         # Create a model-explorer report so the model can be opened in PBI Desktop
-        # PBI Desktop requires a .Report artifact to open a .pbip file
-        model_report_name = f"{model_name}_Model"
-        model_report_dir = os.path.join(project_dir, f"{model_report_name}.Report")
-        os.makedirs(os.path.join(model_report_dir, 'definition'), exist_ok=True)
-
-        # .platform
-        _write_json_file(os.path.join(model_report_dir, '.platform'), {
-            "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
-            "metadata": {"type": "Report", "displayName": model_report_name},
-            "config": {"version": "2.0", "logicalId": str(uuid.uuid4())},
-        })
-
-        # definition.pbir → byPath to the shared model
-        _write_json_file(os.path.join(model_report_dir, 'definition.pbir'), {
-            "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definitionProperties/2.0.0/schema.json",
-            "version": "4.0",
-            "datasetReference": {
-                "byPath": {"path": f"../{model_name}.SemanticModel"},
-            },
-        })
-
-        # Minimal report.json (empty report — user opens Model view)
-        _write_json_file(os.path.join(model_report_dir, 'definition', 'report.json'), {
-            "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/3.1.0/schema.json",
-            "name": model_report_name,
-            "description": f"Model explorer for shared semantic model '{model_name}'. Open this to view and edit the data model.",
-        })
-
-        # version.json
-        _write_json_file(os.path.join(model_report_dir, 'definition', 'version.json'), {
-            "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/versionMetadata/1.0.0/schema.json",
-            "dataFormatVersion": "2.0",
-        })
-
-        # .pbip pointing to the model-explorer report
-        _write_json_file(os.path.join(project_dir, f"{model_name}.pbip"), {
-            "$schema": "https://developer.microsoft.com/json-schemas/fabric/pbip/pbipProperties/1.0.0/schema.json",
-            "version": "1.0",
-            "artifacts": [{"report": {"path": f"{model_report_name}.Report"}}],
-            "settings": {"enableAutoRecovery": True},
-        })
-        print(f"  [OK] Model explorer .pbip: {model_name}.pbip → {model_report_name}.Report")
+        self._create_model_explorer_report(project_dir, model_name)
 
         # 5. Generate thin reports for each workbook
         print(f"\n  Step 4: Generating {len(workbook_names)} thin reports...")
@@ -357,26 +316,99 @@ class PowerBIImporter:
             report_paths.append(report_path)
             print(f"    [OK] Thin report: {wb_name}")
 
-        # 6. Write merge assessment report
+        # 6. Save artifacts (assessment, config, lineage, HTML report)
+        self._save_shared_model_artifacts(
+            project_dir, assessment, lineage, save_config,
+            workbook_names, all_converted_objects, merged, model_name,
+        )
+
+        print(f"\n  Shared Semantic Model migration complete!")
+        print(f"  Output: {project_dir}")
+
+        return {
+            'assessment': assessment,
+            'model_path': sm_dir,
+            'report_paths': report_paths,
+            'validation_issues': validation_issues,
+            'risk_analysis': risk_analysis,
+            'rls_consolidations': rls_consolidations,
+            'lineage': lineage,
+            'navigation': nav_configs,
+        }
+
+    def _create_model_explorer_report(self, project_dir, model_name):
+        """Create a model-explorer report so the model can be opened in PBI Desktop.
+
+        PBI Desktop requires a .Report artifact to open a .pbip file.
+        """
+        model_report_name = f"{model_name}_Model"
+        model_report_dir = os.path.join(project_dir, f"{model_report_name}.Report")
+        os.makedirs(os.path.join(model_report_dir, 'definition'), exist_ok=True)
+
+        # .platform
+        _write_json_file(os.path.join(model_report_dir, '.platform'), {
+            "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+            "metadata": {"type": "Report", "displayName": model_report_name},
+            "config": {"version": "2.0", "logicalId": str(uuid.uuid4())},
+        })
+
+        # definition.pbir -> byPath to the shared model
+        _write_json_file(os.path.join(model_report_dir, 'definition.pbir'), {
+            "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definitionProperties/2.0.0/schema.json",
+            "version": "4.0",
+            "datasetReference": {
+                "byPath": {"path": f"../{model_name}.SemanticModel"},
+            },
+        })
+
+        # Minimal report.json (empty report -- user opens Model view)
+        _write_json_file(os.path.join(model_report_dir, 'definition', 'report.json'), {
+            "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/3.1.0/schema.json",
+            "name": model_report_name,
+            "description": f"Model explorer for shared semantic model '{model_name}'. Open this to view and edit the data model.",
+        })
+
+        # version.json
+        _write_json_file(os.path.join(model_report_dir, 'definition', 'version.json'), {
+            "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/versionMetadata/1.0.0/schema.json",
+            "dataFormatVersion": "2.0",
+        })
+
+        # .pbip pointing to the model-explorer report
+        _write_json_file(os.path.join(project_dir, f"{model_name}.pbip"), {
+            "$schema": "https://developer.microsoft.com/json-schemas/fabric/pbip/pbipProperties/1.0.0/schema.json",
+            "version": "1.0",
+            "artifacts": [{"report": {"path": f"{model_report_name}.Report"}}],
+            "settings": {"enableAutoRecovery": True},
+        })
+        print(f"  [OK] Model explorer .pbip: {model_name}.pbip → {model_report_name}.Report")
+
+    def _save_shared_model_artifacts(self, project_dir, assessment, lineage,
+                                      save_config, workbook_names,
+                                      all_converted_objects, merged, model_name):
+        """Save merge assessment, config, lineage, and HTML report artifacts."""
+        from powerbi_import.merge_assessment import generate_merge_report
+
+        # Write merge assessment report
         assess_path = os.path.join(project_dir, 'merge_assessment.json')
         generate_merge_report(assessment, output_path=assess_path)
         print(f"\n  [OK] Merge assessment saved: {assess_path}")
 
-        # 6b. Save merge config if requested
+        # Save merge config if requested
         if save_config:
             from powerbi_import.merge_config import save_merge_config
             config_path = os.path.join(project_dir, 'merge_config.json')
             save_merge_config(assessment, workbook_names, config_path, merged)
             print(f"  [OK] Merge config saved: {config_path}")
 
-        # 6c. Save lineage report
+        # Save lineage report
         if lineage:
             lineage_path = os.path.join(project_dir, 'column_lineage.json')
             with open(lineage_path, 'w', encoding='utf-8') as f:
                 json.dump(lineage, f, indent=2, ensure_ascii=False)
             print(f"  [OK] Column lineage saved: {lineage_path}")
 
-        # 7. Generate HTML merge report
+        # Generate HTML merge report
         try:
             from powerbi_import.merge_report_html import generate_merge_html_report
         except ImportError:
@@ -392,20 +424,6 @@ class PowerBIImporter:
             output_path=html_path,
         )
         print(f"  [OK] HTML merge report: {html_path}")
-
-        print(f"\n  Shared Semantic Model migration complete!")
-        print(f"  Output: {project_dir}")
-
-        return {
-            'assessment': assessment,
-            'model_path': sm_dir,
-            'report_paths': report_paths,
-            'validation_issues': validation_issues,
-            'risk_analysis': risk_analysis,
-            'rls_consolidations': rls_consolidations,
-            'lineage': lineage,
-            'navigation': nav_configs,
-        }
 
 
 def main():

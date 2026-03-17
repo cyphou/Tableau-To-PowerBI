@@ -1,0 +1,109 @@
+{
+  "generated_at": "2026-03-16T18:20:05.741645",
+  "source": "Tableau Migration",
+  "report_name": "Marketing_Campaign",
+  "objects_converted": {
+    "worksheets": 5,
+    "dashboards": 1,
+    "datasources": 1,
+    "calculations": 25,
+    "parameters": 2,
+    "filters": 0,
+    "stories": 1,
+    "sets": 0,
+    "groups": 0,
+    "bins": 0,
+    "hierarchies": 0,
+    "user_filters": 0,
+    "actions": 3,
+    "custom_sql": 0
+  },
+  "generated_output": {
+    "pages": 1,
+    "visuals": 6,
+    "theme_applied": false,
+    "theme_detail": {
+      "status": "skipped",
+      "reason": "no dashboard colors detected"
+    }
+  },
+  "tmdl_stats": {
+    "tables": 4,
+    "measures": 15,
+    "columns": 50,
+    "relationships": 2
+  },
+  "visual_type_mappings": {
+    "Campaign Performance": "Automatic",
+    "Lead Funnel": "Automatic",
+    "Conversion Trend": "Automatic",
+    "Budget Analysis": "Automatic",
+    "Lead Details": "Automatic"
+  },
+  "visual_details": [
+    {
+      "worksheet": "Campaign Performance",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "campaign_name",
+        "channel"
+      ],
+      "measures": [
+        "Calc_ROI",
+        "Calc_ROI"
+      ],
+      "field_count": 4
+    },
+    {
+      "worksheet": "Lead Funnel",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "lead_status",
+        "channel"
+      ],
+      "measures": [
+        "Calc_NonBlankLeads"
+      ],
+      "field_count": 3
+    },
+    {
+      "worksheet": "Conversion Trend",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "lineChart",
+      "dimensions": [
+        "created_date"
+      ],
+      "measures": [
+        "Calc_ConvRate"
+      ],
+      "field_count": 2
+    },
+    {
+      "worksheet": "Budget Analysis",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "scatterChart",
+      "dimensions": [
+        "channel"
+      ],
+      "measures": [
+        "budget",
+        "deal_value",
+        "spend"
+      ],
+      "field_count": 4
+    },
+    {
+      "worksheet": "Lead Details",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "tableEx",
+      "dimensions": [
+        "company"
+      ],
+      "measures": [],
+      "field_count": 1
+    }
+  ],
+  "approximations": []
+}
