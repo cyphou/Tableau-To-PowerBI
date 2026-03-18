@@ -691,9 +691,31 @@ def merge_semantic_models(all_extracted: List[dict],
     merged['parameters'] = _merge_parameters(all_extracted, workbook_names)
 
     # 4. Merge remaining objects (union, deduplicated by name)
-    for key in ('sets', 'groups', 'bins', 'hierarchies', 'sort_orders',
+    for key in ('sets', 'groups', 'bins', 'sort_orders',
                 'custom_sql', 'user_filters', 'filters', 'stories', 'actions'):
         merged[key] = _merge_list_by_name(all_extracted, key)
+
+    # 4b. Merge hierarchies with level-aware deduplication
+    merged['hierarchies'] = _merge_hierarchies(all_extracted, workbook_names)
+
+    # 4c. Merge calculation groups
+    merged['_calculation_groups'] = _merge_calculation_groups(
+        all_extracted, workbook_names
+    )
+
+    # 4d. Merge field parameters
+    merged['_field_parameters'] = _merge_field_parameters(
+        all_extracted, workbook_names
+    )
+
+    # 4e. Merge perspectives
+    merged['_perspectives'] = _merge_perspectives(all_extracted, workbook_names)
+
+    # 4f. Merge cultures
+    merged['_cultures'] = _merge_cultures(all_extracted, workbook_names)
+
+    # 4g. Merge goals / pulse metrics
+    merged['_goals'] = _merge_goals(all_extracted, workbook_names)
 
     # 5. Merge aliases
     for extracted in all_extracted:
@@ -939,6 +961,348 @@ def _merge_list_by_name(all_extracted: List[dict], key: str) -> list:
             if name:
                 seen_names.add(name)
             result.append(copy.deepcopy(item))
+    return result
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  Sprint 54 — Artifact-level merge functions
+# ═══════════════════════════════════════════════════════════════════
+
+def _merge_hierarchies(all_extracted: List[dict],
+                       workbook_names: List[str]) -> list:
+    """Merge hierarchies with level-aware deduplication.
+
+    Same name + same levels → deduplicate.
+    Same name + different levels → keep the one with more levels.
+    Different names → keep all.
+    Cross-workbook hierarchies on the same table are unioned.
+    """
+    # hierarchy name → (levels_tuple, hierarchy_dict, source_wb)
+    seen: Dict[str, Tuple[tuple, dict, str]] = {}
+    result = []
+
+    for wb_name, extracted in zip(workbook_names, all_extracted):
+        items = extracted.get('hierarchies', [])
+        if not isinstance(items, list):
+            continue
+        for item in items:
+            name = item.get('name', '')
+            if not name:
+                result.append(copy.deepcopy(item))
+                continue
+
+            levels = item.get('levels', [])
+            levels_key = tuple(
+                lv.get('name', lv.get('column', '')) for lv in levels
+            )
+
+            if name in seen:
+                existing_levels_key, _existing_item, _existing_wb = seen[name]
+                if levels_key == existing_levels_key:
+                    # Identical → skip duplicate
+                    continue
+                if len(levels_key) > len(existing_levels_key):
+                    # New one has more levels → replace
+                    for i, r in enumerate(result):
+                        if r.get('name', '') == name:
+                            result[i] = copy.deepcopy(item)
+                            break
+                    seen[name] = (levels_key, item, wb_name)
+                    logger.debug(
+                        "Hierarchy '%s': replaced (%d levels from %s) with (%d levels from %s)",
+                        name, len(existing_levels_key), _existing_wb,
+                        len(levels_key), wb_name
+                    )
+                # else: existing has more or equal levels → keep existing
+            else:
+                seen[name] = (levels_key, item, wb_name)
+                result.append(copy.deepcopy(item))
+
+    return result
+
+
+def _calc_group_signature(cg: dict) -> Tuple[str, ...]:
+    """Build a signature tuple for a calculation group's items."""
+    items = cg.get('calculationItems', cg.get('calculation_items', []))
+    return tuple(sorted(
+        (it.get('name', ''), it.get('expression', ''))
+        for it in items
+    ))
+
+
+def _merge_calculation_groups(all_extracted: List[dict],
+                              workbook_names: List[str]) -> list:
+    """Merge calculation groups across workbooks.
+
+    Same name + same calculation items → deduplicate.
+    Same name + different items → namespace as 'CalcGroup (Workbook)'.
+    Different names → keep all.
+
+    Calculation groups are stored in parameters with domain_type='list'
+    where values match measure names. This function collects them from
+    extracted parameters and deduplicates.
+    """
+    # Collect calc-group-like parameters: name → [(wb, param_dict)]
+    cg_map: Dict[str, List[Tuple[str, dict]]] = {}
+
+    for wb_name, extracted in zip(workbook_names, all_extracted):
+        for param in extracted.get('parameters', []):
+            caption = param.get('caption', param.get('name', ''))
+            domain_type = param.get('domain_type', '')
+            datatype = param.get('datatype', 'string')
+            allowable_values = param.get('allowable_values', [])
+
+            if datatype != 'string' or domain_type != 'list' or not allowable_values:
+                continue
+
+            # Mark this as calc-group candidate — store with values
+            values = [v.get('value', '') for v in allowable_values
+                      if v.get('type') != 'range']
+            if len(values) < 2:
+                continue
+
+            cg_entry = {
+                'caption': caption,
+                'calculationItems': [
+                    {'name': v, 'expression': 'CALCULATE(SELECTEDMEASURE())'}
+                    for v in values
+                ],
+                'values': values,
+                '_source_workbook': wb_name,
+            }
+
+            if caption not in cg_map:
+                cg_map[caption] = []
+            cg_map[caption].append((wb_name, cg_entry))
+
+    result = []
+    for name, entries in cg_map.items():
+        if len(entries) == 1:
+            result.append(entries[0][1])
+            continue
+
+        # Compare signatures
+        sigs = {}
+        for wb, cg in entries:
+            sig = _calc_group_signature(cg)
+            sigs[wb] = sig
+
+        unique_sigs = set(sigs.values())
+        if len(unique_sigs) == 1:
+            # All identical → deduplicate
+            result.append(entries[0][1])
+        else:
+            # Conflict → namespace each
+            for wb, cg in entries:
+                namespaced = copy.deepcopy(cg)
+                namespaced['caption'] = f"{name} ({wb})"
+                namespaced['_source_workbook'] = wb
+                result.append(namespaced)
+                logger.info(
+                    "Calculation group '%s' namespaced → '%s' (conflict)",
+                    name, namespaced['caption']
+                )
+
+    return result
+
+
+def _merge_field_parameters(all_extracted: List[dict],
+                            workbook_names: List[str]) -> list:
+    """Merge field parameters across workbooks.
+
+    Same name + same column references → deduplicate.
+    Same name + different columns → union column references.
+    Different names → keep all.
+    """
+    fp_map: Dict[str, List[Tuple[str, dict]]] = {}
+
+    for wb_name, extracted in zip(workbook_names, all_extracted):
+        for param in extracted.get('parameters', []):
+            caption = param.get('caption', param.get('name', ''))
+            domain_type = param.get('domain_type', '')
+            datatype = param.get('datatype', 'string')
+            allowable_values = param.get('allowable_values', [])
+
+            if datatype != 'string' or domain_type != 'list' or not allowable_values:
+                continue
+
+            values = [v.get('value', '') for v in allowable_values
+                      if v.get('type') != 'range']
+            if len(values) < 2:
+                continue
+
+            fp_entry = {
+                'caption': caption,
+                'values': values,
+                '_source_workbook': wb_name,
+            }
+
+            if caption not in fp_map:
+                fp_map[caption] = []
+            fp_map[caption].append((wb_name, fp_entry))
+
+    result = []
+    for name, entries in fp_map.items():
+        if len(entries) == 1:
+            result.append(entries[0][1])
+            continue
+
+        # Compare value sets
+        all_value_sets = [set(fp['values']) for _wb, fp in entries]
+        if all(vs == all_value_sets[0] for vs in all_value_sets):
+            # All identical → deduplicate
+            result.append(entries[0][1])
+        else:
+            # Union all values (deduplicated, order-preserved)
+            seen_vals = set()
+            unioned_values = []
+            for _wb, fp in entries:
+                for v in fp['values']:
+                    if v not in seen_vals:
+                        seen_vals.add(v)
+                        unioned_values.append(v)
+            merged_fp = copy.deepcopy(entries[0][1])
+            merged_fp['values'] = unioned_values
+            merged_fp['_merged_from'] = [wb for wb, _ in entries]
+            result.append(merged_fp)
+            logger.info(
+                "Field parameter '%s': unioned %d values from %d workbooks",
+                name, len(unioned_values), len(entries)
+            )
+
+    return result
+
+
+def _merge_perspectives(all_extracted: List[dict],
+                        workbook_names: List[str]) -> list:
+    """Merge perspectives across workbooks.
+
+    Same name → union table references.
+    Different names → keep all.
+    """
+    persp_map: Dict[str, List[Tuple[str, set]]] = {}
+
+    for wb_name, extracted in zip(workbook_names, all_extracted):
+        perspectives = extracted.get('_perspectives', [])
+        if not perspectives:
+            continue
+        for persp in perspectives:
+            name = persp.get('name', '')
+            tables = set(persp.get('tables', []))
+            if name not in persp_map:
+                persp_map[name] = []
+            persp_map[name].append((wb_name, tables))
+
+    result = []
+    for name, entries in persp_map.items():
+        # Union all table references
+        all_tables = set()
+        for _wb, tables in entries:
+            all_tables.update(tables)
+        result.append({
+            'name': name,
+            'tables': sorted(all_tables),
+        })
+
+    return result
+
+
+def _merge_cultures(all_extracted: List[dict],
+                    workbook_names: List[str]) -> list:
+    """Merge culture/locale settings across workbooks.
+
+    Same locale → merge translation entries (first-seen wins per key).
+    Different locales → keep all.
+    """
+    culture_map: Dict[str, Dict[str, str]] = {}  # locale → {object_name: translation}
+
+    for wb_name, extracted in zip(workbook_names, all_extracted):
+        culture = extracted.get('culture', '')
+        languages = extracted.get('_languages', '')
+        cultures_data = extracted.get('_cultures', [])
+
+        # Collect cultures from explicit data
+        for c in cultures_data:
+            locale = c.get('locale', '')
+            translations = c.get('translations', {})
+            if locale:
+                if locale not in culture_map:
+                    culture_map[locale] = {}
+                for key, val in translations.items():
+                    if key not in culture_map[locale]:
+                        culture_map[locale][key] = val
+
+        # Collect from culture field
+        if culture and culture != 'en-US' and culture not in culture_map:
+            culture_map[culture] = {}
+
+        # Collect from languages field
+        if languages:
+            for lang in languages.split(','):
+                lang = lang.strip()
+                if lang and lang not in culture_map:
+                    culture_map[lang] = {}
+
+    result = []
+    for locale, translations in culture_map.items():
+        result.append({
+            'locale': locale,
+            'translations': translations,
+        })
+
+    return result
+
+
+def _merge_goals(all_extracted: List[dict],
+                 workbook_names: List[str]) -> list:
+    """Merge goals/scorecard metrics across workbooks.
+
+    Same metric name + same measure → deduplicate.
+    Same metric name + different measure → namespace.
+    Different names → keep all.
+    """
+    goal_map: Dict[str, List[Tuple[str, dict]]] = {}
+
+    for wb_name, extracted in zip(workbook_names, all_extracted):
+        goals = extracted.get('_goals', [])
+        if not goals:
+            continue
+        for goal in goals:
+            name = goal.get('name', goal.get('metric_name', ''))
+            if not name:
+                continue
+            if name not in goal_map:
+                goal_map[name] = []
+            goal_map[name].append((wb_name, goal))
+
+    result = []
+    for name, entries in goal_map.items():
+        if len(entries) == 1:
+            result.append(copy.deepcopy(entries[0][1]))
+            continue
+
+        # Compare measure references
+        measures = {}
+        for wb, goal in entries:
+            measure = goal.get('measure', goal.get('measure_name', ''))
+            measures[wb] = measure
+
+        unique_measures = set(measures.values())
+        if len(unique_measures) == 1:
+            # Identical → deduplicate
+            result.append(copy.deepcopy(entries[0][1]))
+        else:
+            # Conflict → namespace
+            for wb, goal in entries:
+                namespaced = copy.deepcopy(goal)
+                namespaced['name'] = f"{name} ({wb})"
+                namespaced['_source_workbook'] = wb
+                result.append(namespaced)
+                logger.info(
+                    "Goal '%s' namespaced → '%s' (different measures)",
+                    name, namespaced['name']
+                )
+
     return result
 
 

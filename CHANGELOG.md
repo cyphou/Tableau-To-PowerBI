@@ -1,5 +1,18 @@
 # Changelog
 
+## v18.0.0 — Advanced Merge Intelligence & Enterprise Merge Workflows
+
+### Sprint 54 — Artifact-Level Merge: Calculation Groups, Field Parameters, Perspectives & Cultures ✅
+- **Hierarchy level-aware deduplication** (`shared_model.py`): Replaces shallow `_merge_list_by_name` for hierarchies — same name + same levels → deduplicate; same name + different levels → keep longest path; three-workbook scenarios correctly resolved
+- **Calculation group merge** (`shared_model.py`): `_merge_calculation_groups()` — signature-based deduplication of calc-group-like parameters across workbooks; same items → deduplicate; different items → namespace as `CalcGroup (Workbook)`; `_calc_group_signature()` for item-level comparison
+- **Field parameter merge** (`shared_model.py`): `_merge_field_parameters()` — same values → deduplicate; different values → union all column references (order-preserved, wb1 first); `_merged_from` tracking for multi-workbook provenance
+- **Perspective merge** (`shared_model.py`): `_merge_perspectives()` — same name → union table references (sorted); different names → keep all; empty perspectives handled
+- **Culture merge** (`shared_model.py`): `_merge_cultures()` — same locale → merge translations (first-seen wins per key); different locales → keep all; collects from `_cultures`, `culture` field, and `_languages` field; en-US default skipped
+- **Goals/scorecard merge** (`shared_model.py`): `_merge_goals()` — same metric name + same measure → deduplicate; different measures → namespace as `Goal (Workbook)`; supports `metric_name`/`measure_name` fallback keys
+- **`merge_semantic_models()` updated**: Now produces 6 new artifact keys: `_calculation_groups`, `_field_parameters`, `_perspectives`, `_cultures`, `_goals`, and enhanced `hierarchies`
+- **55 new tests** in `test_merge_artifacts.py` across 10 test classes
+- **Overall: 4,274 tests**, 0 failures
+
 ## v17.0.0 — Server Assessment & Merge Intelligence
 
 ### Sprint 53 — Documentation & Release ✅
