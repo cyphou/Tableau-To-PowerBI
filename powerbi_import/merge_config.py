@@ -99,6 +99,28 @@ def save_merge_config(assessment, workbook_names: List[str],
             "variants": pc.get("variants", {}),
         })
 
+    # RLS role decisions
+    config["rls_rules"] = []
+    if merged:
+        from powerbi_import.shared_model import consolidate_rls_roles
+        try:
+            all_ext = [merged]  # placeholder — caller may supply real list
+            # If assessment carries rls_consolidations, use those
+            rls_cons = getattr(assessment, 'rls_consolidations', None)
+            if rls_cons is None:
+                rls_cons = []
+            for rc in rls_cons:
+                config["rls_rules"].append({
+                    "role_name": rc.role_name,
+                    "action": rc.action,
+                    "strategy": "or",
+                    "source_workbooks": rc.source_workbooks,
+                    "tables": rc.tables_affected,
+                    "merged_expression": rc.merged_expression,
+                })
+        except Exception:
+            pass
+
     os.makedirs(os.path.dirname(output_path) or '.', exist_ok=True)
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(config, f, indent=2, ensure_ascii=False)
@@ -186,6 +208,11 @@ def apply_merge_config(assessment, config: dict):
 
     # Store on the assessment for use during merge
     assessment._merge_config = config
+
+    # Store RLS rule decisions on the assessment
+    assessment._rls_rules = {
+        r["role_name"]: r for r in config.get("rls_rules", [])
+    }
 
     # Apply force_merge from config
     options = config.get("options", {})

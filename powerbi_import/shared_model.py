@@ -2265,13 +2265,20 @@ class RLSConsolidation:
 
 
 def consolidate_rls_roles(all_extracted: List[dict],
-                          workbook_names: List[str]) -> List[RLSConsolidation]:
+                          workbook_names: List[str],
+                          strategy: str = "or") -> List[RLSConsolidation]:
     """Analyze and consolidate RLS roles across workbooks.
+
+    Args:
+        all_extracted: List of extracted data dicts.
+        workbook_names: Corresponding workbook names.
+        strategy: Predicate merge strategy - ``"and"`` (both must hold),
+            ``"or"`` (either suffices), or ``"namespace"`` (keep separate).
 
     Rules:
     - Same role name + same filter expression → deduplicate (keep one)
     - Same role name + different table → keep both (different scope)
-    - Same role name + same table + different filters → merge with OR
+    - Same role name + same table + different filters → merge with strategy
     - Different role names → keep all
 
     Returns:
@@ -2296,7 +2303,6 @@ def consolidate_rls_roles(all_extracted: List[dict],
         filters = {e[0]: e[2] for e in entries if e[2]}
 
         if len(source_wbs) == 1:
-            # Unique to one workbook — keep as-is
             results.append(RLSConsolidation(
                 role_name=role_name,
                 source_workbooks=source_wbs,
@@ -2307,7 +2313,6 @@ def consolidate_rls_roles(all_extracted: List[dict],
         else:
             unique_filters = set(filters.values())
             if len(unique_filters) <= 1:
-                # Same filter across workbooks — deduplicate
                 results.append(RLSConsolidation(
                     role_name=role_name,
                     source_workbooks=source_wbs,
@@ -2316,9 +2321,21 @@ def consolidate_rls_roles(all_extracted: List[dict],
                     action="merge",
                     merged_expression=next(iter(unique_filters), None),
                 ))
+            elif strategy == "namespace":
+                # Keep separate roles with workbook prefix
+                for wb_name, expr in filters.items():
+                    results.append(RLSConsolidation(
+                        role_name=f"{role_name} ({wb_name})",
+                        source_workbooks=[wb_name],
+                        tables_affected=tables,
+                        filter_expressions={wb_name: expr},
+                        action="namespace",
+                        merged_expression=expr,
+                    ))
             else:
-                # Different filters — merge with OR
-                combined = " || ".join(
+                # Merge with AND or OR
+                joiner = " && " if strategy == "and" else " || "
+                combined = joiner.join(
                     f"({expr})" for expr in unique_filters if expr
                 )
                 results.append(RLSConsolidation(
@@ -2372,6 +2389,113 @@ def merge_rls_roles(all_extracted: List[dict],
             merged_roles.append(role)
 
     return merged_roles
+
+
+def validate_rls_propagation(merged: dict) -> List[dict]:
+    """Validate RLS roles have propagation paths to fact tables.
+
+    For each RLS role's ``tablePermission`` target, verify the table
+    exists in the model AND has a relationship path (direct or indirect)
+    to at least one other table.
+
+    Returns:
+        List of ``{role, table, status, reason}`` dicts.
+    """
+    tables = {t.get('name', '') for t in merged.get('tables', []) if t.get('name')}
+    rels = merged.get('relationships', [])
+    # Build adjacency set for connected tables
+    connected = set()
+    for r in rels:
+        ft = r.get('fromTable', '')
+        tt = r.get('toTable', '')
+        if ft:
+            connected.add(ft)
+        if tt:
+            connected.add(tt)
+
+    results = []
+    for uf in merged.get('user_filters', []):
+        role_name = uf.get('name', uf.get('field', 'unknown'))
+        tbl = uf.get('table', '')
+        if not tbl:
+            results.append({
+                'role': role_name, 'table': '', 'status': 'warning',
+                'reason': 'No table specified for tablePermission',
+            })
+            continue
+        if tbl not in tables:
+            results.append({
+                'role': role_name, 'table': tbl, 'status': 'error',
+                'reason': f'Table "{tbl}" not found in model',
+            })
+        elif tbl not in connected:
+            results.append({
+                'role': role_name, 'table': tbl, 'status': 'warning',
+                'reason': f'Table "{tbl}" is isolated (no relationships)',
+            })
+        else:
+            results.append({
+                'role': role_name, 'table': tbl, 'status': 'ok',
+                'reason': '',
+            })
+    return results
+
+
+def validate_rls_principals(merged: dict) -> List[dict]:
+    """Detect conflicting principal format requirements across merged RLS.
+
+    Parses ``USERPRINCIPALNAME()`` patterns to detect format conflicts
+    (e.g., ``user@domain.com`` vs ``DOMAIN\\user``).
+
+    Returns:
+        List of ``{role, format_detected, expression}`` dicts.
+    """
+    results = []
+    for uf in merged.get('user_filters', []):
+        role_name = uf.get('name', uf.get('field', 'unknown'))
+        expr = uf.get('filter_expression', uf.get('formula', ''))
+        if not expr:
+            continue
+        fmt = 'unknown'
+        if 'USERPRINCIPALNAME()' in expr.upper():
+            fmt = 'UPN (user@domain.com)'
+        elif 'USERNAME()' in expr.upper():
+            fmt = 'USERNAME (DOMAIN\\user)'
+        results.append({
+            'role': role_name,
+            'format_detected': fmt,
+            'expression': expr[:100],
+        })
+    return results
+
+
+def detect_isolated_tables(merged: dict) -> List[dict]:
+    """Detect tables that have no relationships (isolated).
+
+    Returns:
+        List of ``{table, reason}`` dicts for tables with no
+        relationship connections.
+    """
+    tables = [t.get('name', '') for t in merged.get('tables', []) if t.get('name')]
+    rels = merged.get('relationships', [])
+    connected = set()
+    for r in rels:
+        ft = r.get('fromTable', '')
+        tt = r.get('toTable', '')
+        if ft:
+            connected.add(ft)
+        if tt:
+            connected.add(tt)
+
+    isolated = []
+    for tname in tables:
+        if tname not in connected:
+            isolated.append({
+                'table': tname,
+                'reason': f'Table "{tname}" has no relationships — may need manual wiring',
+            })
+            logger.warning("Isolated table detected: %s", tname)
+    return isolated
 
 
 # ═══════════════════════════════════════════════════════════════════

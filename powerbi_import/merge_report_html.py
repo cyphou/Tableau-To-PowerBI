@@ -739,6 +739,59 @@ Conflicts: <strong>{len(assessment.parameter_conflicts)}</strong></p>
         html += "</div></div>"
 
     # ══════════════════════════════════════════════════════════════
+    # 8. SECURITY — RLS ROLES
+    # ══════════════════════════════════════════════════════════════
+    rls_roles = merged.get('user_filters', [])
+    if rls_roles:
+        # Import validation helpers
+        try:
+            from powerbi_import.shared_model import (
+                validate_rls_propagation,
+                validate_rls_principals,
+            )
+            propagation = {r['role']: r for r in validate_rls_propagation(merged)}
+            principals = {r['role']: r for r in validate_rls_principals(merged)}
+        except Exception:
+            propagation = {}
+            principals = {}
+
+        html += f"""
+<h2 onclick="toggleSection('security')"><span class="section-icon">&#128274;</span>
+Security &mdash; RLS Roles ({len(rls_roles)}) <span class="toggle-icon" id="security-icon">&#9660;</span></h2>
+<div id="security" class="collapsible">
+<div class="card">
+<table class="detail-table">
+<tr><th>Role</th><th>Table</th><th>Expression</th><th>Propagation</th><th>Principal Format</th><th>Source</th></tr>"""
+        for uf in rls_roles:
+            role_name = uf.get('name', uf.get('field', ''))
+            table = uf.get('table', '')
+            expr = uf.get('filter_expression', uf.get('formula', ''))[:120]
+            source_wbs = ', '.join(uf.get('_source_workbooks', []))
+            # Propagation status
+            prop = propagation.get(role_name, {})
+            prop_status = prop.get('status', '')
+            if prop_status == 'ok':
+                prop_html = '<span style="color:#107c10">&#10003; Connected</span>'
+            elif prop_status == 'warning':
+                prop_html = f'<span style="color:#ca5010">&#9888; {_esc(prop.get("reason", ""))}</span>'
+            elif prop_status == 'error':
+                prop_html = f'<span style="color:#d13438">&#10007; {_esc(prop.get("reason", ""))}</span>'
+            else:
+                prop_html = '<span style="color:#a19f9d">N/A</span>'
+            # Principal format
+            princ = principals.get(role_name, {})
+            princ_fmt = _esc(princ.get('format_detected', ''))
+            html += f"""<tr>
+    <td><strong>{_esc(role_name)}</strong></td>
+    <td>{_esc(table)}</td>
+    <td class="mono" style="max-width:300px;word-break:break-all">{_esc(expr)}</td>
+    <td>{prop_html}</td>
+    <td>{princ_fmt}</td>
+    <td>{_esc(source_wbs)}</td>
+</tr>"""
+        html += "</table></div></div>"
+
+    # ══════════════════════════════════════════════════════════════
     # FOOTER
     # ══════════════════════════════════════════════════════════════
     html += f"""
