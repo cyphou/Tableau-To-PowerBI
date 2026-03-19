@@ -208,6 +208,325 @@ class ThinReportGenerator:
         return remapped
 
 
+# ══════════════════════════════════════════════════════════════════
+#  Sprint 57 — Thin Report Binding Validation
+# ══════════════════════════════════════════════════════════════════
+
+def _collect_model_fields(merged_model: dict) -> dict:
+    """Build lookup of all tables/columns/measures in the merged model.
+
+    Returns:
+        dict with keys 'tables' (set), 'columns' (dict table→set),
+        'measures' (dict table→set), 'parameters' (set).
+    """
+    tables = set()
+    columns: dict = {}
+    measures: dict = {}
+    parameters = set()
+
+    for tbl in merged_model.get('tables', []):
+        tname = tbl.get('name', '')
+        if not tname:
+            continue
+        tables.add(tname)
+        columns[tname] = set()
+        measures[tname] = set()
+        for col in tbl.get('columns', []):
+            cname = col.get('name') or col.get('caption', '')
+            if cname:
+                columns[tname].add(cname)
+        for meas in tbl.get('measures', []):
+            mname = meas.get('name') or meas.get('caption', '')
+            if mname:
+                measures[tname].add(mname)
+        # Parameter tables
+        if tbl.get('is_parameter') or 'parameter' in tname.lower():
+            parameters.add(tname)
+
+    return {
+        'tables': tables,
+        'columns': columns,
+        'measures': measures,
+        'parameters': parameters,
+    }
+
+
+def _find_closest_match(name: str, candidates: set, threshold: float = 0.6) -> str:
+    """Find closest string match using simple ratio."""
+    if not candidates:
+        return ''
+    best = ''
+    best_score = 0.0
+    name_lower = name.lower()
+    for c in candidates:
+        c_lower = c.lower()
+        # Simple containment-based score
+        if name_lower == c_lower:
+            return c
+        if name_lower in c_lower or c_lower in name_lower:
+            score = min(len(name), len(c)) / max(len(name), len(c)) if name and c else 0
+            if score > best_score:
+                best_score = score
+                best = c
+    return best if best_score >= threshold else ''
+
+
+def validate_field_references(report_visuals: list, merged_model: dict) -> list:
+    """Validate that all visual field references resolve against the merged model.
+
+    Args:
+        report_visuals: List of visual dicts (with 'fields', 'page', 'visual_id').
+        merged_model: The merged converted_objects dict.
+
+    Returns:
+        List of validation result dicts:
+        ``{visual_id, page, field, table, status, suggestion}``
+    """
+    model_info = _collect_model_fields(merged_model)
+    results = []
+
+    all_measures = set()
+    all_columns = set()
+    for tname in model_info['tables']:
+        all_measures.update(model_info['measures'].get(tname, set()))
+        all_columns.update(model_info['columns'].get(tname, set()))
+
+    for vis in report_visuals:
+        vid = vis.get('visual_id', vis.get('name', 'unknown'))
+        page = vis.get('page', '')
+        for field_ref in vis.get('fields', []):
+            table = ''
+            column = ''
+            if isinstance(field_ref, dict):
+                table = field_ref.get('table', '')
+                column = field_ref.get('column') or field_ref.get('name', '')
+            elif isinstance(field_ref, str):
+                # Parse 'Table[Column]' pattern
+                if '[' in field_ref and ']' in field_ref:
+                    parts = field_ref.split('[', 1)
+                    table = parts[0].strip("' ")
+                    column = parts[1].rstrip(']').strip()
+                else:
+                    column = field_ref
+
+            status = 'resolved'
+            suggestion = ''
+
+            if table and table not in model_info['tables']:
+                status = 'unresolved_table'
+                suggestion = _find_closest_match(table, model_info['tables'])
+            elif column:
+                # Check in specific table or across all
+                found = False
+                if table:
+                    t_cols = model_info['columns'].get(table, set())
+                    t_meas = model_info['measures'].get(table, set())
+                    if column in t_cols or column in t_meas:
+                        found = True
+                else:
+                    if column in all_columns or column in all_measures:
+                        found = True
+
+                if not found:
+                    status = 'unresolved_field'
+                    suggestion = _find_closest_match(
+                        column, all_columns | all_measures)
+
+            results.append({
+                'visual_id': vid,
+                'page': page,
+                'field': f"{table}[{column}]" if table else column,
+                'table': table,
+                'status': status,
+                'suggestion': suggestion,
+            })
+
+    return results
+
+
+def validate_drillthrough_targets(report_pages: list, bundle_reports: list = None) -> list:
+    """Validate drill-through page targets exist.
+
+    Args:
+        report_pages: List of page dicts with 'name', 'page_type', 'drillthrough_target'.
+        bundle_reports: Optional list of other thin report page lists in the bundle.
+
+    Returns:
+        List of ``{source_page, target_page, status}`` dicts.
+    """
+    # Collect all page names across this report and bundle
+    all_pages = set()
+    for p in report_pages:
+        all_pages.add(p.get('name', ''))
+    for other_report in (bundle_reports or []):
+        for p in other_report:
+            all_pages.add(p.get('name', ''))
+
+    results = []
+    for p in report_pages:
+        target = p.get('drillthrough_target', '')
+        if not target:
+            continue
+        status = 'found' if target in all_pages else 'missing'
+        results.append({
+            'source_page': p.get('name', ''),
+            'target_page': target,
+            'status': status,
+        })
+    return results
+
+
+def validate_filter_references(filters: list, merged_model: dict) -> list:
+    """Validate that filter references exist in the merged model.
+
+    Args:
+        filters: List of filter dicts with 'table' and 'column' keys.
+        merged_model: The merged converted_objects dict.
+
+    Returns:
+        List of ``{filter_field, table, column, status, suggestion}`` dicts.
+    """
+    model_info = _collect_model_fields(merged_model)
+    results = []
+
+    for filt in filters:
+        table = filt.get('table', '')
+        column = filt.get('column') or filt.get('field', '')
+        status = 'resolved'
+        suggestion = ''
+
+        if table and table not in model_info['tables']:
+            status = 'unresolved_table'
+            suggestion = _find_closest_match(table, model_info['tables'])
+        elif column:
+            found = False
+            if table:
+                t_cols = model_info['columns'].get(table, set())
+                if column in t_cols:
+                    found = True
+            else:
+                for t_cols in model_info['columns'].values():
+                    if column in t_cols:
+                        found = True
+                        break
+            if not found:
+                status = 'unresolved_field'
+                all_cols = set()
+                for t_cols in model_info['columns'].values():
+                    all_cols.update(t_cols)
+                suggestion = _find_closest_match(column, all_cols)
+
+        results.append({
+            'filter_field': f"{table}.{column}" if table else column,
+            'table': table,
+            'column': column,
+            'status': status,
+            'suggestion': suggestion,
+        })
+    return results
+
+
+def validate_parameter_references(slicer_params: list, merged_model: dict) -> list:
+    """Validate parameter references in slicers exist as tables in the model.
+
+    Args:
+        slicer_params: List of parameter name strings referenced by slicers.
+        merged_model: The merged converted_objects dict.
+
+    Returns:
+        List of ``{parameter, status, suggestion}`` dicts.
+    """
+    model_info = _collect_model_fields(merged_model)
+    all_tables = model_info['tables']
+    results = []
+
+    for param in slicer_params:
+        if param in all_tables:
+            status = 'resolved'
+            suggestion = ''
+        else:
+            status = 'unresolved'
+            suggestion = _find_closest_match(param, all_tables)
+        results.append({
+            'parameter': param,
+            'status': status,
+            'suggestion': suggestion,
+        })
+    return results
+
+
+def validate_cross_report_navigation(actions: list, bundle_report_names: list) -> list:
+    """Validate cross-report navigation targets.
+
+    Args:
+        actions: List of action dicts with 'type' and 'target_report'.
+        bundle_report_names: List of report names in the bundle.
+
+    Returns:
+        List of ``{action, target_report, status}`` dicts.
+    """
+    name_set = set(bundle_report_names or [])
+    results = []
+    for action in actions:
+        if action.get('type') not in ('navigate', 'navigation', 'navigate_to_report'):
+            continue
+        target = action.get('target_report', '')
+        if not target:
+            continue
+        status = 'found' if target in name_set else 'missing'
+        results.append({
+            'action': action.get('name', ''),
+            'target_report': target,
+            'status': status,
+        })
+    return results
+
+
+def generate_thin_report_validation(report_data: dict,
+                                     merged_model: dict,
+                                     bundle_reports: list = None,
+                                     bundle_report_names: list = None) -> dict:
+    """Generate a full validation summary for a thin report.
+
+    Args:
+        report_data: Dict with 'visuals', 'pages', 'filters', 'slicer_params', 'actions'.
+        merged_model: The merged converted_objects dict.
+        bundle_reports: Optional other report page lists.
+        bundle_report_names: Optional list of report names in bundle.
+
+    Returns:
+        Summary dict with field, drillthrough, filter, parameter, navigation results.
+    """
+    field_results = validate_field_references(
+        report_data.get('visuals', []), merged_model)
+    drill_results = validate_drillthrough_targets(
+        report_data.get('pages', []), bundle_reports)
+    filter_results = validate_filter_references(
+        report_data.get('filters', []), merged_model)
+    param_results = validate_parameter_references(
+        report_data.get('slicer_params', []), merged_model)
+    nav_results = validate_cross_report_navigation(
+        report_data.get('actions', []),
+        bundle_report_names or [])
+
+    total_fields = len(field_results)
+    resolved_fields = sum(1 for r in field_results if r['status'] == 'resolved')
+
+    return {
+        'total_fields_checked': total_fields,
+        'resolved_fields': resolved_fields,
+        'unresolved_fields': total_fields - resolved_fields,
+        'field_results': field_results,
+        'drillthrough_results': drill_results,
+        'drillthrough_gaps': sum(1 for d in drill_results if d['status'] == 'missing'),
+        'filter_results': filter_results,
+        'filter_gaps': sum(1 for f in filter_results if f['status'] != 'resolved'),
+        'parameter_results': param_results,
+        'navigation_results': nav_results,
+        'navigation_gaps': sum(1 for n in nav_results if n['status'] == 'missing'),
+    }
+
+
 def _write_json(filepath: str, data: dict):
     """Write JSON to file with consistent formatting."""
     os.makedirs(os.path.dirname(filepath) or '.', exist_ok=True)
