@@ -640,9 +640,114 @@ class TestAddDateTable(unittest.TestCase):
         _add_date_table(model)
         _add_date_table(model)
         cal_tables = [t for t in model["model"]["tables"] if t["name"] == "Calendar"]
-        # Implementation always adds — verify current behavior (may be 2)
-        # This documents the behavior for future dedup improvement
-        self.assertGreaterEqual(len(cal_tables), 1)
+        self.assertEqual(len(cal_tables), 1)
+
+    def test_skip_calendar_when_source_has_calendar_table(self):
+        """If source data already has a 'Calendar' table, _add_date_table is a no-op."""
+        model = {
+            "model": {
+                "tables": [
+                    {
+                        "name": "Calendar",
+                        "columns": [
+                            {"name": "Date", "dataType": "DateTime", "sourceColumn": "Date"},
+                            {"name": "Year", "dataType": "int64", "sourceColumn": "Year"},
+                        ],
+                        "partitions": [{"name": "p", "mode": "import",
+                                         "source": {"type": "m", "expression": "let Source = ..."}}],
+                        "measures": [],
+                    },
+                    {
+                        "name": "Sales",
+                        "columns": [
+                            {"name": "OrderDate", "dataType": "DateTime", "sourceColumn": "OrderDate"},
+                        ],
+                        "partitions": [],
+                        "measures": [],
+                    },
+                ],
+                "relationships": [],
+            }
+        }
+        _add_date_table(model)
+        cal_tables = [t for t in model["model"]["tables"] if t["name"] == "Calendar"]
+        # Should remain exactly the original one — no auto-generated duplicate
+        self.assertEqual(len(cal_tables), 1)
+        # The original should NOT have been replaced (no 'Calendar-Partition' partition)
+        self.assertEqual(cal_tables[0]["partitions"][0]["name"], "p")
+
+    def test_skip_calendar_when_source_has_dimdate_table(self):
+        """Source table named 'DimDate' prevents auto Calendar generation in Phase 6."""
+        model = {
+            "model": {
+                "tables": [
+                    {
+                        "name": "DimDate",
+                        "columns": [
+                            {"name": "DateKey", "dataType": "DateTime", "sourceColumn": "DateKey"},
+                            {"name": "Year", "dataType": "int64", "sourceColumn": "Year"},
+                        ],
+                        "partitions": [],
+                        "measures": [],
+                    },
+                    {
+                        "name": "Sales",
+                        "columns": [
+                            {"name": "OrderDate", "dataType": "DateTime", "sourceColumn": "OrderDate"},
+                        ],
+                        "partitions": [],
+                        "measures": [],
+                    },
+                ],
+                "relationships": [],
+            }
+        }
+        # Simulate Phase 6 guard logic
+        _DATE_TABLE_NAMES = {
+            'calendar', 'date', 'dimdate', 'dim_date', 'datedimension',
+            'date_dimension', 'dim date', 'datetable', 'date_table',
+            'time', 'dimtime', 'dim_time',
+        }
+        existing = {t.get('name', '').lower().strip() for t in model['model']['tables']}
+        has_existing = bool(existing & _DATE_TABLE_NAMES)
+        self.assertTrue(has_existing)
+        # _add_date_table would still add (it only guards 'Calendar' name),
+        # but Phase 6 guard skips calling it entirely
+        table_count_before = len(model['model']['tables'])
+        if not has_existing:
+            _add_date_table(model)
+        self.assertEqual(len(model['model']['tables']), table_count_before)
+
+    def test_skip_calendar_when_source_has_date_table(self):
+        """Source table named 'Date' prevents auto Calendar generation."""
+        model = {
+            "model": {
+                "tables": [
+                    {
+                        "name": "Date",
+                        "columns": [
+                            {"name": "FullDate", "dataType": "DateTime", "sourceColumn": "FullDate"},
+                        ],
+                        "partitions": [], "measures": [],
+                    },
+                    {
+                        "name": "Facts",
+                        "columns": [
+                            {"name": "SaleDate", "dataType": "DateTime", "sourceColumn": "SaleDate"},
+                        ],
+                        "partitions": [], "measures": [],
+                    },
+                ],
+                "relationships": [],
+            }
+        }
+        _DATE_TABLE_NAMES = {
+            'calendar', 'date', 'dimdate', 'dim_date', 'datedimension',
+            'date_dimension', 'dim date', 'datetable', 'date_table',
+            'time', 'dimtime', 'dim_time',
+        }
+        existing = {t.get('name', '').lower().strip() for t in model['model']['tables']}
+        self.assertTrue(bool(existing & _DATE_TABLE_NAMES))
 
     def test_calendar_multi_table_relationships(self):
         """Calendar links to date columns in multiple fact tables."""

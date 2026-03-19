@@ -925,15 +925,25 @@ def _apply_semantic_enrichments(model, extra_objects, main_table_name, column_ta
     _process_sets_groups_bins(model, extra_objects, main_table_name, column_table_map)
 
     # Phase 6: Automatic date table if date columns detected
+    # Skip if the source already has a date/calendar table
+    _DATE_TABLE_NAMES = {
+        'calendar', 'date', 'dimdate', 'dim_date', 'datedimension',
+        'date_dimension', 'dim date', 'datetable', 'date_table',
+        'time', 'dimtime', 'dim_time',
+    }
+    existing_table_names = {t.get('name', '').lower().strip() for t in model['model']['tables']}
+    has_existing_date_table = bool(existing_table_names & _DATE_TABLE_NAMES)
+
     has_date_columns = False
-    for table in model["model"]["tables"]:
-        for col in table.get("columns", []):
-            if col.get("dataType") == "DateTime" or col.get("dataCategory") == "DateTime":
-                has_date_columns = True
+    if not has_existing_date_table:
+        for table in model["model"]["tables"]:
+            for col in table.get("columns", []):
+                if col.get("dataType") == "DateTime" or col.get("dataCategory") == "DateTime":
+                    has_date_columns = True
+                    break
+            if has_date_columns:
                 break
-        if has_date_columns:
-            break
-    if has_date_columns:
+    if has_date_columns and not has_existing_date_table:
         _add_date_table(model)
 
     # Phase 7: Hierarchies from Tableau drill-paths
@@ -3064,7 +3074,13 @@ def _add_date_table(model):
 
     Supports customizable date range via model['_calendar_start'] and
     model['_calendar_end'] (default: 2020–2030).
+
+    Skipped if the model already contains a table named 'Calendar'.
     """
+    # Guard: don't add if Calendar already exists (e.g. from source data)
+    existing_names = {t.get('name', '') for t in model['model']['tables']}
+    if 'Calendar' in existing_names:
+        return
     cal_start = model.get('_calendar_start') or 2020
     cal_end = model.get('_calendar_end') or 2030
 
