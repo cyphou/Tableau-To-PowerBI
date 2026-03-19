@@ -93,6 +93,8 @@ _SIMPLE_FUNCTION_MAP = [
     (r'\bLOWER\s*\(', 'LOWER('),
     (r'\bREPLACE\s*\(', 'SUBSTITUTE('),
     (r'\bSPACE\s*\(', 'REPT(" ", '),
+    (r'\bREPEAT\s*\(', 'REPT('),
+    # REVERSE handled by _convert_reverse (no direct DAX equivalent)
     # FIND/FINDNTH handled by _convert_find (arg order swap needed)
     # ENDSWITH handled by _convert_endswith (needs decomposition)
     # STARTSWITH handled by _convert_startswith (needs decomposition)
@@ -330,6 +332,7 @@ def convert_tableau_formula_to_dax(formula, column_name='Measure', table_name='T
     dax = _convert_endswith(dax)
     dax = _convert_startswith(dax)
     dax = _convert_proper(dax)
+    dax = _convert_reverse(dax)
     dax = _convert_split(dax)
     dax = _convert_atan2(dax)
     dax = _convert_div(dax)
@@ -887,12 +890,22 @@ def _convert_proper(dax):
 
 
 def _convert_split(dax):
-    """SPLIT(string, delimiter, token_number) → PATHITEM(SUBSTITUTE(string, delimiter, "|"), token)."""
+    """SPLIT(string, delimiter, token_number) → PATHITEM(SUBSTITUTE(string, delimiter, "|"), token).
+
+    Also supports negative token index → count from end using PATHITEMREVERSE.
+    """
     def _xf(args, inner):
         if len(args) >= 3:
             s = args[0].strip()
             delim = args[1].strip()
             token = args[2].strip()
+            # Negative index → reverse
+            try:
+                idx = int(token)
+                if idx < 0:
+                    return f'PATHITEMREVERSE(SUBSTITUTE({s}, {delim}, "|"), {-idx})'
+            except (ValueError, TypeError):
+                pass
             return f'PATHITEM(SUBSTITUTE({s}, {delim}, "|"), {token})'
         elif len(args) == 2:
             s = args[0].strip()
@@ -900,6 +913,22 @@ def _convert_split(dax):
             return f'PATHITEM(SUBSTITUTE({s}, {delim}, "|"), 1)'
         return f'/* SPLIT({inner}): insufficient arguments */ BLANK()'
     return _transform_func_call(dax, 'SPLIT', _xf)
+
+
+def _convert_reverse(dax):
+    """REVERSE(string) → iterative MID concatenation pattern.
+
+    DAX has no native REVERSE.  Emits a CONCATENATEX + GENERATESERIES pattern.
+    """
+    def _xf(args, inner):
+        s = inner.strip()
+        return (
+            f'CONCATENATEX('
+            f'GENERATESERIES(1, LEN({s})), '
+            f'MID({s}, LEN({s}) - [Value] + 1, 1), '
+            f'"")'
+        )
+    return _transform_func_call(dax, 'REVERSE', _xf)
 
 
 def _convert_atan2(dax):

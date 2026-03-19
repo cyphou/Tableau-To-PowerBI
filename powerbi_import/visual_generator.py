@@ -1643,44 +1643,61 @@ def generate_script_visual(visual_name, script_info, fields=None,
     original_code = script_info.get('code', '')
     func_name = script_info.get('function', 'SCRIPT_REAL')
 
+    # Map Tableau _argN references to PBI dataset column references
+    adapted_code = original_code
+    if fields:
+        for i, field_name in enumerate(fields, start=1):
+            clean_name = field_name.split('[')[-1].rstrip(']') if '[' in field_name else field_name
+            if language == 'python':
+                adapted_code = adapted_code.replace(f'_arg{i}', f'dataset["{clean_name}"]')
+            else:
+                adapted_code = adapted_code.replace(f'_arg{i}', f'dataset${clean_name}')
+
     if language == 'python':
         pbi_visual_type = 'scriptVisual'
         runtime_label = 'Python'
-        # Wrap original Tableau code in a PBI-compatible Python script
         script_content = (
             f"# Migrated from Tableau {func_name}\n"
-            f"# Original Tableau script (may need adaptation for PBI dataframe):\n"
-            f"# ─────────────────────────────────────────────\n"
+            f"# Power BI provides a 'dataset' pandas DataFrame with your selected fields.\n"
+            f"import matplotlib.pyplot as plt\n"
+            f"import pandas as pd\n\n"
         )
-        for line in original_code.split('\n'):
-            script_content += f"# {line}\n"
-        script_content += (
-            "#\n"
-            "# Power BI provides a 'dataset' pandas DataFrame with your selected fields.\n"
-            "# Assign your matplotlib/seaborn figure to display it.\n"
-            "import matplotlib.pyplot as plt\n"
-            "fig, ax = plt.subplots()\n"
-            "ax.text(0.5, 0.5, 'TODO: Adapt Tableau script for PBI',\n"
-            "        ha='center', va='center', fontsize=14)\n"
-            "plt.show()\n"
-        )
+        if adapted_code != original_code:
+            # Successfully mapped args — include adapted code
+            script_content += f"# Adapted script (original _argN mapped to dataset columns):\n"
+            for line in adapted_code.split('\n'):
+                script_content += f"{line}\n"
+            script_content += "\nplt.show()\n"
+        else:
+            # Could not map — include original as comments with scaffold
+            for line in original_code.split('\n'):
+                script_content += f"# {line}\n"
+            script_content += (
+                "\n# TODO: Adapt the commented Tableau script above for PBI dataset DataFrame.\n"
+                "fig, ax = plt.subplots()\n"
+                "ax.text(0.5, 0.5, 'Adapt Tableau script for PBI',\n"
+                "        ha='center', va='center', fontsize=14)\n"
+                "plt.show()\n"
+            )
     else:
         pbi_visual_type = 'scriptRVisual'
         runtime_label = 'R'
         script_content = (
             f"# Migrated from Tableau {func_name}\n"
-            f"# Original Tableau script (may need adaptation for PBI dataframe):\n"
-            f"# ─────────────────────────────────────────────\n"
+            f"# Power BI provides a 'dataset' data.frame with your selected fields.\n\n"
         )
-        for line in original_code.split('\n'):
-            script_content += f"# {line}\n"
-        script_content += (
-            "#\n"
-            "# Power BI provides a 'dataset' data.frame with your selected fields.\n"
-            "# Plot output is captured automatically.\n"
-            "plot(1, type='n', main='TODO: Adapt Tableau script for PBI')\n"
-            "text(1, 1, 'Adapt the commented script above', cex=1.2)\n"
-        )
+        if adapted_code != original_code:
+            script_content += f"# Adapted script (original _argN mapped to dataset columns):\n"
+            for line in adapted_code.split('\n'):
+                script_content += f"{line}\n"
+        else:
+            for line in original_code.split('\n'):
+                script_content += f"# {line}\n"
+            script_content += (
+                "\n# TODO: Adapt the commented Tableau script above for PBI dataset data.frame.\n"
+                "plot(1, type='n', main='Adapt Tableau script for PBI')\n"
+                "text(1, 1, 'Adapt the commented script above', cex=1.2)\n"
+            )
 
     vid = _new_guid()
 
