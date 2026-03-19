@@ -10,10 +10,10 @@
  EXTRACTION          GENERATION         INFRA / CI         DOCUMENTATION
 +----------------+  +----------------+  +----------------+  +----------------+
 | 20 object types|  | PBIR v4.0      |  | 5-stage CI/CD  |  | 14 doc files   |
-| .twb/.twbx/.tfl|  | TMDL semantic  |  | 4,131 tests    |  | DAX reference  |
-| 180+ DAX conv  |  | 118 visuals    |  | Artifact valid |  | M query ref    |
-| 33 connectors  |  | Drill-through  |  | Fabric deploy  |  | Prep ref       |
-| 43 transforms  |  | Slicer modes   |  | Env configs    |  | Architecture   |
+| .twb/.twbx/.tfl|  | TMDL semantic  |  | 4,762 tests    |  | DAX reference  |
+| 195+ DAX conv  |  | 118 visuals    |  | Artifact valid |  | M query ref    |
+| 37 connectors  |  | Drill-through  |  | Fabric deploy  |  | Prep ref       |
+| 47+ transforms |  | Slicer modes   |  | Env configs    |  | Architecture   |
 | Prep flow DAG  |  | Cond. format   |  | Settings valid |  | Gap analysis   |
 | Ref lines/bands|  | RLS roles      |  | --dry-run      |  | Migration guide|
 | Datasrc filters|  | Calendar/culture|  | --culture      |  | FAQ + more     |
@@ -158,7 +158,7 @@
 ## 3. Test Coverage
 
 ### What IS implemented
-- **887 tests across 18 test files** (original) + **3,244 additional tests in v3.6–v16.0.0**, totaling **4,131 tests across 73 test files** including shared fixtures in `conftest.py`:
+- **887 tests across 18 test files** (original) + **3,875 additional tests in v3.6–v18.0.0**, totaling **4,762 tests across 100 test files** including shared fixtures in `conftest.py`:
 
 | Test File | Tests | Lines | Coverage Focus |
 |-----------|-------|-------|----------------|
@@ -410,15 +410,15 @@
 
 | Area | Implemented | Missing/Incomplete | Approximated | Priority |
 |------|------------|-------------------|-------------|----------|
-| **Extraction** | 20 object types (+4), 10+ connectors, 22 new methods, annotations, layout containers, device layouts, formatting depth, legend, axes, sort depth, **datasource filters**, **reference bands/distributions**, **number formatting**, **custom shapes/fonts/geocoding/hyper metadata**, **dynamic zone visibility**, **clustering/forecasting/trend lines**, **Hyper data loading** (sqlite3), **Tableau 2024.3+ dynamic params**, **Pulse metric extraction** | Composite connectors | Prep VAR/VARP, layout nesting depth | Low |
+| **Extraction** | 20 object types (+4), 10+ connectors, 22 new methods, annotations, layout containers, device layouts, formatting depth, legend, axes, sort depth, **datasource filters**, **reference bands/distributions**, **number formatting**, **custom shapes/fonts/geocoding/hyper metadata**, **dynamic zone visibility**, **clustering/forecasting/trend lines**, **Hyper 3-tier reader** (tableauhyperapi + SQLite + header, multi-schema, `--hyper-rows`, column stats), **Tableau 2024.3+ dynamic params**, **Pulse metric extraction** | Composite connectors | Prep VAR/VARP, layout nesting depth | Low |
 | **TMDL Generation** | 14 phases, full model, date hierarchy, quick table calcs, partition addressing, **semantic validation**, **calendar customization**, **culture config**, **M-based calc columns** (DAX→M converter), **calculation groups**, **field parameters**, **multi-language cultures** (`--languages`), **Goals/Scorecard** (`--goals`), **dynamic parameter M partitions** | Incremental, composite model | — | Low |
 | **PBIR Generation** | 118 visuals, filters, themes, mobile layout, tooltip binding, action buttons, conditional formatting, axis config, legend, sort state, table formatting, padding, **drill-through pages**, **slicer type variety**, **pages shelf**, **number format conversion**, **SCRIPT_* → Python/R script visuals**, **visual diff report**, **data-driven alerts** | Small Multiples | Position scaling | Low |
-| **DAX Conversion** | ~180+ patterns, ALLEXCEPT for partitioned calcs, **CORR/COVAR/COVARP**, **ATTR→SELECTEDVALUE**, **LOD balanced braces**, **PREVIOUS_VALUE→OFFSET**, **LOOKUP→OFFSET**, **RUNNING_*→CALCULATE+FILTER(ALLSELECTED)**, **TOTAL→CALCULATE+ALL**, **SCRIPT_* → scriptVisual** | Spatial (6), SPLIT | REGEX (4), WINDOW_* frames | Medium |
-| **M Query** | **33 connectors** (+8: OData, Google Analytics, Azure Blob/ADLS, Vertica, Impala, Hadoop Hive, Presto), 43 transforms, **DAX-to-M expression converter** (calc columns as M steps), **Hyper data → M #table()** | OAuth, gateway, incremental refresh | Fallback #table, BigQuery/Oracle config | Low |
+| **DAX Conversion** | ~195+ patterns, ALLEXCEPT for partitioned calcs, **CORR/COVAR/COVARP**, **ATTR→SELECTEDVALUE**, **LOD balanced braces**, **PREVIOUS_VALUE→OFFSET**, **LOOKUP→OFFSET**, **RUNNING_*→CALCULATE+FILTER(ALLSELECTED)**, **TOTAL→CALCULATE+ALL**, **SCRIPT_* → scriptVisual**, **REVERSE/REPEAT/SPACE/CHAR**, **MAKEDATE/MAKETIME/ISDATE/MAKEDATETIME**, **SPLIT enhancements**, **nested SUM(IF(AGG))** | Spatial (6) | REGEX (4), WINDOW_* frames | Medium |
+| **M Query** | **37 connectors** (+12: OData, Google Analytics, Azure Blob/ADLS, Vertica, Impala, Hadoop Hive, Presto, MongoDB, Cosmos DB, Athena, DB2), 47+ transforms (+regex extract, JSON/XML parse, connection parameterize), **DAX-to-M expression converter** (calc columns as M steps), **Hyper data → M #table()** | OAuth, gateway, incremental refresh | Fallback #table, BigQuery/Oracle config | Low |
 | **Prep Flow** | DAG traversal, 20+ action types, **ExtractValues**, **CustomCalculation**, **Script/Prediction/CrossJoin/PublishedDataSource** handlers, 5 new connection mappings, **Hyper data loading** | — | Prep VAR/VARP joins | Low |
-| **Pre-Migration** | **Assessment** (9-category scoring + connection string audit), **Strategy advisor** (Import/DQ/Composite), **Global assessment** (`--global-assess`, N×N heatmap, BFS clustering), **Migration completeness scoring** (0–100, letter grade), JSON + HTML reports | — | — | Low |
-| **Shared Model** | **Merge engine** (fingerprint, Jaccard, 0–100 scoring), **thin reports** (byPath), **merge config**, **field validation**, **column lineage**, **RLS consolidation**, **measure risk analyzer**, **global assessment** (cross-workbook clusters), **table isolation**, **Fabric bundle deployment** (`--deploy-bundle`), **artifact-level merge** (calc groups, field params, perspectives, cultures, goals, hierarchy level-aware dedup) | — | — | Low |
-| **Test Coverage** | **4,131 tests across 73 files** (+conftest.py shared fixtures) | — | — | Low |
+| **Pre-Migration** | **Assessment** (14-category scoring + connection string audit + performance + volume + Prep complexity + licensing + multi-datasource), **Strategy advisor** (Import/DQ/Composite), **Global assessment** (`--global-assess`, N×N heatmap, BFS clustering), **Migration completeness scoring** (0–100, letter grade), JSON + HTML reports | — | — | Low |
+| **Shared Model** | **Merge engine** (fingerprint, Jaccard, 0–100 scoring), **thin reports** (byPath), **merge config**, **field validation**, **column lineage**, **RLS consolidation** (predicate merge + propagation + principal scoping), **measure risk analyzer**, **global assessment** (cross-workbook clusters), **table isolation**, **Fabric bundle deployment** (`--deploy-bundle`, permission pre-flight, conflict detection, rollback, refresh polling, DeploymentManifest), **artifact-level merge** (calc groups, field params, perspectives, cultures, goals, hierarchy level-aware dedup), **post-merge safety** (cycle detection, type validation, DAX reference integrity), **thin report binding validation** | — | — | Low |
+| **Test Coverage** | **4,762 tests across 100 files** (+conftest.py shared fixtures) | — | — | Low |
 | **CI/CD** | **5-stage pipeline** (lint+ruff, test, **strict validate+twbx**, **staging deploy**, production deploy), **pip caching**, **PBIR schema forward-compat check** (`--check-schema`), **PyPI auto-publish workflow** (`publish.yml`), **plugin system** (`plugins.py` + `examples/plugins/`), **Windows/macOS/Linux CI matrix** (3 OS × 6 Python versions) | Coverage reporting | — | Low |
 | **Documentation** | **14 docs** + copilot instructions (ARCHITECTURE, KNOWN_LIMITATIONS, MIGRATION_CHECKLIST, DEPLOYMENT_GUIDE, TABLEAU_VERSION_COMPATIBILITY, CONTRIBUTING), **auto-generated API docs** (42 modules) | — | — | Low |
 | **Config** | 11 env vars, 3 environments, **settings validation**, **dry-run**, **calendar/culture CLI**, **.env.example** | Config file, connection templating | — | Low |

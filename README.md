@@ -13,7 +13,7 @@
 <p align="center">
   <a href="https://github.com/cyphou/Tableau-To-PowerBI/actions/workflows/ci.yml"><img src="https://github.com/cyphou/Tableau-To-PowerBI/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
   <img src="https://img.shields.io/badge/coverage-96.2%25-brightgreen?style=flat-square" alt="Coverage"/>
-  <img src="https://img.shields.io/badge/tests-4%2C331%20passed-brightgreen?style=flat-square" alt="Tests"/>
+  <img src="https://img.shields.io/badge/tests-4%2C762%20passed-brightgreen?style=flat-square" alt="Tests"/>
   <img src="https://img.shields.io/badge/python-3.9%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python"/>
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License"/>
   <img src="https://img.shields.io/badge/version-18.0.0-blue?style=flat-square" alt="Version"/>

@@ -2,9 +2,9 @@
 
 This document lists known limitations and approximations in the Tableau to Power BI migration tool.
 
-> **Last updated:** v18.0.0 (Sprint 55) — many previous limitations have been addressed in Sprints 27-55. See below for current status.
+> **Last updated:** v18.0.0 (Sprint 63) — many previous limitations have been addressed in Sprints 27-63. See below for current status.
 >
-> **v18.0.0 notes:** Report schema downgraded from 3.1.0 to 2.0.0 for backward compatibility with PBI Desktop April 2025+. Post-merge safety: cycle detection, column type validation, DAX reference integrity checks. ResourcePackageType fix for custom themes.
+> **v18.0.0 notes:** Report schema downgraded from 3.1.0 to 2.0.0 for backward compatibility with PBI Desktop April 2025+. Post-merge safety: cycle detection, column type validation, DAX reference integrity checks. RLS predicate merging & propagation validation. Deploy hardening: permission pre-flight, conflict detection, rollback, refresh polling. Hyper file 3-tier reader (tableauhyperapi + SQLite + header scan). ResourcePackageType fix for custom themes.
 
 ---
 
@@ -12,7 +12,7 @@ This document lists known limitations and approximations in the Tableau to Power
 
 | Area | Limitation | Impact |
 |------|-----------|--------|
-| **Hyper files** | ✅ `.hyper` file column metadata AND row-level data are now loaded via SQLite interface (`hyper_reader.py`). Some `.hyper` v2+ files may use a proprietary format that SQLite cannot read — falls back to metadata-only extraction | Tables from unsupported Hyper formats will have structure but no inline data |
+| **Hyper files** | ✅ `.hyper` file column metadata AND row-level data loaded via 3-tier reader chain: (1) `tableauhyperapi` optional package for full v2+ support, (2) SQLite fallback for older formats, (3) header-only scan. Multi-schema discovery (`Extract`, `public`, `stg`). Configurable sample rows via `--hyper-rows N`. Column stats (distinct_count, min, max) and metadata enrichment with DirectQuery recommendations | Requires optional `tableauhyperapi` pip package for proprietary v2+ Hyper formats; without it, some v2+ files still fall back to metadata-only |
 | **Tableau Server/Cloud** | ✅ `--server` CLI flag enables direct extraction from Tableau Server/Cloud via REST API (PAT or password auth). Live connections still need reconfiguration in PBI |
 | **Tableau 2024.3+** | ✅ Dynamic parameters with database queries are now fully extracted and converted to M partition with `Value.NativeQuery()`. Dynamic zone visibility may still be partially handled | Newer dynamic zone features may need manual adjustment |
 | **Custom shapes** | Shape encoding extracts the field reference only — actual image files are not migrated | Custom shape visuals will show default markers |
