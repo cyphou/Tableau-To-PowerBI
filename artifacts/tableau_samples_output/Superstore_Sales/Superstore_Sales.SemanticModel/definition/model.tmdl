@@ -13,6 +13,10 @@ ref table Returns
 ref table People
 ref table Calendar
 
+ref relationship 001bd08e-da23-4a48-9dee-45b06869abfc
+ref relationship 588468d2-2df7-41d4-acbd-a766514cd648
+ref relationship 1878f4cf-aa94-427d-8124-1f0e742ef8d5
+
 ref expression DataFolder
 
 ref perspective 'Full Model'

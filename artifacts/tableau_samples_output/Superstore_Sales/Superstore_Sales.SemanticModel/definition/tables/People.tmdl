@@ -1,9 +1,9 @@
 table People
-	lineageTag: 31a77a5f-9214-49f4-9996-9ca9f092883a
+	lineageTag: ba77b908-619e-4f01-a31a-e714cb5ed192
 
 	column 'Regional Manager'
 		dataType: string
-		lineageTag: 398d343d-4414-4cde-b6e1-08205cd3ea32
+		lineageTag: f3089f0c-edeb-490d-838f-c2854dce9b95
 		summarizeBy: none
 		sourceColumn: 'Regional Manager'
 		dataCategory: StateOrProvince
@@ -12,14 +12,14 @@ table People
 
 	column Region
 		dataType: string
-		lineageTag: b29ab21c-7250-4a65-8375-d15f32b57d2a
+		lineageTag: 60842d08-27fe-4403-a68d-bf4aa8f063df
 		summarizeBy: none
 		sourceColumn: Region
 		dataCategory: StateOrProvince
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'People-613c4837-9853-4d62-9779-a49177b793ef' = m
+	partition 'People-d179230a-2408-45af-ae9d-6491d9ce8262' = m
 		mode: import
 		source =
 				let

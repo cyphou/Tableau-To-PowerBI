@@ -1,14 +1,18 @@
-relationship be2142a1-f80a-4e27-97fe-923e1906e78c
+relationship 001bd08e-da23-4a48-9dee-45b06869abfc
 	fromColumn: Orders.Region
 	toColumn: People.Region
-	crossFilteringBehavior: oneDirection
+	fromCardinality: many
+	toCardinality: many
+	crossFilteringBehavior: bothDirections
 
-relationship 24b29241-d83e-4b1e-8f03-ee1e0c328a76
+relationship 588468d2-2df7-41d4-acbd-a766514cd648
 	fromColumn: Orders.'Order ID'
 	toColumn: Returns.'Order ID'
-	crossFilteringBehavior: oneDirection
+	fromCardinality: many
+	toCardinality: many
+	crossFilteringBehavior: bothDirections
 
-relationship d54d79ba-6a8c-46c3-a450-77f4f6a64e4c
+relationship 1878f4cf-aa94-427d-8124-1f0e742ef8d5
 	fromColumn: Orders.'Order Date'
 	toColumn: Calendar.Date
 	crossFilteringBehavior: oneDirection

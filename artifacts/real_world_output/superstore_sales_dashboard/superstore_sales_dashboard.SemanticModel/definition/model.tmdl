@@ -12,6 +12,10 @@ ref table Orders
 ref table Extract
 ref table Calendar
 
+ref relationship 0f51c9f9-f7e1-42a4-9d03-069b16fdb6cb
+ref relationship 540403fc-576c-474e-ba46-a7ed3c1372d3
+ref relationship 9534aef5-b4fd-4a0c-874a-96f679b492d7
+
 ref expression DataFolder
 
 ref perspective 'Full Model'

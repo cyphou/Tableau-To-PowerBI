@@ -14,6 +14,10 @@ ref table Calendar
 ref table 'Target Margin'
 ref table 'Top N'
 
+ref relationship 7e3b09a1-dbf0-4af3-9b2e-28386ff03b19
+ref relationship 8f8c93c8-8afe-450e-9db6-bacad3f28af2
+ref relationship e3328d24-7062-4110-a5c2-ddb5449910a0
+
 ref expression DataFolder
 
 ref role 'Territory Access'

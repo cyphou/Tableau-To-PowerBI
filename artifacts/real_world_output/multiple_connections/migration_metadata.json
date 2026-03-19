@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-12T13:08:04.259737",
+  "generated_at": "2026-03-19T10:23:34.960653",
   "source": "Tableau Migration",
   "report_name": "multiple_connections",
   "objects_converted": {
@@ -34,5 +34,6 @@
     "relationships": 0
   },
   "visual_type_mappings": {},
+  "visual_details": [],
   "approximations": []
 }

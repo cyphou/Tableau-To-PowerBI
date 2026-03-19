@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-12T13:07:21.136635",
+  "generated_at": "2026-03-19T10:21:47.279282",
   "source": "Tableau Migration",
   "report_name": "Cache",
   "objects_converted": {
@@ -20,7 +20,7 @@
   },
   "generated_output": {
     "pages": 1,
-    "visuals": 2,
+    "visuals": 1,
     "theme_applied": false,
     "theme_detail": {
       "status": "skipped",
@@ -29,12 +29,26 @@
   },
   "tmdl_stats": {
     "tables": 9,
-    "measures": 7,
+    "measures": 8,
     "columns": 20,
     "relationships": 0
   },
   "visual_type_mappings": {
     "Sheet 21": "Automatic"
   },
+  "visual_details": [
+    {
+      "worksheet": "Sheet 21",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "Category"
+      ],
+      "measures": [
+        "Number of Records"
+      ],
+      "field_count": 2
+    }
+  ],
   "approximations": []
 }

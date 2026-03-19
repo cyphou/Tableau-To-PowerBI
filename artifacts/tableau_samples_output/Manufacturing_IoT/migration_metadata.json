@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-12T13:08:41.718481",
+  "generated_at": "2026-03-19T10:20:57.169956",
   "source": "Tableau Migration",
   "report_name": "Manufacturing_IoT",
   "objects_converted": {
@@ -41,5 +41,88 @@
     "Vibration Analysis": "Automatic",
     "Machine Rankings": "Automatic"
   },
+  "visual_details": [
+    {
+      "worksheet": "Sensor Monitor",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "lineChart",
+      "dimensions": [
+        "reading_time",
+        "sensor_type"
+      ],
+      "measures": [
+        "value"
+      ],
+      "field_count": 3
+    },
+    {
+      "worksheet": "Machine Health",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "treemap",
+      "dimensions": [
+        "machine_name",
+        "sensor_type"
+      ],
+      "measures": [
+        "value",
+        "quality_score"
+      ],
+      "field_count": 4
+    },
+    {
+      "worksheet": "Maintenance Costs",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "machine_name",
+        "maint_type"
+      ],
+      "measures": [
+        "maint_cost",
+        "maint_cost"
+      ],
+      "field_count": 4
+    },
+    {
+      "worksheet": "Value Distribution",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "areaChart",
+      "dimensions": [
+        "sensor_type",
+        "sensor_type"
+      ],
+      "measures": [
+        "value"
+      ],
+      "field_count": 3
+    },
+    {
+      "worksheet": "Vibration Analysis",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "scatterChart",
+      "dimensions": [
+        "machine_name"
+      ],
+      "measures": [
+        "Calc_VibX",
+        "Calc_VibY",
+        "Calc_EnergyIdx"
+      ],
+      "field_count": 4
+    },
+    {
+      "worksheet": "Machine Rankings",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "machine_name"
+      ],
+      "measures": [
+        "Calc_WinTotal",
+        "Calc_DenseRank"
+      ],
+      "field_count": 3
+    }
+  ],
   "approximations": []
 }

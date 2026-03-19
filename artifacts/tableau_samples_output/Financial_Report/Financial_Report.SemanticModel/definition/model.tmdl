@@ -13,6 +13,8 @@ ref table Calendar
 ref table 'Fiscal Year'
 ref table 'Business Unit'
 
+ref relationship dd5cf802-3b42-45bc-a554-f51dd76ed50b
+
 ref expression DataFolder
 
 ref perspective 'Full Model'

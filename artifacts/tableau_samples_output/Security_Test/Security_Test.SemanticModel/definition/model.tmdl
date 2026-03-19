@@ -12,6 +12,9 @@ ref table Orders
 ref table Regions
 ref table Calendar
 
+ref relationship da0288c9-5f9f-404c-8e0c-25441f81800c
+ref relationship ee4e414e-836e-4840-82b7-c818d3145e70
+
 ref expression DataFolder
 
 ref role 'Region Access'

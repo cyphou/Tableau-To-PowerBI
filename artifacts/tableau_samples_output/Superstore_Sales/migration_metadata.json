@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-12T13:08:42.513196",
+  "generated_at": "2026-03-19T10:21:29.698937",
   "source": "Tableau Migration",
   "report_name": "Superstore_Sales",
   "objects_converted": {
@@ -38,5 +38,47 @@
     "Profit by Category": "Automatic",
     "Sales Trend": "Automatic"
   },
+  "visual_details": [
+    {
+      "worksheet": "Sales by Region",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "Region",
+        "Region"
+      ],
+      "measures": [
+        "Calculation_1",
+        "Calculation_1"
+      ],
+      "field_count": 4
+    },
+    {
+      "worksheet": "Profit by Category",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "Category",
+        "Category"
+      ],
+      "measures": [
+        "Calculation_2",
+        "Calculation_2"
+      ],
+      "field_count": 4
+    },
+    {
+      "worksheet": "Sales Trend",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "lineChart",
+      "dimensions": [
+        "Order Date"
+      ],
+      "measures": [
+        "Calculation_1"
+      ],
+      "field_count": 2
+    }
+  ],
   "approximations": []
 }

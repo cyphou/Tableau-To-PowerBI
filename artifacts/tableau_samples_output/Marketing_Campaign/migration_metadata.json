@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-12T13:08:42.024394",
+  "generated_at": "2026-03-19T10:21:11.530606",
   "source": "Tableau Migration",
   "report_name": "Marketing_Campaign",
   "objects_converted": {
@@ -40,5 +40,70 @@
     "Budget Analysis": "Automatic",
     "Lead Details": "Automatic"
   },
+  "visual_details": [
+    {
+      "worksheet": "Campaign Performance",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "campaign_name",
+        "channel"
+      ],
+      "measures": [
+        "Calc_ROI",
+        "Calc_ROI"
+      ],
+      "field_count": 4
+    },
+    {
+      "worksheet": "Lead Funnel",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "lead_status",
+        "channel"
+      ],
+      "measures": [
+        "Calc_NonBlankLeads"
+      ],
+      "field_count": 3
+    },
+    {
+      "worksheet": "Conversion Trend",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "lineChart",
+      "dimensions": [
+        "created_date"
+      ],
+      "measures": [
+        "Calc_ConvRate"
+      ],
+      "field_count": 2
+    },
+    {
+      "worksheet": "Budget Analysis",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "scatterChart",
+      "dimensions": [
+        "channel"
+      ],
+      "measures": [
+        "budget",
+        "deal_value",
+        "spend"
+      ],
+      "field_count": 4
+    },
+    {
+      "worksheet": "Lead Details",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "tableEx",
+      "dimensions": [
+        "company"
+      ],
+      "measures": [],
+      "field_count": 1
+    }
+  ],
   "approximations": []
 }

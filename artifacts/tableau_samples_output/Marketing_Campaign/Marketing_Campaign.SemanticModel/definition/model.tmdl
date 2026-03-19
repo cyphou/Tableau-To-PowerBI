@@ -13,6 +13,10 @@ ref table Leads
 ref table Calendar
 ref table 'Min Budget'
 
+ref relationship 24e42517-b861-4b93-a763-fb645c7e6554
+ref relationship f519b5f7-c90a-450b-a1e0-579b9beaf8be
+ref relationship e4e7fbcb-e824-4113-bf12-cea83f037160
+
 ref expression DataFolder
 
 ref perspective 'Full Model'

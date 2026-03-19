@@ -917,7 +917,7 @@ class PowerBIProjectGenerator:
         if theme_data:
             report_json["resourcePackages"].append({
                 "name": "MigrationTheme",
-                "type": "CustomTheme",
+                "type": "RegisteredResources",
                 "items": [
                     {
                         "name": "TableauMigrationTheme",
@@ -1110,7 +1110,7 @@ class PowerBIProjectGenerator:
 
         if theme_data:
             report_json["resourcePackages"].append({
-                "name": "MigrationTheme", "type": "CustomTheme",
+                "name": "MigrationTheme", "type": "RegisteredResources",
                 "items": [{"name": "TableauMigrationTheme",
                            "path": "RegisteredResources/TableauMigrationTheme.json",
                            "type": "CustomTheme"}],

@@ -1,9 +1,9 @@
 table xy
-	lineageTag: d0fd4431-9025-4907-95d7-ee26e3b52d4a
+	lineageTag: 05ddd0bf-435e-456c-858f-d209f1de4eea
 
 	column a
 		dataType: string
-		lineageTag: 72e7fbee-0ee0-4183-8147-56f34e0c5190
+		lineageTag: 75f85ddf-8afc-4257-ad95-463c38793ee0
 		summarizeBy: none
 		sourceColumn: a
 
@@ -11,7 +11,7 @@ table xy
 
 	column x
 		dataType: int64
-		lineageTag: b18252e2-3e6b-4b27-b9ff-67acedb1e057
+		lineageTag: 1fc3d181-282c-4724-bad4-e04570015784
 		summarizeBy: sum
 		sourceColumn: x
 
@@ -19,13 +19,13 @@ table xy
 
 	column y
 		dataType: int64
-		lineageTag: 09b4e7d3-6160-40b3-8878-445b481fac97
+		lineageTag: c0b146ca-280c-4f50-bc70-9e20283c58e9
 		summarizeBy: sum
 		sourceColumn: y
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'xy-b0a3878e-b1c9-4c37-a2c6-5ee050ceb00b' = m
+	partition 'xy-f9573a42-2336-4882-95c3-2d8aeefb739a' = m
 		mode: import
 		source =
 				let

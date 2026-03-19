@@ -1,28 +1,42 @@
 table sqlproxy
-	lineageTag: 700a1db7-0cc1-48cf-8896-519c36205944
+	lineageTag: fbe097bd-3339-44f2-a1fb-b3bde4411efd
 
-	partition 'sqlproxy-81be9020-c2e9-453d-9da4-f0c60ea57942' = m
+	partition 'sqlproxy-6b8ee240-5296-4f67-ad92-d9af7fb7bd80' = m
 		mode: import
 		source =
 				let
-				    // TODO: Configure the data source for connector type: Unknown
-				    // Replace the sample table below with the actual source expression.
+				    // ================================================================
+				    // Tableau Server Published Datasource: xyTestV1
+				    // Server: http://awesomeserver:80
+				    // ================================================================
+				    // This table was sourced from a Tableau Server published datasource.
+				    // Replace the sample data below with your actual database connection.
+				    //
+				    // Option A — SQL Server:
+				    //   Source = Sql.Database("your-server", "your-database"){[Schema="dbo", Item="sqlproxy"]}[Data]
+				    //
+				    // Option B — Oracle:
+				    //   Source = Oracle.Database("your-server:1521/service"){[Schema="SCHEMA", Name="SQLPROXY"]}[Data]
+				    //
+				    // Option C — PostgreSQL:
+				    //   Source = PostgreSQL.Database("your-server:5432", "your-database"){[Schema="public", Name="sqlproxy"]}[Data]
+				    //
+				    // Option D — Snowflake:
+				    //   Source = Snowflake.Databases("account.snowflakecomputing.com", "WAREHOUSE"){[Name="DB"]}[Data]{[Schema="PUBLIC", Name="SQLPROXY"]}[Data]
+				    // ================================================================
 				    Source = try
 				
-				        try
 				        #table(
+				        {},
+				        {
 				            {},
-				            {
-				                {},
-				                {}
-				            }
-				        )
-				    otherwise
-				        #table({}, {})  // Empty table on error
+				            {}
+				        }
+				    )
 				
 				    otherwise
 				
-				        #table({}, {}),
+				        #table({}, {})
 				in
 				    Source
 

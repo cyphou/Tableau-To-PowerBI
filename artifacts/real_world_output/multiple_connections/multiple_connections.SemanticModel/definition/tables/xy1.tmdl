@@ -1,7 +1,7 @@
 table xy1
-	lineageTag: 42e321fb-5c79-4de7-9042-b8f960c3683e
+	lineageTag: 70ce0b4a-2d0f-4fff-8b66-2e2d18217c7c
 
-	partition 'xy1-38897701-fc87-45da-a252-830e3a0f5552' = m
+	partition 'xy1-c3358f08-dbf1-4647-90a9-5f377a61037c' = m
 		mode: import
 		source =
 				let

@@ -1,25 +1,25 @@
 table Calendar
-	lineageTag: 6a2b8f93-3d21-4f2e-a082-590c7890e749
+	lineageTag: 5a72dee7-25f7-428a-a357-be0772d500a3
 
 	measure 'Year To Date' = TOTALYTD([Total Revenue], 'Calendar'[Date])
 		formatString: #,0.00
 		displayFolder: Time Intelligence
-		lineageTag: 972b17a6-d93c-4842-9a6b-33bf2f36f847
+		lineageTag: 6b0a07c7-e460-4ddb-a6ed-d8e238c3ba5f
 
 	measure 'Previous Year' = CALCULATE([Total Revenue], SAMEPERIODLASTYEAR('Calendar'[Date]))
 		formatString: #,0.00
 		displayFolder: Time Intelligence
-		lineageTag: 51eb6e90-1d84-4873-a0d2-7ec7673604fe
+		lineageTag: 013a2da5-fac3-43f8-a8b6-71ed380f9ce1
 
 	measure 'Year Over Year %' = DIVIDE([Year To Date] - [Previous Year], [Previous Year], 0)
 		formatString: 0.00%
 		displayFolder: Time Intelligence
-		lineageTag: 7c9e6ce2-e3f4-477c-a9a4-68e0b06ce0d6
+		lineageTag: 43f45bdf-e462-4d3e-ba0e-111d6ac63bb6
 
 	column Date
 		dataType: dateTime
 		formatString: dd/mm/yyyy
-		lineageTag: ddec163b-b0ee-44b5-981a-60945036327d
+		lineageTag: a3d1023d-8a37-42b9-bc44-b18b14bee1c0
 		summarizeBy: none
 		sourceColumn: Date
 		isKey
@@ -29,7 +29,7 @@ table Calendar
 
 	column Year
 		dataType: int64
-		lineageTag: 0bf003b8-3a11-4866-9e09-f8b9ee6ffb0f
+		lineageTag: 34300827-13b4-43f7-8b34-a33bf7cde9a8
 		summarizeBy: none
 		sourceColumn: Year
 		dataCategory: Years
@@ -38,7 +38,7 @@ table Calendar
 
 	column Quarter
 		dataType: string
-		lineageTag: cd41a5e7-934e-48c2-897e-2deb9693df0c
+		lineageTag: b822c91f-1192-427c-8b2a-c6c3090868b0
 		summarizeBy: none
 		sourceColumn: Quarter
 
@@ -46,7 +46,7 @@ table Calendar
 
 	column Month
 		dataType: int64
-		lineageTag: e9887ddc-b53e-47ef-870c-7dad8b066029
+		lineageTag: a2c5f3b8-57a1-495a-8dbc-e15e9795bb59
 		summarizeBy: none
 		sourceColumn: Month
 		dataCategory: Months
@@ -55,7 +55,7 @@ table Calendar
 
 	column MonthName
 		dataType: string
-		lineageTag: 8500eb73-c0e6-403f-9758-31bcae74d6de
+		lineageTag: 9452808b-018f-4d27-a6d7-b11a05e21fbb
 		summarizeBy: none
 		sourceColumn: MonthName
 		sortByColumn: Month
@@ -64,7 +64,7 @@ table Calendar
 
 	column Day
 		dataType: int64
-		lineageTag: bcaa6547-656f-443f-8d6f-306daaeae772
+		lineageTag: 71169481-fc1d-4b8f-9a48-8646fb732440
 		summarizeBy: none
 		sourceColumn: Day
 		dataCategory: Days
@@ -73,7 +73,7 @@ table Calendar
 
 	column DayOfWeek
 		dataType: int64
-		lineageTag: 7a3763b6-4c5b-4c88-bcfc-46bbbd11263b
+		lineageTag: ed725212-11ec-4e2c-8f4c-7b7c09a9530f
 		summarizeBy: none
 		sourceColumn: DayOfWeek
 
@@ -81,7 +81,7 @@ table Calendar
 
 	column DayName
 		dataType: string
-		lineageTag: 354b5782-059b-4f2a-bf2c-67796e05b104
+		lineageTag: 789b8756-d9f9-490b-90c2-3554b6c8ccdf
 		summarizeBy: none
 		sourceColumn: DayName
 		sortByColumn: DayOfWeek
@@ -89,30 +89,30 @@ table Calendar
 		annotation SummarizationSetBy = Automatic
 
 	hierarchy 'Date Hierarchy'
-		lineageTag: 4b3eb0a3-8cf9-4818-8ec7-461ff470c1fe
+		lineageTag: 28738197-1e4c-40e2-8d05-3d2eb232ecc1
 
 		level Year
 			ordinal: 0
 			column: Year
-			lineageTag: b253a6bc-2637-49fb-ac1f-4ff5a72a1bde
+			lineageTag: 46ce07ec-888e-4bcd-9544-7d0f73b67154
 
 		level Quarter
 			ordinal: 1
 			column: Quarter
-			lineageTag: 658e91a9-2091-42af-9d8a-705cd11002f9
+			lineageTag: 4a55e9b7-9f4d-4fa5-a8f6-c5f65b83bb8d
 
 		level Month
 			ordinal: 2
 			column: MonthName
-			lineageTag: 7fd5a452-c778-4d37-882e-88641cfa5b70
+			lineageTag: 4e5b72ef-98db-486a-b249-af3346e31e69
 
 		level Day
 			ordinal: 3
 			column: Day
-			lineageTag: a43462d9-c002-4028-9edc-325f5e43841a
+			lineageTag: 046114d0-3ebb-4140-b6d7-3248d4f5a1f6
 
 
-	partition 'Calendar-7b62161b-f376-48d4-90ae-ec2fa3fda713' = m
+	partition 'Calendar-44410416-7c33-4e99-9bd1-f21ff7973098' = m
 		mode: import
 		source =
 				let

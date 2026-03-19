@@ -12,6 +12,10 @@ ref table sessions
 ref table users
 ref table Calendar
 
+ref relationship 01390d90-25b8-42ca-bf0c-b3ba367984c7
+ref relationship af8c2dca-6ae3-45db-ab9d-5121b60176cc
+ref relationship 67903ab8-e150-4e05-9f8d-ed601674c699
+
 ref expression DataFolder
 
 ref perspective 'Full Model'

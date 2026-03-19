@@ -1,13 +1,13 @@
 table xy
-	lineageTag: e9109cfc-7708-431d-b4db-44977953e367
+	lineageTag: 958cd922-249b-444c-b23c-3ede11ea481a
 
 	measure '[Number of Records]' = 1
 		displayFolder: Measures
-		lineageTag: 5c783777-bfdf-4149-96ea-31cd0b494b2f
+		lineageTag: aa0451f9-9da6-45c3-8e7f-f7f836fa6792
 
 	column a
 		dataType: string
-		lineageTag: 18b46a48-2b74-4648-ac1e-0cc79a392b32
+		lineageTag: 9c601dff-9523-4f4e-83c0-2adcbf3dec63
 		summarizeBy: none
 		sourceColumn: a
 
@@ -15,7 +15,7 @@ table xy
 
 	column x
 		dataType: int64
-		lineageTag: d7f21af6-d538-4e86-8d5f-7fe1fc2f1f3f
+		lineageTag: 4baa220f-aec0-4946-a4ae-69db8803fd0e
 		summarizeBy: sum
 		sourceColumn: x
 
@@ -23,35 +23,26 @@ table xy
 
 	column y
 		dataType: int64
-		lineageTag: c290209a-936b-4fa4-b57b-9f47596fd3a1
+		lineageTag: 30f0c697-4f92-4b28-b65f-a739d02201c5
 		summarizeBy: sum
 		sourceColumn: y
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'xy-6bf8d9b1-83d3-4928-a5cd-8c47d5f7d6a9' = m
+	partition 'xy-05065ef8-69c2-4e3c-bb1e-55169822f975' = m
 		mode: import
 		source =
 				let
-				    // TODO: Configure the data source for connector type: Unknown
-				    // Replace the sample table below with the actual source expression.
+				    // Source PostgreSQL
 				    Source = try
 				
-				        try
-				        #table(
-				            {"a", "x", "y"},
-				            {
-				                {"Sample 1", 2, 3},
-				                {"Sample 2", 3, 4}
-				            }
-				        )
-				    otherwise
-				        #table({"a", "x", "y"}, {})
+				        PostgreSQL.Database("postgres91.test.tsi.lan:5432", "TestV1")
 				
 				    otherwise
 				
 				        #table({"a", "x", "y"}, {}),
-				    #"Renamed Columns" = Table.RenameColumns(Source, {{"a", "A"}, {"x", "X"}, {"y", "Y"}}),
+				    #"xy Table" = Source{[Schema="public", Item="xy"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(#"xy Table", {{"a", "A"}, {"x", "X"}, {"y", "Y"}}),
 				    Result = #"Renamed Columns"
 				in
 				    Result

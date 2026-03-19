@@ -18,6 +18,8 @@ ref table 'New Business Growth'
 ref table 'Churn Rate'
 ref table State
 
+ref relationship 6dd9f91f-f521-43f0-884e-6598cf49d4d3
+
 ref expression DataFolder
 
 ref perspective 'Full Model'

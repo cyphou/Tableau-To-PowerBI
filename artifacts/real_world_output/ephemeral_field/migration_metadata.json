@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-12T13:07:48.041370",
+  "generated_at": "2026-03-19T10:22:47.230122",
   "source": "Tableau Migration",
   "report_name": "ephemeral_field",
   "objects_converted": {
@@ -20,7 +20,7 @@
   },
   "generated_output": {
     "pages": 1,
-    "visuals": 4,
+    "visuals": 2,
     "theme_applied": false,
     "theme_detail": {
       "status": "skipped",
@@ -37,5 +37,30 @@
     "Sheet 1": "Automatic",
     "Sheet 2": "Automatic"
   },
+  "visual_details": [
+    {
+      "worksheet": "Sheet 1",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "a"
+      ],
+      "measures": [],
+      "field_count": 1
+    },
+    {
+      "worksheet": "Sheet 2",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "a"
+      ],
+      "measures": [
+        "x",
+        "Calculation_3002775091869110273"
+      ],
+      "field_count": 3
+    }
+  ],
   "approximations": []
 }

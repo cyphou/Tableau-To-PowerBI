@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-12T13:08:42.274181",
+  "generated_at": "2026-03-19T10:21:19.853725",
   "source": "Tableau Migration",
   "report_name": "Security_Test",
   "objects_converted": {
@@ -37,5 +37,23 @@
     "Sales Overview": "Automatic",
     "Profit Analysis": "Automatic"
   },
+  "visual_details": [
+    {
+      "worksheet": "Sales Overview",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "bar",
+      "dimensions": [],
+      "measures": [],
+      "field_count": 0
+    },
+    {
+      "worksheet": "Profit Analysis",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "bar",
+      "dimensions": [],
+      "measures": [],
+      "field_count": 0
+    }
+  ],
   "approximations": []
 }

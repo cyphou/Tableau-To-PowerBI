@@ -1,23 +1,23 @@
 table Employees
-	lineageTag: 53ace3f0-b7d2-45fc-93f7-3bcef78de5c5
+	lineageTag: 5eb06737-b496-4f51-8860-1ca64a949651
 
 	measure 'Average Salary' = AVERAGE('Employees'[Salary])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: d511136d-f1ab-4f90-a4e8-a49149b871ed
+		lineageTag: 8c83c345-e4a1-4b94-a02d-20c555b8a1e5
 
 	measure 'Employee Count' = COUNT('Employees'[EmployeeID])
 		displayFolder: Measures
-		lineageTag: 5ae8c07c-56e8-4abc-8141-114c78e61b4f
+		lineageTag: 9dc21fa8-8ca8-4c6c-872d-7fdeff365bb8
 
 	measure 'Total Compensation' = SUM('Employees'[Salary]) * 1.25
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 75c02e17-0e1b-4ad3-859d-9f31a64216d4
+		lineageTag: 2423586d-2ffb-47f7-b909-c18c6981b31c
 
 	column EmployeeID
 		dataType: int64
-		lineageTag: 0bc5d7a2-5026-4724-947d-ff85bbdb24f5
+		lineageTag: ce499a95-81d2-4915-9209-be8c1e5f1473
 		summarizeBy: sum
 		sourceColumn: EmployeeID
 
@@ -25,7 +25,7 @@ table Employees
 
 	column FirstName
 		dataType: string
-		lineageTag: b8b6a05f-045f-42d7-8918-53047ccb666b
+		lineageTag: 7774db0c-81e0-436f-832f-80281426ff69
 		summarizeBy: none
 		sourceColumn: FirstName
 
@@ -33,7 +33,7 @@ table Employees
 
 	column LastName
 		dataType: string
-		lineageTag: b7f9542b-fdbc-4ead-a17f-294ae7d55f99
+		lineageTag: e0030d1c-97b6-4361-a835-66bd1d2eb130
 		summarizeBy: none
 		sourceColumn: LastName
 
@@ -42,7 +42,7 @@ table Employees
 	column HireDate
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 81855ad9-f7c5-4306-83a0-94c0d6032111
+		lineageTag: 738b56d3-49fa-4974-a41f-12a5a3f7fef9
 		summarizeBy: none
 		sourceColumn: HireDate
 		dataCategory: DateTime
@@ -51,7 +51,7 @@ table Employees
 
 	column Department
 		dataType: string
-		lineageTag: 14d432d4-f4bb-49eb-b653-eea6a0cc7115
+		lineageTag: fc2f3eb5-c7e3-47e1-8996-dac99d517ebc
 		summarizeBy: none
 		sourceColumn: Department
 
@@ -59,7 +59,7 @@ table Employees
 
 	column JobTitle
 		dataType: string
-		lineageTag: 2d6395f1-006a-4d75-9e5f-eab19f2ef384
+		lineageTag: 3dec7385-6491-4517-a694-5fe8b45e5180
 		summarizeBy: none
 		sourceColumn: JobTitle
 
@@ -68,7 +68,7 @@ table Employees
 	column Salary
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 853671cb-1177-4a22-b270-8a1fe7ec3d49
+		lineageTag: dec970b9-eb0a-4ddc-a63e-165438629e8e
 		summarizeBy: sum
 		sourceColumn: Salary
 
@@ -76,7 +76,7 @@ table Employees
 
 	column Location
 		dataType: string
-		lineageTag: c8848689-9a08-4c98-ba2b-36961c65b2d6
+		lineageTag: 40d5d9bd-69fb-4dda-93bd-045d25cf8445
 		summarizeBy: none
 		sourceColumn: Location
 
@@ -84,7 +84,7 @@ table Employees
 
 	column Age
 		dataType: int64
-		lineageTag: 977275e1-ea4a-4780-a23a-cdb87da978f2
+		lineageTag: d9bfcbf8-6b5e-489a-9fb2-b188ee9d7029
 		summarizeBy: sum
 		sourceColumn: Age
 
@@ -92,7 +92,7 @@ table Employees
 
 	column YearsOfService
 		dataType: int64
-		lineageTag: a5c8e2e4-b652-428e-8ae0-e4fcf8b8638f
+		lineageTag: 436b3132-5b4e-4337-a988-c6bacf292b3f
 		summarizeBy: sum
 		sourceColumn: YearsOfService
 
@@ -100,7 +100,7 @@ table Employees
 
 	column PerformanceRating
 		dataType: string
-		lineageTag: 505c85a1-9d08-40ce-b555-21225e0a9929
+		lineageTag: e2b39efe-bb43-4997-bee8-c8c452f9b123
 		summarizeBy: none
 		sourceColumn: PerformanceRating
 
@@ -108,13 +108,13 @@ table Employees
 
 	column 'Tenure Category'
 		dataType: string
-		lineageTag: f1185703-ca59-4faa-affe-0ba5c0cecaf1
+		lineageTag: 7bac7a9d-c065-4f19-9006-4889b13a26d5
 		summarizeBy: none
 		sourceColumn: 'Tenure Category'
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Employees-82a99504-f695-491e-b2d1-8c3ac8e35b16' = m
+	partition 'Employees-f4c04ae6-2acb-47f4-98ee-6f4d3c2dec78' = m
 		mode: import
 		source =
 				let

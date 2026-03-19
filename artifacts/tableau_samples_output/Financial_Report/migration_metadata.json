@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-12T13:08:41.154963",
+  "generated_at": "2026-03-19T10:20:31.141868",
   "source": "Tableau Migration",
   "report_name": "Financial_Report",
   "objects_converted": {
@@ -39,5 +39,61 @@
     "Business Unit Performance": "Automatic",
     "Top 10 Accounts": "Automatic"
   },
+  "visual_details": [
+    {
+      "worksheet": "Revenue vs Expenses",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "lineChart",
+      "dimensions": [
+        "transaction_date"
+      ],
+      "measures": [
+        "Revenue",
+        "Expenses"
+      ],
+      "field_count": 3
+    },
+    {
+      "worksheet": "Category Breakdown",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "category"
+      ],
+      "measures": [
+        "Net_Income",
+        "Net_Income"
+      ],
+      "field_count": 3
+    },
+    {
+      "worksheet": "Business Unit Performance",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "scatterChart",
+      "dimensions": [
+        "business_unit",
+        "business_unit"
+      ],
+      "measures": [
+        "Profit_Margin",
+        "Profit_Margin",
+        "Revenue"
+      ],
+      "field_count": 5
+    },
+    {
+      "worksheet": "Top 10 Accounts",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "account"
+      ],
+      "measures": [
+        "amount",
+        "amount"
+      ],
+      "field_count": 3
+    }
+  ],
   "approximations": []
 }

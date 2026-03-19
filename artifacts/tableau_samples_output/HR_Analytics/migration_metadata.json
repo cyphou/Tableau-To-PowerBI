@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-12T13:08:41.358381",
+  "generated_at": "2026-03-19T10:20:42.541657",
   "source": "Tableau Migration",
   "report_name": "HR_Analytics",
   "objects_converted": {
@@ -39,5 +39,59 @@
     "Hiring Trend": "Automatic",
     "Performance Matrix": "Automatic"
   },
+  "visual_details": [
+    {
+      "worksheet": "Headcount by Department",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "pieChart",
+      "dimensions": [
+        "Department"
+      ],
+      "measures": [
+        "Employee_Count",
+        "Employee_Count"
+      ],
+      "field_count": 3
+    },
+    {
+      "worksheet": "Salary Analysis",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "Department"
+      ],
+      "measures": [
+        "AVG_Salary",
+        "AVG_Salary"
+      ],
+      "field_count": 3
+    },
+    {
+      "worksheet": "Hiring Trend",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "areaChart",
+      "dimensions": [
+        "HireDate"
+      ],
+      "measures": [
+        "Employee_Count"
+      ],
+      "field_count": 2
+    },
+    {
+      "worksheet": "Performance Matrix",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "treemap",
+      "dimensions": [
+        "Tenure_Category",
+        "PerformanceRating"
+      ],
+      "measures": [
+        "Employee_Count",
+        "Employee_Count"
+      ],
+      "field_count": 4
+    }
+  ],
   "approximations": []
 }
