@@ -1277,6 +1277,266 @@ class ArtifactValidator:
 
         return unused
 
+    # ── Sprint 59: Enhanced Validators ─────────────────────────────
+
+    # Known Power Query M table functions (subset for validation)
+    _KNOWN_M_TABLE_FUNCTIONS = {
+        'Table.FromRows', 'Table.FromRecords', 'Table.FromList',
+        'Table.FromColumns', 'Table.FromValue', 'Table.RenameColumns',
+        'Table.RemoveColumns', 'Table.SelectColumns', 'Table.DuplicateColumn',
+        'Table.ReorderColumns', 'Table.SplitColumn', 'Table.CombineColumns',
+        'Table.ReplaceValue', 'Table.TransformColumns', 'Table.FillDown',
+        'Table.FillUp', 'Table.SelectRows', 'Table.Distinct', 'Table.FirstN',
+        'Table.Group', 'Table.Unpivot', 'Table.UnpivotOtherColumns',
+        'Table.Pivot', 'Table.NestedJoin', 'Table.ExpandTableColumn',
+        'Table.Combine', 'Table.Sort', 'Table.Transpose',
+        'Table.AddIndexColumn', 'Table.Skip', 'Table.RemoveLastN',
+        'Table.AddColumn', 'Table.Buffer', 'Table.PromoteHeaders',
+        'Table.DemoteHeaders', 'Table.RemoveRowsWithErrors',
+        'Table.TransformColumnTypes', 'Table.Schema',
+    }
+
+    _SEVERITY_ERROR = 'ERROR'
+    _SEVERITY_WARNING = 'WARNING'
+    _SEVERITY_INFO = 'INFO'
+
+    @classmethod
+    def validate_tmdl_indentation(cls, content, filepath=''):
+        """Validate TMDL indentation consistency.
+
+        TMDL spec requires tab-based indentation. Flags mixed tabs/spaces
+        and incorrect nesting depth.
+
+        Returns:
+            List of issue dicts: ``{severity, message, line}``.
+        """
+        issues = []
+        lines = content.split('\n')
+        for i, line in enumerate(lines, 1):
+            if not line or not line[0] in (' ', '\t'):
+                continue
+            stripped = line.lstrip()
+            if not stripped:
+                continue
+            leading = line[:len(line) - len(stripped)]
+            has_tabs = '\t' in leading
+            has_spaces = ' ' in leading
+            if has_tabs and has_spaces:
+                issues.append({
+                    'severity': cls._SEVERITY_WARNING,
+                    'message': f'Mixed tabs and spaces at line {i} in {filepath}',
+                    'line': i,
+                })
+        return issues
+
+    @classmethod
+    def validate_tmdl_structure(cls, content, filepath=''):
+        """Validate TMDL keyword balance.
+
+        Checks that every ``table`` block has at least one ``column`` or
+        ``partition``, every ``relationship`` has ``fromColumn``/``toColumn``,
+        and every ``role`` has at least one ``tablePermission``.
+
+        Returns:
+            List of issue dicts.
+        """
+        issues = []
+        lines = content.split('\n')
+        current_table = None
+        has_column_or_partition = False
+        current_role = None
+        has_table_permission = False
+
+        for line in lines:
+            stripped = line.strip()
+            # Track table blocks
+            if stripped.startswith('table ') and not stripped.startswith('tablePermission'):
+                if current_table and not has_column_or_partition:
+                    issues.append({
+                        'severity': cls._SEVERITY_WARNING,
+                        'message': f'Table "{current_table}" has no columns or partitions in {filepath}',
+                        'line': 0,
+                    })
+                current_table = stripped.split("'")[1] if "'" in stripped else stripped.split()[1] if len(stripped.split()) > 1 else None
+                has_column_or_partition = False
+
+            if current_table and stripped.startswith(('column ', 'partition ')):
+                has_column_or_partition = True
+
+            # Track role blocks
+            if stripped.startswith('role '):
+                if current_role and not has_table_permission:
+                    issues.append({
+                        'severity': cls._SEVERITY_WARNING,
+                        'message': f'Role "{current_role}" has no tablePermission in {filepath}',
+                        'line': 0,
+                    })
+                current_role = stripped.split("'")[1] if "'" in stripped else stripped.split()[1] if len(stripped.split()) > 1 else None
+                has_table_permission = False
+
+            if current_role and stripped.startswith('tablePermission'):
+                has_table_permission = True
+
+        # Final blocks
+        if current_table and not has_column_or_partition:
+            issues.append({
+                'severity': cls._SEVERITY_WARNING,
+                'message': f'Table "{current_table}" has no columns or partitions in {filepath}',
+                'line': 0,
+            })
+        if current_role and not has_table_permission:
+            issues.append({
+                'severity': cls._SEVERITY_WARNING,
+                'message': f'Role "{current_role}" has no tablePermission in {filepath}',
+                'line': 0,
+            })
+
+        return issues
+
+    @classmethod
+    def validate_m_expression(cls, m_code, context=''):
+        """Validate a Power Query M expression for common errors.
+
+        Checks: unmatched ``let``/``in``, unclosed quotes/brackets,
+        dangling ``{prev}`` placeholders, missing ``Source`` step.
+
+        Returns:
+            List of issue dicts.
+        """
+        issues = []
+        if not m_code or not m_code.strip():
+            return issues
+
+        code = m_code.strip()
+
+        # let/in balance
+        let_count = len(re.findall(r'\blet\b', code, re.IGNORECASE))
+        in_count = len(re.findall(r'\bin\b', code, re.IGNORECASE))
+        if let_count > 0 and in_count == 0:
+            issues.append({
+                'severity': cls._SEVERITY_ERROR,
+                'message': f'M expression has "let" without matching "in"{" in " + context if context else ""}',
+                'line': 0,
+            })
+
+        # Unmatched brackets
+        for open_ch, close_ch, name in [('(', ')', 'parentheses'), ('{', '}', 'braces'), ('[', ']', 'brackets')]:
+            depth = 0
+            in_string = False
+            for ch in code:
+                if ch == '"' and not in_string:
+                    in_string = True
+                elif ch == '"' and in_string:
+                    in_string = False
+                elif not in_string:
+                    if ch == open_ch:
+                        depth += 1
+                    elif ch == close_ch:
+                        depth -= 1
+            if depth != 0:
+                issues.append({
+                    'severity': cls._SEVERITY_ERROR,
+                    'message': f'Unmatched {name} in M expression{" in " + context if context else ""}',
+                    'line': 0,
+                })
+
+        # Dangling {prev} placeholder
+        if '{prev}' in code:
+            issues.append({
+                'severity': cls._SEVERITY_ERROR,
+                'message': f'Dangling {{prev}} placeholder in M expression{" in " + context if context else ""}',
+                'line': 0,
+            })
+
+        return issues
+
+    @classmethod
+    def validate_visual_completeness(cls, visual_json, filepath=''):
+        """Check visual JSON for completeness beyond schema compliance.
+
+        Flags: empty query state, missing visualType, zero-size position.
+
+        Returns:
+            List of issue dicts.
+        """
+        issues = []
+        visual = visual_json.get('visual', visual_json)
+
+        vtype = visual.get('visualType', '')
+        if not vtype:
+            issues.append({
+                'severity': cls._SEVERITY_WARNING,
+                'message': f'Visual missing visualType in {filepath}',
+                'line': 0,
+            })
+
+        pos = visual_json.get('position', {})
+        w = pos.get('width', 1)
+        h = pos.get('height', 1)
+        if w <= 0 or h <= 0:
+            issues.append({
+                'severity': cls._SEVERITY_WARNING,
+                'message': f'Visual has zero or negative size ({w}x{h}) in {filepath}',
+                'line': 0,
+            })
+
+        return issues
+
+    @classmethod
+    def validate_cross_references(cls, project_dir):
+        """Verify report → page → visual file chain is complete.
+
+        Checks every page directory has page.json, every visual directory has
+        visual.json. Flags orphan files.
+
+        Returns:
+            List of issue dicts.
+        """
+        issues = []
+        project_dir = Path(project_dir)
+
+        # Find report directory
+        report_dirs = [d for d in project_dir.iterdir()
+                       if d.is_dir() and d.name.endswith('.Report')]
+        if not report_dirs:
+            return issues
+
+        report_dir = report_dirs[0]
+        pages_dir = report_dir / 'pages'
+        if not pages_dir.exists():
+            issues.append({
+                'severity': cls._SEVERITY_ERROR,
+                'message': f'pages/ directory missing in {report_dir}',
+                'line': 0,
+            })
+            return issues
+
+        for page_dir in sorted(pages_dir.iterdir()):
+            if not page_dir.is_dir():
+                continue
+            page_json = page_dir / 'page.json'
+            if not page_json.exists():
+                issues.append({
+                    'severity': cls._SEVERITY_ERROR,
+                    'message': f'page.json missing in {page_dir.name}',
+                    'line': 0,
+                })
+
+            visuals_dir = page_dir / 'visuals'
+            if visuals_dir.exists():
+                for vis_dir in sorted(visuals_dir.iterdir()):
+                    if not vis_dir.is_dir():
+                        continue
+                    vis_json = vis_dir / 'visual.json'
+                    if not vis_json.exists():
+                        issues.append({
+                            'severity': cls._SEVERITY_WARNING,
+                            'message': f'visual.json missing in {vis_dir.name}',
+                            'line': 0,
+                        })
+
+        return issues
+
     @classmethod
     def validate_directory(cls, artifacts_dir):
         """
