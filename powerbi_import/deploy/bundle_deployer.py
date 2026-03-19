@@ -40,6 +40,9 @@ class BundleDeploymentResult:
         self.reports = []  # list of ReportDeploymentResult dicts
         self.refresh_status = None  # None | triggered | failed | skipped
         self.refresh_error = None
+        self.rollback_actions = []  # list of {action, artifact, status}
+        self.validation = []  # list of {check, status, detail}
+        self.conflicts = []  # list of {name, type, existing_id}
 
     @property
     def success(self):
@@ -80,6 +83,9 @@ class BundleDeploymentResult:
             'reports_total': self.total_count,
             'refresh_status': self.refresh_status,
             'refresh_error': self.refresh_error,
+            'rollback_actions': self.rollback_actions,
+            'validation': self.validation,
+            'conflicts': self.conflicts,
             'success': self.success,
         }
 
@@ -311,8 +317,192 @@ class BundleDeployer:
             result.refresh_error = str(e)
             logger.error('Refresh failed: %s', e)
 
+    def check_workspace_permissions(self):
+        """Verify workspace exists and principal has sufficient role.
+
+        Returns:
+            dict with ``{ok, role, detail}``.
+        """
+        try:
+            ws = self.client.get(
+                f'/workspaces/{self.workspace_id}')
+            role = ''
+            if isinstance(ws, dict):
+                role = ws.get('role', ws.get('currentUserRole', ''))
+            if role and role.lower() not in ('admin', 'contributor', 'member'):
+                return {
+                    'ok': False, 'role': role,
+                    'detail': f'Insufficient role: {role} (need Contributor+)',
+                }
+            return {'ok': True, 'role': role or 'unknown', 'detail': ''}
+        except Exception as e:
+            return {'ok': False, 'role': '', 'detail': str(e)}
+
+    def detect_conflicts(self, model_name, report_names):
+        """Detect name collisions with existing workspace items.
+
+        Args:
+            model_name: Semantic model display name.
+            report_names: List of report display names.
+
+        Returns:
+            list of ``{name, type, existing_id}`` dicts.
+        """
+        conflicts = []
+        try:
+            items = self.client.get(
+                f'/workspaces/{self.workspace_id}/items') or []
+            if isinstance(items, dict):
+                items = items.get('value', [])
+            name_map = {}
+            for item in items:
+                dname = item.get('displayName', '')
+                name_map.setdefault(dname, []).append(item)
+            # Check model
+            if model_name in name_map:
+                for item in name_map[model_name]:
+                    conflicts.append({
+                        'name': model_name,
+                        'type': item.get('type', 'SemanticModel'),
+                        'existing_id': item.get('id', ''),
+                    })
+            # Check reports
+            for rname in report_names:
+                if rname in name_map:
+                    for item in name_map[rname]:
+                        conflicts.append({
+                            'name': rname,
+                            'type': item.get('type', 'Report'),
+                            'existing_id': item.get('id', ''),
+                        })
+        except Exception as e:
+            logger.warning('Could not check conflicts: %s', e)
+        return conflicts
+
+    def rollback(self, result):
+        """Roll back deployed artifacts after a failure.
+
+        Deletes the semantic model if it was deployed but reports failed.
+
+        Args:
+            result: BundleDeploymentResult with deployment state.
+        """
+        if result.model_id and result.model_status == 'deployed':
+            try:
+                self.client.delete(
+                    f'/workspaces/{self.workspace_id}/'
+                    f'items/{result.model_id}')
+                result.rollback_actions.append({
+                    'action': 'delete_model',
+                    'artifact': result.model_name,
+                    'status': 'success',
+                })
+                logger.info('Rolled back model: %s', result.model_name)
+            except Exception as e:
+                result.rollback_actions.append({
+                    'action': 'delete_model',
+                    'artifact': result.model_name,
+                    'status': f'failed: {e}',
+                })
+                logger.error('Rollback failed for model: %s', e)
+
+        for rpt in result.reports:
+            if rpt.get('status') == 'deployed' and rpt.get('id'):
+                try:
+                    self.client.delete(
+                        f'/workspaces/{self.workspace_id}/'
+                        f'items/{rpt["id"]}')
+                    result.rollback_actions.append({
+                        'action': 'delete_report',
+                        'artifact': rpt['name'],
+                        'status': 'success',
+                    })
+                except Exception as e:
+                    result.rollback_actions.append({
+                        'action': 'delete_report',
+                        'artifact': rpt['name'],
+                        'status': f'failed: {e}',
+                    })
+
+    def validate_deployment(self, result):
+        """Post-deployment validation.
+
+        Verifies model status and report binding.
+
+        Args:
+            result: BundleDeploymentResult to validate.
+        """
+        # Check model status
+        if result.model_id:
+            try:
+                status = self.deployer.get_deployment_status(
+                    self.workspace_id, result.model_id)
+                model_state = status.get('status', '') if status else ''
+                result.validation.append({
+                    'check': 'model_status',
+                    'status': 'ok' if model_state != 'Failed' else 'fail',
+                    'detail': model_state,
+                })
+            except Exception as e:
+                result.validation.append({
+                    'check': 'model_status',
+                    'status': 'error',
+                    'detail': str(e),
+                })
+
+        # Check reports are bound
+        for rpt in result.reports:
+            if rpt.get('status') == 'deployed':
+                result.validation.append({
+                    'check': f'report_bound:{rpt["name"]}',
+                    'status': 'ok' if rpt.get('rebind') == 'success' else 'warn',
+                    'detail': rpt.get('rebind', 'unknown'),
+                })
+
+    def poll_refresh(self, model_id, result,
+                     interval=10, timeout=1800):
+        """Poll refresh status until completion or timeout.
+
+        Args:
+            model_id: Semantic model ID.
+            result: BundleDeploymentResult to update.
+            interval: Polling interval in seconds.
+            timeout: Maximum wait time in seconds.
+        """
+        import time
+        elapsed = 0
+        while elapsed < timeout:
+            try:
+                resp = self.client.get(
+                    f'/workspaces/{self.workspace_id}/'
+                    f'datasets/{model_id}/refreshes')
+                refreshes = resp if isinstance(resp, list) else (
+                    resp.get('value', []) if isinstance(resp, dict) else [])
+                if refreshes:
+                    latest = refreshes[0]
+                    status = latest.get('status', '').lower()
+                    if status in ('completed', 'succeeded'):
+                        result.refresh_status = 'completed'
+                        logger.info('Refresh completed after %ds', elapsed)
+                        return
+                    elif status == 'failed':
+                        result.refresh_status = 'failed'
+                        result.refresh_error = latest.get('error', '')
+                        logger.error('Refresh failed: %s',
+                                     result.refresh_error)
+                        return
+            except Exception as e:
+                logger.debug('Refresh poll error: %s', e)
+            time.sleep(interval)
+            elapsed += interval
+
+        result.refresh_status = 'timeout'
+        result.refresh_error = f'Refresh timed out after {timeout}s'
+        logger.warning(result.refresh_error)
+
     def deploy_bundle(self, project_dir, refresh=False,
-                      report_filter=None):
+                      report_filter=None,
+                      overwrite=False, enable_rollback=False):
         """Deploy a shared semantic model project as a bundle.
 
         Deploys the semantic model first, then each thin report.
@@ -324,6 +514,8 @@ class BundleDeployer:
             refresh: Trigger dataset refresh after deployment.
             report_filter: Optional list of report names to deploy
                 (deploys all if None).
+            overwrite: Proceed even if name conflicts are detected.
+            enable_rollback: Delete deployed artifacts on failure.
 
         Returns:
             BundleDeploymentResult with per-artifact status.
@@ -361,6 +553,28 @@ class BundleDeployer:
             model_name, len(report_dirs),
         )
 
+        # 1b. Permission pre-flight
+        perm = self.check_workspace_permissions()
+        if not perm['ok']:
+            result.model_status = 'failed'
+            result.model_error = f'Permission check failed: {perm["detail"]}'
+            result.end_time = datetime.now()
+            return result
+
+        # 1c. Conflict detection
+        report_names = [name for name, _ in report_dirs]
+        conflicts = self.detect_conflicts(model_name, report_names)
+        result.conflicts = conflicts
+        if conflicts and not overwrite:
+            names = ', '.join(c['name'] for c in conflicts)
+            result.model_status = 'failed'
+            result.model_error = (
+                f'Name conflicts detected: {names}. '
+                f'Use overwrite=True to proceed.'
+            )
+            result.end_time = datetime.now()
+            return result
+
         # 2. Deploy semantic model first
         model_id = self._deploy_semantic_model(model_dir, model_name, result)
         if not model_id:
@@ -382,9 +596,20 @@ class BundleDeployer:
 
             result.reports.append(rpt_result)
 
-        # 4. Trigger refresh if requested
+        # 4. Rollback on failure if enabled
+        if enable_rollback and result.failed_count > 0:
+            logger.info('Rolling back due to %d failed reports',
+                        result.failed_count)
+            self.rollback(result)
+
+        # 5. Post-deployment validation
+        self.validate_deployment(result)
+
+        # 6. Trigger refresh if requested
         if refresh and model_id:
             self._trigger_refresh(model_id, result)
+            if result.refresh_status == 'triggered':
+                self.poll_refresh(model_id, result)
         elif not refresh:
             result.refresh_status = 'skipped'
 

@@ -2,6 +2,26 @@
 
 ## v18.0.0 — Advanced Merge Intelligence & Enterprise Merge Workflows
 
+### Sprint 63 — Deploy Hardening & Fabric Reliability ✅
+- **Workspace permission pre-flight** (`bundle_deployer.py`): `check_workspace_permissions()` — verifies workspace exists and principal has Contributor+ role before deployment; blocks on Viewer-only or network errors
+- **Name conflict detection** (`bundle_deployer.py`): `detect_conflicts(model_name, report_names)` — queries workspace items for collisions; `overwrite=True` parameter to proceed despite conflicts
+- **Rollback on failure** (`bundle_deployer.py`): `rollback(result)` — deletes deployed semantic model and reports when `enable_rollback=True` and any report deployment fails; per-artifact rollback status tracking
+- **Post-deployment validation** (`bundle_deployer.py`): `validate_deployment(result)` — checks model deployment status and report binding state; appends validation results to `BundleDeploymentResult`
+- **Refresh polling** (`bundle_deployer.py`): `poll_refresh(model_id, result)` — polls dataset refresh status until completion/failure/timeout; replaces fire-and-forget refresh pattern
+- **Deployment manifest** (`deploy/utils.py`): `DeploymentManifest` class — tracks workspace_id, model/report IDs, source_hash, principal, version; save/load JSON for audit trail
+- **BundleDeploymentResult extended**: Added `rollback_actions`, `validation`, `conflicts` fields with `to_dict()` serialization
+- **28 new tests** in `test_deploy_hardening.py`: permissions (6), conflicts (5), rollback (4), validation (4), polling (3), manifest (2), integration (2), result fields (2)
+- **Existing test fix** (`test_bundle_deployer.py`): `test_deploy_with_refresh` updated to mock `poll_refresh` — was causing 30-minute hang
+- **Overall: 4,762 tests** (21 Hyper + 28 deploy + fix), 0 failures
+
+### Hyper File Improvements ✅
+- **Option A — tableauhyperapi integration** (`hyper_reader.py`): `_read_hyper_api()` — tries optional `tableauhyperapi` package first for full .hyper format support (v2+); graceful fallback to SQLite reader when package not installed
+- **Option B — Multi-schema support** (`hyper_reader.py`): Enhanced `_read_hyper_sqlite()` with `_HYPER_SCHEMAS` loop — discovers tables across `Extract`, `public`, and `stg` schemas; proper quoted name handling for schema-qualified queries
+- **Option C — Configurable row limit** (`hyper_reader.py`, `migrate.py`): `--hyper-rows N` CLI flag controls sample data extraction; `row_limit` parameter on `generate_m_for_hyper_table()` overrides default thresholds; wired through full pipeline: migrate.py → extract_tableau_data.py → hyper_reader.py
+- **Option D — Metadata enrichment** (`hyper_reader.py`): `_compute_column_stats_sqlite()` with distinct_count/min/max per column; `get_hyper_metadata()` summary function with recommendations (DirectQuery for >10M rows, cardinality warnings); file metadata (size, modified date) included in output
+- **3-tier reader chain**: tableauhyperapi → SQLite → header scan (documented in module docstring)
+- **21 new tests** in `test_hyper_improvements.py`: API reader (3), multi-schema (3), configurable rows (6), metadata (7), format detection (2)
+
 ### Backward Compatibility Fix — PBI Desktop April 2025 (v2.142.928.0) ✅
 - **Report schema downgrade** (`pbip_generator.py`): Downgraded report.json `$schema` from `3.1.0` to `2.0.0` — PBI Desktop April 2025 cannot resolve report schema 3.x
 - **ThemeVersion format fix** (`pbip_generator.py`): Changed `reportVersionAtImport` from object `{visual, report, page}` (schema 3.x) to string `"5.55"` (schema 2.x) per Microsoft PBIR documentation

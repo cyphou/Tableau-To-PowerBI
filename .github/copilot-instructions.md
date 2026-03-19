@@ -63,7 +63,7 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
     - `pbix_packager.py`: .pbip → .pbix ZIP packager with OPC content types
     - `pbi_deployer.py`: PBI Service deployment orchestrator — package, upload, poll, refresh, validate
     - `bundle_deployer.py`: Fabric bundle deployer — deploy shared model + thin reports as atomic bundle, artifact discovery, per-report error isolation, rebind, refresh, `BundleDeploymentResult`
-- **tests/**: Unit and integration tests (4,331+ tests across 79 test files + conftest.py shared fixtures)
+- **tests/**: Unit and integration tests (4,762+ tests across 100 test files + conftest.py shared fixtures)
 - **docs/**: FAQ, PBI project guide, mapping reference
 - **.github/workflows/ci.yml**: CI/CD pipeline (lint → test → validate → deploy)
 - **.github/workflows/publish.yml**: PyPI auto-publish workflow (tag-triggered, OIDC trusted publisher)

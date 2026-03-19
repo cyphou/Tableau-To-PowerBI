@@ -151,3 +151,49 @@ class ArtifactCache:
         """Clear all cached entries."""
         self.cache = {}
         self.save()
+
+
+class DeploymentManifest:
+    """Track deployment metadata for reproducibility and auditing."""
+
+    def __init__(self, workspace_id, model_name=''):
+        self.workspace_id = workspace_id
+        self.model_name = model_name
+        self.timestamp = datetime.now().isoformat()
+        self.model_id = None
+        self.report_ids = []
+        self.source_hash = None
+        self.principal = None
+        self.version = None
+
+    def to_dict(self):
+        return {
+            'workspace_id': self.workspace_id,
+            'model_name': self.model_name,
+            'timestamp': self.timestamp,
+            'model_id': self.model_id,
+            'report_ids': self.report_ids,
+            'source_hash': self.source_hash,
+            'principal': self.principal,
+            'version': self.version,
+        }
+
+    def save(self, output_path):
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump(self.to_dict(), f, indent=2)
+        logger.info('Deployment manifest saved: %s', output_path)
+
+    @classmethod
+    def load(cls, path):
+        with open(path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        m = cls(data.get('workspace_id', ''), data.get('model_name', ''))
+        m.timestamp = data.get('timestamp', '')
+        m.model_id = data.get('model_id')
+        m.report_ids = data.get('report_ids', [])
+        m.source_hash = data.get('source_hash')
+        m.principal = data.get('principal')
+        m.version = data.get('version')
+        return m

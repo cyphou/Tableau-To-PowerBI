@@ -130,10 +130,11 @@ def _scan_delimited_sample(text_chunk, col_names, max_rows):
 class TableauExtractor:
     """Tableau objects extractor"""
     
-    def __init__(self, tableau_file, output_dir='tableau_export/'):
+    def __init__(self, tableau_file, output_dir='tableau_export/', hyper_max_rows=None):
         self.tableau_file = tableau_file
         self.output_dir = output_dir
         self.workbook_data = {}
+        self.hyper_max_rows = hyper_max_rows or 20
         
         os.makedirs(self.output_dir, exist_ok=True)
     
@@ -2685,7 +2686,7 @@ class TableauExtractor:
         if file_ext in ['.twbx', '.tdsx']:
             try:
                 deep_results = read_hyper_from_twbx(
-                    self.tableau_file, max_rows=20,
+                    self.tableau_file, max_rows=self.hyper_max_rows,
                 )
                 if deep_results:
                     # Merge deep data (actual row counts, richer sample rows)

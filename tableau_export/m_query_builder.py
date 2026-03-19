@@ -617,8 +617,9 @@ def _gen_m_hyper(details, table_name, columns):
         import os as _os
         from hyper_reader import read_hyper, generate_m_for_hyper_table
         filename = details.get('filename', '')
+        hyper_rows = details.get('hyper_max_rows', 20)
         if filename and _os.path.isfile(filename):
-            result = read_hyper(filename, max_rows=20)
+            result = read_hyper(filename, max_rows=hyper_rows)
             tables = result.get('tables', [])
             # Find matching table or use the first
             target = None
@@ -629,7 +630,7 @@ def _gen_m_hyper(details, table_name, columns):
             if target is None and tables:
                 target = tables[0]
             if target and target.get('columns'):
-                return generate_m_for_hyper_table(target)
+                return generate_m_for_hyper_table(target, row_limit=hyper_rows)
     except (ImportError, OSError, KeyError, ValueError) as exc:
         logger.debug('Hyper read failed for %s: %s', table_name, exc)
 

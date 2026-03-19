@@ -268,10 +268,12 @@ class TestDeployBundle(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             project, deployer = self._make_project_and_deployer(td)
             deployer.client.post.return_value = {}
+            deployer.poll_refresh = MagicMock()
             result = deployer.deploy_bundle(project, refresh=True)
 
             self.assertTrue(result.success)
             self.assertEqual(result.refresh_status, 'triggered')
+            deployer.poll_refresh.assert_called_once()
 
     def test_deploy_model_failure_stops_reports(self):
         with tempfile.TemporaryDirectory() as td:

@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-19 — updated through v18.0.0 (Sprints 54-55)  
 **Scope:** Every source file, test file, CI/CD, docs, config, and cross-project comparison with TableauToFabric  
-**Status:** 4,331 tests passing across 79 test files
+**Status:** 4,762 tests passing across 100 test files
 
 ### Implementation Coverage
 
@@ -70,7 +70,7 @@
 
 ### What is MISSING or INCOMPLETE
 - **Tableau Server/Cloud connection types**: ✅ IMPLEMENTED — `TableauServerClient` in `server_client.py` provides PAT/password auth, workbook download, datasource listing, batch download, regex search via `--server` CLI flag
-- **`.hyper` file parsing**: ✅ IMPLEMENTED — `hyper_reader.py` reads `.hyper` files via SQLite interface (column metadata + row data), schema discovery, type mapping to M/TMDL types; row data injected into M `#table()` expressions
+- **`.hyper` file parsing**: ✅ IMPLEMENTED — `hyper_reader.py` 3-tier reader chain: (1) `tableauhyperapi` optional package for full v2+ .hyper support, (2) SQLite fallback for older formats, (3) header scan; multi-schema discovery (`Extract`, `public`, `stg`); configurable row limit via `--hyper-rows N`; column stats (distinct_count, min, max); metadata enrichment with DirectQuery/cardinality recommendations
 - **Tableau extensions/LOD filters**: LOD calc extraction relies on text-based `{FIXED ...}` parsing (can miss edge cases with nested LODs or LOD inside LOD)
 - **Dashboard layout containers**: Layout containers are extracted but deeply nested containers may lose relative positioning when mapped to PBI
 - **Tableau 2024.3+ features**: ✅ IMPLEMENTED — Dynamic parameters with database queries fully extracted and converted to M partition with `Value.NativeQuery()` for dynamic parameter refresh
@@ -306,7 +306,7 @@
 | **Incremental refresh** | ✅ IMPLEMENTED — `refreshPolicy` section in TMDL table partitions |
 | **Query folding hints** | ✅ IMPLEMENTED — `m_transform_buffer()` + `m_transform_join(buffer_right=True)` for `Table.Buffer()` folding boundaries |
 | **Parameterized data sources** | ✅ IMPLEMENTED — `_write_expressions_tmdl()` generates `ServerName`/`DatabaseName` M parameters |
-| **Tableau Hyper extract data** | ✅ IMPLEMENTED — `hyper_reader.py` reads `.hyper` files via SQLite interface; row data injected into M `#table()` expressions |
+| **Tableau Hyper extract data** | ✅ IMPLEMENTED — `hyper_reader.py` 3-tier reader: tableauhyperapi → SQLite → header scan; multi-schema, configurable rows (`--hyper-rows`), column stats, metadata enrichment |
 | **Google Sheets authentication** | M query generated but no OAuth2 credential setup |
 | **PDF connector** | Produces `Pdf.Tables(File.Contents(...))` — may need page/table index parameters |
 | **Salesforce connector** | Basic `Salesforce.Data()` — may need object/API version specification |

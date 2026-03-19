@@ -141,7 +141,7 @@ def print_step(step_num, total_steps, text):
     print("-" * 80)
 
 
-def run_extraction(tableau_file):
+def run_extraction(tableau_file, hyper_max_rows=None):
     """Run Tableau extraction"""
     global _stats
     print_step(1, 2, "TABLEAU OBJECTS EXTRACTION")
@@ -158,7 +158,7 @@ def run_extraction(tableau_file):
     try:
         from extract_tableau_data import TableauExtractor
 
-        extractor = TableauExtractor(tableau_file)
+        extractor = TableauExtractor(tableau_file, hyper_max_rows=hyper_max_rows)
         success = extractor.extract_all()
 
         if success:
@@ -1338,6 +1338,15 @@ def _add_migration_args(parser):
         '--assess',
         action='store_true',
         help='Run pre-migration assessment and strategy analysis after extraction (no generation)'
+    )
+
+    parser.add_argument(
+        '--hyper-rows',
+        metavar='N',
+        type=int,
+        default=None,
+        help='Max rows to inline from .hyper extract data (default: 20 for sample, up to 500 for inline #table). '
+             'Set higher to include more data; above 500 switches to Csv.Document() reference.'
     )
 
     parser.add_argument(
@@ -2575,7 +2584,10 @@ def _run_single_migration(args):
     # Step 1: Extraction
     progress.start("Extracting Tableau data")
     if not args.skip_extraction:
-        results['extraction'] = run_extraction(args.tableau_file)
+        results['extraction'] = run_extraction(
+            args.tableau_file,
+            hyper_max_rows=getattr(args, 'hyper_rows', None),
+        )
         if not results['extraction']:
             progress.fail("Extraction failed")
             print("\nMigration aborted due to extraction failure")
