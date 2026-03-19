@@ -1,9 +1,9 @@
 table users
-	lineageTag: ac61886e-3b59-4284-8712-9e91cff9a55e
+	lineageTag: 11abe55a-2bb2-4bb0-a337-31bfd8df5c45
 
 	column user_id
 		dataType: string
-		lineageTag: 7043df62-1d79-4e93-868e-26185d34096b
+		lineageTag: bf1ec32e-9e6d-4ce7-9b96-29a11ddbd6c3
 		summarizeBy: none
 		sourceColumn: user_id
 
@@ -11,7 +11,7 @@ table users
 
 	column user_name
 		dataType: string
-		lineageTag: 6054604c-02d6-4af4-a549-4fabb957b2e6
+		lineageTag: 484d2341-0339-4386-b1af-43608e77aecf
 		summarizeBy: none
 		sourceColumn: user_name
 
@@ -19,7 +19,7 @@ table users
 
 	column email
 		dataType: string
-		lineageTag: acab7165-7cbb-45ba-9f42-b7acaaa2b277
+		lineageTag: f41bfe0e-2e0c-4042-be67-fd7c6fa3e6cc
 		summarizeBy: none
 		sourceColumn: email
 
@@ -28,7 +28,7 @@ table users
 	column signup_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: a58eb669-fc7e-4b19-b02e-076a7b069e89
+		lineageTag: d36fd5f8-3690-4fc7-82bc-de96b69f51a2
 		summarizeBy: none
 		sourceColumn: signup_date
 		dataCategory: DateTime
@@ -37,7 +37,7 @@ table users
 
 	column plan
 		dataType: string
-		lineageTag: c3492f74-f7ad-4f32-a4fa-da89be7875e4
+		lineageTag: f9784897-2b8a-4d02-a776-50e83c44cbb8
 		summarizeBy: none
 		sourceColumn: plan
 
@@ -45,14 +45,14 @@ table users
 
 	column region
 		dataType: string
-		lineageTag: 9fd45759-2ecb-4118-9f09-b3f2deaf0f18
+		lineageTag: 900c45ce-b9e4-45d7-9a91-19afa5f5fe85
 		summarizeBy: none
 		sourceColumn: region
 		dataCategory: StateOrProvince
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'users-febf4fd0-c5db-4f35-a2b6-1fd73b379461' = m
+	partition 'users-f513f045-6d87-482c-90cd-af2e3f213ade' = m
 		mode: import
 		source =
 				let

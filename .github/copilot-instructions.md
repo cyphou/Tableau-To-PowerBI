@@ -63,7 +63,8 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
     - `pbix_packager.py`: .pbip → .pbix ZIP packager with OPC content types
     - `pbi_deployer.py`: PBI Service deployment orchestrator — package, upload, poll, refresh, validate
     - `bundle_deployer.py`: Fabric bundle deployer — deploy shared model + thin reports as atomic bundle, artifact discovery, per-report error isolation, rebind, refresh, `BundleDeploymentResult`
-- **tests/**: Unit and integration tests (4,813+ tests across 101 test files + conftest.py shared fixtures)
+    - `multi_tenant.py`: Multi-tenant deployment — `TenantConfig`/`MultiTenantConfig` (validate/load/save JSON), `_apply_connection_overrides()` (template substitution: `${TENANT_SERVER}`, `${TENANT_DATABASE}`), `deploy_multi_tenant()` orchestrator with per-tenant results
+- **tests/**: Unit and integration tests (4,923+ tests across 106 test files + conftest.py shared fixtures)
 - **docs/**: FAQ, PBI project guide, mapping reference
 - **.github/workflows/ci.yml**: CI/CD pipeline (lint → test → validate → deploy)
 - **.github/workflows/publish.yml**: PyPI auto-publish workflow (tag-triggered, OIDC trusted publisher)
@@ -102,6 +103,8 @@ python migrate.py --batch examples/tableau_samples/ --shared-model
 python migrate.py --global-assess --batch examples/tableau_samples/
 python migrate.py --shared-model wb1.twbx wb2.twbx --deploy-bundle WORKSPACE_ID --bundle-refresh
 python migrate.py --deploy-bundle WORKSPACE_ID --output-dir artifacts/shared/MyModel
+python migrate.py --shared-model wb1.twbx wb2.twbx --multi-tenant tenants.json
+python migrate.py --shared-model wb1.twbx wb2.twbx --live-connection WORKSPACE_ID/ModelName
 ```
 
 ## Extracted Objects (16 types)

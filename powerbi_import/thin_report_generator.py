@@ -30,14 +30,19 @@ logger = logging.getLogger(__name__)
 class ThinReportGenerator:
     """Generates a thin report (.Report/) referencing an external semantic model."""
 
-    def __init__(self, semantic_model_name: str, output_dir: str):
+    def __init__(self, semantic_model_name: str, output_dir: str,
+                 live_connection: str = None):
         """
         Args:
             semantic_model_name: Name of the shared semantic model directory.
             output_dir: Root output directory where reports are created.
+            live_connection: Optional ``WORKSPACE_ID/MODEL_NAME`` for byConnection
+                wiring instead of byPath. When set, the report references a
+                deployed Fabric semantic model via workspace connection string.
         """
         self.semantic_model_name = semantic_model_name
         self.output_dir = os.path.abspath(output_dir)
+        self.live_connection = live_connection
 
     def generate_thin_report(self, report_name: str,
                              converted_objects: dict,
@@ -90,16 +95,41 @@ class ThinReportGenerator:
         _write_json(os.path.join(report_dir, '.platform'), platform)
 
     def _write_definition_pbir(self, report_dir: str):
-        """Write definition.pbir with byPath reference to the shared semantic model."""
+        """Write definition.pbir with byPath or byConnection reference."""
         report_definition = {
             "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definitionProperties/2.0.0/schema.json",
             "version": "4.0",
-            "datasetReference": {
+        }
+
+        if self.live_connection:
+            # byConnection: reference a deployed Fabric semantic model
+            # Format: "WORKSPACE_ID/MODEL_NAME"
+            parts = self.live_connection.split('/', 1)
+            if len(parts) == 2:
+                workspace_id, model_name = parts
+            else:
+                workspace_id = parts[0]
+                model_name = self.semantic_model_name
+
+            report_definition["datasetReference"] = {
+                "byConnection": {
+                    "connectionString": (
+                        f"Data Source=powerbi://api.powerbi.com/v1.0/myorg/{workspace_id};"
+                        f"Initial Catalog={model_name}"
+                    ),
+                    "pbiServiceModelId": None,
+                    "pbiModelVirtualServerName": "sobe_wowvirtualserver",
+                    "pbiModelDatabaseName": model_name,
+                },
+            }
+        else:
+            # byPath: local project reference (default)
+            report_definition["datasetReference"] = {
                 "byPath": {
                     "path": f"../{self.semantic_model_name}.SemanticModel",
                 },
-            },
-        }
+            }
+
         _write_json(os.path.join(report_dir, 'definition.pbir'), report_definition)
 
     def _write_pbip(self, report_name: str):

@@ -203,6 +203,11 @@ def _find_shared_table_names(ext_a: dict, ext_b: dict) -> List[str]:
     """Find table names shared between two workbooks via fingerprint matching."""
     fp_a = build_table_fingerprints(ext_a.get('datasources', []))
     fp_b = build_table_fingerprints(ext_b.get('datasources', []))
+    return _find_shared_table_names_cached(fp_a, fp_b)
+
+
+def _find_shared_table_names_cached(fp_a: dict, fp_b: dict) -> List[str]:
+    """Find shared table names from pre-computed fingerprint dicts."""
     hashes_a = {fp.fingerprint(): name for name, (fp, _, _) in fp_a.items()}
     hashes_b = {fp.fingerprint(): name for name, (fp, _, _) in fp_b.items()}
     shared_hashes = set(hashes_a.keys()) & set(hashes_b.keys())
@@ -239,13 +244,22 @@ def run_global_assessment(
     # adjacency: wb_index → set of wb_indices with score >= 30
     adjacency: Dict[int, set] = {i: set() for i in range(n)}
 
+    # Pre-compute fingerprints once per workbook (O(n) instead of O(n²))
+    _fingerprint_cache: Dict[int, dict] = {}
+    for i in range(n):
+        _fingerprint_cache[i] = build_table_fingerprints(
+            all_extracted[i].get('datasources', [])
+        )
+
     for i in range(n):
         for j in range(i + 1, n):
             pair_assessment = assess_merge(
                 [all_extracted[i], all_extracted[j]],
                 [workbook_names[i], workbook_names[j]],
             )
-            shared = _find_shared_table_names(all_extracted[i], all_extracted[j])
+            shared = _find_shared_table_names_cached(
+                _fingerprint_cache[i], _fingerprint_cache[j]
+            )
             ps = PairwiseScore(
                 wb_a=workbook_names[i],
                 wb_b=workbook_names[j],

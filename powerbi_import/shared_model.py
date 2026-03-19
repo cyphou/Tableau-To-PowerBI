@@ -346,6 +346,9 @@ def _parse_table_name(raw_name: str) -> Tuple[str, str]:
 def build_table_fingerprints(datasources: list) -> Dict[str, Tuple[TableFingerprint, dict, dict]]:
     """Build fingerprints for all tables in a workbook's datasources.
 
+    Handles both physical tables (connection+schema+name) and custom SQL
+    tables (connection+normalized SQL hash).
+
     Returns:
         {physical_table_name: (fingerprint, table_dict, connection_dict)}
     """
@@ -359,9 +362,24 @@ def build_table_fingerprints(datasources: list) -> Dict[str, Tuple[TableFingerpr
 
         for table in ds.get('tables', []):
             ttype = table.get('type', 'table')
+            raw_name = table.get('name', '')
+
+            # Custom SQL tables: fingerprint by normalized SQL hash
+            sql = table.get('custom_sql', table.get('query', ''))
+            if sql:
+                sql_hash = _hash_sql(sql)
+                fp = TableFingerprint(
+                    connection_type=conn_type,
+                    server=server,
+                    database=database,
+                    schema='_custom_sql',
+                    table_name=sql_hash,
+                )
+                result[raw_name] = (fp, table, conn)
+                continue
+
             if ttype != 'table':
                 continue
-            raw_name = table.get('name', '')
             schema, tname = _parse_table_name(raw_name)
             fp = TableFingerprint(
                 connection_type=conn_type,
@@ -1253,6 +1271,128 @@ def calculate_merge_score(assessment: MergeAssessment) -> int:
 
 
 # ═══════════════════════════════════════════════════════════════════
+#  Lineage extraction
+# ═══════════════════════════════════════════════════════════════════
+
+def extract_lineage(merged: dict) -> List[dict]:
+    """Extract lineage metadata from a merged converted_objects dict.
+
+    Returns a list of lineage records, each with:
+        name, type, source_workbooks, merge_action
+    """
+    records: List[dict] = []
+
+    # Tables
+    for ds in merged.get('datasources', []):
+        for table in ds.get('tables', []):
+            records.append({
+                'name': table.get('name', ''),
+                'type': 'table',
+                'source_workbooks': table.get('_source_workbooks', []),
+                'merge_action': table.get('_merge_action', ''),
+            })
+        # Datasource-level calculations
+        for calc in ds.get('calculations', []):
+            records.append({
+                'name': calc.get('caption', calc.get('name', '')),
+                'type': 'ds_calculation',
+                'source_workbooks': calc.get('_source_workbooks', []),
+                'merge_action': calc.get('_merge_action', ''),
+            })
+        # Relationships
+        for rel in ds.get('relationships', []):
+            from_t = rel.get('from_table', '')
+            to_t = rel.get('to_table', '')
+            records.append({
+                'name': f"{from_t} → {to_t}",
+                'type': 'relationship',
+                'source_workbooks': rel.get('_source_workbooks', []),
+                'merge_action': rel.get('_merge_action', ''),
+            })
+
+    # Standalone calculations
+    for calc in merged.get('calculations', []):
+        records.append({
+            'name': calc.get('caption', calc.get('name', '')),
+            'type': 'calculation',
+            'source_workbooks': calc.get('_source_workbooks', []),
+            'merge_action': calc.get('_merge_action', ''),
+        })
+
+    # Parameters
+    for param in merged.get('parameters', []):
+        records.append({
+            'name': param.get('name', param.get('caption', '')),
+            'type': 'parameter',
+            'source_workbooks': param.get('_source_workbooks', []),
+            'merge_action': param.get('_merge_action', ''),
+        })
+
+    # Hierarchies
+    for hier in merged.get('hierarchies', []):
+        records.append({
+            'name': hier.get('name', ''),
+            'type': 'hierarchy',
+            'source_workbooks': hier.get('_source_workbooks', []),
+            'merge_action': hier.get('_merge_action', ''),
+        })
+
+    # Simple list-based artifacts
+    for key in ('sets', 'groups', 'bins', 'user_filters', 'filters',
+                'stories', 'actions', 'sort_orders', 'custom_sql'):
+        for item in merged.get(key, []):
+            records.append({
+                'name': item.get('name', ''),
+                'type': key.rstrip('s'),  # e.g., 'set', 'group'
+                'source_workbooks': item.get('_source_workbooks', []),
+                'merge_action': item.get('_merge_action', ''),
+            })
+
+    # Advanced artifacts
+    for cg in merged.get('_calculation_groups', []):
+        records.append({
+            'name': cg.get('caption', ''),
+            'type': 'calculation_group',
+            'source_workbooks': cg.get('_source_workbooks', []),
+            'merge_action': cg.get('_merge_action', ''),
+        })
+
+    for fp in merged.get('_field_parameters', []):
+        records.append({
+            'name': fp.get('caption', ''),
+            'type': 'field_parameter',
+            'source_workbooks': fp.get('_source_workbooks', []),
+            'merge_action': fp.get('_merge_action', ''),
+        })
+
+    for persp in merged.get('_perspectives', []):
+        records.append({
+            'name': persp.get('name', ''),
+            'type': 'perspective',
+            'source_workbooks': persp.get('_source_workbooks', []),
+            'merge_action': persp.get('_merge_action', ''),
+        })
+
+    for culture in merged.get('_cultures', []):
+        records.append({
+            'name': culture.get('locale', ''),
+            'type': 'culture',
+            'source_workbooks': culture.get('_source_workbooks', []),
+            'merge_action': culture.get('_merge_action', ''),
+        })
+
+    for goal in merged.get('_goals', []):
+        records.append({
+            'name': goal.get('name', goal.get('metric_name', '')),
+            'type': 'goal',
+            'source_workbooks': goal.get('_source_workbooks', []),
+            'merge_action': goal.get('_merge_action', ''),
+        })
+
+    return records
+
+
+# ═══════════════════════════════════════════════════════════════════
 #  Semantic model merging
 # ═══════════════════════════════════════════════════════════════════
 
@@ -1397,9 +1537,14 @@ def _merge_datasources(all_extracted: List[dict],
                 if fp_hash in added_tables:
                     # Merge columns into existing table
                     _merge_columns_into(added_tables[fp_hash], table)
+                    # Lineage: track additional source workbook
+                    added_tables[fp_hash].setdefault('_source_workbooks', []).append(wb_name)
+                    added_tables[fp_hash]['_merge_action'] = 'deduplicated'
                 else:
                     # Add new table
                     merged_table = copy.deepcopy(table)
+                    merged_table['_source_workbooks'] = [wb_name]
+                    merged_table['_merge_action'] = 'unique'
                     added_tables[fp_hash] = merged_table
                     merged_ds['tables'].append(merged_table)
 
@@ -1408,7 +1553,17 @@ def _merge_datasources(all_extracted: List[dict],
                 key = _relationship_key(rel)
                 if key not in rel_keys_seen:
                     rel_keys_seen.add(key)
-                    merged_ds['relationships'].append(copy.deepcopy(rel))
+                    rel_copy = copy.deepcopy(rel)
+                    rel_copy['_source_workbooks'] = [wb_name]
+                    rel_copy['_merge_action'] = 'unique'
+                    merged_ds['relationships'].append(rel_copy)
+                else:
+                    # Find existing and update lineage
+                    for existing_rel in merged_ds['relationships']:
+                        if _relationship_key(existing_rel) == key:
+                            existing_rel.setdefault('_source_workbooks', []).append(wb_name)
+                            existing_rel['_merge_action'] = 'deduplicated'
+                            break
 
             # Merge datasource-level calculations (dedup + namespace conflicts)
             conflict_names = {mc.name for mc in assessment.measure_conflicts}
@@ -1424,13 +1579,26 @@ def _merge_datasources(all_extracted: List[dict],
                     namespaced['caption'] = new_caption
                     namespaced['_original_caption'] = caption
                     namespaced['_source_workbook'] = wb_name
+                    namespaced['_source_workbooks'] = [wb_name]
+                    namespaced['_merge_action'] = 'namespaced'
                     merged_ds['calculations'].append(namespaced)
                 else:
                     # Deduplicate by (caption, formula)
                     dup_key = (caption, formula)
                     if dup_key not in _ds_calc_seen:
                         _ds_calc_seen.add(dup_key)
-                        merged_ds['calculations'].append(copy.deepcopy(calc))
+                        calc_copy = copy.deepcopy(calc)
+                        calc_copy['_source_workbooks'] = [wb_name]
+                        calc_copy['_merge_action'] = 'unique'
+                        merged_ds['calculations'].append(calc_copy)
+                    else:
+                        # Track additional source on existing
+                        for existing_calc in merged_ds['calculations']:
+                            ec = existing_calc.get('caption', existing_calc.get('name', ''))
+                            if ec == caption:
+                                existing_calc.setdefault('_source_workbooks', []).append(wb_name)
+                                existing_calc['_merge_action'] = 'deduplicated'
+                                break
 
     return merged_ds
 
@@ -1520,13 +1688,22 @@ def _merge_calculations(all_extracted: List[dict],
                 namespaced['caption'] = new_caption
                 namespaced['_original_caption'] = caption
                 namespaced['_source_workbook'] = wb_name
+                namespaced['_source_workbooks'] = [wb_name]
+                namespaced['_merge_action'] = 'namespaced'
                 result.append(namespaced)
             elif caption in seen:
-                # Already seen — skip duplicate
-                continue
+                # Already seen — track source for lineage
+                for existing in result:
+                    if existing.get('caption', existing.get('name', '')) == caption:
+                        existing.setdefault('_source_workbooks', []).append(wb_name)
+                        existing['_merge_action'] = 'deduplicated'
+                        break
             else:
                 seen[caption] = (formula, calc)
-                result.append(copy.deepcopy(calc))
+                calc_copy = copy.deepcopy(calc)
+                calc_copy['_source_workbooks'] = [wb_name]
+                calc_copy['_merge_action'] = 'unique'
+                result.append(calc_copy)
 
     return result
 
@@ -1546,7 +1723,10 @@ def _merge_parameters(all_extracted: List[dict],
     result = []
     for pname, entries in param_map.items():
         if len(entries) == 1:
-            result.append(copy.deepcopy(entries[0][1]))
+            p_copy = copy.deepcopy(entries[0][1])
+            p_copy['_source_workbooks'] = [entries[0][0]]
+            p_copy['_merge_action'] = 'unique'
+            result.append(p_copy)
         else:
             # Check if all identical
             sigs = set()
@@ -1555,7 +1735,10 @@ def _merge_parameters(all_extracted: List[dict],
                        str(p.get('current_value', '')))
                 sigs.add(sig)
             if len(sigs) == 1:
-                result.append(copy.deepcopy(entries[0][1]))
+                p_copy = copy.deepcopy(entries[0][1])
+                p_copy['_source_workbooks'] = [wb for wb, _ in entries]
+                p_copy['_merge_action'] = 'deduplicated'
+                result.append(p_copy)
             else:
                 # Namespace each
                 for wb, p in entries:
@@ -1563,6 +1746,8 @@ def _merge_parameters(all_extracted: List[dict],
                     namespaced['name'] = f"{pname} ({wb})"
                     namespaced['caption'] = f"{pname} ({wb})"
                     namespaced['_source_workbook'] = wb
+                    namespaced['_source_workbooks'] = [wb]
+                    namespaced['_merge_action'] = 'namespaced'
                     result.append(namespaced)
 
     return result
@@ -1570,19 +1755,25 @@ def _merge_parameters(all_extracted: List[dict],
 
 def _merge_list_by_name(all_extracted: List[dict], key: str) -> list:
     """Merge a list-type object by deduplicating on 'name' field."""
-    seen_names = set()
+    seen_names: Dict[str, dict] = {}  # name → item (for lineage tracking)
     result = []
-    for extracted in all_extracted:
+    for idx, extracted in enumerate(all_extracted):
         items = extracted.get(key, [])
         if not isinstance(items, list):
             continue
         for item in items:
             name = item.get('name', '')
             if name and name in seen_names:
+                # Track additional source
+                seen_names[name].setdefault('_source_workbooks', []).append(f'wb_{idx}')
+                seen_names[name]['_merge_action'] = 'deduplicated'
                 continue
+            item_copy = copy.deepcopy(item)
+            item_copy['_source_workbooks'] = [f'wb_{idx}']
+            item_copy['_merge_action'] = 'unique'
             if name:
-                seen_names.add(name)
-            result.append(copy.deepcopy(item))
+                seen_names[name] = item_copy
+            result.append(item_copy)
     return result
 
 
@@ -1621,13 +1812,22 @@ def _merge_hierarchies(all_extracted: List[dict],
             if name in seen:
                 existing_levels_key, _existing_item, _existing_wb = seen[name]
                 if levels_key == existing_levels_key:
-                    # Identical → skip duplicate
+                    # Identical → skip duplicate, track source
+                    for r in result:
+                        if r.get('name', '') == name:
+                            r.setdefault('_source_workbooks', []).append(wb_name)
+                            r['_merge_action'] = 'deduplicated'
+                            break
                     continue
                 if len(levels_key) > len(existing_levels_key):
                     # New one has more levels → replace
                     for i, r in enumerate(result):
                         if r.get('name', '') == name:
-                            result[i] = copy.deepcopy(item)
+                            replacement = copy.deepcopy(item)
+                            replacement['_source_workbooks'] = [
+                                _existing_wb, wb_name]
+                            replacement['_merge_action'] = 'deduplicated'
+                            result[i] = replacement
                             break
                     seen[name] = (levels_key, item, wb_name)
                     logger.debug(
@@ -1638,7 +1838,10 @@ def _merge_hierarchies(all_extracted: List[dict],
                 # else: existing has more or equal levels → keep existing
             else:
                 seen[name] = (levels_key, item, wb_name)
-                result.append(copy.deepcopy(item))
+                item_copy = copy.deepcopy(item)
+                item_copy['_source_workbooks'] = [wb_name]
+                item_copy['_merge_action'] = 'unique'
+                result.append(item_copy)
 
     return result
 
@@ -1700,7 +1903,10 @@ def _merge_calculation_groups(all_extracted: List[dict],
     result = []
     for name, entries in cg_map.items():
         if len(entries) == 1:
-            result.append(entries[0][1])
+            entry = entries[0][1]
+            entry['_source_workbooks'] = [entries[0][0]]
+            entry['_merge_action'] = 'unique'
+            result.append(entry)
             continue
 
         # Compare signatures
@@ -1712,13 +1918,18 @@ def _merge_calculation_groups(all_extracted: List[dict],
         unique_sigs = set(sigs.values())
         if len(unique_sigs) == 1:
             # All identical → deduplicate
-            result.append(entries[0][1])
+            entry = entries[0][1]
+            entry['_source_workbooks'] = [wb for wb, _ in entries]
+            entry['_merge_action'] = 'deduplicated'
+            result.append(entry)
         else:
             # Conflict → namespace each
             for wb, cg in entries:
                 namespaced = copy.deepcopy(cg)
                 namespaced['caption'] = f"{name} ({wb})"
                 namespaced['_source_workbook'] = wb
+                namespaced['_source_workbooks'] = [wb]
+                namespaced['_merge_action'] = 'namespaced'
                 result.append(namespaced)
                 logger.info(
                     "Calculation group '%s' namespaced → '%s' (conflict)",
@@ -1766,14 +1977,20 @@ def _merge_field_parameters(all_extracted: List[dict],
     result = []
     for name, entries in fp_map.items():
         if len(entries) == 1:
-            result.append(entries[0][1])
+            entry = entries[0][1]
+            entry['_source_workbooks'] = [entries[0][0]]
+            entry['_merge_action'] = 'unique'
+            result.append(entry)
             continue
 
         # Compare value sets
         all_value_sets = [set(fp['values']) for _wb, fp in entries]
         if all(vs == all_value_sets[0] for vs in all_value_sets):
             # All identical → deduplicate
-            result.append(entries[0][1])
+            entry = entries[0][1]
+            entry['_source_workbooks'] = [wb for wb, _ in entries]
+            entry['_merge_action'] = 'deduplicated'
+            result.append(entry)
         else:
             # Union all values (deduplicated, order-preserved)
             seen_vals = set()
@@ -1786,6 +2003,8 @@ def _merge_field_parameters(all_extracted: List[dict],
             merged_fp = copy.deepcopy(entries[0][1])
             merged_fp['values'] = unioned_values
             merged_fp['_merged_from'] = [wb for wb, _ in entries]
+            merged_fp['_source_workbooks'] = [wb for wb, _ in entries]
+            merged_fp['_merge_action'] = 'unioned'
             result.append(merged_fp)
             logger.info(
                 "Field parameter '%s': unioned %d values from %d workbooks",
@@ -1824,6 +2043,8 @@ def _merge_perspectives(all_extracted: List[dict],
         result.append({
             'name': name,
             'tables': sorted(all_tables),
+            '_source_workbooks': [wb for wb, _ in entries],
+            '_merge_action': 'deduplicated' if len(entries) > 1 else 'unique',
         })
 
     return result
@@ -1837,6 +2058,7 @@ def _merge_cultures(all_extracted: List[dict],
     Different locales → keep all.
     """
     culture_map: Dict[str, Dict[str, str]] = {}  # locale → {object_name: translation}
+    culture_sources: Dict[str, List[str]] = {}  # locale → [workbook_names]
 
     for wb_name, extracted in zip(workbook_names, all_extracted):
         culture = extracted.get('culture', '')
@@ -1850,26 +2072,33 @@ def _merge_cultures(all_extracted: List[dict],
             if locale:
                 if locale not in culture_map:
                     culture_map[locale] = {}
+                culture_sources.setdefault(locale, []).append(wb_name)
                 for key, val in translations.items():
                     if key not in culture_map[locale]:
                         culture_map[locale][key] = val
 
         # Collect from culture field
-        if culture and culture != 'en-US' and culture not in culture_map:
-            culture_map[culture] = {}
+        if culture and culture != 'en-US':
+            if culture not in culture_map:
+                culture_map[culture] = {}
+            culture_sources.setdefault(culture, []).append(wb_name)
 
         # Collect from languages field
         if languages:
             for lang in languages.split(','):
                 lang = lang.strip()
-                if lang and lang not in culture_map:
-                    culture_map[lang] = {}
+                if lang:
+                    if lang not in culture_map:
+                        culture_map[lang] = {}
+                    culture_sources.setdefault(lang, []).append(wb_name)
 
     result = []
     for locale, translations in culture_map.items():
         result.append({
             'locale': locale,
             'translations': translations,
+            '_source_workbooks': culture_sources.get(locale, []),
+            '_merge_action': 'deduplicated' if len(culture_sources.get(locale, [])) > 1 else 'unique',
         })
 
     return result
@@ -1900,7 +2129,10 @@ def _merge_goals(all_extracted: List[dict],
     result = []
     for name, entries in goal_map.items():
         if len(entries) == 1:
-            result.append(copy.deepcopy(entries[0][1]))
+            g_copy = copy.deepcopy(entries[0][1])
+            g_copy['_source_workbooks'] = [entries[0][0]]
+            g_copy['_merge_action'] = 'unique'
+            result.append(g_copy)
             continue
 
         # Compare measure references
@@ -1912,13 +2144,18 @@ def _merge_goals(all_extracted: List[dict],
         unique_measures = set(measures.values())
         if len(unique_measures) == 1:
             # Identical → deduplicate
-            result.append(copy.deepcopy(entries[0][1]))
+            g_copy = copy.deepcopy(entries[0][1])
+            g_copy['_source_workbooks'] = [wb for wb, _ in entries]
+            g_copy['_merge_action'] = 'deduplicated'
+            result.append(g_copy)
         else:
             # Conflict → namespace
             for wb, goal in entries:
                 namespaced = copy.deepcopy(goal)
                 namespaced['name'] = f"{name} ({wb})"
                 namespaced['_source_workbook'] = wb
+                namespaced['_source_workbooks'] = [wb]
+                namespaced['_merge_action'] = 'namespaced'
                 result.append(namespaced)
                 logger.info(
                     "Goal '%s' namespaced → '%s' (different measures)",

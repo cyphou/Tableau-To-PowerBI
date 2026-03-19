@@ -1,0 +1,135 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
+  "name": "317280fc6e794512affb",
+  "position": {
+    "x": 640,
+    "y": 72,
+    "z": 2000,
+    "height": 360,
+    "width": 640,
+    "tabOrder": 2000
+  },
+  "visual": {
+    "visualType": "clusteredBarChart",
+    "drillFilterOtherVisuals": true,
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Orders"
+                    }
+                  },
+                  "Property": "region"
+                }
+              },
+              "queryRef": "Orders.region",
+              "active": true
+            }
+          ]
+        },
+        "Series": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Orders"
+                    }
+                  },
+                  "Property": "channel"
+                }
+              },
+              "queryRef": "Orders.channel",
+              "active": true
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Orders"
+                    }
+                  },
+                  "Property": "Net Revenue"
+                }
+              },
+              "queryRef": "Orders.Net Revenue",
+              "active": true
+            }
+          ]
+        }
+      }
+    },
+    "objects": {
+      "title": [
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Revenue by Region'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "legend": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "position": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Right'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "categoryAxis": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "valueAxis": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,117 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
+  "name": "c73b92dbba1b40b4b737",
+  "position": {
+    "x": 0,
+    "y": 360,
+    "z": 2000,
+    "height": 360,
+    "width": 640,
+    "tabOrder": 2000
+  },
+  "visual": {
+    "visualType": "clusteredBarChart",
+    "drillFilterOtherVisuals": true,
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "transactions"
+                    }
+                  },
+                  "Property": "category"
+                }
+              },
+              "queryRef": "transactions.category",
+              "active": true
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "transactions"
+                    }
+                  },
+                  "Property": "Net Income"
+                }
+              },
+              "queryRef": "transactions.Net Income",
+              "active": true
+            }
+          ]
+        }
+      }
+    },
+    "objects": {
+      "title": [
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Category Breakdown'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "legend": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "position": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Right'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "categoryAxis": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "valueAxis": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

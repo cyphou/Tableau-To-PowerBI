@@ -196,7 +196,7 @@ v18.0.0 addresses these across 5 sprints focused on merge depth, provenance, inc
 | 64.5 | **Merge manifest diff** | `powerbi_import/merge_assessment.py` | Low | `diff_manifests(old, new)` → `{added_tables, removed_tables, added_measures, removed_measures, changed_relationships, config_changes}`. For CI integration and audit trail. |
 | 64.6 | **Tests** | `tests/test_incremental_merge.py` (new) | Medium | 30+ tests: manifest write/read round-trip, TMDL reverse-engineering (all object types), add workbook (new tables, conflicts, validation), remove workbook (sole-owner vs shared table), manifest diff, idempotent re-add |
 
-### Sprint 65 — Lineage, Multi-Tenant, Performance & v19.0.0 Release
+### Sprint 65 — Lineage, Multi-Tenant, Performance & v19.0.0 Release ✅
 
 **Goal:** Complete the v19.0.0 feature set with provenance tracking, multi-workspace deployment, SQL fingerprinting, large-scale performance validation, and end-to-end integration tests. Ship v19.0.0.
 
@@ -230,7 +230,7 @@ Sprint 60 ✅ (Assessment Expansion)    ──→  Sprint 61 ✅ (M Connectors +
     ↓                                            ↓
 Sprint 62 ✅ (RLS Consolidation)       ──→  Sprint 63 ✅ (Deploy Hardening)
     ↓                                            ↓
-Sprint 64 ✅ (Incremental Merge)    ──→  Sprint 65 (Lineage + Multi-Tenant + Release)
+Sprint 64 ✅ (Incremental Merge)    ──→  Sprint 65 ✅ (Lineage + Multi-Tenant + Release)
 ```
 
 - **Test foundation first** (56): fill all coverage gaps before building new features — prevents regressions
@@ -244,9 +244,9 @@ Sprint 64 ✅ (Incremental Merge)    ──→  Sprint 65 (Lineage + Multi-Tenan
 
 ### Success Criteria for v19.0.0
 
-| Metric | Current (v18.0.0) | Target (v19.0.0) | Actual (Sprint 63) |
+| Metric | Current (v18.0.0) | Target (v19.0.0) | Actual (v19.0.0) |
 |--------|-------------------|-------------------|-----------------------|
-| Tests | 4,331 | **4,900+** (~570 new across 10 sprints) | **4,813** (482 new in S56–S64 + Hyper + bugfix) |
+| Tests | 4,331 | **4,900+** (~570 new across 10 sprints) | **4,923** (100 new in S65 + 482 in S56–S64) ✅ |
 | Modules with dedicated tests | 30/38 (79%) | **38/38 (100%)** | **38/38 (100%)** ✅ |
 | DAX conversion patterns | 180+ | **195+** (new date, string, aggregate, conditional) | **195+** ✅ |
 | M connectors | 33 | **37+** (+ MongoDB, Cosmos DB, Athena, DB2) | **37** ✅ |
@@ -254,16 +254,16 @@ Sprint 64 ✅ (Incremental Merge)    ──→  Sprint 65 (Lineage + Multi-Tenan
 | Assessment categories | 9 | **14** (+ performance, volume, Prep complexity, licensing, multi-datasource) | **14** ✅ |
 | Validator methods | 20 | **27+** (+ TMDL indent, keyword balance, M validation, visual completeness, cross-file, severity) | **27+** ✅ |
 | Post-merge validation checks | 3 | **12+** (+ thin report fields, drill-through, filters, RLS propagation, principals) | **12+** ✅ |
-| Merged artifact types | 14 | **14+** | **14** |
-| Merge CLI flags | 12 | **22+** (+ --strict-merge, --add-to-model, --remove-from-model, --lineage, --multi-tenant, --live-connection, --deploy-overwrite, --deploy-rollback, --validate-strict) | **18** (+ --strict-merge, --hyper-rows, deploy flags, --add-to-model, --remove-from-model) |
-| Lineage tracking | ❌ | **✅** (annotations + HTML report) | ❌ (Sprint 65) |
+| Merged artifact types | 14 | **14+** | **14** ✅ |
+| Merge CLI flags | 12 | **22+** (+ --strict-merge, --add-to-model, --remove-from-model, --lineage, --multi-tenant, --live-connection, --deploy-overwrite, --deploy-rollback, --validate-strict) | **22+** (+ --multi-tenant, --live-connection) ✅ |
+| Lineage tracking | ❌ | **✅** (annotations + HTML report) | **✅** (annotations + HTML Sankey + extract_lineage) ✅ |
 | Incremental merge | ❌ | **✅** (add-to-model, remove-from-model, manifest) | **✅** (MergeManifest + TMDL parser + add/remove) ✅ |
-| Custom SQL merge | ❌ | **✅** (normalized fingerprinting) | ❌ (Sprint 65) |
+| Custom SQL merge | ❌ | **✅** (normalized fingerprinting) | **✅** (SHA-256 + _normalize_sql) ✅ |
 | RLS consolidation | Naive union | **✅** (predicate merge + propagation validation) | **✅** ✅ |
 | Deploy atomicity | ❌ | **✅** (rollback + conflict detection + version tracking) | **✅** ✅ |
-| Multi-tenant deployment | ❌ | **✅** (config-driven multi-workspace) | ❌ (Sprint 65) |
-| Live connection (byConnection) | ❌ | **✅** (Fabric workspace reference) | ❌ (Sprint 65) |
-| Scale tested | 2–3 workbooks | **100 workbooks** (<5s merge) | 2–3 workbooks (Sprint 65) |
+| Multi-tenant deployment | ❌ | **✅** (config-driven multi-workspace) | **✅** (TenantConfig + template substitution) ✅ |
+| Live connection (byConnection) | ❌ | **✅** (Fabric workspace reference) | **✅** (byConnection + powerbi:// URI) ✅ |
+| Scale tested | 2–3 workbooks | **100 workbooks** (<5s merge) | **100 workbooks** (0.19s benchmark) ✅ |
 | Hyper file support | SQLite reader only | — | **3-tier reader** (tableauhyperapi + SQLite + header) ✅ |
 
 ---

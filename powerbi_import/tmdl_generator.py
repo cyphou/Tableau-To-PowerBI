@@ -1378,6 +1378,11 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
                 "formatString": _get_format_string(datatype),
                 "displayFolder": _get_display_folder(datatype, role)
             }
+            # Propagate lineage metadata from calculation
+            if calc.get('_source_workbooks'):
+                bim_measure['_source_workbooks'] = calc['_source_workbooks']
+            if calc.get('_merge_action'):
+                bim_measure['_merge_action'] = calc['_merge_action']
             # Dedup: skip if measure with same name already exists
             existing_measure = any(
                 m.get("name", "").lower() == caption.lower()
@@ -1389,6 +1394,12 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
     # Inject accumulated M steps into the partition (replaces DAX calc cols)
     if m_calc_steps:
         _inject_m_steps_into_partition(result_table, m_calc_steps)
+
+    # Propagate lineage metadata from source table (merge pipeline)
+    if table.get('_source_workbooks'):
+        result_table['_source_workbooks'] = table['_source_workbooks']
+    if table.get('_merge_action'):
+        result_table['_merge_action'] = table['_merge_action']
 
     return result_table
 
@@ -4138,6 +4149,14 @@ def _write_table_tmdl(tables_dir, table):
 
     # Annotations
     lines.append("\tannotation PBI_ResultType = Table")
+
+    # Lineage annotations (from merge)
+    source_wbs = table.get('_source_workbooks', [])
+    if source_wbs:
+        lines.append(f"\tannotation MigrationSource = {json.dumps(source_wbs)}")
+    merge_action = table.get('_merge_action', '')
+    if merge_action:
+        lines.append(f'\tannotation MergeAction = {merge_action}')
     lines.append("")
 
     content = '\n'.join(lines) + '\n'
@@ -4177,6 +4196,15 @@ def _write_measure(lines, measure):
         lines.append("\t\tisHidden")
 
     lines.append(f"\t\tlineageTag: {uuid.uuid4()}")
+
+    # Lineage annotations (from merge)
+    source_wbs = measure.get('_source_workbooks', [])
+    if source_wbs:
+        lines.append(f"\t\tannotation MigrationSource = {json.dumps(source_wbs)}")
+    merge_action = measure.get('_merge_action', '')
+    if merge_action:
+        lines.append(f'\t\tannotation MergeAction = {merge_action}')
+
     lines.append("")
 
 

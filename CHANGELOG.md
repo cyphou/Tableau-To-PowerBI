@@ -1,5 +1,20 @@
 # Changelog
 
+## v19.0.0 — Lineage, Multi-Tenant Deployment & Performance
+
+### Sprint 65 — Lineage, Multi-Tenant, Performance & v19.0.0 Release ✅
+- **Lineage metadata injection** (`shared_model.py`): Every merged artifact (tables, calculations, parameters, hierarchies, relationships, calc groups, field parameters, perspectives, cultures, goals) now tagged with `_source_workbooks: List[str]` and `_merge_action: str` (`deduplicated`/`namespaced`/`unique`/`unioned`/`first-wins`); `extract_lineage(merged)` function returns structured lineage records for all artifact types
+- **TMDL lineage annotations** (`tmdl_generator.py`): `annotation MigrationSource = ["WB1", "WB2"]` and `annotation MergeAction = deduplicated` written on tables and measures; lineage metadata propagated through `_build_table()` and measure creation pipeline
+- **Lineage HTML report** (`merge_report_html.py`): New "Lineage" section with Sankey-style flow diagram (workbooks → merge actions → artifact types) and sortable detail table; `_build_lineage_section()` with `_ACTION_STYLE` color-coding for merge actions
+- **Custom SQL fingerprinting** (`shared_model.py`): `build_table_fingerprints()` extended to handle custom SQL tables — tables with `custom_sql` or `query` field fingerprinted as `_custom_sql` schema with normalized SQL hash; identical queries across workbooks become merge candidates
+- **Multi-tenant deployment** (`deploy/multi_tenant.py`): New module with `TenantConfig`, `MultiTenantConfig` (validate/load/save JSON), `_apply_connection_overrides()` (template substitution: `${TENANT_SERVER}`, `${TENANT_DATABASE}` in .tmdl/.m/.json/.pbir files), `deploy_multi_tenant()` orchestrator with per-tenant results; `--multi-tenant CONFIG_FILE` CLI flag
+- **Live connection byConnection** (`thin_report_generator.py`): `--live-connection WORKSPACE_ID/MODEL_NAME` CLI flag; thin reports wired via `byConnection` reference with `powerbi://api.powerbi.com/v1.0/myorg/{workspace_id}` connection string instead of `byPath`
+- **Fingerprint hash cache** (`global_assessment.py`): Pre-computes fingerprints in `_fingerprint_cache` dict before pairwise loop; `_find_shared_table_names_cached()` operates on pre-computed dicts; O(n) fingerprinting instead of O(n²)
+- **E2E integration tests** (`test_merge_integration.py`): 15 tests using 3 real sample workbooks (Superstore_Sales, Financial_Report, Marketing_Campaign) — extraction validation, assessment scoring, merge pipeline, lineage metadata, TMDL generation, thin reports, validation report, merge manifest
+- **Benchmark test suite** (`test_merge_performance.py`): 10 synthetic benchmarks (10/25/50/100 workbooks × 3-10 tables), assessment scaling, fingerprint cache speedup comparison, lineage at scale, merge manifest at scale; gated by `RUN_BENCHMARKS=1` env var
+- **100 new tests** across 5 test files: `test_merge_lineage.py` (22), `test_multi_tenant.py` (31), `test_sql_fingerprint.py` (22), `test_merge_integration.py` (15), `test_merge_performance.py` (10)
+- **Overall: 4,923 tests** (4,913 + 10 benchmark), 0 failures
+
 ## v18.0.0 — Advanced Merge Intelligence & Enterprise Merge Workflows
 
 ### Sprint 64 — Incremental Merge & Add-to-Model Workflow ✅

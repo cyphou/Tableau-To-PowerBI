@@ -139,3 +139,67 @@ for name, result in results.items():
 | `ImportError: azure-identity` | Install with `pip install azure-identity`. Required for authentication. |
 | `ImportError: requests` | Install with `pip install requests`. Falls back to `urllib` if not available. |
 | Stale files on Windows | OneDrive may lock generated files. Close OneDrive sync or use `--output-dir` outside synced folders. |
+
+---
+
+## Multi-Tenant Deployment
+
+Deploy a shared semantic model to multiple Fabric workspaces with per-tenant connection string overrides.
+
+### Configuration File
+
+Create a `tenants.json`:
+
+```json
+{
+  "tenants": [
+    {
+      "name": "Contoso",
+      "workspace_id": "aaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+      "connection_overrides": {
+        "${TENANT_SERVER}": "contoso-sql.database.windows.net",
+        "${TENANT_DATABASE}": "contoso_sales"
+      },
+      "rls_mappings": {
+        "RegionManager": ["user1@contoso.com"]
+      }
+    },
+    {
+      "name": "Fabrikam",
+      "workspace_id": "1111-2222-3333-4444-555555555555",
+      "connection_overrides": {
+        "${TENANT_SERVER}": "fabrikam-sql.database.windows.net",
+        "${TENANT_DATABASE}": "fabrikam_sales"
+      }
+    }
+  ]
+}
+```
+
+### Usage
+
+```bash
+python migrate.py --shared-model wb1.twbx wb2.twbx --multi-tenant tenants.json
+```
+
+The pipeline copies the model for each tenant, substitutes `${TENANT_SERVER}` / `${TENANT_DATABASE}` placeholders in all `.tmdl`, `.m`, `.json`, and `.pbir` files, then deploys each copy to the tenant's workspace.
+
+---
+
+## Live Connection (byConnection) Mode
+
+Wire thin reports to reference a published semantic model via Power BI connection string instead of local `byPath`.
+
+### Usage
+
+```bash
+python migrate.py --shared-model wb1.twbx wb2.twbx --live-connection WORKSPACE_ID/ModelName
+```
+
+This generates thin reports with `definition.pbir` containing a `byConnection` reference:
+
+```
+Data Source=powerbi://api.powerbi.com/v1.0/myorg/{workspace_id};Initial Catalog={model_name}
+```
+
+Use this when the semantic model is already published to a Fabric workspace and thin reports should connect remotely.

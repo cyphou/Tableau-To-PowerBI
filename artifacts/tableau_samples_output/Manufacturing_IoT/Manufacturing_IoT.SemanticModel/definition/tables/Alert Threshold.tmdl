@@ -1,18 +1,18 @@
 table 'Alert Threshold'
-	lineageTag: ea66e7d5-f8cc-4ba3-9c40-2a64f8648230
+	lineageTag: 94c35f13-26a9-415c-9d66-fb53dcf0b9cd
 
 	measure 'Alert Threshold' = SELECTEDVALUE('Alert Threshold'[Value], 100)
-		lineageTag: 1e00c098-1805-4089-84a0-99a073950874
+		lineageTag: 923f7079-2e0c-4b02-a11b-00535547b7d5
 
 	column Value
 		dataType: double
-		lineageTag: 9a674658-bb92-4e75-809e-401aef025d5a
+		lineageTag: 68be8605-6ef1-4a61-9639-645b52d53f34
 		summarizeBy: none
 		sourceColumn: Value
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Alert Threshold-9f54b53f-ca62-4507-8d1f-31c1fa9f3b18' = calculated
+	partition 'Alert Threshold-cd281fb7-adc9-4fad-9051-42e19b095978' = calculated
 		mode: import
 		source = GENERATESERIES(0, 500, 10)
 

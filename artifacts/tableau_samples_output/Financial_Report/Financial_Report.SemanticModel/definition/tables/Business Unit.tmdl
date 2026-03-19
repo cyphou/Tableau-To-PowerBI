@@ -1,18 +1,18 @@
 table 'Business Unit'
-	lineageTag: 558e6c8f-fa8b-4094-83f1-6e14741285a3
+	lineageTag: a8321d56-62f5-4253-816c-ecff5abeda7a
 
 	measure 'Business Unit' = SELECTEDVALUE('Business Unit'[Value], "All")
-		lineageTag: e500a820-8653-4ced-881a-e219b8f8ec83
+		lineageTag: f3df6483-9c17-45ec-92bd-bdff88cb9098
 
 	column Value
 		dataType: string
-		lineageTag: aa40eff9-16a5-4dff-8dc5-f1d28b55471b
+		lineageTag: 969414be-3acd-4da6-a638-540bc4312691
 		summarizeBy: none
 		sourceColumn: Value
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Business Unit-3de5208a-a688-4ccd-80d3-dd7d4a821079' = calculated
+	partition 'Business Unit-7d6f0d19-7560-4b10-ad0f-fc9b89a8c6a4' = calculated
 		mode: import
 		source = DATATABLE("Value", STRING, {{"All"}, {"North America"}, {"Europe"}, {"Asia Pacific"}})
 

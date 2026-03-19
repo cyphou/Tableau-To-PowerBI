@@ -255,6 +255,118 @@ def _merged_measures_list(merged: dict) -> list:
 #  Main HTML generator
 # ═══════════════════════════════════════════════════════════════════
 
+# ═══════════════════════════════════════════════════════════════════
+#  Lineage section builder
+# ═══════════════════════════════════════════════════════════════════
+
+_ACTION_STYLE = {
+    'deduplicated': ('success-tag', '&#10003; Deduplicated'),
+    'namespaced': ('warn-tag', '&#9888; Namespaced'),
+    'unioned': ('connector-tag', '&#8644; Unioned'),
+    'unique': ('connector-tag', '&#8226; Unique'),
+    'first-wins': ('connector-tag', '1st wins'),
+}
+
+
+def _build_lineage_section(merged: dict, workbook_names: List[str]) -> str:
+    """Build the Lineage HTML section for the merge report."""
+    try:
+        from powerbi_import.shared_model import extract_lineage
+    except ImportError:
+        from shared_model import extract_lineage
+
+    records = extract_lineage(merged)
+    if not records:
+        return ''
+
+    html = '<h2 onclick="toggleSection(\'lineage\')"><span class="section-icon">&#128279;</span>'
+    html += 'Lineage<span class="toggle-icon" id="lineage-icon">&#9660;</span></h2>'
+    html += '<div class="collapsible" id="lineage">'
+
+    # --- Sankey-style flow diagram ---
+    # Group by type and action
+    type_counts: Dict[str, Dict[str, int]] = {}
+    for r in records:
+        rtype = r.get('type', 'unknown')
+        action = r.get('merge_action', 'unique')
+        type_counts.setdefault(rtype, {})
+        type_counts[rtype][action] = type_counts[rtype].get(action, 0) + 1
+
+    # Workbook → artifact flow
+    wb_artifact_count: Dict[str, int] = {}
+    for r in records:
+        for wb in r.get('source_workbooks', []):
+            wb_artifact_count[wb] = wb_artifact_count.get(wb, 0) + 1
+
+    html += '<div class="card">'
+    html += '<h3>Artifact Flow</h3>'
+    html += '<div style="display:flex;justify-content:space-around;align-items:center;flex-wrap:wrap;gap:10px;padding:20px;">'
+
+    # Left side: workbooks
+    html += '<div style="display:flex;flex-direction:column;gap:8px;">'
+    for wb_name in workbook_names:
+        count = wb_artifact_count.get(wb_name, 0)
+        html += f'<div class="flow-box" style="background:#e8f0fe;color:#1a73e8;min-width:160px;">'
+        html += f'{_esc(wb_name)}<br/><small>{count} artifacts</small></div>'
+    html += '</div>'
+
+    html += '<div class="flow-arrow">&#8594;</div>'
+
+    # Middle: merge actions
+    action_totals: Dict[str, int] = {}
+    for r in records:
+        action = r.get('merge_action', 'unique')
+        action_totals[action] = action_totals.get(action, 0) + 1
+
+    html += '<div style="display:flex;flex-direction:column;gap:8px;">'
+    for action, count in sorted(action_totals.items(), key=lambda x: -x[1]):
+        style_cls, label = _ACTION_STYLE.get(action, ('connector-tag', action))
+        html += f'<div class="flow-box" style="background:#fff;border:2px solid {PBI_BLUE};min-width:140px;">'
+        html += f'<span class="{style_cls}">{label}</span><br/><small>{count} items</small></div>'
+    html += '</div>'
+
+    html += '<div class="flow-arrow">&#8594;</div>'
+
+    # Right: artifact types
+    html += '<div style="display:flex;flex-direction:column;gap:8px;">'
+    for rtype, actions in sorted(type_counts.items()):
+        total = sum(actions.values())
+        html += f'<div class="flow-box" style="background:#d4edda;color:#155724;min-width:140px;">'
+        html += f'{_esc(rtype)}<br/><small>{total} items</small></div>'
+    html += '</div>'
+
+    html += '</div></div>'
+
+    # --- Sortable detail table ---
+    html += '<div class="card">'
+    html += '<h3>Artifact Lineage Detail</h3>'
+    html += '<table class="detail-table"><tr>'
+    html += '<th>Artifact Name</th><th>Type</th><th>Source Workbook(s)</th><th>Merge Action</th>'
+    html += '</tr>'
+
+    for r in records:
+        name = r.get('name', '')
+        rtype = r.get('type', '')
+        sources = r.get('source_workbooks', [])
+        action = r.get('merge_action', '')
+
+        source_html = ', '.join(
+            f'<span class="connector-tag">{_esc(s)}</span>' for s in sources
+        ) if sources else '<span style="color:#a19f9d">—</span>'
+
+        style_cls, label = _ACTION_STYLE.get(action, ('connector-tag', action or '—'))
+        action_html = f'<span class="{style_cls}">{label}</span>'
+
+        html += f'<tr><td><strong>{_esc(name)}</strong></td>'
+        html += f'<td>{_esc(rtype)}</td>'
+        html += f'<td>{source_html}</td>'
+        html += f'<td>{action_html}</td></tr>'
+
+    html += '</table></div></div>'
+
+    return html
+
+
 def generate_merge_html_report(
     assessment: MergeAssessment,
     all_extracted: List[dict],
@@ -790,6 +902,11 @@ Security &mdash; RLS Roles ({len(rls_roles)}) <span class="toggle-icon" id="secu
     <td>{_esc(source_wbs)}</td>
 </tr>"""
         html += "</table></div></div>"
+
+    # ══════════════════════════════════════════════════════════════
+    # SECTION 9: LINEAGE
+    # ══════════════════════════════════════════════════════════════
+    html += _build_lineage_section(merged, workbook_names)
 
     # ══════════════════════════════════════════════════════════════
     # FOOTER

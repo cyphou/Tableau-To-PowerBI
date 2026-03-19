@@ -103,7 +103,7 @@ This document lists known limitations and approximations in the Tableau to Power
 | **Table matching** | Tables are matched by physical fingerprint (`connection_type\|server\|database\|table_name`) — tables with the same name but from different servers are NOT merged |
 | **Column type conflicts** | When the same column has different types across workbooks, the wider type is used (e.g., integer → string). Data may need type casting after migration |
 | **Measure namespacing** | Conflicting measures (same name, different formula) are namespaced as `Measure (Workbook)`. Visuals referencing the original measure name may need manual update |
-| **Custom SQL tables** | Tables defined by custom SQL are not matched by fingerprint (no table name) |
+| **Custom SQL tables** | ✅ RESOLVED — Custom SQL tables are now fingerprinted by normalized SQL hash (`_normalize_sql()` + SHA-256). Identical queries across workbooks are merge candidates |
 | **Cross-workbook RLS** | RLS roles from multiple workbooks are merged but may have overlapping rules. Review `Manage Roles` in PBI Desktop |
 | **Post-merge validation** | Use `--strict-merge` to block generation on validation failures (relationship cycles, column type errors, broken DAX references). Without it, validation is advisory only |
 

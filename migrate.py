@@ -1454,6 +1454,17 @@ def _add_deploy_args(parser):
         help='Trigger a dataset refresh after bundle deployment (requires --deploy-bundle)'
     )
 
+    parser.add_argument(
+        '--multi-tenant',
+        metavar='CONFIG_FILE',
+        default=None,
+        help=(
+            'Deploy the shared model to multiple tenant workspaces using a JSON '
+            'config file with per-tenant connection overrides and RLS mappings. '
+            'Use with --deploy-bundle or --shared-model.'
+        )
+    )
+
 
 def _add_server_args(parser):
     """Add Tableau Server extraction arguments."""
@@ -1663,6 +1674,17 @@ def _add_shared_model_args(parser):
         help=(
             'Assess all workbooks on a Tableau Server site and produce a '
             'portfolio readiness report (requires --server)'
+        )
+    )
+
+    parser.add_argument(
+        '--live-connection',
+        metavar='WORKSPACE_ID/MODEL_NAME',
+        default=None,
+        help=(
+            'Wire thin reports via byConnection (Fabric workspace reference) '
+            'instead of byPath. Format: WORKSPACE_ID/MODEL_NAME. '
+            'Use with --shared-model.'
         )
     )
 
