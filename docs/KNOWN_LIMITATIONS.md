@@ -2,9 +2,9 @@
 
 This document lists known limitations and approximations in the Tableau to Power BI migration tool.
 
-> **Last updated:** v17.0.0 (Sprint 53) — many previous limitations have been addressed in Sprints 27-53. See below for current status.
+> **Last updated:** v18.0.0 (Sprint 55) — many previous limitations have been addressed in Sprints 27-55. See below for current status.
 >
-> **v17.0.0 notes:** VAR/VARP aggregation in M queries approximated via `List.StandardDeviation` (M has no native variance function). Server-level assessment, merge preview, and RLS conflict detection are new capabilities.
+> **v18.0.0 notes:** Report schema downgraded from 3.1.0 to 2.0.0 for backward compatibility with PBI Desktop April 2025+. Post-merge safety: cycle detection, column type validation, DAX reference integrity checks. ResourcePackageType fix for custom themes.
 
 ---
 
@@ -94,7 +94,7 @@ This document lists known limitations and approximations in the Tableau to Power
 
 | Area | Limitation |
 |------|------------|
-| **PBIR schema versions** | Generated output targets PBIR v4.0 schemas. Use `--check-schema` to verify forward-compatibility with newer Power BI Desktop versions |
+| **PBIR schema versions** | Generated output targets PBIR v4.0 with report schema 2.0.0, page schema 2.0.0, and visualContainer schema 2.5.0. Compatible with PBI Desktop April 2025+ (v2.142.928.0). Use `--check-schema` to verify forward-compatibility with newer PBI Desktop versions |
 
 ## Shared Semantic Model Limitations
 
@@ -105,6 +105,7 @@ This document lists known limitations and approximations in the Tableau to Power
 | **Measure namespacing** | Conflicting measures (same name, different formula) are namespaced as `Measure (Workbook)`. Visuals referencing the original measure name may need manual update |
 | **Custom SQL tables** | Tables defined by custom SQL are not matched by fingerprint (no table name) |
 | **Cross-workbook RLS** | RLS roles from multiple workbooks are merged but may have overlapping rules. Review `Manage Roles` in PBI Desktop |
+| **Post-merge validation** | Use `--strict-merge` to block generation on validation failures (relationship cycles, column type errors, broken DAX references). Without it, validation is advisory only |
 
 ## Workarounds
 

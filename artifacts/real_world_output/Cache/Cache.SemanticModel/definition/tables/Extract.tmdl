@@ -1,13 +1,13 @@
 table Extract
-	lineageTag: d261efea-9ce1-475a-9815-60738c33a688
+	lineageTag: 726f3aab-5e2a-4f3c-a910-f37cd7afc1ce
 
 	measure 'Number of Records' = COUNTROWS('Extract')
 		displayFolder: Measures
-		lineageTag: 68163e7c-c5ed-40b9-b58b-6b7a5220c293
+		lineageTag: 081275b6-3f6f-4888-a3e2-32a64ece7c73
 
 	column Category
 		dataType: string
-		lineageTag: 022fe33a-6e6e-4e58-908e-97037f38bdef
+		lineageTag: 7c017bc3-1002-4633-adf6-72e8d1801794
 		summarizeBy: none
 		sourceColumn: Category
 
@@ -15,7 +15,7 @@ table Extract
 
 	column 'Number of Records'
 		dataType: int64
-		lineageTag: 9b67a8c9-b86c-4dea-8f8d-960ebef81e2b
+		lineageTag: c8463aeb-063b-4426-ad1a-19c59e364266
 		summarizeBy: sum
 		sourceColumn: 'Number of Records'
 
@@ -24,7 +24,7 @@ table Extract
 	column 'Order Date'
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 6449728b-faf7-4a6d-af89-f8ff94f1eb36
+		lineageTag: 45ff8cf9-1f12-4d0a-bf25-7e1adbe21f0f
 		summarizeBy: none
 		sourceColumn: 'Order Date'
 		dataCategory: DateTime
@@ -34,7 +34,7 @@ table Extract
 	column 'Sales Target'
 		dataType: int64
 		formatString: c"$"#,#0;("$"#,#0)
-		lineageTag: a85c7876-b307-4dfc-be4e-4bcb3e276383
+		lineageTag: 9e42a647-2bbf-4c34-a31c-3a6bb367ebc6
 		summarizeBy: sum
 		sourceColumn: 'Sales Target'
 
@@ -42,13 +42,13 @@ table Extract
 
 	column Segment
 		dataType: string
-		lineageTag: 2ffd7bf2-81c5-439c-9ffc-cf07c0e4d3f1
+		lineageTag: 8bd22a4b-c704-48aa-87a8-0aed2423897c
 		summarizeBy: none
 		sourceColumn: Segment
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Extract-baabd63b-a7fe-484b-8f16-20532b3c3453' = m
+	partition 'Extract-1cb3e341-8632-48e8-9f91-efb81f1e313d' = m
 		mode: import
 		source =
 				let

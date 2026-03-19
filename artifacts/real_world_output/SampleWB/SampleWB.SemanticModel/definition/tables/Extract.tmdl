@@ -1,28 +1,28 @@
 table Extract
-	lineageTag: 89a8dcd7-b21f-4d19-80c2-a6d93cdf2c30
+	lineageTag: fe256d11-eabb-4365-889c-4ac16f51a06a
 
 	measure 'GDP % of Total' = AVERAGE('Extract'[F: GDP per capita (curr $)]) / CALCULATE(AVERAGE('Extract'[F: GDP per capita (curr $)]))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: abdcbd7b-ab6f-49af-91c0-08287619e257
+		lineageTag: e94e8582-1bee-40e6-a7e5-ab76f741dafe
 
 	measure 'GDP per capita (weighted)' = SUM('Extract'[F: GDP (curr $)]) / SUM('Extract'[P: Population (count)])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 68e69763-ebe6-490d-a7ee-d6fccefca9a1
+		lineageTag: 4c532c9e-986b-4fe4-b797-39e4ef33f900
 
 	measure 'Rate spread (difference)' = AVERAGE('Extract'[F: Lending interest rate (%)])-AVERAGE('Extract'[F: Deposit interest rate (%)])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: b9dd9a66-364b-42fa-8f8f-1f50fd21414b
+		lineageTag: 192b6ec3-ebc5-4edf-806e-bd4de9970f38
 
 	measure '[Number of Records]' = 1
 		displayFolder: Measures
-		lineageTag: e7418948-db64-4743-8790-348253895440
+		lineageTag: 7270a8df-9455-4e2a-ac40-1ad5c155c154
 
 	column 'Country / Region'
 		dataType: string
-		lineageTag: b4329c3b-2482-4eb6-832c-0511cd37892c
+		lineageTag: e815b2e4-cc6b-4f12-b007-b9735b0659d0
 		summarizeBy: none
 		sourceColumn: 'Country / Region'
 		dataCategory: Country
@@ -32,7 +32,7 @@ table Extract
 	column Date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 5d2f131a-52c8-4a7b-9232-f8bcd429dd99
+		lineageTag: aecb891c-e506-4ca4-9015-2287d25396fb
 		summarizeBy: none
 		sourceColumn: Date
 		dataCategory: DateTime
@@ -42,7 +42,7 @@ table Extract
 	column 'F: Deposit interest rate (%)'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 288bdcbd-ebbc-4505-81f2-b1cd0b8016a6
+		lineageTag: 1db0724e-6895-4cc5-86dd-c7526b7aa29f
 		summarizeBy: sum
 		sourceColumn: 'F: Deposit interest rate (%)'
 
@@ -51,7 +51,7 @@ table Extract
 	column 'F: GDP (curr $)'
 		dataType: double
 		formatString: c"$"#,#0,,.00B;("$"#,#0,,.00B)
-		lineageTag: 1128e9fc-9979-4c2d-81b3-a79cad5419e3
+		lineageTag: 67c33365-1ca1-4f7a-98c8-ecf3cb268cb6
 		summarizeBy: sum
 		sourceColumn: 'F: GDP (curr $)'
 
@@ -60,7 +60,7 @@ table Extract
 	column 'F: GDP per capita (curr $)'
 		dataType: double
 		formatString: c"$"#,#0,.0K;("$"#,#0,.0K)
-		lineageTag: 9e1ec2f8-2f42-472d-a3a7-9beb34d9d834
+		lineageTag: 82a6ccc0-25c5-46c1-9f18-68b6d8fed605
 		summarizeBy: sum
 		sourceColumn: 'F: GDP per capita (curr $)'
 
@@ -69,7 +69,7 @@ table Extract
 	column 'F: Lending interest rate (%)'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 2c6b48dc-aea9-460b-8eba-73a743404dde
+		lineageTag: 1790ba69-a452-4792-addf-d8f3ed058ad0
 		summarizeBy: sum
 		sourceColumn: 'F: Lending interest rate (%)'
 
@@ -78,7 +78,7 @@ table Extract
 	column 'H: Health exp (% GDP)'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 933ef9b6-6f4f-41d7-a4c9-b34f9da96480
+		lineageTag: 9f5add38-fad5-43cb-8179-3b1b88a3809c
 		summarizeBy: sum
 		sourceColumn: 'H: Health exp (% GDP)'
 
@@ -87,7 +87,7 @@ table Extract
 	column 'H: Health exp/cap (curr $)'
 		dataType: double
 		formatString: c"$"#,#0,,.0B;("$"#,#0,,.0B)
-		lineageTag: 356db016-3c34-47dd-8686-d048f1241010
+		lineageTag: e615e039-e86b-4b24-9e69-23f2a1237741
 		summarizeBy: sum
 		sourceColumn: 'H: Health exp/cap (curr $)'
 
@@ -96,7 +96,7 @@ table Extract
 	column 'H: Life exp (years)'
 		dataType: double
 		formatString: n#,0;-#,0
-		lineageTag: 9acd2339-90b5-413e-99e0-7b480c0c9a6b
+		lineageTag: 606f0867-2d0b-4fdd-9468-55f4ed494c99
 		summarizeBy: sum
 		sourceColumn: 'H: Life exp (years)'
 
@@ -104,7 +104,7 @@ table Extract
 
 	column 'Number of Records'
 		dataType: int64
-		lineageTag: 7c76a608-0ffd-4212-93e7-3ee7dbf30b9f
+		lineageTag: c4a8c562-dfc8-4b7f-b346-6c068f200161
 		summarizeBy: sum
 		sourceColumn: 'Number of Records'
 
@@ -113,7 +113,7 @@ table Extract
 	column 'P: Population (count)'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 9fd6e0c4-a5ac-47f4-9ad0-ff13f969db6f
+		lineageTag: ae6333ff-455d-4ec6-b02d-ee7e67dd99d9
 		summarizeBy: sum
 		sourceColumn: 'P: Population (count)'
 
@@ -121,7 +121,7 @@ table Extract
 
 	column Region
 		dataType: string
-		lineageTag: 0b574546-1a87-45b3-9d09-6edf6a3ee18b
+		lineageTag: 81ebd2dc-d0fd-4039-a4ed-d3d752b8e984
 		summarizeBy: none
 		sourceColumn: Region
 		dataCategory: StateOrProvince
@@ -130,7 +130,7 @@ table Extract
 
 	column Subregion
 		dataType: string
-		lineageTag: 4ba2a051-0e59-405a-a17d-ec21b2238b21
+		lineageTag: 22c79680-f977-4fa9-a990-474aea78c20e
 		summarizeBy: none
 		sourceColumn: Subregion
 		dataCategory: StateOrProvince
@@ -139,7 +139,7 @@ table Extract
 
 	column 'Action (Country Name)'
 		dataType: string
-		lineageTag: 0520d478-61d9-4755-959d-d3621378b590
+		lineageTag: dda01306-0beb-4b29-9bc4-5576691c3115
 		summarizeBy: none
 		sourceColumn: 'Action (Country Name)'
 		displayFolder: Groups
@@ -148,7 +148,7 @@ table Extract
 
 	column 'Action (Date (year))'
 		dataType: string
-		lineageTag: b3f12d90-94af-4ca3-a2d2-7e850321b84e
+		lineageTag: ed72e972-87a5-4c38-8a5f-4c363ef48289
 		summarizeBy: none
 		sourceColumn: 'Action (Date (year))'
 		displayFolder: Groups
@@ -157,7 +157,7 @@ table Extract
 
 	column 'Action (Region)'
 		dataType: string
-		lineageTag: 0e89b5da-de64-4a5e-beb9-8120b4e178be
+		lineageTag: 96672362-8cd4-4562-9e15-ac1eea936ae4
 		summarizeBy: none
 		sourceColumn: 'Action (Region)'
 		displayFolder: Groups
@@ -166,7 +166,7 @@ table Extract
 
 	column 'Action (YEAR(Date (year)))'
 		dataType: string
-		lineageTag: c64b0c25-9280-4b0c-a270-d47f2e47a1b3
+		lineageTag: 55d03fd7-99d2-4739-8443-6179eb58a0df
 		summarizeBy: none
 		sourceColumn: 'Action (YEAR(Date (year)))'
 		displayFolder: Groups
@@ -175,14 +175,14 @@ table Extract
 
 	column 'Exclusions (Country Name,YEAR(Date (year)))'
 		dataType: string
-		lineageTag: 683b9a54-64e8-490b-9f57-390827afab58
+		lineageTag: 8415b2e2-7241-463e-aba7-27672d9b5f67
 		summarizeBy: none
 		sourceColumn: 'Exclusions (Country Name,YEAR(Date (year)))'
 		displayFolder: Groups
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Extract-09702609-c693-4ceb-a742-fd565207c28c' = m
+	partition 'Extract-6e522b20-caf1-4cb1-9498-6f5285cca98c' = m
 		mode: import
 		source =
 				let

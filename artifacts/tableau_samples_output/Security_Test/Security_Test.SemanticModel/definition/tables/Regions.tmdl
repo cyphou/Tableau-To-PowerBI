@@ -1,9 +1,9 @@
 table Regions
-	lineageTag: 3a972a8c-99cb-42c4-8e5d-5e46f9684577
+	lineageTag: 8061e8a3-2139-4d3e-809a-5c9d0c88a839
 
 	column RegionName
 		dataType: string
-		lineageTag: 3dd984f5-78d4-4148-bd2d-a253419d10a8
+		lineageTag: b5b64aab-50db-4998-84ae-832f6a698997
 		summarizeBy: none
 		sourceColumn: RegionName
 		dataCategory: StateOrProvince
@@ -12,14 +12,14 @@ table Regions
 
 	column RegionManager
 		dataType: string
-		lineageTag: 2a633bd7-527f-4288-8ab6-62bcc6206b91
+		lineageTag: 6c3fb7b3-b6ee-4205-818a-eb47c23d0b12
 		summarizeBy: none
 		sourceColumn: RegionManager
 		dataCategory: StateOrProvince
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Regions-d0b7fca1-2209-4e0f-a89a-ca3f298ba190' = m
+	partition 'Regions-a95bae97-6e6f-4ce5-9dbd-510a972a0718' = m
 		mode: import
 		source =
 				let

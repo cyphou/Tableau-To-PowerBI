@@ -1,9 +1,9 @@
 table Returns
-	lineageTag: 0c346fc7-886b-484d-a905-cb0a9409effb
+	lineageTag: 36cc7fb3-25f9-4d53-9915-40941024819a
 
 	column Returned
 		dataType: string
-		lineageTag: dfa4a2a8-a3e2-4395-975e-5e6cec1c78fd
+		lineageTag: a2d9820e-0c3c-423f-a291-c1d4c7e38ba7
 		summarizeBy: none
 		sourceColumn: Returned
 
@@ -11,13 +11,13 @@ table Returns
 
 	column 'Order ID'
 		dataType: string
-		lineageTag: 85a0bf57-d69e-4bb9-99e3-cf36eba53469
+		lineageTag: 849a32a8-8657-4cea-9716-483aec6184e8
 		summarizeBy: none
 		sourceColumn: 'Order ID'
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Returns-2103d8a6-06a3-4b3c-a7ff-61891baa01f7' = m
+	partition 'Returns-13fb1745-b760-404d-b046-f89702d2cdd4' = m
 		mode: import
 		source =
 				let

@@ -14,12 +14,12 @@ ref table Maintenance
 ref table Calendar
 ref table 'Alert Threshold'
 
-ref relationship 0e1a2531-68e1-477b-ba7d-fb3ac72d718c
-ref relationship 8770afcf-b34b-4e56-9fbf-b51fe8a8f8b2
-ref relationship a5d065d3-0856-48cf-8b60-9d7345cef4d4
-ref relationship 34a4d13e-9680-4931-8320-0b74610ca8cd
-ref relationship 0c6e5767-3bc1-4d7d-b7b0-e3e9e6fc5688
-ref relationship 32092e85-766b-41d4-9e36-f6bf337b5654
+ref relationship b37a6662-dcee-443b-9cfe-c66bc763ce55
+ref relationship 4920dfc8-d7b4-4ef2-91a5-4e65be5b572e
+ref relationship 3b8cec6e-a74b-4b16-a093-465415aef461
+ref relationship abc6c802-e9cc-45d4-8902-108ac6c1c9f3
+ref relationship 6a1a18ac-5c28-4ac8-8c41-59bcedd6702c
+ref relationship fb2afdf8-368e-49a2-bd73-caf758eb429a
 
 ref expression DataFolder
 

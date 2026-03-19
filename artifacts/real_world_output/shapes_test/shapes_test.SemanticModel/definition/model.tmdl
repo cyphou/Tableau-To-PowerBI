@@ -15,9 +15,9 @@ ref table Calendar
 ref table 'Top Customers'
 ref table 'Profit Bin Size'
 
-ref relationship d196c88d-2025-46c2-8617-746dda1d33cf
-ref relationship db473d66-4008-4a93-97e1-d21a9f5e7cee
-ref relationship 5c9e1185-ff28-429e-a42b-f775e7987134
+ref relationship 6289e1f4-2257-48bf-8593-80be74f78b2a
+ref relationship 2c082b69-62cc-483b-b4e8-e88d7337aade
+ref relationship 9016dde3-61b8-4a87-8ec1-e24e4951dbb1
 
 ref expression DataFolder
 

@@ -1,8 +1,8 @@
 # Development Plan — Tableau to Power BI Migration Tool
 
-**Version:** v17.0.0 → v18.0.0 (planning)  
-**Date:** 2025-03-18  
-**Current state:** v17.0.0 released — **4,219 tests** across 77 test files (+conftest.py), 0 failures  
+**Version:** v18.0.0 (in progress)  
+**Date:** 2026-03-19  
+**Current state:** v18.0.0 Sprint 55 complete — **4,331 tests** across 79 test files (+conftest.py), 0 failures  
 **Previous baseline:** v3.5.0 — 887 → v4.0.0 — 1,387 → v5.0.0 — 1,543 → v5.1.0 — 1,595 → v5.5.0 — 1,777 → v6.0.0 — 1,889 → v6.1.0 — 1,997 → v7.0.0 — 2,057 → Sprint 21 — 2,066 → v8.0.0 — 2,275 → Sprint 27 — 2,542 → Sprint 28 — 2,616 → Sprint 29 — 2,666 → v9.0.0 — 3,196 → v10.0.0 — 3,342 → v11.0.0 — 3,459 → v12.0.0 — 3,729 → v13.0.0 — 3,847 → v14.0.0 — 3,925 → v15.0.0 — 3,988 → v15.0.1 — 3,996 → v16.0.0 — 4,131 → **v17.0.0 — 4,219**
 
 ---
@@ -40,7 +40,7 @@ v18.0.0 addresses these across 5 sprints focused on merge depth, provenance, inc
 | 54.6 | **Hierarchy deduplication enhancement** | `powerbi_import/shared_model.py` | Low | Current `_merge_list_by_name` is shallow. Enhance: same hierarchy name + same levels → deduplicate; same name + different levels → keep longest path; cross-workbook hierarchies on same table → union. |
 | 54.7 | **Tests** | `tests/test_merge_artifacts.py` (new) | Medium | 30+ tests: calc group merge/conflict, field param union, perspective merge, culture merge, goal dedup, hierarchy level comparison |
 
-### Sprint 55 — Post-Merge Safety: Cycle Detection, Column Type Validation & DAX Integrity ✨CRITICAL
+### Sprint 55 — Post-Merge Safety: Cycle Detection, Column Type Validation & DAX Integrity ✅
 
 **Goal:** Prevent data loss and model corruption by validating merge output before generation. Relationship cycles break PBI model loading; wrong column types silently truncate data; unresolved DAX refs cause runtime errors.
 

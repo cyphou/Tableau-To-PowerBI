@@ -1,4 +1,4 @@
-relationship 6dd9f91f-f521-43f0-884e-6598cf49d4d3
+relationship 15c68264-5b2e-4414-a9d9-a36c68b689e5
 	fromColumn: Extract.'Order Date'
 	toColumn: Calendar.Date
 	fromCardinality: many
