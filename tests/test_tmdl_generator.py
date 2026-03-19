@@ -943,5 +943,167 @@ class TestGenerateTmdl(unittest.TestCase):
             self.assertIn(key, stats)
 
 
+class TestColumnDeduplication(unittest.TestCase):
+    """Regression: duplicate columns/measures must be deduplicated.
+
+    PBI Desktop rejects TMDL when two columns declare the same 'expression'
+    property on the same table (e.g. 'Filtre période par défaut').
+    """
+
+    def test_calc_column_replaces_physical_column_same_name(self):
+        """If a physical col and a calc col share the same caption, only one should remain."""
+        from powerbi_import.tmdl_generator import _build_table
+
+        columns = [
+            {'name': 'Filtre période par défaut', 'datatype': 'string'},
+            {'name': 'Region', 'datatype': 'string'},
+        ]
+        calculations = [{
+            'name': 'Filtre période par défaut',
+            'caption': 'Filtre période par défaut',
+            'formula': 'IF([Status]="Active", "Oui", "Non")',
+            'role': 'dimension',
+            'datatype': 'string',
+        }]
+        table = {'name': 'sqlproxy', 'columns': columns}
+        connection = {'type': 'sqlserver', 'server': 'srv', 'database': 'db'}
+        dax_context = {
+            'calc_map': {}, 'param_map': {}, 'column_table_map': {},
+            'measure_names': set(), 'param_values': {},
+        }
+        result = _build_table(
+            table, connection, calculations, [],
+            dax_context=dax_context, col_metadata_map={},
+        )
+        col_names = [c['name'] for c in result['columns']]
+        # Only one instance of the column
+        self.assertEqual(col_names.count('Filtre période par défaut'), 1)
+
+    def test_duplicate_calc_columns_deduplicated(self):
+        """Two calculations with same caption produce only one column."""
+        from powerbi_import.tmdl_generator import _build_table
+
+        columns = [{'name': 'ID', 'datatype': 'integer'}]
+        calculations = [
+            {
+                'name': 'calc.MyCalc',
+                'caption': 'MyCalc',
+                'formula': '[A] + [B]',
+                'role': 'dimension',
+                'datatype': 'integer',
+            },
+            {
+                'name': 'other.MyCalc',
+                'caption': 'MyCalc',
+                'formula': '[A] + [B] + [C]',
+                'role': 'dimension',
+                'datatype': 'integer',
+            },
+        ]
+        table = {'name': 'TestTable', 'columns': columns}
+        connection = {'type': 'sqlserver', 'server': 'srv', 'database': 'db'}
+        dax_context = {
+            'calc_map': {}, 'param_map': {}, 'column_table_map': {},
+            'measure_names': set(), 'param_values': {},
+        }
+        result = _build_table(
+            table, connection, calculations, [],
+            dax_context=dax_context, col_metadata_map={},
+        )
+        col_names = [c['name'] for c in result['columns']]
+        self.assertEqual(col_names.count('MyCalc'), 1)
+
+    def test_duplicate_measures_deduplicated(self):
+        """Two calculations resolving to the same measure name: only one kept."""
+        from powerbi_import.tmdl_generator import _build_table
+
+        columns = [{'name': 'Amount', 'datatype': 'real'}]
+        calculations = [
+            {
+                'name': 'calc.Total',
+                'caption': 'Total',
+                'formula': 'SUM([Amount])',
+                'role': 'measure',
+                'datatype': 'real',
+            },
+            {
+                'name': 'other.Total',
+                'caption': 'Total',
+                'formula': 'SUM([Amount])',
+                'role': 'measure',
+                'datatype': 'real',
+            },
+        ]
+        table = {'name': 'TestTable', 'columns': columns}
+        connection = {'type': 'sqlserver', 'server': 'srv', 'database': 'db'}
+        dax_context = {
+            'calc_map': {}, 'param_map': {}, 'column_table_map': {},
+            'measure_names': set(), 'param_values': {},
+        }
+        result = _build_table(
+            table, connection, calculations, [],
+            dax_context=dax_context, col_metadata_map={},
+        )
+        measure_names = [m['name'] for m in result['measures']]
+        self.assertEqual(measure_names.count('Total'), 1)
+
+    def test_tmdl_writer_dedup_columns(self):
+        """_write_table_tmdl deduplicates columns by name (defense in depth)."""
+        from powerbi_import.tmdl_generator import _write_table_tmdl
+        import tempfile
+
+        table = {
+            'name': 'sqlproxy',
+            'columns': [
+                {'name': 'Filtre', 'dataType': 'string',
+                 'sourceColumn': 'Filtre'},
+                {'name': 'Filtre', 'dataType': 'string',
+                 'expression': 'IF(TRUE, "A", "B")', 'isCalculated': True},
+            ],
+            'measures': [],
+            'partitions': [{'name': 'P', 'mode': 'import',
+                            'source': {'type': 'm',
+                                       'expression': 'let x=1 in x'}}],
+        }
+        with tempfile.TemporaryDirectory() as td:
+            _write_table_tmdl(td, table)
+            import os
+            with open(os.path.join(td, 'sqlproxy.tmdl'), 'r',
+                       encoding='utf-8') as f:
+                content = f.read()
+        # Column name appears exactly once as a TMDL column declaration
+        import re
+        col_decls = re.findall(r'^\tcolumn .*Filtre', content, re.MULTILINE)
+        self.assertEqual(len(col_decls), 1, f'Expected 1 column, got: {col_decls}')
+
+    def test_tmdl_writer_dedup_measures(self):
+        """_write_table_tmdl deduplicates measures by name."""
+        from powerbi_import.tmdl_generator import _write_table_tmdl
+        import tempfile
+
+        table = {
+            'name': 'Facts',
+            'columns': [{'name': 'Val', 'dataType': 'int64',
+                          'sourceColumn': 'Val'}],
+            'measures': [
+                {'name': 'Total', 'expression': 'SUM([Val])'},
+                {'name': 'Total', 'expression': 'SUM([Val])'},
+            ],
+            'partitions': [{'name': 'P', 'mode': 'import',
+                            'source': {'type': 'm',
+                                       'expression': 'let x=1 in x'}}],
+        }
+        with tempfile.TemporaryDirectory() as td:
+            _write_table_tmdl(td, table)
+            import os
+            with open(os.path.join(td, 'Facts.tmdl'), 'r',
+                       encoding='utf-8') as f:
+                content = f.read()
+        import re
+        measure_decls = re.findall(r'^\tmeasure .*Total', content, re.MULTILINE)
+        self.assertEqual(len(measure_decls), 1,
+                         f'Expected 1 measure, got: {measure_decls}')
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

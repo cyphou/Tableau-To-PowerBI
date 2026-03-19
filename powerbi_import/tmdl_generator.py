@@ -1354,7 +1354,16 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
             if geo_cat:
                 bim_calc_col["dataCategory"] = geo_cat
 
-            result_table["columns"].append(bim_calc_col)
+            # Dedup: replace existing physical/calc column with same name
+            existing_idx = None
+            for idx, ec in enumerate(result_table["columns"]):
+                if ec.get("name", "").lower() == caption.lower():
+                    existing_idx = idx
+                    break
+            if existing_idx is not None:
+                result_table["columns"][existing_idx] = bim_calc_col
+            else:
+                result_table["columns"].append(bim_calc_col)
         else:
             # DAX Measure
             bim_measure = {
@@ -1363,7 +1372,13 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
                 "formatString": _get_format_string(datatype),
                 "displayFolder": _get_display_folder(datatype, role)
             }
-            result_table["measures"].append(bim_measure)
+            # Dedup: skip if measure with same name already exists
+            existing_measure = any(
+                m.get("name", "").lower() == caption.lower()
+                for m in result_table["measures"]
+            )
+            if not existing_measure:
+                result_table["measures"].append(bim_measure)
 
     # Inject accumulated M steps into the partition (replaces DAX calc cols)
     if m_calc_steps:
@@ -3990,11 +4005,24 @@ def _write_table_tmdl(tables_dir, table):
     lines.append("")
 
     # Measures (before columns, as in PBI Hero reference)
+    # Deduplicate by name — first wins
+    seen_measure_names = set()
     for measure in table.get('measures', []):
-        _write_measure(lines, measure)
+        mn = measure.get('name', '').lower()
+        if mn not in seen_measure_names:
+            seen_measure_names.add(mn)
+            _write_measure(lines, measure)
 
-    # Columns
-    for column in table.get('columns', []):
+    # Columns (deduplicate by name — last wins)
+    seen_col_names = set()
+    deduped_columns = []
+    for column in reversed(table.get('columns', [])):
+        cn = column.get('name', '').lower()
+        if cn not in seen_col_names:
+            seen_col_names.add(cn)
+            deduped_columns.append(column)
+    deduped_columns.reverse()
+    for column in deduped_columns:
         _write_column(lines, column)
 
     # Hierarchies
