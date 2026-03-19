@@ -703,10 +703,20 @@ class TestAddDateTable(unittest.TestCase):
             }
         }
         # Simulate Phase 6 guard logic
+        from powerbi_import.tmdl_generator import _apply_semantic_enrichments
         _DATE_TABLE_NAMES = {
             'calendar', 'date', 'dimdate', 'dim_date', 'datedimension',
             'date_dimension', 'dim date', 'datetable', 'date_table',
-            'time', 'dimtime', 'dim_time',
+            'time', 'dimtime', 'dim_time', 'dates',
+            'calendrier', 'dimcalendrier', 'dim_calendrier',
+            'tabledate', 'table_date', 'temps',
+            'datum', 'kalender', 'dimdatum', 'dim_datum', 'dimkalender',
+            'dim_kalender', 'zeit',
+            'fecha', 'calendario', 'dimfecha', 'dim_fecha', 'dimcalendario',
+            'dim_calendario',
+            'data', 'dimdata', 'dim_data',
+            'datacalendario',
+            'datemaster', 'date_master', 'masterdate', 'master_date',
         }
         existing = {t.get('name', '').lower().strip() for t in model['model']['tables']}
         has_existing = bool(existing & _DATE_TABLE_NAMES)
@@ -744,7 +754,109 @@ class TestAddDateTable(unittest.TestCase):
         _DATE_TABLE_NAMES = {
             'calendar', 'date', 'dimdate', 'dim_date', 'datedimension',
             'date_dimension', 'dim date', 'datetable', 'date_table',
-            'time', 'dimtime', 'dim_time',
+            'time', 'dimtime', 'dim_time', 'dates',
+            'calendrier', 'dimcalendrier', 'dim_calendrier',
+            'tabledate', 'table_date', 'temps',
+            'datum', 'kalender', 'dimdatum', 'dim_datum', 'dimkalender',
+            'dim_kalender', 'zeit',
+            'fecha', 'calendario', 'dimfecha', 'dim_fecha', 'dimcalendario',
+            'dim_calendario',
+            'data', 'dimdata', 'dim_data',
+            'datacalendario',
+            'datemaster', 'date_master', 'masterdate', 'master_date',
+        }
+        existing = {t.get('name', '').lower().strip() for t in model['model']['tables']}
+        self.assertTrue(bool(existing & _DATE_TABLE_NAMES))
+
+    def test_skip_calendar_when_source_has_french_calendrier(self):
+        """Source table named 'Calendrier' (French) prevents auto Calendar generation."""
+        model = {
+            "model": {
+                "tables": [
+                    {
+                        "name": "Calendrier",
+                        "columns": [
+                            {"name": "Date", "dataType": "DateTime", "sourceColumn": "Date"},
+                            {"name": "Annee", "dataType": "int64", "sourceColumn": "Annee"},
+                        ],
+                        "partitions": [], "measures": [],
+                    },
+                    {
+                        "name": "Ventes",
+                        "columns": [
+                            {"name": "DateVente", "dataType": "DateTime", "sourceColumn": "DateVente"},
+                        ],
+                        "partitions": [], "measures": [],
+                    },
+                ],
+                "relationships": [],
+            }
+        }
+        _DATE_TABLE_NAMES = {
+            'calendar', 'date', 'dimdate', 'dim_date', 'datedimension',
+            'date_dimension', 'dim date', 'datetable', 'date_table',
+            'time', 'dimtime', 'dim_time', 'dates',
+            'calendrier', 'dimcalendrier', 'dim_calendrier',
+            'tabledate', 'table_date', 'temps',
+            'datum', 'kalender', 'dimdatum', 'dim_datum', 'dimkalender',
+            'dim_kalender', 'zeit',
+            'fecha', 'calendario', 'dimfecha', 'dim_fecha', 'dimcalendario',
+            'dim_calendario',
+            'data', 'dimdata', 'dim_data',
+            'datacalendario',
+            'datemaster', 'date_master', 'masterdate', 'master_date',
+        }
+        existing = {t.get('name', '').lower().strip() for t in model['model']['tables']}
+        self.assertTrue(bool(existing & _DATE_TABLE_NAMES))
+
+    def test_skip_calendar_when_source_has_german_datum(self):
+        """Source table named 'Datum' (German) prevents auto Calendar generation."""
+        model = {
+            "model": {
+                "tables": [
+                    {
+                        "name": "Datum",
+                        "columns": [
+                            {"name": "Datum", "dataType": "DateTime", "sourceColumn": "Datum"},
+                        ],
+                        "partitions": [], "measures": [],
+                    },
+                ],
+                "relationships": [],
+            }
+        }
+        existing = {t.get('name', '').lower().strip() for t in model['model']['tables']}
+        self.assertIn('datum', existing)
+
+    def test_skip_calendar_when_source_has_spanish_fecha(self):
+        """Source table named 'Fecha' (Spanish) prevents auto Calendar generation."""
+        model = {
+            "model": {
+                "tables": [
+                    {
+                        "name": "DimFecha",
+                        "columns": [
+                            {"name": "Fecha", "dataType": "DateTime", "sourceColumn": "Fecha"},
+                        ],
+                        "partitions": [], "measures": [],
+                    },
+                ],
+                "relationships": [],
+            }
+        }
+        _DATE_TABLE_NAMES = {
+            'calendar', 'date', 'dimdate', 'dim_date', 'datedimension',
+            'date_dimension', 'dim date', 'datetable', 'date_table',
+            'time', 'dimtime', 'dim_time', 'dates',
+            'calendrier', 'dimcalendrier', 'dim_calendrier',
+            'tabledate', 'table_date', 'temps',
+            'datum', 'kalender', 'dimdatum', 'dim_datum', 'dimkalender',
+            'dim_kalender', 'zeit',
+            'fecha', 'calendario', 'dimfecha', 'dim_fecha', 'dimcalendario',
+            'dim_calendario',
+            'data', 'dimdata', 'dim_data',
+            'datacalendario',
+            'datemaster', 'date_master', 'masterdate', 'master_date',
         }
         existing = {t.get('name', '').lower().strip() for t in model['model']['tables']}
         self.assertTrue(bool(existing & _DATE_TABLE_NAMES))

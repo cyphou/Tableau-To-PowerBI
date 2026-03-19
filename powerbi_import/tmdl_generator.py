@@ -927,9 +927,27 @@ def _apply_semantic_enrichments(model, extra_objects, main_table_name, column_ta
     # Phase 6: Automatic date table if date columns detected
     # Skip if the source already has a date/calendar table
     _DATE_TABLE_NAMES = {
+        # English
         'calendar', 'date', 'dimdate', 'dim_date', 'datedimension',
         'date_dimension', 'dim date', 'datetable', 'date_table',
-        'time', 'dimtime', 'dim_time',
+        'time', 'dimtime', 'dim_time', 'dates',
+        # French
+        'calendrier', 'dimcalendrier', 'dim_calendrier', 'dimdate',
+        'dim_date', 'tabledate', 'table_date', 'temps',
+        # German
+        'datum', 'kalender', 'dimdatum', 'dim_datum', 'dimkalender',
+        'dim_kalender', 'zeit',
+        # Spanish
+        'fecha', 'calendario', 'dimfecha', 'dim_fecha', 'dimcalendario',
+        'dim_calendario',
+        # Portuguese
+        'data', 'dimdata', 'dim_data', 'calendario',
+        # Italian
+        'datacalendario', 'dim_data', 'dimdata',
+        # Dutch
+        'datum', 'dimdatum', 'dim_datum', 'kalender',
+        # Japanese / Chinese / Korean (romanized common names)
+        'datemaster', 'date_master', 'masterdate', 'master_date',
     }
     existing_table_names = {t.get('name', '').lower().strip() for t in model['model']['tables']}
     has_existing_date_table = bool(existing_table_names & _DATE_TABLE_NAMES)
