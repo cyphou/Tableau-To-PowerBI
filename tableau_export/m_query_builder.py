@@ -703,6 +703,65 @@ in
     Source'''
 
 
+# ── Sprint 61: New Connector Generators ───────────────────────────────────────
+
+def _gen_m_mongodb(details, table_name, columns):
+    """MongoDB Atlas / MongoDB BI connector."""
+    server = details.get('server', 'cluster0.mongodb.net')
+    database = details.get('database', 'mydb')
+    collection = details.get('collection', table_name)
+    m_query = 'let\n'
+    m_query += f'    // Source MongoDB: {server}\n'
+    m_query += f'    Source = MongoDBAtlas.Database("{server}", "{database}"),\n'
+    m_query += f'    #"{collection}" = Source{{[Name="{collection}"]}}[Data],\n'
+    m_query += f'    Result = #"{collection}"\nin\n    Result'
+    return m_query
+
+
+def _gen_m_cosmosdb(details, table_name, columns):
+    """Azure Cosmos DB (SQL API or MongoDB API)."""
+    endpoint = details.get('server', 'https://myaccount.documents.azure.com:443/')
+    database = details.get('database', 'mydb')
+    container = details.get('collection', table_name)
+    m_query = 'let\n'
+    m_query += f'    // Source Azure Cosmos DB: {endpoint}\n'
+    m_query += f'    Source = DocumentDB.Contents("{endpoint}", "{database}"),\n'
+    m_query += f'    #"{container}" = Source{{[Id="{container}"]}}[Data],\n'
+    m_query += f'    Result = #"{container}"\nin\n    Result'
+    return m_query
+
+
+def _gen_m_athena(details, table_name, columns):
+    """Amazon Athena via ODBC."""
+    region = details.get('region', details.get('server', 'us-east-1'))
+    s3_output = details.get('s3_output', 's3://my-bucket/athena-output/')
+    catalog = details.get('catalog', details.get('database', 'AwsDataCatalog'))
+    custom_sql = details.get('custom_sql', '')
+    if custom_sql:
+        m_query = 'let\n'
+        m_query += f'    // Source Amazon Athena: {region}\n'
+        m_query += f'    Source = Odbc.Query("dsn=AmazonAthena;Region={region}",\n'
+        m_query += f'        "{custom_sql}")\n'
+        m_query += 'in\n    Source'
+    else:
+        m_query = 'let\n'
+        m_query += f'    // Source Amazon Athena: {region}\n'
+        m_query += f'    Source = Odbc.DataSource("dsn=AmazonAthena;Region={region}"),\n'
+        m_query += f'    #"{catalog}" = Source{{[Name="{catalog}"]}}[Data],\n'
+        m_query += f'    #"{table_name} Table" = #"{catalog}"{{[Name="{table_name}"]}}[Data],\n'
+        m_query += f'    Result = #"{table_name} Table"\nin\n    Result'
+    return m_query
+
+
+def _gen_m_db2(details, table_name, columns):
+    """IBM DB2 connector."""
+    server = details.get('server', 'localhost')
+    database = details.get('database', 'SAMPLE')
+    schema = details.get('schema', 'DB2INST1')
+    return _gen_m_schema_item(details, table_name, columns,
+                              'IBM DB2', 'DB2.Database', server, database, schema)
+
+
 _M_GENERATORS = {
     'Excel':            _gen_m_excel,
     'SQL Server':       _gen_m_sql_server,
@@ -756,6 +815,20 @@ _M_GENERATORS = {
     'Tableau Server':   _gen_m_sqlproxy,
     'sqlproxy':         _gen_m_sqlproxy,
     'SQLPROXY':         _gen_m_sqlproxy,
+    # Sprint 61: New connectors
+    'MongoDB':          _gen_m_mongodb,
+    'MongoDB Atlas':    _gen_m_mongodb,
+    'mongodb':          _gen_m_mongodb,
+    'Cosmos DB':        _gen_m_cosmosdb,
+    'Azure Cosmos DB':  _gen_m_cosmosdb,
+    'cosmosdb':         _gen_m_cosmosdb,
+    'DocumentDB':       _gen_m_cosmosdb,
+    'Amazon Athena':    _gen_m_athena,
+    'Athena':           _gen_m_athena,
+    'athena':           _gen_m_athena,
+    'IBM DB2':          _gen_m_db2,
+    'DB2':              _gen_m_db2,
+    'db2':              _gen_m_db2,
 }
 
 
@@ -1509,3 +1582,71 @@ def generate_m_from_hyper(hyper_tables, table_name=None):
         return None
 
     return generate_m_for_hyper_table(target)
+
+
+# ── Sprint 61: New Transform Generators ───────────────────────────────────────
+
+def gen_extract_regex(column, pattern, group=0):
+    """Regex extraction transform.
+
+    Returns:
+        Tuple (step_name, step_expression) with ``{prev}`` placeholder.
+    """
+    step_name = f'Regex_{column}'
+    expr = (
+        f'Table.TransformColumns({{prev}}, '
+        f'{{{{"{column}", each try Text.RegexExtract(_, "{pattern}", {group}) otherwise null}}}}'
+        f')'
+    )
+    return (step_name, expr)
+
+
+def gen_parse_json(column):
+    """JSON parsing + record expansion transform.
+
+    Returns:
+        Tuple (step_name, step_expression) with ``{prev}`` placeholder.
+    """
+    step_name = f'ParseJSON_{column}'
+    expr = (
+        f'Table.TransformColumns({{prev}}, '
+        f'{{{{"{column}", Json.Document}}}}'
+        f')'
+    )
+    return (step_name, expr)
+
+
+def gen_parse_xml(column):
+    """XML parsing transform.
+
+    Returns:
+        Tuple (step_name, step_expression) with ``{prev}`` placeholder.
+    """
+    step_name = f'ParseXML_{column}'
+    expr = (
+        f'Table.TransformColumns({{prev}}, '
+        f'{{{{"{column}", Xml.Tables}}}}'
+        f')'
+    )
+    return (step_name, expr)
+
+
+def parameterize_connection(m_expression, param_map=None):
+    """Replace hardcoded connection values with Power Query parameter references.
+
+    Args:
+        m_expression: Complete M query string.
+        param_map: Dict mapping placeholder names to PBI parameter names,
+            e.g. ``{"ServerName": "P_Server", "DatabaseName": "P_Database"}``.
+
+    Returns:
+        Modified M expression with parameter references.
+    """
+    if not param_map:
+        return m_expression
+
+    result = m_expression
+    for placeholder, pq_param in param_map.items():
+        # Replace quoted values with parameter references
+        result = result.replace(f'"{placeholder}"', f'#"{pq_param}"')
+    return result
