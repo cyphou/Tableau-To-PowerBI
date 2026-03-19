@@ -1,18 +1,18 @@
 table 'Top Customers'
-	lineageTag: dceed639-7c0d-4bb5-b3e5-057ea629926b
+	lineageTag: 31d2a9a8-de33-4806-9609-3b163ea08311
 
 	measure 'Top Customers' = SELECTEDVALUE('Top Customers'[Value], 5)
-		lineageTag: ebac63a4-2bc0-4408-a1dd-fa5431dd3f84
+		lineageTag: ab8338fa-ee3d-4fcd-a398-e2e067e7f02e
 
 	column Value
 		dataType: int64
-		lineageTag: 0eae20c3-70a2-4288-931f-62609a1242b9
+		lineageTag: 83bc9f1d-935a-46b7-96eb-42cb5857f312
 		summarizeBy: none
 		sourceColumn: Value
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Top Customers-0c855df4-8b51-4244-965f-49e60bcb7808' = calculated
+	partition 'Top Customers-d086abbe-135e-41a6-a30a-4310171d57ac' = calculated
 		mode: import
 		source = GENERATESERIES(5, 20, 5)
 

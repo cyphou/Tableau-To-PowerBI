@@ -1,18 +1,18 @@
 table 'Fiscal Year'
-	lineageTag: ebb82993-6a78-4059-9ad6-468df8e45d02
+	lineageTag: 6544e103-a64c-44a3-b611-d68594c23099
 
 	measure 'Fiscal Year' = SELECTEDVALUE('Fiscal Year'[Value], 2024)
-		lineageTag: dda3c1fe-7fd4-4c55-8873-f6685d37d426
+		lineageTag: 153de802-386d-4f66-a4f2-cce7164a209f
 
 	column Value
 		dataType: int64
-		lineageTag: 3633258d-f193-4ee5-a4c2-4e91dcc9fc9b
+		lineageTag: c0ffb2bf-3cd1-41da-926f-db1019107910
 		summarizeBy: none
 		sourceColumn: Value
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Fiscal Year-0ed9a42f-b234-4093-86b9-d7c3c818cd15' = calculated
+	partition 'Fiscal Year-66ae98aa-237a-48f3-b622-25fc6cb48722' = calculated
 		mode: import
 		source = GENERATESERIES(2020, 2030, 1)
 

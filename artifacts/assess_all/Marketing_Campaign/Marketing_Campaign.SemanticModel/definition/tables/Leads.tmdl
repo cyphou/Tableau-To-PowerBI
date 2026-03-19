@@ -1,9 +1,9 @@
 table Leads
-	lineageTag: e3c93188-b5e9-4eef-8612-112f07912820
+	lineageTag: efa0e85e-6ddc-43ef-acfb-6e2538ca2606
 
 	column lead_id
 		dataType: int64
-		lineageTag: aa9ecdbb-a740-4bb8-af00-546dbaf90be3
+		lineageTag: 4c0e833e-ae8d-4201-9c56-8499a7480d31
 		summarizeBy: sum
 		sourceColumn: lead_id
 
@@ -11,7 +11,7 @@ table Leads
 
 	column campaign_id
 		dataType: int64
-		lineageTag: b09a51c9-9b2a-4420-86e1-2638d49dc05e
+		lineageTag: 357d98f1-5196-45b4-a2de-de2605e19803
 		summarizeBy: sum
 		sourceColumn: campaign_id
 
@@ -19,7 +19,7 @@ table Leads
 
 	column lead_name
 		dataType: string
-		lineageTag: 6c8f0f6e-75d2-4fd7-822c-5d6ed27682b9
+		lineageTag: 10a477a3-e5c7-4b6d-8438-5460794fcfa4
 		summarizeBy: none
 		sourceColumn: lead_name
 
@@ -27,7 +27,7 @@ table Leads
 
 	column email
 		dataType: string
-		lineageTag: b4b092a8-cc68-49a7-a2ee-334af280a2a8
+		lineageTag: f87cc878-dc75-4013-b81b-5402e0c649d9
 		summarizeBy: none
 		sourceColumn: email
 
@@ -35,7 +35,7 @@ table Leads
 
 	column phone
 		dataType: string
-		lineageTag: ade2c7ae-0d75-4562-9b97-ed9bd5a782f5
+		lineageTag: 256a01ac-e618-43cd-9981-0a87b7594801
 		summarizeBy: none
 		sourceColumn: phone
 
@@ -43,7 +43,7 @@ table Leads
 
 	column company
 		dataType: string
-		lineageTag: 7b9c8477-9d16-42e7-917e-c7e0f73446ef
+		lineageTag: d3c820c7-0993-451c-abde-0be80e958c9f
 		summarizeBy: none
 		sourceColumn: company
 
@@ -51,7 +51,7 @@ table Leads
 
 	column job_title
 		dataType: string
-		lineageTag: cf55b3cc-c294-4f1b-b301-ac4f032d70d3
+		lineageTag: 75d5bad1-c48e-4710-9ea1-a342236c8b60
 		summarizeBy: none
 		sourceColumn: job_title
 
@@ -60,7 +60,7 @@ table Leads
 	column created_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: ab315542-560d-4c34-8cf7-837b1a6a6bb9
+		lineageTag: ef63be16-b057-4fff-80ec-35b3b915fc84
 		summarizeBy: none
 		sourceColumn: created_date
 		dataCategory: DateTime
@@ -70,7 +70,7 @@ table Leads
 	column deal_value
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 04a20e9c-4d0c-446e-a28a-4013e3f19a9e
+		lineageTag: 65d2ecee-bf4c-4e48-aa96-b88374796ada
 		summarizeBy: sum
 		sourceColumn: deal_value
 
@@ -78,7 +78,7 @@ table Leads
 
 	column lead_source
 		dataType: string
-		lineageTag: 6a52d05c-5707-4391-99b0-2fd91573dc9c
+		lineageTag: a839c8b8-92e6-4db9-a0f7-beb101f525b5
 		summarizeBy: none
 		sourceColumn: lead_source
 
@@ -86,7 +86,7 @@ table Leads
 
 	column lead_status
 		dataType: string
-		lineageTag: 15f9c492-0f47-450b-80a8-67ce870a19ac
+		lineageTag: 0fc2188f-fe27-4f29-b0b2-b061e84ec236
 		summarizeBy: none
 		sourceColumn: lead_status
 
@@ -95,13 +95,13 @@ table Leads
 	column engagement_score
 		dataType: double
 		formatString: #,0.00
-		lineageTag: fb74765a-8090-426f-9efd-c3e369e2f327
+		lineageTag: 3d8951e3-10ad-48da-b56e-cfb15ea13140
 		summarizeBy: sum
 		sourceColumn: engagement_score
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Leads-6ad904e3-1e01-4889-899f-d9e766c6b779' = m
+	partition 'Leads-51590062-a57e-4119-8cd1-fdbefd3332a9' = m
 		mode: import
 		source =
 				let

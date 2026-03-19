@@ -1,18 +1,18 @@
 table 'Top N'
-	lineageTag: 4451cf53-acef-4676-b39e-5deb78f5432b
+	lineageTag: cc9aff6c-d64a-48c8-8018-8392f03cbc6f
 
 	measure 'Top N' = SELECTEDVALUE('Top N'[Value], 10)
-		lineageTag: fd691426-23d0-408c-a63b-e9313ccc8cf2
+		lineageTag: f03c21d9-da06-403b-af5a-b565d0a89197
 
 	column Value
 		dataType: int64
-		lineageTag: 43d93d73-ace3-4b4b-a125-034b3f6e91a7
+		lineageTag: a7485195-7ac1-413f-b93e-9819fb0c36dd
 		summarizeBy: none
 		sourceColumn: Value
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Top N-d462721b-7ec9-4a75-8086-031e681c95f3' = calculated
+	partition 'Top N-a30a4cbe-76f9-4c48-b373-6930f2cc2a1a' = calculated
 		mode: import
 		source = GENERATESERIES(1, 50, 1)
 

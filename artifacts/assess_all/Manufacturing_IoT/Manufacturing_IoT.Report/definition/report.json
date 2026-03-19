@@ -1,13 +1,9 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/3.1.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/2.0.0/schema.json",
   "themeCollection": {
     "baseTheme": {
       "name": "CY24SU06",
-      "reportVersionAtImport": {
-        "visual": "1.8.50",
-        "report": "2.0.50",
-        "page": "1.3.50"
-      },
+      "reportVersionAtImport": "5.55",
       "type": "SharedResources"
     }
   },
@@ -34,21 +30,21 @@
   },
   "bookmarks": [
     {
-      "name": "Bookmark_94a5dede157e",
+      "name": "Bookmark_bab36c29803b",
       "displayName": "",
       "explorationState": {
         "version": "1.0"
       }
     },
     {
-      "name": "Bookmark_29f2161ec0a4",
+      "name": "Bookmark_0d45e78b2029",
       "displayName": "",
       "explorationState": {
         "version": "1.0"
       }
     },
     {
-      "name": "Bookmark_f4911ab450e9",
+      "name": "Bookmark_0dd178a218ec",
       "displayName": "",
       "explorationState": {
         "version": "1.0"
