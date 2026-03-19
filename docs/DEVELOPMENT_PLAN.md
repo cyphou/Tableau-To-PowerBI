@@ -2,8 +2,8 @@
 
 **Version:** v18.0.0 (in progress)  
 **Date:** 2026-03-19  
-**Current state:** v18.0.0 Sprint 63 + Hyper improvements complete — **4,762 tests** across 100 test files (+conftest.py), 0 failures  
-**Previous baseline:** v3.5.0 — 887 → v4.0.0 — 1,387 → v5.0.0 — 1,543 → v5.1.0 — 1,595 → v5.5.0 — 1,777 → v6.0.0 — 1,889 → v6.1.0 — 1,997 → v7.0.0 — 2,057 → Sprint 21 — 2,066 → v8.0.0 — 2,275 → Sprint 27 — 2,542 → Sprint 28 — 2,616 → Sprint 29 — 2,666 → v9.0.0 — 3,196 → v10.0.0 — 3,342 → v11.0.0 — 3,459 → v12.0.0 — 3,729 → v13.0.0 — 3,847 → v14.0.0 — 3,925 → v15.0.0 — 3,988 → v15.0.1 — 3,996 → v16.0.0 — 4,131 → v17.0.0 — 4,219 → **Sprint 63 — 4,762**
+**Current state:** v18.0.0 Sprint 64 complete — **4,813 tests** across 101 test files (+conftest.py), 0 failures  
+**Previous baseline:** v3.5.0 — 887 → v4.0.0 — 1,387 → v5.0.0 — 1,543 → v5.1.0 — 1,595 → v5.5.0 — 1,777 → v6.0.0 — 1,889 → v6.1.0 — 1,997 → v7.0.0 — 2,057 → Sprint 21 — 2,066 → v8.0.0 — 2,275 → Sprint 27 — 2,542 → Sprint 28 — 2,616 → Sprint 29 — 2,666 → v9.0.0 — 3,196 → v10.0.0 — 3,342 → v11.0.0 — 3,459 → v12.0.0 — 3,729 → v13.0.0 — 3,847 → v14.0.0 — 3,925 → v15.0.0 — 3,988 → v15.0.1 — 3,996 → v16.0.0 — 4,131 → v17.0.0 — 4,219 → Sprint 63 — 4,762 → **Sprint 64 — 4,813**
 
 ---
 
@@ -180,9 +180,10 @@ v18.0.0 addresses these across 5 sprints focused on merge depth, provenance, inc
 | 63.6 | **Refresh completion polling** | `powerbi_import/deploy/bundle_deployer.py` | Low | When `--bundle-refresh` is set, poll refresh status every 10s (configurable, max 30min) until complete/failed. Report final refresh status, duration, and row counts if available. |
 | 63.7 | **Tests** | `tests/test_deploy_hardening.py` (new) | Medium | 25+ tests: permission pre-flight (sufficient/insufficient), conflict detection (no conflict/collision), rollback simulation, deployment manifest write/read, post-deploy validation, refresh polling mock |
 
-### Sprint 64 — Incremental Merge & Add-to-Model Workflow
+### Sprint 64 — Incremental Merge & Add-to-Model Workflow ✅
 
 **Goal:** Enable adding workbooks to an existing shared model without full re-merge. Support iterative workflows for teams migrating 50+ workbooks over weeks.
+**Status:** COMPLETE — 46 tests, MergeManifest + TMDL reverse-engineering + add/remove-from-model + manifest diff, all 4,813 tests passing.
 
 **Assessment finding:** Real-world global assessment found 3 merge clusters in 14 workbooks. As more workbooks are discovered, teams need to add them to existing clusters without re-extracting all previous workbooks.
 
@@ -229,7 +230,7 @@ Sprint 60 ✅ (Assessment Expansion)    ──→  Sprint 61 ✅ (M Connectors +
     ↓                                            ↓
 Sprint 62 ✅ (RLS Consolidation)       ──→  Sprint 63 ✅ (Deploy Hardening)
     ↓                                            ↓
-Sprint 64 (Incremental Merge)       ──→  Sprint 65 (Lineage + Multi-Tenant + Release)
+Sprint 64 ✅ (Incremental Merge)    ──→  Sprint 65 (Lineage + Multi-Tenant + Release)
 ```
 
 - **Test foundation first** (56): fill all coverage gaps before building new features — prevents regressions
@@ -245,7 +246,7 @@ Sprint 64 (Incremental Merge)       ──→  Sprint 65 (Lineage + Multi-Tenant
 
 | Metric | Current (v18.0.0) | Target (v19.0.0) | Actual (Sprint 63) |
 |--------|-------------------|-------------------|-----------------------|
-| Tests | 4,331 | **4,900+** (~570 new across 10 sprints) | **4,762** (431 new in S56–S63 + Hyper) |
+| Tests | 4,331 | **4,900+** (~570 new across 10 sprints) | **4,813** (482 new in S56–S64 + Hyper + bugfix) |
 | Modules with dedicated tests | 30/38 (79%) | **38/38 (100%)** | **38/38 (100%)** ✅ |
 | DAX conversion patterns | 180+ | **195+** (new date, string, aggregate, conditional) | **195+** ✅ |
 | M connectors | 33 | **37+** (+ MongoDB, Cosmos DB, Athena, DB2) | **37** ✅ |
@@ -254,9 +255,9 @@ Sprint 64 (Incremental Merge)       ──→  Sprint 65 (Lineage + Multi-Tenant
 | Validator methods | 20 | **27+** (+ TMDL indent, keyword balance, M validation, visual completeness, cross-file, severity) | **27+** ✅ |
 | Post-merge validation checks | 3 | **12+** (+ thin report fields, drill-through, filters, RLS propagation, principals) | **12+** ✅ |
 | Merged artifact types | 14 | **14+** | **14** |
-| Merge CLI flags | 12 | **22+** (+ --strict-merge, --add-to-model, --remove-from-model, --lineage, --multi-tenant, --live-connection, --deploy-overwrite, --deploy-rollback, --validate-strict) | 15 (+ --strict-merge, --hyper-rows, deploy flags) |
+| Merge CLI flags | 12 | **22+** (+ --strict-merge, --add-to-model, --remove-from-model, --lineage, --multi-tenant, --live-connection, --deploy-overwrite, --deploy-rollback, --validate-strict) | **18** (+ --strict-merge, --hyper-rows, deploy flags, --add-to-model, --remove-from-model) |
 | Lineage tracking | ❌ | **✅** (annotations + HTML report) | ❌ (Sprint 65) |
-| Incremental merge | ❌ | **✅** (add-to-model, remove-from-model, manifest) | ❌ (Sprint 64) |
+| Incremental merge | ❌ | **✅** (add-to-model, remove-from-model, manifest) | **✅** (MergeManifest + TMDL parser + add/remove) ✅ |
 | Custom SQL merge | ❌ | **✅** (normalized fingerprinting) | ❌ (Sprint 65) |
 | RLS consolidation | Naive union | **✅** (predicate merge + propagation validation) | **✅** ✅ |
 | Deploy atomicity | ❌ | **✅** (rollback + conflict detection + version tracking) | **✅** ✅ |

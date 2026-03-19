@@ -166,7 +166,7 @@ class PowerBIImporter:
                             culture=None, model_mode='import',
                             languages=None, force_merge=False,
                             merge_config_path=None, save_config=False,
-                            strict_merge=False):
+                            strict_merge=False, workbook_paths=None):
         """Generate a shared semantic model + thin reports.
 
         Args:
@@ -193,6 +193,7 @@ class PowerBIImporter:
             consolidate_rls_roles, merge_rls_roles,
             build_cross_report_navigation,
             generate_merge_validation_report,
+            build_merge_manifest,
         )
         from powerbi_import.merge_assessment import generate_merge_report, print_merge_summary
         from powerbi_import.thin_report_generator import ThinReportGenerator
@@ -357,6 +358,20 @@ class PowerBIImporter:
             workbook_names, all_converted_objects, merged, model_name,
         )
 
+        # 7. Write merge manifest for incremental add/remove
+        manifest = build_merge_manifest(
+            model_name=model_name,
+            all_extracted=all_converted_objects,
+            workbook_names=workbook_names,
+            workbook_paths=workbook_paths,
+            merged=merged,
+            assessment=assessment,
+            validation_score=validation.get('score', 0) if validation else 0,
+            merge_config=None,
+        )
+        manifest_path = manifest.save(project_dir)
+        print(f"  [OK] Merge manifest: {manifest_path}")
+
         print(f"\n  Shared Semantic Model migration complete!")
         print(f"  Output: {project_dir}")
 
@@ -370,6 +385,7 @@ class PowerBIImporter:
             'rls_consolidations': rls_consolidations,
             'lineage': lineage,
             'navigation': nav_configs,
+            'manifest': manifest,
         }
 
     def _create_model_explorer_report(self, project_dir, model_name):

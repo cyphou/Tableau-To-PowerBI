@@ -2,6 +2,16 @@
 
 ## v18.0.0 — Advanced Merge Intelligence & Enterprise Merge Workflows
 
+### Sprint 64 — Incremental Merge & Add-to-Model Workflow ✅
+- **MergeManifest** (`shared_model.py`): `MergeManifest` dataclass with `save()`/`load()`/`from_dict()`/`to_dict()` — tracks workbook sources (name, path, SHA-256 hash), per-table fingerprints, artifact counts (tables, measures, relationships, RLS roles, parameters), validation score, merge score, timestamp; `build_merge_manifest()` populates from merge results with exclusive table detection
+- **TMDL reverse-engineering** (`shared_model.py`): `load_existing_model(model_dir)` — parses `.tmdl` files into `converted_objects`-compatible dict; handles `table`, `column` (physical + calculated), `measure` (single + multi-line), `hierarchy` (with levels), `partition`, `relationship`, `role` (with tablePermissions); `_find_definition_dir()` resolves from project dir, SemanticModel dir, or definition dir
+- **`--add-to-model`** (`migrate.py`, `shared_model.py`): `add_to_model(model_dir, new_extracted, wb_name)` — loads existing model via manifest + TMDL, performs incremental merge, updates manifest with new workbook entry, regenerates TMDL + thin report; duplicate detection with `force=True` override; `_run_add_to_model()` CLI handler with extraction + merge + generation pipeline
+- **`--remove-from-model`** (`migrate.py`, `shared_model.py`): `remove_from_model(model_dir, wb_name)` — identifies exclusive tables (not shared with other workbooks), removes them from model, cleans up relationships involving removed tables, removes measures owned by workbook; shared tables preserved; `_run_remove_from_model()` CLI handler with TMDL regeneration + thin report cleanup
+- **Manifest diff** (`merge_assessment.py`): `diff_manifests(old, new)` — compares two manifests returning added/removed tables, measures, workbooks, relationship count changes, config changes; accepts both dict and `MergeManifest` objects
+- **Manifest auto-save** (`import_to_powerbi.py`): `import_shared_model()` now writes `merge_manifest.json` after merge completion; `workbook_paths` parameter threaded through pipeline for file hash tracking
+- **46 new tests** in `test_incremental_merge.py` across 10 test classes: MergeManifest (6), build_merge_manifest (2), TMDL parsing (10), load_existing_model (7), add_to_model (4), remove_from_model (4), diff_manifests (5), find_definition_dir (4), idempotent re-add (1), file_hash (2), manifest save (1), TMDL duplicate column fix (5 in test_tmdl_generator.py from prior commit)
+- **Overall: 4,813 tests**, 0 failures
+
 ### Sprint 63 — Deploy Hardening & Fabric Reliability ✅
 - **Workspace permission pre-flight** (`bundle_deployer.py`): `check_workspace_permissions()` — verifies workspace exists and principal has Contributor+ role before deployment; blocks on Viewer-only or network errors
 - **Name conflict detection** (`bundle_deployer.py`): `detect_conflicts(model_name, report_names)` — queries workspace items for collisions; `overwrite=True` parameter to proceed despite conflicts

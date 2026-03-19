@@ -318,3 +318,67 @@ def generate_merge_html_report(
         f.write(html)
     logger.info("Merge HTML report saved to %s", output_path)
     return output_path
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  Manifest diff — compare two merge manifests
+# ═══════════════════════════════════════════════════════════════════
+
+def diff_manifests(old: dict, new: dict) -> dict:
+    """Compare two merge manifests and return a structured diff.
+
+    Both *old* and *new* can be either ``MergeManifest.to_dict()`` dicts
+    or ``MergeManifest`` instances (with a ``.to_dict()`` method).
+
+    Returns:
+        Dict with keys: ``added_tables``, ``removed_tables``,
+        ``added_measures``, ``removed_measures``,
+        ``added_workbooks``, ``removed_workbooks``,
+        ``changed_relationships``, ``config_changes``.
+    """
+    if hasattr(old, 'to_dict'):
+        old = old.to_dict()
+    if hasattr(new, 'to_dict'):
+        new = new.to_dict()
+
+    old_tables = set(old.get('table_fingerprints', {}).keys())
+    new_tables = set(new.get('table_fingerprints', {}).keys())
+
+    old_wb_names = {wb.get('name', '') for wb in old.get('workbooks', [])}
+    new_wb_names = {wb.get('name', '') for wb in new.get('workbooks', [])}
+
+    # Collect all measures across workbooks
+    old_measures = set()
+    for wb in old.get('workbooks', []):
+        old_measures.update(wb.get('measures', []))
+    new_measures = set()
+    for wb in new.get('workbooks', []):
+        new_measures.update(wb.get('measures', []))
+
+    # Relationship count change
+    old_rels = old.get('artifact_counts', {}).get('relationships', 0)
+    new_rels = new.get('artifact_counts', {}).get('relationships', 0)
+
+    # Config changes
+    old_config = old.get('merge_config_snapshot', {})
+    new_config = new.get('merge_config_snapshot', {})
+    config_changes = {}
+    all_keys = set(list(old_config.keys()) + list(new_config.keys()))
+    for key in all_keys:
+        ov = old_config.get(key)
+        nv = new_config.get(key)
+        if ov != nv:
+            config_changes[key] = {'old': ov, 'new': nv}
+
+    return {
+        'added_tables': sorted(new_tables - old_tables),
+        'removed_tables': sorted(old_tables - new_tables),
+        'added_measures': sorted(new_measures - old_measures),
+        'removed_measures': sorted(old_measures - new_measures),
+        'added_workbooks': sorted(new_wb_names - old_wb_names),
+        'removed_workbooks': sorted(old_wb_names - new_wb_names),
+        'relationship_count_change': new_rels - old_rels,
+        'config_changes': config_changes,
+        'old_score': old.get('merge_score', 0),
+        'new_score': new.get('merge_score', 0),
+    }

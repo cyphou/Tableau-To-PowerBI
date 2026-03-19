@@ -1624,6 +1624,29 @@ def _add_shared_model_args(parser):
     )
 
     parser.add_argument(
+        '--add-to-model',
+        nargs=2,
+        metavar=('DIR', 'WORKBOOK'),
+        default=None,
+        help=(
+            'Add a new workbook to an existing shared model. '
+            'DIR is the shared model output directory, WORKBOOK is the .twb/.twbx to add.'
+        )
+    )
+
+    parser.add_argument(
+        '--remove-from-model',
+        nargs=2,
+        metavar=('DIR', 'WB_NAME'),
+        default=None,
+        help=(
+            'Remove a workbook from an existing shared model. '
+            'DIR is the shared model output directory, WB_NAME is the workbook name to remove. '
+            'Shared tables (used by other workbooks) are kept.'
+        )
+    )
+
+    parser.add_argument(
         '--bulk-assess',
         metavar='DIR',
         default=None,
@@ -2156,6 +2179,7 @@ def run_shared_model_migration(workbook_paths, model_name=None, output_dir=None,
                 merge_config_path=merge_config_path,
                 save_config=save_config,
                 strict_merge=strict_merge,
+                workbook_paths=workbook_paths,
             )
 
             if result.get('model_path'):
@@ -2186,6 +2210,185 @@ def _empty_converted_objects():
         'bins': [], 'hierarchies': [], 'sort_orders': [],
         'aliases': {}, 'custom_sql': [], 'user_filters': [],
     }
+
+
+def _run_add_to_model(args):
+    """Handle --add-to-model DIR WORKBOOK."""
+    import tempfile
+    import shutil
+
+    model_dir, workbook_path = args.add_to_model
+    if not os.path.isdir(model_dir):
+        print(f"Error: Model directory not found: {model_dir}")
+        return ExitCode.GENERAL_ERROR
+    if not os.path.exists(workbook_path):
+        print(f"Error: Workbook not found: {workbook_path}")
+        return ExitCode.GENERAL_ERROR
+
+    basename = os.path.splitext(os.path.basename(workbook_path))[0]
+    print_header("ADD WORKBOOK TO SHARED MODEL")
+    print(f"  Model dir:  {model_dir}")
+    print(f"  Workbook:   {basename}")
+    print()
+
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'tableau_export'))
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'powerbi_import'))
+
+    temp_dir = None
+    try:
+        from extract_tableau_data import TableauExtractor
+        from powerbi_import.shared_model import add_to_model
+        from import_to_powerbi import PowerBIImporter
+
+        # Extract new workbook
+        temp_dir = tempfile.mkdtemp(prefix=f'tableau_{basename}_')
+        extractor = TableauExtractor(workbook_path, output_dir=temp_dir)
+        success = extractor.extract_all()
+        if not success:
+            print(f"Error: Extraction failed for {basename}")
+            return ExitCode.EXTRACTION_FAILED
+
+        importer = PowerBIImporter(source_dir=temp_dir)
+        new_extracted = importer._load_converted_objects()
+
+        # Run incremental add
+        result = add_to_model(
+            model_dir=model_dir,
+            new_extracted=new_extracted,
+            new_workbook_name=basename,
+            new_workbook_path=workbook_path,
+            force=getattr(args, 'force_merge', False),
+        )
+
+        status = result.get('status', 'unknown')
+        if status == 'rejected':
+            print(f"  Add rejected: {result.get('reason', '')}")
+            return ExitCode.GENERAL_ERROR
+
+        if status == 'added':
+            manifest = result['manifest']
+            manifest.save(model_dir)
+
+            # Regenerate TMDL from merged model
+            merged = result['merged']
+            importer2 = PowerBIImporter()
+            project_dir = model_dir
+            sm_dir = None
+            for entry in os.listdir(model_dir):
+                if entry.endswith('.SemanticModel'):
+                    sm_dir = os.path.join(model_dir, entry)
+                    break
+
+            if sm_dir:
+                importer2.create_semantic_model_structure(
+                    project_dir, manifest.model_name, merged
+                )
+
+            # Generate thin report for new workbook
+            from powerbi_import.thin_report_generator import ThinReportGenerator
+            from powerbi_import.shared_model import build_field_mapping, assess_merge
+
+            assessment = result['assessment']
+            field_mapping = build_field_mapping(assessment, basename)
+            thin_gen = ThinReportGenerator(manifest.model_name, model_dir)
+            thin_gen.generate_thin_report(basename, new_extracted, field_mapping=field_mapping)
+
+            val = result.get('validation', {})
+            score = val.get('score', 0) if val else 0
+            print(f"  [OK] Workbook '{basename}' added to model")
+            print(f"  Tables: {manifest.artifact_counts.get('tables', 0)}")
+            print(f"  Validation: {score}/100")
+            return ExitCode.SUCCESS
+
+        print(f"  Unexpected status: {status}")
+        return ExitCode.GENERAL_ERROR
+
+    except Exception as e:
+        logger.error("Add-to-model failed: %s", e, exc_info=True)
+        print(f"\nError: {e}")
+        return ExitCode.GENERAL_ERROR
+    finally:
+        if temp_dir:
+            try:
+                shutil.rmtree(temp_dir, ignore_errors=True)
+            except OSError:
+                pass
+
+
+def _run_remove_from_model(args):
+    """Handle --remove-from-model DIR WB_NAME."""
+    model_dir, wb_name = args.remove_from_model
+    if not os.path.isdir(model_dir):
+        print(f"Error: Model directory not found: {model_dir}")
+        return ExitCode.GENERAL_ERROR
+
+    print_header("REMOVE WORKBOOK FROM SHARED MODEL")
+    print(f"  Model dir:  {model_dir}")
+    print(f"  Workbook:   {wb_name}")
+    print()
+
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'powerbi_import'))
+
+    try:
+        from powerbi_import.shared_model import remove_from_model
+
+        result = remove_from_model(model_dir=model_dir, workbook_name=wb_name)
+
+        status = result.get('status', 'unknown')
+        if status == 'not_found':
+            print(f"  Workbook '{wb_name}' not found in manifest.")
+            return ExitCode.GENERAL_ERROR
+
+        if status == 'removed':
+            manifest = result['manifest']
+            manifest.save(model_dir)
+
+            removed_t = result.get('removed_tables', [])
+            removed_m = result.get('removed_measures', [])
+            kept = result.get('shared_tables_kept', [])
+
+            print(f"  [OK] Workbook '{wb_name}' removed from model")
+            if removed_t:
+                print(f"  Removed tables: {', '.join(removed_t)}")
+            if removed_m:
+                print(f"  Removed measures: {', '.join(removed_m)}")
+            if kept:
+                print(f"  Shared tables kept: {', '.join(kept)}")
+            print(f"  Remaining workbooks: {len(manifest.workbooks)}")
+
+            # Regenerate TMDL from updated model
+            merged = result.get('merged')
+            if merged:
+                from import_to_powerbi import PowerBIImporter
+                importer = PowerBIImporter()
+                sm_dir = None
+                for entry in os.listdir(model_dir):
+                    if entry.endswith('.SemanticModel'):
+                        sm_dir = os.path.join(model_dir, entry)
+                        break
+                if sm_dir:
+                    importer.create_semantic_model_structure(
+                        model_dir, manifest.model_name, merged
+                    )
+
+            # Remove the thin report directory
+            for entry in os.listdir(model_dir):
+                if entry.startswith(wb_name) and entry.endswith('.Report'):
+                    report_dir = os.path.join(model_dir, entry)
+                    if os.path.isdir(report_dir):
+                        import shutil
+                        shutil.rmtree(report_dir, ignore_errors=True)
+                        print(f"  Removed thin report: {entry}")
+
+            return ExitCode.SUCCESS
+
+        print(f"  Unexpected status: {status}")
+        return ExitCode.GENERAL_ERROR
+
+    except Exception as e:
+        logger.error("Remove-from-model failed: %s", e, exc_info=True)
+        print(f"\nError: {e}")
+        return ExitCode.GENERAL_ERROR
 
 
 # ── Assessment mode ──────────────────────────────────────────────────────────
@@ -2284,6 +2487,14 @@ def main():
     # ── Global Assessment mode ─────────────────────────────────
     if getattr(args, 'global_assess', None) is not None:
         return run_global_assessment_mode(args)
+
+    # ── Add-to-model mode ───────────────────────────────────
+    if getattr(args, 'add_to_model', None):
+        return _run_add_to_model(args)
+
+    # ── Remove-from-model mode ────────────────────────────────
+    if getattr(args, 'remove_from_model', None):
+        return _run_remove_from_model(args)
 
     # ── Shared Semantic Model mode ────────────────────────────
     if getattr(args, 'shared_model', None) is not None:

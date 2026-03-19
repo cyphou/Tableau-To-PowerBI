@@ -1,8 +1,8 @@
 # Comprehensive Gap Analysis — Tableau to Power BI Migration Tool
 
-**Date:** 2026-03-19 — updated through v18.0.0 (Sprints 54-55)  
+**Date:** 2026-03-19 — updated through v18.0.0 (Sprints 54-64)  
 **Scope:** Every source file, test file, CI/CD, docs, config, and cross-project comparison with TableauToFabric  
-**Status:** 4,762 tests passing across 100 test files
+**Status:** 4,813 tests passing across 101 test files
 
 ### Implementation Coverage
 
@@ -10,7 +10,7 @@
  EXTRACTION          GENERATION         INFRA / CI         DOCUMENTATION
 +----------------+  +----------------+  +----------------+  +----------------+
 | 20 object types|  | PBIR v4.0      |  | 5-stage CI/CD  |  | 14 doc files   |
-| .twb/.twbx/.tfl|  | TMDL semantic  |  | 4,762 tests    |  | DAX reference  |
+| .twb/.twbx/.tfl|  | TMDL semantic  |  | 4,813 tests    |  | DAX reference  |
 | 195+ DAX conv  |  | 118 visuals    |  | Artifact valid |  | M query ref    |
 | 37 connectors  |  | Drill-through  |  | Fabric deploy  |  | Prep ref       |
 | 47+ transforms |  | Slicer modes   |  | Env configs    |  | Architecture   |
@@ -143,7 +143,7 @@
 - **Deployment not end-to-end tested**: Integration test structure added in v5.0 (`test_fabric_integration.py`) — opt-in with `@pytest.mark.integration`
 - **Stale file cleanup race conditions**: OneDrive lock leftovers handled via try/except but may still leave artifacts on Windows
 - **`import_to_powerbi.py` loads JSON from hardcoded paths**: ✅ IMPLEMENTED — `source_dir` parameter allows configurable JSON source directory
-- **No shared semantic model**: ✅ IMPLEMENTED — `--shared-model` CLI flag merges multiple workbooks into one shared SemanticModel + N thin Reports; fingerprint-based table matching, Jaccard column overlap scoring, measure conflict resolution, merge assessment with 0–100 scoring, `--global-assess` cross-workbook analysis with HTML heatmap, `--deploy-bundle` Fabric bundle deployment; **v18 Sprint 54**: artifact-level merge (calc groups, field params, perspectives, cultures, goals, hierarchies); **v18 Sprint 55**: post-merge safety validation (cycle detection, column type compatibility matrix, DAX reference validation, RELATED/LOOKUPVALUE cardinality audit, `--strict-merge` flag)
+- **No shared semantic model**: ✅ IMPLEMENTED — `--shared-model` CLI flag merges multiple workbooks into one shared SemanticModel + N thin Reports; fingerprint-based table matching, Jaccard column overlap scoring, measure conflict resolution, merge assessment with 0–100 scoring, `--global-assess` cross-workbook analysis with HTML heatmap, `--deploy-bundle` Fabric bundle deployment; **v18 Sprint 54**: artifact-level merge (calc groups, field params, perspectives, cultures, goals, hierarchies); **v18 Sprint 55**: post-merge safety validation (cycle detection, column type compatibility matrix, DAX reference validation, RELATED/LOOKUPVALUE cardinality audit, `--strict-merge` flag); **v18 Sprint 64**: incremental merge (`--add-to-model DIR WB.twbx`, `--remove-from-model DIR WB_NAME`), `MergeManifest` provenance tracking, TMDL reverse-engineering parser, `diff_manifests()` for CI audit trail
 - **No composite model support**: ✅ IMPLEMENTED — `--mode composite` enables DirectQuery + Import hybrid
 - **No Small Multiples**: ✅ IMPLEMENTED — `_build_small_multiples_config()` auto-detects suitable fields
 ### What is APPROXIMATED

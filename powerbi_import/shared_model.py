@@ -27,9 +27,12 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import json
 import logging
+import os
 import re
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
@@ -138,6 +141,189 @@ class MergeAssessment:
             "linked_unique_tables": self.linked_unique_tables,
             "isolated_tables": self.isolated_tables,
         }
+
+
+@dataclass
+class MergeManifest:
+    """Tracks merge provenance for incremental add/remove workflows.
+
+    Written to ``merge_manifest.json`` after a merge completes, enabling
+    subsequent ``--add-to-model`` and ``--remove-from-model`` operations
+    without re-extracting all original workbooks.
+    """
+    model_name: str
+    workbooks: List[dict] = field(default_factory=list)
+    # workbook entry: {"name", "path", "hash", "tables", "measures", "exclusive_tables"}
+    table_fingerprints: Dict[str, str] = field(default_factory=dict)
+    # {table_name: fingerprint_hex}
+    artifact_counts: dict = field(default_factory=dict)
+    # {"tables", "measures", "relationships", "rls_roles", "parameters"}
+    merge_config_snapshot: dict = field(default_factory=dict)
+    validation_score: int = 0
+    merge_score: int = 0
+    timestamp: str = ""
+
+    def to_dict(self) -> dict:
+        return {
+            "schema_version": "1.0",
+            "model_name": self.model_name,
+            "workbooks": self.workbooks,
+            "table_fingerprints": self.table_fingerprints,
+            "artifact_counts": self.artifact_counts,
+            "merge_config_snapshot": self.merge_config_snapshot,
+            "validation_score": self.validation_score,
+            "merge_score": self.merge_score,
+            "timestamp": self.timestamp,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> 'MergeManifest':
+        return cls(
+            model_name=data.get("model_name", ""),
+            workbooks=data.get("workbooks", []),
+            table_fingerprints=data.get("table_fingerprints", {}),
+            artifact_counts=data.get("artifact_counts", {}),
+            merge_config_snapshot=data.get("merge_config_snapshot", {}),
+            validation_score=data.get("validation_score", 0),
+            merge_score=data.get("merge_score", 0),
+            timestamp=data.get("timestamp", ""),
+        )
+
+    def save(self, output_dir: str) -> str:
+        """Write merge_manifest.json to *output_dir*. Returns file path."""
+        os.makedirs(output_dir, exist_ok=True)
+        path = os.path.join(output_dir, "merge_manifest.json")
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(self.to_dict(), f, indent=2, ensure_ascii=False)
+        return path
+
+    @classmethod
+    def load(cls, path: str) -> 'MergeManifest':
+        """Load manifest from a JSON file or directory containing one."""
+        if os.path.isdir(path):
+            path = os.path.join(path, "merge_manifest.json")
+        with open(path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return cls.from_dict(data)
+
+    def find_workbook(self, name: str) -> Optional[dict]:
+        """Find a workbook entry by name (case-insensitive)."""
+        lower = name.lower()
+        for wb in self.workbooks:
+            if wb.get("name", "").lower() == lower:
+                return wb
+        return None
+
+    def exclusive_tables(self, workbook_name: str) -> List[str]:
+        """Tables contributed solely by *workbook_name*."""
+        wb = self.find_workbook(workbook_name)
+        if not wb:
+            return []
+        return list(wb.get("exclusive_tables", []))
+
+
+def build_merge_manifest(model_name: str,
+                         all_extracted: List[dict],
+                         workbook_names: List[str],
+                         workbook_paths: Optional[List[str]],
+                         merged: dict,
+                         assessment: 'MergeAssessment',
+                         validation_score: int = 0,
+                         merge_config: Optional[dict] = None) -> MergeManifest:
+    """Build a :class:`MergeManifest` from merge results.
+
+    Args:
+        model_name: Name of the shared semantic model.
+        all_extracted: Per-workbook converted_objects list.
+        workbook_names: Parallel list of workbook names.
+        workbook_paths: Parallel list of workbook file paths (may be ``None``).
+        merged: The merged ``converted_objects`` dict.
+        assessment: The :class:`MergeAssessment`.
+        validation_score: 0–100 from post-merge validation.
+        merge_config: Optional merge config dict snapshot.
+
+    Returns:
+        A populated :class:`MergeManifest`.
+    """
+    # Collect per-workbook info
+    wb_entries = []
+    # Build set of shared table names (appear in >1 workbook)
+    all_wb_tables: Dict[str, List[str]] = {}  # table_name -> [wb_names]
+    for wb_name, extracted in zip(workbook_names, all_extracted):
+        fps = build_table_fingerprints(extracted.get('datasources', []))
+        for tname in fps:
+            all_wb_tables.setdefault(tname, []).append(wb_name)
+
+    shared_table_names = {t for t, wbs in all_wb_tables.items() if len(wbs) > 1}
+
+    for idx, (wb_name, extracted) in enumerate(zip(workbook_names, all_extracted)):
+        fps = build_table_fingerprints(extracted.get('datasources', []))
+        wb_tables = list(fps.keys())
+        exclusive = [t for t in wb_tables if t not in shared_table_names]
+
+        # Count measures from this workbook's calculations
+        wb_measures = [
+            c for c in extracted.get('calculations', [])
+            if c.get('_classification') == 'measure' or c.get('role') == 'measure'
+        ]
+
+        wb_path = ""
+        if workbook_paths and idx < len(workbook_paths):
+            wb_path = workbook_paths[idx]
+        file_hash = _file_hash(wb_path) if wb_path and os.path.isfile(wb_path) else ""
+
+        wb_entries.append({
+            "name": wb_name,
+            "path": wb_path,
+            "hash": file_hash,
+            "tables": wb_tables,
+            "measures": [c.get('caption', c.get('name', '')) for c in wb_measures],
+            "exclusive_tables": exclusive,
+        })
+
+    # Build table fingerprint map from merged datasources
+    fp_map = {}
+    for ds in merged.get('datasources', []):
+        fps = build_table_fingerprints([ds])
+        for tname, (fp, _, _) in fps.items():
+            fp_map[tname] = fp.fingerprint()
+
+    # Count artifacts in merged model
+    merged_ds = merged.get('datasources', [{}])[0] if merged.get('datasources') else {}
+    counts = {
+        "tables": len(merged_ds.get('tables', [])),
+        "measures": len([c for c in merged.get('calculations', [])
+                        if c.get('_classification') == 'measure' or c.get('role') == 'measure']),
+        "relationships": len(merged_ds.get('relationships', [])),
+        "rls_roles": len(merged.get('user_filters', [])),
+        "parameters": len(merged.get('parameters', [])),
+    }
+
+    return MergeManifest(
+        model_name=model_name,
+        workbooks=wb_entries,
+        table_fingerprints=fp_map,
+        artifact_counts=counts,
+        merge_config_snapshot=merge_config or {},
+        validation_score=validation_score,
+        merge_score=assessment.merge_score,
+        timestamp=datetime.now(timezone.utc).isoformat(),
+    )
+
+
+def _file_hash(path: str) -> str:
+    """SHA-256 hash of a file (first 16 hex chars)."""
+    h = hashlib.sha256()
+    try:
+        with open(path, 'rb') as f:
+            while True:
+                chunk = f.read(65536)
+                if not chunk:
+                    break
+                h.update(chunk)
+        return h.hexdigest()[:16]
+    except OSError:
+        return ""
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -2535,3 +2721,779 @@ def build_cross_report_navigation(workbook_names: List[str],
             "navigation_buttons": buttons,
         })
     return nav_configs
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  TMDL reverse-engineering — load existing model from .tmdl files
+# ═══════════════════════════════════════════════════════════════════
+
+_UNQUOTE_RE = re.compile(r"^'((?:''|[^'])*)'$")
+
+
+def _unquote_name(name: str) -> str:
+    """Strip TMDL single-quote escaping: 'My Table' → My Table."""
+    name = name.strip()
+    m = _UNQUOTE_RE.match(name)
+    if m:
+        return m.group(1).replace("''", "'")
+    return name
+
+
+def _parse_tmdl_table(text: str) -> dict:
+    """Parse a single ``table`` TMDL block into a dict.
+
+    Returns a table dict compatible with the merged ``converted_objects``
+    format used by ``tmdl_generator.generate_tmdl()``.
+    """
+    table = {"name": "", "columns": [], "measures": [], "partitions": [],
+             "hierarchies": [], "annotations": []}
+
+    lines = text.splitlines()
+    if not lines:
+        return table
+
+    # First line: table 'Name' or table Name
+    header = lines[0].strip()
+    if header.startswith("table "):
+        table["name"] = _unquote_name(header[6:].strip())
+
+    i = 1
+    while i < len(lines):
+        line = lines[i]
+        stripped = line.strip()
+
+        # ── measure ──
+        if stripped.startswith("measure "):
+            measure, i = _parse_tmdl_measure(lines, i)
+            table["measures"].append(measure)
+            continue
+
+        # ── column ──
+        if stripped.startswith("column "):
+            column, i = _parse_tmdl_column(lines, i)
+            table["columns"].append(column)
+            continue
+
+        # ── hierarchy ──
+        if stripped.startswith("hierarchy "):
+            hierarchy, i = _parse_tmdl_hierarchy(lines, i)
+            table["hierarchies"].append(hierarchy)
+            continue
+
+        # ── partition ──
+        if stripped.startswith("partition "):
+            partition, i = _parse_tmdl_partition(lines, i)
+            table["partitions"].append(partition)
+            continue
+
+        # ── annotation ──
+        if stripped.startswith("annotation "):
+            table["annotations"].append(stripped)
+
+        i += 1
+
+    return table
+
+
+def _parse_tmdl_measure(lines: list, start: int) -> tuple:
+    """Parse a measure block starting at *start*. Returns (measure_dict, next_index)."""
+    header = lines[start].strip()
+    # measure 'Name' = expression  OR  measure 'Name' = ```
+    rest = header[len("measure "):].strip()
+
+    # Find name vs expression split
+    eq_pos = rest.find(" = ")
+    if eq_pos >= 0:
+        name = _unquote_name(rest[:eq_pos])
+        expr_start = rest[eq_pos + 3:]
+    else:
+        name = _unquote_name(rest)
+        expr_start = ""
+
+    measure = {"name": name, "expression": "", "formatString": "",
+               "displayFolder": "", "isHidden": False, "description": ""}
+
+    # Handle multi-line expression (```)
+    if expr_start.strip() == "```":
+        expr_lines = []
+        i = start + 1
+        while i < len(lines):
+            sl = lines[i].strip()
+            if sl == "```":
+                i += 1
+                break
+            expr_lines.append(sl)
+            i += 1
+        measure["expression"] = "\n".join(expr_lines)
+    else:
+        measure["expression"] = expr_start
+        i = start + 1
+
+    # Parse properties until next top-level item
+    while i < len(lines):
+        stripped = lines[i].strip()
+        if not stripped or _is_top_level(stripped):
+            break
+        if stripped.startswith("formatString:"):
+            measure["formatString"] = stripped.split(":", 1)[1].strip()
+        elif stripped.startswith("displayFolder:"):
+            measure["displayFolder"] = stripped.split(":", 1)[1].strip()
+        elif stripped.startswith("description:"):
+            measure["description"] = stripped.split(":", 1)[1].strip()
+        elif stripped == "isHidden":
+            measure["isHidden"] = True
+        i += 1
+
+    return measure, i
+
+
+def _parse_tmdl_column(lines: list, start: int) -> tuple:
+    """Parse a column block. Returns (column_dict, next_index)."""
+    header = lines[start].strip()
+    rest = header[len("column "):].strip()
+
+    eq_pos = rest.find(" = ")
+    is_calculated = eq_pos >= 0
+    if is_calculated:
+        name = _unquote_name(rest[:eq_pos])
+        expr_start = rest[eq_pos + 3:]
+    else:
+        name = _unquote_name(rest)
+        expr_start = ""
+
+    column = {"name": name, "dataType": "string", "sourceColumn": name,
+              "isCalculated": is_calculated, "isHidden": False, "isKey": False,
+              "dataCategory": "", "description": "", "displayFolder": "",
+              "sortByColumn": "", "formatString": "", "summarizeBy": "none"}
+
+    if is_calculated:
+        if expr_start.strip() == "```":
+            expr_lines = []
+            i = start + 1
+            while i < len(lines):
+                sl = lines[i].strip()
+                if sl == "```":
+                    i += 1
+                    break
+                expr_lines.append(sl)
+                i += 1
+            column["expression"] = "\n".join(expr_lines)
+        else:
+            column["expression"] = expr_start
+            i = start + 1
+    else:
+        i = start + 1
+
+    while i < len(lines):
+        stripped = lines[i].strip()
+        if not stripped or _is_top_level(stripped):
+            break
+        if stripped.startswith("dataType:"):
+            column["dataType"] = stripped.split(":", 1)[1].strip()
+        elif stripped.startswith("sourceColumn:"):
+            column["sourceColumn"] = _unquote_name(stripped.split(":", 1)[1].strip())
+        elif stripped.startswith("formatString:"):
+            column["formatString"] = stripped.split(":", 1)[1].strip()
+        elif stripped.startswith("summarizeBy:"):
+            column["summarizeBy"] = stripped.split(":", 1)[1].strip()
+        elif stripped.startswith("dataCategory:"):
+            column["dataCategory"] = stripped.split(":", 1)[1].strip()
+        elif stripped.startswith("displayFolder:"):
+            column["displayFolder"] = stripped.split(":", 1)[1].strip()
+        elif stripped.startswith("description:"):
+            column["description"] = stripped.split(":", 1)[1].strip()
+        elif stripped.startswith("sortByColumn:"):
+            column["sortByColumn"] = _unquote_name(stripped.split(":", 1)[1].strip())
+        elif stripped == "isHidden":
+            column["isHidden"] = True
+        elif stripped == "isKey":
+            column["isKey"] = True
+        i += 1
+
+    return column, i
+
+
+def _parse_tmdl_hierarchy(lines: list, start: int) -> tuple:
+    """Parse a hierarchy block. Returns (hierarchy_dict, next_index)."""
+    header = lines[start].strip()
+    name = _unquote_name(header[len("hierarchy "):].strip())
+    hierarchy = {"name": name, "levels": []}
+    i = start + 1
+    while i < len(lines):
+        stripped = lines[i].strip()
+        if not stripped or _is_top_level(stripped):
+            break
+        if stripped.startswith("level "):
+            level_name = _unquote_name(stripped[len("level "):].strip())
+            level = {"name": level_name, "column": level_name}
+            i += 1
+            while i < len(lines):
+                s2 = lines[i].strip()
+                if not s2 or _is_top_level(s2) or s2.startswith("level "):
+                    break
+                if s2.startswith("column:"):
+                    level["column"] = _unquote_name(s2.split(":", 1)[1].strip())
+                i += 1
+            hierarchy["levels"].append(level)
+            continue
+        i += 1
+    return hierarchy, i
+
+
+def _parse_tmdl_partition(lines: list, start: int) -> tuple:
+    """Parse a partition block. Returns (partition_dict, next_index)."""
+    header = lines[start].strip()
+    name = _unquote_name(header[len("partition "):].strip())
+    partition = {"name": name, "source": {"type": "m", "expression": ""}}
+    i = start + 1
+    expr_lines = []
+    in_expression = False
+    while i < len(lines):
+        stripped = lines[i].strip()
+        if not stripped and not in_expression:
+            # Check if next non-blank is still partition content
+            if i + 1 < len(lines) and _is_top_level(lines[i + 1].strip()):
+                break
+            if i + 1 >= len(lines):
+                break
+            i += 1
+            continue
+        if _is_top_level(stripped) and not in_expression:
+            break
+        if stripped.startswith("mode:"):
+            partition.setdefault("mode", stripped.split(":", 1)[1].strip())
+        elif stripped.startswith("source"):
+            in_expression = False
+        elif stripped.startswith("expression"):
+            in_expression = True
+            # Inline expression after =
+            after_eq = stripped.split("=", 1)
+            if len(after_eq) > 1 and after_eq[1].strip():
+                if after_eq[1].strip() == "```":
+                    i += 1
+                    while i < len(lines):
+                        sl = lines[i].strip()
+                        if sl == "```":
+                            i += 1
+                            break
+                        expr_lines.append(lines[i].rstrip())
+                        i += 1
+                    in_expression = False
+                    continue
+                else:
+                    expr_lines.append(after_eq[1].strip())
+        elif in_expression:
+            if stripped == "```":
+                in_expression = False
+            else:
+                expr_lines.append(lines[i].rstrip())
+        i += 1
+    if expr_lines:
+        partition["source"]["expression"] = "\n".join(expr_lines)
+    return partition, i
+
+
+def _is_top_level(stripped: str) -> bool:
+    """Check if a stripped line starts a new top-level TMDL element."""
+    return (stripped.startswith("measure ") or
+            stripped.startswith("column ") or
+            stripped.startswith("hierarchy ") or
+            stripped.startswith("partition ") or
+            stripped.startswith("annotation ") or
+            stripped.startswith("table ") or
+            stripped.startswith("relationship ") or
+            stripped.startswith("role "))
+
+
+def _parse_tmdl_relationships(text: str) -> list:
+    """Parse ``relationships.tmdl`` content into a list of relationship dicts."""
+    relationships = []
+    lines = text.splitlines()
+    i = 0
+    while i < len(lines):
+        stripped = lines[i].strip()
+        if stripped.startswith("relationship "):
+            rel_id = stripped[len("relationship "):].strip()
+            rel = {"name": rel_id, "fromTable": "", "fromColumn": "",
+                   "toTable": "", "toColumn": "",
+                   "fromCardinality": "many", "toCardinality": "one",
+                   "crossFilteringBehavior": "oneDirection", "isActive": True}
+            i += 1
+            while i < len(lines):
+                s = lines[i].strip()
+                if not s:
+                    i += 1
+                    continue
+                if s.startswith("relationship "):
+                    break
+                if s.startswith("fromColumn:"):
+                    parts = s.split(":", 1)[1].strip()
+                    dot = parts.rfind(".")
+                    if dot >= 0:
+                        rel["fromTable"] = _unquote_name(parts[:dot])
+                        rel["fromColumn"] = _unquote_name(parts[dot + 1:])
+                    else:
+                        rel["fromColumn"] = _unquote_name(parts)
+                elif s.startswith("toColumn:"):
+                    parts = s.split(":", 1)[1].strip()
+                    dot = parts.rfind(".")
+                    if dot >= 0:
+                        rel["toTable"] = _unquote_name(parts[:dot])
+                        rel["toColumn"] = _unquote_name(parts[dot + 1:])
+                    else:
+                        rel["toColumn"] = _unquote_name(parts)
+                elif s.startswith("fromCardinality:"):
+                    rel["fromCardinality"] = s.split(":", 1)[1].strip()
+                elif s.startswith("toCardinality:"):
+                    rel["toCardinality"] = s.split(":", 1)[1].strip()
+                elif s.startswith("crossFilteringBehavior:"):
+                    rel["crossFilteringBehavior"] = s.split(":", 1)[1].strip()
+                elif s.startswith("isActive:"):
+                    rel["isActive"] = s.split(":", 1)[1].strip().lower() != "false"
+                i += 1
+            relationships.append(rel)
+            continue
+        i += 1
+    return relationships
+
+
+def _parse_tmdl_roles(text: str) -> list:
+    """Parse ``roles.tmdl`` content into a list of role dicts."""
+    roles = []
+    lines = text.splitlines()
+    i = 0
+    while i < len(lines):
+        stripped = lines[i].strip()
+        if stripped.startswith("role "):
+            role_name = _unquote_name(stripped[len("role "):].strip())
+            role = {"name": role_name, "modelPermission": "read",
+                    "tablePermissions": [], "_migration_note": ""}
+            i += 1
+            while i < len(lines):
+                s = lines[i].strip()
+                if not s:
+                    i += 1
+                    continue
+                if s.startswith("role "):
+                    break
+                if s.startswith("modelPermission:"):
+                    role["modelPermission"] = s.split(":", 1)[1].strip()
+                elif s.startswith("annotation MigrationNote"):
+                    val = s.split("=", 1)[1].strip().strip('"')
+                    role["_migration_note"] = val
+                elif s.startswith("tablePermission "):
+                    tp_name = _unquote_name(s[len("tablePermission "):].strip())
+                    tp = {"name": tp_name, "filterExpression": ""}
+                    i += 1
+                    while i < len(lines):
+                        s2 = lines[i].strip()
+                        if not s2:
+                            i += 1
+                            continue
+                        if (s2.startswith("tablePermission ") or
+                                s2.startswith("role ") or
+                                s2.startswith("annotation ")):
+                            break
+                        if s2.startswith("filterExpression"):
+                            eq = s2.split("=", 1)
+                            if len(eq) > 1:
+                                tp["filterExpression"] = eq[1].strip()
+                        i += 1
+                    role["tablePermissions"].append(tp)
+                    continue
+                i += 1
+            roles.append(role)
+            continue
+        i += 1
+    return roles
+
+
+def load_existing_model(model_dir: str) -> dict:
+    """Reverse-engineer an existing TMDL model directory into a
+    ``converted_objects``-compatible dict.
+
+    Reads ``.tmdl`` files from the SemanticModel definition directory
+    (``tables/``, ``relationships.tmdl``, ``roles.tmdl``) and reconstructs
+    the table/column/measure/relationship/parameter/RLS inventory.
+
+    Args:
+        model_dir: Path to the shared model output dir (contains
+            ``<ModelName>.SemanticModel/definition/``), OR direct path to
+            the ``definition/`` directory, OR path to the ``tables/``
+            directory.
+
+    Returns:
+        A ``converted_objects``-compatible dict with ``datasources``,
+        ``calculations``, ``parameters``, and ``user_filters``.
+    """
+    # Locate the definition directory
+    def_dir = _find_definition_dir(model_dir)
+    if not def_dir:
+        logger.warning("Could not locate TMDL definition directory in %s", model_dir)
+        return _empty_model()
+
+    tables_dir = os.path.join(def_dir, "tables")
+    tables = []
+    if os.path.isdir(tables_dir):
+        for fname in sorted(os.listdir(tables_dir)):
+            if not fname.endswith(".tmdl"):
+                continue
+            fpath = os.path.join(tables_dir, fname)
+            with open(fpath, "r", encoding="utf-8") as f:
+                content = f.read()
+            tbl = _parse_tmdl_table(content)
+            if tbl.get("name"):
+                tables.append(tbl)
+
+    # Relationships
+    relationships = []
+    rels_path = os.path.join(def_dir, "relationships.tmdl")
+    if os.path.isfile(rels_path):
+        with open(rels_path, "r", encoding="utf-8") as f:
+            relationships = _parse_tmdl_relationships(f.read())
+
+    # Roles (RLS)
+    roles = []
+    roles_path = os.path.join(def_dir, "roles.tmdl")
+    if os.path.isfile(roles_path):
+        with open(roles_path, "r", encoding="utf-8") as f:
+            roles = _parse_tmdl_roles(f.read())
+
+    # Reconstruct converted_objects format
+    # Build a single datasource with all tables + relationships
+    ds = {
+        "name": "SharedModel",
+        "caption": "Shared Semantic Model",
+        "connection": {},
+        "tables": [],
+        "columns": [],
+        "relationships": relationships,
+    }
+
+    calculations = []
+    for tbl in tables:
+        # Physical table entry
+        ds_table = {
+            "name": tbl["name"],
+            "type": "table",
+            "columns": [],
+        }
+        for col in tbl.get("columns", []):
+            ds_col = {
+                "name": col["name"],
+                "dataType": col.get("dataType", "string"),
+                "table": tbl["name"],
+            }
+            ds_table["columns"].append(ds_col)
+
+            if col.get("isCalculated") and col.get("expression"):
+                calculations.append({
+                    "name": f"[{col['name']}]",
+                    "caption": col["name"],
+                    "formula": col.get("expression", ""),
+                    "table": tbl["name"],
+                    "_classification": "calculated_column",
+                    "role": "dimension",
+                })
+
+        ds["tables"].append(ds_table)
+
+        # Measures → calculations
+        for meas in tbl.get("measures", []):
+            calculations.append({
+                "name": f"[{meas['name']}]",
+                "caption": meas["name"],
+                "formula": meas.get("expression", ""),
+                "table": tbl["name"],
+                "_classification": "measure",
+                "role": "measure",
+            })
+
+    # User filters from roles
+    user_filters = []
+    for role in roles:
+        for tp in role.get("tablePermissions", []):
+            user_filters.append({
+                "name": role["name"],
+                "table": tp.get("name", ""),
+                "filter_expression": tp.get("filterExpression", ""),
+            })
+
+    return {
+        "datasources": [ds] if ds["tables"] else [],
+        "worksheets": [],
+        "dashboards": [],
+        "calculations": calculations,
+        "parameters": [],
+        "filters": [],
+        "stories": [],
+        "actions": [],
+        "sets": [],
+        "groups": [],
+        "bins": [],
+        "hierarchies": [],
+        "sort_orders": [],
+        "aliases": {},
+        "custom_sql": [],
+        "user_filters": user_filters,
+    }
+
+
+def _find_definition_dir(path: str) -> Optional[str]:
+    """Locate the TMDL ``definition/`` directory from various starting points."""
+    # Direct definition dir
+    if os.path.basename(path) == "definition" and os.path.isdir(path):
+        return path
+
+    # Check for tables/ subdir (we're already in definition/)
+    if os.path.isdir(os.path.join(path, "tables")):
+        return path
+
+    # Look for *.SemanticModel/definition/
+    if os.path.isdir(path):
+        for entry in os.listdir(path):
+            if entry.endswith(".SemanticModel"):
+                def_candidate = os.path.join(path, entry, "definition")
+                if os.path.isdir(def_candidate):
+                    return def_candidate
+
+    # Try path/definition/
+    def_candidate = os.path.join(path, "definition")
+    if os.path.isdir(def_candidate):
+        return def_candidate
+
+    return None
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  Incremental merge — add / remove workbook
+# ═══════════════════════════════════════════════════════════════════
+
+def add_to_model(model_dir: str,
+                 new_extracted: dict,
+                 new_workbook_name: str,
+                 new_workbook_path: Optional[str] = None,
+                 force: bool = False) -> dict:
+    """Add a new workbook to an existing shared model.
+
+    Loads the existing model from *model_dir* (via manifest + TMDL),
+    performs an incremental merge with *new_extracted*, and returns
+    the updated merged ``converted_objects`` plus an updated manifest.
+
+    Args:
+        model_dir: Path to the existing shared model output directory.
+        new_extracted: ``converted_objects`` dict for the new workbook.
+        new_workbook_name: Display name for the new workbook.
+        new_workbook_path: Filesystem path to the new ``.twbx`` file.
+        force: Merge even if score is low.
+
+    Returns:
+        Dict with ``merged``, ``manifest``, ``assessment``, ``validation``.
+    """
+    # Load existing manifest
+    manifest = MergeManifest.load(model_dir)
+
+    # Check for duplicate workbook
+    if manifest.find_workbook(new_workbook_name) and not force:
+        raise ValueError(
+            f"Workbook '{new_workbook_name}' already exists in the model. "
+            f"Use force=True to re-add (will replace)."
+        )
+
+    # Load existing model from TMDL
+    existing = load_existing_model(model_dir)
+
+    # Combine existing + new for merge
+    all_extracted = [existing, new_extracted]
+    workbook_names = ["_existing_model_", new_workbook_name]
+
+    assessment = assess_merge(all_extracted, workbook_names)
+
+    if assessment.recommendation == "separate" and not force:
+        return {
+            "merged": None,
+            "manifest": manifest,
+            "assessment": assessment,
+            "validation": None,
+            "status": "rejected",
+            "reason": f"Low merge score ({assessment.merge_score}). Use force=True.",
+        }
+
+    merged = merge_semantic_models(all_extracted, assessment, manifest.model_name)
+
+    # Validation
+    validation = generate_merge_validation_report(merged)
+
+    # Update manifest
+    # Remove existing entry if re-adding
+    manifest.workbooks = [
+        wb for wb in manifest.workbooks
+        if wb.get("name", "").lower() != new_workbook_name.lower()
+    ]
+
+    # Build new workbook entry
+    new_fps = build_table_fingerprints(new_extracted.get("datasources", []))
+    new_tables = list(new_fps.keys())
+    existing_table_names = set()
+    for wb in manifest.workbooks:
+        existing_table_names.update(wb.get("tables", []))
+    exclusive = [t for t in new_tables if t not in existing_table_names]
+
+    new_measures = [
+        c.get("caption", c.get("name", ""))
+        for c in new_extracted.get("calculations", [])
+        if c.get("_classification") == "measure" or c.get("role") == "measure"
+    ]
+
+    file_hash = _file_hash(new_workbook_path) if new_workbook_path and os.path.isfile(new_workbook_path) else ""
+
+    manifest.workbooks.append({
+        "name": new_workbook_name,
+        "path": new_workbook_path or "",
+        "hash": file_hash,
+        "tables": new_tables,
+        "measures": new_measures,
+        "exclusive_tables": exclusive,
+    })
+
+    # Update fingerprints and counts
+    for ds in merged.get("datasources", []):
+        fps = build_table_fingerprints([ds])
+        for tname, (fp, _, _) in fps.items():
+            manifest.table_fingerprints[tname] = fp.fingerprint()
+
+    merged_ds = merged.get("datasources", [{}])[0] if merged.get("datasources") else {}
+    manifest.artifact_counts = {
+        "tables": len(merged_ds.get("tables", [])),
+        "measures": len([c for c in merged.get("calculations", [])
+                        if c.get("_classification") == "measure" or c.get("role") == "measure"]),
+        "relationships": len(merged_ds.get("relationships", [])),
+        "rls_roles": len(merged.get("user_filters", [])),
+        "parameters": len(merged.get("parameters", [])),
+    }
+    manifest.validation_score = validation.get("score", 0)
+    manifest.merge_score = assessment.merge_score
+    manifest.timestamp = datetime.now(timezone.utc).isoformat()
+
+    return {
+        "merged": merged,
+        "manifest": manifest,
+        "assessment": assessment,
+        "validation": validation,
+        "status": "added",
+    }
+
+
+def remove_from_model(model_dir: str,
+                      workbook_name: str) -> dict:
+    """Remove a workbook's exclusive artifacts from the shared model.
+
+    Tables shared with other workbooks are NOT removed. Only tables,
+    measures, and thin reports exclusively owned by *workbook_name*
+    are cleaned up.
+
+    Args:
+        model_dir: Path to the existing shared model output directory.
+        workbook_name: Name of the workbook to remove.
+
+    Returns:
+        Dict with ``manifest``, ``removed_tables``, ``removed_measures``,
+        ``status``.
+    """
+    manifest = MergeManifest.load(model_dir)
+    wb_entry = manifest.find_workbook(workbook_name)
+
+    if not wb_entry:
+        return {
+            "manifest": manifest,
+            "removed_tables": [],
+            "removed_measures": [],
+            "status": "not_found",
+            "reason": f"Workbook '{workbook_name}' not found in manifest.",
+        }
+
+    # Determine which tables are exclusive to this workbook
+    other_tables = set()
+    for wb in manifest.workbooks:
+        if wb.get("name", "").lower() != workbook_name.lower():
+            other_tables.update(wb.get("tables", []))
+
+    wb_tables = set(wb_entry.get("tables", []))
+    exclusive_tables = wb_tables - other_tables
+    shared_tables = wb_tables & other_tables
+
+    # Load existing model to rebuild without exclusive tables
+    existing = load_existing_model(model_dir)
+
+    # Remove exclusive tables from datasources
+    removed_tables = []
+    for ds in existing.get("datasources", []):
+        original_tables = ds.get("tables", [])
+        ds["tables"] = [
+            t for t in original_tables
+            if t.get("name") not in exclusive_tables
+        ]
+        removed_tables = [
+            t.get("name") for t in original_tables
+            if t.get("name") in exclusive_tables
+        ]
+
+        # Remove relationships involving removed tables
+        ds["relationships"] = [
+            r for r in ds.get("relationships", [])
+            if r.get("fromTable") not in exclusive_tables
+            and r.get("toTable") not in exclusive_tables
+        ]
+
+    # Remove measures from this workbook
+    wb_measures = set(wb_entry.get("measures", []))
+    removed_measures = []
+    remaining_calcs = []
+    for calc in existing.get("calculations", []):
+        caption = calc.get("caption", calc.get("name", ""))
+        if caption in wb_measures and calc.get("table") in exclusive_tables:
+            removed_measures.append(caption)
+        else:
+            remaining_calcs.append(calc)
+    existing["calculations"] = remaining_calcs
+
+    # Update manifest
+    manifest.workbooks = [
+        wb for wb in manifest.workbooks
+        if wb.get("name", "").lower() != workbook_name.lower()
+    ]
+
+    # Remove fingerprints for exclusive tables
+    for tname in exclusive_tables:
+        manifest.table_fingerprints.pop(tname, None)
+
+    # Update artifact counts
+    merged_ds = existing.get("datasources", [{}])[0] if existing.get("datasources") else {}
+    manifest.artifact_counts = {
+        "tables": len(merged_ds.get("tables", [])),
+        "measures": len(remaining_calcs),
+        "relationships": len(merged_ds.get("relationships", [])),
+        "rls_roles": len(existing.get("user_filters", [])),
+        "parameters": len(existing.get("parameters", [])),
+    }
+    manifest.timestamp = datetime.now(timezone.utc).isoformat()
+
+    return {
+        "merged": existing,
+        "manifest": manifest,
+        "removed_tables": removed_tables,
+        "removed_measures": removed_measures,
+        "shared_tables_kept": list(shared_tables),
+        "status": "removed",
+    }
+
+
+def _empty_model() -> dict:
+    """Return an empty converted_objects dict."""
+    return {
+        "datasources": [], "worksheets": [], "dashboards": [],
+        "calculations": [], "parameters": [], "filters": [],
+        "stories": [], "actions": [], "sets": [], "groups": [],
+        "bins": [], "hierarchies": [], "sort_orders": [],
+        "aliases": {}, "custom_sql": [], "user_filters": [],
+    }
