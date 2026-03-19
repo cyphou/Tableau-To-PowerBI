@@ -882,15 +882,11 @@ class PowerBIProjectGenerator:
         custom_theme = tmdl_generator.generate_theme_json(theme_data)
 
         report_json = {
-            "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/3.1.0/schema.json",
+            "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/2.0.0/schema.json",
             "themeCollection": {
                 "baseTheme": {
                     "name": "CY24SU06",
-                    "reportVersionAtImport": {
-                        "visual": "1.8.50",
-                        "report": "2.0.50",
-                        "page": "1.3.50"
-                    },
+                    "reportVersionAtImport": "5.55",
                     "type": "SharedResources"
                 }
             },
@@ -932,12 +928,8 @@ class PowerBIProjectGenerator:
             })
             report_json["themeCollection"]["customTheme"] = {
                 "name": "TableauMigrationTheme",
-                "reportVersionAtImport": {
-                    "visual": "1.8.50",
-                    "report": "2.0.50",
-                    "page": "1.3.50"
-                },
-                "type": "CustomTheme"
+                "reportVersionAtImport": "5.55",
+                "type": "RegisteredResources"
             }
         
         # Promote global filters and datasource-level filters to report level
@@ -1091,13 +1083,11 @@ class PowerBIProjectGenerator:
         custom_theme = tmdl_generator.generate_theme_json(theme_data)
 
         report_json = {
-            "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/3.1.0/schema.json",
+            "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/2.0.0/schema.json",
             "themeCollection": {
                 "baseTheme": {
                     "name": "CY24SU06",
-                    "reportVersionAtImport": {
-                        "visual": "1.8.50", "report": "2.0.50", "page": "1.3.50",
-                    },
+                    "reportVersionAtImport": "5.55",
                     "type": "SharedResources",
                 },
             },
@@ -1127,8 +1117,8 @@ class PowerBIProjectGenerator:
             })
             report_json["themeCollection"]["customTheme"] = {
                 "name": "TableauMigrationTheme",
-                "reportVersionAtImport": {"visual": "1.8.50", "report": "2.0.50", "page": "1.3.50"},
-                "type": "CustomTheme",
+                "reportVersionAtImport": "5.55",
+                "type": "RegisteredResources",
             }
             res_dir = os.path.join(def_dir, 'RegisteredResources')
             _write_json(os.path.join(res_dir, 'TableauMigrationTheme.json'), custom_theme)

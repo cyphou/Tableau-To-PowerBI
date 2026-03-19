@@ -25,9 +25,10 @@ v18.0.0 addresses these across 5 sprints focused on merge depth, provenance, inc
 
 ---
 
-### Sprint 54 — Artifact-Level Merge: Calculation Groups, Field Parameters, Perspectives & Cultures
+### Sprint 54 — Artifact-Level Merge: Calculation Groups, Field Parameters, Perspectives & Cultures ✅
 
 **Goal:** Extend `merge_semantic_models()` to properly merge advanced TMDL artifacts currently handled by naive union or silently dropped.
+**Status:** COMPLETE — 55 tests, 6 new merge functions, all 4,274 tests passing.
 
 | # | Item | File(s) | Est. | Details |
 |---|------|---------|------|---------|
@@ -39,89 +40,191 @@ v18.0.0 addresses these across 5 sprints focused on merge depth, provenance, inc
 | 54.6 | **Hierarchy deduplication enhancement** | `powerbi_import/shared_model.py` | Low | Current `_merge_list_by_name` is shallow. Enhance: same hierarchy name + same levels → deduplicate; same name + different levels → keep longest path; cross-workbook hierarchies on same table → union. |
 | 54.7 | **Tests** | `tests/test_merge_artifacts.py` (new) | Medium | 30+ tests: calc group merge/conflict, field param union, perspective merge, culture merge, goal dedup, hierarchy level comparison |
 
-### Sprint 55 — Incremental Merge & Add-to-Model Workflow
+### Sprint 55 — Post-Merge Safety: Cycle Detection, Column Type Validation & DAX Integrity ✨CRITICAL
 
-**Goal:** Enable adding workbooks to an existing shared model without full re-merge. Support iterative merge workflows for teams migrating over weeks/months.
+**Goal:** Prevent data loss and model corruption by validating merge output before generation. Relationship cycles break PBI model loading; wrong column types silently truncate data; unresolved DAX refs cause runtime errors.
 
-| # | Item | File(s) | Est. | Details |
-|---|------|---------|------|---------|
-| 55.1 | **Merge manifest file** | `powerbi_import/shared_model.py` | Medium | After merge, write `merge_manifest.json` to output dir: list of workbook sources, fingerprint hashes, timestamp, merge config used, artifact counts. Used for incremental add. |
-| 55.2 | **`--add-to-model` CLI flag** | `migrate.py`, `powerbi_import/shared_model.py` | High | `--add-to-model DIR NEW.twbx` — loads existing shared model from DIR (reads merge_manifest.json + TMDL), extracts new workbook, runs incremental merge (new tables/measures/relationships added, conflicts detected), regenerates TMDL + thin report for new workbook only. |
-| 55.3 | **Reverse-engineer existing TMDL** | `powerbi_import/shared_model.py` | High | `_load_existing_model(model_dir)` — parses existing `.tmdl` files to reconstruct table/column/measure/relationship inventory. Needed for incremental add to detect duplicates without re-extracting original workbooks. |
-| 55.4 | **Remove-from-model** | `powerbi_import/shared_model.py` | Medium | `--remove-from-model DIR WB_NAME` — removes all artifacts contributed by a specific workbook (tables only from that source, namespaced measures, thin report). Regenerates TMDL with remaining workbooks. |
-| 55.5 | **Merge manifest diff** | `powerbi_import/merge_assessment.py` | Low | Compare two merge manifests: show what changed (new tables, removed measures, conflict resolution changes). For audit trail and CI integration. |
-| 55.6 | **Tests** | `tests/test_incremental_merge.py` (new) | Medium | 25+ tests: manifest write/read round-trip, add workbook (new tables, conflicts), remove workbook, diff manifests, TMDL reverse-engineering accuracy |
-
-### Sprint 56 — Post-Merge Validation & DAX Integrity Checks
-
-**Goal:** Deep validation of merged model: verify all DAX references resolve, thin report fields exist, RLS propagation is correct, and cross-table relationships are complete.
+**Assessment finding:** All 22 workbooks migrate at ≥95.8% fidelity individually, but merged models have NO safety net — broken refs, circular relationships, or type mismatches go undetected until PBI Desktop.
 
 | # | Item | File(s) | Est. | Details |
 |---|------|---------|------|---------|
-| 56.1 | **DAX reference validator** | `powerbi_import/validator.py` | High | After merge, scan all measures and calc columns for `'Table'[Column]` references. Verify every referenced table and column exists in merged model. Report unresolved references with source workbook and suggestion (closest match). |
-| 56.2 | **RELATED/LOOKUPVALUE audit** | `powerbi_import/validator.py` | Medium | Verify `RELATED()` calls match manyToOne relationships and `LOOKUPVALUE()` matches manyToMany. Flag mismatches (e.g., RELATED used but relationship is manyToMany after merge). |
-| 56.3 | **Thin report field completeness** | `powerbi_import/thin_report_generator.py` | Medium | After generating each thin report, validate every field reference in every visual against the merged model's actual measure/column names. Report unresolvable fields with visual ID, page, and field name. |
-| 56.4 | **RLS propagation validator** | `powerbi_import/validator.py` | Medium | For merged RLS roles, verify the `tablePermission` table exists and has an active relationship path to relevant fact tables. Flag roles on orphan or isolated tables. |
-| 56.5 | **Circular relationship guard** | `powerbi_import/shared_model.py` | Low | After adding cross-workbook relationship suggestions, run DFS cycle detection. If accepting a suggestion would create a cycle, downgrade from "high" to "blocked" confidence with explanation. |
-| 56.6 | **Validation summary report** | `powerbi_import/validator.py` | Low | `generate_merge_validation_report()` → JSON + console summary: unresolved DAX refs, RELATED/LOOKUPVALUE mismatches, thin report gaps, RLS issues, relationship cycles. Integrated into `--shared-model` pipeline. |
-| 56.7 | **Tests** | `tests/test_merge_validation.py` (new) | Medium | 25+ tests: broken DAX refs, RELATED/LOOKUPVALUE mismatch, thin report field gaps, RLS on orphan table, circular suggestion blocking, end-to-end validation report |
+| 55.1 | **Relationship cycle detection** | `powerbi_import/shared_model.py` | High | After `merge_semantic_models()` and after cross-workbook relationship suggestions, run DFS/topological-sort on the relationship graph. If cycles found: (a) for suggestions → downgrade confidence to `"blocked"` with explanation; (b) for existing rels → emit warning in merge report. Uses iterative DFS (no recursion limit). |
+| 55.2 | **Column type compatibility matrix** | `powerbi_import/shared_model.py` | Medium | When merging columns from different workbooks, validate type promotion with explicit compatibility matrix: `int64→double` OK, `bool→int64` OK, `string→int64` WARN, `dateTime→string` ERROR. Add `_column_type_warnings` list to merge result with source workbook + column + original type + promoted type. |
+| 55.3 | **DAX reference validator** | `powerbi_import/validator.py` | High | `validate_merged_dax_references(merged)`: scan all measures and calc columns for `'Table'[Column]` patterns. Verify every referenced table exists in `merged["tables"]` and column exists in that table's columns. Return list of `{measure, ref, table, column, status, suggestion}`. Suggestion = closest Levenshtein match in model. |
+| 55.4 | **RELATED/LOOKUPVALUE cardinality audit** | `powerbi_import/validator.py` | Medium | `validate_dax_relationship_functions(merged)`: for each `RELATED()` call, verify a manyToOne relationship exists on that path; for each `LOOKUPVALUE()`, verify manyToMany. Flag mismatches (e.g., `RELATED` used but relationship is manyToMany after merge changed cardinality). |
+| 55.5 | **Validation summary report** | `powerbi_import/validator.py` | Medium | `generate_merge_validation_report(merged)` → JSON + console output: cycle count, type warnings, unresolved DAX refs, cardinality mismatches. Integrated into `--shared-model` pipeline (runs automatically after merge, before TMDL generation). Return `{"cycles": [...], "type_warnings": [...], "dax_errors": [...], "cardinality_mismatches": [...], "score": int}`. |
+| 55.6 | **`--strict-merge` CLI flag** | `migrate.py` | Low | When `--strict-merge` is set, any validation error (cycles, unresolved DAX, type ERROR) blocks generation and returns exit code 1. Without flag, validation is advisory (warnings printed, generation proceeds). |
+| 55.7 | **Tests** | `tests/test_merge_validation.py` (new) | Medium | 30+ tests: cycle detection (2-node, 3-node, suggestion-induced), type compatibility (all pairs), DAX ref resolution (valid, broken table, broken column, closest match), RELATED/LOOKUPVALUE mismatch, validation report structure, --strict-merge blocking |
 
-### Sprint 57 — Cross-Workbook Lineage & Provenance Tracking
+### Sprint 56 — Thin Report Binding Validation & Cross-Report Integrity
 
-**Goal:** Track which workbook contributed each artifact to the shared model. Enable audit, debugging, and documentation.
+**Goal:** After generating thin reports, validate that all field references resolve against the merged model. Detect broken drill-through targets, unresolvable measure names, and orphan filter references.
 
-| # | Item | File(s) | Est. | Details |
-|---|------|---------|------|---------|
-| 57.1 | **Lineage metadata on all merged artifacts** | `powerbi_import/shared_model.py` | Medium | Add `_source_workbooks: List[str]` and `_merge_action: str` (dedup/namespace/union/first-wins) annotations on every merged table, measure, column, relationship, parameter, RLS role. Stored as TMDL `annotation` entries. |
-| 57.2 | **Lineage report generator** | `powerbi_import/merge_assessment.py` | Medium | `generate_lineage_report(merged, manifest)` → HTML report: table → source workbook(s) matrix, measure → origin workbook + conflict resolution, relationship → source + merge action. Searchable, sortable. |
-| 57.3 | **TMDL annotations for provenance** | `powerbi_import/tmdl_generator.py` | Low | Write lineage annotations to TMDL files: `annotation MigrationSource = 'workbook_name'` and `annotation MergeAction = 'deduplicated|namespaced|unioned'` on tables, measures, columns. |
-| 57.4 | **Interactive lineage HTML** | `powerbi_import/merge_report_html.py` | Medium | Extend merge HTML report with a "Lineage" tab: Sankey-style HTML visualization (CSS-only, no JS framework) showing workbook → table → measure flow. Clickable drill-down. |
-| 57.5 | **`--lineage` CLI flag** | `migrate.py` | Low | `--lineage` flag on `--shared-model` pipeline: enables lineage tracking + generates lineage report alongside merge assessment. |
-| 57.6 | **Tests** | `tests/test_merge_lineage.py` (new) | Medium | 20+ tests: lineage annotation injection, annotation round-trip with TMDL, lineage report HTML structure, multi-workbook provenance tracking, Sankey data model |
-
-### Sprint 58 — Multi-Tenant Deployment & Live Connection Mode
-
-**Goal:** Enterprise deployment patterns — deploy shared model to multiple Fabric workspaces, support live connection wiring for Fabric-native scenarios, and finalize v18.0.0.
+**Assessment finding:** 3 merge clusters detected in real-world workbooks. Cluster #3 (global_superstores_db + shapes_test + superstore_sales_dashboard) merges 6→4 tables — thin reports must reference the correct namespaced artifacts.
 
 | # | Item | File(s) | Est. | Details |
 |---|------|---------|------|---------|
-| 58.1 | **Multi-tenant manifest** | `powerbi_import/deploy/multi_tenant.py` (new) | Medium | `MultiTenantConfig` class: YAML/JSON config listing N Fabric workspaces, each with workspace_id, connection_string_overrides, rls_role_mappings, display_name_prefix. `load_multi_tenant_config()` + `validate_config()`. |
-| 58.2 | **Multi-tenant deployer** | `powerbi_import/deploy/multi_tenant.py` | High | `deploy_multi_tenant(model_dir, config)`: iterates workspaces, clones shared model, patches connection strings in M partitions, adjusts RLS role assignments, deploys via `BundleDeployer`, collects per-tenant results. |
-| 58.3 | **`--multi-tenant` CLI flag** | `migrate.py` | Low | `--multi-tenant CONFIG_FILE` flag: loads tenant config, runs multi-tenant deploy after `--shared-model` pipeline. Requires `--deploy-bundle`. |
-| 58.4 | **Live connection (byConnection) mode** | `powerbi_import/thin_report_generator.py` | Medium | `--live-connection WORKSPACE_ID/MODEL_NAME` flag: thin reports wired via `byConnection` reference (Fabric workspace semantic model) instead of `byPath` (local directory). Writes `definition.pbir` with `datasetReference` block. |
-| 58.5 | **Documentation & release** | `docs/`, `CHANGELOG.md`, `README.md` | Low | Full v18.0.0 docs: CHANGELOG, GAP_ANALYSIS, KNOWN_LIMITATIONS, copilot-instructions, DEPLOYMENT_GUIDE updates. Version bump 17.0.0 → 18.0.0. |
-| 58.6 | **Tests** | `tests/test_multi_tenant.py` (new), `tests/test_live_connection.py` (new) | Medium | 25+ tests: config validation, connection string patching, per-tenant deployment simulation, byConnection PBIR generation, multi-workspace error isolation |
+| 56.1 | **Visual field reference validator** | `powerbi_import/thin_report_generator.py` | High | `_validate_field_references(report_visuals, merged_model)`: after generating each thin report, iterate every visual's query state / data role bindings. Check each `measure`, `column`, and `table` reference exists in the merged model. Return `[{visual_id, page, field, status, suggestion}]`. |
+| 56.2 | **Drill-through target existence check** | `powerbi_import/thin_report_generator.py` | Medium | For drill-through pages, verify that target page names referenced by action buttons exist within the same thin report or another thin report in the bundle. Flag orphan targets with source visual + target page name. |
+| 56.3 | **Parameter accessibility validation** | `powerbi_import/thin_report_generator.py` | Low | Check that parameters referenced in thin report slicers/filters exist as tables in the merged model. Parameters deduplicated during merge may have changed names → validate new names. |
+| 56.4 | **Filter reference validation** | `powerbi_import/thin_report_generator.py` | Medium | For report-level and page-level filters, verify filter target table/column exists in merged model. Flag orphan filters that reference pre-merge table/column names. |
+| 56.5 | **Cross-report navigation validation** | `powerbi_import/thin_report_generator.py` | Low | For action buttons with "navigate to report" type, verify target report name matches another thin report in the bundle. Log warning for broken cross-report links. |
+| 56.6 | **Thin report validation summary** | `powerbi_import/thin_report_generator.py` | Low | `generate_thin_report_validation(reports, merged)` → JSON per thin report: total fields checked, resolved, unresolved, drill-through gaps, filter gaps. Print console summary after each thin report. |
+| 56.7 | **Tests** | `tests/test_thin_report_validation.py` (new) | Medium | 25+ tests: valid field refs, broken field refs with suggestion, namespaced measure lookup, drill-through target found/missing, filter on merged table, cross-report link validation, summary report structure |
+
+### Sprint 57 — RLS Consolidation & Security Hardening
+
+**Goal:** Strengthen RLS handling during merge. Currently overlapping RLS rules are naively unioned — rules with same name but different predicates create ambiguous security. Add predicate merging, principal scoping, and propagation path validation.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 57.1 | **RLS predicate merging logic** | `powerbi_import/shared_model.py` | High | When two workbooks have RLS role with same name: (a) same table + same predicate → deduplicate; (b) same table + different predicates → merge with AND (both conditions must hold) or configurable OR. Add `rls_merge_strategy` to merge config (`"and"` / `"or"` / `"namespace"`). |
+| 57.2 | **RLS propagation path validator** | `powerbi_import/validator.py` | Medium | `validate_rls_propagation(merged)`: for each RLS role, verify `tablePermission` target table exists in model AND has an active uni-directional or bi-directional relationship path to at least one fact table. Flag roles on orphan/isolated tables. |
+| 57.3 | **RLS principal scoping check** | `powerbi_import/shared_model.py` | Medium | `_validate_rls_principals(merged)`: parse `USERPRINCIPALNAME()` patterns across merged RLS roles. Detect conflicting principal requirements (e.g., workbook A expects `user@domain.com` format, workbook B expects `DOMAIN\user`). Emit warning with role names + expected format. |
+| 57.4 | **RLS merge config support** | `powerbi_import/merge_config.py` | Low | Extend merge config JSON with `rls_rules` section: per-role accept/reject/strategy decisions. `{"role_name": {"action": "merge", "strategy": "and"}}`. Load/save round-trip. |
+| 57.5 | **RLS conflict HTML report** | `powerbi_import/merge_report_html.py` | Medium | Add "Security" tab to merge HTML report: table of all RLS roles with source workbook(s), predicate text, merge action taken, propagation status (✅ connected / ⚠️ orphan), principal format. |
+| 57.6 | **Isolated table warning system** | `powerbi_import/shared_model.py` | Low | When tables are excluded from shared model due to isolation (no relationships), emit explicit warning with table name, source workbook, and reason. Track in merge result as `_excluded_tables` list with `reason` field. |
+| 57.7 | **Tests** | `tests/test_rls_consolidation.py` (new) | Medium | 25+ tests: predicate AND merge, predicate OR merge, namespace fallback, propagation path validation (connected/orphan), principal format detection, merge config round-trip, isolated table warnings, HTML report structure |
+
+### Sprint 58 — Incremental Merge & Add-to-Model Workflow
+
+**Goal:** Enable adding workbooks to an existing shared model without full re-merge. Support iterative workflows for teams migrating 50+ workbooks over weeks.
+
+**Assessment finding:** Real-world global assessment found 3 merge clusters in 14 workbooks. As more workbooks are discovered, teams need to add them to existing clusters without re-extracting all previous workbooks.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 58.1 | **Merge manifest file** | `powerbi_import/shared_model.py` | Medium | After merge, write `merge_manifest.json` to output dir: list of workbook sources (name, path, hash), fingerprint hashes per table, timestamp, merge config snapshot, artifact counts (tables, measures, relationships, RLS roles), validation score from Sprint 55. Used for incremental add. |
+| 58.2 | **Reverse-engineer existing TMDL** | `powerbi_import/shared_model.py` | High | `_load_existing_model(model_dir)` — parses existing `.tmdl` files to reconstruct table/column/measure/relationship/parameter/RLS inventory as a `converted_objects`-compatible dict. Needed for incremental add to detect duplicates without re-extracting original workbooks. Handles all TMDL syntax: `table`, `column`, `measure`, `partition`, `relationship`, `role`, `annotation`. |
+| 58.3 | **`--add-to-model` CLI flag** | `migrate.py`, `powerbi_import/shared_model.py` | High | `--add-to-model DIR NEW.twbx` — loads existing model from DIR (reads `merge_manifest.json` + TMDL), extracts new workbook, runs incremental merge (new tables/measures/relationships added, conflicts detected via Sprint 55 validator), regenerates TMDL + thin report for new workbook only. Existing thin reports untouched. |
+| 58.4 | **`--remove-from-model`** | `powerbi_import/shared_model.py` | Medium | `--remove-from-model DIR WB_NAME` — reads manifest, identifies all artifacts contributed solely by that workbook (tables unique to it, namespaced measures, its thin report). Removes them, regenerates TMDL. Updates manifest. Shared tables (contributed by multiple workbooks) are NOT removed. |
+| 58.5 | **Merge manifest diff** | `powerbi_import/merge_assessment.py` | Low | `diff_manifests(old, new)` → `{added_tables, removed_tables, added_measures, removed_measures, changed_relationships, config_changes}`. For CI integration and audit trail. |
+| 58.6 | **Tests** | `tests/test_incremental_merge.py` (new) | Medium | 30+ tests: manifest write/read round-trip, TMDL reverse-engineering (all object types), add workbook (new tables, conflicts, validation), remove workbook (sole-owner vs shared table), manifest diff, idempotent re-add |
+
+### Sprint 59 — Custom SQL Fingerprinting & Connection Compatibility
+
+**Goal:** Enable merge matching for custom SQL tables (currently silently excluded) and add connection type compatibility analysis to merge scoring.
+
+**Assessment finding:** Real-world workbooks like `RESTAPISample` use custom SQL. Custom SQL tables cannot currently participate in merge matching — they stay isolated even when identical queries exist across workbooks.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 59.1 | **SQL query normalizer** | `powerbi_import/shared_model.py` | Medium | `_normalize_sql(query)` → canonical form: strip comments (`--`, `/* */`), collapse whitespace, lowercase keywords, normalize aliases (`AS` optional), remove trailing semicolons. Deterministic — same logical query always produces same normalized string. |
+| 59.2 | **Custom SQL fingerprint** | `powerbi_import/shared_model.py` | Medium | Extend `build_table_fingerprints()`: for tables with `custom_sql` source, fingerprint = SHA-256 of `connection|server|database` + normalized SQL. Tables with identical fingerprints are merge candidates. |
+| 59.3 | **Custom SQL merge strategy** | `powerbi_import/shared_model.py` | Medium | When merging custom SQL tables: compare column lists. If columns match → deduplicate (keep one M partition). If columns differ → keep both as separate tables but flag in merge report with SQL diff. |
+| 59.4 | **Connection type compatibility matrix** | `powerbi_import/global_assessment.py` | Medium | New merge-score dimension (0–10 points): same connector type = 10, compatible types (sqlserver↔azure_sql, postgres↔redshift) = 7, incompatible (sqlserver↔rest_api) = 0. Matrix covers all 33 supported connectors. |
+| 59.5 | **Mixed-connector merge warnings** | `powerbi_import/merge_assessment.py` | Low | When merge assessment detects tables from different connector types in same merge cluster, emit warning: "Tables from [SQL Server] and [REST API] may have different refresh behaviors and query capabilities." |
+| 59.6 | **Tests** | `tests/test_sql_fingerprint.py` (new) | Medium | 25+ tests: SQL normalization (comments, whitespace, aliases, case), fingerprint identity, custom SQL merge (matching/different columns), connection compatibility scoring, mixed-connector warnings |
+
+### Sprint 60 — Cross-Workbook Lineage & Provenance Tracking
+
+**Goal:** Track which workbook contributed each artifact to the shared model. Enable audit trail, debugging, and compliance documentation.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 60.1 | **Lineage metadata injection** | `powerbi_import/shared_model.py` | Medium | Add `_source_workbooks: List[str]` and `_merge_action: str` (`"deduplicated"` / `"namespaced"` / `"unioned"` / `"first-wins"`) fields on every merged table, measure, column, relationship, parameter, RLS role. Populated during `merge_semantic_models()`. |
+| 60.2 | **TMDL annotations for provenance** | `powerbi_import/tmdl_generator.py` | Low | Write lineage annotations to TMDL files: `annotation MigrationSource = 'workbook_name'` and `annotation MergeAction = 'deduplicated'` on tables, measures, columns. Read back by Sprint 58's `_load_existing_model()`. |
+| 60.3 | **Lineage report generator** | `powerbi_import/merge_assessment.py` | Medium | `generate_lineage_report(merged, manifest)` → JSON: `{tables: [{name, sources, action, columns: [{name, sources}]}], measures: [{name, source, action}], relationships: [{key, sources}]}`. |
+| 60.4 | **Interactive lineage HTML** | `powerbi_import/merge_report_html.py` | Medium | Add "Lineage" tab to merge HTML report: Sankey-style CSS visualization (no JS framework) showing workbook → table → measure flow. Color-coded by merge action. Table with sortable columns: artifact name, type, source(s), action, conflict. |
+| 60.5 | **`--lineage` CLI flag** | `migrate.py` | Low | `--lineage` flag on `--shared-model` pipeline: enables lineage tracking + generates lineage report alongside merge assessment. Adds lineage annotations to TMDL output. |
+| 60.6 | **Tests** | `tests/test_merge_lineage.py` (new) | Medium | 20+ tests: lineage metadata injection (all artifact types), TMDL annotation write/read round-trip, lineage report JSON structure, HTML report "Lineage" tab presence, multi-workbook provenance tracking, action field correctness |
+
+### Sprint 61 — Bundle Deploy Atomicity & Deployment Hardening
+
+**Goal:** Make Fabric bundle deployment reliable for production. Add atomic rollback, pre-flight checks, conflict detection, and version tracking.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 61.1 | **Workspace permission pre-flight** | `powerbi_import/deploy/bundle_deployer.py` | Medium | Before deploying, call Fabric API to verify workspace exists and authenticated principal has `Contributor` or `Admin` role. Fail fast with clear error message if permissions insufficient. |
+| 61.2 | **Conflict detection** | `powerbi_import/deploy/bundle_deployer.py` | Medium | Before deploying model/reports, list existing items in workspace. If name collision found: (a) `--deploy-overwrite` → proceed with overwrite; (b) default → fail with message listing conflicting items. Prevents accidental overwrite of production models. |
+| 61.3 | **Atomic rollback** | `powerbi_import/deploy/bundle_deployer.py` | High | Track deployed artifacts during `deploy_bundle()`. If any report deployment fails after model succeeded: attempt to delete the orphaned model via Fabric API. Record rollback actions in `BundleDeploymentResult`. Configurable via `--deploy-rollback` flag. |
+| 61.4 | **Deployment version tracking** | `powerbi_import/deploy/utils.py` | Medium | `DeploymentManifest` class: tracks deployment timestamp, workspace_id, model_id, report_ids, source merge_manifest hash, deployer principal. Written to `deployment_manifest.json` in output dir. Used by incremental deploy to detect changes. |
+| 61.5 | **Post-deployment validation** | `powerbi_import/deploy/bundle_deployer.py` | Medium | After deploy, call Fabric API to verify: model shows `Succeeded` status, reports are bound to correct model, refresh (if requested) completed without error. Return validation results in `BundleDeploymentResult`. |
+| 61.6 | **Refresh completion polling** | `powerbi_import/deploy/bundle_deployer.py` | Low | When `--bundle-refresh` is set, poll refresh status every 10s (configurable, max 30min) until complete/failed. Report final refresh status, duration, and row counts if available. |
+| 61.7 | **Tests** | `tests/test_deploy_hardening.py` (new) | Medium | 25+ tests: permission pre-flight (sufficient/insufficient), conflict detection (no conflict/collision), rollback simulation, deployment manifest write/read, post-deploy validation, refresh polling mock |
+
+### Sprint 62 — Multi-Tenant Deployment & Live Connection Mode
+
+**Goal:** Enterprise deployment patterns — deploy shared model to multiple Fabric workspaces with per-tenant config, and support live connection wiring for Fabric-native scenarios.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 62.1 | **Multi-tenant manifest** | `powerbi_import/deploy/multi_tenant.py` (new) | Medium | `MultiTenantConfig` class: JSON config listing N Fabric workspaces, each with `workspace_id`, `connection_string_overrides`, `rls_role_mappings`, `display_name_prefix`. `load_multi_tenant_config()` + `validate_config()`. Validates workspace IDs are valid UUIDs, connection strings have required keys. |
+| 62.2 | **Multi-tenant deployer** | `powerbi_import/deploy/multi_tenant.py` | High | `deploy_multi_tenant(model_dir, config)`: iterates workspaces, clones shared model dir to temp, patches connection strings in M partitions (regex replacement), adjusts RLS role Azure AD group mappings per tenant, deploys via `BundleDeployer` (Sprint 61 hardened), collects per-tenant results. Parallelizable (future). |
+| 62.3 | **`--multi-tenant` CLI flag** | `migrate.py` | Low | `--multi-tenant CONFIG_FILE` flag: loads tenant config, runs multi-tenant deploy after `--shared-model` pipeline. Requires `--deploy-bundle`. Prints per-tenant status table. |
+| 62.4 | **Live connection (byConnection) mode** | `powerbi_import/thin_report_generator.py` | Medium | `--live-connection WORKSPACE_ID/MODEL_NAME` flag: thin reports wired via `byConnection` reference (Fabric workspace semantic model) instead of `byPath`. Writes `definition.pbir` with `datasetReference: {byConnection: {connectionString: "...workspace_id...model_name..."}}`. |
+| 62.5 | **Connection string template engine** | `powerbi_import/deploy/multi_tenant.py` | Low | Simple template substitution in M partition expressions: `${TENANT_SERVER}`, `${TENANT_DATABASE}`, `${TENANT_SCHEMA}` → per-tenant values from config. No external template engine — regex-based stdlib replacement. |
+| 62.6 | **Tests** | `tests/test_multi_tenant.py` (new), `tests/test_live_connection.py` (new) | Medium | 25+ tests: config validation (valid/invalid UUIDs, missing keys), connection string patching, RLS mapping, per-tenant deploy simulation, byConnection PBIR generation, template substitution, error isolation |
+
+### Sprint 63 — Merge Config Depth & Interactive Wizard
+
+**Goal:** Give users granular control over merge decisions. Current config supports table-level and measure-level decisions — extend to columns, relationships, RLS, and hierarchies. Add interactive wizard for guided merge.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 63.1 | **Column-level merge config** | `powerbi_import/merge_config.py` | Medium | Extend config with `columns` section: per-column `include`/`exclude`/`rename` decisions. `{"table_name": {"columns": {"old_col": {"action": "rename", "new_name": "..."}}}}`. Applied during column union in `_merge_columns_into()`. |
+| 63.2 | **Relationship acceptance config** | `powerbi_import/merge_config.py` | Medium | Add `relationships` section: per-relationship `accept`/`reject`/`modify_cardinality` decisions. Applied after relationship dedup and cross-workbook suggestions. `{"from_table.from_col->to_table.to_col": {"action": "accept", "cardinality": "manyToOne"}}`. |
+| 63.3 | **Custom measure naming template** | `powerbi_import/merge_config.py` | Low | Add `naming_template` field for conflicting measures: default `"{measure} ({workbook})"`, configurable to `"{workbook}_{measure}"`, `"{measure}_v2"`, etc. Template variables: `{measure}`, `{workbook}`, `{table}`, `{index}`. |
+| 63.4 | **Column type override** | `powerbi_import/merge_config.py` | Low | Add `type_overrides` section: force specific column type instead of "wider wins" heuristic. `{"table.column": "int64"}`. Validated against Sprint 55's type compatibility matrix — errors if forced type is incompatible. |
+| 63.5 | **Interactive merge wizard** | `powerbi_import/wizard.py` | Medium | Extend existing wizard with merge-specific flow: (1) select workbooks, (2) review table matches (accept/reject), (3) review measure conflicts (choose resolution), (4) review relationship suggestions, (5) RLS strategy, (6) preview score, (7) confirm and execute. Outputs merge config JSON for reproducibility. |
+| 63.6 | **Tests** | `tests/test_merge_config_v2.py` (new) | Medium | 20+ tests: column config round-trip, relationship config application, naming template expansion, type override validation, wizard step simulation (mocked input), config migration from old format |
+
+### Sprint 64 — Large-Scale Performance, Integration Tests & v18.0.0 Release
+
+**Goal:** Validate merge at scale (10–100 workbooks), add end-to-end integration tests, benchmark performance, and ship v18.0.0.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 64.1 | **Fingerprint hash cache** | `powerbi_import/shared_model.py` | Medium | Cache computed fingerprints in `_fingerprint_cache: Dict[str, str]` to avoid recomputation during pairwise comparison in global assessment. O(n) fingerprinting instead of O(n²). |
+| 64.2 | **Batch relationship dedup optimization** | `powerbi_import/shared_model.py` | Medium | Replace O(n²) relationship dedup loop with set-based key comparison. Pre-build `rel_key_set` before merge, check membership in O(1). |
+| 64.3 | **Benchmark test suite** | `tests/test_merge_performance.py` (new) | Medium | Synthetic benchmarks: generate N workbooks (10, 25, 50, 100) with M tables each, run `merge_semantic_models()`, assert merge completes in <T seconds. Not run in CI (requires `--benchmark` flag). |
+| 64.4 | **End-to-end integration tests** | `tests/test_merge_integration.py` (new) | High | 15+ tests: extract 2–3 real sample workbooks → merge → generate TMDL → validate JSON/TMDL structure → validate thin report field refs → validate PBIR schema compliance. Uses actual example workbooks from `examples/`. |
+| 64.5 | **Merge → TMDL → Validate pipeline** | `powerbi_import/validator.py` | Medium | `validate_merged_pbip(output_dir)` — orchestrator that runs all Sprint 55–57 validators against a generated .pbip project. Returns pass/warn/fail summary. Called by integration tests and available via `--validate` flag. |
+| 64.6 | **v18.0.0 release** | `docs/`, `CHANGELOG.md`, `README.md`, `pyproject.toml` | Low | Version bump 17.0.0 → 18.0.0. Update all docs: CHANGELOG (all 10 sprints), GAP_ANALYSIS (close resolved gaps), KNOWN_LIMITATIONS (update), copilot-instructions (new features), DEPLOYMENT_GUIDE (multi-tenant + live connection), README (new CLI flags). PyPI publish. |
+| 64.7 | **Tests** | cumulative | — | Target: **4,600+ tests** total (4,274 baseline + ~330 new across Sprints 55–64) |
 
 ---
 
 ### Sprint Sequencing (v18.0.0)
 
 ```
-Sprint 54 (Artifact Merge)  ──→  Sprint 55 (Incremental Merge)
-        ↓                                ↓
-Sprint 56 (Post-Merge Validation) ──→  Sprint 57 (Lineage & Provenance)
-                                               ↓
-                                     Sprint 58 (Multi-Tenant & Release)
+Sprint 54 ✅ (Artifact Merge)
+    ↓
+Sprint 55 (Post-Merge Safety)  ──→  Sprint 56 (Thin Report Validation)
+    ↓                                        ↓
+Sprint 57 (RLS Consolidation)  ──→  Sprint 58 (Incremental Merge)
+    ↓                                        ↓
+Sprint 59 (Custom SQL + Compat) ──→ Sprint 60 (Lineage & Provenance)
+    ↓                                        ↓
+Sprint 61 (Deploy Hardening)   ──→  Sprint 62 (Multi-Tenant + Live)
+    ↓                                        ↓
+Sprint 63 (Merge Config Depth) ──→  Sprint 64 (Performance + Release)
 ```
 
-- Sprint 54 first — artifact-level merge is foundation for all other sprints (calc groups, field params, perspectives must merge before incremental add can work correctly)
-- Sprint 55 after 54 — incremental merge depends on complete artifact inventory (including calc groups, cultures)
-- Sprint 56 after 54 — validation needs to cover all merged artifact types
-- Sprint 57 after 55+56 — lineage tracking builds on merge manifest (Sprint 55) and validation metadata (Sprint 56)
-- Sprint 58 last — multi-tenant deployment is the capstone; live connection wiring is independent but shipped with release
+- **Safety first** (55–57): cycle detection, DAX validation, thin report binding, RLS consolidation — must ship before incremental merge or deployment
+- **Incremental workflows** (58): depends on validation (55) to verify incremental adds don't break model
+- **Matching depth** (59): custom SQL fingerprinting expands merge coverage; connection compatibility improves scoring accuracy
+- **Traceability** (60): lineage depends on merge manifest (58) for source tracking
+- **Deployment** (61–62): hardened deploy depends on validation (55–57) to gate deployments; multi-tenant depends on hardened deployer
+- **UX & scale** (63–64): merge config depth and performance are polish; release only after all features are stable
 
 ### Success Criteria for v18.0.0
 
-| Metric | Current (v17.0.0) | Target |
-|--------|-------------------|--------|
-| Tests | 4,219 | **4,400+** |
-| Merged artifact types | 8 (tables, columns, measures, relationships, parameters, sets/groups/bins, hierarchies, RLS) | **14+** (+ calc groups, field params, perspectives, cultures, goals, stories/bookmarks) |
-| Merge CLI flags | 12 | **16+** (+ --add-to-model, --remove-from-model, --lineage, --multi-tenant, --live-connection) |
-| Post-merge validation checks | 3 (circular rels, orphan tables, unused params) | **8+** (+ DAX refs, RELATED/LOOKUPVALUE audit, thin report fields, RLS propagation, suggestion cycles) |
-| Lineage tracking | ❌ | **✅** (annotations + HTML report) |
-| Incremental merge | ❌ | **✅** (add-to-model, remove-from-model, manifest) |
-| Multi-tenant deployment | ❌ | **✅** (config-driven multi-workspace deploy) |
-| Live connection (byConnection) | ❌ | **✅** (Fabric workspace reference) |
+| Metric | Current (v17.0.0) | Sprint 54 | Target (v18.0.0) |
+|--------|-------------------|-----------|-------------------|
+| Tests | 4,219 | **4,274** | **4,600+** |
+| Merged artifact types | 8 | **14** (+ calc groups, field params, perspectives, cultures, goals, hierarchies) | **14+** |
+| Merge CLI flags | 12 | 12 | **20+** (+ --strict-merge, --add-to-model, --remove-from-model, --lineage, --multi-tenant, --live-connection, --deploy-overwrite, --deploy-rollback) |
+| Post-merge validation checks | 3 | 3 | **12+** (+ cycles, types, DAX refs, cardinality, thin report fields, drill-through, filters, RLS propagation, RLS principals) |
+| Lineage tracking | ❌ | ❌ | **✅** (annotations + HTML report) |
+| Incremental merge | ❌ | ❌ | **✅** (add-to-model, remove-from-model, manifest) |
+| Custom SQL merge | ❌ | ❌ | **✅** (normalized fingerprinting) |
+| RLS consolidation | Naive union | Naive union | **✅** (predicate merge + propagation validation) |
+| Deploy atomicity | ❌ | ❌ | **✅** (rollback + conflict detection + version tracking) |
+| Multi-tenant deployment | ❌ | ❌ | **✅** (config-driven multi-workspace) |
+| Live connection (byConnection) | ❌ | ❌ | **✅** (Fabric workspace reference) |
+| Merge config granularity | Table + measure | Table + measure | **✅** (+ columns, relationships, RLS, naming templates, type overrides) |
+| Scale tested | 2–3 workbooks | 2–3 workbooks | **100 workbooks** (<5s merge) |
 
 ---
 

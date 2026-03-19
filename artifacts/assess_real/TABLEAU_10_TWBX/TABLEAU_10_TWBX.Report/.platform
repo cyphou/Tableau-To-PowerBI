@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Report",
+    "displayName": "TABLEAU_10_TWBX"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "360465d1-4710-4755-9a37-b0899d686876"
+  }
+}

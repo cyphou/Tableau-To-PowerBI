@@ -1,0 +1,112 @@
+{
+  "generated_at": "2026-03-18T09:35:38.367734",
+  "source": "Tableau Migration",
+  "report_name": "nba_player_stats",
+  "objects_converted": {
+    "worksheets": 5,
+    "dashboards": 1,
+    "datasources": 2,
+    "calculations": 4,
+    "parameters": 1,
+    "filters": 6,
+    "stories": 0,
+    "sets": 0,
+    "groups": 1,
+    "bins": 0,
+    "hierarchies": 0,
+    "user_filters": 0,
+    "actions": 2,
+    "custom_sql": 0
+  },
+  "generated_output": {
+    "pages": 1,
+    "visuals": 5,
+    "theme_applied": false,
+    "theme_detail": {
+      "status": "skipped",
+      "reason": "no dashboard colors detected"
+    }
+  },
+  "tmdl_stats": {
+    "tables": 2,
+    "measures": 3,
+    "columns": 21,
+    "relationships": 0
+  },
+  "visual_type_mappings": {
+    "Average Points per Game": "Automatic",
+    "Player Stats": "Automatic",
+    "Players Headshot": "Automatic",
+    "Rebounds per Game": "Automatic",
+    "Teams": "Automatic"
+  },
+  "visual_details": [
+    {
+      "worksheet": "Average Points per Game",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "Player"
+      ],
+      "measures": [
+        "PTS"
+      ],
+      "field_count": 2
+    },
+    {
+      "worksheet": "Player Stats",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "scatterChart",
+      "dimensions": [
+        "Player"
+      ],
+      "measures": [
+        "ASST",
+        "BLK",
+        "STL"
+      ],
+      "field_count": 4
+    },
+    {
+      "worksheet": "Players Headshot",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "scatterChart",
+      "dimensions": [
+        "Player",
+        "Player"
+      ],
+      "measures": [
+        "Calculation_1565282387735883788",
+        "Calculation_1565282387735928846",
+        "GP"
+      ],
+      "field_count": 5
+    },
+    {
+      "worksheet": "Rebounds per Game",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "Player"
+      ],
+      "measures": [
+        "Calculation_1565282387749318674"
+      ],
+      "field_count": 2
+    },
+    {
+      "worksheet": "Teams",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "scatterChart",
+      "dimensions": [
+        "Player",
+        "TM",
+        "YR",
+        "TM"
+      ],
+      "measures": [],
+      "field_count": 4
+    }
+  ],
+  "approximations": []
+}

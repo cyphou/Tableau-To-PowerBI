@@ -1,0 +1,27 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation PBI_QueryOrder = ["Sensors","Machines","Maintenance","Calendar","Alert Threshold"]
+
+ref table Sensors
+ref table Machines
+ref table Maintenance
+ref table Calendar
+ref table 'Alert Threshold'
+
+ref relationship a62d9d96-a352-4c67-9eaa-bf0079ffd94d
+ref relationship fd319ff5-d736-4132-bf1d-9d321a1146bc
+ref relationship 2273e3e4-ef44-49e3-88a4-f4671baf3528
+ref relationship 33b01988-b5c9-4f52-aae9-e108551f25ba
+ref relationship 4611cb9d-b484-41c7-aaf7-b667b6212d2e
+ref relationship cfeb19e7-aea7-46d0-bedf-e29a8c2b28cc
+
+ref expression DataFolder
+
+ref perspective 'Full Model'
+

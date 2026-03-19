@@ -143,7 +143,7 @@
 - **Deployment not end-to-end tested**: Integration test structure added in v5.0 (`test_fabric_integration.py`) — opt-in with `@pytest.mark.integration`
 - **Stale file cleanup race conditions**: OneDrive lock leftovers handled via try/except but may still leave artifacts on Windows
 - **`import_to_powerbi.py` loads JSON from hardcoded paths**: ✅ IMPLEMENTED — `source_dir` parameter allows configurable JSON source directory
-- **No shared semantic model**: ✅ IMPLEMENTED — `--shared-model` CLI flag merges multiple workbooks into one shared SemanticModel + N thin Reports; fingerprint-based table matching, Jaccard column overlap scoring, measure conflict resolution, merge assessment with 0–100 scoring, `--global-assess` cross-workbook analysis with HTML heatmap, `--deploy-bundle` Fabric bundle deployment
+- **No shared semantic model**: ✅ IMPLEMENTED — `--shared-model` CLI flag merges multiple workbooks into one shared SemanticModel + N thin Reports; fingerprint-based table matching, Jaccard column overlap scoring, measure conflict resolution, merge assessment with 0–100 scoring, `--global-assess` cross-workbook analysis with HTML heatmap, `--deploy-bundle` Fabric bundle deployment; **v18 Sprint 54**: artifact-level merge (calc groups, field params, perspectives, cultures, goals, hierarchies); **v18 Sprint 55**: post-merge safety validation (cycle detection, column type compatibility matrix, DAX reference validation, RELATED/LOOKUPVALUE cardinality audit, `--strict-merge` flag)
 - **No composite model support**: ✅ IMPLEMENTED — `--mode composite` enables DirectQuery + Import hybrid
 - **No Small Multiples**: ✅ IMPLEMENTED — `_build_small_multiples_config()` auto-detects suitable fields
 ### What is APPROXIMATED

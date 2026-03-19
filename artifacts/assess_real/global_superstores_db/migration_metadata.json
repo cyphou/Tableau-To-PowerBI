@@ -1,0 +1,321 @@
+{
+  "generated_at": "2026-03-18T09:35:37.858461",
+  "source": "Tableau Migration",
+  "report_name": "global_superstores_db",
+  "objects_converted": {
+    "worksheets": 20,
+    "dashboards": 6,
+    "datasources": 1,
+    "calculations": 3,
+    "parameters": 0,
+    "filters": 17,
+    "stories": 0,
+    "sets": 0,
+    "groups": 4,
+    "bins": 1,
+    "hierarchies": 0,
+    "user_filters": 0,
+    "actions": 4,
+    "custom_sql": 0
+  },
+  "generated_output": {
+    "pages": 6,
+    "visuals": 20,
+    "theme_applied": false,
+    "theme_detail": {
+      "status": "skipped",
+      "reason": "no dashboard colors detected"
+    }
+  },
+  "tmdl_stats": {
+    "tables": 2,
+    "measures": 5,
+    "columns": 38,
+    "relationships": 0
+  },
+  "visual_type_mappings": {
+    "AnalyticsBasic": "Automatic",
+    "Bar 1": "Automatic",
+    "Bar2": "Automatic",
+    "Heat Map": "Automatic",
+    "Histogram": "Automatic",
+    "Line-Area": "Automatic",
+    "Line-Forecast": "Automatic",
+    "Product Sales": "Automatic",
+    "Profit": "Automatic",
+    "Profit Map": "Automatic",
+    "Profit and Sales": "Automatic",
+    "Profit and Sales Relationship": "Automatic",
+    "Profit and Sales by Sub Categories": "Automatic",
+    "ScatterPlot": "Automatic",
+    "ShelvesCard": "Automatic",
+    "Shipping Cost": "Automatic",
+    "ShippingCostToMarkets": "Automatic",
+    "South Map": "Automatic",
+    "World's Profit and Sales Reln": "Automatic",
+    "YOY Profit": "Automatic"
+  },
+  "visual_details": [
+    {
+      "worksheet": "AnalyticsBasic",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "lineChart",
+      "dimensions": [
+        "Order Date"
+      ],
+      "measures": [
+        "Sales",
+        "Profit"
+      ],
+      "field_count": 3
+    },
+    {
+      "worksheet": "Bar 1",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "Category",
+        "Sub-Category (group)"
+      ],
+      "measures": [
+        "Sales",
+        "Profit"
+      ],
+      "field_count": 4
+    },
+    {
+      "worksheet": "Bar2",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "Category",
+        "Sub-Category (group)",
+        "Product Name"
+      ],
+      "measures": [
+        "Sales",
+        "Profit"
+      ],
+      "field_count": 5
+    },
+    {
+      "worksheet": "Heat Map",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "treemap",
+      "dimensions": [
+        "Order Date",
+        "Category",
+        "Sub-Category"
+      ],
+      "measures": [
+        "Calculation_555350140620128257",
+        "Calculation_555350140620128257"
+      ],
+      "field_count": 5
+    },
+    {
+      "worksheet": "Histogram",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "Discount (bin)",
+        "cnt:Discount"
+      ],
+      "measures": [],
+      "field_count": 2
+    },
+    {
+      "worksheet": "Line-Area",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "areaChart",
+      "dimensions": [
+        "Order Date",
+        "Order Date"
+      ],
+      "measures": [
+        "Sales"
+      ],
+      "field_count": 3
+    },
+    {
+      "worksheet": "Line-Forecast",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "lineChart",
+      "dimensions": [
+        "Order Date",
+        "Order Date",
+        "fVal:sum:Sales",
+        "Forecast Indicator"
+      ],
+      "measures": [],
+      "field_count": 4
+    },
+    {
+      "worksheet": "Product Sales",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "Category",
+        "Market"
+      ],
+      "measures": [
+        "Sales",
+        "Profit"
+      ],
+      "field_count": 4
+    },
+    {
+      "worksheet": "Profit",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "treemap",
+      "dimensions": [
+        "Order Date"
+      ],
+      "measures": [
+        "Profit"
+      ],
+      "field_count": 2
+    },
+    {
+      "worksheet": "Profit Map",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "map",
+      "dimensions": [],
+      "measures": [
+        "Profit",
+        "Sales"
+      ],
+      "field_count": 2
+    },
+    {
+      "worksheet": "Profit and Sales",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "scatterChart",
+      "dimensions": [],
+      "measures": [
+        "Sales",
+        "Profit",
+        "Profit"
+      ],
+      "field_count": 3
+    },
+    {
+      "worksheet": "Profit and Sales Relationship",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "scatterChart",
+      "dimensions": [
+        "Segment"
+      ],
+      "measures": [
+        "Sales",
+        "Profit"
+      ],
+      "field_count": 3
+    },
+    {
+      "worksheet": "Profit and Sales by Sub Categories",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "Sub-Category"
+      ],
+      "measures": [
+        "Sales",
+        "Profit"
+      ],
+      "field_count": 3
+    },
+    {
+      "worksheet": "ScatterPlot",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "Segment"
+      ],
+      "measures": [
+        "Discount",
+        "Profit"
+      ],
+      "field_count": 3
+    },
+    {
+      "worksheet": "ShelvesCard",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "scatterChart",
+      "dimensions": [
+        "Category",
+        "Sub-Category",
+        "Category",
+        "Category",
+        "Category"
+      ],
+      "measures": [
+        "Sales",
+        "Shipping Cost",
+        "Sales",
+        "Shipping Cost"
+      ],
+      "field_count": 9
+    },
+    {
+      "worksheet": "Shipping Cost",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "Order Priority"
+      ],
+      "measures": [
+        "Shipping Cost"
+      ],
+      "field_count": 2
+    },
+    {
+      "worksheet": "ShippingCostToMarkets",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "lineChart",
+      "dimensions": [
+        "Order Date",
+        "Market"
+      ],
+      "measures": [
+        "Shipping Cost"
+      ],
+      "field_count": 3
+    },
+    {
+      "worksheet": "South Map",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "map",
+      "dimensions": [],
+      "measures": [
+        "Profit",
+        "Sales"
+      ],
+      "field_count": 2
+    },
+    {
+      "worksheet": "World's Profit and Sales Reln",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "map",
+      "dimensions": [],
+      "measures": [
+        "Profit",
+        "Sales"
+      ],
+      "field_count": 2
+    },
+    {
+      "worksheet": "YOY Profit",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "Order Date"
+      ],
+      "measures": [
+        "Profit"
+      ],
+      "field_count": 2
+    }
+  ],
+  "approximations": []
+}

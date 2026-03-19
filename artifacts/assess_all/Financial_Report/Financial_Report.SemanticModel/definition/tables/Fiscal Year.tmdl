@@ -1,0 +1,20 @@
+table 'Fiscal Year'
+	lineageTag: ebb82993-6a78-4059-9ad6-468df8e45d02
+
+	measure 'Fiscal Year' = SELECTEDVALUE('Fiscal Year'[Value], 2024)
+		lineageTag: dda3c1fe-7fd4-4c55-8873-f6685d37d426
+
+	column Value
+		dataType: int64
+		lineageTag: 3633258d-f193-4ee5-a4c2-4e91dcc9fc9b
+		summarizeBy: none
+		sourceColumn: Value
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Fiscal Year-0ed9a42f-b234-4093-86b9-d7c3c818cd15' = calculated
+		mode: import
+		source = GENERATESERIES(2020, 2030, 1)
+
+	annotation PBI_ResultType = Table
+

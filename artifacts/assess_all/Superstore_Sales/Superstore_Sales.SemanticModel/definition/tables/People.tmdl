@@ -1,0 +1,45 @@
+table People
+	lineageTag: a154bf4d-c4a8-40b3-a8a2-130d82e39c3b
+
+	column 'Regional Manager'
+		dataType: string
+		lineageTag: d900ba77-0b2f-46aa-9812-eb0062b284c9
+		summarizeBy: none
+		sourceColumn: 'Regional Manager'
+		dataCategory: StateOrProvince
+
+		annotation SummarizationSetBy = Automatic
+
+	column Region
+		dataType: string
+		lineageTag: 19704489-af18-4d4b-b4d5-359f999f91d1
+		summarizeBy: none
+		sourceColumn: Region
+		dataCategory: StateOrProvince
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'People-ddd138ea-df35-4f50-8bfe-932c7992e006' = m
+		mode: import
+		source =
+				let
+				    // Source Excel: Sample - Superstore.xlsx
+				    Source = try
+				
+				        Excel.Workbook(File.Contents(DataFolder & "\Sample - Superstore.xlsx"), null, true)
+				
+				    otherwise
+				
+				        #table({"Regional Manager", "Region"}, {}),
+				    #"People Sheet" = Source{[Item="People",Kind="Sheet"]}[Data],
+				    #"Promoted Headers" = Table.PromoteHeaders(#"People Sheet", [PromoteAllScalars=true]),
+				    #"Changed Types" = Table.TransformColumnTypes(#"Promoted Headers", {
+				        {"Regional Manager", type text},
+				        {"Region", type text}
+				    }),
+				    Result = #"Changed Types"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+

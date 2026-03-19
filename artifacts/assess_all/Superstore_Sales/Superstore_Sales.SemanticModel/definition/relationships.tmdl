@@ -1,0 +1,19 @@
+relationship 1629c296-4290-45cc-8b6d-c7eab7d54c4e
+	fromColumn: Orders.Region
+	toColumn: People.Region
+	fromCardinality: many
+	toCardinality: many
+	crossFilteringBehavior: bothDirections
+
+relationship 6b6cadea-e0d0-4601-9def-5becd2ac6a90
+	fromColumn: Orders.'Order ID'
+	toColumn: Returns.'Order ID'
+	fromCardinality: many
+	toCardinality: many
+	crossFilteringBehavior: bothDirections
+
+relationship 354d5206-877d-41f0-9192-418b7e1f4d73
+	fromColumn: Orders.'Order Date'
+	toColumn: Calendar.Date
+	crossFilteringBehavior: oneDirection
+

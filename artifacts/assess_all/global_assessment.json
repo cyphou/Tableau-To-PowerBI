@@ -1,0 +1,361 @@
+{
+  "total_workbooks": 8,
+  "total_tables": 16,
+  "total_measures": 134,
+  "merge_clusters": [],
+  "isolated_workbooks": [
+    "BigQuery_Analytics",
+    "Enterprise_Sales",
+    "Financial_Report",
+    "HR_Analytics",
+    "Manufacturing_IoT",
+    "Marketing_Campaign",
+    "Security_Test",
+    "Superstore_Sales"
+  ],
+  "pairwise_scores": [
+    {
+      "workbook_a": "BigQuery_Analytics",
+      "workbook_b": "Enterprise_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "BigQuery_Analytics",
+      "workbook_b": "Financial_Report",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "BigQuery_Analytics",
+      "workbook_b": "HR_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "BigQuery_Analytics",
+      "workbook_b": "Manufacturing_IoT",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "BigQuery_Analytics",
+      "workbook_b": "Marketing_Campaign",
+      "merge_score": 0,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "BigQuery_Analytics",
+      "workbook_b": "Security_Test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "BigQuery_Analytics",
+      "workbook_b": "Superstore_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Enterprise_Sales",
+      "workbook_b": "Financial_Report",
+      "merge_score": 0,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Enterprise_Sales",
+      "workbook_b": "HR_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Enterprise_Sales",
+      "workbook_b": "Manufacturing_IoT",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Enterprise_Sales",
+      "workbook_b": "Marketing_Campaign",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Enterprise_Sales",
+      "workbook_b": "Security_Test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Enterprise_Sales",
+      "workbook_b": "Superstore_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Financial_Report",
+      "workbook_b": "HR_Analytics",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Financial_Report",
+      "workbook_b": "Manufacturing_IoT",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Financial_Report",
+      "workbook_b": "Marketing_Campaign",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Financial_Report",
+      "workbook_b": "Security_Test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Financial_Report",
+      "workbook_b": "Superstore_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "HR_Analytics",
+      "workbook_b": "Manufacturing_IoT",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "HR_Analytics",
+      "workbook_b": "Marketing_Campaign",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "HR_Analytics",
+      "workbook_b": "Security_Test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "HR_Analytics",
+      "workbook_b": "Superstore_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Manufacturing_IoT",
+      "workbook_b": "Marketing_Campaign",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Manufacturing_IoT",
+      "workbook_b": "Security_Test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Manufacturing_IoT",
+      "workbook_b": "Superstore_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Marketing_Campaign",
+      "workbook_b": "Security_Test",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Marketing_Campaign",
+      "workbook_b": "Superstore_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    },
+    {
+      "workbook_a": "Security_Test",
+      "workbook_b": "Superstore_Sales",
+      "merge_score": 20,
+      "shared_tables": 0,
+      "recommendation": "separate"
+    }
+  ],
+  "workbook_profiles": [
+    {
+      "name": "BigQuery_Analytics",
+      "tables": 2,
+      "columns": 16,
+      "measures": 14,
+      "calc_columns": 6,
+      "relationships": 1,
+      "worksheets": 4,
+      "dashboards": 1,
+      "parameters": 0,
+      "connection_types": [
+        "BigQuery"
+      ],
+      "table_names": [
+        "sessions",
+        "users"
+      ]
+    },
+    {
+      "name": "Enterprise_Sales",
+      "tables": 2,
+      "columns": 24,
+      "measures": 30,
+      "calc_columns": 14,
+      "relationships": 1,
+      "worksheets": 5,
+      "dashboards": 1,
+      "parameters": 3,
+      "connection_types": [
+        "Snowflake"
+      ],
+      "table_names": [
+        "Orders",
+        "Customers"
+      ]
+    },
+    {
+      "name": "Financial_Report",
+      "tables": 1,
+      "columns": 8,
+      "measures": 12,
+      "calc_columns": 0,
+      "relationships": 0,
+      "worksheets": 4,
+      "dashboards": 1,
+      "parameters": 2,
+      "connection_types": [
+        "PostgreSQL"
+      ],
+      "table_names": [
+        "transactions"
+      ]
+    },
+    {
+      "name": "HR_Analytics",
+      "tables": 1,
+      "columns": 11,
+      "measures": 6,
+      "calc_columns": 2,
+      "relationships": 0,
+      "worksheets": 4,
+      "dashboards": 1,
+      "parameters": 0,
+      "connection_types": [
+        "SQL Server"
+      ],
+      "table_names": [
+        "Employees"
+      ]
+    },
+    {
+      "name": "Manufacturing_IoT",
+      "tables": 3,
+      "columns": 28,
+      "measures": 40,
+      "calc_columns": 10,
+      "relationships": 2,
+      "worksheets": 6,
+      "dashboards": 2,
+      "parameters": 2,
+      "connection_types": [
+        "Oracle"
+      ],
+      "table_names": [
+        "Sensors",
+        "Machines",
+        "Maintenance"
+      ]
+    },
+    {
+      "name": "Marketing_Campaign",
+      "tables": 2,
+      "columns": 26,
+      "measures": 20,
+      "calc_columns": 30,
+      "relationships": 1,
+      "worksheets": 5,
+      "dashboards": 1,
+      "parameters": 2,
+      "connection_types": [
+        "MySQL"
+      ],
+      "table_names": [
+        "Campaigns",
+        "Leads"
+      ]
+    },
+    {
+      "name": "Security_Test",
+      "tables": 2,
+      "columns": 9,
+      "measures": 4,
+      "calc_columns": 6,
+      "relationships": 0,
+      "worksheets": 2,
+      "dashboards": 1,
+      "parameters": 0,
+      "connection_types": [
+        "SQL Server"
+      ],
+      "table_names": [
+        "Orders",
+        "Regions"
+      ]
+    },
+    {
+      "name": "Superstore_Sales",
+      "tables": 3,
+      "columns": 25,
+      "measures": 8,
+      "calc_columns": 0,
+      "relationships": 2,
+      "worksheets": 3,
+      "dashboards": 1,
+      "parameters": 0,
+      "connection_types": [
+        "Excel"
+      ],
+      "table_names": [
+        "Orders",
+        "Returns",
+        "People"
+      ]
+    }
+  ],
+  "timestamp": "2026-03-18T08:36:00.341304+00:00"
+}

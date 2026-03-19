@@ -47,7 +47,7 @@ class ArtifactValidator:
 
     # Valid PBIR schemas
     VALID_REPORT_SCHEMAS = [
-        'https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/3.1.0/schema.json',
+        'https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/2.0.0/schema.json',
     ]
 
     VALID_PAGE_SCHEMAS = [

@@ -1,0 +1,119 @@
+table transactions
+	lineageTag: ead05edb-ee16-4827-b972-1040951102c8
+
+	measure Revenue = SUMX('transactions', IF('transactions'[type] = "Revenue", 'transactions'[amount], 0))
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 592c2268-d479-41aa-b928-42a685d088b8
+
+	measure Expenses = SUMX('transactions', IF('transactions'[type] = "Expense", 'transactions'[amount], 0))
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 02af72cd-25f2-4db1-ad62-a05383be3615
+
+	measure 'Net Income' = SUMX('transactions', IF('transactions'[type] = "Revenue", 'transactions'[amount], -'transactions'[amount]))
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: b01ad87e-1075-4fda-aa94-7b0f1f19b3f2
+
+	measure 'Profit Margin %' = ([Revenue] - [Expenses]) / [Revenue]
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: fedfc95d-ab79-42da-98a6-9c79581a3673
+
+	measure 'YTD Revenue' = CALCULATE(SUMX('transactions', IF(YEAR('transactions'[transaction_date]) = YEAR(TODAY()), 'transactions'[amount], 0)), ALL('transactions'))
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 3e554a10-d824-43e4-929d-fa1cb51c4765
+
+	measure 'Budget Variance' = SUM('transactions'[amount]) - CALCULATE(SUM('transactions'[amount]), ALL('transactions'))
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 4b120d50-4a41-4e41-925d-57f9de17bcb4
+
+	column transaction_id
+		dataType: int64
+		lineageTag: 09d1f8f7-819f-47ae-8459-c5f2a81d4ea2
+		summarizeBy: sum
+		sourceColumn: transaction_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column transaction_date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: b1853a90-9f90-437a-9040-92b400f5c63f
+		summarizeBy: none
+		sourceColumn: transaction_date
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column account
+		dataType: string
+		lineageTag: 393e6cd7-4d46-44d9-bb8b-ac0bd258be0e
+		summarizeBy: none
+		sourceColumn: account
+
+		annotation SummarizationSetBy = Automatic
+
+	column category
+		dataType: string
+		lineageTag: 30efa4db-6c4a-41c7-990f-e115f8aa07e5
+		summarizeBy: none
+		sourceColumn: category
+
+		annotation SummarizationSetBy = Automatic
+
+	column amount
+		dataType: double
+		formatString: #,0.00
+		lineageTag: ecf4e966-1ac9-48b8-a0dc-354728aa7ff2
+		summarizeBy: sum
+		sourceColumn: amount
+
+		annotation SummarizationSetBy = Automatic
+
+	column type
+		dataType: string
+		lineageTag: 04efa8e0-014b-4949-a4d8-f7220d116210
+		summarizeBy: none
+		sourceColumn: type
+
+		annotation SummarizationSetBy = Automatic
+
+	column business_unit
+		dataType: string
+		lineageTag: 2cdda0f0-f9af-4039-be75-cd099a2c7c25
+		summarizeBy: none
+		sourceColumn: business_unit
+
+		annotation SummarizationSetBy = Automatic
+
+	column cost_center
+		dataType: string
+		lineageTag: 67b516ca-7dd8-4b3e-b5b6-ff325a4d7150
+		summarizeBy: none
+		sourceColumn: cost_center
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'transactions-80bc9d72-a9b5-4b06-927d-4d17909dfa2e' = m
+		mode: import
+		source =
+				let
+				    // Source PostgreSQL
+				    Source = try
+				
+				        PostgreSQL.Database("db.company.com:5432", "finance")
+				
+				    otherwise
+				
+				        #table({"transaction_id", "transaction_date", "account", "category", "amount", "type", "business_unit", "cost_center"}, {}),
+				    #"transactions Table" = Source{[Schema="public", Item="transactions"]}[Data],
+				    Result = #"transactions Table"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+

@@ -165,7 +165,8 @@ class PowerBIImporter:
                             calendar_start=None, calendar_end=None,
                             culture=None, model_mode='import',
                             languages=None, force_merge=False,
-                            merge_config_path=None, save_config=False):
+                            merge_config_path=None, save_config=False,
+                            strict_merge=False):
         """Generate a shared semantic model + thin reports.
 
         Args:
@@ -191,6 +192,7 @@ class PowerBIImporter:
             generate_lineage_annotations, analyze_measure_risk,
             consolidate_rls_roles, merge_rls_roles,
             build_cross_report_navigation,
+            generate_merge_validation_report,
         )
         from powerbi_import.merge_assessment import generate_merge_report, print_merge_summary
         from powerbi_import.thin_report_generator import ThinReportGenerator
@@ -243,6 +245,39 @@ class PowerBIImporter:
         # 2. Merge into unified dataset
         print("\n  Step 2: Merging semantic models...")
         merged = merge_semantic_models(all_converted_objects, assessment, model_name)
+
+        # 2a. Post-merge safety validation (Sprint 55)
+        print("\n  Step 2a: Running post-merge safety checks...")
+        validation = generate_merge_validation_report(merged)
+        vc = validation['counts']
+        icons = {
+            'cycles': '✗' if vc['cycles'] else '✓',
+            'type_errors': '✗' if vc['type_errors'] else '✓',
+            'type_warnings': '⚠' if vc['type_warnings'] else '✓',
+            'dax_errors': '✗' if vc['dax_errors'] else '✓',
+            'cardinality': '⚠' if vc['cardinality_mismatches'] else '✓',
+        }
+        print(f"    [{icons['cycles']}] Relationship cycles: {vc['cycles']}")
+        print(f"    [{icons['type_errors']}] Column type errors: {vc['type_errors']}")
+        print(f"    [{icons['type_warnings']}] Column type warnings: {vc['type_warnings']}")
+        print(f"    [{icons['dax_errors']}] Unresolved DAX references: {vc['dax_errors']}")
+        print(f"    [{icons['cardinality']}] Cardinality mismatches: {vc['cardinality_mismatches']}")
+        print(f"    Validation score: {validation['score']}/100")
+
+        if not validation['passed'] and strict_merge:
+            print("\n  ✗ Strict merge validation FAILED — generation blocked.")
+            print("    Remove --strict-merge to proceed with warnings.")
+            for cycle in validation['cycles']:
+                print(f"    Cycle: {' → '.join(cycle)}")
+            for tw in validation['type_warnings']:
+                if tw['level'] == 'error':
+                    print(f"    Type error: {tw['table']}.{tw['column']} — {tw['types']}")
+            return {
+                'assessment': assessment,
+                'model_path': None,
+                'report_paths': [],
+                'validation': validation,
+            }
 
         # 2b. Apply RLS consolidation
         merged_rls = merge_rls_roles(all_converted_objects, workbook_names)
@@ -330,6 +365,7 @@ class PowerBIImporter:
             'model_path': sm_dir,
             'report_paths': report_paths,
             'validation_issues': validation_issues,
+            'validation': validation,
             'risk_analysis': risk_analysis,
             'rls_consolidations': rls_consolidations,
             'lineage': lineage,
@@ -363,7 +399,7 @@ class PowerBIImporter:
 
         # Minimal report.json (empty report -- user opens Model view)
         _write_json_file(os.path.join(model_report_dir, 'definition', 'report.json'), {
-            "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/3.1.0/schema.json",
+            "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/2.0.0/schema.json",
             "name": model_report_name,
             "description": f"Model explorer for shared semantic model '{model_name}'. Open this to view and edit the data model.",
         })

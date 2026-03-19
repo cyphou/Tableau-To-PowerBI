@@ -1,0 +1,25 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation PBI_QueryOrder = ["Orders","People","Returns","Calendar","Top Customers","Profit Bin Size"]
+
+ref table Orders
+ref table People
+ref table Returns
+ref table Calendar
+ref table 'Top Customers'
+ref table 'Profit Bin Size'
+
+ref relationship 46b5e145-7aaa-41ce-8cd9-a3436e2b6e93
+ref relationship 576f941f-50f8-4f38-ad05-a8c656281402
+ref relationship 8ffa223c-3ece-4f8a-bd65-72869878da55
+
+ref expression DataFolder
+
+ref perspective 'Full Model'
+

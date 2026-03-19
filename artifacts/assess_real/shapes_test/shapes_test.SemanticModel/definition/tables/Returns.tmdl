@@ -1,0 +1,43 @@
+table Returns
+	lineageTag: 2736d53c-ef36-4ca2-baf1-bc65b7b97f13
+
+	column Returned
+		dataType: string
+		lineageTag: eb5c8145-262c-4aab-8e51-3210fb238536
+		summarizeBy: none
+		sourceColumn: Returned
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Order ID'
+		dataType: string
+		lineageTag: 2cf079a5-2407-4534-b832-803a65644a6d
+		summarizeBy: none
+		sourceColumn: 'Order ID'
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Returns-aa6a5db0-73c4-4251-8583-024892c6221e' = m
+		mode: import
+		source =
+				let
+				    // Source Excel: /Users/mkorotchenkov/Documents/My Tableau Repository/Datasources/2021.2/en_US-US/Sample - Superstore.xls
+				    Source = try
+				
+				        Excel.Workbook(File.Contents(DataFolder & "\\Users\mkorotchenkov\Documents\My Tableau Repository\Datasources\2021.2\en_US-US\Sample - Superstore.xls"), null, true)
+				
+				    otherwise
+				
+				        #table({"Returned", "Order ID"}, {}),
+				    #"Returns Sheet" = Source{[Item="Returns",Kind="Sheet"]}[Data],
+				    #"Promoted Headers" = Table.PromoteHeaders(#"Returns Sheet", [PromoteAllScalars=true]),
+				    #"Changed Types" = Table.TransformColumnTypes(#"Promoted Headers", {
+				        {"Returned", type text},
+				        {"Order ID", type text}
+				    }),
+				    Result = #"Changed Types"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+

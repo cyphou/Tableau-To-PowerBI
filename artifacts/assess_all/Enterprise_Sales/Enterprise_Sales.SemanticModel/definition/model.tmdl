@@ -1,0 +1,27 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation PBI_QueryOrder = ["Orders","Customers","Calendar","Target Margin","Top N"]
+
+ref table Orders
+ref table Customers
+ref table Calendar
+ref table 'Target Margin'
+ref table 'Top N'
+
+ref relationship 4c6ff2a8-d6d8-43da-a957-4cc6338e03c2
+ref relationship 1b2ed337-768c-46eb-9299-9d3218006e19
+ref relationship c134bf19-7657-47f3-aced-068cb1e479ea
+
+ref expression DataFolder
+
+ref role 'Territory Access'
+ref role 'Is My Account'
+
+ref perspective 'Full Model'
+

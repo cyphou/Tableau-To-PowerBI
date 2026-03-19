@@ -2,6 +2,25 @@
 
 ## v18.0.0 — Advanced Merge Intelligence & Enterprise Merge Workflows
 
+### Backward Compatibility Fix — PBI Desktop April 2025 (v2.142.928.0) ✅
+- **Report schema downgrade** (`pbip_generator.py`): Downgraded report.json `$schema` from `3.1.0` to `2.0.0` — PBI Desktop April 2025 cannot resolve report schema 3.x
+- **ThemeVersion format fix** (`pbip_generator.py`): Changed `reportVersionAtImport` from object `{visual, report, page}` (schema 3.x) to string `"5.55"` (schema 2.x) per Microsoft PBIR documentation
+- **Custom theme type fix** (`pbip_generator.py`): Changed `themeCollection.customTheme.type` from `"CustomTheme"` to `"RegisteredResources"` to match schema 2.0.0 `ThemeResourcePackageType` enum
+- **Validator updated** (`validator.py`): `VALID_REPORT_SCHEMAS` now expects `report/2.0.0/schema.json`
+- **All code paths fixed**: `pbip_generator.py` (2 sites), `import_to_powerbi.py`, `validator.py`, `test_backlog.py`
+
+### Sprint 55 — Post-Merge Safety: Cycle Detection, Column Type Validation & DAX Integrity ✅
+- **Relationship cycle detection** (`shared_model.py`): `detect_merge_cycles()` — iterative DFS on merged relationship graph; detects 2-node, 3-node, self-loop, and multi-component cycles; supports both `from_table/to_table` and `left/right` relationship formats
+- **Column type compatibility matrix** (`shared_model.py`): `check_type_compatibility()` — explicit matrix for all type pairs (`ok`/`warn`/`error`); `_TYPE_COMPAT` covers boolean, integer, int64, real, double, decimal, currency, datetime, string; safe promotions (int→real), warnings (custom types), errors (datetime↔boolean)
+- **Column type history tracking** (`shared_model.py`): `_merge_columns_into()` now populates `_column_type_history` dict on tables during merge; `detect_type_conflicts()` scans history for incompatible promotions
+- **DAX reference validator** (`shared_model.py`): `validate_merged_dax_references()` — scans all measures/calc columns for `'Table'[Column]` patterns; verifies every referenced table and column exists in merged model; provides closest-match suggestions via `_find_closest()` (Levenshtein-like)
+- **RELATED/LOOKUPVALUE cardinality audit** (`shared_model.py`): `validate_dax_relationship_functions()` — verifies `RELATED()` calls have manyToOne relationships; `LOOKUPVALUE()` used for manyToMany; flags mismatches (no relationship, wrong cardinality)
+- **Validation summary report** (`shared_model.py`): `generate_merge_validation_report()` — aggregates all checks into structured JSON: cycles, type warnings, DAX errors, cardinality mismatches, score (0–100), passed flag; integrated into `import_shared_model()` pipeline
+- **`--strict-merge` CLI flag** (`migrate.py`): When set, any validation failure (cycles, type errors) blocks PBIP generation with exit code 1; without flag, validation is advisory (warnings printed, generation proceeds)
+- **Pipeline integration** (`import_to_powerbi.py`): Post-merge validation runs automatically after `merge_semantic_models()` in Step 2a; prints per-check status with ✓/⚠/✗ icons; validation result included in return dict
+- **57 new tests** in `test_merge_validation.py` across 8 test classes: cycle detection (9), type compatibility (8), type conflicts (5), DAX refs (9), cardinality audit (6), validation report (9), find_closest (5), edge cases (4), type history (3)
+- **Overall: 4,331 tests**, 0 failures
+
 ### Sprint 54 — Artifact-Level Merge: Calculation Groups, Field Parameters, Perspectives & Cultures ✅
 - **Hierarchy level-aware deduplication** (`shared_model.py`): Replaces shallow `_merge_list_by_name` for hierarchies — same name + same levels → deduplicate; same name + different levels → keep longest path; three-workbook scenarios correctly resolved
 - **Calculation group merge** (`shared_model.py`): `_merge_calculation_groups()` — signature-based deduplication of calc-group-like parameters across workbooks; same items → deduplicate; different items → namespace as `CalcGroup (Workbook)`; `_calc_group_signature()` for item-level comparison

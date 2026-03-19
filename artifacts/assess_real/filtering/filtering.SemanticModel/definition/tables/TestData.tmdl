@@ -1,0 +1,388 @@
+table TestData
+	lineageTag: 3f0d3ae2-6112-48be-97cf-0b2b570a662b
+
+	measure 'Number of Records' = COUNTROWS('TestData')
+		displayFolder: Measures
+		lineageTag: e0c01441-d383-4a6a-a241-00f969b8b8be
+
+	column 'Account Account Name'
+		dataType: string
+		lineageTag: d761179e-21d6-4ea1-ad4a-d9bde657f11f
+		summarizeBy: none
+		sourceColumn: 'Account Account Name'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Account Number'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 9a328115-b3f3-4678-a9af-1040080ff3d7
+		summarizeBy: sum
+		sourceColumn: 'Account Number'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Account Number Burst Out Account'
+		dataType: string
+		lineageTag: 2c65d18b-a366-457b-a028-a53e84f48f28
+		summarizeBy: none
+		sourceColumn: 'Account Number Burst Out Account'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Acct Name'
+		dataType: string
+		lineageTag: ce0f9f3b-b583-4b48-8a2b-33ffdce94f74
+		summarizeBy: none
+		sourceColumn: 'Acct Name'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Burst Out'
+		dataType: string
+		lineageTag: 1052ad5a-5112-4bd7-8ff6-55294e47c2f2
+		summarizeBy: none
+		sourceColumn: 'Burst Out'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Burst Out Join'
+		dataType: string
+		lineageTag: d1d78774-660d-4ed5-92e4-7cce06e945c9
+		summarizeBy: none
+		sourceColumn: 'Burst Out Join'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Burst Out Set list'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 85751983-bc6b-4ce7-8978-ce093b4744f4
+		summarizeBy: sum
+		sourceColumn: 'Burst Out Set list'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Burst Out View'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: a5985e32-cb19-4345-9d98-e307663150e8
+		summarizeBy: sum
+		sourceColumn: 'Burst Out View'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Count JE Number'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 658c66ee-8672-4ed4-a596-400f101a7326
+		summarizeBy: sum
+		sourceColumn: 'Count JE Number'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Entity ID'
+		dataType: string
+		lineageTag: 5cb67103-a7bc-4559-9658-965bd4d9c795
+		summarizeBy: none
+		sourceColumn: 'Entity ID'
+
+		annotation SummarizationSetBy = Automatic
+
+	column Filter
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 7a599906-3910-49cc-8205-13e250fbd179
+		summarizeBy: sum
+		sourceColumn: Filter
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Fiscal Year'
+		dataType: string
+		lineageTag: e73dff2b-4845-4633-b818-78f306fbff24
+		summarizeBy: none
+		sourceColumn: 'Fiscal Year'
+
+		annotation SummarizationSetBy = Automatic
+
+	column Flag
+		dataType: boolean
+		lineageTag: 92f1c7b5-a747-4f1f-8f0c-c247cb3472d7
+		summarizeBy: none
+		sourceColumn: Flag
+
+		annotation SummarizationSetBy = Automatic
+
+	column Flag__copy_
+		dataType: boolean
+		lineageTag: 0f9e3a97-3c35-42ba-9ef2-c66d8a55dc0f
+		summarizeBy: none
+		sourceColumn: Flag__copy_
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'FS Line'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: ceaa2830-73c1-4f92-938f-6e4105db2f8b
+		summarizeBy: sum
+		sourceColumn: 'FS Line'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'FS Line Burst Out Account'
+		dataType: string
+		lineageTag: 84b94959-136d-42f6-a50f-dd5864cbc366
+		summarizeBy: none
+		sourceColumn: 'FS Line Burst Out Account'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Group By'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 5c41be28-74fd-4288-9303-d0bfdeb1de5a
+		summarizeBy: sum
+		sourceColumn: 'Group By'
+
+		annotation SummarizationSetBy = Automatic
+
+	column Image
+		dataType: string
+		lineageTag: c483d86f-7fd8-4202-84c8-f26ba7198360
+		summarizeBy: none
+		sourceColumn: Image
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Note Line'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 7b5ae8f0-88c8-43fc-b042-b8bb203ee79e
+		summarizeBy: sum
+		sourceColumn: 'Note Line'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Note Line Burst Out Account'
+		dataType: string
+		lineageTag: 34e5ef93-85e8-47c2-91e8-5d1a61e2683c
+		summarizeBy: none
+		sourceColumn: 'Note Line Burst Out Account'
+
+		annotation SummarizationSetBy = Automatic
+
+	column Selection
+		dataType: double
+		formatString: #,0.00
+		lineageTag: c1205014-8b3b-4c06-ac76-bb10537e6bc7
+		summarizeBy: sum
+		sourceColumn: Selection
+
+		annotation SummarizationSetBy = Automatic
+
+	column show
+		dataType: string
+		lineageTag: 91706fc5-ce99-4523-87c7-d51c4e1c50cd
+		summarizeBy: none
+		sourceColumn: show
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Show Cycle Based'
+		dataType: string
+		lineageTag: 6807cc0c-1862-4028-b349-d4347bc491bc
+		summarizeBy: none
+		sourceColumn: 'Show Cycle Based'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Sub Class'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 58b4d8da-b153-4ac6-9d45-8d903914f666
+		summarizeBy: sum
+		sourceColumn: 'Sub Class'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'SubClass Burst Out Account'
+		dataType: string
+		lineageTag: 683582fe-e9e4-441c-9392-c42f627b42c1
+		summarizeBy: none
+		sourceColumn: 'SubClass Burst Out Account'
+
+		annotation SummarizationSetBy = Automatic
+
+	column Type
+		dataType: string
+		lineageTag: a3365c8e-1332-423b-b8d4-7cf000ac1747
+		summarizeBy: none
+		sourceColumn: Type
+
+		annotation SummarizationSetBy = Automatic
+
+	column Amount
+		dataType: string
+		lineageTag: 11fc3a79-86d9-4b23-b6da-aeb8b96258f2
+		summarizeBy: none
+		sourceColumn: Amount
+
+		annotation SummarizationSetBy = Automatic
+
+	column Amount1
+		dataType: string
+		lineageTag: 58ec9dcb-48ec-42d9-92a7-fc854d32739c
+		summarizeBy: none
+		sourceColumn: Amount1
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Count of Amount Calculation'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: d85895a9-139d-49e7-aae9-e54df6f2f146
+		summarizeBy: sum
+		sourceColumn: 'Count of Amount Calculation'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Number of Records'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: b6740ac7-bc12-4afb-9ac0-45e2511bc435
+		summarizeBy: sum
+		sourceColumn: 'Number of Records'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Number of Records1'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: a6c3e033-74c4-44f2-816d-82db79fb361a
+		summarizeBy: sum
+		sourceColumn: 'Number of Records1'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Select Burst Out'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 0f044c02-5953-45b7-aaa1-3328739ceca0
+		summarizeBy: sum
+		sourceColumn: 'Select Burst Out'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Select Transaction Analysis view'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: ab2002a3-f745-4b08-a611-e1a64efacf60
+		summarizeBy: sum
+		sourceColumn: 'Select Transaction Analysis view'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Sum Cy'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 2812ea71-4a80-4f8d-be08-1ba79bf97058
+		summarizeBy: sum
+		sourceColumn: 'Sum Cy'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Sum Py1'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: d0874ee7-6302-498a-8364-d5cb77f42ab0
+		summarizeBy: sum
+		sourceColumn: 'Sum Py1'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Sum Py2'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 712ac74b-9f69-4565-a5ab-ce6119db003d
+		summarizeBy: sum
+		sourceColumn: 'Sum Py2'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Sum Py3'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 90be79c9-4c43-4035-b05f-b255a61b8e6e
+		summarizeBy: sum
+		sourceColumn: 'Sum Py3'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Sum Py4'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: e2f64679-b5f2-4b92-bbd5-062ca7fda2d6
+		summarizeBy: sum
+		sourceColumn: 'Sum Py4'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Total Credits'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 38249429-e8c6-4aa3-8673-d15312d051a2
+		summarizeBy: sum
+		sourceColumn: 'Total Credits'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Total Debits'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: a8d413f4-ee1b-4348-b931-1ce5f81710bf
+		summarizeBy: sum
+		sourceColumn: 'Total Debits'
+
+		annotation SummarizationSetBy = Automatic
+
+	column SHOW
+		dataType: string
+		lineageTag: d1e6a879-003d-4565-986c-ce3656c1c085
+		summarizeBy: none
+		sourceColumn: SHOW
+
+		annotation SummarizationSetBy = Automatic
+
+	column BurstoutSet
+		dataType: string
+		lineageTag: 45c757a8-1658-4f03-ba02-8d7f661935e1
+		summarizeBy: none
+		sourceColumn: BurstoutSet
+		displayFolder: Groups
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'TestData-62c2b3c4-164f-4b6d-90ad-7bae28c3bd42' = m
+		mode: import
+		source =
+				let
+				    // Source SQL Server
+				    Source = try
+				
+				        Sql.Database("b5dpm3ihhu.database.windows.net", "EmptyDB")
+				
+				    otherwise
+				
+				        #table({"Account Account Name", "Account Number", "Account Number Burst Out Account", "Acct Name", "Burst Out", "Burst Out Join", "Burst Out Set list", "Burst Out View", "Count JE Number", "Entity ID", "Filter", "Fiscal Year", "Flag", "Flag__copy_", "FS Line", "FS Line Burst Out Account", "Group By", "Image", "Note Line", "Note Line Burst Out Account", "Selection", "show", "Show Cycle Based", "Sub Class", "SubClass Burst Out Account", "Type", "Amount", "Amount1", "Count of Amount Calculation", "Number of Records", "Number of Records1", "Select Burst Out", "Select Transaction Analysis view", "Sum Cy", "Sum Py1", "Sum Py2", "Sum Py3", "Sum Py4", "Total Credits", "Total Debits"}, {}),
+				    #"TestData Table" = Source{[Schema="dbo", Item="TestData"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(#"TestData Table", {{"show", "Show"}}),
+				    #"Added SHOW" = Table.AddColumn(#"Renamed Columns", "SHOW", each if [BurstoutSet] then "Selected" else "Not Selected", type text),
+				    #"Added BurstoutSet" = Table.AddColumn(#"Added SHOW", "BurstoutSet", each "", type text),
+				    Result = #"Added BurstoutSet"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+

@@ -1,0 +1,54 @@
+{
+  "workbooks": [
+    "global_superstores_db",
+    "shapes_test",
+    "superstore_sales_dashboard"
+  ],
+  "total_tables": 6,
+  "unique_table_count": 4,
+  "tables_saved": 2,
+  "merge_candidates": [
+    {
+      "table_name": "Orders",
+      "workbooks": [
+        "global_superstores_db",
+        "shapes_test",
+        "superstore_sales_dashboard"
+      ],
+      "column_overlap": 0.8,
+      "conflicts": [
+        "Column 'Order ID': type mismatch — global_superstores_db=string, shapes_test=string, superstore_sales_dashboard=integer",
+        "Column 'Postal Code': type mismatch — global_superstores_db=string, shapes_test=integer"
+      ]
+    }
+  ],
+  "unique_tables": {
+    "shapes_test": [
+      "People",
+      "Returns"
+    ],
+    "superstore_sales_dashboard": [
+      "Extract"
+    ]
+  },
+  "measure_conflicts": [],
+  "measure_duplicates_removed": 0,
+  "relationship_duplicates_removed": 0,
+  "parameter_conflicts": [],
+  "parameter_duplicates_removed": 0,
+  "rls_conflicts": [],
+  "merge_score": 69,
+  "recommendation": "merge",
+  "linked_unique_tables": {
+    "shapes_test": [
+      "People",
+      "Returns"
+    ]
+  },
+  "isolated_tables": {
+    "superstore_sales_dashboard": [
+      "Extract"
+    ]
+  },
+  "timestamp": "2026-03-18T08:38:56.750679+00:00"
+}

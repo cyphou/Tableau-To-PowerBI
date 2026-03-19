@@ -1,0 +1,20 @@
+table 'Commission Rate'
+	lineageTag: 0bfe1bed-4f28-414b-a8e2-5acab984b9b3
+
+	measure 'Commission Rate' = SELECTEDVALUE('Commission Rate'[Value], 18.400000000000002)
+		lineageTag: 332de6f3-7ddb-4f47-afa8-ebf6ff775757
+
+	column Value
+		dataType: double
+		lineageTag: 4da5c145-5736-4b97-9596-9433d6fb0dee
+		summarizeBy: none
+		sourceColumn: Value
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Commission Rate-d55cc1d9-fc19-49a7-ad6b-ab02f30e00aa' = calculated
+		mode: import
+		source = GENERATESERIES(1.0, 100.0, 0.10000000000000001)
+
+	annotation PBI_ResultType = Table
+

@@ -1604,6 +1604,17 @@ def _add_shared_model_args(parser):
     )
 
     parser.add_argument(
+        '--strict-merge',
+        action='store_true',
+        default=False,
+        help=(
+            'Strict merge validation: block generation if post-merge safety '
+            'checks fail (cycles, unresolved DAX references, incompatible '
+            'column types). Without this flag, validation is advisory.'
+        )
+    )
+
+    parser.add_argument(
         '--bulk-assess',
         metavar='DIR',
         default=None,
@@ -2035,7 +2046,7 @@ def run_shared_model_migration(workbook_paths, model_name=None, output_dir=None,
                                calendar_start=None, calendar_end=None,
                                culture=None, model_mode='import',
                                languages=None, merge_config_path=None,
-                               save_config=False):
+                               save_config=False, strict_merge=False):
     """Orchestrate shared semantic model migration for multiple workbooks.
 
     Steps:
@@ -2135,6 +2146,7 @@ def run_shared_model_migration(workbook_paths, model_name=None, output_dir=None,
                 force_merge=force_merge,
                 merge_config_path=merge_config_path,
                 save_config=save_config,
+                strict_merge=strict_merge,
             )
 
             if result.get('model_path'):
@@ -2290,6 +2302,7 @@ def main():
             languages=getattr(args, 'languages', None),
             merge_config_path=getattr(args, 'merge_config', None),
             save_config=getattr(args, 'save_merge_config', False),
+            strict_merge=getattr(args, 'strict_merge', False),
         )
 
         # Auto-deploy bundle if --deploy-bundle is given alongside --shared-model

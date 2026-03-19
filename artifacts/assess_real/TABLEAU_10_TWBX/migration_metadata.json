@@ -1,0 +1,50 @@
+{
+  "generated_at": "2026-03-18T09:35:36.849300",
+  "source": "Tableau Migration",
+  "report_name": "TABLEAU_10_TWBX",
+  "objects_converted": {
+    "worksheets": 1,
+    "dashboards": 0,
+    "datasources": 1,
+    "calculations": 1,
+    "parameters": 0,
+    "filters": 0,
+    "stories": 0,
+    "sets": 0,
+    "groups": 0,
+    "bins": 0,
+    "hierarchies": 0,
+    "user_filters": 0,
+    "actions": 0,
+    "custom_sql": 0
+  },
+  "generated_output": {
+    "pages": 1,
+    "visuals": 1,
+    "theme_applied": false,
+    "theme_detail": {
+      "status": "skipped",
+      "reason": "no dashboard colors detected"
+    }
+  },
+  "tmdl_stats": {
+    "tables": 2,
+    "measures": 1,
+    "columns": 7,
+    "relationships": 0
+  },
+  "visual_type_mappings": {
+    "Sheet 1": "Automatic"
+  },
+  "visual_details": [
+    {
+      "worksheet": "Sheet 1",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "table",
+      "dimensions": [],
+      "measures": [],
+      "field_count": 0
+    }
+  ],
+  "approximations": []
+}

@@ -426,6 +426,430 @@ def _relationship_key(rel: dict) -> Tuple[str, str, str, str]:
     )
 
 
+# ═══════════════════════════════════════════════════════════════════
+#  Post-merge safety validation (Sprint 55)
+# ═══════════════════════════════════════════════════════════════════
+
+# Column type compatibility matrix: (from_type, to_type) → level
+# Levels: "ok" (safe promotion), "warn" (lossy), "error" (incompatible)
+_TYPE_COMPAT: Dict[Tuple[str, str], str] = {}
+
+_TYPE_NAMES = ['boolean', 'integer', 'int64', 'real', 'double', 'decimal',
+               'currency', 'datetime', 'string']
+
+# Build compatibility — wider type absorbs narrower
+_SAFE_PROMOTIONS = {
+    ('boolean', 'integer'), ('boolean', 'int64'), ('boolean', 'real'),
+    ('boolean', 'double'), ('boolean', 'decimal'), ('boolean', 'currency'),
+    ('boolean', 'string'),
+    ('integer', 'int64'), ('integer', 'real'), ('integer', 'double'),
+    ('integer', 'decimal'), ('integer', 'currency'), ('integer', 'string'),
+    ('int64', 'real'), ('int64', 'double'), ('int64', 'decimal'),
+    ('int64', 'currency'), ('int64', 'string'),
+    ('real', 'double'), ('real', 'decimal'), ('real', 'string'),
+    ('double', 'decimal'), ('double', 'string'),
+    ('decimal', 'string'), ('currency', 'string'),
+    ('currency', 'real'), ('currency', 'double'), ('currency', 'decimal'),
+    ('datetime', 'string'),
+}
+
+for _a in _TYPE_NAMES:
+    _TYPE_COMPAT[(_a, _a)] = 'ok'
+for _pair in _SAFE_PROMOTIONS:
+    _TYPE_COMPAT[_pair] = 'ok'
+    _TYPE_COMPAT[(_pair[1], _pair[0])] = 'ok'  # reverse is also ok (wider wins)
+
+_WARN_PROMOTIONS = {
+    ('string', 'integer'), ('string', 'int64'), ('string', 'real'),
+    ('string', 'double'), ('string', 'decimal'), ('string', 'boolean'),
+    ('string', 'currency'),
+}
+for _pair in _WARN_PROMOTIONS:
+    key = (_pair[0], _pair[1])
+    rev = (_pair[1], _pair[0])
+    if key not in _TYPE_COMPAT:
+        _TYPE_COMPAT[key] = 'warn'
+    if rev not in _TYPE_COMPAT:
+        _TYPE_COMPAT[rev] = 'warn'
+
+_ERROR_PROMOTIONS = {
+    ('datetime', 'boolean'), ('datetime', 'integer'), ('datetime', 'int64'),
+    ('datetime', 'real'), ('datetime', 'double'), ('datetime', 'decimal'),
+    ('datetime', 'currency'),
+}
+for _pair in _ERROR_PROMOTIONS:
+    key = (_pair[0], _pair[1])
+    rev = (_pair[1], _pair[0])
+    if key not in _TYPE_COMPAT:
+        _TYPE_COMPAT[key] = 'error'
+    if rev not in _TYPE_COMPAT:
+        _TYPE_COMPAT[rev] = 'error'
+
+
+def check_type_compatibility(type_a: str, type_b: str) -> str:
+    """Check compatibility between two column types.
+
+    Returns:
+        'ok', 'warn', or 'error'.
+    """
+    a = type_a.lower().strip()
+    b = type_b.lower().strip()
+    if a == b:
+        return 'ok'
+    return _TYPE_COMPAT.get((a, b), 'warn')
+
+
+def detect_merge_cycles(merged: dict) -> List[List[str]]:
+    """Detect circular relationships in merged model using iterative DFS.
+
+    Args:
+        merged: The merged converted_objects dict.
+
+    Returns:
+        List of cycles, each cycle is a list of table names forming the loop.
+    """
+    # Build directed graph from relationships
+    graph: Dict[str, set] = {}
+    for ds in merged.get('datasources', []):
+        for rel in ds.get('relationships', []):
+            if 'left' in rel:
+                from_t = rel['left'].get('table', '')
+                to_t = rel['right'].get('table', '')
+            else:
+                from_t = rel.get('from_table', '')
+                to_t = rel.get('to_table', '')
+            if from_t and to_t:
+                graph.setdefault(from_t, set()).add(to_t)
+
+    # Iterative DFS with explicit stack
+    cycles: List[List[str]] = []
+    WHITE, GRAY, BLACK = 0, 1, 2
+    color: Dict[str, int] = {n: WHITE for n in graph}
+    # Also include nodes that are only targets
+    for targets in list(graph.values()):
+        for t in targets:
+            if t not in color:
+                color[t] = WHITE
+
+    parent: Dict[str, Optional[str]] = {}
+
+    for start in list(color.keys()):
+        if color[start] != WHITE:
+            continue
+        stack = [(start, False)]  # (node, backtrack_flag)
+        while stack:
+            node, backtrack = stack.pop()
+            if backtrack:
+                color[node] = BLACK
+                continue
+            if color[node] == GRAY:
+                continue
+            color[node] = GRAY
+            stack.append((node, True))  # schedule backtrack
+            for neighbor in graph.get(node, set()):
+                if color.get(neighbor) == GRAY:
+                    # Found cycle — reconstruct path
+                    cycle = [neighbor]
+                    cur = node
+                    while cur != neighbor:
+                        cycle.append(cur)
+                        cur = parent.get(cur, neighbor)
+                    cycle.append(neighbor)
+                    cycle.reverse()
+                    cycles.append(cycle)
+                elif color.get(neighbor, WHITE) == WHITE:
+                    parent[neighbor] = node
+                    stack.append((neighbor, False))
+
+    return cycles
+
+
+def detect_type_conflicts(merged: dict) -> List[dict]:
+    """Detect column type conflicts across merged tables.
+
+    Compares each table's columns against the type compatibility matrix.
+    Only relevant for tables that were merged (have columns from multiple
+    workbooks, tracked via _merge_columns_into).
+
+    Returns:
+        List of {table, column, types, level} dicts.
+    """
+    warnings = []
+    for ds in merged.get('datasources', []):
+        for table in ds.get('tables', []):
+            table_name = table.get('name', '')
+            type_history = table.get('_column_type_history', {})
+            for col_name, types in type_history.items():
+                if len(types) < 2:
+                    continue
+                unique_types = list(set(types))
+                if len(unique_types) < 2:
+                    continue
+                # Check worst compatibility across all pairs
+                worst = 'ok'
+                for i in range(len(unique_types)):
+                    for j in range(i + 1, len(unique_types)):
+                        level = check_type_compatibility(
+                            unique_types[i], unique_types[j]
+                        )
+                        if level == 'error':
+                            worst = 'error'
+                        elif level == 'warn' and worst != 'error':
+                            worst = 'warn'
+                if worst != 'ok':
+                    warnings.append({
+                        'table': table_name,
+                        'column': col_name,
+                        'types': unique_types,
+                        'level': worst,
+                    })
+    return warnings
+
+
+# Regex to extract 'Table'[Column] references from DAX
+_RE_DAX_TABLE_COL = re.compile(
+    r"'([^']+)'\[([^\]]+)\]"
+)
+# Regex to extract bare [Column] references
+_RE_DAX_BARE_COL = re.compile(
+    r"(?<!')\[([^\]]+)\]"
+)
+
+
+def validate_merged_dax_references(merged: dict) -> List[dict]:
+    """Scan all measures and calc columns for unresolved 'Table'[Column] refs.
+
+    Args:
+        merged: The merged converted_objects dict.
+
+    Returns:
+        List of {source, source_type, ref, table, column, status, suggestion} dicts.
+    """
+    # Build inventory of tables and columns
+    table_names: set = set()
+    table_columns: Dict[str, set] = {}
+    for ds in merged.get('datasources', []):
+        for table in ds.get('tables', []):
+            tname = table.get('name', '')
+            table_names.add(tname)
+            cols = {c.get('name', '') for c in table.get('columns', [])}
+            table_columns[tname] = cols
+
+    # Also add parameter tables from merged parameters
+    for param in merged.get('parameters', []):
+        pname = param.get('caption', param.get('name', ''))
+        if pname:
+            table_names.add(pname)
+
+    errors: List[dict] = []
+
+    # Scan calculations (measures + calc columns)
+    for calc in merged.get('calculations', []):
+        formula = calc.get('dax_formula', calc.get('formula', ''))
+        if not formula:
+            continue
+        calc_name = calc.get('caption', calc.get('name', ''))
+        calc_type = calc.get('classification', 'measure')
+
+        for match in _RE_DAX_TABLE_COL.finditer(formula):
+            ref_table = match.group(1)
+            ref_col = match.group(2)
+            status = 'ok'
+            suggestion = None
+
+            if ref_table not in table_names:
+                status = 'error_table'
+                suggestion = _find_closest(ref_table, table_names)
+            elif ref_col not in table_columns.get(ref_table, set()):
+                status = 'error_column'
+                suggestion = _find_closest(
+                    ref_col, table_columns.get(ref_table, set())
+                )
+
+            if status != 'ok':
+                errors.append({
+                    'source': calc_name,
+                    'source_type': calc_type,
+                    'ref': f"'{ref_table}'[{ref_col}]",
+                    'table': ref_table,
+                    'column': ref_col,
+                    'status': status,
+                    'suggestion': suggestion,
+                })
+
+    return errors
+
+
+def validate_dax_relationship_functions(merged: dict) -> List[dict]:
+    """Verify RELATED() / LOOKUPVALUE() usage matches relationship cardinality.
+
+    RELATED() requires a manyToOne relationship on the referenced path.
+    LOOKUPVALUE() is used for manyToMany.
+
+    Returns:
+        List of {source, function, ref_table, ref_column, expected, actual, status}.
+    """
+    # Build relationship cardinality map: (from_table, to_table) -> cardinality
+    cardinality_map: Dict[Tuple[str, str], str] = {}
+    # Also build reverse map for RELATED lookups
+    for ds in merged.get('datasources', []):
+        for rel in ds.get('relationships', []):
+            if 'left' in rel:
+                ft = rel['left'].get('table', '')
+                tt = rel['right'].get('table', '')
+            else:
+                ft = rel.get('from_table', '')
+                tt = rel.get('to_table', '')
+            card = rel.get('cardinality', 'manyToOne')
+            if ft and tt:
+                cardinality_map[(ft, tt)] = card
+                cardinality_map[(tt, ft)] = card
+
+    mismatches: List[dict] = []
+
+    _RE_RELATED = re.compile(r"RELATED\s*\(\s*'([^']+)'\[([^\]]+)\]")
+    _RE_LOOKUPVALUE = re.compile(
+        r"LOOKUPVALUE\s*\(\s*'([^']+)'\[([^\]]+)\]"
+    )
+
+    for calc in merged.get('calculations', []):
+        formula = calc.get('dax_formula', calc.get('formula', ''))
+        if not formula:
+            continue
+        calc_name = calc.get('caption', calc.get('name', ''))
+
+        # Check RELATED() calls — should be manyToOne
+        for m in _RE_RELATED.finditer(formula):
+            ref_table = m.group(1)
+            ref_col = m.group(2)
+            # Find if any relationship path exists to ref_table
+            related_cards = [
+                v for (k, v) in cardinality_map.items()
+                if k[1] == ref_table
+            ]
+            if not related_cards:
+                mismatches.append({
+                    'source': calc_name,
+                    'function': 'RELATED',
+                    'ref_table': ref_table,
+                    'ref_column': ref_col,
+                    'expected': 'manyToOne',
+                    'actual': 'no_relationship',
+                    'status': 'error',
+                })
+            elif all(c == 'manyToMany' for c in related_cards):
+                mismatches.append({
+                    'source': calc_name,
+                    'function': 'RELATED',
+                    'ref_table': ref_table,
+                    'ref_column': ref_col,
+                    'expected': 'manyToOne',
+                    'actual': 'manyToMany',
+                    'status': 'warning',
+                })
+
+        # Check LOOKUPVALUE() calls — used when manyToMany
+        for m in _RE_LOOKUPVALUE.finditer(formula):
+            ref_table = m.group(1)
+            ref_col = m.group(2)
+            related_cards = [
+                v for (k, v) in cardinality_map.items()
+                if k[1] == ref_table
+            ]
+            if related_cards and all(c == 'manyToOne' for c in related_cards):
+                mismatches.append({
+                    'source': calc_name,
+                    'function': 'LOOKUPVALUE',
+                    'ref_table': ref_table,
+                    'ref_column': ref_col,
+                    'expected': 'manyToMany',
+                    'actual': 'manyToOne',
+                    'status': 'info',
+                })
+
+    return mismatches
+
+
+def generate_merge_validation_report(merged: dict) -> dict:
+    """Run all post-merge safety checks and produce a summary report.
+
+    Returns:
+        {
+            'cycles': [...],
+            'type_warnings': [...],
+            'dax_errors': [...],
+            'cardinality_mismatches': [...],
+            'counts': {cycles, type_errors, type_warnings, dax_errors, cardinality},
+            'score': int (0-100, higher is better),
+            'passed': bool,
+        }
+    """
+    cycles = detect_merge_cycles(merged)
+    type_warnings = detect_type_conflicts(merged)
+    dax_errors = validate_merged_dax_references(merged)
+    cardinality = validate_dax_relationship_functions(merged)
+
+    # Counts
+    n_cycles = len(cycles)
+    n_type_errors = sum(1 for w in type_warnings if w['level'] == 'error')
+    n_type_warns = sum(1 for w in type_warnings if w['level'] == 'warn')
+    n_dax_errors = len(dax_errors)
+    n_card = sum(1 for c in cardinality if c['status'] in ('error', 'warning'))
+
+    # Score: start at 100, deduct for issues
+    score = 100
+    score -= n_cycles * 25  # cycles are critical
+    score -= n_type_errors * 15
+    score -= n_type_warns * 5
+    score -= n_dax_errors * 10
+    score -= n_card * 5
+    score = max(0, score)
+
+    passed = n_cycles == 0 and n_type_errors == 0
+
+    return {
+        'cycles': cycles,
+        'type_warnings': type_warnings,
+        'dax_errors': dax_errors,
+        'cardinality_mismatches': cardinality,
+        'counts': {
+            'cycles': n_cycles,
+            'type_errors': n_type_errors,
+            'type_warnings': n_type_warns,
+            'dax_errors': n_dax_errors,
+            'cardinality_mismatches': n_card,
+        },
+        'score': score,
+        'passed': passed,
+    }
+
+
+def _find_closest(name: str, candidates: set) -> Optional[str]:
+    """Find the closest match for *name* in *candidates* (Levenshtein-like)."""
+    if not candidates:
+        return None
+    name_lower = name.lower()
+    best = None
+    best_score = 999
+    for c in candidates:
+        c_lower = c.lower()
+        # Simple edit distance approximation: shared prefix + length diff
+        common = 0
+        for a, b in zip(name_lower, c_lower):
+            if a == b:
+                common += 1
+            else:
+                break
+        dist = abs(len(name_lower) - len(c_lower)) + (max(len(name_lower), len(c_lower)) - common)
+        if dist < best_score:
+            best_score = dist
+            best = c
+    # Only suggest if reasonably close
+    if best_score <= max(3, len(name) // 2):
+        return best
+    return None
+
+
 def _detect_parameter_conflicts(
     all_extracted: List[dict], workbook_names: List[str]
 ) -> Tuple[List[dict], int]:
@@ -830,16 +1254,28 @@ def _merge_columns_into(existing_table: dict, new_table: dict):
 
     Existing columns are kept. New columns not in existing are added.
     Type conflicts: wider type wins (string > real > integer).
+    Tracks type history in ``_column_type_history`` for post-merge validation.
     """
     existing_cols = {c.get('name', '').lower(): c
                      for c in existing_table.get('columns', [])}
 
+    # Ensure type history dict exists
+    type_history = existing_table.setdefault('_column_type_history', {})
+
+    # Seed type history from existing columns (first workbook)
+    for col in existing_table.get('columns', []):
+        cn = col.get('name', '').lower()
+        if cn not in type_history:
+            type_history[cn] = [col.get('datatype', 'string')]
+
     for col in new_table.get('columns', []):
         col_name = col.get('name', '').lower()
+        new_type = col.get('datatype', 'string')
         if col_name in existing_cols:
+            # Track type history for validation
+            type_history.setdefault(col_name, []).append(new_type)
             # Resolve type conflicts — wider type wins
             existing_type = existing_cols[col_name].get('datatype', 'string')
-            new_type = col.get('datatype', 'string')
             if _type_width(new_type) > _type_width(existing_type):
                 existing_cols[col_name]['datatype'] = new_type
             # Merge metadata: unhide if unhidden in any workbook

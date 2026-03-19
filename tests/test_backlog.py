@@ -249,7 +249,7 @@ class TestPBIRSchemaValidation(unittest.TestCase):
 
     def test_missing_schema_key(self):
         """Missing $schema in report JSON is flagged."""
-        url = 'https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/3.1.0/schema.json'
+        url = 'https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/2.0.0/schema.json'
         data = {'datasetReference': {}}
         errors = ArtifactValidator.validate_pbir_structure(data, url)
         self.assertTrue(any('$schema' in e for e in errors))
