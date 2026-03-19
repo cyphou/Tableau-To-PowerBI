@@ -302,6 +302,9 @@ def _compute_complexity(extracted: dict) -> Dict[str, int]:
         'table_calcs': table_calc_count,
         'filters': filters,
         'actions': actions,
+        'parameters': len(extracted.get('parameters', [])),
+        'rls_rules': len(extracted.get('user_filters', [])),
+        'custom_sql': len(extracted.get('custom_sql', [])),
     }
 
 

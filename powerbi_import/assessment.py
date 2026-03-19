@@ -1090,6 +1090,229 @@ def _check_connection_strings(extracted: Dict) -> CategoryResult:
 
 
 # ═══════════════════════════════════════════════════════════════════
+#  Sprint 60: New assessment categories
+# ═══════════════════════════════════════════════════════════════════
+
+def _check_performance(extracted: Dict) -> CategoryResult:
+    """Assess performance impact: query complexity, expensive patterns."""
+    cat = CategoryResult(name="Performance")
+
+    calcs = extracted.get("calculations", [])
+    filters_list = extracted.get("filters", [])
+    worksheets = extracted.get("worksheets", [])
+
+    # Count LOD expressions
+    lod_count = 0
+    table_calc_count = 0
+    lookupvalue_count = 0
+    for c in calcs:
+        formula = c.get("formula", "") or ""
+        if re.search(r'\{(?:FIXED|INCLUDE|EXCLUDE)\s', formula):
+            lod_count += 1
+        if re.search(r'\b(?:RUNNING_|WINDOW_|RANK|INDEX)\b', formula, re.IGNORECASE):
+            table_calc_count += 1
+        if 'LOOKUPVALUE' in formula.upper():
+            lookupvalue_count += 1
+
+    complexity_score = lod_count * 3 + table_calc_count * 2 + len(filters_list) + lookupvalue_count * 2
+
+    if complexity_score > 100:
+        cat.checks.append(CheckItem(
+            cat.name, "Query complexity", FAIL,
+            f"High complexity score ({complexity_score}): {lod_count} LODs, "
+            f"{table_calc_count} table calcs, {lookupvalue_count} LOOKUPVALUE chains.",
+            "Consider simplifying calculations or pre-aggregating data.",
+        ))
+    elif complexity_score > 30:
+        cat.checks.append(CheckItem(
+            cat.name, "Query complexity", WARN,
+            f"Moderate complexity ({complexity_score}): {lod_count} LODs, "
+            f"{table_calc_count} table calcs.",
+            "Review performance after migration. Consider Import mode.",
+        ))
+    else:
+        cat.checks.append(CheckItem(
+            cat.name, "Query complexity", PASS,
+            f"Low complexity score ({complexity_score}).",
+        ))
+
+    # Unique DAX expression count
+    dax_count = len(calcs)
+    if dax_count > 50:
+        cat.checks.append(CheckItem(
+            cat.name, "DAX expression count", WARN,
+            f"{dax_count} unique calculations — may impact model refresh time.",
+            "Review for consolidation opportunities.",
+        ))
+    else:
+        cat.checks.append(CheckItem(
+            cat.name, "DAX expression count", PASS,
+            f"{dax_count} calculations — within typical range.",
+        ))
+
+    return cat
+
+
+def _check_data_volume(extracted: Dict) -> CategoryResult:
+    """Assess data volume: row counts, model size estimates."""
+    cat = CategoryResult(name="Data Volume")
+
+    datasources = extracted.get("datasources", [])
+    total_tables = 0
+    large_tables = 0
+
+    for ds in datasources:
+        tables = ds.get("tables", [])
+        total_tables += len(tables)
+        for tbl in tables:
+            row_count = tbl.get("row_count", 0) or 0
+            if row_count > 10_000_000:
+                cat.checks.append(CheckItem(
+                    cat.name, f"Large table: {tbl.get('name', 'unknown')}",
+                    WARN,
+                    f"Table has {row_count:,} rows — consider DirectQuery mode.",
+                    "Use DirectQuery or incremental refresh for large tables.",
+                ))
+                large_tables += 1
+            elif row_count > 1_000_000:
+                cat.checks.append(CheckItem(
+                    cat.name, f"Table size: {tbl.get('name', 'unknown')}",
+                    INFO,
+                    f"Table has {row_count:,} rows.",
+                ))
+
+    if large_tables == 0:
+        cat.checks.append(CheckItem(
+            cat.name, "Table sizes", PASS,
+            f"{total_tables} tables — no excessively large tables detected.",
+        ))
+
+    return cat
+
+
+def _check_prep_complexity(extracted: Dict) -> CategoryResult:
+    """Assess Tableau Prep flow complexity."""
+    cat = CategoryResult(name="Prep Complexity")
+
+    prep_steps = extracted.get("prep_steps", [])
+    if not prep_steps:
+        cat.checks.append(CheckItem(
+            cat.name, "Prep flow", PASS,
+            "No Tableau Prep flow provided.",
+        ))
+        return cat
+
+    step_count = len(prep_steps)
+    join_count = sum(1 for s in prep_steps if s.get("type") in ("join", "Join"))
+    branch_count = sum(1 for s in prep_steps if s.get("type") in ("union", "Union"))
+
+    if step_count > 50:
+        cat.checks.append(CheckItem(
+            cat.name, "Step count", WARN,
+            f"Complex Prep flow: {step_count} steps, {join_count} joins, {branch_count} unions.",
+            "Review generated Power Query for correctness.",
+        ))
+    elif step_count > 10:
+        cat.checks.append(CheckItem(
+            cat.name, "Step count", INFO,
+            f"Moderate Prep flow: {step_count} steps.",
+        ))
+    else:
+        cat.checks.append(CheckItem(
+            cat.name, "Step count", PASS,
+            f"Simple Prep flow: {step_count} steps.",
+        ))
+
+    return cat
+
+
+def _check_licensing(extracted: Dict) -> CategoryResult:
+    """Assess licensing requirements for PBI features."""
+    cat = CategoryResult(name="Licensing")
+
+    datasources = extracted.get("datasources", [])
+    calcs = extracted.get("calculations", [])
+    worksheets = extracted.get("worksheets", [])
+
+    # Estimate model complexity (proxy for size)
+    total_columns = sum(
+        len(tbl.get("columns", []))
+        for ds in datasources
+        for tbl in ds.get("tables", [])
+    )
+    total_measures = len(calcs)
+
+    needs_premium = []
+    if total_columns > 500:
+        needs_premium.append(f"{total_columns} columns (likely >1GB model)")
+    if len(worksheets) > 30:
+        needs_premium.append(f"{len(worksheets)} worksheets (large report)")
+
+    rls_count = len(extracted.get("user_filters", []))
+    if rls_count > 10:
+        needs_premium.append(f"{rls_count} RLS rules (complex security)")
+
+    if needs_premium:
+        cat.checks.append(CheckItem(
+            cat.name, "Premium features", WARN,
+            f"May require Premium/PPU: {'; '.join(needs_premium)}.",
+            "Consider Power BI Premium Per User or Premium capacity.",
+        ))
+    else:
+        cat.checks.append(CheckItem(
+            cat.name, "License tier", PASS,
+            "Standard Power BI Pro license should be sufficient.",
+        ))
+
+    return cat
+
+
+def _check_multi_datasource(extracted: Dict) -> CategoryResult:
+    """Detect worksheets pulling from multiple datasources."""
+    cat = CategoryResult(name="Multi-Datasource")
+
+    worksheets = extracted.get("worksheets", [])
+    datasources = extracted.get("datasources", [])
+
+    # Build column→datasource mapping
+    col_ds_map: Dict[str, str] = {}
+    for ds in datasources:
+        ds_name = ds.get("name", ds.get("caption", ""))
+        for tbl in ds.get("tables", []):
+            for col in tbl.get("columns", []):
+                col_name = col.get("name", "")
+                if col_name:
+                    col_ds_map[col_name] = ds_name
+
+    multi_ds_count = 0
+    for ws in worksheets:
+        ds_refs = set()
+        for field_entry in ws.get("fields", []):
+            fname = field_entry if isinstance(field_entry, str) else field_entry.get("name", "")
+            # Strip brackets
+            fname = fname.strip("[]")
+            if fname in col_ds_map:
+                ds_refs.add(col_ds_map[fname])
+        if len(ds_refs) > 1:
+            multi_ds_count += 1
+            cat.checks.append(CheckItem(
+                cat.name,
+                f"Worksheet: {ws.get('name', 'unknown')}",
+                WARN,
+                f"References {len(ds_refs)} datasources: {', '.join(sorted(ds_refs))}.",
+                "Merge datasources or use LOOKUPVALUE for cross-source references.",
+            ))
+
+    if multi_ds_count == 0:
+        cat.checks.append(CheckItem(
+            cat.name, "Single datasource", PASS,
+            "All worksheets use a single datasource.",
+        ))
+
+    return cat
+
+
+# ═══════════════════════════════════════════════════════════════════
 #  Main assessment orchestrator
 # ═══════════════════════════════════════════════════════════════════
 
@@ -1123,6 +1346,11 @@ def run_assessment(
         _check_extract_and_packaging(extracted),
         _check_migration_scope(extracted),
         _check_connection_strings(extracted),
+        _check_performance(extracted),
+        _check_data_volume(extracted),
+        _check_prep_complexity(extracted),
+        _check_licensing(extracted),
+        _check_multi_datasource(extracted),
     ]
 
     # Build summary
