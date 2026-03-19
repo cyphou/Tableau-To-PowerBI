@@ -925,32 +925,10 @@ def _apply_semantic_enrichments(model, extra_objects, main_table_name, column_ta
     _process_sets_groups_bins(model, extra_objects, main_table_name, column_table_map)
 
     # Phase 6: Automatic date table if date columns detected
-    # Skip if the source already has a date/calendar table
-    _DATE_TABLE_NAMES = {
-        # English
-        'calendar', 'date', 'dimdate', 'dim_date', 'datedimension',
-        'date_dimension', 'dim date', 'datetable', 'date_table',
-        'time', 'dimtime', 'dim_time', 'dates',
-        # French
-        'calendrier', 'dimcalendrier', 'dim_calendrier', 'dimdate',
-        'dim_date', 'tabledate', 'table_date', 'temps',
-        # German
-        'datum', 'kalender', 'dimdatum', 'dim_datum', 'dimkalender',
-        'dim_kalender', 'zeit',
-        # Spanish
-        'fecha', 'calendario', 'dimfecha', 'dim_fecha', 'dimcalendario',
-        'dim_calendario',
-        # Portuguese
-        'data', 'dimdata', 'dim_data', 'calendario',
-        # Italian
-        'datacalendario', 'dim_data', 'dimdata',
-        # Dutch
-        'datum', 'dimdatum', 'dim_datum', 'kalender',
-        # Japanese / Chinese / Korean (romanized common names)
-        'datemaster', 'date_master', 'masterdate', 'master_date',
-    }
-    existing_table_names = {t.get('name', '').lower().strip() for t in model['model']['tables']}
-    has_existing_date_table = bool(existing_table_names & _DATE_TABLE_NAMES)
+    # Skip if the source already has a date/calendar table (name-based or column-heuristic)
+    has_existing_date_table = any(
+        _is_date_table(t) for t in model['model']['tables']
+    )
 
     has_date_columns = False
     if not has_existing_date_table:
@@ -3077,6 +3055,92 @@ def _create_quick_table_calc_measures(model, worksheets, main_table_name, column
     
     if added:
         print(f"  ✓ {added} quick table calc measures generated")
+
+
+# Well-known date table names (any language)
+_DATE_TABLE_NAMES = {
+    # English
+    'calendar', 'date', 'dimdate', 'dim_date', 'datedimension',
+    'date_dimension', 'dim date', 'datetable', 'date_table',
+    'time', 'dimtime', 'dim_time', 'dates',
+    # French
+    'calendrier', 'dimcalendrier', 'dim_calendrier',
+    'tabledate', 'table_date', 'temps',
+    # German
+    'datum', 'kalender', 'dimdatum', 'dim_datum', 'dimkalender',
+    'dim_kalender', 'zeit',
+    # Spanish
+    'fecha', 'calendario', 'dimfecha', 'dim_fecha', 'dimcalendario',
+    'dim_calendario',
+    # Portuguese
+    'data', 'dimdata', 'dim_data',
+    # Italian
+    'datacalendario',
+    # Dutch (datum/kalender already covered above)
+    # Romanized
+    'datemaster', 'date_master', 'masterdate', 'master_date',
+}
+
+# Column-name patterns that are typical date-part columns (any language)
+_DATE_PART_PATTERNS = re.compile(
+    r'^('
+    # Year
+    r'year|ann[eé]e|annee|jahr|a[nñ]o|ano|anno|jaar'
+    r'|'
+    # Month
+    r'month|mois|monat|mes|mese|maand|monthname|month.?name|month.?num'
+    r'|'
+    # Day
+    r'day|jour|tag|d[ií]a|dia|giorno|dag|dayname|day.?name|dayofweek|day.?of.?week'
+    r'|'
+    # Quarter
+    r'quarter|trimestre|quartal|kwartaal|quarter.?name|quarter.?num'
+    r'|'
+    # Week
+    r'week|semaine|woche|semana|settimana|weeknum|week.?num|weekday|week.?of.?year'
+    r'|'
+    # Date (the key column itself)
+    r'date|datum|fecha|data|datekey|date.?key|fulldate|full.?date'
+    r'|'
+    # Calendar-specific
+    r'calendar|calendrier|kalender|calendario|fiscal.?year|fiscal.?month|fiscal.?quarter'
+    r')$', re.IGNORECASE
+)
+
+
+def _is_date_table(table):
+    """Detect whether a table is a date/calendar dimension table.
+
+    Uses two strategies:
+    1. Name-based: table name matches a known date table name (any language).
+    2. Column-heuristic: table has a DateTime column AND ≥50% of its columns
+       have names that match common date-part patterns (Year, Month, Day, etc.).
+    """
+    name = table.get('name', '').lower().strip()
+
+    # Strategy 1: well-known name
+    if name in _DATE_TABLE_NAMES:
+        return True
+
+    # Strategy 2: column heuristic
+    columns = table.get('columns', [])
+    if not columns:
+        return False
+
+    has_datetime_col = any(
+        c.get('dataType') == 'DateTime' or c.get('dataCategory') == 'DateTime'
+        for c in columns
+    )
+    if not has_datetime_col:
+        return False
+
+    date_part_count = sum(
+        1 for c in columns
+        if _DATE_PART_PATTERNS.match(c.get('name', '').strip())
+    )
+
+    # If ≥50% of columns look like date parts, it's a date table
+    return date_part_count >= len(columns) * 0.5
 
 
 def _add_date_table(model):

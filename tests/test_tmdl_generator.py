@@ -26,6 +26,7 @@ from powerbi_import.tmdl_generator import (
     generate_theme_json,
     _build_semantic_model,
     _add_date_table,
+    _is_date_table,
     _write_tmdl_files,
     _write_perspectives_tmdl,
     _write_culture_tmdl,
@@ -677,189 +678,125 @@ class TestAddDateTable(unittest.TestCase):
         self.assertEqual(cal_tables[0]["partitions"][0]["name"], "p")
 
     def test_skip_calendar_when_source_has_dimdate_table(self):
-        """Source table named 'DimDate' prevents auto Calendar generation in Phase 6."""
-        model = {
-            "model": {
-                "tables": [
-                    {
-                        "name": "DimDate",
-                        "columns": [
-                            {"name": "DateKey", "dataType": "DateTime", "sourceColumn": "DateKey"},
-                            {"name": "Year", "dataType": "int64", "sourceColumn": "Year"},
-                        ],
-                        "partitions": [],
-                        "measures": [],
-                    },
-                    {
-                        "name": "Sales",
-                        "columns": [
-                            {"name": "OrderDate", "dataType": "DateTime", "sourceColumn": "OrderDate"},
-                        ],
-                        "partitions": [],
-                        "measures": [],
-                    },
-                ],
-                "relationships": [],
-            }
+        """Source table named 'DimDate' is detected as a date table via _is_date_table."""
+        table = {
+            "name": "DimDate",
+            "columns": [
+                {"name": "DateKey", "dataType": "DateTime", "sourceColumn": "DateKey"},
+                {"name": "Year", "dataType": "int64", "sourceColumn": "Year"},
+            ],
+            "partitions": [], "measures": [],
         }
-        # Simulate Phase 6 guard logic
-        from powerbi_import.tmdl_generator import _apply_semantic_enrichments
-        _DATE_TABLE_NAMES = {
-            'calendar', 'date', 'dimdate', 'dim_date', 'datedimension',
-            'date_dimension', 'dim date', 'datetable', 'date_table',
-            'time', 'dimtime', 'dim_time', 'dates',
-            'calendrier', 'dimcalendrier', 'dim_calendrier',
-            'tabledate', 'table_date', 'temps',
-            'datum', 'kalender', 'dimdatum', 'dim_datum', 'dimkalender',
-            'dim_kalender', 'zeit',
-            'fecha', 'calendario', 'dimfecha', 'dim_fecha', 'dimcalendario',
-            'dim_calendario',
-            'data', 'dimdata', 'dim_data',
-            'datacalendario',
-            'datemaster', 'date_master', 'masterdate', 'master_date',
-        }
-        existing = {t.get('name', '').lower().strip() for t in model['model']['tables']}
-        has_existing = bool(existing & _DATE_TABLE_NAMES)
-        self.assertTrue(has_existing)
-        # _add_date_table would still add (it only guards 'Calendar' name),
-        # but Phase 6 guard skips calling it entirely
-        table_count_before = len(model['model']['tables'])
-        if not has_existing:
-            _add_date_table(model)
-        self.assertEqual(len(model['model']['tables']), table_count_before)
+        self.assertTrue(_is_date_table(table))
 
     def test_skip_calendar_when_source_has_date_table(self):
-        """Source table named 'Date' prevents auto Calendar generation."""
-        model = {
-            "model": {
-                "tables": [
-                    {
-                        "name": "Date",
-                        "columns": [
-                            {"name": "FullDate", "dataType": "DateTime", "sourceColumn": "FullDate"},
-                        ],
-                        "partitions": [], "measures": [],
-                    },
-                    {
-                        "name": "Facts",
-                        "columns": [
-                            {"name": "SaleDate", "dataType": "DateTime", "sourceColumn": "SaleDate"},
-                        ],
-                        "partitions": [], "measures": [],
-                    },
-                ],
-                "relationships": [],
-            }
+        """Source table named 'Date' is detected as a date table."""
+        table = {
+            "name": "Date",
+            "columns": [
+                {"name": "FullDate", "dataType": "DateTime", "sourceColumn": "FullDate"},
+            ],
+            "partitions": [], "measures": [],
         }
-        _DATE_TABLE_NAMES = {
-            'calendar', 'date', 'dimdate', 'dim_date', 'datedimension',
-            'date_dimension', 'dim date', 'datetable', 'date_table',
-            'time', 'dimtime', 'dim_time', 'dates',
-            'calendrier', 'dimcalendrier', 'dim_calendrier',
-            'tabledate', 'table_date', 'temps',
-            'datum', 'kalender', 'dimdatum', 'dim_datum', 'dimkalender',
-            'dim_kalender', 'zeit',
-            'fecha', 'calendario', 'dimfecha', 'dim_fecha', 'dimcalendario',
-            'dim_calendario',
-            'data', 'dimdata', 'dim_data',
-            'datacalendario',
-            'datemaster', 'date_master', 'masterdate', 'master_date',
-        }
-        existing = {t.get('name', '').lower().strip() for t in model['model']['tables']}
-        self.assertTrue(bool(existing & _DATE_TABLE_NAMES))
+        self.assertTrue(_is_date_table(table))
 
     def test_skip_calendar_when_source_has_french_calendrier(self):
-        """Source table named 'Calendrier' (French) prevents auto Calendar generation."""
-        model = {
-            "model": {
-                "tables": [
-                    {
-                        "name": "Calendrier",
-                        "columns": [
-                            {"name": "Date", "dataType": "DateTime", "sourceColumn": "Date"},
-                            {"name": "Annee", "dataType": "int64", "sourceColumn": "Annee"},
-                        ],
-                        "partitions": [], "measures": [],
-                    },
-                    {
-                        "name": "Ventes",
-                        "columns": [
-                            {"name": "DateVente", "dataType": "DateTime", "sourceColumn": "DateVente"},
-                        ],
-                        "partitions": [], "measures": [],
-                    },
-                ],
-                "relationships": [],
-            }
+        """Source table named 'Calendrier' (French) is detected as a date table."""
+        table = {
+            "name": "Calendrier",
+            "columns": [
+                {"name": "Date", "dataType": "DateTime", "sourceColumn": "Date"},
+                {"name": "Annee", "dataType": "int64", "sourceColumn": "Annee"},
+            ],
+            "partitions": [], "measures": [],
         }
-        _DATE_TABLE_NAMES = {
-            'calendar', 'date', 'dimdate', 'dim_date', 'datedimension',
-            'date_dimension', 'dim date', 'datetable', 'date_table',
-            'time', 'dimtime', 'dim_time', 'dates',
-            'calendrier', 'dimcalendrier', 'dim_calendrier',
-            'tabledate', 'table_date', 'temps',
-            'datum', 'kalender', 'dimdatum', 'dim_datum', 'dimkalender',
-            'dim_kalender', 'zeit',
-            'fecha', 'calendario', 'dimfecha', 'dim_fecha', 'dimcalendario',
-            'dim_calendario',
-            'data', 'dimdata', 'dim_data',
-            'datacalendario',
-            'datemaster', 'date_master', 'masterdate', 'master_date',
-        }
-        existing = {t.get('name', '').lower().strip() for t in model['model']['tables']}
-        self.assertTrue(bool(existing & _DATE_TABLE_NAMES))
+        self.assertTrue(_is_date_table(table))
 
     def test_skip_calendar_when_source_has_german_datum(self):
-        """Source table named 'Datum' (German) prevents auto Calendar generation."""
-        model = {
-            "model": {
-                "tables": [
-                    {
-                        "name": "Datum",
-                        "columns": [
-                            {"name": "Datum", "dataType": "DateTime", "sourceColumn": "Datum"},
-                        ],
-                        "partitions": [], "measures": [],
-                    },
-                ],
-                "relationships": [],
-            }
+        """Source table named 'Datum' (German) is detected as a date table."""
+        table = {
+            "name": "Datum",
+            "columns": [
+                {"name": "Datum", "dataType": "DateTime", "sourceColumn": "Datum"},
+            ],
+            "partitions": [], "measures": [],
         }
-        existing = {t.get('name', '').lower().strip() for t in model['model']['tables']}
-        self.assertIn('datum', existing)
+        self.assertTrue(_is_date_table(table))
 
     def test_skip_calendar_when_source_has_spanish_fecha(self):
-        """Source table named 'Fecha' (Spanish) prevents auto Calendar generation."""
-        model = {
-            "model": {
-                "tables": [
-                    {
-                        "name": "DimFecha",
-                        "columns": [
-                            {"name": "Fecha", "dataType": "DateTime", "sourceColumn": "Fecha"},
-                        ],
-                        "partitions": [], "measures": [],
-                    },
-                ],
-                "relationships": [],
-            }
+        """Source table named 'DimFecha' (Spanish) is detected as a date table."""
+        table = {
+            "name": "DimFecha",
+            "columns": [
+                {"name": "Fecha", "dataType": "DateTime", "sourceColumn": "Fecha"},
+            ],
+            "partitions": [], "measures": [],
         }
-        _DATE_TABLE_NAMES = {
-            'calendar', 'date', 'dimdate', 'dim_date', 'datedimension',
-            'date_dimension', 'dim date', 'datetable', 'date_table',
-            'time', 'dimtime', 'dim_time', 'dates',
-            'calendrier', 'dimcalendrier', 'dim_calendrier',
-            'tabledate', 'table_date', 'temps',
-            'datum', 'kalender', 'dimdatum', 'dim_datum', 'dimkalender',
-            'dim_kalender', 'zeit',
-            'fecha', 'calendario', 'dimfecha', 'dim_fecha', 'dimcalendario',
-            'dim_calendario',
-            'data', 'dimdata', 'dim_data',
-            'datacalendario',
-            'datemaster', 'date_master', 'masterdate', 'master_date',
+        self.assertTrue(_is_date_table(table))
+
+    def test_heuristic_detects_custom_named_date_table(self):
+        """A table with a custom name but date-like columns is detected by heuristic."""
+        table = {
+            "name": "MyCustomDateLookup",
+            "columns": [
+                {"name": "Date", "dataType": "DateTime", "sourceColumn": "Date"},
+                {"name": "Year", "dataType": "int64", "sourceColumn": "Year"},
+                {"name": "Month", "dataType": "int64", "sourceColumn": "Month"},
+                {"name": "Quarter", "dataType": "string", "sourceColumn": "Quarter"},
+                {"name": "Day", "dataType": "int64", "sourceColumn": "Day"},
+                {"name": "DayName", "dataType": "string", "sourceColumn": "DayName"},
+            ],
+            "partitions": [], "measures": [],
         }
-        existing = {t.get('name', '').lower().strip() for t in model['model']['tables']}
-        self.assertTrue(bool(existing & _DATE_TABLE_NAMES))
+        self.assertTrue(_is_date_table(table))
+
+    def test_heuristic_detects_french_column_date_table(self):
+        """A table with French date-part column names is detected by heuristic."""
+        table = {
+            "name": "TableTemporelle",
+            "columns": [
+                {"name": "Date", "dataType": "DateTime", "sourceColumn": "Date"},
+                {"name": "Année", "dataType": "int64", "sourceColumn": "Année"},
+                {"name": "Mois", "dataType": "int64", "sourceColumn": "Mois"},
+                {"name": "Jour", "dataType": "int64", "sourceColumn": "Jour"},
+                {"name": "Trimestre", "dataType": "string", "sourceColumn": "Trimestre"},
+                {"name": "Semaine", "dataType": "int64", "sourceColumn": "Semaine"},
+            ],
+            "partitions": [], "measures": [],
+        }
+        self.assertTrue(_is_date_table(table))
+
+    def test_heuristic_does_not_flag_fact_table(self):
+        """A fact table with a DateTime column but mostly non-date columns is NOT a date table."""
+        table = {
+            "name": "Sales",
+            "columns": [
+                {"name": "OrderDate", "dataType": "DateTime", "sourceColumn": "OrderDate"},
+                {"name": "Amount", "dataType": "double", "sourceColumn": "Amount"},
+                {"name": "Quantity", "dataType": "int64", "sourceColumn": "Quantity"},
+                {"name": "Product", "dataType": "string", "sourceColumn": "Product"},
+                {"name": "Customer", "dataType": "string", "sourceColumn": "Customer"},
+                {"name": "Region", "dataType": "string", "sourceColumn": "Region"},
+            ],
+            "partitions": [], "measures": [],
+        }
+        self.assertFalse(_is_date_table(table))
+
+    def test_heuristic_german_columns(self):
+        """German date-part column names detected by heuristic."""
+        table = {
+            "name": "ZeitDimension",
+            "columns": [
+                {"name": "Datum", "dataType": "DateTime", "sourceColumn": "Datum"},
+                {"name": "Jahr", "dataType": "int64", "sourceColumn": "Jahr"},
+                {"name": "Monat", "dataType": "int64", "sourceColumn": "Monat"},
+                {"name": "Tag", "dataType": "int64", "sourceColumn": "Tag"},
+                {"name": "Quartal", "dataType": "string", "sourceColumn": "Quartal"},
+                {"name": "Woche", "dataType": "int64", "sourceColumn": "Woche"},
+            ],
+            "partitions": [], "measures": [],
+        }
+        self.assertTrue(_is_date_table(table))
 
     def test_calendar_multi_table_relationships(self):
         """Calendar links to date columns in multiple fact tables."""
