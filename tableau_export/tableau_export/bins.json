@@ -1,0 +1,8 @@
+[
+  {
+    "name": "Manufacturer",
+    "source_field": "",
+    "size": "10",
+    "datatype": "string"
+  }
+]

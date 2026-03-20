@@ -23,6 +23,14 @@ _RE_DERIVATION_PREFIX = re.compile(
 )
 _RE_TYPE_SUFFIX = re.compile(r':(nk|qk|ok|fn|tn)$')
 
+# Tableau shelf aggregation prefix → PBI Aggregation Function ID
+# 0=Sum, 1=Avg, 2=Count, 3=Min, 4=Max, 5=CountNonNull, 6=DistinctCount
+_TABLEAU_AGG_TO_PBI_FUNC = {
+    'sum': 0, 'avg': 1, 'cnt': 2, 'count': 2,
+    'min': 3, 'max': 4, 'ctd': 6, 'countd': 6,
+    'median': 0, 'attr': 0,
+}
+
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -479,11 +487,18 @@ class PowerBIProjectGenerator:
                             by_prop = sort_by
                             if hasattr(self, '_field_map') and sort_by in self._field_map:
                                 by_entity, by_prop = self._field_map[sort_by]
+                            # Detect aggregation from the original sort_by Tableau name
+                            raw_sort_by = sort_def.get('sort_by', '')
+                            if '.' in raw_sort_by:
+                                raw_sort_by = raw_sort_by.split('.', 1)[1]
+                            sort_agg_match = _RE_DERIVATION_PREFIX.match(raw_sort_by)
+                            sort_agg_func = _TABLEAU_AGG_TO_PBI_FUNC.get(
+                                sort_agg_match.group(1), 0) if sort_agg_match else 0
                             # Computed sort: sort category by a measure
                             sort_entry["field"] = {
                                 "Aggregation": {
                                     "Expression": {"Column": {"Expression": {"SourceRef": {"Entity": by_entity}}, "Property": by_prop}},
-                                    "Function": 0
+                                    "Function": sort_agg_func
                                 }
                             }
                         else:
@@ -2128,12 +2143,6 @@ class PowerBIProjectGenerator:
             clean_name in self._bim_measure_names or prop in self._bim_measure_names
         )
 
-        # Tableau shelf aggregation → PBI Aggregation Function ID
-        _TABLEAU_AGG_TO_PBI_FUNC = {
-            'sum': 0, 'avg': 1, 'cnt': 2, 'count': 2,
-            'min': 3, 'max': 4, 'ctd': 6, 'countd': 6,
-            'median': 0, 'attr': 0,
-        }
         shelf_agg = field.get('aggregation', '')
         agg_func = _TABLEAU_AGG_TO_PBI_FUNC.get(shelf_agg, 0)
 
@@ -2197,13 +2206,6 @@ class PowerBIProjectGenerator:
                         self._field_map[clean_name] = (entity, prop)
                         break
 
-        # Tableau shelf aggregation → PBI Aggregation Function ID
-        # 0=Sum, 1=Avg, 2=Count, 3=Min, 4=Max, 5=CountNonNull, 6=DistinctCount
-        _TABLEAU_AGG_TO_PBI_FUNC = {
-            'sum': 0, 'avg': 1, 'cnt': 2, 'count': 2,
-            'min': 3, 'max': 4, 'ctd': 6, 'countd': 6,
-            'median': 0, 'attr': 0,
-        }
         shelf_agg = field.get('aggregation', '')
         explicit_agg_func = _TABLEAU_AGG_TO_PBI_FUNC.get(shelf_agg)
 

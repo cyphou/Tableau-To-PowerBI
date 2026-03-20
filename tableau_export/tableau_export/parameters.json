@@ -1,0 +1,32 @@
+[
+  {
+    "name": "[Parameter 1]",
+    "caption": "Top Customers",
+    "datatype": "integer",
+    "value": "5",
+    "domain_type": "range",
+    "allowable_values": [
+      {
+        "type": "range",
+        "min": "5",
+        "max": "20",
+        "step": "5"
+      }
+    ]
+  },
+  {
+    "name": "[Parameter 2]",
+    "caption": "Profit Bin Size",
+    "datatype": "integer",
+    "value": "200",
+    "domain_type": "range",
+    "allowable_values": [
+      {
+        "type": "range",
+        "min": "50",
+        "max": "200",
+        "step": "50"
+      }
+    ]
+  }
+]

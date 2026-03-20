@@ -1,0 +1,62 @@
+[
+  {
+    "name": "[Parameter 1]",
+    "caption": "Top Customers",
+    "formula": "5",
+    "class": "tableau",
+    "datatype": "integer",
+    "role": "measure",
+    "type": "quantitative",
+    "datasource_name": "Parameters"
+  },
+  {
+    "name": "[Parameter 2]",
+    "caption": "Profit Bin Size",
+    "formula": "200",
+    "class": "tableau",
+    "datatype": "integer",
+    "role": "measure",
+    "type": "quantitative",
+    "datasource_name": "Parameters"
+  },
+  {
+    "name": "[Calculation_5571209093911105]",
+    "caption": "Profit Ratio",
+    "formula": "SUM([Profit])/SUM([Sales])",
+    "class": "tableau",
+    "datatype": "real",
+    "role": "measure",
+    "type": "quantitative",
+    "datasource_name": "Sample - Superstore"
+  },
+  {
+    "name": "[Number of Records]",
+    "caption": "[Number of Records]",
+    "formula": "1",
+    "class": "tableau",
+    "datatype": "integer",
+    "role": "measure",
+    "type": "quantitative",
+    "datasource_name": "Sample - Superstore"
+  },
+  {
+    "name": "[Profit (bin)]",
+    "caption": "Profit (bin)",
+    "formula": "[Profit]",
+    "class": "bin",
+    "datatype": "integer",
+    "role": "dimension",
+    "type": "ordinal",
+    "datasource_name": "Sample - Superstore"
+  },
+  {
+    "name": "[Sales (bin)]",
+    "caption": "Sales (bin)",
+    "formula": "[Sales]",
+    "class": "bin",
+    "datatype": "integer",
+    "role": "dimension",
+    "type": "ordinal",
+    "datasource_name": "Sample - Superstore"
+  }
+]

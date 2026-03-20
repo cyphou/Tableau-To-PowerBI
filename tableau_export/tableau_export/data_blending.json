@@ -1,0 +1,16 @@
+[
+  {
+    "datasource": "Sample - Superstore",
+    "secondary_datasource": "Parameters",
+    "column": "Parameter 1",
+    "link_expression": "",
+    "link_key": ""
+  },
+  {
+    "datasource": "Sample - Superstore",
+    "secondary_datasource": "Parameters",
+    "column": "Parameter 2",
+    "link_expression": "",
+    "link_key": ""
+  }
+]

@@ -1,0 +1,341 @@
+[
+  {
+    "name": "Sheet 1",
+    "title": "",
+    "chart_type": "lineChart",
+    "original_mark_class": "Automatic",
+    "fields": [
+      {
+        "name": "Order Date",
+        "shelf": "columns",
+        "datasource": "Sample - Superstore"
+      },
+      {
+        "name": "Sales",
+        "shelf": "rows",
+        "datasource": "Sample - Superstore",
+        "aggregation": "sum"
+      }
+    ],
+    "filters": [],
+    "formatting": {},
+    "tooltips": [],
+    "actions": [],
+    "sort_orders": [],
+    "mark_encoding": {},
+    "axes": {
+      "dual_axis": false,
+      "dual_axis_sync": false
+    },
+    "reference_lines": [
+      {
+        "type": "line",
+        "value": "",
+        "label": "",
+        "label_type": "none",
+        "scope": "per-cell",
+        "axis": "y",
+        "color": "#666666",
+        "line_color": "#666666",
+        "style": "solid",
+        "computation": "constant",
+        "field": "",
+        "is_band": false
+      }
+    ],
+    "annotations": [],
+    "trend_lines": [],
+    "pages_shelf": {},
+    "table_calcs": [],
+    "forecasting": [],
+    "map_options": {},
+    "clustering": [],
+    "dual_axis": {},
+    "totals": {
+      "grand_totals": [],
+      "subtotals": []
+    },
+    "description": "",
+    "show_hide_headers": {
+      "rows": true,
+      "columns": true
+    },
+    "dynamic_title": null,
+    "analytics_stats": []
+  },
+  {
+    "name": "Sheet 2",
+    "title": "",
+    "chart_type": "scatterChart",
+    "original_mark_class": "Automatic",
+    "fields": [
+      {
+        "name": "Sales (bin)",
+        "shelf": "columns",
+        "datasource": "Sample - Superstore"
+      },
+      {
+        "name": "Sales",
+        "shelf": "rows",
+        "datasource": "Sample - Superstore",
+        "aggregation": "cnt"
+      }
+    ],
+    "filters": [],
+    "formatting": {},
+    "tooltips": [],
+    "actions": [],
+    "sort_orders": [],
+    "mark_encoding": {},
+    "axes": {
+      "dual_axis": false,
+      "dual_axis_sync": false
+    },
+    "reference_lines": [
+      {
+        "type": "line",
+        "value": "",
+        "label": "",
+        "label_type": "automatic",
+        "scope": "per-table",
+        "axis": "y",
+        "color": "#666666",
+        "line_color": "#666666",
+        "style": "solid",
+        "computation": "constant",
+        "field": "",
+        "is_band": false
+      }
+    ],
+    "annotations": [],
+    "trend_lines": [],
+    "pages_shelf": {},
+    "table_calcs": [],
+    "forecasting": [],
+    "map_options": {},
+    "clustering": [],
+    "dual_axis": {},
+    "totals": {
+      "grand_totals": [],
+      "subtotals": []
+    },
+    "description": "",
+    "show_hide_headers": {
+      "rows": true,
+      "columns": true
+    },
+    "dynamic_title": null,
+    "analytics_stats": []
+  },
+  {
+    "name": "Sheet 3",
+    "title": "",
+    "chart_type": "table",
+    "original_mark_class": "Automatic",
+    "fields": [],
+    "filters": [],
+    "formatting": {},
+    "tooltips": [],
+    "actions": [],
+    "sort_orders": [],
+    "mark_encoding": {},
+    "axes": {
+      "dual_axis": false,
+      "dual_axis_sync": false
+    },
+    "reference_lines": [],
+    "annotations": [],
+    "trend_lines": [],
+    "pages_shelf": {},
+    "table_calcs": [],
+    "forecasting": [],
+    "map_options": {},
+    "clustering": [],
+    "dual_axis": {},
+    "totals": {
+      "grand_totals": [],
+      "subtotals": []
+    },
+    "description": "",
+    "show_hide_headers": {
+      "rows": true,
+      "columns": true
+    },
+    "dynamic_title": null,
+    "analytics_stats": []
+  },
+  {
+    "name": "Sheet 4",
+    "title": "",
+    "chart_type": "clusteredBarChart",
+    "original_mark_class": "Bar",
+    "fields": [
+      {
+        "name": "Profit",
+        "shelf": "columns",
+        "datasource": "Sample - Superstore",
+        "aggregation": "sum"
+      },
+      {
+        "name": "Sub-Category",
+        "shelf": "rows",
+        "datasource": "Sample - Superstore"
+      }
+    ],
+    "filters": [],
+    "formatting": {
+      "refline": {
+        "attr": "stroke-color",
+        "id": "refline0",
+        "value": "#000000",
+        "stroke-color": "#000000"
+      },
+      "table-div": {
+        "attr": "div-level",
+        "scope": "rows",
+        "value": "10",
+        "div-level": "10"
+      },
+      "mark": {
+        "attr": "size",
+        "value": "1",
+        "size": "1"
+      }
+    },
+    "tooltips": [],
+    "actions": [],
+    "sort_orders": [],
+    "mark_encoding": {},
+    "axes": {
+      "dual_axis": false,
+      "dual_axis_sync": false
+    },
+    "reference_lines": [
+      {
+        "type": "line",
+        "value": "",
+        "label": "",
+        "label_type": "none",
+        "scope": "per-cell",
+        "axis": "y",
+        "color": "#666666",
+        "line_color": "#666666",
+        "style": "solid",
+        "computation": "constant",
+        "field": "",
+        "is_band": false
+      },
+      {
+        "type": "band",
+        "value": "",
+        "label": "",
+        "label_type": "none",
+        "scope": "per-cell",
+        "axis": "y",
+        "color": "#666666",
+        "line_color": "#666666",
+        "style": "solid",
+        "computation": "constant",
+        "field": "",
+        "is_band": true,
+        "value_from": "",
+        "value_to": ""
+      }
+    ],
+    "annotations": [],
+    "trend_lines": [],
+    "pages_shelf": {},
+    "table_calcs": [],
+    "forecasting": [],
+    "map_options": {},
+    "clustering": [],
+    "dual_axis": {},
+    "totals": {
+      "grand_totals": [],
+      "subtotals": []
+    },
+    "description": "",
+    "show_hide_headers": {
+      "rows": true,
+      "columns": true
+    },
+    "dynamic_title": null,
+    "analytics_stats": []
+  },
+  {
+    "name": "Sheet 5",
+    "title": "",
+    "chart_type": "clusteredBarChart",
+    "original_mark_class": "Automatic",
+    "fields": [
+      {
+        "name": "Sales",
+        "shelf": "columns",
+        "datasource": "Sample - Superstore",
+        "aggregation": "sum"
+      },
+      {
+        "name": "Product Name (group)",
+        "shelf": "rows",
+        "datasource": "Sample - Superstore"
+      }
+    ],
+    "filters": [
+      {
+        "field": "Product Name (group)",
+        "datasource": "Sample - Superstore",
+        "type": "",
+        "values": [],
+        "min": null,
+        "max": null,
+        "exclude": false,
+        "include_null": false,
+        "is_context": false,
+        "date_part": null
+      },
+      {
+        "field": "Category",
+        "datasource": "Sample - Superstore",
+        "type": "categorical",
+        "values": [
+          "\"Technology\""
+        ],
+        "min": null,
+        "max": null,
+        "exclude": false,
+        "include_null": false,
+        "is_context": true,
+        "date_part": null
+      }
+    ],
+    "formatting": {},
+    "tooltips": [],
+    "actions": [],
+    "sort_orders": [],
+    "mark_encoding": {},
+    "axes": {
+      "dual_axis": false,
+      "dual_axis_sync": false
+    },
+    "reference_lines": [],
+    "annotations": [],
+    "trend_lines": [],
+    "pages_shelf": {},
+    "table_calcs": [],
+    "forecasting": [],
+    "map_options": {},
+    "clustering": [],
+    "dual_axis": {},
+    "totals": {
+      "grand_totals": [],
+      "subtotals": []
+    },
+    "description": "",
+    "show_hide_headers": {
+      "rows": true,
+      "columns": true
+    },
+    "dynamic_title": null,
+    "analytics_stats": []
+  }
+]

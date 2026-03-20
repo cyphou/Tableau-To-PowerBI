@@ -1,0 +1,919 @@
+[
+  {
+    "name": "Parameters",
+    "caption": "Parameters",
+    "connection": {
+      "type": "Unknown",
+      "details": {}
+    },
+    "connection_map": {},
+    "tables": [],
+    "calculations": [
+      {
+        "name": "[Parameter 1]",
+        "caption": "Top Customers",
+        "formula": "5",
+        "class": "tableau",
+        "datatype": "integer",
+        "role": "measure",
+        "type": "quantitative",
+        "datasource_name": "Parameters"
+      },
+      {
+        "name": "[Parameter 2]",
+        "caption": "Profit Bin Size",
+        "formula": "200",
+        "class": "tableau",
+        "datatype": "integer",
+        "role": "measure",
+        "type": "quantitative",
+        "datasource_name": "Parameters"
+      }
+    ],
+    "columns": [
+      {
+        "name": "[Parameter 1]",
+        "caption": "Top Customers",
+        "datatype": "integer",
+        "role": "measure",
+        "type": "quantitative",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": {
+          "class": "tableau",
+          "formula": "5"
+        }
+      },
+      {
+        "name": "[Parameter 2]",
+        "caption": "Profit Bin Size",
+        "datatype": "integer",
+        "role": "measure",
+        "type": "quantitative",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": {
+          "class": "tableau",
+          "formula": "200"
+        }
+      }
+    ],
+    "relationships": []
+  },
+  {
+    "name": "Sample - Superstore",
+    "caption": "Sample - Superstore",
+    "connection": {
+      "type": "Excel",
+      "details": {
+        "filename": "C:/Users/91740/Documents/My Tableau Repository/Datasources/2019.4/en_US-US/Sample - Superstore.xls",
+        "cleaning": "no",
+        "compat": "no",
+        "caption": ""
+      }
+    },
+    "connection_map": {
+      "Sample - Superstoreleaf": {
+        "type": "Excel",
+        "details": {
+          "filename": "C:/Users/91740/Documents/My Tableau Repository/Datasources/2019.4/en_US-US/Sample - Superstore.xls",
+          "cleaning": "no",
+          "compat": "no",
+          "caption": ""
+        }
+      }
+    },
+    "tables": [
+      {
+        "name": "Orders$",
+        "type": "table",
+        "columns": [
+          {
+            "name": "Row ID",
+            "datatype": "integer",
+            "role": "dimension",
+            "ordinal": 0,
+            "length": null,
+            "nullable": true,
+            "default_format": ""
+          },
+          {
+            "name": "Order ID",
+            "datatype": "string",
+            "role": "dimension",
+            "ordinal": 1,
+            "length": null,
+            "nullable": true,
+            "default_format": ""
+          },
+          {
+            "name": "Order Date",
+            "datatype": "date",
+            "role": "dimension",
+            "ordinal": 2,
+            "length": null,
+            "nullable": true,
+            "default_format": ""
+          },
+          {
+            "name": "Ship Date",
+            "datatype": "date",
+            "role": "dimension",
+            "ordinal": 3,
+            "length": null,
+            "nullable": true,
+            "default_format": ""
+          },
+          {
+            "name": "Ship Mode",
+            "datatype": "string",
+            "role": "dimension",
+            "ordinal": 4,
+            "length": null,
+            "nullable": true,
+            "default_format": ""
+          },
+          {
+            "name": "Customer ID",
+            "datatype": "string",
+            "role": "dimension",
+            "ordinal": 5,
+            "length": null,
+            "nullable": true,
+            "default_format": ""
+          },
+          {
+            "name": "Customer Name",
+            "datatype": "string",
+            "role": "dimension",
+            "ordinal": 6,
+            "length": null,
+            "nullable": true,
+            "default_format": ""
+          },
+          {
+            "name": "Segment",
+            "datatype": "string",
+            "role": "dimension",
+            "ordinal": 7,
+            "length": null,
+            "nullable": true,
+            "default_format": ""
+          },
+          {
+            "name": "Country/Region",
+            "datatype": "string",
+            "role": "dimension",
+            "ordinal": 8,
+            "length": null,
+            "nullable": true,
+            "default_format": ""
+          },
+          {
+            "name": "City",
+            "datatype": "string",
+            "role": "dimension",
+            "ordinal": 9,
+            "length": null,
+            "nullable": true,
+            "default_format": ""
+          },
+          {
+            "name": "State",
+            "datatype": "string",
+            "role": "dimension",
+            "ordinal": 10,
+            "length": null,
+            "nullable": true,
+            "default_format": ""
+          },
+          {
+            "name": "Postal Code",
+            "datatype": "integer",
+            "role": "dimension",
+            "ordinal": 11,
+            "length": null,
+            "nullable": true,
+            "default_format": ""
+          },
+          {
+            "name": "Region",
+            "datatype": "string",
+            "role": "dimension",
+            "ordinal": 12,
+            "length": null,
+            "nullable": true,
+            "default_format": ""
+          },
+          {
+            "name": "Product ID",
+            "datatype": "string",
+            "role": "dimension",
+            "ordinal": 13,
+            "length": null,
+            "nullable": true,
+            "default_format": ""
+          },
+          {
+            "name": "Category",
+            "datatype": "string",
+            "role": "dimension",
+            "ordinal": 14,
+            "length": null,
+            "nullable": true,
+            "default_format": ""
+          },
+          {
+            "name": "Sub-Category",
+            "datatype": "string",
+            "role": "dimension",
+            "ordinal": 15,
+            "length": null,
+            "nullable": true,
+            "default_format": ""
+          },
+          {
+            "name": "Product Name",
+            "datatype": "string",
+            "role": "dimension",
+            "ordinal": 16,
+            "length": null,
+            "nullable": true,
+            "default_format": ""
+          },
+          {
+            "name": "Sales",
+            "datatype": "real",
+            "role": "measure",
+            "ordinal": 17,
+            "length": null,
+            "nullable": true,
+            "default_format": ""
+          },
+          {
+            "name": "Quantity",
+            "datatype": "integer",
+            "role": "measure",
+            "ordinal": 18,
+            "length": null,
+            "nullable": true,
+            "default_format": ""
+          },
+          {
+            "name": "Discount",
+            "datatype": "real",
+            "role": "measure",
+            "ordinal": 19,
+            "length": null,
+            "nullable": true,
+            "default_format": ""
+          },
+          {
+            "name": "Profit",
+            "datatype": "real",
+            "role": "measure",
+            "ordinal": 20,
+            "length": null,
+            "nullable": true,
+            "default_format": ""
+          }
+        ],
+        "connection": "Sample - Superstoreleaf",
+        "connection_details": {
+          "type": "Excel",
+          "details": {
+            "filename": "C:/Users/91740/Documents/My Tableau Repository/Datasources/2019.4/en_US-US/Sample - Superstore.xls",
+            "cleaning": "no",
+            "compat": "no",
+            "caption": ""
+          }
+        }
+      }
+    ],
+    "calculations": [
+      {
+        "name": "[Calculation_5571209093911105]",
+        "caption": "Profit Ratio",
+        "formula": "SUM([Profit])/SUM([Sales])",
+        "class": "tableau",
+        "datatype": "real",
+        "role": "measure",
+        "type": "quantitative",
+        "datasource_name": "Sample - Superstore"
+      },
+      {
+        "name": "[Number of Records]",
+        "caption": "[Number of Records]",
+        "formula": "1",
+        "class": "tableau",
+        "datatype": "integer",
+        "role": "measure",
+        "type": "quantitative",
+        "datasource_name": "Sample - Superstore"
+      },
+      {
+        "name": "[Profit (bin)]",
+        "caption": "Profit (bin)",
+        "formula": "[Profit]",
+        "class": "bin",
+        "datatype": "integer",
+        "role": "dimension",
+        "type": "ordinal",
+        "datasource_name": "Sample - Superstore"
+      },
+      {
+        "name": "[Sales (bin)]",
+        "caption": "Sales (bin)",
+        "formula": "[Sales]",
+        "class": "bin",
+        "datatype": "integer",
+        "role": "dimension",
+        "type": "ordinal",
+        "datasource_name": "Sample - Superstore"
+      },
+      {
+        "name": "[Parameter 1]",
+        "caption": "Top Customers",
+        "formula": "5",
+        "class": "tableau",
+        "datatype": "integer",
+        "role": "measure",
+        "type": "quantitative",
+        "datasource_name": "Sample - Superstore"
+      },
+      {
+        "name": "[Parameter 2]",
+        "caption": "Profit Bin Size",
+        "formula": "200",
+        "class": "tableau",
+        "datatype": "integer",
+        "role": "measure",
+        "type": "quantitative",
+        "datasource_name": "Sample - Superstore"
+      }
+    ],
+    "columns": [
+      {
+        "name": "Row ID",
+        "caption": "",
+        "datatype": "integer",
+        "role": "dimension",
+        "type": "nominal",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "Order ID",
+        "caption": "",
+        "datatype": "string",
+        "role": "dimension",
+        "type": "nominal",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "Order Date",
+        "caption": "",
+        "datatype": "date",
+        "role": "dimension",
+        "type": "nominal",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "Ship Date",
+        "caption": "",
+        "datatype": "date",
+        "role": "dimension",
+        "type": "nominal",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "Ship Mode",
+        "caption": "",
+        "datatype": "string",
+        "role": "dimension",
+        "type": "nominal",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "Customer ID",
+        "caption": "",
+        "datatype": "string",
+        "role": "dimension",
+        "type": "nominal",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "Customer Name",
+        "caption": "",
+        "datatype": "string",
+        "role": "dimension",
+        "type": "nominal",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "Segment",
+        "caption": "",
+        "datatype": "string",
+        "role": "dimension",
+        "type": "nominal",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "Country/Region",
+        "caption": "",
+        "datatype": "string",
+        "role": "dimension",
+        "type": "nominal",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "City",
+        "caption": "",
+        "datatype": "string",
+        "role": "dimension",
+        "type": "nominal",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "State",
+        "caption": "",
+        "datatype": "string",
+        "role": "dimension",
+        "type": "nominal",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "Postal Code",
+        "caption": "",
+        "datatype": "integer",
+        "role": "dimension",
+        "type": "nominal",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "Region",
+        "caption": "",
+        "datatype": "string",
+        "role": "dimension",
+        "type": "nominal",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "Product ID",
+        "caption": "",
+        "datatype": "string",
+        "role": "dimension",
+        "type": "nominal",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "Category",
+        "caption": "",
+        "datatype": "string",
+        "role": "dimension",
+        "type": "nominal",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "Sub-Category",
+        "caption": "",
+        "datatype": "string",
+        "role": "dimension",
+        "type": "nominal",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "Product Name",
+        "caption": "",
+        "datatype": "string",
+        "role": "dimension",
+        "type": "nominal",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "Sales",
+        "caption": "",
+        "datatype": "real",
+        "role": "dimension",
+        "type": "nominal",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "Quantity",
+        "caption": "",
+        "datatype": "integer",
+        "role": "dimension",
+        "type": "nominal",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "Discount",
+        "caption": "",
+        "datatype": "real",
+        "role": "dimension",
+        "type": "nominal",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "Profit",
+        "caption": "",
+        "datatype": "real",
+        "role": "dimension",
+        "type": "nominal",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "[Calculation_5571209093911105]",
+        "caption": "Profit Ratio",
+        "datatype": "real",
+        "role": "measure",
+        "type": "quantitative",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "p0%",
+        "description": "",
+        "calculation": {
+          "class": "tableau",
+          "formula": "SUM([Profit])/SUM([Sales])"
+        }
+      },
+      {
+        "name": "[City]",
+        "caption": "",
+        "datatype": "string",
+        "role": "dimension",
+        "type": "nominal",
+        "hidden": false,
+        "semantic_role": "[City].[Name]",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "[Country/Region]",
+        "caption": "",
+        "datatype": "string",
+        "role": "dimension",
+        "type": "nominal",
+        "hidden": false,
+        "semantic_role": "[Country].[ISO3166_2]",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "[Customer ID]",
+        "caption": "",
+        "datatype": "string",
+        "role": "dimension",
+        "type": "nominal",
+        "hidden": true,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "[Customer Name]",
+        "caption": "",
+        "datatype": "string",
+        "role": "dimension",
+        "type": "nominal",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "[Discount]",
+        "caption": "",
+        "datatype": "real",
+        "role": "measure",
+        "type": "quantitative",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "p0%",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "[Number of Records]",
+        "caption": "",
+        "datatype": "integer",
+        "role": "measure",
+        "type": "quantitative",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": {
+          "class": "tableau",
+          "formula": "1"
+        }
+      },
+      {
+        "name": "[Postal Code]",
+        "caption": "",
+        "datatype": "integer",
+        "role": "dimension",
+        "type": "ordinal",
+        "hidden": false,
+        "semantic_role": "[ZipCode].[Name]",
+        "default_aggregation": "",
+        "default_format": "*00000",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "[Product ID]",
+        "caption": "",
+        "datatype": "string",
+        "role": "dimension",
+        "type": "nominal",
+        "hidden": true,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "[Product Name (group)]",
+        "caption": "Manufacturer",
+        "datatype": "string",
+        "role": "dimension",
+        "type": "nominal",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": {
+          "class": "categorical-bin",
+          "formula": ""
+        }
+      },
+      {
+        "name": "[Product Name]",
+        "caption": "",
+        "datatype": "string",
+        "role": "dimension",
+        "type": "nominal",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "[Profit (bin)]",
+        "caption": "Profit (bin)",
+        "datatype": "integer",
+        "role": "dimension",
+        "type": "ordinal",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": {
+          "class": "bin",
+          "formula": "[Profit]"
+        }
+      },
+      {
+        "name": "[Profit]",
+        "caption": "",
+        "datatype": "real",
+        "role": "measure",
+        "type": "quantitative",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "c\"$\"#,##0",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "[Quantity]",
+        "caption": "",
+        "datatype": "integer",
+        "role": "measure",
+        "type": "quantitative",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "n#,##0",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "[Row ID]",
+        "caption": "",
+        "datatype": "integer",
+        "role": "dimension",
+        "type": "ordinal",
+        "hidden": true,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "[Sales (bin)]",
+        "caption": "Sales (bin)",
+        "datatype": "integer",
+        "role": "dimension",
+        "type": "ordinal",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": {
+          "class": "bin",
+          "formula": "[Sales]"
+        }
+      },
+      {
+        "name": "[Sales]",
+        "caption": "",
+        "datatype": "real",
+        "role": "measure",
+        "type": "quantitative",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "c\"$\"#,##0",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "[State]",
+        "caption": "",
+        "datatype": "string",
+        "role": "dimension",
+        "type": "nominal",
+        "hidden": false,
+        "semantic_role": "[State].[Name]",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": null
+      },
+      {
+        "name": "[Parameter 1]",
+        "caption": "Top Customers",
+        "datatype": "integer",
+        "role": "measure",
+        "type": "quantitative",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": {
+          "class": "tableau",
+          "formula": "5"
+        }
+      },
+      {
+        "name": "[Parameter 2]",
+        "caption": "Profit Bin Size",
+        "datatype": "integer",
+        "role": "measure",
+        "type": "quantitative",
+        "hidden": false,
+        "semantic_role": "",
+        "default_aggregation": "",
+        "default_format": "",
+        "description": "",
+        "calculation": {
+          "class": "tableau",
+          "formula": "200"
+        }
+      }
+    ],
+    "relationships": []
+  }
+]

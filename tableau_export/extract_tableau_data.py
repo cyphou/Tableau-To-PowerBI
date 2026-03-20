@@ -1843,13 +1843,17 @@ class TableauExtractor:
     def extract_groups(self, root):
         """Extracts manual groups (value grouping)
         
-        Two types of Tableau groups:
+        Three types of Tableau groups:
         1. crossjoin/level-members: combined field
            → calculated columns concatenating the sources
         2. union/member: value grouping into categories
            → calculated columns with SWITCH
+        3. categorical-bin: <column> with <calculation class='categorical-bin'>
+           and <bin> elements mapping values → labels
+           → calculated columns with SWITCH
         """
         groups = []
+        seen_group_names = set()
         
         for ds in root.findall('.//datasource'):
             for group_elem in ds.findall('.//group'):
@@ -1879,6 +1883,7 @@ class TableauExtractor:
                         'source_field': '',
                         'members': {}
                     })
+                    seen_group_names.add(group_name)
                 
                 elif func == 'union':
                     # Value grouping — extract members
@@ -1919,6 +1924,7 @@ class TableauExtractor:
                         'source_fields': [],
                         'members': members
                     })
+                    seen_group_names.add(group_name)
                 
                 else:
                     # Other types — record as-is
@@ -1929,7 +1935,40 @@ class TableauExtractor:
                         'source_fields': [],
                         'members': {}
                     })
+                    seen_group_names.add(group_name)
         
+        # Also extract categorical-bin groups from <column> elements.
+        # These are defined as <column name='[X (group)]'><calculation class='categorical-bin'>
+        # with <bin value='label'><value>member</value></bin> children.
+        for col_elem in root.findall('.//column'):
+            calc_elem = col_elem.find('calculation')
+            if calc_elem is None or calc_elem.get('class') != 'categorical-bin':
+                continue
+            col_name = _strip_brackets(col_elem.get('name', ''))
+            if not col_name or col_name in seen_group_names:
+                continue
+            source_col = _strip_brackets(calc_elem.get('column', ''))
+            members = {}
+            for bin_elem in calc_elem.findall('bin'):
+                label = bin_elem.get('value', '').strip('"')
+                if not label:
+                    continue
+                values = []
+                for val_elem in bin_elem.findall('value'):
+                    if val_elem.text:
+                        values.append(val_elem.text.strip('"'))
+                if values:
+                    members[label] = values
+            if members and source_col:
+                groups.append({
+                    'name': col_name,
+                    'group_type': 'values',
+                    'source_field': source_col,
+                    'source_fields': [],
+                    'members': members
+                })
+                seen_group_names.add(col_name)
+
         self.workbook_data['groups'] = groups
         print(f"  ✓ {len(groups)} groups extracted")
     
