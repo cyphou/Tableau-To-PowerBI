@@ -1,0 +1,338 @@
+{
+  "report_name": "Enterprise_Sales",
+  "created_at": "2026-03-20T16:33:54.493581",
+  "summary": {
+    "total_items": 34,
+    "exact": 34,
+    "approximate": 0,
+    "placeholder": 0,
+    "unsupported": 0,
+    "skipped": 0,
+    "fidelity_score": 100.0,
+    "by_category": {
+      "datasource": {
+        "total": 1,
+        "exact": 1
+      },
+      "calculation": {
+        "total": 22,
+        "exact": 22
+      },
+      "visual": {
+        "total": 5,
+        "exact": 5
+      },
+      "parameter": {
+        "total": 3,
+        "exact": 3
+      },
+      "bookmark": {
+        "total": 1,
+        "exact": 1
+      },
+      "rls_role": {
+        "total": 2,
+        "exact": 2
+      }
+    }
+  },
+  "completeness": {
+    "categories": {
+      "datasource": {
+        "total": 1,
+        "exact": 1,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "calculation": {
+        "total": 22,
+        "exact": 22,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "visual": {
+        "total": 5,
+        "exact": 5,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "parameter": {
+        "total": 3,
+        "exact": 3,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "bookmark": {
+        "total": 1,
+        "exact": 1,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "rls_role": {
+        "total": 2,
+        "exact": 2,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      }
+    },
+    "overall_score": 100.0,
+    "grade": "A"
+  },
+  "table_mapping": [
+    {
+      "source_datasource": "Enterprise Sales",
+      "source_table": "Orders",
+      "target_table": "Orders",
+      "connection_type": "Snowflake",
+      "columns": 13
+    },
+    {
+      "source_datasource": "Enterprise Sales",
+      "source_table": "Customers",
+      "target_table": "Customers",
+      "connection_type": "Snowflake",
+      "columns": 11
+    }
+  ],
+  "items": [
+    {
+      "category": "datasource",
+      "name": "federated.enterprise",
+      "status": "exact",
+      "note": "Snowflake, 2 table(s)"
+    },
+    {
+      "category": "calculation",
+      "name": "Gross Revenue",
+      "status": "exact",
+      "source_formula": "SUM([quantity] * [unit_price])",
+      "dax": "SUMX('Orders', 'Orders'[quantity] * 'Orders'[unit_price])"
+    },
+    {
+      "category": "calculation",
+      "name": "Net Revenue",
+      "status": "exact",
+      "source_formula": "SUM(IF [order_status] != \"Cancelled\" THEN [quantity] * [unit_price] * (1 - [discount]) ELSE 0 END)",
+      "dax": "SUMX('Orders', IF('Orders'[order_status] <> \"Cancelled\", 'Orders'[quantity] * 'Orders'[unit_price] * (1 - 'Orders'[discount]), 0))"
+    },
+    {
+      "category": "calculation",
+      "name": "Total Discount",
+      "status": "exact",
+      "source_formula": "SUM([quantity] * [unit_price] * [discount])",
+      "dax": "SUMX('Orders', 'Orders'[quantity] * 'Orders'[unit_price] * 'Orders'[discount])"
+    },
+    {
+      "category": "calculation",
+      "name": "Profit",
+      "status": "exact",
+      "source_formula": "SUM(IF [order_status] != \"Cancelled\" THEN ([quantity] * [unit_price] * (1 - [discount])) - [shipping_cost] ELSE 0 END)",
+      "dax": "SUMX('Orders', IF('Orders'[order_status] <> \"Cancelled\", ('Orders'[quantity] * 'Orders'[unit_price] * (1 - 'Orders'[discount])) - 'Orders'[shipping_cost], 0))"
+    },
+    {
+      "category": "calculation",
+      "name": "Profit Margin %",
+      "status": "exact",
+      "source_formula": "[Calc_Profit] / [Calc_NetRevenue]",
+      "dax": "[Profit] / [Net Revenue]"
+    },
+    {
+      "category": "calculation",
+      "name": "Revenue per Customer",
+      "status": "exact",
+      "source_formula": "{FIXED [customer_id] : SUM([quantity] * [unit_price])}",
+      "dax": "CALCULATE(SUMX('Orders', 'Orders'[quantity] * 'Orders'[unit_price]), ALLEXCEPT('Orders', 'Orders'[customer_id]))"
+    },
+    {
+      "category": "calculation",
+      "name": "Regional Channel Revenue",
+      "status": "exact",
+      "source_formula": "{FIXED [region], [channel] : SUM([quantity] * [unit_price])}",
+      "dax": "CALCULATE(SUMX('Orders', 'Orders'[quantity] * 'Orders'[unit_price]), ALLEXCEPT('Orders', 'Orders'[region], 'Orders'[channel]))"
+    },
+    {
+      "category": "calculation",
+      "name": "Revenue Excl Category",
+      "status": "exact",
+      "source_formula": "{EXCLUDE [channel] : SUM([quantity] * [unit_price])}",
+      "dax": "CALCULATE(SUMX('Orders', 'Orders'[quantity] * 'Orders'[unit_price]), REMOVEFILTERS('Orders'[channel]))"
+    },
+    {
+      "category": "calculation",
+      "name": "Moving Avg Revenue",
+      "status": "exact",
+      "source_formula": "WINDOW_AVG(SUM([quantity] * [unit_price]))",
+      "dax": "CALCULATE(SUMX('Orders', 'Orders'[quantity] * 'Orders'[unit_price]), ALL('Orders'))"
+    },
+    {
+      "category": "calculation",
+      "name": "Running Total Revenue",
+      "status": "exact",
+      "source_formula": "RUNNING_SUM(SUM([quantity] * [unit_price]))",
+      "dax": "CALCULATE(SUMX('Orders', 'Orders'[quantity] * 'Orders'[unit_price]))"
+    },
+    {
+      "category": "calculation",
+      "name": "Revenue Rank",
+      "status": "exact",
+      "source_formula": "RANK(SUM([quantity] * [unit_price]))",
+      "dax": "RANKX(ALL('Orders'), SUMX('Orders', 'Orders'[quantity] * 'Orders'[unit_price]))"
+    },
+    {
+      "category": "calculation",
+      "name": "YTD Revenue",
+      "status": "exact",
+      "source_formula": "{FIXED : SUM(IF YEAR([order_date]) = YEAR(TODAY()) THEN [quantity] * [unit_price] ELSE 0 END)}",
+      "dax": "CALCULATE(SUMX('Orders', IF(YEAR('Orders'[order_date]) = YEAR(TODAY()), 'Orders'[quantity] * 'Orders'[unit_price], 0)), ALL('Orders'))"
+    },
+    {
+      "category": "calculation",
+      "name": "Customer Tenure Days",
+      "status": "exact",
+      "source_formula": "DATEDIFF(\"day\", [first_purchase_date], TODAY())",
+      "dax": "DATEDIFF(LOOKUPVALUE(Customers[first_purchase_date], Customers[customer_id], Orders[customer_id]), TODAY(), DAY)"
+    },
+    {
+      "category": "calculation",
+      "name": "Customer Tier",
+      "status": "exact",
+      "source_formula": "IF [Calc_RevPerCustomer] > 10000 THEN \"Platinum\" ELSEIF [Calc_RevPerCustomer] > 5000 THEN \"Gold\" ELSEIF [Calc_RevPerCustomer] > 1000 THEN \"Silver\" ELSE \"Bronze\" END",
+      "dax": "IF([Revenue per Customer] > 10000, \"Platinum\", IF([Revenue per Customer] > 5000, \"Gold\", IF([Revenue per Customer] > 1000, \"Silver\", \"Bronze\")))"
+    },
+    {
+      "category": "calculation",
+      "name": "Safe Discount Rate",
+      "status": "exact",
+      "source_formula": "IF ISNULL([discount]) THEN 0 ELSE ZN([discount]) END",
+      "dax": "[M-based column]"
+    },
+    {
+      "category": "calculation",
+      "name": "Full Location",
+      "status": "exact",
+      "source_formula": "UPPER([city]) + \", \" + [state] + \" (\" + [country] + \")\"",
+      "dax": "UPPER(LOOKUPVALUE(Customers[city], Customers[customer_id], Orders[customer_id])) & \", \" & LOOKUPVALUE(Customers[state], Customers[customer_id], Orders[customer_id]) & \" (\" & LOOKUPVALUE(Customers[country], Customers[customer_id], Orders[customer_id]) & \")\""
+    },
+    {
+      "category": "calculation",
+      "name": "Unique Customers",
+      "status": "exact",
+      "source_formula": "COUNTD([customer_id])",
+      "dax": "DISTINCTCOUNT('Orders'[customer_id])"
+    },
+    {
+      "category": "calculation",
+      "name": "AOV Completed",
+      "status": "exact",
+      "source_formula": "AVG(IF [order_status] = \"Completed\" THEN [quantity] * [unit_price] ELSE 0 END)",
+      "dax": "AVERAGEX('Orders', IF('Orders'[order_status] = \"Completed\", 'Orders'[quantity] * 'Orders'[unit_price], 0))"
+    },
+    {
+      "category": "calculation",
+      "name": "Customer Segment Label",
+      "status": "exact",
+      "source_formula": "\"Segment: \" + [segment]",
+      "dax": "\"Segment: \" & LOOKUPVALUE(Customers[segment], Customers[customer_id], Orders[customer_id])"
+    },
+    {
+      "category": "calculation",
+      "name": "Discount Category",
+      "status": "exact",
+      "source_formula": "IF ISNULL([discount]) THEN \"No Discount\" ELSEIF [discount] = 0 THEN \"No Discount\" ELSEIF [discount] < 0.1 THEN \"Low (<10%)\" ELSEIF [discount] < 0.25 THEN \"Medium (10-25%)\" ELSE \"High (>25%)\" END",
+      "dax": "[M-based column]"
+    },
+    {
+      "category": "calculation",
+      "name": "Revenue StdDev",
+      "status": "exact",
+      "source_formula": "STDEV(SUM([quantity] * [unit_price]))",
+      "dax": "STDEVX.S('Orders', 'Orders'[quantity] * 'Orders'[unit_price])"
+    },
+    {
+      "category": "calculation",
+      "name": "Is My Account",
+      "status": "exact",
+      "source_formula": "[customer_email] = USERNAME()",
+      "dax": "'Customers'[customer_email] = USERPRINCIPALNAME()"
+    },
+    {
+      "category": "visual",
+      "name": "Executive KPIs",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Revenue by Region",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Profit Trend",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Customer Analysis",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Sales Map",
+      "status": "exact"
+    },
+    {
+      "category": "parameter",
+      "name": "[Parameters].[Target Margin]",
+      "status": "exact",
+      "note": "domain=range"
+    },
+    {
+      "category": "parameter",
+      "name": "[Parameters].[Date Range Start]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[Parameters].[Top N]",
+      "status": "exact",
+      "note": "domain=range"
+    },
+    {
+      "category": "bookmark",
+      "name": "Quarterly Review",
+      "status": "exact",
+      "note": "Converted to 3 bookmark(s)"
+    },
+    {
+      "category": "rls_role",
+      "name": "Territory Access",
+      "status": "exact",
+      "note": "User filter with explicit mappings → RLS role"
+    },
+    {
+      "category": "rls_role",
+      "name": "Is My Account",
+      "status": "exact",
+      "note": "Calculated security (USERNAME) → USERPRINCIPALNAME()"
+    }
+  ]
+}

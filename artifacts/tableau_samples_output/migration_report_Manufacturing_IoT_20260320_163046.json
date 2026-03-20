@@ -1,0 +1,340 @@
+{
+  "report_name": "Manufacturing_IoT",
+  "created_at": "2026-03-20T16:30:46.616626",
+  "summary": {
+    "total_items": 35,
+    "exact": 35,
+    "approximate": 0,
+    "placeholder": 0,
+    "unsupported": 0,
+    "skipped": 0,
+    "fidelity_score": 100.0,
+    "by_category": {
+      "datasource": {
+        "total": 1,
+        "exact": 1
+      },
+      "calculation": {
+        "total": 25,
+        "exact": 25
+      },
+      "visual": {
+        "total": 6,
+        "exact": 6
+      },
+      "parameter": {
+        "total": 2,
+        "exact": 2
+      },
+      "bookmark": {
+        "total": 1,
+        "exact": 1
+      }
+    }
+  },
+  "completeness": {
+    "categories": {
+      "datasource": {
+        "total": 1,
+        "exact": 1,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "calculation": {
+        "total": 25,
+        "exact": 25,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "visual": {
+        "total": 6,
+        "exact": 6,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "parameter": {
+        "total": 2,
+        "exact": 2,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "bookmark": {
+        "total": 1,
+        "exact": 1,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      }
+    },
+    "overall_score": 100.0,
+    "grade": "A"
+  },
+  "table_mapping": [
+    {
+      "source_datasource": "Manufacturing IoT",
+      "source_table": "Sensors",
+      "target_table": "Sensors",
+      "connection_type": "Oracle",
+      "columns": 13
+    },
+    {
+      "source_datasource": "Manufacturing IoT",
+      "source_table": "Machines",
+      "target_table": "Machines",
+      "connection_type": "Oracle",
+      "columns": 7
+    },
+    {
+      "source_datasource": "Manufacturing IoT",
+      "source_table": "Maintenance",
+      "target_table": "Maintenance",
+      "connection_type": "Oracle",
+      "columns": 8
+    }
+  ],
+  "items": [
+    {
+      "category": "datasource",
+      "name": "federated.iot",
+      "status": "exact",
+      "note": "Oracle, 3 table(s)"
+    },
+    {
+      "category": "calculation",
+      "name": "Abs Deviation",
+      "status": "exact",
+      "source_formula": "ABS([value] - ([threshold_min] + [threshold_max]) / 2)",
+      "dax": "[M-based column]"
+    },
+    {
+      "category": "calculation",
+      "name": "Ceiling Value",
+      "status": "exact",
+      "source_formula": "CEILING([value])",
+      "dax": "CEILING('Sensors'[value], 1)"
+    },
+    {
+      "category": "calculation",
+      "name": "Floor Value",
+      "status": "exact",
+      "source_formula": "FLOOR([value])",
+      "dax": "[M-based column]"
+    },
+    {
+      "category": "calculation",
+      "name": "Rounded Value",
+      "status": "exact",
+      "source_formula": "ROUND([value], 2)",
+      "dax": "[M-based column]"
+    },
+    {
+      "category": "calculation",
+      "name": "Energy Index",
+      "status": "exact",
+      "source_formula": "SQRT(POWER([power_watts], 2) + POWER([delta_value], 2))",
+      "dax": "SQRT(POWER('Sensors'[power_watts], 2) + POWER('Sensors'[delta_value], 2))"
+    },
+    {
+      "category": "calculation",
+      "name": "Log Scale",
+      "status": "exact",
+      "source_formula": "IF [value] > 0 THEN LOG([value]) ELSE LN(EXP(1)) END",
+      "dax": "IF('Sensors'[value] > 0, LOG('Sensors'[value]), LN(EXP(1)))"
+    },
+    {
+      "category": "calculation",
+      "name": "Vibration X",
+      "status": "exact",
+      "source_formula": "[value] * COS(RADIANS([angle_degrees]))",
+      "dax": "'Sensors'[value] * COS((('Sensors'[angle_degrees])*PI()/180))"
+    },
+    {
+      "category": "calculation",
+      "name": "Vibration Y",
+      "status": "exact",
+      "source_formula": "[value] * SIN(RADIANS([angle_degrees]))",
+      "dax": "'Sensors'[value] * SIN((('Sensors'[angle_degrees])*PI()/180))"
+    },
+    {
+      "category": "calculation",
+      "name": "Score Label",
+      "status": "exact",
+      "source_formula": "\"Score: \" + STR(INT([quality_score])) + \" / \" + STR(FLOAT([value]))",
+      "dax": "\"Score: \" & FORMAT(INT('Sensors'[quality_score]), \"0\") & \" / \" & FORMAT(CONVERT('Sensors'[value], DOUBLE), \"0\")"
+    },
+    {
+      "category": "calculation",
+      "name": "Median Value",
+      "status": "exact",
+      "source_formula": "MEDIAN([value])",
+      "dax": "MEDIAN('Sensors'[value])"
+    },
+    {
+      "category": "calculation",
+      "name": "P95 Value",
+      "status": "exact",
+      "source_formula": "PERCENTILE([value], 0.95)",
+      "dax": "PERCENTILE.INC('Sensors'[value], 0.95)"
+    },
+    {
+      "category": "calculation",
+      "name": "Value Variance",
+      "status": "exact",
+      "source_formula": "VAR([value])",
+      "dax": "VAR.S('Sensors'[value])"
+    },
+    {
+      "category": "calculation",
+      "name": "Value Variance Pop",
+      "status": "exact",
+      "source_formula": "VARP([value])",
+      "dax": "VAR.P('Sensors'[value])"
+    },
+    {
+      "category": "calculation",
+      "name": "Avg by Sensor Machine",
+      "status": "exact",
+      "source_formula": "{INCLUDE [sensor_type], [machine_id] : AVG([value])}",
+      "dax": "CALCULATE(AVERAGE('Sensors'[value]))"
+    },
+    {
+      "category": "calculation",
+      "name": "Reading Month",
+      "status": "exact",
+      "source_formula": "DATETRUNC(\"month\", [reading_time])",
+      "dax": "[M-based column]"
+    },
+    {
+      "category": "calculation",
+      "name": "Reading Quarter",
+      "status": "exact",
+      "source_formula": "DATETRUNC(\"quarter\", [reading_time])",
+      "dax": "DATE(YEAR('Sensors'[reading_time]), 3 * INT((MONTH('Sensors'[reading_time]) - 1) / 3) + 1, 1)"
+    },
+    {
+      "category": "calculation",
+      "name": "Reading Hour",
+      "status": "exact",
+      "source_formula": "DATEPART(\"hour\", [reading_time])",
+      "dax": "HOUR('Sensors'[reading_time])"
+    },
+    {
+      "category": "calculation",
+      "name": "Weekday",
+      "status": "exact",
+      "source_formula": "DATEPART(\"weekday\", [reading_time])",
+      "dax": "WEEKDAY('Sensors'[reading_time])"
+    },
+    {
+      "category": "calculation",
+      "name": "Running Avg Value",
+      "status": "exact",
+      "source_formula": "RUNNING_AVG(AVG([value]))",
+      "dax": "CALCULATE(AVERAGE('Sensors'[value]))"
+    },
+    {
+      "category": "calculation",
+      "name": "Running Count",
+      "status": "exact",
+      "source_formula": "RUNNING_COUNT(COUNT([reading_id]))",
+      "dax": "CALCULATE(COUNT('Sensors'[reading_id]))"
+    },
+    {
+      "category": "calculation",
+      "name": "Running Max Value",
+      "status": "exact",
+      "source_formula": "RUNNING_MAX(MAX([value]))",
+      "dax": "CALCULATE(MAX('Sensors'[value]))"
+    },
+    {
+      "category": "calculation",
+      "name": "Running Min Value",
+      "status": "exact",
+      "source_formula": "RUNNING_MIN(MIN([value]))",
+      "dax": "CALCULATE(MIN('Sensors'[value]))"
+    },
+    {
+      "category": "calculation",
+      "name": "Dense Rank",
+      "status": "exact",
+      "source_formula": "RANK_DENSE(SUM([value]))",
+      "dax": "RANKX(ALL('Sensors'), SUM('Sensors'[value]),, ASC, DENSE)"
+    },
+    {
+      "category": "calculation",
+      "name": "Unique Rank",
+      "status": "exact",
+      "source_formula": "RANK_UNIQUE(AVG([value]))",
+      "dax": "RANKX(ALL('Sensors'), AVERAGE('Sensors'[value]))"
+    },
+    {
+      "category": "calculation",
+      "name": "Window Total",
+      "status": "exact",
+      "source_formula": "WINDOW_SUM(SUM([value]))",
+      "dax": "CALCULATE(SUM('Sensors'[value]), ALL('Sensors'))"
+    },
+    {
+      "category": "visual",
+      "name": "Sensor Monitor",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Machine Health",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Maintenance Costs",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Value Distribution",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Vibration Analysis",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Machine Rankings",
+      "status": "exact"
+    },
+    {
+      "category": "parameter",
+      "name": "[Parameters].[Alert Threshold]",
+      "status": "exact",
+      "note": "domain=range"
+    },
+    {
+      "category": "parameter",
+      "name": "[Parameters].[Time Granularity]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "bookmark",
+      "name": "Plant Review",
+      "status": "exact",
+      "note": "Converted to 3 bookmark(s)"
+    }
+  ]
+}

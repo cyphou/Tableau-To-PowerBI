@@ -657,7 +657,7 @@ class PowerBIProjectGenerator:
                 "objects": {
                     "general": [{
                         "properties": {
-                            "paragraphs": _L(json.dumps(paragraphs))
+                            "paragraphs": paragraphs
                         }
                     }]
                 }
@@ -731,6 +731,50 @@ class PowerBIProjectGenerator:
         slicer_json = self._create_slicer_visual(visual_id, vx, vy, vw, vh,
                                                   column_name, table_name, visual_count,
                                                   slicer_mode=slicer_mode)
+        _write_json(os.path.join(visual_dir, 'visual.json'), slicer_json, ensure_ascii=False)
+
+    def _create_visual_parameter_control(self, visuals_dir, obj, scale_x, scale_y,
+                                          visual_count, converted_objects):
+        """Create a slicer visual from a Tableau parameter control (paramctrl zone).
+
+        Maps the parameter to its What-If table in the semantic model.  The
+        slicer references the parameter table's Value column so users can pick
+        a parameter value from a dropdown.
+        """
+        visual_id = uuid.uuid4().hex[:20]
+        visual_dir = os.path.join(visuals_dir, visual_id)
+
+        pos = obj.get('position', {})
+        param_name = obj.get('param_name', '')
+
+        # Resolve param_name (e.g., "Parameter 1") to caption via parameters list
+        param_caption = param_name
+        has_aliases = False
+        for p in converted_objects.get('parameters', []):
+            pname = p.get('name', '').strip('[]')
+            if pname == param_name:
+                param_caption = p.get('caption', param_name)
+                # Check if aliases exist (for display name column)
+                avs = p.get('allowable_values', [])
+                has_aliases = any(
+                    v.get('alias') and str(v.get('alias')) != str(v.get('value', ''))
+                    for v in avs if v.get('type') != 'range'
+                )
+                break
+
+        # The What-If table uses the caption as table name
+        # Use "Name" column when aliases exist, "Value" otherwise
+        table_name = param_caption
+        column_name = "Name" if has_aliases else "Value"
+
+        vx = round(pos.get('x', 0) * scale_x)
+        vy = round(pos.get('y', 0) * scale_y)
+        vw = round(pos.get('w', 200) * scale_x)
+        vh = round(pos.get('h', 60) * scale_y)
+
+        slicer_json = self._create_slicer_visual(visual_id, vx, vy, vw, vh,
+                                                  column_name, table_name, visual_count,
+                                                  slicer_mode='Dropdown')
         _write_json(os.path.join(visual_dir, 'visual.json'), slicer_json, ensure_ascii=False)
 
     def _create_action_visuals(self, visuals_dir, actions, scale_x, scale_y,
@@ -1307,6 +1351,11 @@ class PowerBIProjectGenerator:
                     self._create_visual_filter_control(visuals_dir, obj, scale_x, scale_y,
                                                         visual_count, calc_id_to_caption,
                                                         converted_objects)
+                    visual_count += 1
+
+                elif obj.get('type') == 'parameter_control':
+                    self._create_visual_parameter_control(visuals_dir, obj, scale_x, scale_y,
+                                                           visual_count, converted_objects)
                     visual_count += 1
 
             # Create action buttons for URL and sheet-navigate actions

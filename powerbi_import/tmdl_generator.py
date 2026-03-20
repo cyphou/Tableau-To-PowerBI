@@ -2409,6 +2409,7 @@ def _create_parameter_tables(model, parameters, main_table_name):
 
         table_expr = None
         col_name = caption
+        has_aliases = False
 
         if domain_type == 'range':
             range_info = next((v for v in allowable_values if v.get('type') == 'range'), None)
@@ -2422,14 +2423,28 @@ def _create_parameter_tables(model, parameters, main_table_name):
         elif domain_type == 'list':
             list_values = [v for v in allowable_values if v.get('type') != 'range']
             if list_values:
+                # Check if aliases exist and differ from values (display names)
+                has_aliases = any(
+                    v.get('alias') and str(v.get('alias')) != str(v.get('value', ''))
+                    for v in list_values
+                )
                 if datatype == 'string':
                     rows = ', '.join(f'{{"{v.get("value", "")}"}}' for v in list_values)
                 elif datatype == 'boolean':
                     rows = ', '.join(f'{{{v.get("value", "TRUE").upper()}}}' for v in list_values)
+                elif has_aliases:
+                    # Numeric list with aliases → include Name column
+                    rows = ', '.join(
+                        '{{{}, "{}"}}'.format(v.get("value", "0"), v.get("alias", v.get("value", "")).replace('"', '""'))
+                        for v in list_values
+                    )
                 else:
                     rows = ', '.join(f'{{{v.get("value", "0")}}}' for v in list_values)
                 col_name = "Value"
-                table_expr = f'DATATABLE("Value", {dax_type}, {{{rows}}})'
+                if has_aliases and datatype not in ('string', 'boolean'):
+                    table_expr = f'DATATABLE("Value", {dax_type}, "Name", STRING, {{{rows}}})'
+                else:
+                    table_expr = f'DATATABLE("Value", {dax_type}, {{{rows}}})'
 
         if not table_expr:
             continue
@@ -2464,6 +2479,17 @@ def _create_parameter_tables(model, parameters, main_table_name):
             }]
         }
 
+        # Add Name column for numeric list parameters with aliases
+        if has_aliases and domain_type == 'list':
+            param_table["columns"].append({
+                "name": "Name",
+                "dataType": "string",
+                "sourceColumn": "Name",
+                "annotations": [
+                    {"name": "displayFolder", "value": "Parameters"}
+                ]
+            })
+
         model["model"]["tables"].append(param_table)
 
     # Deduplicate: remove parameter measures from other tables
@@ -2494,8 +2520,8 @@ def _create_calculation_groups(model, parameters, main_table_name):
        names → each measure becomes a ``CALCULATE(SELECTEDMEASURE())`` item.
     2. **Numeric list parameters with aliases** where a SWITCH measure maps
        numeric values to aggregation expressions → each alias becomes a
-       calculation item with the aggregation as its expression.  The original
-       SWITCH measure and What-If parameter table are removed.
+       calculation item with the branch expression.  The SWITCH measure and
+       What-If table are kept alongside for backward compatibility.
     """
     if not parameters:
         return
@@ -2572,11 +2598,10 @@ def _create_calculation_groups(model, parameters, main_table_name):
         if not all(v.get('alias') for v in list_values):
             continue
 
-        # Build value→alias map
+        # Build value→alias map (normalise "1.0" → "1")
         val_alias = {}
         for v in list_values:
             raw = v.get('value', '')
-            # Normalise numeric strings: "1.0" → "1", "2.0" → "2"
             try:
                 num = float(raw)
                 normalised = str(int(num)) if num == int(num) else str(num)
@@ -2584,15 +2609,12 @@ def _create_calculation_groups(model, parameters, main_table_name):
                 normalised = raw
             val_alias[normalised] = v.get('alias', '')
 
-        # Find SWITCH measures in the model that reference this parameter
-        dax_caption = caption.replace("'", "''")
+        # Find SWITCH measures that reference this parameter
         switch_pat = re.compile(
             r'^SWITCH\s*\(\s*\[' + re.escape(caption) + r'\]\s*,(.+)\)$',
             re.IGNORECASE | re.DOTALL,
         )
 
-        found_measure = None
-        found_table = None
         found_branches = None
         for table in model['model']['tables']:
             for m in table.get('measures', []):
@@ -2600,20 +2622,14 @@ def _create_calculation_groups(model, parameters, main_table_name):
                 sm = switch_pat.match(expr)
                 if not sm:
                     continue
-                # Parse SWITCH branches: val1, expr1, val2, expr2, ...
                 branches = _parse_switch_branches(sm.group(1).strip())
-                if not branches:
-                    continue
-                # Check that all branch keys match our parameter values
-                if all(bk in val_alias for bk, _ in branches):
-                    found_measure = m
-                    found_table = table
+                if branches and all(bk in val_alias for bk, _ in branches):
                     found_branches = branches
                     break
-            if found_measure:
+            if found_branches:
                 break
 
-        if not found_measure or not found_branches:
+        if not found_branches:
             continue
 
         cg_name = f"{caption} CalcGroup"
@@ -2675,13 +2691,11 @@ def _parse_switch_branches(args_str):
     if current:
         parts.append(''.join(current).strip())
 
-    # SWITCH args: val1, expr1, val2, expr2 [, default]
     branches = []
     i = 0
     while i + 1 < len(parts):
         val = parts[i].strip()
         expr = parts[i + 1].strip()
-        # Normalise numeric keys: "1" and "1.0" → "1"
         try:
             num = float(val)
             val = str(int(num)) if num == int(num) else str(num)

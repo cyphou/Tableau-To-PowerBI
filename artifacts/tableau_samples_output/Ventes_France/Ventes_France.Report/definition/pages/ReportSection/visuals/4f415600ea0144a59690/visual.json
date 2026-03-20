@@ -1,0 +1,30 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
+  "name": "4f415600ea0144a59690",
+  "position": {
+    "x": 0,
+    "y": 698,
+    "z": 5000,
+    "height": 40,
+    "width": 1280,
+    "tabOrder": 5000
+  },
+  "visual": {
+    "visualType": "textbox",
+    "objects": {
+      "general": [
+        {
+          "properties": {
+            "paragraphs": {
+              "expr": {
+                "Literal": {
+                  "Value": "[{\"textRuns\": [{\"value\": \"Source : Base de donn\\u00e9es PostgreSQL \\u2014 Donn\\u00e9es mises \\u00e0 jour quotidiennement\", \"textStyle\": {\"color\": \"#888888\", \"fontSize\": \"9.0pt\"}}]}]"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

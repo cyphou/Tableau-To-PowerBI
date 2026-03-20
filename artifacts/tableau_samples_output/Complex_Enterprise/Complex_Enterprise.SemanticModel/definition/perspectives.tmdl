@@ -1,0 +1,7 @@
+perspective 'Full Model'
+	perspectiveTable fact_sales
+	perspectiveTable dim_date
+	perspectiveTable dim_customer
+	perspectiveTable dim_product
+	perspectiveTable 'Target Margin %'
+	perspectiveTable 'Top N Items'

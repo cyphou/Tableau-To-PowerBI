@@ -1,0 +1,167 @@
+{
+  "report_name": "Security_Test",
+  "created_at": "2026-03-20T16:38:20.598001",
+  "summary": {
+    "total_items": 12,
+    "exact": 11,
+    "approximate": 1,
+    "placeholder": 0,
+    "unsupported": 0,
+    "skipped": 0,
+    "fidelity_score": 95.8,
+    "by_category": {
+      "datasource": {
+        "total": 1,
+        "exact": 1
+      },
+      "calculation": {
+        "total": 5,
+        "exact": 5
+      },
+      "visual": {
+        "total": 2,
+        "exact": 2
+      },
+      "rls_role": {
+        "total": 4,
+        "exact": 3,
+        "approximate": 1
+      }
+    }
+  },
+  "completeness": {
+    "categories": {
+      "datasource": {
+        "total": 1,
+        "exact": 1,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "calculation": {
+        "total": 5,
+        "exact": 5,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "visual": {
+        "total": 2,
+        "exact": 2,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "rls_role": {
+        "total": 4,
+        "exact": 3,
+        "approximate": 1,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 87.5
+      }
+    },
+    "overall_score": 99.8,
+    "grade": "A"
+  },
+  "table_mapping": [
+    {
+      "source_datasource": "Sales Data",
+      "source_table": "Orders",
+      "target_table": "Orders",
+      "connection_type": "SQL Server",
+      "columns": 7
+    },
+    {
+      "source_datasource": "Sales Data",
+      "source_table": "Regions",
+      "target_table": "Regions",
+      "connection_type": "SQL Server",
+      "columns": 2
+    }
+  ],
+  "items": [
+    {
+      "category": "datasource",
+      "name": "federated.sales",
+      "status": "exact",
+      "note": "SQL Server, 2 table(s)"
+    },
+    {
+      "category": "calculation",
+      "name": "Is Current User",
+      "status": "exact",
+      "source_formula": "[CustomerEmail] = USERNAME()",
+      "dax": "'Orders'[CustomerEmail] = USERPRINCIPALNAME()"
+    },
+    {
+      "category": "calculation",
+      "name": "Manager Access",
+      "status": "exact",
+      "source_formula": "ISMEMBEROF(\"Managers\") OR ISMEMBEROF(\"Executives\")",
+      "dax": "TRUE() /* ISMEMBEROF(\"Managers\"): implement via RLS role */ || TRUE() /* ISMEMBEROF(\"Executives\"): implement via RLS role */"
+    },
+    {
+      "category": "calculation",
+      "name": "Region Match",
+      "status": "exact",
+      "source_formula": "[RegionManager] = FULLNAME()",
+      "dax": "'Regions'[RegionManager] = USERPRINCIPALNAME()"
+    },
+    {
+      "category": "calculation",
+      "name": "Total Sales",
+      "status": "exact",
+      "source_formula": "SUM([Sales])",
+      "dax": "SUM('Orders'[Sales])"
+    },
+    {
+      "category": "calculation",
+      "name": "Profit Ratio",
+      "status": "exact",
+      "source_formula": "SUM([Profit]) / SUM([Sales])",
+      "dax": "SUM('Orders'[Profit]) / SUM('Orders'[Sales])"
+    },
+    {
+      "category": "visual",
+      "name": "Sales Overview",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Profit Analysis",
+      "status": "exact"
+    },
+    {
+      "category": "rls_role",
+      "name": "Region Access",
+      "status": "exact",
+      "note": "User filter with explicit mappings → RLS role"
+    },
+    {
+      "category": "rls_role",
+      "name": "Is Current User",
+      "status": "exact",
+      "note": "Calculated security (USERNAME) → USERPRINCIPALNAME()"
+    },
+    {
+      "category": "rls_role",
+      "name": "Manager Access",
+      "status": "approximate",
+      "note": "ISMEMBEROF → RLS role (assign Azure AD group members: Managers, Executives)"
+    },
+    {
+      "category": "rls_role",
+      "name": "Region Match",
+      "status": "exact",
+      "note": "Calculated security (FULLNAME) → USERPRINCIPALNAME()"
+    }
+  ]
+}

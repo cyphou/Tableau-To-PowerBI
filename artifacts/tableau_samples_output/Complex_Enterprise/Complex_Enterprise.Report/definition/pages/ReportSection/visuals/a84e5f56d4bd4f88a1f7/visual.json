@@ -1,0 +1,30 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
+  "name": "a84e5f56d4bd4f88a1f7",
+  "position": {
+    "x": 0,
+    "y": 691,
+    "z": 5000,
+    "height": 40,
+    "width": 1280,
+    "tabOrder": 5000
+  },
+  "visual": {
+    "visualType": "textbox",
+    "objects": {
+      "general": [
+        {
+          "properties": {
+            "paragraphs": {
+              "expr": {
+                "Literal": {
+                  "Value": "[{\"textRuns\": [{\"value\": \"Data Source: Snowflake Enterprise DW | Updated: Daily at 06:00 UTC\", \"textStyle\": {\"color\": \"#888888\", \"fontSize\": \"9.0pt\"}}]}]"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,18 +1,18 @@
 table 'Target Margin'
-	lineageTag: 99af2879-4a49-4c89-8ce7-6447b22cf155
+	lineageTag: 7a9205ce-e44c-4769-9e99-faa14613936a
 
 	measure 'Target Margin' = SELECTEDVALUE('Target Margin'[Value], 0.2)
-		lineageTag: 6b505ddf-4f9f-4ae0-a72f-b81a8c5fb12d
+		lineageTag: 7dccb716-daf6-42a0-ae0f-cf3ba9b5d715
 
 	column Value
 		dataType: double
-		lineageTag: 0333220e-1675-44e3-b575-989efdb4f350
+		lineageTag: 54161050-ec7c-4780-84de-4f303fefbf22
 		summarizeBy: none
 		sourceColumn: Value
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Target Margin-a10e7b0c-f9b2-4cc5-8ce6-82d9b10aa40e' = calculated
+	partition 'Target Margin-b069b0d7-4371-485b-bc3d-45ba11c98013' = calculated
 		mode: import
 		source = GENERATESERIES(0, 0.5, 0.01)
 

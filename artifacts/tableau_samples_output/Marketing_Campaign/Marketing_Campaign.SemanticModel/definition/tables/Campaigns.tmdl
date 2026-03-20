@@ -1,60 +1,60 @@
 table Campaigns
-	lineageTag: 2778c232-c850-4298-bee4-4957989df8b1
+	lineageTag: deb1b34d-13b4-4c27-8cdd-7c77629d03a7
 
 	measure 'Non-Blank Leads' = COUNTA('Leads'[lead_name])
 		displayFolder: Measures
-		lineageTag: e0bdacec-92fc-4787-bc49-dc364fa1c147
+		lineageTag: ceb97162-37c7-4788-83e9-a6bdca639872
 
 	measure 'Budget Deal Correlation' = VAR _MeanX = AVERAGEX(ALL('Campaigns'), 'Campaigns'[budget]) VAR _MeanY = AVERAGEX(ALL('Campaigns'), 'Leads'[deal_value]) VAR _Cov = SUMX(ALL('Campaigns'), ('Campaigns'[budget] - _MeanX) * ('Leads'[deal_value] - _MeanY)) VAR _StdX = SQRT(SUMX(ALL('Campaigns'), ('Campaigns'[budget] - _MeanX) ^ 2)) VAR _StdY = SQRT(SUMX(ALL('Campaigns'), ('Leads'[deal_value] - _MeanY) ^ 2)) RETURN DIVIDE(_Cov, _StdX * _StdY, 0)
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 0cb6d266-ad89-4743-9648-1e7eecdd85d5
+		lineageTag: 614f6af3-f007-4357-a652-c18aeaf4f014
 
 	measure 'Spend Engagement Covar' = VAR _MeanX = AVERAGEX(ALL('Campaigns'), 'Campaigns'[spend]) VAR _MeanY = AVERAGEX(ALL('Campaigns'), 'Leads'[engagement_score]) VAR _N = COUNTROWS(ALL('Campaigns')) RETURN DIVIDE(SUMX(ALL('Campaigns'), ('Campaigns'[spend] - _MeanX) * ('Leads'[engagement_score] - _MeanY)), _N - 1, 0)
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 13db01e9-7cfe-4c8f-9cad-300d82860faa
+		lineageTag: de39099d-9470-47c3-a65a-5fe1af966f35
 
 	measure 'Avg Deal by Channel' = CALCULATE(AVERAGE('Leads'[deal_value]))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: a6f6ffc7-cfdb-4df3-ba1c-e374e6177043
+		lineageTag: 7c2e92d8-89e7-4fdc-a1d6-dc40ff6f4ced
 
 	measure 'Campaign ROI' = (SUM('Leads'[deal_value]) - SUM('Campaigns'[spend])) / SUM('Campaigns'[spend])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: e0a409fa-5d29-4a47-8b22-3f7abf4decb1
+		lineageTag: 46db7585-4bf5-4bae-8a62-2d2bcb4614f9
 
 	measure 'Cost Per Lead' = SUM('Campaigns'[spend]) / DISTINCTCOUNT('Leads'[lead_id])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: dc63df35-54e5-457d-9f12-bf9d68a3c7b8
+		lineageTag: 9aaf7935-a2e4-471f-b745-67193b81eb05
 
 	measure 'Window Best ROI' = CALCULATE((SUM('Leads'[deal_value]) - SUM('Campaigns'[spend])) / SUM('Campaigns'[spend]), ALL('Campaigns'))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 738ec876-bc6a-45aa-be42-55f08d0bbc5a
+		lineageTag: f60c6c0a-1054-4f69-aacf-8c59bc98e408
 
 	measure 'Window Worst ROI' = CALCULATE((SUM('Leads'[deal_value]) - SUM('Campaigns'[spend])) / SUM('Campaigns'[spend]), ALL('Campaigns'))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 18ea3e97-9ff0-422e-9f13-87c3e0c1c87d
+		lineageTag: 656667d1-ffb7-4ad2-a6b3-164d5e00d815
 
 	measure 'Cumulative Leads' = CALCULATE(DISTINCTCOUNT('Leads'[lead_id]))
 		displayFolder: Measures
-		lineageTag: 63d353a3-2b85-48c6-b16b-e1ff9cf739d9
+		lineageTag: e152acb4-528e-4e09-9558-c34189432ff7
 
 	measure 'Conversion Rate' = SUMX('Leads', IF('Leads'[lead_status] = "Won", 1, 0)) / COUNT('Leads'[lead_id])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: c5e301a5-4883-4514-8b8c-1638634638a2
+		lineageTag: ce0ac597-3d74-477b-a162-558360c18d40
 
 	measure 'Target Channel' = "Email"
-		lineageTag: 9b0c71bb-ab11-49e1-9c12-32f992cc3c80
+		lineageTag: ad6d86ed-19aa-4162-a37a-b08d72cd4cbf
 
 	column campaign_id
 		dataType: int64
-		lineageTag: ed278775-c0ea-4812-b6a0-3e0ce1994bc8
+		lineageTag: 6ff9d425-88a1-44a2-a91f-1e84fbcaebf6
 		summarizeBy: sum
 		sourceColumn: campaign_id
 
@@ -62,7 +62,7 @@ table Campaigns
 
 	column campaign_name
 		dataType: string
-		lineageTag: 47e27896-fd2d-402d-895c-9398750e422b
+		lineageTag: c19f8915-c8dd-4202-8521-643002fceab3
 		summarizeBy: none
 		sourceColumn: campaign_name
 
@@ -70,7 +70,7 @@ table Campaigns
 
 	column channel
 		dataType: string
-		lineageTag: e063d94c-0f96-4943-8434-836b375f5b15
+		lineageTag: 45c766f1-a76c-4cd2-be44-b621cdcba0d4
 		summarizeBy: none
 		sourceColumn: channel
 
@@ -79,7 +79,7 @@ table Campaigns
 	column start_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 56e5b486-2110-4584-8fd8-b8dd605b6b06
+		lineageTag: d6f0023d-272a-41ef-a2a5-9d98f7ec60ba
 		summarizeBy: none
 		sourceColumn: start_date
 		dataCategory: DateTime
@@ -89,7 +89,7 @@ table Campaigns
 	column end_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: d30a4303-a077-4e4b-8214-6c8c6685bf2d
+		lineageTag: efc52c6f-9703-4458-9249-d0ce8e49b020
 		summarizeBy: none
 		sourceColumn: end_date
 		dataCategory: DateTime
@@ -99,7 +99,7 @@ table Campaigns
 	column budget
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 981f2973-cd5f-4780-89bd-12ed92ad70b9
+		lineageTag: 4679024e-f2a9-4b03-a992-1a13f2b9128f
 		summarizeBy: sum
 		sourceColumn: budget
 
@@ -108,7 +108,7 @@ table Campaigns
 	column spend
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 7b8e91fd-a218-4efd-8776-643d53126dc6
+		lineageTag: f06aca79-6f4c-467b-90e3-97c2fe4688fb
 		summarizeBy: sum
 		sourceColumn: spend
 
@@ -116,7 +116,7 @@ table Campaigns
 
 	column target_audience
 		dataType: string
-		lineageTag: 2c3192e5-7bf3-4ba9-b746-f6d646b35de6
+		lineageTag: fcb501f1-bd02-46f7-a220-ecd9ea6fa380
 		summarizeBy: none
 		sourceColumn: target_audience
 
@@ -124,7 +124,7 @@ table Campaigns
 
 	column creative_url
 		dataType: string
-		lineageTag: a2e0ec98-d6c5-4388-88fd-da1b5e85953e
+		lineageTag: 41c17e9c-93d5-4f65-898b-88432b449094
 		summarizeBy: none
 		sourceColumn: creative_url
 
@@ -132,7 +132,7 @@ table Campaigns
 
 	column utm_source
 		dataType: string
-		lineageTag: a4e0e041-1dee-4698-aa58-2a1c2530d201
+		lineageTag: 731ac261-4a1d-44d4-9d87-64cba68f9230
 		summarizeBy: none
 		sourceColumn: utm_source
 
@@ -140,7 +140,7 @@ table Campaigns
 
 	column utm_medium
 		dataType: string
-		lineageTag: 48717604-3466-437d-bcf2-d86843fa2d44
+		lineageTag: b54cb3c8-5f3e-43d5-bc41-c2617bc78132
 		summarizeBy: none
 		sourceColumn: utm_medium
 
@@ -148,7 +148,7 @@ table Campaigns
 
 	column utm_campaign
 		dataType: string
-		lineageTag: 8525427f-12b2-4e08-804e-40004b26973d
+		lineageTag: ffd7dfdf-eff3-4552-9c88-4e657bb7a9bb
 		summarizeBy: none
 		sourceColumn: utm_campaign
 
@@ -156,7 +156,7 @@ table Campaigns
 
 	column region
 		dataType: string
-		lineageTag: 47ed0344-e920-4fdd-8452-dd5dcdf280ec
+		lineageTag: d2440650-8d93-40b4-9951-43d98457af7e
 		summarizeBy: none
 		sourceColumn: region
 		dataCategory: StateOrProvince
@@ -165,7 +165,7 @@ table Campaigns
 
 	column status
 		dataType: string
-		lineageTag: 3013abe4-a27c-42ae-8ffa-03e36c917558
+		lineageTag: 262e6754-5572-4139-a803-93c0926155a1
 		summarizeBy: none
 		sourceColumn: status
 
@@ -173,56 +173,56 @@ table Campaigns
 
 	column 'Email Domain' = MID(LOOKUPVALUE(Leads[email], Leads[campaign_id], Campaigns[campaign_id]), FIND("@", LOOKUPVALUE(Leads[email], Leads[campaign_id], Campaigns[campaign_id])) + 1, LEN(LOOKUPVALUE(Leads[email], Leads[campaign_id], Campaigns[campaign_id])))
 		dataType: string
-		lineageTag: 083804c3-402f-4adc-9b3a-73905f07452e
+		lineageTag: af18dfc1-9757-43f2-ad76-a3877b3551b6
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'First Name' = LEFT(LOOKUPVALUE(Leads[lead_name], Leads[campaign_id], Campaigns[campaign_id]), FIND(" ", LOOKUPVALUE(Leads[lead_name], Leads[campaign_id], Campaigns[campaign_id])) - 1)
 		dataType: string
-		lineageTag: 54f97111-c294-4cd9-a746-a32a9edb2f29
+		lineageTag: 7c289084-e7b1-4f32-8414-0b52dc3e571d
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Last Name' = MID(LOOKUPVALUE(Leads[lead_name], Leads[campaign_id], Campaigns[campaign_id]), FIND(" ", LOOKUPVALUE(Leads[lead_name], Leads[campaign_id], Campaigns[campaign_id])) + 1, LEN(LOOKUPVALUE(Leads[lead_name], Leads[campaign_id], Campaigns[campaign_id])))
 		dataType: string
-		lineageTag: 644d3b50-45c3-476b-9ced-01caa9bdea90
+		lineageTag: 2302a477-a1b3-41cf-9b86-49ba64ee1531
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Name Length' = LEN(LOOKUPVALUE(Leads[lead_name], Leads[campaign_id], Campaigns[campaign_id]))
 		dataType: int64
-		lineageTag: 79249507-9a02-4ff0-a992-99271cf55375
+		lineageTag: be8a800f-4849-4cd0-9eea-d2b9de8ddded
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Clean Phone' = TRIM(SUBSTITUTE(SUBSTITUTE(LOOKUPVALUE(Leads[phone], Leads[campaign_id], Campaigns[campaign_id]), "-", ""), " ", ""))
 		dataType: string
-		lineageTag: bb00c569-8d41-48ac-939d-91544fb0f17b
+		lineageTag: 3d37d60a-474a-493c-8714-4df622d769d0
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Phone Last 4' = RIGHT(LOOKUPVALUE(Leads[phone], Leads[campaign_id], Campaigns[campaign_id]), 4)
 		dataType: string
-		lineageTag: 22435f7f-19d4-43e8-884f-4fed4c21b7ac
+		lineageTag: 45ec309f-3c63-4e3c-8914-8b741ac142b7
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Campaign Code' = UPPER(LEFT('Campaigns'[channel], 3)) & "-" & FORMAT('Campaigns'[campaign_id], "0") & REPT(" ", 5 - LEN(FORMAT('Campaigns'[campaign_id], "0")))
 		dataType: string
-		lineageTag: 56c8eff4-3129-4376-b317-77c04d8b84d7
+		lineageTag: 84da7918-78ab-4d1f-9f8b-9394f5e641af
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Is Enterprise'
 		dataType: boolean
-		lineageTag: 5d672bea-48e6-408c-adf0-bd2ccd24ab9d
+		lineageTag: 26c8d5d8-b12c-4c33-92d5-d386d3935fd0
 		summarizeBy: none
 		sourceColumn: 'Is Enterprise'
 
@@ -230,21 +230,21 @@ table Campaigns
 
 	column 'Has Valid UTM' = /* REGEXP_MATCH: complex regex "^[a-z0-9_-]+$" — verify manually */ CONTAINSSTRING('Campaigns'[utm_campaign], "^[a-z0-9_-]+$")
 		dataType: boolean
-		lineageTag: e3fb086b-0b72-4fa5-aebc-c7395940ab0e
+		lineageTag: 114d520d-3f98-406f-abdf-5f75b689d0d8
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Clean URL' = /* REGEXP_REPLACE("https?://"): complex regex — verify manually */ SUBSTITUTE('Campaigns'[creative_url], "https?://", "")
 		dataType: string
-		lineageTag: eb871be4-9bdd-47f3-aca8-1a9d12f04268
+		lineageTag: 835b6157-9b1c-44f4-b3c9-4e6f6cad8da7
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Campaign Year'
 		dataType: dateTime
-		lineageTag: 8165d984-c9f7-466f-b87c-a66bad2aa07d
+		lineageTag: 222bd0ea-4115-4ad9-818f-7e881a59c05e
 		summarizeBy: none
 		sourceColumn: 'Campaign Year'
 
@@ -252,7 +252,7 @@ table Campaigns
 
 	column 'Start Month'
 		dataType: int64
-		lineageTag: fef5aa6a-ef75-48cc-95e5-471438128041
+		lineageTag: e4234281-0ad4-415b-83cc-7b54e2ebdf1e
 		summarizeBy: none
 		sourceColumn: 'Start Month'
 
@@ -260,14 +260,14 @@ table Campaigns
 
 	column 'Month Name' = FORMAT('Campaigns'[start_date], "MMMM")
 		dataType: string
-		lineageTag: be3737d5-9f4b-4e6d-b817-a5c18e7b4d9f
+		lineageTag: 64d81add-b4a9-4d3a-9ebb-fa500875434c
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Campaign Days'
 		dataType: int64
-		lineageTag: b198fb7b-51c9-423b-a055-d767433fb7c6
+		lineageTag: 8567c90b-0972-4bb6-8712-bacd051b7187
 		summarizeBy: none
 		sourceColumn: 'Campaign Days'
 
@@ -275,12 +275,12 @@ table Campaigns
 
 	column 'Budget Band' = INT('Campaigns'[budget] / 1000) * 1000
 		dataType: int64
-		lineageTag: f2408ae8-c83b-423e-841e-8977e8e5ca6a
+		lineageTag: cdb7bcc1-91e4-4802-857a-003b87b69424
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Campaigns-d3490215-2456-435d-9016-7dffa419e767' = m
+	partition 'Campaigns-88e81142-c226-495d-b6d1-4a2f9eb92030' = m
 		mode: import
 		source =
 				let

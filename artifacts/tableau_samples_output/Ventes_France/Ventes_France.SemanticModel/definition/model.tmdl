@@ -1,0 +1,28 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation PBI_QueryOrder = ["Commandes","Produits","Clients","Calendar","Objectif Marge","Top N Produits"]
+
+ref table Commandes
+ref table Produits
+ref table Clients
+ref table Calendar
+ref table 'Objectif Marge'
+ref table 'Top N Produits'
+
+ref relationship f6b7b596-8cb0-42cd-ab77-0838264174c3
+ref relationship d9eab7be-0879-4920-a799-40574ac1b46c
+ref relationship 40a6edef-5dc6-4b55-b69e-38119d67b4f3
+ref relationship f78256ff-a956-4981-befa-3a84d0ea11b4
+
+ref expression DataFolder
+
+ref role 'Accès Commercial'
+
+ref perspective 'Full Model'
+

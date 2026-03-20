@@ -248,12 +248,19 @@ class TableauExtractor:
         dashboards = []
         
         for dashboard in root.findall('.//dashboard'):
+            size_elem = dashboard.find('size')
+            if size_elem is not None:
+                db_width = _safe_int(size_elem.get('maxwidth', size_elem.get('minwidth', '1280')))
+                db_height = _safe_int(size_elem.get('maxheight', size_elem.get('minheight', '720')))
+            else:
+                db_width = _safe_int(dashboard.get('width', 1280))
+                db_height = _safe_int(dashboard.get('height', 720))
             db_data = {
                 'name': dashboard.get('name', ''),
                 'title': dashboard.findtext('.//title', ''),
                 'size': {
-                    'width': _safe_int(dashboard.get('width', 1280)),
-                    'height': _safe_int(dashboard.get('height', 720)),
+                    'width': db_width,
+                    'height': db_height,
                 },
                 'objects': self.extract_dashboard_objects(dashboard),
                 'filters': self.extract_dashboard_filters(dashboard),
@@ -553,10 +560,46 @@ class TableauExtractor:
         
         # For explicit mark types, use the mapping directly
         if mark_class != 'Automatic':
-            return self._map_tableau_mark_to_type(mark_class)
+            pbi_type = self._map_tableau_mark_to_type(mark_class)
+            # Bar orientation: dimension on cols + measure on rows = vertical column chart
+            if pbi_type == 'clusteredBarChart':
+                pbi_type = self._detect_bar_orientation(worksheet, pbi_type)
+            return pbi_type
         
         # Automatic: infer from field shelf assignments
         return self._infer_automatic_chart_type(worksheet)
+    
+    def _detect_bar_orientation(self, worksheet, default):
+        """Detects bar chart orientation from shelf assignments.
+        
+        In Tableau, a Bar mark with dimension on columns and measure on
+        rows renders as vertical columns.  When measure is on columns and
+        dimension (or nothing) on rows it renders as horizontal bars.
+        """
+        agg_prefixes = {'sum:', 'avg:', 'count:', 'cnt:', 'ctd:', 'countd:',
+                        'min:', 'max:', 'attr:', 'median:', 'usr:'}
+        cols_shelf = worksheet.find('./table/cols')
+        rows_shelf = worksheet.find('./table/rows')
+        cols_text = cols_shelf.text if cols_shelf is not None and cols_shelf.text else ''
+        rows_text = rows_shelf.text if rows_shelf is not None and rows_shelf.text else ''
+        
+        def _has_measure(text):
+            refs = re.findall(r'\[([^\]]+)\]\.\[([^\]]+)\]', text)
+            for _, field_ref in refs:
+                lower = field_ref.lower()
+                if any(lower.startswith(p) for p in agg_prefixes):
+                    return True
+            return False
+        
+        cols_has_measure = _has_measure(cols_text)
+        rows_has_measure = _has_measure(rows_text)
+        cols_has_fields = bool(re.search(r'\[.*\]\.\[.*\]', cols_text))
+        rows_has_fields = bool(re.search(r'\[.*\]\.\[.*\]', rows_text))
+        
+        # Dimension on cols + measure on rows → vertical column chart
+        if cols_has_fields and not cols_has_measure and rows_has_measure:
+            return 'clusteredColumnChart'
+        return default
     
     def _infer_automatic_chart_type(self, worksheet):
         """Infers the chart type when Tableau uses 'Automatic' mark.
@@ -840,11 +883,16 @@ class TableauExtractor:
                     if col_name in existing_names:
                         continue
                     existing_names.add(col_name)
-                    fields.append({
+                    # Map derivation to aggregation key for PBI
+                    agg_key = deriv.lower() if deriv != 'User' else ''
+                    field_entry = {
                         'name': col_name,
                         'shelf': 'measure_value',
                         'datasource': ds_ref,
-                    })
+                    }
+                    if agg_key:
+                        field_entry['aggregation'] = agg_key
+                    fields.append(field_entry)
 
         return fields
     
@@ -1266,6 +1314,27 @@ class TableauExtractor:
                         'field': zone_name,
                         'param': param_ref,
                         'calc_column_id': calc_column_name,
+                        'position': pos,
+                        'layout': layout_mode
+                    })
+                continue
+
+            # Parameter control (dropdown/slider for a Tableau parameter)
+            if zone_type == 'paramctrl' or zone_type_v2 == 'paramctrl':
+                param_ref = zone.get('param', '')
+                dedup_key = f"pc_{param_ref}" if param_ref else f"pc_{zone_id}"
+                if dedup_key not in seen_names:
+                    seen_names.add(dedup_key)
+                    # Extract param name: [Parameters].[Parameter 1] → Parameter 1
+                    param_name = param_ref
+                    pm = re.search(r'\[Parameters\]\.\[([^\]]+)\]', param_ref)
+                    if pm:
+                        param_name = pm.group(1)
+                    objects.append({
+                        'type': 'parameter_control',
+                        'name': f'param_{param_name}',
+                        'param': param_ref,
+                        'param_name': param_name,
                         'position': pos,
                         'layout': layout_mode
                     })

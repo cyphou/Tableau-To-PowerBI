@@ -11,7 +11,7 @@ annotation PBI_QueryOrder = ["Employees","Calendar"]
 ref table Employees
 ref table Calendar
 
-ref relationship 0ab6e5a0-f1eb-4a6b-9380-d932659dc78b
+ref relationship fbb9a9cf-a2be-42f2-a0b8-5c512c2f668f
 
 ref expression DataFolder
 
