@@ -508,8 +508,8 @@ class PowerBIProjectGenerator:
                         query["queryState"] = query.get("queryState", {})
                         query["sortDefinition"] = {"sort": [sort_entry]}
 
-        # Visual container title (vcObjects — displayed above the chart)
-        visual_json["vcObjects"] = {
+        # Visual container title (vcObjects inside "visual" — displayed above the chart)
+        visual_json["visual"]["vcObjects"] = {
             "title": [{
                 "properties": {
                     "show": _L("true"),
