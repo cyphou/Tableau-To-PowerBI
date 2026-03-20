@@ -1950,13 +1950,20 @@ class TableauExtractor:
             source_col = _strip_brackets(calc_elem.get('column', ''))
             members = {}
             for bin_elem in calc_elem.findall('bin'):
-                label = bin_elem.get('value', '').strip('"')
+                raw_label = bin_elem.get('value', '')
+                # Tableau wraps values in quotes and uses \ escapes (\", \', \#, \%)
+                label = re.sub(r'\\(.)', r'\1', raw_label)
+                if label.startswith('"') and label.endswith('"'):
+                    label = label[1:-1]
                 if not label:
                     continue
                 values = []
                 for val_elem in bin_elem.findall('value'):
                     if val_elem.text:
-                        values.append(val_elem.text.strip('"'))
+                        v = re.sub(r'\\(.)', r'\1', val_elem.text)
+                        if v.startswith('"') and v.endswith('"'):
+                            v = v[1:-1]
+                        values.append(v)
                 if values:
                     members[label] = values
             if members and source_col:

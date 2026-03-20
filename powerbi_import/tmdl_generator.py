@@ -1883,7 +1883,7 @@ def _process_sets_groups_bins(model, extra_objects, main_table_name, column_tabl
         if formula:
             dax_expr = formula
         elif members:
-            escaped = [f'"{m}"' for m in members[:50]]
+            escaped = [f'"{m.replace(chr(34), chr(34)+chr(34))}"' for m in members[:50]]
             dax_expr = f"'{main_table_name}'[{set_name}] IN {{{', '.join(escaped)}}}"
         else:
             dax_expr = 'TRUE()'
@@ -2055,11 +2055,51 @@ def _process_sets_groups_bins(model, extra_objects, main_table_name, column_tabl
             continue
 
         elif members and source_field:
+            total_values = sum(len(v) for v in members.values())
+            # Large groups: use M table-join lookup (avoids M engine complexity limit)
+            if total_values > 100:
+                escaped_src = source_field.replace('"', '""')
+                escaped_grp = group_name.replace('"', '""')
+                rows = []
+                for label, values in members.items():
+                    el = label.replace('"', '""')
+                    for val in values:
+                        ev = val.replace('"', '""')
+                        rows.append(f'{{"{ev}", "{el}"}}')
+                map_expr = (
+                    f'#table(type table [key = text, grp = text], '
+                    f'{{{", ".join(rows)}}})'
+                )
+                safe_tag = re.sub(r'[^A-Za-z0-9_]', '_', group_name)
+                m_steps.append((
+                    f'#"Join_{safe_tag}"',
+                    f'Table.NestedJoin({{prev}}, {{"{escaped_src}"}}, {map_expr}, {{"key"}}, "_lkp_{safe_tag}", JoinKind.LeftOuter)'
+                ))
+                m_steps.append((
+                    f'#"Expand_{safe_tag}"',
+                    f'Table.ExpandTableColumn({{prev}}, "_lkp_{safe_tag}", {{"grp"}}, {{"{escaped_grp}"}})'
+                ))
+                m_steps.append((
+                    f'#"Fill_{safe_tag}"',
+                    f'Table.ReplaceValue({{prev}}, null, "Other", Replacer.ReplaceValue, {{"{escaped_grp}"}})'
+                ))
+                main_table["columns"].append({
+                    "name": group_name,
+                    "dataType": "String",
+                    "sourceColumn": group_name,
+                    "summarizeBy": "none",
+                    "displayFolder": "Groups"
+                })
+                existing_cols.add(group_name)
+                continue
+
             table_ref = column_table_map.get(source_field, main_table_name)
             cases = []
             for label, values in members.items():
+                escaped_label = label.replace('"', '""')
                 for val in values:
-                    cases.append(f'"{val}", "{label}"')
+                    escaped_val = val.replace('"', '""')
+                    cases.append(f'"{escaped_val}", "{escaped_label}"')
 
             if cases:
                 dax_expr = f"SWITCH('{table_ref}'[{source_field}], {', '.join(cases)}, \"Other\")"
