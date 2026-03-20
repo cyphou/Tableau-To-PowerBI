@@ -1,5 +1,4 @@
 ---
-applyTo: "**/*.py"
 description: "Shared rules for all agents in the Tableau to Power BI migration project. USE FOR: enforcing project-wide constraints, coding standards, and safety rules."
 ---
 
