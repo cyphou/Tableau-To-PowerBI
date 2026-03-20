@@ -2,9 +2,9 @@
 
 This document lists known limitations and approximations in the Tableau to Power BI migration tool.
 
-> **Last updated:** v18.0.0 (Sprint 64) — many previous limitations have been addressed in Sprints 27-64. See below for current status.
+> **Last updated:** v19.0.0 (Sprint 65) — many previous limitations have been addressed in Sprints 27-65. See below for current status.
 >
-> **v18.0.0 notes:** Report schema downgraded from 3.1.0 to 2.0.0 for backward compatibility with PBI Desktop April 2025+. Post-merge safety: cycle detection, column type validation, DAX reference integrity checks. RLS predicate merging & propagation validation. Deploy hardening: permission pre-flight, conflict detection, rollback, refresh polling. Hyper file 3-tier reader (tableauhyperapi + SQLite + header scan). ResourcePackageType fix for custom themes. **Sprint 64**: Incremental merge workflow — `--add-to-model` / `--remove-from-model` CLI flags, `MergeManifest` provenance, TMDL reverse-engineering parser, manifest diff for CI audit.
+> **v19.0.0 notes:** Lineage metadata injection (TMDL annotations + Sankey HTML report). Custom SQL fingerprinting for merge candidates. Multi-tenant deployment (`--multi-tenant CONFIG_FILE`). Live connection mode (`--live-connection WORKSPACE_ID/MODEL_NAME`). Fingerprint hash cache for O(n) global assessment. End-to-end merge integration tests. Benchmark suite (100 workbooks in <1s).
 
 ---
 

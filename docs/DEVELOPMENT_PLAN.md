@@ -268,6 +268,244 @@ Sprint 64 ✅ (Incremental Merge)    ──→  Sprint 65 ✅ (Lineage + Multi-T
 
 ---
 
+## v20.0.0 — Web UI, AI-Assisted Migration & CI Maturity
+
+### Motivation
+
+v19.0.0 delivered enterprise-grade merge capabilities (lineage, multi-tenant, live connection, benchmarks) with 4,923 tests across 106 files. The migration engine is feature-complete for core scenarios. However, adoption is limited to CLI-savvy users, DAX approximations require manual review, and CI workflows lack PR-level visibility. v20.0.0 shifts focus to **user experience**, **AI-assisted quality**, and **CI maturity**:
+
+1. **Web UI** — CLI-only workflow is a barrier for analysts and PBI developers who don't use terminals. A browser-based wizard would dramatically expand the user base.
+2. **AI-assisted DAX** — ~15 DAX functions produce approximated output (REGEX, WINDOW_*, RANK_PERCENTILE). An optional LLM pass could refine these with semantic understanding.
+3. **CI maturity** — No PR preview, no automated release pipeline, no migration diff reports on pull requests. Enterprise teams need CI integration for migration governance.
+4. **Composite model depth** — `--mode composite` exists but lacks per-table StorageMode control and aggregation table support.
+5. **Conversion accuracy** — Prep VAR/VARP and notInner join are still approximated; bump chart loses ranking semantics; PDF/Salesforce connectors are shallow.
+
+---
+
+### Sprint 66 — Web UI: Streamlit Migration Wizard
+
+**Goal:** Build a browser-based migration interface that enables non-CLI users to upload Tableau workbooks, configure migration options, preview results, and download .pbip projects.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 66.1 | **Streamlit app scaffold** | `web/app.py` (new) | Medium | Main Streamlit app with sidebar navigation: Upload → Configure → Preview → Download. Session state management for multi-step workflow. |
+| 66.2 | **File upload & extraction** | `web/app.py` | Medium | `.twbx`/`.twb` file uploader → temp dir → call `extract_tableau_data()`. Display extraction summary: worksheet count, datasource count, calculation count, parameter count. |
+| 66.3 | **Configuration panel** | `web/app.py` | Medium | Interactive settings: output directory name, `--culture` dropdown, `--calendar-start`/`--calendar-end` sliders, `--mode` radio (Import/DirectQuery/Composite), `--prep` file upload, `--goals` toggle, `--assess` toggle. Maps to CLI args. |
+| 66.4 | **Pre-migration assessment view** | `web/app.py` | Medium | Run `AssessmentReport` on extracted data, render 14-category radar chart, display pass/warn/fail breakdown, strategy recommendation (Import/DQ/Composite), connection string audit results. |
+| 66.5 | **Migration execution & progress** | `web/app.py` | Medium | "Migrate" button → run pipeline with progress bar (reuse `progress.py`). Display real-time log output in expandable section. Capture migration report with completeness score. |
+| 66.6 | **Result preview & download** | `web/app.py` | Medium | Post-migration: display visual mapping table (Tableau → PBI types), DAX conversion summary (exact/approximated/failed), model stats (tables/measures/relationships). ZIP download button for .pbip project. |
+| 66.7 | **Shared model mode** | `web/app.py` | Medium | Multi-file upload for `--shared-model`. Display merge assessment heatmap, conflict list, merge score. Configure `--force-merge`, `--strict-merge`, `--model-name`. |
+| 66.8 | **Docker packaging** | `web/Dockerfile`, `docker-compose.yml` | Low | Dockerfile: Python 3.11 + Streamlit + project dependencies. Docker Compose for one-command startup. Health check endpoint. |
+| 66.9 | **Tests** | `tests/test_web_app.py` (new) | Medium | 20+ tests: file upload handling, config-to-args mapping, assessment rendering, migration pipeline integration, ZIP generation, session state management |
+
+### Sprint 67 — LLM-Assisted DAX Correction
+
+**Goal:** Add an optional AI-powered pass that refines approximated DAX formulas using GPT/Claude. Opt-in only, requires API key, cost-tracked.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 67.1 | **LLM client abstraction** | `powerbi_import/llm_client.py` (new) | Medium | `LLMClient` class: supports OpenAI (`gpt-4o`) and Anthropic (`claude-sonnet-4-20250514`) APIs. API key from `--llm-key` or `LLM_API_KEY` env var. Sync HTTP calls via `urllib` (no external deps). Token counting and cost estimation. |
+| 67.2 | **DAX refinement prompt engine** | `powerbi_import/llm_client.py` | High | `refine_dax(original_tableau, approximated_dax, context)`: structured prompt with Tableau formula, current DAX output, table/column context, and conversion notes. Returns refined DAX + confidence score + explanation. System prompt with DAX best practices and known Tableau→DAX patterns. |
+| 67.3 | **Selective refinement targeting** | `powerbi_import/tmdl_generator.py` | Medium | After DAX conversion, identify measures/calc columns with `MigrationNote` containing "approximated" or "placeholder". Queue these for LLM refinement. Skip exact conversions (no wasted API calls). |
+| 67.4 | **Cost tracking & rate limiting** | `powerbi_import/llm_client.py` | Low | Track total tokens consumed, estimated cost (per model pricing), and API calls. Rate limit to configurable max calls per migration (`--llm-max-calls 50`). Print cost summary at end. |
+| 67.5 | **CLI integration** | `migrate.py` | Low | `--llm-refine` flag enables LLM pass. `--llm-provider openai|anthropic` (default: openai). `--llm-model MODEL_NAME` override. `--llm-key KEY`. `--llm-max-calls N`. Disabled by default. |
+| 67.6 | **Refinement report** | `powerbi_import/llm_client.py` | Low | JSON report: per-formula original → approximated → refined, confidence, tokens, cost. Included in migration metadata. |
+| 67.7 | **Tests** | `tests/test_llm_client.py` (new) | Medium | 25+ tests: client init, prompt construction, response parsing, cost tracking, rate limiting, selective targeting, CLI flag parsing, mock API responses, error handling (timeout, invalid key, rate limit) |
+
+### Sprint 68 — CI/CD Maturity: PR Preview, Release Automation & Coverage Gates
+
+**Goal:** Add PR-level migration preview, automated release pipeline, and coverage enforcement to support enterprise governance workflows.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 68.1 | **PR migration preview action** | `.github/workflows/pr-preview.yml` (new) | High | On PR: detect changed `.twb`/`.twbx` samples → run migration → generate diff report (before vs after) → post as PR comment. Uses `comparison_report.py` for diff generation. |
+| 68.2 | **Migration diff comment bot** | `.github/workflows/pr-preview.yml` | Medium | Format diff as Markdown table: visual mapping changes, DAX conversion changes, new/removed measures, model structure changes. Post via `github-script` action. Collapse large diffs. |
+| 68.3 | **Automated release pipeline** | `.github/workflows/release.yml` (new) | Medium | On tag push (`v*`): run full test suite → build wheel → generate CHANGELOG diff → create GitHub Release with assets → trigger PyPI publish. Integrates with `scripts/version_bump.py`. |
+| 68.4 | **Coverage gate enforcement** | `.github/workflows/ci.yml` | Low | Add `coverage report --fail-under=95` after test run. Upload coverage XML as artifact. Display coverage badge in README. Block merge if coverage drops below threshold. |
+| 68.5 | **Test result annotations** | `.github/workflows/ci.yml` | Low | Parse pytest JUnit XML output → GitHub Actions annotations for failed tests. Inline failure messages on the failing files in PR diff view. |
+| 68.6 | **Dependency security scanning** | `.github/workflows/ci.yml` | Low | Add `pip-audit` or `safety` scan for known vulnerabilities in optional dependencies (`azure-identity`, `requests`, `pydantic-settings`). Fail on HIGH severity. |
+| 68.7 | **Tests** | `tests/test_ci_workflows.py` (new) | Medium | 15+ tests: PR preview diff generation, release metadata construction, coverage threshold validation, workflow YAML structure validation |
+
+### Sprint 69 — Conversion Accuracy: Prep Fixes, Connector Depth & Visual Semantics
+
+**Goal:** Close remaining conversion accuracy gaps: fix Prep flow approximations, deepen PDF/Salesforce connectors, and preserve bump chart ranking semantics.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 69.1 | **Prep VAR/VARP correct mapping** | `tableau_export/prep_flow_parser.py` | Low | Fix `_PREP_AGG_MAP`: `"var"` → `List.StandardDeviation` squared (or `List.Variance` if available), `"varp"` → population variance. Currently mapped to `sum` (mathematically incorrect). |
+| 69.2 | **Prep notInner → leftanti join** | `tableau_export/prep_flow_parser.py` | Low | Fix `notInner` join mapping: generate `Table.NestedJoin` with `JoinKind.LeftAnti` instead of `JoinKind.FullOuter`. |
+| 69.3 | **Bump chart ranking injection** | `powerbi_import/visual_generator.py` | Medium | For Tableau bump chart → PBI lineChart mapping: auto-inject a RANKX measure as secondary Y axis based on the dimension and primary measure. Generate `_bump_rank_{measure}` auto-measure in the semantic model. |
+| 69.4 | **PDF connector depth** | `tableau_export/m_query_builder.py` | Medium | Enhance `_gen_m_pdf()`: add page index parameter from Tableau connection attributes, `[StartPage=N, EndPage=M]` options, table selection via `{[Name="Table001"]}[Data]`. Handle multi-page PDFs. |
+| 69.5 | **Salesforce connector depth** | `tableau_export/m_query_builder.py` | Medium | Enhance `_gen_m_salesforce()`: add SOQL query passthrough (`Salesforce.Data(instance, [Query=soql])`), API version from Tableau connection, object selection, relationship traversal. |
+| 69.6 | **Data type enrichment** | `tableau_export/datasource_extractor.py` | Medium | Improve type mapping for complex Tableau types: `duration` → `Int64` (total seconds), `geographic` role → string with `dataCategory`, `datetime` distinction between date-only and date+time. Emit type metadata for downstream M/TMDL generators. |
+| 69.7 | **Tests** | `tests/test_conversion_accuracy.py` (new) | Medium | 30+ tests: Prep VAR/VARP correctness, notInner→leftanti, bump chart RANKX injection, PDF multi-page M, Salesforce SOQL, data type enrichment (duration, geographic, datetime) |
+
+### Sprint 70 — Composite Model Depth & v20.0.0 Release
+
+**Goal:** Deepen composite model support with per-table StorageMode control, aggregation tables, and hybrid Import+DirectQuery configurations. Ship v20.0.0.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 70.1 | **Per-table StorageMode annotation** | `powerbi_import/tmdl_generator.py` | Medium | When `--mode composite`, classify tables: large/real-time → `storageMode: directQuery`; small/lookup → `storageMode: import`. Use table row count estimation (from Hyper metadata or assessment) and strategy advisor signals. Write TMDL `mode` property on each table partition. |
+| 70.2 | **Aggregation table generation** | `powerbi_import/tmdl_generator.py` | High | For DirectQuery fact tables, auto-generate Import-mode aggregation tables: group by dimension keys, pre-aggregate common measures (SUM, COUNT, AVG). Write `alternateOf` TMDL annotations linking agg columns to detail columns. |
+| 70.3 | **Hybrid relationship constraints** | `powerbi_import/tmdl_generator.py` | Medium | Validate cross-storage-mode relationships: Import→DirectQuery requires single direction. Warn on bi-directional cross-mode relationships. Auto-set `crossFilteringBehavior: oneDirection` where needed. |
+| 70.4 | **Strategy advisor composite signals** | `powerbi_import/strategy_advisor.py` | Medium | Expand composite recommendation: analyze per-table refresh requirements, data volume variance (small lookup + large fact), real-time fields. Output per-table StorageMode recommendation in assessment report. |
+| 70.5 | **Composite model assessment category** | `powerbi_import/assessment.py` | Low | New check `_check_composite_suitability()`: flag workbooks with mixed large/small tables, real-time needs + historical analysis, multi-source with different refresh cadences. Score 0–100 for composite fit. |
+| 70.6 | **v20.0.0 release** | `docs/`, `CHANGELOG.md`, `README.md`, `pyproject.toml` | Low | Version bump 19.0.0 → 20.0.0. Update CHANGELOG (5 sprints), GAP_ANALYSIS, KNOWN_LIMITATIONS, copilot-instructions, README (badges + new CLI flags). |
+| 70.7 | **Tests** | `tests/test_composite_model.py` (new) | Medium | 30+ tests: per-table StorageMode classification, aggregation table generation, alternateOf annotations, hybrid relationship validation, strategy advisor composite signals, composite assessment scoring |
+
+---
+
+### Sprint Sequencing (v20.0.0)
+
+```
+Sprint 66 (Web UI)            ──→  Sprint 67 (LLM DAX)
+         ↓                              ↓
+Sprint 68 (CI/CD Maturity)    ──→  Sprint 69 (Conversion Accuracy)
+                                        ↓
+                              Sprint 70 (Composite + Release)
+```
+
+- **Web UI first** (66): broadens user base; reuses all existing pipeline components
+- **LLM DAX** (67): improves migration quality for the long tail of approximated formulas
+- **CI/CD** (68): enables enterprise governance for migration workflows
+- **Conversion accuracy** (69): closes known approximation gaps before release
+- **Composite + release** (70): deepens enterprise model support, ships v20.0.0
+
+### Success Criteria for v20.0.0
+
+| Metric | Current (v19.0.0) | Target (v20.0.0) |
+|--------|-------------------|-------------------|
+| Tests | 4,923 | **5,200+** (~280 new across 5 sprints) |
+| Web UI | ❌ | **✅** (Streamlit wizard + Docker) |
+| LLM-assisted DAX | ❌ | **✅** (opt-in GPT/Claude refinement) |
+| PR preview | ❌ | **✅** (migration diff on PRs) |
+| Release automation | Partial | **✅** (tag → test → build → publish → GitHub Release) |
+| Prep VAR/VARP accuracy | Approximated | **✅** (correct variance mapping) |
+| Prep notInner join | Approximated | **✅** (leftanti) |
+| Composite per-table StorageMode | ❌ | **✅** (Import/DirectQuery per table) |
+| Aggregation tables | ❌ | **✅** (auto-generated agg tables) |
+| Bump chart ranking | Lost | **✅** (auto-RANKX injection) |
+| PDF/Salesforce connector depth | Shallow | **✅** (page index, SOQL, API version) |
+
+---
+
+## v21.0.0 — Screenshots, Notebooks, Refresh Scheduling & Observability
+
+### Motivation
+
+v20.0.0 delivers a Web UI, AI-assisted DAX, CI maturity, and composite model depth. The migration tooling is now accessible to both CLI and browser users, with AI augmentation for edge cases. v21.0.0 addresses the final frontier of migration quality assurance and enterprise operational readiness:
+
+1. **Side-by-side screenshots** — Currently, comparing Tableau vs PBI output requires manually opening both tools. Automated screenshot comparison gives instant visual fidelity feedback.
+2. **Notebook-based migration** — Jupyter interface for interactive, cell-by-cell migration with inline editing — ideal for data teams exploring and tuning conversions.
+3. **Scheduled refresh migration** — Tableau extract refresh schedules and subscriptions are lost in migration. Mapping them to PBI refresh configs closes an operational gap.
+4. **Observability** — As organizations migrate dozens/hundreds of workbooks, they need dashboards tracking migration progress, fidelity trends, and bottleneck identification.
+5. **Legacy cleanup** — The `conversion/` folder has been unused since v3.0 but still exists. Test depth for DAX patterns lags behind the 195+ documented conversions.
+
+---
+
+### Sprint 71 — Side-by-Side Screenshot Comparison
+
+**Goal:** Automate visual comparison between Tableau and Power BI outputs using headless browser capture and pixel-level diff analysis.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 71.1 | **Screenshot capture engine** | `powerbi_import/screenshot.py` (new) | High | `capture_tableau_screenshot(url, view_name)` via Playwright/Selenium: log into Tableau Server/Public, navigate to view, capture PNG. `capture_pbi_screenshot(pbix_path, page_name)` via PBI Desktop automation or PBI Service embed URL. Headless mode, configurable viewport. |
+| 71.2 | **Pixel-level diff comparison** | `powerbi_import/screenshot.py` | Medium | `compare_screenshots(img_a, img_b)`: structural similarity index (SSIM), pixel diff heatmap (red overlay for differences), diff percentage. Uses PIL (Pillow) for image processing — optional dependency. |
+| 71.3 | **Visual fidelity scoring** | `powerbi_import/screenshot.py` | Medium | Per-visual SSIM score (0–1), per-page aggregate, per-workbook aggregate. Thresholds: >0.95 = excellent, 0.85–0.95 = good, <0.85 = review needed. Integrated into migration report. |
+| 71.4 | **Comparison HTML report** | `powerbi_import/screenshot.py` | Medium | HTML gallery: side-by-side images per visual, SSIM score badge, diff heatmap overlay toggle, overall fidelity summary. Linked from migration report. |
+| 71.5 | **CLI integration** | `migrate.py` | Low | `--screenshots` flag: after migration, capture and compare. `--tableau-url URL` for Tableau source. `--screenshot-pages PAGE1,PAGE2` to limit scope. |
+| 71.6 | **Tests** | `tests/test_screenshot.py` (new) | Medium | 20+ tests: capture mock (no real browser), diff calculation (identical/different/partial), SSIM scoring, HTML report generation, CLI flag parsing |
+
+### Sprint 72 — Notebook-Based Interactive Migration
+
+**Goal:** Jupyter notebook interface for interactive migration with cell-by-cell control, inline DAX/M editing, and visual preview.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 72.1 | **Migration notebook template** | `notebooks/migration_template.ipynb` (new) | Medium | Pre-built notebook: Cell 1 (upload/extract), Cell 2 (assessment), Cell 3 (DAX conversion preview), Cell 4 (M query preview), Cell 5 (model configuration), Cell 6 (generate), Cell 7 (validate), Cell 8 (deploy). Each cell is self-contained with markdown documentation. |
+| 72.2 | **Notebook API module** | `powerbi_import/notebook_api.py` (new) | High | `MigrationSession` class: stateful session for notebook use. Methods: `load(path)`, `assess()`, `preview_dax()`, `preview_m()`, `configure(options)`, `generate()`, `validate()`, `deploy(workspace_id)`. Returns DataFrames for Jupyter display. |
+| 72.3 | **Interactive DAX editor** | `powerbi_import/notebook_api.py` | Medium | `edit_dax(measure_name, new_formula)`: override a specific measure's DAX formula before generation. `list_approximated()`: show all measures with approximated DAX for manual review. Changes stored in session state. |
+| 72.4 | **Visual mapping preview** | `powerbi_import/notebook_api.py` | Medium | `preview_visuals()`: DataFrame with Tableau visual → PBI visual type mapping, per-visual data role coverage, encoding gaps. `override_visual_type(visual_name, new_type)`: manual type override. |
+| 72.5 | **Notebook generator** | `powerbi_import/notebook_api.py` | Medium | `generate_notebook(workbook_path)`: auto-generate a pre-filled Jupyter notebook with extraction results, assessment data, and conversion previews already populated. Save as `.ipynb`. |
+| 72.6 | **Tests** | `tests/test_notebook_api.py` (new) | Medium | 25+ tests: session lifecycle, load/extract/assess/generate pipeline, DAX override persistence, visual type override, notebook generation, DataFrame output format |
+
+### Sprint 73 — Scheduled Refresh & Subscription Migration
+
+**Goal:** Extract Tableau extract refresh schedules and subscriptions, map them to Power BI refresh configurations and alert subscriptions.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 73.1 | **Refresh schedule extraction** | `tableau_export/server_client.py` | Medium | `get_workbook_refresh_schedule(workbook_id)`: extract refresh frequency (hourly, daily, weekly), time, day-of-week from Tableau Server API `/schedules` + `/tasks/extractRefreshes`. Return structured schedule dict. |
+| 73.2 | **Subscription extraction** | `tableau_export/server_client.py` | Medium | `get_workbook_subscriptions(workbook_id)`: extract email subscriptions (recipients, schedule, subject, view attachment type) from `/subscriptions`. Return structured subscription list. |
+| 73.3 | **PBI refresh config generator** | `powerbi_import/refresh_generator.py` (new) | Medium | `generate_refresh_config(schedule)`: map Tableau schedule → PBI `refreshSchedule` JSON (enabled, frequency, timeZone, days, times). Handle daily/weekly/monthly patterns. Write to deployment metadata. |
+| 73.4 | **PBI subscription config** | `powerbi_import/refresh_generator.py` | Medium | `generate_subscription_config(subscriptions)`: map Tableau subscriptions → PBI subscription JSON (recipients, schedule, report page, format). Note: PBI subscriptions require E5/PPU license — emit licensing warning. |
+| 73.5 | **Refresh schedule API deployment** | `powerbi_import/deploy/pbi_deployer.py` | Medium | After deploying dataset, call PBI REST API `POST /datasets/{id}/refreshSchedule` to configure the mapped refresh. Requires dataset owner permissions. |
+| 73.6 | **CLI integration** | `migrate.py` | Low | `--migrate-schedules` flag (with `--server`): extract schedules + subscriptions during server-mode migration. Include in migration report. |
+| 73.7 | **Tests** | `tests/test_refresh_generator.py` (new) | Medium | 25+ tests: schedule extraction mock, frequency mapping (hourly/daily/weekly/monthly), subscription mapping, PBI config structure, API deployment mock, licensing warning detection |
+
+### Sprint 74 — Migration Observability Dashboard
+
+**Goal:** Build an organization-wide migration tracking dashboard: progress tracking, fidelity trends, bottleneck identification, and migration health scoring.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 74.1 | **Migration event store** | `powerbi_import/telemetry.py` | Medium | Extend telemetry with event-level granularity: per-workbook start/end timestamps, per-visual conversion result, per-measure DAX accuracy class (exact/approximated/failed), deployment status. Write to structured JSON log (one event per line — JSONL). |
+| 74.2 | **Aggregation engine** | `powerbi_import/telemetry_dashboard.py` | Medium | `aggregate_migration_events(log_dir)`: load all JSONL telemetry files, compute: migration success rate, average fidelity score, DAX accuracy distribution, visual coverage breakdown, top-10 failed patterns, daily migration volume, cumulative progress. |
+| 74.3 | **Interactive HTML dashboard** | `powerbi_import/telemetry_dashboard.py` | High | Upgrade from static HTML to interactive dashboard: date range filter, workbook search, sortable tables, drill-down from summary → workbook → visual. Charts: migration progress line, fidelity distribution histogram, DAX accuracy pie, connector census bar, migration timeline Gantt. |
+| 74.4 | **Organization progress tracker** | `powerbi_import/telemetry_dashboard.py` | Medium | "Migration Portfolio" view: total workbooks discovered (from server assessment) vs migrated vs validated vs deployed. Progress percentage with projected completion. Wave-level tracking (from server assessment wave plan). |
+| 74.5 | **Bottleneck analyzer** | `powerbi_import/telemetry_dashboard.py` | Medium | Identify recurring friction points: most-failed DAX patterns (with frequency), slowest conversions (by duration), most-approximated visual types, connectors requiring most manual intervention. Emit prioritized action list. |
+| 74.6 | **CLI integration** | `migrate.py` | Low | `--dashboard DIR` flag: generate observability dashboard from telemetry data in DIR. `--dashboard-serve` flag: start local HTTP server to serve interactive dashboard. |
+| 74.7 | **Tests** | `tests/test_observability.py` (new) | Medium | 25+ tests: event store write/read, aggregation correctness, dashboard generation, progress tracking, bottleneck detection, date range filtering, empty data handling |
+
+### Sprint 75 — Test Depth, Legacy Cleanup & v21.0.0 Release
+
+**Goal:** Expand DAX test coverage to match documented conversions, remove legacy `conversion/` folder, update all documentation, and ship v21.0.0.
+
+| # | Item | File(s) | Est. | Details |
+|---|------|---------|------|---------|
+| 75.1 | **DAX test expansion** | `tests/test_dax_converter.py` | High | Expand from 86 to 180+ tests: systematically test every documented DAX conversion pattern (ISNULL→ISBLANK, ZN, DATETRUNC, DATEPART, DATEDIFF, DATEADD, all LOD variants, all RUNNING_* variants, all WINDOW_* variants, all RANK variants with partition fields). One test per documented conversion. |
+| 75.2 | **M connector test expansion** | `tests/test_m_query_builder.py` | Medium | Add tests for all 37 connectors: generate M for each, validate function names and parameter structure. Currently 7+ connectors tested — expand to full coverage. |
+| 75.3 | **Legacy conversion/ removal** | `conversion/` folder | Low | Remove unused `conversion/` folder (8 modules, ~1,200 lines). These per-object converters were superseded by direct extraction→generation pipeline in v3.0. Add deprecation notice in CHANGELOG. |
+| 75.4 | **File I/O test abstraction** | `tests/conftest.py` | Medium | Add `MockFileSystem` fixture: in-memory file system for tests that currently write to tempdir. Reduces test I/O overhead and eliminates Windows path flakiness. Opt-in per test class. |
+| 75.5 | **KNOWN_LIMITATIONS.md update** | `docs/KNOWN_LIMITATIONS.md` | Low | Update header to v21.0.0. Mark resolved items: Prep VAR/VARP, notInner, bump chart, PDF/Salesforce depth. Add new items: screenshot comparison requires Playwright, LLM requires API key, notebook requires Jupyter. |
+| 75.6 | **v21.0.0 release** | `docs/`, `CHANGELOG.md`, `README.md`, `pyproject.toml` | Low | Version bump 20.0.0 → 21.0.0. Update CHANGELOG (5 sprints), GAP_ANALYSIS, KNOWN_LIMITATIONS, copilot-instructions, README (badges + new features: Web UI, LLM, screenshots, notebooks). |
+| 75.7 | **Tests** | `tests/test_legacy_cleanup.py` (new) | Low | 10+ tests: verify conversion/ imports are removed from all source files, no broken imports, pipeline still works end-to-end without legacy modules |
+
+---
+
+### Sprint Sequencing (v21.0.0)
+
+```
+Sprint 71 (Screenshots)       ──→  Sprint 72 (Notebooks)
+         ↓                              ↓
+Sprint 73 (Refresh Schedules)  ──→  Sprint 74 (Observability)
+                                        ↓
+                              Sprint 75 (Test Depth + Release)
+```
+
+- **Screenshots first** (71): visual fidelity validation — highest value for migration confidence
+- **Notebooks** (72): interactive workflow for data teams who prefer Jupyter over CLI/Web
+- **Refresh schedules** (73): operational continuity — bridges Tableau Server → PBI Service refresh configs
+- **Observability** (74): organization-wide migration tracking — requires telemetry from prior sprints
+- **Test depth + release** (75): expand coverage, remove legacy code, ship v21.0.0
+
+### Success Criteria for v21.0.0
+
+| Metric | Current (v20.0.0) | Target (v21.0.0) |
+|--------|-------------------|-------------------|
+| Tests | ~5,200 | **5,500+** (~300 new across 5 sprints) |
+| DAX test coverage | 86/195+ patterns | **195/195+** (1 test per conversion) |
+| M connector test coverage | 7/37 connectors | **37/37** (full coverage) |
+| Screenshot comparison | ❌ | **✅** (Playwright capture + SSIM diff) |
+| Notebook migration | ❌ | **✅** (Jupyter template + MigrationSession API) |
+| Refresh schedule migration | ❌ | **✅** (extract → map → deploy) |
+| Observability dashboard | Basic telemetry | **✅** (interactive HTML + portfolio tracker + bottleneck analyzer) |
+| Legacy code removed | `conversion/` (8 modules) | **✅** (removed) |
+| File I/O mocking | ❌ | **✅** (MockFileSystem fixture) |
+
+---
+
 ## v16.0.0 — Hardening, Code Health & New Capabilities
 
 ### Motivation
