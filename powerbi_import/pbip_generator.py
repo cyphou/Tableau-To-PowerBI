@@ -371,6 +371,163 @@ class PowerBIProjectGenerator:
             "tabOrder": z_index * 1000
         }
 
+    # ── Grid-snapping layout engine (Sprint 76) ────────────────────────────
+
+    def _build_zone_layout_map(self, zone_hierarchy, page_width, page_height):
+        """Build a flat map of zone-name/zone-id → PBI pixel rect from zone hierarchy.
+
+        Recursively subdivides the page according to container orientation
+        (horizontal splits width, vertical splits height) and proportional
+        zone sizes from Tableau's 0-100 000 coordinate system.
+
+        Returns:
+            dict mapping zone ``name`` (or ``id`` when unnamed) to
+            ``{'x': int, 'y': int, 'w': int, 'h': int}``.
+        """
+        layout_map = {}
+        if not zone_hierarchy:
+            return layout_map
+        root_pos = zone_hierarchy.get('position', {})
+        root_w = max(root_pos.get('w', 0), root_pos.get('x', 0) + root_pos.get('w', 0))
+        root_h = max(root_pos.get('h', 0), root_pos.get('y', 0) + root_pos.get('h', 0))
+        if root_w == 0:
+            root_w = 100000
+        if root_h == 0:
+            root_h = 100000
+        self._layout_zone(zone_hierarchy, 0, 0, page_width, page_height,
+                          root_w, root_h, layout_map)
+        return layout_map
+
+    def _layout_zone(self, zone, px_x, px_y, px_w, px_h,
+                     coord_w, coord_h, layout_map):
+        """Recursively lay out a zone and its children into PBI pixel space.
+
+        For leaf zones the full allocated rectangle is recorded.
+        For container zones the space is subdivided among children based on
+        their Tableau coordinate sizes along the container's orientation axis.
+        """
+        key = zone.get('name') or zone.get('id', '')
+        children = zone.get('children', [])
+
+        if not children:
+            # Leaf zone — record its pixel rectangle
+            if key:
+                layout_map[key] = {
+                    'x': round(px_x), 'y': round(px_y),
+                    'w': max(round(px_w), self.MIN_VISUAL_WIDTH),
+                    'h': max(round(px_h), self.MIN_VISUAL_HEIGHT),
+                }
+            return
+
+        orientation = zone.get('orientation', '')
+
+        # Separate floating children (absolute position) from tiled children
+        tiled = [c for c in children if not c.get('is_floating', False)]
+        floating = [c for c in children if c.get('is_floating', False)]
+
+        if tiled:
+            if orientation == 'horz':
+                total = sum(c.get('position', {}).get('w', 1) for c in tiled) or 1
+                cursor = px_x
+                for child in tiled:
+                    cw = child.get('position', {}).get('w', 1)
+                    alloc_w = px_w * cw / total
+                    self._layout_zone(child, cursor, px_y, alloc_w, px_h,
+                                      coord_w, coord_h, layout_map)
+                    cursor += alloc_w
+            elif orientation == 'vert':
+                total = sum(c.get('position', {}).get('h', 1) for c in tiled) or 1
+                cursor = px_y
+                for child in tiled:
+                    ch = child.get('position', {}).get('h', 1)
+                    alloc_h = px_h * ch / total
+                    self._layout_zone(child, px_x, cursor, px_w, alloc_h,
+                                      coord_w, coord_h, layout_map)
+                    cursor += alloc_h
+            else:
+                # No explicit orientation — stack vertically by default
+                total = sum(c.get('position', {}).get('h', 1) for c in tiled) or 1
+                cursor = px_y
+                for child in tiled:
+                    ch = child.get('position', {}).get('h', 1)
+                    alloc_h = px_h * ch / total
+                    self._layout_zone(child, px_x, cursor, px_w, alloc_h,
+                                      coord_w, coord_h, layout_map)
+                    cursor += alloc_h
+
+        # Floating children get absolute-scaled positions
+        for child in floating:
+            cpos = child.get('position', {})
+            sx = px_w / max(coord_w, 1)
+            sy = px_h / max(coord_h, 1)
+            fx = px_x + cpos.get('x', 0) * sx
+            fy = px_y + cpos.get('y', 0) * sy
+            fw = cpos.get('w', 300) * sx
+            fh = cpos.get('h', 200) * sy
+            self._layout_zone(child, fx, fy, fw, fh,
+                              coord_w, coord_h, layout_map)
+
+        # Record the container itself (useful for padding propagation)
+        if key:
+            layout_map[key] = {
+                'x': round(px_x), 'y': round(px_y),
+                'w': max(round(px_w), self.MIN_VISUAL_WIDTH),
+                'h': max(round(px_h), self.MIN_VISUAL_HEIGHT),
+            }
+
+    def _resolve_visual_position(self, obj, layout_map, scale_x, scale_y,
+                                  z_index, page_width, page_height):
+        """Resolve visual position using the grid layout map if available.
+
+        Falls back to proportional scaling when the object is not found
+        in the layout map (preserves backward compatibility).
+        """
+        ws_name = obj.get('worksheetName', '') or obj.get('name', '')
+        mapped = layout_map.get(ws_name) if layout_map else None
+        if mapped:
+            x = max(mapped['x'], 0)
+            y = max(mapped['y'], 0)
+            w = max(mapped['w'], self.MIN_VISUAL_WIDTH)
+            h = max(mapped['h'], self.MIN_VISUAL_HEIGHT)
+            if x + w > page_width:
+                w = max(page_width - x, self.MIN_VISUAL_WIDTH)
+            if y + h > page_height:
+                h = max(page_height - y, self.MIN_VISUAL_HEIGHT)
+            return {
+                "x": x, "y": y,
+                "z": z_index * 1000,
+                "height": h, "width": w,
+                "tabOrder": z_index * 1000,
+            }
+        # Fallback to proportional scaling
+        pos = obj.get('position', {})
+        return self._make_visual_position(pos, scale_x, scale_y, z_index,
+                                          page_width, page_height)
+
+    def _apply_padding_to_visual(self, visual_json, zone_hierarchy, obj_name):
+        """Add padding properties to visual from zone hierarchy padding data."""
+        if not zone_hierarchy:
+            return
+        padding = self._find_zone_padding(zone_hierarchy, obj_name)
+        if not padding:
+            return
+        general_props = visual_json.setdefault("visual", {}).setdefault(
+            "objects", {}).setdefault("general", [{}])[0].setdefault("properties", {})
+        for side in ('top', 'bottom', 'left', 'right'):
+            if side in padding:
+                general_props[f"padding{side.capitalize()}"] = padding[side]
+
+    def _find_zone_padding(self, zone, name):
+        """Recursively find padding for a named zone in the hierarchy."""
+        zone_name = zone.get('name', '') or zone.get('id', '')
+        if zone_name == name and zone.get('padding'):
+            return zone['padding']
+        for child in zone.get('children', []):
+            result = self._find_zone_padding(child, name)
+            if result:
+                return result
+        return None
+
     def _create_visual_worksheet(self, visuals_dir, ws_data, obj, scale_x, scale_y,
                                   visual_count, worksheets, converted_objects,
                                   tooltip_page_map=None):
@@ -1305,6 +1462,40 @@ class PowerBIProjectGenerator:
                 if page_filters:
                     page_json["filterConfig"] = {"filters": page_filters}
 
+            # Responsive breakpoints from Tableau device layouts
+            device_layouts = db.get('device_layouts', [])
+            phone_layout = next((dl for dl in device_layouts
+                                 if dl.get('device_type') == 'phone'), None)
+            if phone_layout:
+                mobile_visuals = []
+                for viz in phone_layout.get('zones', []):
+                    vname = viz.get('name', '')
+                    vpos = viz.get('position', {})
+                    # Scale phone layout to PBI mobile dimensions (320×568)
+                    mob_w = 320
+                    mob_h = 568
+                    dl_max_w = max((z.get('position', {}).get('x', 0)
+                                    + z.get('position', {}).get('w', 0)
+                                    for z in phone_layout.get('zones', [])),
+                                   default=mob_w) or mob_w
+                    dl_max_h = max((z.get('position', {}).get('y', 0)
+                                    + z.get('position', {}).get('h', 0)
+                                    for z in phone_layout.get('zones', [])),
+                                   default=mob_h) or mob_h
+                    sx = mob_w / max(dl_max_w, 1)
+                    sy = mob_h / max(dl_max_h, 1)
+                    mobile_visuals.append({
+                        "name": vname,
+                        "position": {
+                            "x": round(vpos.get('x', 0) * sx),
+                            "y": round(vpos.get('y', 0) * sy),
+                            "width": max(round(vpos.get('w', 200) * sx), 60),
+                            "height": max(round(vpos.get('h', 100) * sy), 40),
+                        }
+                    })
+                if mobile_visuals:
+                    page_json["mobileState"] = {"visuals": mobile_visuals}
+
             _write_json(os.path.join(page_dir, 'page.json'), page_json)
 
             # Create visuals
@@ -1323,38 +1514,52 @@ class PowerBIProjectGenerator:
                 if cname and ccaption:
                     calc_id_to_caption[cname] = ccaption
 
-            # Compute scale factor from Tableau to Power BI pixels
+            # Build grid layout map from zone hierarchy when available
+            zone_hierarchy = db.get('zone_hierarchy', {})
+            layout_map = self._build_zone_layout_map(zone_hierarchy, page_width, page_height)
+
+            # Compute scale factor from Tableau to Power BI pixels (fallback)
             max_x = max((o.get('position', {}).get('x', 0) + o.get('position', {}).get('w', 0) for o in db_objects), default=page_width)
             max_y = max((o.get('position', {}).get('y', 0) + o.get('position', {}).get('h', 0) for o in db_objects), default=page_height)
             scale_x = page_width / max(max_x, 1)
             scale_y = page_height / max(max_y, 1)
 
             for obj in db_objects:
+                # Resolve position: grid layout map (preferred) or proportional (fallback)
+                obj_name = obj.get('worksheetName', '') or obj.get('name', '') or obj.get('param_name', '')
+                grid_pos = layout_map.get(obj_name) if layout_map and obj_name else None
+                if grid_pos:
+                    eff_obj = dict(obj, position=grid_pos)
+                    eff_sx, eff_sy = 1.0, 1.0
+                else:
+                    eff_obj = obj
+                    eff_sx, eff_sy = scale_x, scale_y
+
                 if obj.get('type') == 'worksheetReference':
                     ws_name = obj.get('worksheetName', '')
                     ws_data = self._find_worksheet(worksheets, ws_name)
-                    self._create_visual_worksheet(visuals_dir, ws_data, obj,
-                                                   scale_x, scale_y, visual_count,
+                    self._create_visual_worksheet(visuals_dir, ws_data, eff_obj,
+                                                   eff_sx, eff_sy, visual_count,
                                                    worksheets, converted_objects,
                                                    tooltip_page_map=tooltip_page_map)
                     visual_count += 1
 
                 elif obj.get('type') == 'text':
-                    self._create_visual_textbox(visuals_dir, obj, scale_x, scale_y, visual_count)
+                    self._create_visual_textbox(visuals_dir, eff_obj, eff_sx, eff_sy, visual_count)
                     visual_count += 1
 
                 elif obj.get('type') == 'image':
-                    self._create_visual_image(visuals_dir, obj, scale_x, scale_y, visual_count)
+                    self._create_visual_image(visuals_dir, eff_obj, eff_sx, eff_sy, visual_count)
                     visual_count += 1
 
                 elif obj.get('type') == 'filter_control':
-                    self._create_visual_filter_control(visuals_dir, obj, scale_x, scale_y,
+                    self._create_visual_filter_control(visuals_dir, eff_obj, eff_sx, eff_sy,
                                                         visual_count, calc_id_to_caption,
                                                         converted_objects)
                     visual_count += 1
 
                 elif obj.get('type') == 'parameter_control':
-                    self._create_visual_parameter_control(visuals_dir, obj, scale_x, scale_y,
+                    self._create_visual_parameter_control(visuals_dir, eff_obj, eff_sx, eff_sy,
                                                            visual_count, converted_objects)
                     visual_count += 1
 

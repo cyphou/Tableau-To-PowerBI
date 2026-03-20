@@ -272,6 +272,7 @@ class TableauExtractor:
                 'show_hide_containers': self.extract_show_hide_containers(dashboard),
                 'dynamic_zone_visibility': self.extract_dynamic_zone_visibility(dashboard),
                 'floating_tiled': self.extract_floating_tiled(dashboard),
+                'zone_hierarchy': self.extract_zone_hierarchy(dashboard),
             }
             dashboards.append(db_data)
         
@@ -3031,6 +3032,116 @@ class TableauExtractor:
                 'h': _safe_int(zone.get('h', 0)),
             })
         return layout_info
+
+    def extract_zone_hierarchy(self, dashboard):
+        """Extracts the full zone tree from the dashboard's <zones> element.
+
+        Builds a recursive parent→child tree preserving nesting, container
+        orientation (horizontal/vertical), layout type, and zone constraints
+        (is-fixed, is-floating, min/max size).
+
+        Returns a dict representing the root zone with nested ``children``.
+        Each node contains:
+        - ``id``, ``name``, ``zone_type`` (layout-basic, layout-flow,
+          worksheet, text, bitmap, filter, paramctrl, …)
+        - ``orientation`` ('horz' or 'vert' for flow containers)
+        - ``position`` {x, y, w, h} in Tableau coordinates (0-100 000 scale)
+        - ``is_floating``, ``is_fixed``
+        - ``padding`` dict with top/bottom/left/right
+        - ``children`` list (recursive)
+        """
+        zones_elem = dashboard.find('zones')
+        if zones_elem is None:
+            return {}
+        root_zone = zones_elem.find('zone')
+        if root_zone is None:
+            return {}
+        return self._parse_zone_node(root_zone)
+
+    def _parse_zone_node(self, zone_elem):
+        """Recursively parse a <zone> element into a hierarchy dict."""
+        zone_id = zone_elem.get('id', '')
+        zone_name = zone_elem.get('name', '')
+
+        # Determine zone type from type-v2, type, or FCP-prefixed attributes
+        zone_type = zone_elem.get('type-v2', '') or zone_elem.get('type', '')
+        if not zone_type:
+            for attr_name, attr_val in zone_elem.attrib.items():
+                if attr_name.endswith('...type-v2'):
+                    zone_type = attr_val
+                    break
+            if not zone_type:
+                for attr_name, attr_val in zone_elem.attrib.items():
+                    if attr_name.endswith('...type') and not attr_name.endswith('...type-v2'):
+                        zone_type = attr_val
+                        break
+
+        # Container orientation from param attribute on flow containers
+        param = zone_elem.get('param', '')
+        orientation = ''
+        if zone_type in ('layout-flow', '') and param in ('horz', 'vert'):
+            orientation = param
+
+        # Classify: if no explicit type but has children → container; if has name → worksheet
+        if not zone_type:
+            child_zones = [ch for ch in zone_elem if ch.tag == 'zone']
+            if child_zones and not zone_name:
+                zone_type = 'layout-basic'
+            elif zone_name:
+                zone_type = 'worksheet'
+
+        is_floating = zone_elem.get('is-floating', 'false') == 'true'
+        is_fixed = zone_elem.get('is-fixed', 'false') == 'true'
+
+        # Position
+        pos = {
+            'x': _safe_int(zone_elem.get('x', 0)),
+            'y': _safe_int(zone_elem.get('y', 0)),
+            'w': _safe_int(zone_elem.get('w', 0)),
+            'h': _safe_int(zone_elem.get('h', 0)),
+        }
+
+        # Padding from zone-style or direct attributes
+        padding = {}
+        for side in ('top', 'bottom', 'left', 'right'):
+            for prefix in ('padding-', 'margin-'):
+                val = zone_elem.get(f'{prefix}{side}', '')
+                if val:
+                    try:
+                        padding[side] = int(val)
+                    except (ValueError, TypeError):
+                        pass
+        zone_style = zone_elem.find('zone-style')
+        if zone_style is not None:
+            for fmt in zone_style.findall('format'):
+                attr = fmt.get('attr', '')
+                val = fmt.get('value', '')
+                for side in ('top', 'bottom', 'left', 'right'):
+                    if attr in (f'padding-{side}', f'margin-{side}') and side not in padding:
+                        try:
+                            padding[side] = int(val)
+                        except (ValueError, TypeError):
+                            pass
+
+        # Recurse into child zones
+        children = []
+        for child in zone_elem:
+            if child.tag == 'zone':
+                children.append(self._parse_zone_node(child))
+
+        node = {
+            'id': zone_id,
+            'name': zone_name,
+            'zone_type': zone_type,
+            'orientation': orientation,
+            'position': pos,
+            'is_floating': is_floating,
+            'is_fixed': is_fixed,
+            'children': children,
+        }
+        if padding:
+            node['padding'] = padding
+        return node
 
     def extract_analytics_pane_stats(self, worksheet):
         """Extracts analytics pane statistics (mean, median, CI, distribution bands)."""
