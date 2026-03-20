@@ -66,8 +66,8 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
     - `pbi_deployer.py`: PBI Service deployment orchestrator — package, upload, poll, refresh, validate, `deploy_refresh_schedule()` for PBI REST API refresh config
     - `bundle_deployer.py`: Fabric bundle deployer — deploy shared model + thin reports as atomic bundle, artifact discovery, per-report error isolation, rebind, refresh, `BundleDeploymentResult`
     - `multi_tenant.py`: Multi-tenant deployment — `TenantConfig`/`MultiTenantConfig` (validate/load/save JSON), `_apply_connection_overrides()` (template substitution: `${TENANT_SERVER}`, `${TENANT_DATABASE}`), `deploy_multi_tenant()` orchestrator with per-tenant results
-- **tests/**: Unit and integration tests (5,024+ tests across 110 test files + conftest.py shared fixtures)
-- **docs/**: FAQ, PBI project guide, mapping reference
+- **tests/**: Unit and integration tests (5,170+ tests across 106 test files + conftest.py shared fixtures)
+- **docs/**: FAQ, PBI project guide, mapping reference, **ROADMAP.md** (v22–v24 development roadmap per agent)
 - **.github/workflows/ci.yml**: CI/CD pipeline (lint → test → validate → deploy)
 - **.github/workflows/publish.yml**: PyPI auto-publish workflow (tag-triggered, OIDC trusted publisher)
 - **examples/plugins/**: Plugin examples (custom visual mapper, DAX post-processor, naming convention)
@@ -337,7 +337,7 @@ See `docs/AGENTS.md` for the full architecture diagram, data flow, and handoff p
 | **@assessor** | Readiness scoring, strategy, diff reports | `assessment.py`, `server_assessment.py`, `strategy_advisor.py` |
 | **@merger** | Shared semantic model, fingerprint matching | `shared_model.py`, `merge_config.py` |
 | **@deployer** | Fabric/PBI deployment, auth, gateway | `deploy/*.py`, `gateway_config.py`, `telemetry.py` |
-| **@tester** | Tests (4,823+), coverage, regression | `tests/*.py` |
+| **@tester** | Tests (5,170+), coverage, regression | `tests/*.py` |
 
 ### Rules
 
@@ -345,6 +345,7 @@ See `docs/AGENTS.md` for the full architecture diagram, data flow, and handoff p
 - **Read access is universal** — any agent can read any file for context
 - **Tester is cross-cutting** — reads all source, writes only to `tests/`
 - **Default agent** handles multi-domain tasks, docs, git, sprint planning
+- **Roadmap**: See `docs/ROADMAP.md` for v22–v24 per-agent sprint assignments (Sprints 76–90)
 
 ### Agent Definitions
 
