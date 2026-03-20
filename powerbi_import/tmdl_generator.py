@@ -2547,11 +2547,11 @@ def _create_calculation_groups(model, parameters, main_table_name):
                 "name": cg_name,
                 "calculationGroup": {
                     "columns": [{"name": caption, "dataType": "string",
-                                 "sourceColumn": caption}],
+                                 "sourceColumn": "Name"}],
                     "calculationItems": calc_items,
                 },
                 "columns": [{"name": caption, "dataType": "string",
-                             "sourceColumn": caption}],
+                             "sourceColumn": "Name"}],
                 "partitions": [{
                     "name": cg_name,
                     "mode": "import",
@@ -2637,11 +2637,11 @@ def _create_calculation_groups(model, parameters, main_table_name):
             "name": cg_name,
             "calculationGroup": {
                 "columns": [{"name": caption, "dataType": "string",
-                             "sourceColumn": caption}],
+                             "sourceColumn": "Name"}],
                 "calculationItems": calc_items,
             },
             "columns": [{"name": caption, "dataType": "string",
-                         "sourceColumn": caption}],
+                         "sourceColumn": "Name"}],
             "partitions": [{
                 "name": cg_name,
                 "mode": "import",
@@ -4065,11 +4065,15 @@ def _write_model_tmdl(def_dir, model, tables, roles=None, relationships=None):
     culture = model.get('culture', 'en-US')
     perspectives = model.get('perspectives', [])
 
+    has_calc_groups = any(t.get('calculationGroup') for t in tables)
+
     lines = []
     lines.append("model Model")
     lines.append(f"\tculture: {culture}")
     lines.append("\tdefaultPowerBIDataSourceVersion: powerBI_V3")
     lines.append("\tsourceQueryCulture: en-US")
+    if has_calc_groups:
+        lines.append("\tdiscourageImplicitMeasures")
     lines.append("\tdataAccessOptions")
     lines.append("\t\tlegacyRedirects")
     lines.append("\t\treturnErrorValuesAsNull")
