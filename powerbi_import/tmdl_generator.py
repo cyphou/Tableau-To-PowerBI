@@ -2489,9 +2489,13 @@ def _create_parameter_tables(model, parameters, main_table_name):
 def _create_calculation_groups(model, parameters, main_table_name):
     """Create calculation group tables from parameters that switch between measures.
 
-    A Tableau parameter that selects from a list of known measure names maps to
-    a Power BI calculation group: each selectable measure becomes a calculation
-    item that runs ``CALCULATE(SELECTEDMEASURE())``.
+    Two detection paths:
+    1. **String list parameters** whose allowable values match existing measure
+       names → each measure becomes a ``CALCULATE(SELECTEDMEASURE())`` item.
+    2. **Numeric list parameters with aliases** where a SWITCH measure maps
+       numeric values to aggregation expressions → each alias becomes a
+       calculation item with the aggregation as its expression.  The original
+       SWITCH measure and What-If parameter table are removed.
     """
     if not parameters:
         return
@@ -2504,21 +2508,116 @@ def _create_calculation_groups(model, parameters, main_table_name):
         for m in table.get('measures', []):
             measure_names.add(m.get('name', ''))
 
+    # Track parameter tables and measures to remove after numeric CG creation
+    tables_to_remove = set()
+    measures_to_remove = []  # list of (table_name, measure_name)
+
     for param in parameters:
         caption = param.get('caption', '')
         domain_type = param.get('domain_type', '')
         datatype = param.get('datatype', 'string')
         allowable_values = param.get('allowable_values', [])
 
-        # Only string list parameters are candidates
-        if datatype != 'string' or domain_type != 'list' or not allowable_values:
+        if domain_type != 'list' or not allowable_values:
             continue
 
-        matching_values = [
-            v for v in allowable_values
-            if v.get('type') != 'range' and v.get('value', '') in measure_names
-        ]
-        if len(matching_values) < 2:
+        # ── Path 1: String list parameters matching measure names ──
+        if datatype == 'string':
+            matching_values = [
+                v for v in allowable_values
+                if v.get('type') != 'range' and v.get('value', '') in measure_names
+            ]
+            if len(matching_values) < 2:
+                continue
+
+            cg_name = f"{caption} CalcGroup"
+            if cg_name in existing_tables:
+                continue
+
+            calc_items = []
+            for idx, val in enumerate(matching_values):
+                measure_ref = val.get('value', '')
+                calc_items.append({
+                    "name": measure_ref,
+                    "expression": "CALCULATE(SELECTEDMEASURE())",
+                    "ordinal": idx,
+                })
+
+            cg_table = {
+                "name": cg_name,
+                "calculationGroup": {
+                    "columns": [{"name": caption, "dataType": "string",
+                                 "sourceColumn": caption}],
+                    "calculationItems": calc_items,
+                },
+                "columns": [{"name": caption, "dataType": "string",
+                             "sourceColumn": caption}],
+                "partitions": [{
+                    "name": cg_name,
+                    "mode": "import",
+                    "source": {"type": "calculationGroup"},
+                }],
+                "annotations": [
+                    {"name": "displayFolder", "value": "Calculation Groups"},
+                ],
+            }
+            model['model']['tables'].append(cg_table)
+            existing_tables.add(cg_name)
+            continue
+
+        # ── Path 2: Numeric list parameters with aliases → SWITCH measure ──
+        if datatype not in ('real', 'integer'):
+            continue
+
+        list_values = [v for v in allowable_values if v.get('type') != 'range']
+        if len(list_values) < 2:
+            continue
+        # All values must have aliases for meaningful item names
+        if not all(v.get('alias') for v in list_values):
+            continue
+
+        # Build value→alias map
+        val_alias = {}
+        for v in list_values:
+            raw = v.get('value', '')
+            # Normalise numeric strings: "1.0" → "1", "2.0" → "2"
+            try:
+                num = float(raw)
+                normalised = str(int(num)) if num == int(num) else str(num)
+            except (ValueError, OverflowError):
+                normalised = raw
+            val_alias[normalised] = v.get('alias', '')
+
+        # Find SWITCH measures in the model that reference this parameter
+        dax_caption = caption.replace("'", "''")
+        switch_pat = re.compile(
+            r'^SWITCH\s*\(\s*\[' + re.escape(caption) + r'\]\s*,(.+)\)$',
+            re.IGNORECASE | re.DOTALL,
+        )
+
+        found_measure = None
+        found_table = None
+        found_branches = None
+        for table in model['model']['tables']:
+            for m in table.get('measures', []):
+                expr = m.get('expression', '').strip()
+                sm = switch_pat.match(expr)
+                if not sm:
+                    continue
+                # Parse SWITCH branches: val1, expr1, val2, expr2, ...
+                branches = _parse_switch_branches(sm.group(1).strip())
+                if not branches:
+                    continue
+                # Check that all branch keys match our parameter values
+                if all(bk in val_alias for bk, _ in branches):
+                    found_measure = m
+                    found_table = table
+                    found_branches = branches
+                    break
+            if found_measure:
+                break
+
+        if not found_measure or not found_branches:
             continue
 
         cg_name = f"{caption} CalcGroup"
@@ -2526,11 +2625,11 @@ def _create_calculation_groups(model, parameters, main_table_name):
             continue
 
         calc_items = []
-        for idx, val in enumerate(matching_values):
-            measure_ref = val.get('value', '')
+        for idx, (bval, bexpr) in enumerate(found_branches):
+            item_name = val_alias.get(bval, bval)
             calc_items.append({
-                "name": measure_ref,
-                "expression": "CALCULATE(SELECTEDMEASURE())",
+                "name": item_name,
+                "expression": f"CALCULATE({bexpr})",
                 "ordinal": idx,
             })
 
@@ -2554,6 +2653,68 @@ def _create_calculation_groups(model, parameters, main_table_name):
         }
         model['model']['tables'].append(cg_table)
         existing_tables.add(cg_name)
+
+        # Mark the SWITCH measure and What-If parameter table for removal
+        measures_to_remove.append((found_table.get('name', ''), found_measure.get('name', '')))
+        tables_to_remove.add(caption)  # What-If table has same name as param caption
+
+    # Remove replaced SWITCH measures
+    for tbl_name, msr_name in measures_to_remove:
+        for table in model['model']['tables']:
+            if table.get('name', '') == tbl_name:
+                table['measures'] = [
+                    m for m in table.get('measures', [])
+                    if m.get('name', '') != msr_name
+                ]
+                break
+
+    # Remove replaced What-If parameter tables
+    if tables_to_remove:
+        model['model']['tables'] = [
+            t for t in model['model']['tables']
+            if t.get('name', '') not in tables_to_remove
+        ]
+
+
+def _parse_switch_branches(args_str):
+    """Parse the arguments of a SWITCH() after the switch expression.
+
+    Returns a list of ``(value, expression)`` tuples, or *None* if parsing fails.
+    The trailing default value (odd argument) is ignored.
+    """
+    parts = []
+    depth = 0
+    current = []
+    for ch in args_str:
+        if ch in '(':
+            depth += 1
+            current.append(ch)
+        elif ch in ')':
+            depth -= 1
+            current.append(ch)
+        elif ch == ',' and depth == 0:
+            parts.append(''.join(current).strip())
+            current = []
+        else:
+            current.append(ch)
+    if current:
+        parts.append(''.join(current).strip())
+
+    # SWITCH args: val1, expr1, val2, expr2 [, default]
+    branches = []
+    i = 0
+    while i + 1 < len(parts):
+        val = parts[i].strip()
+        expr = parts[i + 1].strip()
+        # Normalise numeric keys: "1" and "1.0" → "1"
+        try:
+            num = float(val)
+            val = str(int(num)) if num == int(num) else str(num)
+        except (ValueError, OverflowError):
+            pass
+        branches.append((val, expr))
+        i += 2
+    return branches if branches else None
 
 
 def _create_field_parameters(model, parameters, main_table_name, column_table_map):
@@ -4153,6 +4314,29 @@ def _write_table_tmdl(tables_dir, table):
     lines.append(f"\tlineageTag: {uuid.uuid4()}")
     lines.append("")
 
+    # Calculation group block (must come before columns/measures)
+    cg = table.get('calculationGroup')
+    if cg:
+        lines.append("\tcalculationGroup")
+        lines.append(f"\t\tprecedence: {cg.get('precedence', 0)}")
+        lines.append("")
+        for item in cg.get('calculationItems', []):
+            item_name = _quote_name(item.get('name', 'Item'))
+            lines.append(f"\t\tcalculationItem {item_name}")
+            expr = item.get('expression', 'CALCULATE(SELECTEDMEASURE())')
+            if '\n' in expr:
+                lines.append(f"\t\t\texpression = ```")
+                for el in expr.split('\n'):
+                    lines.append(f"\t\t\t\t{el}")
+                lines.append("\t\t\t\t```")
+            else:
+                lines.append(f"\t\t\texpression = {expr}")
+            ordinal = item.get('ordinal')
+            if ordinal is not None:
+                lines.append(f"\t\t\tordinal: {ordinal}")
+            lines.append("")
+        lines.append("")
+
     # Measures (before columns, as in PBI Hero reference)
     # Deduplicate by name — first wins
     seen_measure_names = set()
@@ -4435,6 +4619,11 @@ def _write_partition(lines, table_name, partition):
 
     lines.append(f"\tpartition {_quote_name(part_name)} = {source_type}")
     lines.append(f"\t\tmode: {mode}")
+
+    # Calculation group partitions have no source expression
+    if source_type == 'calculationGroup':
+        lines.append("")
+        return
 
     if expression:
         if source_type == 'calculated':

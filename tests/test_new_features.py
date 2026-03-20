@@ -151,6 +151,205 @@ class TestCalculationGroups(unittest.TestCase):
 
 
 # ═══════════════════════════════════════════════════════════════════
+#  Numeric Parameter → Calculation Group (CASE-on-parameter)
+# ═══════════════════════════════════════════════════════════════════
+
+_parse_switch_branches = tmdl_mod._parse_switch_branches
+
+
+class TestParseSwitchBranches(unittest.TestCase):
+
+    def test_simple_branches(self):
+        result = _parse_switch_branches("1, AVERAGE('T'[A]), 2, SUM('T'[B])")
+        self.assertEqual(result, [("1", "AVERAGE('T'[A])"), ("2", "SUM('T'[B])")])
+
+    def test_nested_parens(self):
+        result = _parse_switch_branches("1, CALCULATE(SUM('T'[A]), FILTER('T', [X] > 0)), 2, MAX('T'[B])")
+        self.assertEqual(len(result), 2)
+        self.assertIn("CALCULATE(SUM('T'[A]), FILTER('T', [X] > 0))", result[0][1])
+
+    def test_trailing_default_ignored(self):
+        result = _parse_switch_branches("1, SUM([A]), 2, SUM([B]), 0")
+        self.assertEqual(len(result), 2)
+
+    def test_empty_returns_none(self):
+        self.assertIsNone(_parse_switch_branches(""))
+
+    def test_float_normalised(self):
+        result = _parse_switch_branches("1.0, SUM([A]), 2.0, SUM([B])")
+        self.assertEqual(result[0][0], "1")
+        self.assertEqual(result[1][0], "2")
+
+
+class TestNumericParamCalcGroup(unittest.TestCase):
+    """Numeric list params with aliases + SWITCH measures → calculation groups."""
+
+    def _model_with_switch(self):
+        """Model with a What-If parameter table and a SWITCH measure."""
+        return {
+            "model": {
+                "tables": [
+                    {
+                        "name": "Data",
+                        "columns": [
+                            {"name": "DEF", "dataType": "double", "sourceColumn": "DEF"},
+                            {"name": "OFF", "dataType": "double", "sourceColumn": "OFF"},
+                            {"name": "REB", "dataType": "double", "sourceColumn": "REB"},
+                        ],
+                        "measures": [
+                            {
+                                "name": "p. Rebounds",
+                                "expression": "SWITCH([Rebounds], 1, AVERAGE('Data'[DEF]), 2, AVERAGE('Data'[OFF]), 3, AVERAGE('Data'[REB]))",
+                            },
+                        ],
+                    },
+                    {
+                        "name": "Rebounds",
+                        "columns": [{"name": "Value", "dataType": "double", "sourceColumn": "Value"}],
+                        "measures": [{"name": "Rebounds", "expression": "SELECTEDVALUE('Rebounds'[Value], 1)"}],
+                        "partitions": [{"name": "Rebounds", "mode": "import",
+                                        "source": {"type": "calculated",
+                                                   "expression": 'DATATABLE("Value", DOUBLE, {{1.0},{2.0},{3.0}})'}}],
+                    },
+                ],
+                "relationships": [],
+            }
+        }
+
+    def _rebounds_param(self):
+        return {
+            "caption": "Rebounds",
+            "datatype": "real",
+            "domain_type": "list",
+            "allowable_values": [
+                {"value": "1.0", "alias": "Average Defensive Rebounds"},
+                {"value": "2.0", "alias": "Average Offensive Rebounds"},
+                {"value": "3.0", "alias": "Average Rebound"},
+            ],
+        }
+
+    def test_numeric_param_creates_calc_group(self):
+        model = self._model_with_switch()
+        _create_calculation_groups(model, [self._rebounds_param()], "Data")
+        cg_tables = [t for t in model['model']['tables'] if 'CalcGroup' in t['name']]
+        self.assertEqual(len(cg_tables), 1)
+        cg = cg_tables[0]
+        self.assertEqual(cg['name'], "Rebounds CalcGroup")
+        items = cg['calculationGroup']['calculationItems']
+        self.assertEqual(len(items), 3)
+        self.assertEqual(items[0]['name'], "Average Defensive Rebounds")
+        self.assertEqual(items[1]['name'], "Average Offensive Rebounds")
+        self.assertEqual(items[2]['name'], "Average Rebound")
+
+    def test_numeric_param_removes_switch_measure(self):
+        model = self._model_with_switch()
+        _create_calculation_groups(model, [self._rebounds_param()], "Data")
+        data_table = next(t for t in model['model']['tables'] if t['name'] == 'Data')
+        measure_names = [m['name'] for m in data_table.get('measures', [])]
+        self.assertNotIn("p. Rebounds", measure_names)
+
+    def test_numeric_param_removes_whatif_table(self):
+        model = self._model_with_switch()
+        _create_calculation_groups(model, [self._rebounds_param()], "Data")
+        table_names = [t['name'] for t in model['model']['tables']]
+        self.assertNotIn("Rebounds", table_names)
+
+    def test_numeric_param_items_have_calculate(self):
+        model = self._model_with_switch()
+        _create_calculation_groups(model, [self._rebounds_param()], "Data")
+        cg = next(t for t in model['model']['tables'] if 'CalcGroup' in t['name'])
+        for item in cg['calculationGroup']['calculationItems']:
+            self.assertTrue(item['expression'].startswith("CALCULATE("))
+
+    def test_numeric_param_without_aliases_skipped(self):
+        model = self._model_with_switch()
+        param = {
+            "caption": "Rebounds",
+            "datatype": "real",
+            "domain_type": "list",
+            "allowable_values": [
+                {"value": "1.0"},  # No aliases
+                {"value": "2.0"},
+                {"value": "3.0"},
+            ],
+        }
+        _create_calculation_groups(model, [param], "Data")
+        cg_tables = [t for t in model['model']['tables'] if 'CalcGroup' in t['name']]
+        self.assertEqual(len(cg_tables), 0)
+
+    def test_numeric_param_no_matching_switch_skipped(self):
+        """If no SWITCH measure references the parameter, skip."""
+        model = self._model_with_switch()
+        param = {
+            "caption": "OtherParam",  # No SWITCH references this
+            "datatype": "real",
+            "domain_type": "list",
+            "allowable_values": [
+                {"value": "1.0", "alias": "A"},
+                {"value": "2.0", "alias": "B"},
+            ],
+        }
+        _create_calculation_groups(model, [param], "Data")
+        cg_tables = [t for t in model['model']['tables'] if 'CalcGroup' in t['name']]
+        self.assertEqual(len(cg_tables), 0)
+
+    def test_integer_param_also_works(self):
+        """Integer params (not just real) should also trigger."""
+        model = self._model_with_switch()
+        param = {
+            "caption": "Rebounds",
+            "datatype": "integer",
+            "domain_type": "list",
+            "allowable_values": [
+                {"value": "1", "alias": "DEF Avg"},
+                {"value": "2", "alias": "OFF Avg"},
+                {"value": "3", "alias": "REB Avg"},
+            ],
+        }
+        _create_calculation_groups(model, [param], "Data")
+        cg_tables = [t for t in model['model']['tables'] if 'CalcGroup' in t['name']]
+        self.assertEqual(len(cg_tables), 1)
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  TMDL Writer — Calculation Group Serialization
+# ═══════════════════════════════════════════════════════════════════
+
+_write_table_tmdl = tmdl_mod._write_table_tmdl
+
+
+class TestCalcGroupTMDLWriter(unittest.TestCase):
+
+    def test_calc_group_tmdl_has_items(self):
+        """Verify the TMDL writer emits calculationGroup block with items."""
+        cg_table = {
+            "name": "MyCalcGroup",
+            "calculationGroup": {
+                "precedence": 0,
+                "calculationItems": [
+                    {"name": "Item A", "expression": "CALCULATE(SUM('T'[X]))", "ordinal": 0},
+                    {"name": "Item B", "expression": "CALCULATE(AVG('T'[Y]))", "ordinal": 1},
+                ],
+            },
+            "columns": [{"name": "Measure", "dataType": "string", "sourceColumn": "Measure"}],
+            "partitions": [{"name": "MyCalcGroup", "mode": "import",
+                            "source": {"type": "calculationGroup"}}],
+        }
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _write_table_tmdl(tmpdir, cg_table)
+            path = os.path.join(tmpdir, "MyCalcGroup.tmdl")
+            self.assertTrue(os.path.exists(path))
+            content = open(path).read()
+            self.assertIn("calculationGroup", content)
+            self.assertIn("calculationItem 'Item A'", content)
+            self.assertIn("CALCULATE(SUM('T'[X]))", content)
+            self.assertIn("calculationItem 'Item B'", content)
+            self.assertIn("ordinal: 0", content)
+            # Should NOT have placeholder M expression
+            self.assertNotIn("#table(type table", content)
+
+
+# ═══════════════════════════════════════════════════════════════════
 #  Field Parameters
 # ═══════════════════════════════════════════════════════════════════
 
