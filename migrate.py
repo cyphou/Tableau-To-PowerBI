@@ -21,6 +21,7 @@ import json
 import logging
 import argparse
 import tempfile
+import zipfile
 import concurrent.futures
 from datetime import datetime
 from enum import IntEnum
@@ -2744,6 +2745,67 @@ def _run_goals_generation(args, source_basename):
         print(f"  ⚠ Goals generation failed: {exc}")
 
 
+def _extract_twbx_data_files(args, source_basename):
+    """Extract embedded data files from TWBX into the PBI output directory.
+
+    For .twbx sources, extracts xlsx/csv/txt/json data files into a ``Data/``
+    subdirectory alongside the .pbip project and updates the ``DataFolder``
+    M parameter in ``expressions.tmdl`` so Power BI can find them.
+    """
+    source = getattr(args, 'tableau_file', '')
+    if not source or not source.lower().endswith('.twbx'):
+        return
+    if not zipfile.is_zipfile(source):
+        return
+
+    out_base = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
+    project_dir = os.path.join(out_base, source_basename)
+    data_dir = os.path.join(project_dir, 'Data')
+
+    _SKIP_EXT = {'.twb', '.tds', '.twbr'}
+    extracted_files = []
+
+    try:
+        with zipfile.ZipFile(source, 'r') as zf:
+            for entry in zf.namelist():
+                ext = os.path.splitext(entry)[1].lower()
+                if ext in _SKIP_EXT or entry.endswith('/'):
+                    continue
+                # Extract data and image files
+                dest = os.path.join(data_dir, entry)
+                os.makedirs(os.path.dirname(dest), exist_ok=True)
+                with zf.open(entry) as src, open(dest, 'wb') as dst:
+                    dst.write(src.read())
+                extracted_files.append(entry)
+    except (zipfile.BadZipFile, OSError) as exc:
+        logger.warning("Could not extract TWBX data files: %s", exc)
+        return
+
+    if not extracted_files:
+        return
+
+    # Update DataFolder expression to point to the Data/ directory
+    expr_path = os.path.join(
+        project_dir, f'{source_basename}.SemanticModel', 'definition', 'expressions.tmdl')
+    if os.path.isfile(expr_path):
+        data_abs = os.path.abspath(data_dir).replace('\\', '\\\\')
+        try:
+            with open(expr_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            import re as _re
+            content = _re.sub(
+                r'(expression DataFolder = )"[^"]*"',
+                rf'\1"{data_abs}"',
+                content,
+            )
+            with open(expr_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+        except OSError as exc:
+            logger.warning("Could not update DataFolder expression: %s", exc)
+
+    print(f"  📁 Extracted {len(extracted_files)} data file(s) from TWBX into {data_dir}")
+
+
 def _run_post_generation_reports(args, source_basename, results):
     """Run comparison report and telemetry dashboard if requested."""
     if getattr(args, 'compare', False) and results.get('generation') and not args.dry_run:
@@ -2943,6 +3005,8 @@ def _run_single_migration(args):
         )
         if results['generation']:
             progress.complete(f"Generated {source_basename}")
+            # Extract embedded data files from TWBX into PBI output
+            _extract_twbx_data_files(args, source_basename)
         else:
             progress.fail("Generation failed")
 
