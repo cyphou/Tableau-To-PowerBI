@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-19T11:05:08.859004",
+  "generated_at": "2026-03-20T15:46:26.718360",
   "source": "Tableau Migration",
   "report_name": "datasource_test",
   "objects_converted": {
@@ -19,7 +19,7 @@
     "custom_sql": 0
   },
   "generated_output": {
-    "pages": 1,
+    "pages": 2,
     "visuals": 2,
     "theme_applied": false,
     "theme_detail": {

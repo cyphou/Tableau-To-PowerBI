@@ -1320,28 +1320,49 @@ class PowerBIProjectGenerator:
         return page_names
 
     def _create_fallback_page(self, pages_dir, worksheets, converted_objects):
-        """Creates a default page when no dashboards exist. Returns page_names list."""
-        page_name = "ReportSection"
-        page_names = [page_name]
+        """Creates pages when no dashboards exist — one page per worksheet. Returns page_names list."""
+        page_names = []
 
-        page_dir = os.path.join(pages_dir, page_name)
-        os.makedirs(page_dir, exist_ok=True)
+        if not worksheets:
+            # No worksheets either — create a single empty page
+            page_name = "ReportSection"
+            page_names.append(page_name)
+            page_dir = os.path.join(pages_dir, page_name)
+            os.makedirs(page_dir, exist_ok=True)
+            page_json = {
+                "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.0.0/schema.json",
+                "name": page_name,
+                "displayName": "Tableau Migration",
+                "displayOption": "FitToPage",
+                "height": 720,
+                "width": 1280
+            }
+            _write_json(os.path.join(page_dir, 'page.json'), page_json)
+            os.makedirs(os.path.join(page_dir, 'visuals'), exist_ok=True)
+            print(f"  📊 Default page: 0 visuals created")
+            return page_names
 
-        page_json = {
-            "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.0.0/schema.json",
-            "name": page_name,
-            "displayName": "Tableau Migration",
-            "displayOption": "FitToPage",
-            "height": 720,
-            "width": 1280
-        }
-        _write_json(os.path.join(page_dir, 'page.json'), page_json)
-
-        visuals_dir = os.path.join(page_dir, 'visuals')
-        os.makedirs(visuals_dir, exist_ok=True)
-
-        x, y = 10, 10
         for idx, ws in enumerate(worksheets):
+            page_name = "ReportSection" if idx == 0 else f"ReportSection{uuid.uuid4().hex[:20]}"
+            page_names.append(page_name)
+
+            ws_name = ws.get('name', f'Sheet {idx+1}')
+            page_dir = os.path.join(pages_dir, page_name)
+            os.makedirs(page_dir, exist_ok=True)
+
+            page_json = {
+                "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.0.0/schema.json",
+                "name": page_name,
+                "displayName": ws_name,
+                "displayOption": "FitToPage",
+                "height": 720,
+                "width": 1280
+            }
+            _write_json(os.path.join(page_dir, 'page.json'), page_json)
+
+            visuals_dir = os.path.join(page_dir, 'visuals')
+            os.makedirs(visuals_dir, exist_ok=True)
+
             visual_id = uuid.uuid4().hex[:20]
             visual_dir = os.path.join(visuals_dir, visual_id)
 
@@ -1375,12 +1396,12 @@ class PowerBIProjectGenerator:
                 "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
                 "name": visual_id,
                 "position": {
-                    "x": x,
-                    "y": y,
-                    "z": idx * 1000,
-                    "height": 200,
-                    "width": 300,
-                    "tabOrder": idx * 1000
+                    "x": 10,
+                    "y": 10,
+                    "z": 0,
+                    "height": 700,
+                    "width": 1260,
+                    "tabOrder": 0
                 },
                 "visual": {
                     "visualType": visual_type,
@@ -1395,12 +1416,7 @@ class PowerBIProjectGenerator:
 
             _write_json(os.path.join(visual_dir, 'visual.json'), visual_json, ensure_ascii=False)
 
-            x += 320
-            if x > 1000:
-                x = 10
-                y += 220
-
-        print(f"  📊 Default page: {len(worksheets)} visuals created")
+        print(f"  📊 {len(worksheets)} worksheet pages created (1 visual each)")
         return page_names
 
     def _create_tooltip_pages(self, pages_dir, page_names, worksheets, converted_objects):

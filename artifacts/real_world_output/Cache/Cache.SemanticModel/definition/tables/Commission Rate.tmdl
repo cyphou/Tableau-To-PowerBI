@@ -1,18 +1,18 @@
 table 'Commission Rate'
-	lineageTag: 28a6e18f-e38d-475a-a408-2e4e6d208b55
+	lineageTag: 64e4d882-4e94-4080-a06c-77ef377517cb
 
 	measure 'Commission Rate' = SELECTEDVALUE('Commission Rate'[Value], 18.400000000000002)
-		lineageTag: 55a321c1-1ca2-4783-85c2-1661b986c2ef
+		lineageTag: 09027669-d6ba-47d4-b1d5-3f162b77fddf
 
 	column Value
 		dataType: double
-		lineageTag: 5e31ac16-d1fb-4d34-9332-508f0b029192
+		lineageTag: 58134f0d-aaa0-4d6d-9ee8-57f20799a924
 		summarizeBy: none
 		sourceColumn: Value
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Commission Rate-95e032d2-4cf7-4ffb-9de2-dcd6858d7678' = calculated
+	partition 'Commission Rate-718297b6-c1de-4361-b03e-dabbf4f51e48' = calculated
 		mode: import
 		source = GENERATESERIES(1.0, 100.0, 0.10000000000000001)
 

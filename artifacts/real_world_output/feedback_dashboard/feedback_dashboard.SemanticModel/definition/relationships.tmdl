@@ -1,0 +1,7 @@
+relationship 0d178170-2ad8-4ea6-8c2f-9c5c2b2625bf
+	fromColumn: 'customer_feedback_data.json'.customer_id
+	toColumn: Extract.customer_id
+	fromCardinality: many
+	toCardinality: many
+	crossFilteringBehavior: bothDirections
+

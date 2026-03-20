@@ -1,18 +1,18 @@
 table 'Base Salary'
-	lineageTag: c819d007-54a0-44d0-8ea7-14a55723d5aa
+	lineageTag: 7f65d73b-7dba-461f-80da-37e7322ae2d9
 
 	measure 'Base Salary' = SELECTEDVALUE('Base Salary'[Value], 50000)
-		lineageTag: f96006bf-a8e2-4330-914a-45dabb4db09c
+		lineageTag: 9c55e11e-f11a-4ce0-a248-c517d8735061
 
 	column Value
 		dataType: int64
-		lineageTag: da0cc1d8-d877-454c-a869-d9d99d0818e2
+		lineageTag: f8601a18-c916-4990-99dc-284714f89860
 		summarizeBy: none
 		sourceColumn: Value
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Base Salary-78657b2d-49be-45e0-aaaf-07ca7b142bb6' = calculated
+	partition 'Base Salary-87acac53-8027-42e9-9c25-95fa79df319b' = calculated
 		mode: import
 		source = GENERATESERIES(0, , 1000)
 

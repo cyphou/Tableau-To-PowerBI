@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-19T11:07:16.013505",
+  "generated_at": "2026-03-20T15:51:16.336695",
   "source": "Tableau Migration",
   "report_name": "shapes_test",
   "objects_converted": {
@@ -11,7 +11,7 @@
     "filters": 0,
     "stories": 0,
     "sets": 0,
-    "groups": 1,
+    "groups": 2,
     "bins": 1,
     "hierarchies": 0,
     "user_filters": 0,
@@ -30,7 +30,7 @@
   "tmdl_stats": {
     "tables": 6,
     "measures": 6,
-    "columns": 38,
+    "columns": 39,
     "relationships": 2
   },
   "visual_type_mappings": {

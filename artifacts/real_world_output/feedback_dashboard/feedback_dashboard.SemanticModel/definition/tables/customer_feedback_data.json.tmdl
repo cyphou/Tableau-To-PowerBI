@@ -1,0 +1,128 @@
+table 'customer_feedback_data.json'
+	lineageTag: e3748f6f-1728-41ec-9d36-8c14a84c0e46
+
+	column 'Document Index (generated)'
+		dataType: int64
+		lineageTag: 6da3f138-9f47-44fe-b7b6-ad468cd226e6
+		summarizeBy: sum
+		sourceColumn: 'Document Index (generated)'
+
+		annotation SummarizationSetBy = Automatic
+
+	column category
+		dataType: string
+		lineageTag: 2fc23393-e0b1-4ed1-aa89-200838b3675b
+		summarizeBy: none
+		sourceColumn: category
+
+		annotation SummarizationSetBy = Automatic
+
+	column customer_id
+		dataType: string
+		lineageTag: 10d67d3f-fb32-48bb-91e9-657ce07bb9b0
+		summarizeBy: none
+		sourceColumn: customer_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column date
+		dataType: string
+		lineageTag: ea47100f-5659-42ec-bf8c-0ec30b3c04ea
+		summarizeBy: none
+		sourceColumn: date
+
+		annotation SummarizationSetBy = Automatic
+
+	column email
+		dataType: string
+		lineageTag: 837f36fb-bec7-45da-a1bd-bee90a0fbfbb
+		summarizeBy: none
+		sourceColumn: email
+
+		annotation SummarizationSetBy = Automatic
+
+	column feedback_score
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 7d3cf3d0-e099-4ef8-86ab-9dc7ae97bdb7
+		summarizeBy: sum
+		sourceColumn: feedback_score
+
+		annotation SummarizationSetBy = Automatic
+
+	column feedback_text
+		dataType: string
+		lineageTag: a0e8a19b-1665-4238-8833-afd51ca85159
+		summarizeBy: none
+		sourceColumn: feedback_text
+
+		annotation SummarizationSetBy = Automatic
+
+	column name
+		dataType: string
+		lineageTag: 6cabe0a2-5101-47bb-b86a-d4fc9c7581a0
+		summarizeBy: none
+		sourceColumn: name
+
+		annotation SummarizationSetBy = Automatic
+
+	column sentiment
+		dataType: string
+		lineageTag: e2c6ebbc-38e5-41d1-9871-fb8957732b92
+		summarizeBy: none
+		sourceColumn: sentiment
+
+		annotation SummarizationSetBy = Automatic
+
+	column Promoter
+		dataType: int64
+		lineageTag: 11c3bd11-5e49-453b-a5e6-c20abbf3d047
+		summarizeBy: none
+		sourceColumn: Promoter
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Action (Category)'
+		dataType: string
+		lineageTag: dfd7a78e-b2e2-430b-b102-8e985928ac92
+		summarizeBy: none
+		sourceColumn: 'Action (Category)'
+		displayFolder: Groups
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Action (Sentiment)'
+		dataType: string
+		lineageTag: bfdcb54b-44da-41b8-a2ba-12ee4d18718c
+		summarizeBy: none
+		sourceColumn: 'Action (Sentiment)'
+		displayFolder: Groups
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'customer_feedback_data.json-8da37bf3-8d80-4d6c-b2a4-616bbc322c4c' = m
+		mode: import
+		source =
+				let
+				    // TODO: Configure the data source for connector type: SEMISTRUCTPASSIVESTORE-DIRECT
+				    // Replace the sample table below with the actual source expression.
+				    Source = try
+				        #table(
+				            {"Document Index (generated)", "category", "customer_id", "date", "email", "feedback_score", "feedback_text", "name", "sentiment"},
+				            {
+				                {1, "Sample 2", "Sample 3", "Sample 4", "Sample 5", 6, "Sample 7", "Sample 8", "Sample 9"},
+				                {2, "Sample 3", "Sample 4", "Sample 5", "Sample 6", 7, "Sample 8", "Sample 9", "Sample 10"}
+				            }
+				        )
+				    otherwise
+				        #table({"Document Index (generated)", "category", "customer_id", "date", "email", "feedback_score", "feedback_text", "name", "sentiment"}, {}),
+				    #"Renamed Columns" = Table.RenameColumns(Source, {{"category", "Category"}, {"customer_id", "Customer Id"}, {"date", "Date"}, {"email", "Email"}, {"feedback_score", "Feedback Score"}, {"feedback_text", "Feedback Text"}, {"name", "Name"}, {"sentiment", "Sentiment"}}),
+				    #"Added Promoter" = Table.AddColumn(#"Renamed Columns", "Promoter", each if [feedback_score]>=9 then 1 else 0, Int64.Type),
+				    #"Added Action (Category)" = Table.AddColumn(#"Added Promoter", "Action (Category)", each Text.From([#"category"]), type text),
+				    #"Added Action (Sentiment)" = Table.AddColumn(#"Added Action (Category)", "Action (Sentiment)", each Text.From([#"sentiment"]), type text),
+				    Result = #"Added Action (Sentiment)"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+

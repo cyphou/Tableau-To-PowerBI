@@ -1,18 +1,18 @@
 table 'Sort by'
-	lineageTag: d5dadeec-77a2-487b-8a37-5bca2d994ea7
+	lineageTag: 90f02681-93c7-4dc2-9c65-d60a0ac892ed
 
 	measure 'Sort by' = SELECTEDVALUE('Sort by'[Value], "Names")
-		lineageTag: 21753deb-d59f-49d3-90b1-4c76ea8e39e8
+		lineageTag: 68a04a32-de14-43ca-ab5c-8c9bdd76c046
 
 	column Value
 		dataType: string
-		lineageTag: d909e0cc-383e-4143-be0e-1db8a480d8ec
+		lineageTag: 84e59f99-593a-4a63-ac72-639b12013e0a
 		summarizeBy: none
 		sourceColumn: Value
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Sort by-01450aed-8078-4a79-9a63-e2b7c2493cec' = calculated
+	partition 'Sort by-b39244b0-bf34-42b9-8b84-5dace13bb97a' = calculated
 		mode: import
 		source = DATATABLE("Value", STRING, {{""\% quota ascending""}, {""\% quota descending""}, {""Names""}})
 

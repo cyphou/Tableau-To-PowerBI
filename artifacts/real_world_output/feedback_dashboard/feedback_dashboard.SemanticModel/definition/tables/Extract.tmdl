@@ -1,0 +1,99 @@
+table Extract
+	lineageTag: 3c8bfe55-0bda-41d4-9f71-fc8b3589077e
+
+	column 'Document Index (generated)'
+		dataType: int64
+		lineageTag: 25c70361-9d19-4915-be81-baf722835821
+		summarizeBy: sum
+		sourceColumn: 'Document Index (generated)'
+
+		annotation SummarizationSetBy = Automatic
+
+	column category
+		dataType: string
+		lineageTag: 8184ad69-cf06-4be9-8614-f79cf52d05ce
+		summarizeBy: none
+		sourceColumn: category
+
+		annotation SummarizationSetBy = Automatic
+
+	column customer_id
+		dataType: string
+		lineageTag: cf95ff94-71af-49c6-b25b-944c2576d60f
+		summarizeBy: none
+		sourceColumn: customer_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column date
+		dataType: string
+		lineageTag: 66083e5e-9acb-4ea1-af17-82879e055bb2
+		summarizeBy: none
+		sourceColumn: date
+
+		annotation SummarizationSetBy = Automatic
+
+	column email
+		dataType: string
+		lineageTag: 9bbd40c2-21d8-47f9-8df3-bcc7c6422130
+		summarizeBy: none
+		sourceColumn: email
+
+		annotation SummarizationSetBy = Automatic
+
+	column feedback_score
+		dataType: double
+		formatString: #,0.00
+		lineageTag: a4f528bc-b0bb-4c40-a6d9-59d046f46dd5
+		summarizeBy: sum
+		sourceColumn: feedback_score
+
+		annotation SummarizationSetBy = Automatic
+
+	column feedback_text
+		dataType: string
+		lineageTag: 8e83abeb-a324-492c-a04a-c38f8c016391
+		summarizeBy: none
+		sourceColumn: feedback_text
+
+		annotation SummarizationSetBy = Automatic
+
+	column name
+		dataType: string
+		lineageTag: 36c49296-3086-4b74-a99f-6ac8f0cda30b
+		summarizeBy: none
+		sourceColumn: name
+
+		annotation SummarizationSetBy = Automatic
+
+	column sentiment
+		dataType: string
+		lineageTag: 08fa9bc7-17cf-4b1b-aac1-21f2de44ede7
+		summarizeBy: none
+		sourceColumn: sentiment
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Extract-1b025783-4fb9-4b3c-8147-e4d631590346' = m
+		mode: import
+		source =
+				let
+				    // TODO: Configure the data source for connector type: SEMISTRUCTPASSIVESTORE-DIRECT
+				    // Replace the sample table below with the actual source expression.
+				    Source = try
+				        #table(
+				            {"Document Index (generated)", "category", "customer_id", "date", "email", "feedback_score", "feedback_text", "name", "sentiment"},
+				            {
+				                {1, "Sample 2", "Sample 3", "Sample 4", "Sample 5", 6, "Sample 7", "Sample 8", "Sample 9"},
+				                {2, "Sample 3", "Sample 4", "Sample 5", "Sample 6", 7, "Sample 8", "Sample 9", "Sample 10"}
+				            }
+				        )
+				    otherwise
+				        #table({"Document Index (generated)", "category", "customer_id", "date", "email", "feedback_score", "feedback_text", "name", "sentiment"}, {}),
+				    #"Renamed Columns" = Table.RenameColumns(Source, {{"category", "Category"}, {"customer_id", "Customer Id"}, {"date", "Date"}, {"email", "Email"}, {"feedback_score", "Feedback Score"}, {"feedback_text", "Feedback Text"}, {"name", "Name"}, {"sentiment", "Sentiment"}}),
+				    Result = #"Renamed Columns"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+

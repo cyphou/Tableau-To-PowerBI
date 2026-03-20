@@ -1,18 +1,18 @@
 table Sheet1
-	lineageTag: fdcf0c47-44e8-40fd-b8b0-762a82349c02
+	lineageTag: 8a08c22c-3984-4662-9d77-bc849036b86d
 
 	measure 'p. Rebounds' = SWITCH([Rebounds], 1, AVERAGE('Sheet1'[DEF]), 2, AVERAGE('Sheet1'[OFF]), 3, AVERAGE('Sheet1'[REB]))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: f3483c22-0bc4-4d2d-82f9-15c074162b0e
+		lineageTag: a01d3292-fa98-42a1-a227-9e6fce407a91
 
 	measure 'min(1)' = MINX('Sheet1', 1)
 		displayFolder: Measures
-		lineageTag: 74e00220-fc0b-4489-a688-a10f385b10a8
+		lineageTag: 62432e4b-8453-493e-b7e1-56b6b9f45b31
 
 	column Player
 		dataType: string
-		lineageTag: 88c55477-872c-43a5-81c7-ffe82a9f0098
+		lineageTag: 55bc75de-6738-4062-8962-0bfbe8bcb9d6
 		summarizeBy: none
 		sourceColumn: Player
 
@@ -20,7 +20,7 @@ table Sheet1
 
 	column YR
 		dataType: int64
-		lineageTag: 9b655ad1-97ba-4e97-9965-a5604f18290e
+		lineageTag: 006afa72-3afc-40d4-840a-f3a42f402089
 		summarizeBy: sum
 		sourceColumn: YR
 
@@ -28,7 +28,7 @@ table Sheet1
 
 	column TM
 		dataType: string
-		lineageTag: 68885932-83bc-4660-b8da-08c149c058fd
+		lineageTag: 233b2d1b-bb11-4132-8157-898b3429a84e
 		summarizeBy: none
 		sourceColumn: TM
 
@@ -36,7 +36,7 @@ table Sheet1
 
 	column GP
 		dataType: int64
-		lineageTag: c8d78e86-064f-4e89-8764-842ecd3bb650
+		lineageTag: fa4f2306-965a-4e59-a746-ab1177122eb7
 		summarizeBy: sum
 		sourceColumn: GP
 
@@ -45,7 +45,7 @@ table Sheet1
 	column MIN
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 7f30b502-5f21-481f-8c5e-e783993ca003
+		lineageTag: 886e27ea-c21c-47ba-8b30-cd6a5f8b8ba9
 		summarizeBy: sum
 		sourceColumn: MIN
 
@@ -54,7 +54,7 @@ table Sheet1
 	column FGM
 		dataType: double
 		formatString: #,0.00
-		lineageTag: c8922dc8-0c65-43f6-836a-3164e1d2c3e4
+		lineageTag: 15cf30d0-9345-4183-8447-e088b7b73647
 		summarizeBy: sum
 		sourceColumn: FGM
 
@@ -63,7 +63,7 @@ table Sheet1
 	column FGA
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 0234157f-12a7-4eb4-983f-70aab8f9de3e
+		lineageTag: ee578277-075b-47ef-b7d4-e089b07b9beb
 		summarizeBy: sum
 		sourceColumn: FGA
 
@@ -72,7 +72,7 @@ table Sheet1
 	column 'FG%'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 83f450d8-08b2-4582-bbe7-b8511245687b
+		lineageTag: 74ee7e3f-0477-4cb6-8364-d35f16727476
 		summarizeBy: sum
 		sourceColumn: 'FG%'
 
@@ -81,7 +81,7 @@ table Sheet1
 	column '3PT%'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 0e1245f6-1498-4312-8677-a5bc88b9874e
+		lineageTag: 39b88ed2-a99e-4aae-b4dd-a3ab85c50a5e
 		summarizeBy: sum
 		sourceColumn: '3PT%'
 
@@ -90,7 +90,7 @@ table Sheet1
 	column 'FT%'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: c65a5e1e-3c24-4c81-b046-52e0b58dab80
+		lineageTag: 2b66d38c-af1b-48da-abf6-2f1d0b48ef83
 		summarizeBy: sum
 		sourceColumn: 'FT%'
 
@@ -99,7 +99,7 @@ table Sheet1
 	column OFF
 		dataType: double
 		formatString: #,0.00
-		lineageTag: a2195757-be4c-4617-88cf-5c66199902c8
+		lineageTag: 51f66a1b-3c4d-47ed-b178-a8a796989a79
 		summarizeBy: sum
 		sourceColumn: OFF
 
@@ -108,7 +108,7 @@ table Sheet1
 	column DEF
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 641b881e-76b5-41ae-b6a8-ba6e35d6c380
+		lineageTag: 4c5d1cee-8119-46a2-aa9e-99a9c7d47876
 		summarizeBy: sum
 		sourceColumn: DEF
 
@@ -117,7 +117,7 @@ table Sheet1
 	column REB
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 79a4841f-b48a-42d8-9faa-61feae7c9012
+		lineageTag: da49decb-2df5-4490-a93f-f316962ee132
 		summarizeBy: sum
 		sourceColumn: REB
 
@@ -126,7 +126,7 @@ table Sheet1
 	column ASST
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 557df55f-8468-4dbe-8204-8eb37bf447ed
+		lineageTag: 5a1e561b-ae58-466f-99b2-b65221b50ca9
 		summarizeBy: sum
 		sourceColumn: ASST
 
@@ -135,7 +135,7 @@ table Sheet1
 	column STL
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 3c74cf70-f0fa-4323-87dd-f581ca1b956e
+		lineageTag: 72ce2782-b4d3-4f8c-bd0f-41597f1f83e6
 		summarizeBy: sum
 		sourceColumn: STL
 
@@ -144,7 +144,7 @@ table Sheet1
 	column BLK
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 97eea1d0-1760-45bf-806f-5448bc9f68cb
+		lineageTag: ffe55509-9320-49f4-805e-ad5cfc57afa6
 		summarizeBy: sum
 		sourceColumn: BLK
 
@@ -153,7 +153,7 @@ table Sheet1
 	column TO
 		dataType: double
 		formatString: #,0.00
-		lineageTag: ed3a6f04-d9d8-49b6-a253-bd523595f16f
+		lineageTag: 6039018d-7b15-49c3-babe-a1e73e3bd29e
 		summarizeBy: sum
 		sourceColumn: TO
 
@@ -162,7 +162,7 @@ table Sheet1
 	column PF
 		dataType: double
 		formatString: #,0.00
-		lineageTag: f9e6fa37-e796-49c7-943d-c3a86f7c7eeb
+		lineageTag: 8f0813c9-2754-41ad-a798-a4ebb57cc9c4
 		summarizeBy: sum
 		sourceColumn: PF
 
@@ -171,7 +171,7 @@ table Sheet1
 	column PTS
 		dataType: double
 		formatString: #,0.00
-		lineageTag: c346e70d-542c-4628-a308-f81f699ea2d0
+		lineageTag: 94194775-cec1-4480-8860-2df522c7cb08
 		summarizeBy: sum
 		sourceColumn: PTS
 
@@ -179,14 +179,14 @@ table Sheet1
 
 	column 'Action (Player)'
 		dataType: string
-		lineageTag: 3178bcff-7174-42f1-85c4-dda7f8c7a05b
+		lineageTag: 07f70a42-e1de-4883-93e4-b4ddf6cce3d7
 		summarizeBy: none
 		sourceColumn: 'Action (Player)'
 		displayFolder: Groups
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Sheet1-7be0e81d-dd5a-4b48-9877-c65eaedc2a5d' = m
+	partition 'Sheet1-9c777cfe-81a3-4830-b5e0-a0c63973dd85' = m
 		mode: import
 		source =
 				let

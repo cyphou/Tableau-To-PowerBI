@@ -1456,8 +1456,15 @@ def _convert_single_quoted_strings(dax):
         else:
             i += 1
 
-    # Also add table names that appear in ALL/ALLEXCEPT/VALUES/RELATED
-    for m in re.finditer(r"(?:ALL|ALLEXCEPT|VALUES|RELATED|RELATEDTABLE)\s*\(\s*'((?:[^']|'')+)'", dax, re.IGNORECASE):
+    # Also add table names that appear in DAX functions that take table arguments
+    _TABLE_FN_RE = re.compile(
+        r"(?:ALL|ALLEXCEPT|VALUES|RELATED|RELATEDTABLE|FILTER|CALCULATETABLE"
+        r"|MINX|MAXX|SUMX|AVERAGEX|COUNTX|RANKX|TOPN|ADDCOLUMNS|SELECTCOLUMNS"
+        r"|SUMMARIZE|GENERATE|GENERATEALL|NATURALLEFTOUTERJOIN|NATURALINNERJOIN"
+        r"|UNION|INTERSECT|EXCEPT|DATATABLE|DISTINCT|SAMPLE)\s*\(\s*'((?:[^']|'')+)'",
+        re.IGNORECASE
+    )
+    for m in _TABLE_FN_RE.finditer(dax):
         table_names.add(m.group(1))
 
     # If no table names found, any 'token' with spaces or mixed case is likely a table name

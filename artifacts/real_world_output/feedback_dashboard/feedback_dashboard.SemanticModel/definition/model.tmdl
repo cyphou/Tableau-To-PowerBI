@@ -1,0 +1,19 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation PBI_QueryOrder = ["customer_feedback_data.json","Extract"]
+
+ref table 'customer_feedback_data.json'
+ref table Extract
+
+ref relationship 0d178170-2ad8-4ea6-8c2f-9c5c2b2625bf
+
+ref expression DataFolder
+
+ref perspective 'Full Model'
+

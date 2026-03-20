@@ -1,0 +1,142 @@
+{
+  "generated_at": "2026-03-20T15:47:39.025728",
+  "source": "Tableau Migration",
+  "report_name": "feedback_dashboard",
+  "objects_converted": {
+    "worksheets": 7,
+    "dashboards": 1,
+    "datasources": 1,
+    "calculations": 1,
+    "parameters": 0,
+    "filters": 1,
+    "stories": 0,
+    "sets": 0,
+    "groups": 2,
+    "bins": 0,
+    "hierarchies": 0,
+    "user_filters": 0,
+    "actions": 0,
+    "custom_sql": 0
+  },
+  "generated_output": {
+    "pages": 1,
+    "visuals": 9,
+    "theme_applied": false,
+    "theme_detail": {
+      "status": "skipped",
+      "reason": "no dashboard colors detected"
+    }
+  },
+  "tmdl_stats": {
+    "tables": 2,
+    "measures": 0,
+    "columns": 21,
+    "relationships": 0
+  },
+  "visual_type_mappings": {
+    "KPI": "Automatic",
+    "avg fdbck score": "Automatic",
+    "cnt of custmrs": "Automatic",
+    "fdback in days": "Automatic",
+    "no.of fdbk by cstmr": "Automatic",
+    "prmtr by ctgr": "Automatic",
+    "sentiment": "Automatic"
+  },
+  "visual_details": [
+    {
+      "worksheet": "KPI",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [],
+      "measures": [
+        "feedback_score",
+        "Calculation_337488536047382528"
+      ],
+      "field_count": 2
+    },
+    {
+      "worksheet": "avg fdbck score",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "table",
+      "dimensions": [
+        "category",
+        "category"
+      ],
+      "measures": [
+        "feedback_score",
+        "feedback_score"
+      ],
+      "field_count": 4
+    },
+    {
+      "worksheet": "cnt of custmrs",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "category",
+        "customer_id",
+        "category",
+        "customer_id"
+      ],
+      "measures": [],
+      "field_count": 4
+    },
+    {
+      "worksheet": "fdback in days",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "lineChart",
+      "dimensions": [
+        "date",
+        "date",
+        "date"
+      ],
+      "measures": [
+        "feedback_score",
+        "feedback_score"
+      ],
+      "field_count": 5
+    },
+    {
+      "worksheet": "no.of fdbk by cstmr",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "feedback_text",
+        "category",
+        "category",
+        "feedback_text"
+      ],
+      "measures": [],
+      "field_count": 4
+    },
+    {
+      "worksheet": "prmtr by ctgr",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "pieChart",
+      "dimensions": [
+        "category",
+        "category"
+      ],
+      "measures": [
+        "Calculation_337488536047382528",
+        "Calculation_337488536047382528"
+      ],
+      "field_count": 4
+    },
+    {
+      "worksheet": "sentiment",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "scatterChart",
+      "dimensions": [
+        "sentiment",
+        "sentiment"
+      ],
+      "measures": [
+        "feedback_score",
+        "feedback_score"
+      ],
+      "field_count": 4
+    }
+  ],
+  "approximations": []
+}

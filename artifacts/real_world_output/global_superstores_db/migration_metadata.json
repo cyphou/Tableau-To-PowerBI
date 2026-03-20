@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-19T11:06:22.734822",
+  "generated_at": "2026-03-20T15:49:44.166327",
   "source": "Tableau Migration",
   "report_name": "global_superstores_db",
   "objects_converted": {
@@ -11,7 +11,7 @@
     "filters": 17,
     "stories": 0,
     "sets": 0,
-    "groups": 4,
+    "groups": 5,
     "bins": 1,
     "hierarchies": 0,
     "user_filters": 0,
@@ -118,10 +118,11 @@
       "tableau_mark": "Automatic",
       "pbi_visual": "clusteredBarChart",
       "dimensions": [
-        "Discount (bin)",
-        "cnt:Discount"
+        "Discount (bin)"
       ],
-      "measures": [],
+      "measures": [
+        "Discount"
+      ],
       "field_count": 2
     },
     {
