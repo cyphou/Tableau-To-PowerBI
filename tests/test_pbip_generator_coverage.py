@@ -273,7 +273,7 @@ class TestDetectSlicerMode(unittest.TestCase):
                     {'name': 'OrderDate', 'datatype': 'date'}
                 ]}]}]}
         mode = self._detect({}, 'orderdate', conv)
-        self.assertEqual(mode, 'Basic')
+        self.assertEqual(mode, 'Date')
 
     def test_integer_column(self):
         conv = {'parameters': [],

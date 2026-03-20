@@ -2756,7 +2756,53 @@ class PowerBIProjectGenerator:
             entity, prop = self._resolve_field_entity(clean_field)
             
             filter_type = f.get('type', 'categorical')
-            
+            filter_mode = f.get('filter_mode', '')
+
+            # Sprint 77: Relative date filter
+            if filter_mode == 'relative-date':
+                period = f.get('period', 'day')
+                period_map = {'day': 0, 'week': 1, 'month': 2,
+                              'quarter': 3, 'year': 4}
+                period_type_map = {'last': 0, 'this': 1, 'next': 2}
+                pbi_filter = {
+                    "name": f"Filter_{uuid.uuid4().hex[:12]}",
+                    "type": "RelativeDate",
+                    "field": {
+                        "Column": {
+                            "Expression": {"SourceRef": {"Entity": entity}},
+                            "Property": prop
+                        }
+                    },
+                    "filter": {
+                        "Version": 2,
+                        "From": [{"Name": "t", "Entity": entity, "Type": 0}],
+                        "Where": [{
+                            "Condition": {
+                                "RelativeDate": {
+                                    "Expression": {
+                                        "Column": {
+                                            "Expression": {"SourceRef": {"Source": "t"}},
+                                            "Property": prop
+                                        }
+                                    },
+                                    "TimeUnit": period_map.get(period, 0),
+                                    "TimeUnitCount": f.get('period_count', 1),
+                                    "RelativeDateFilterType": period_type_map.get(
+                                        f.get('period_type', 'last'), 0),
+                                    "IncludeToday": True,
+                                }
+                            }
+                        }]
+                    }
+                }
+                visual_filters.append(pbi_filter)
+                continue
+
+            # Sprint 77: Context filter → report-level (emit as normal filter
+            # with annotation — PBI evaluates all filters simultaneously)
+            if filter_mode == 'context' and f.get('values'):
+                pass  # fall through to categorical handling below
+
             if filter_type == 'range' or f.get('min') is not None:
                 # Range filter (dates, numbers)
                 pbi_filter = {
@@ -3426,16 +3472,24 @@ class PowerBIProjectGenerator:
 
         Args:
             slicer_mode: PBI slicer mode string — ``'Dropdown'``, ``'List'``,
-                ``'Between'`` (range/slider), or ``'Basic'`` (relative date).
+                ``'Between'`` (range/slider), ``'Basic'`` (relative date),
+                ``'Date'`` (date picker), or ``'Search'`` (wildcard text).
         """
         clean_field = field_name.replace('[', '').replace(']', '')
         clean_table = table_name.replace("'", "''") if table_name else getattr(self, '_main_table', 'Table')
         
+        # Map extended modes to PBI mode strings
+        pbi_mode = slicer_mode
+        if slicer_mode == 'Search':
+            pbi_mode = 'Dropdown'  # Dropdown with search enabled
+        elif slicer_mode == 'Date':
+            pbi_mode = 'Basic'  # Basic = date picker in PBI
+
         # Build objects with the correct mode
         slicer_objects = {
             "data": [{
                 "properties": {
-                    "mode": _L(f"'{slicer_mode}'")
+                    "mode": _L(f"'{pbi_mode}'")
                 }
             }],
             "header": [{
@@ -3450,6 +3504,27 @@ class PowerBIProjectGenerator:
             slicer_objects["numericInputStyle"] = [{
                 "properties": {
                     "show": _L("true")
+                }
+            }]
+
+        # For Search/wildcard mode, enable search box
+        if slicer_mode == 'Search':
+            slicer_objects["selection"] = [{
+                "properties": {
+                    "selectAllCheckboxEnabled": _L("true")
+                }
+            }]
+            slicer_objects["search"] = [{
+                "properties": {
+                    "enabled": _L("true")
+                }
+            }]
+
+        # For relative date mode, add relative date config
+        if slicer_mode == 'Basic':
+            slicer_objects["relativeDate"] = [{
+                "properties": {
+                    "includeToday": _L("true")
                 }
             }]
 
@@ -3491,9 +3566,21 @@ class PowerBIProjectGenerator:
     def _detect_slicer_mode(self, obj, column_name, converted_objects):
         """Detect the best PBI slicer mode for a Tableau filter control.
 
-        Returns one of: ``'Dropdown'``, ``'List'``, ``'Between'``, ``'Basic'``.
+        Returns one of: ``'Dropdown'``, ``'List'``, ``'Between'``, ``'Basic'``,
+            ``'Date'``, ``'Search'``.
         """
         param_ref = obj.get('param', '')
+
+        # Sprint 77: Check filter_mode from classified filter data
+        filter_mode = obj.get('filter_mode', '')
+        if filter_mode == 'relative-date':
+            return 'Basic'
+        if filter_mode == 'wildcard':
+            return 'Search'
+        if filter_mode == 'top-n':
+            return 'List'
+        if filter_mode == 'range':
+            return 'Between'
 
         # Check if this is a range parameter → slider (Between)
         for param in converted_objects.get('parameters', []):
@@ -3506,6 +3593,7 @@ class PowerBIProjectGenerator:
 
         # Check column data type across datasources
         col_lower = column_name.lower()
+        value_count = 0
         for ds in converted_objects.get('datasources', []):
             for table in ds.get('tables', []):
                 for col in table.get('columns', []):
@@ -3513,9 +3601,17 @@ class PowerBIProjectGenerator:
                     if name == col_lower:
                         dtype = col.get('datatype', '').lower()
                         if dtype in ('date', 'datetime'):
-                            return 'Basic'  # relative date slicer
+                            return 'Date'
                         if dtype in ('integer', 'real', 'float', 'number'):
-                            return 'Between'  # numeric range slider
+                            return 'Between'
+                        # Track cardinality hint
+                        card = col.get('cardinality', 0)
+                        if card:
+                            value_count = card
+
+        # High cardinality (>20) → Dropdown, low → List
+        if value_count and value_count <= 20:
+            return 'List'
 
         # Default to Dropdown for categorical text fields
         return 'Dropdown'

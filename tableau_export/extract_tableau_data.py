@@ -483,7 +483,11 @@ class TableauExtractor:
         print(f"  ✓ {len(parameters)} parameters extracted")
     
     def extract_filters(self, root):
-        """Extracts filters"""
+        """Extracts filters with mode classification.
+
+        Classifies each filter as categorical, range, relative-date,
+        wildcard, top-n, or context based on XML attributes and values.
+        """
         
         filters = []
         
@@ -493,6 +497,62 @@ class TableauExtractor:
                 'type': filt.get('type', ''),
                 'values': [v.text for v in filt.findall('.//value') if v.text is not None],
             }
+
+            # ── Sprint 77: Filter mode classification ──────────────
+            filter_mode = 'categorical'  # default
+
+            # Exclude mode
+            exclude = filt.get('exclude', 'false') == 'true'
+            filter_data['exclude'] = exclude
+
+            # Range detection: min/max attributes or range child
+            fmin = filt.get('min', filt.findtext('.//min', ''))
+            fmax = filt.get('max', filt.findtext('.//max', ''))
+            if fmin or fmax:
+                filter_mode = 'range'
+                filter_data['min'] = fmin
+                filter_data['max'] = fmax
+
+            # Relative date detection
+            period = filt.get('period', filt.findtext('.//period', ''))
+            period_type = filt.get('period-type', filt.findtext('.//period-type', ''))
+            if period or period_type:
+                filter_mode = 'relative-date'
+                filter_data['period'] = period
+                filter_data['period_type'] = period_type or 'last'
+                count_str = filt.get('count', filt.findtext('.//count', '1'))
+                try:
+                    filter_data['period_count'] = int(count_str)
+                except (ValueError, TypeError):
+                    filter_data['period_count'] = 1
+                anchor = filt.get('anchor-date', filt.findtext('.//anchor-date', ''))
+                if anchor:
+                    filter_data['anchor_date'] = anchor
+
+            # Wildcard detection: match/pattern attributes
+            match = filt.get('match', filt.findtext('.//match', ''))
+            pattern = filt.get('pattern', filt.findtext('.//pattern', ''))
+            if match or pattern:
+                filter_mode = 'wildcard'
+                filter_data['match'] = match or pattern
+                filter_data['match_type'] = filt.get('match-type', 'contains')
+
+            # Top-N detection
+            count_type = filt.get('count-type', '')
+            top_n = filt.findtext('.//top', '')
+            if count_type or top_n:
+                filter_mode = 'top-n'
+                filter_data['top_n_count'] = int(top_n or count_type or '10')
+                filter_data['top_n_field'] = filt.get('count-field',
+                                                       filt.findtext('.//count-field', ''))
+
+            # Context filter detection
+            is_context = filt.get('context', 'false') == 'true'
+            if is_context:
+                filter_data['is_context'] = True
+                filter_mode = 'context'
+
+            filter_data['filter_mode'] = filter_mode
             filters.append(filter_data)
         
         self.workbook_data['filters'] = filters
@@ -576,6 +636,8 @@ class TableauExtractor:
         In Tableau, a Bar mark with dimension on columns and measure on
         rows renders as vertical columns.  When measure is on columns and
         dimension (or nothing) on rows it renders as horizontal bars.
+
+        Sprint 78: Extends to stacked and 100% stacked variants.
         """
         agg_prefixes = {'sum:', 'avg:', 'count:', 'cnt:', 'ctd:', 'countd:',
                         'min:', 'max:', 'attr:', 'median:', 'usr:'}
@@ -597,9 +659,16 @@ class TableauExtractor:
         cols_has_fields = bool(re.search(r'\[.*\]\.\[.*\]', cols_text))
         rows_has_fields = bool(re.search(r'\[.*\]\.\[.*\]', rows_text))
         
-        # Dimension on cols + measure on rows → vertical column chart
+        # Sprint 78: Map stacked variants based on orientation
+        stacked_map_column = {
+            'stackedBarChart': 'stackedColumnChart',
+            'hundredPercentStackedBarChart': 'hundredPercentStackedColumnChart',
+            'clusteredBarChart': 'clusteredColumnChart',
+        }
+        
+        # Dimension on cols + measure on rows → vertical (column)
         if cols_has_fields and not cols_has_measure and rows_has_measure:
-            return 'clusteredColumnChart'
+            return stacked_map_column.get(default, 'clusteredColumnChart')
         return default
     
     def _infer_automatic_chart_type(self, worksheet):

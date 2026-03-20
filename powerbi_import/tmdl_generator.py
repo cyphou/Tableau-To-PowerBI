@@ -3591,8 +3591,11 @@ def generate_theme_json(theme_data=None):
     """
     Generate a Power BI theme.json from extracted Tableau dashboard theme data.
 
+    Sprint 79: Enhanced with background color, border style, and font mapping.
+
     Args:
-        theme_data: dict with 'colors' (list of hex), 'font_family', 'styles'
+        theme_data: dict with 'colors' (list of hex), 'font_family', 'styles',
+                    'background_color', 'border_color', 'border_width'
                     from extract_theme() in extract_tableau_data.py
 
     Returns:
@@ -3600,6 +3603,19 @@ def generate_theme_json(theme_data=None):
     """
     colors = _DEFAULT_PBI_COLORS
     font_family = "Segoe UI"
+    background = "#FFFFFF"
+    foreground = "#252423"
+
+    # Tableau → web-safe font mapping
+    font_map = {
+        'Tableau Book': 'Segoe UI',
+        'Tableau Light': 'Segoe UI Light',
+        'Tableau Medium': 'Segoe UI Semibold',
+        'Tableau Bold': 'Segoe UI Bold',
+        'Tableau Semibold': 'Segoe UI Semibold',
+        'Benton Sans': 'Segoe UI',
+        'Benton Sans Book': 'Segoe UI',
+    }
 
     if theme_data:
         t_colors = theme_data.get('colors', [])
@@ -3613,29 +3629,36 @@ def generate_theme_json(theme_data=None):
                     colors.append(_DEFAULT_PBI_COLORS[len(colors) % len(_DEFAULT_PBI_COLORS)])
         t_font = theme_data.get('font_family', '')
         if t_font:
-            font_family = t_font
+            font_family = font_map.get(t_font, t_font)
+        # Sprint 79: Background and foreground from styles
+        bg = theme_data.get('background_color', '')
+        if bg and isinstance(bg, str) and bg.startswith('#'):
+            background = bg
+        fg = theme_data.get('foreground_color', '')
+        if fg and isinstance(fg, str) and fg.startswith('#'):
+            foreground = fg
 
     theme = {
         "name": "Tableau Migration Theme",
         "dataColors": colors,
-        "background": "#FFFFFF",
-        "foreground": "#252423",
+        "background": background,
+        "foreground": foreground,
         "tableAccent": colors[0] if colors else "#4E79A7",
         "textClasses": {
             "callout": {
                 "fontSize": 28,
                 "fontFace": font_family,
-                "color": "#252423"
+                "color": foreground
             },
             "title": {
                 "fontSize": 12,
                 "fontFace": font_family,
-                "color": "#252423"
+                "color": foreground
             },
             "header": {
                 "fontSize": 12,
                 "fontFace": font_family,
-                "color": "#252423"
+                "color": foreground
             },
             "label": {
                 "fontSize": 10,
@@ -3654,6 +3677,17 @@ def generate_theme_json(theme_data=None):
             }
         }
     }
+
+    # Sprint 79: Border styling
+    if theme_data:
+        border_color = theme_data.get('border_color', '')
+        border_width = theme_data.get('border_width', 0)
+        if border_color and isinstance(border_color, str) and border_color.startswith('#'):
+            theme["visualStyles"]["*"]["*"]["border"] = [{
+                "show": True,
+                "color": border_color,
+                "width": border_width if border_width else 1,
+            }]
 
     return theme
 

@@ -340,7 +340,7 @@ class TestSlicerTypeVariety(unittest.TestCase):
             }]
         }
         mode = gen._detect_slicer_mode(obj, 'Order Date', converted)
-        self.assertEqual(mode, 'Basic')  # date → relative date slicer
+        self.assertEqual(mode, 'Date')  # date → date picker slicer
 
     def test_detect_slicer_mode_numeric_column(self):
         gen = PBIPGenerator.__new__(PBIPGenerator)

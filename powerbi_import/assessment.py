@@ -585,6 +585,30 @@ def _check_visuals(extracted: Dict) -> CategoryResult:
             "Power BI Desktop.",
         ))
 
+    # Sprint 79: Formatting coverage sub-metric
+    color_encoded = 0
+    cond_format_count = 0
+    custom_font_count = 0
+    for ws in worksheets:
+        me = ws.get('mark_encoding', {})
+        if me.get('color', {}).get('field'):
+            color_encoded += 1
+        if ws.get('conditionalFormatting'):
+            cond_format_count += len(ws['conditionalFormatting'])
+        fmt = ws.get('formatting', {})
+        if fmt.get('font_family') or fmt.get('font_size'):
+            custom_font_count += 1
+    fmt_total = color_encoded + cond_format_count + custom_font_count
+    if fmt_total > 0:
+        cat.checks.append(CheckItem(
+            cat.name, "Formatting coverage", INFO,
+            f"{color_encoded} color-encoded field(s), {cond_format_count} "
+            f"conditional formatting rule(s), {custom_font_count} custom "
+            f"font worksheet(s).",
+            "Color encoding migrates as gradient/categorical rules. "
+            "Custom fonts map to web-safe equivalents.",
+        ))
+
     return cat
 
 

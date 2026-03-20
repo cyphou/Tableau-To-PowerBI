@@ -999,6 +999,12 @@ def create_visual_container(worksheet, visual_id=None, x=10, y=10,
     # Resolve visual type through the map
     pbi_type = resolve_visual_type(visual_type)
 
+    # Sprint 78: Dual-axis detection → combo chart override
+    axes_data = worksheet.get('axes', {})
+    if isinstance(axes_data, dict) and axes_data.get('dual_axis') and pbi_type not in (
+            'lineClusteredColumnComboChart', 'lineStackedColumnComboChart'):
+        pbi_type = 'lineClusteredColumnComboChart'
+
     # Check for approximation note
     approx_note = get_approximation_note(visual_type)
 
@@ -1193,6 +1199,77 @@ def _apply_visual_decorations(worksheet, visual_type, pbi_type, visual_name, ctm
             "properties": {"showAllDataPoints": _L("true")}
         }]
 
+    # ── Sprint 79: Advanced conditional formatting from color encoding ──
+    mark_enc_color = worksheet.get('mark_encoding', {}).get('color', {})
+    if mark_enc_color and mark_enc_color.get('type'):
+        visual_obj.setdefault("objects", {})
+        color_type = mark_enc_color['type']
+        thresholds = mark_enc_color.get('thresholds', [])
+        palette_colors = mark_enc_color.get('palette_colors', [])
+
+        if color_type == 'quantitative' and len(palette_colors) >= 3:
+            # Diverging color scale (3-stop gradient: min → center → max)
+            visual_obj["objects"]["dataPoint"] = [{
+                "properties": {
+                    "showAllDataPoints": _L("true"),
+                    "fillRule": {
+                        "linearGradient3": {
+                            "min": {"color": palette_colors[0]},
+                            "mid": {"color": palette_colors[len(palette_colors) // 2]},
+                            "max": {"color": palette_colors[-1]},
+                        }
+                    }
+                }
+            }]
+        elif color_type == 'quantitative' and len(palette_colors) == 2:
+            # Sequential gradient (2-stop: min → max)
+            visual_obj["objects"]["dataPoint"] = [{
+                "properties": {
+                    "showAllDataPoints": _L("true"),
+                    "fillRule": {
+                        "linearGradient2": {
+                            "min": {"color": palette_colors[0]},
+                            "max": {"color": palette_colors[-1]},
+                        }
+                    }
+                }
+            }]
+        elif color_type == 'quantitative' and thresholds:
+            # Stepped color (N discrete bins from thresholds)
+            rules = []
+            for th in thresholds:
+                rule = {}
+                if th.get('value') is not None:
+                    rule["inputValue"] = th['value']
+                if th.get('color'):
+                    rule["color"] = th['color']
+                rules.append(rule)
+            if rules:
+                visual_obj["objects"]["dataPoint"] = [{
+                    "properties": {
+                        "showAllDataPoints": _L("true"),
+                        "fillRule": {
+                            "steppedColor": {
+                                "steps": rules,
+                            }
+                        }
+                    }
+                }]
+        elif color_type == 'categorical' and palette_colors:
+            # Categorical color assignment (explicit color per category)
+            visual_obj["objects"]["dataPoint"] = [{
+                "properties": {
+                    "showAllDataPoints": _L("true"),
+                }
+            }]
+            # Store per-category colors as separate data point entries
+            for i, color in enumerate(palette_colors[:20]):
+                visual_obj["objects"].setdefault("sentimentColors", [{
+                    "properties": {}
+                }])
+                visual_obj["objects"]["sentimentColors"][0]["properties"][
+                    f"color{i+1}"] = {"solid": {"color": color}}
+
     # ── Visual-level filters ─────────────────────────────────
     # NOTE: visual-level filters are applied in create_visual_container()
     # on container["filterConfig"] — PBIR v4.0 does not allow "filters"
@@ -1221,13 +1298,29 @@ def _apply_visual_decorations(worksheet, visual_type, pbi_type, visual_name, ctm
             visual_obj.setdefault("query", {})
             visual_obj["query"]["sortDefinition"] = {"sort": sort_state}
 
-    # ── Reference lines (constant + dynamic) ──────────────────
+    # ── Reference lines and bands (constant + dynamic) ──────────
     ref_lines = worksheet.get('referenceLines', worksheet.get('reference_lines', []))
     if ref_lines:
         constant_lines = []
         dynamic_lines = []
+        reference_bands = []
         for rl in ref_lines:
             ref_type = rl.get('type', 'constant')
+            # Sprint 78: Reference band (shaded region between two values)
+            if ref_type == 'band':
+                band_values = rl.get('values', [])
+                band_color = rl.get('color', rl.get('fill_color', '#4472C4'))
+                band_opacity = rl.get('opacity', 0.2)
+                if len(band_values) >= 2:
+                    reference_bands.append({
+                        "show": _L("true"),
+                        "startValue": _L(f"{band_values[0]}D"),
+                        "endValue": _L(f"{band_values[1]}D"),
+                        "displayName": _L(json.dumps(rl.get('label', 'Band'))),
+                        "color": {"solid": {"color": band_color}},
+                        "transparency": _L(f"{round((1 - band_opacity) * 100)}D"),
+                    })
+                continue
             if ref_type in ('average', 'median', 'percentile', 'min', 'max', 'trend'):
                 drl = _build_dynamic_reference_line(
                     ref_type=ref_type,
@@ -1255,6 +1348,62 @@ def _apply_visual_decorations(worksheet, visual_type, pbi_type, visual_name, ctm
         if dynamic_lines:
             visual_obj.setdefault("objects", {})
             visual_obj["objects"]["referenceLine"] = dynamic_lines
+        if reference_bands:
+            visual_obj.setdefault("objects", {})
+            visual_obj["objects"]["referenceBand"] = [
+                {"properties": rb} for rb in reference_bands
+            ]
+
+    # ── Sprint 78: Data label formatting from mark encoding ───
+    mark_enc = worksheet.get('mark_encoding', {})
+    label_enc = mark_enc.get('label', {})
+    if label_enc and label_enc.get('show'):
+        visual_obj.setdefault("objects", {})
+        label_props = {"show": _L("true")}
+        if label_enc.get('font_size'):
+            try:
+                label_props["fontSize"] = _L(f"{int(label_enc['font_size'])}D")
+            except (ValueError, TypeError):
+                pass
+        if label_enc.get('font_color'):
+            label_props["color"] = {"solid": {"color": label_enc['font_color']}}
+        if label_enc.get('position'):
+            pos_map = {'top': "'OutsideEnd'", 'center': "'InsideCenter'",
+                       'bottom': "'InsideBase'", 'left': "'Left'", 'right': "'Right'"}
+            pbi_pos = pos_map.get(label_enc['position'], "'OutsideEnd'")
+            label_props["labelPosition"] = _L(pbi_pos)
+        if label_enc.get('orientation') == 'vertical':
+            label_props["orientation"] = _L("'Vertical'")
+        visual_obj["objects"]["labels"] = [{"properties": label_props}]
+
+    # ── Sprint 78: Trend line from analytics ──────────────────
+    trend_lines = worksheet.get('trendLines', worksheet.get('trend_lines', []))
+    if trend_lines:
+        visual_obj.setdefault("objects", {})
+        for tl in trend_lines:
+            reg_type = tl.get('regression_type', 'linear')
+            reg_map = {'linear': "'Linear'", 'logarithmic': "'Logarithmic'",
+                       'exponential': "'Exponential'", 'power': "'Power'",
+                       'polynomial': "'Polynomial'", 'moving_average': "'MovingAverage'"}
+            tl_props = {
+                "show": _L("true"),
+                "lineColor": {"solid": {"color": tl.get('color', '#666666')}},
+                "style": _L("'dashed'"),
+                "regressionType": _L(reg_map.get(reg_type, "'Linear'")),
+            }
+            if reg_type == 'polynomial':
+                order = tl.get('order', 2)
+                tl_props["polynomialOrder"] = _L(f"{order}D")
+            visual_obj["objects"]["trend"] = [{"properties": tl_props}]
+
+    # ── Sprint 78: Mark size encoding → bubble size config ────
+    size_enc = mark_enc.get('size', {})
+    if size_enc.get('field') and pbi_type in ('scatterChart',):
+        visual_obj.setdefault("objects", {})
+        bubble_props = visual_obj["objects"].get("bubbles", [{}])[0].get("properties", {})
+        bubble_props["show"] = _L("true")
+        bubble_props["bubbleSizeBy"] = _L("'Value'")
+        visual_obj["objects"]["bubbles"] = [{"properties": bubble_props}]
 
     # ── Data bars for table/matrix columns ─────────────────────
     if pbi_type in ('tableEx', 'matrix'):
@@ -1299,7 +1448,7 @@ def _apply_visual_decorations(worksheet, visual_type, pbi_type, visual_name, ctm
 
     # ── Axis config (min/max, log, reversed) ──────────────────
     axes_data = worksheet.get('axes', {})
-    if axes_data:
+    if isinstance(axes_data, dict) and axes_data:
         visual_obj.setdefault("objects", {})
         y_axis = axes_data.get('y', {})
         if y_axis:
@@ -1318,6 +1467,17 @@ def _apply_visual_decorations(worksheet, visual_type, pbi_type, visual_name, ctm
                 va_props["titleText"] = _L(json.dumps(y_axis['title']))
                 va_props["showAxisTitle"] = _L("true")
             visual_obj["objects"]["valueAxis"] = [{"properties": va_props}]
+
+        # Sprint 78: Secondary Y axis for dual-axis / combo charts
+        if axes_data.get('dual_axis') and pbi_type in (
+                'lineClusteredColumnComboChart', 'lineStackedColumnComboChart'):
+            y2_props = {"show": _L("true")}
+            sync = axes_data.get('dual_axis_sync', False)
+            if not sync:
+                y2_props["secShow"] = _L("true")
+            visual_obj["objects"]["y1AxisReferenceLine"] = []
+            visual_obj["objects"]["valueAxis2"] = [{"properties": y2_props}]
+
         x_axis = axes_data.get('x', {})
         if x_axis:
             ca_props = visual_obj["objects"].get("categoryAxis", [{}])[0].get("properties", {})
