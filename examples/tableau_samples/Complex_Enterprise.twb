@@ -1,0 +1,1029 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<workbook source-build='2024.3.0 (20243.24.1001.0812)' source-platform='win' version='18.1' xmlns:user='http://www.tableausoftware.com/xml/user'>
+  <document-format-change-manifest>
+    <_.fcp.ObjectModelEncapsulateLegacy.true...ObjectModelEncapsulateLegacy />
+  </document-format-change-manifest>
+  <preferences>
+    <preference name='ui.encoding.shelf.height' value='24' />
+    <preference name='ui.shelf.height' value='26' />
+  </preferences>
+  <datasources>
+    <!-- ══════════════════════════════════════════════════════════
+         DS1: Main fact table — multi-join, Snowflake connector
+         ══════════════════════════════════════════════════════════ -->
+    <datasource caption='Global Sales Model' inline='true' name='federated.global' version='18.1'>
+      <connection class='federated'>
+        <named-connections>
+          <named-connection caption='Snowflake DW' name='snowflake.main'>
+            <connection class='snowflake' server='analytics.snowflakecomputing.com' dbname='ENTERPRISE_DW' schema='SALES' warehouse='ANALYTICS_WH' role='DATA_READER' />
+          </named-connection>
+        </named-connections>
+        <!-- 4-table star schema with multiple joins -->
+        <relation join='inner' type='join'>
+          <clause type='join'>
+            <expression op='='>
+              <expression op='[fact_sales].[product_key]' />
+              <expression op='[dim_product].[product_key]' />
+            </expression>
+          </clause>
+          <relation join='inner' type='join'>
+            <clause type='join'>
+              <expression op='='>
+                <expression op='[fact_sales].[customer_key]' />
+                <expression op='[dim_customer].[customer_key]' />
+              </expression>
+            </clause>
+            <relation join='inner' type='join'>
+              <clause type='join'>
+                <expression op='='>
+                  <expression op='[fact_sales].[date_key]' />
+                  <expression op='[dim_date].[date_key]' />
+                </expression>
+              </clause>
+              <relation connection='snowflake.main' name='fact_sales' table='[SALES].[FACT_SALES]' type='table'>
+                <columns>
+                  <column datatype='integer' name='sale_id' ordinal='0' />
+                  <column datatype='integer' name='date_key' ordinal='1' />
+                  <column datatype='integer' name='customer_key' ordinal='2' />
+                  <column datatype='integer' name='product_key' ordinal='3' />
+                  <column datatype='integer' name='store_key' ordinal='4' />
+                  <column datatype='string' name='channel' ordinal='5' />
+                  <column datatype='string' name='region' ordinal='6' />
+                  <column datatype='string' name='territory' ordinal='7' />
+                  <column datatype='string' name='country' ordinal='8' />
+                  <column datatype='string' name='state' ordinal='9' />
+                  <column datatype='string' name='city' ordinal='10' />
+                  <column datatype='string' name='postal_code' ordinal='11' />
+                  <column datatype='real' name='latitude' ordinal='12' />
+                  <column datatype='real' name='longitude' ordinal='13' />
+                  <column datatype='real' name='quantity' ordinal='14' />
+                  <column datatype='real' name='unit_price' ordinal='15' />
+                  <column datatype='real' name='unit_cost' ordinal='16' />
+                  <column datatype='real' name='discount_pct' ordinal='17' />
+                  <column datatype='real' name='tax_rate' ordinal='18' />
+                  <column datatype='real' name='shipping_cost' ordinal='19' />
+                  <column datatype='string' name='currency_code' ordinal='20' />
+                  <column datatype='string' name='order_status' ordinal='21' />
+                  <column datatype='string' name='payment_method' ordinal='22' />
+                  <column datatype='string' name='sales_rep' ordinal='23' />
+                  <column datatype='string' name='promotion_code' ordinal='24' />
+                  <column datatype='boolean' name='is_returned' ordinal='25' />
+                </columns>
+              </relation>
+              <relation connection='snowflake.main' name='dim_date' table='[SALES].[DIM_DATE]' type='table'>
+                <columns>
+                  <column datatype='integer' name='date_key' ordinal='0' />
+                  <column datatype='date' name='full_date' ordinal='1' />
+                  <column datatype='integer' name='year' ordinal='2' />
+                  <column datatype='integer' name='quarter' ordinal='3' />
+                  <column datatype='integer' name='month_num' ordinal='4' />
+                  <column datatype='string' name='month_name' ordinal='5' />
+                  <column datatype='integer' name='week_num' ordinal='6' />
+                  <column datatype='string' name='day_name' ordinal='7' />
+                  <column datatype='boolean' name='is_weekend' ordinal='8' />
+                  <column datatype='boolean' name='is_holiday' ordinal='9' />
+                  <column datatype='string' name='fiscal_quarter' ordinal='10' />
+                  <column datatype='integer' name='fiscal_year' ordinal='11' />
+                </columns>
+              </relation>
+            </relation>
+            <relation connection='snowflake.main' name='dim_customer' table='[SALES].[DIM_CUSTOMER]' type='table'>
+              <columns>
+                <column datatype='integer' name='customer_key' ordinal='0' />
+                <column datatype='string' name='customer_id' ordinal='1' />
+                <column datatype='string' name='customer_name' ordinal='2' />
+                <column datatype='string' name='email' ordinal='3' />
+                <column datatype='string' name='phone' ordinal='4' />
+                <column datatype='string' name='segment' ordinal='5' />
+                <column datatype='string' name='industry' ordinal='6' />
+                <column datatype='string' name='company_size' ordinal='7' />
+                <column datatype='date' name='first_order_date' ordinal='8' />
+                <column datatype='real' name='credit_limit' ordinal='9' />
+                <column datatype='string' name='account_manager' ordinal='10' />
+                <column datatype='boolean' name='is_active' ordinal='11' />
+              </columns>
+            </relation>
+          </relation>
+          <relation connection='snowflake.main' name='dim_product' table='[SALES].[DIM_PRODUCT]' type='table'>
+            <columns>
+              <column datatype='integer' name='product_key' ordinal='0' />
+              <column datatype='string' name='product_id' ordinal='1' />
+              <column datatype='string' name='product_name' ordinal='2' />
+              <column datatype='string' name='category' ordinal='3' />
+              <column datatype='string' name='subcategory' ordinal='4' />
+              <column datatype='string' name='brand' ordinal='5' />
+              <column datatype='string' name='supplier' ordinal='6' />
+              <column datatype='real' name='weight_kg' ordinal='7' />
+              <column datatype='boolean' name='is_perishable' ordinal='8' />
+              <column datatype='date' name='launch_date' ordinal='9' />
+            </columns>
+          </relation>
+        </relation>
+        <cols>
+          <map key='[sale_id]' value='[fact_sales].[sale_id]' />
+          <map key='[date_key]' value='[fact_sales].[date_key]' />
+          <map key='[customer_key]' value='[fact_sales].[customer_key]' />
+          <map key='[product_key]' value='[fact_sales].[product_key]' />
+          <map key='[store_key]' value='[fact_sales].[store_key]' />
+          <map key='[channel]' value='[fact_sales].[channel]' />
+          <map key='[region]' value='[fact_sales].[region]' />
+          <map key='[territory]' value='[fact_sales].[territory]' />
+          <map key='[country]' value='[fact_sales].[country]' />
+          <map key='[state]' value='[fact_sales].[state]' />
+          <map key='[city]' value='[fact_sales].[city]' />
+          <map key='[postal_code]' value='[fact_sales].[postal_code]' />
+          <map key='[latitude]' value='[fact_sales].[latitude]' />
+          <map key='[longitude]' value='[fact_sales].[longitude]' />
+          <map key='[quantity]' value='[fact_sales].[quantity]' />
+          <map key='[unit_price]' value='[fact_sales].[unit_price]' />
+          <map key='[unit_cost]' value='[fact_sales].[unit_cost]' />
+          <map key='[discount_pct]' value='[fact_sales].[discount_pct]' />
+          <map key='[tax_rate]' value='[fact_sales].[tax_rate]' />
+          <map key='[shipping_cost]' value='[fact_sales].[shipping_cost]' />
+          <map key='[currency_code]' value='[fact_sales].[currency_code]' />
+          <map key='[order_status]' value='[fact_sales].[order_status]' />
+          <map key='[payment_method]' value='[fact_sales].[payment_method]' />
+          <map key='[sales_rep]' value='[fact_sales].[sales_rep]' />
+          <map key='[promotion_code]' value='[fact_sales].[promotion_code]' />
+          <map key='[is_returned]' value='[fact_sales].[is_returned]' />
+          <map key='[full_date]' value='[dim_date].[full_date]' />
+          <map key='[year]' value='[dim_date].[year]' />
+          <map key='[quarter]' value='[dim_date].[quarter]' />
+          <map key='[month_num]' value='[dim_date].[month_num]' />
+          <map key='[month_name]' value='[dim_date].[month_name]' />
+          <map key='[week_num]' value='[dim_date].[week_num]' />
+          <map key='[day_name]' value='[dim_date].[day_name]' />
+          <map key='[is_weekend]' value='[dim_date].[is_weekend]' />
+          <map key='[is_holiday]' value='[dim_date].[is_holiday]' />
+          <map key='[fiscal_quarter]' value='[dim_date].[fiscal_quarter]' />
+          <map key='[fiscal_year]' value='[dim_date].[fiscal_year]' />
+          <map key='[customer_id]' value='[dim_customer].[customer_id]' />
+          <map key='[customer_name]' value='[dim_customer].[customer_name]' />
+          <map key='[email]' value='[dim_customer].[email]' />
+          <map key='[phone]' value='[dim_customer].[phone]' />
+          <map key='[segment]' value='[dim_customer].[segment]' />
+          <map key='[industry]' value='[dim_customer].[industry]' />
+          <map key='[company_size]' value='[dim_customer].[company_size]' />
+          <map key='[first_order_date]' value='[dim_customer].[first_order_date]' />
+          <map key='[credit_limit]' value='[dim_customer].[credit_limit]' />
+          <map key='[account_manager]' value='[dim_customer].[account_manager]' />
+          <map key='[is_active]' value='[dim_customer].[is_active]' />
+          <map key='[product_id]' value='[dim_product].[product_id]' />
+          <map key='[product_name]' value='[dim_product].[product_name]' />
+          <map key='[category]' value='[dim_product].[category]' />
+          <map key='[subcategory]' value='[dim_product].[subcategory]' />
+          <map key='[brand]' value='[dim_product].[brand]' />
+          <map key='[supplier]' value='[dim_product].[supplier]' />
+          <map key='[weight_kg]' value='[dim_product].[weight_kg]' />
+          <map key='[is_perishable]' value='[dim_product].[is_perishable]' />
+          <map key='[launch_date]' value='[dim_product].[launch_date]' />
+        </cols>
+        <metadata-records>
+          <metadata-record class='column'>
+            <remote-name>quantity</remote-name>
+            <remote-type>5</remote-type>
+            <local-name>[quantity]</local-name>
+            <parent-name>[fact_sales]</parent-name>
+            <remote-alias>quantity</remote-alias>
+            <ordinal>14</ordinal>
+            <local-type>real</local-type>
+            <aggregation>Sum</aggregation>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>unit_price</remote-name>
+            <remote-type>5</remote-type>
+            <local-name>[unit_price]</local-name>
+            <parent-name>[fact_sales]</parent-name>
+            <remote-alias>unit_price</remote-alias>
+            <ordinal>15</ordinal>
+            <local-type>real</local-type>
+            <aggregation>Sum</aggregation>
+          </metadata-record>
+        </metadata-records>
+      </connection>
+
+      <!-- ── Physical Column Definitions ────────────────────── -->
+      <column caption='Sale ID' datatype='integer' name='[sale_id]' role='dimension' type='ordinal' />
+      <column caption='Full Date' datatype='date' name='[full_date]' role='dimension' type='ordinal' />
+      <column caption='Year' datatype='integer' name='[year]' role='dimension' type='ordinal' />
+      <column caption='Quarter' datatype='integer' name='[quarter]' role='dimension' type='ordinal' />
+      <column caption='Month' datatype='integer' name='[month_num]' role='dimension' type='ordinal' />
+      <column caption='Month Name' datatype='string' name='[month_name]' role='dimension' type='nominal' />
+      <column caption='Week' datatype='integer' name='[week_num]' role='dimension' type='ordinal' />
+      <column caption='Day Name' datatype='string' name='[day_name]' role='dimension' type='nominal' />
+      <column caption='Weekend?' datatype='boolean' name='[is_weekend]' role='dimension' type='nominal' />
+      <column caption='Holiday?' datatype='boolean' name='[is_holiday]' role='dimension' type='nominal' />
+      <column caption='Fiscal Quarter' datatype='string' name='[fiscal_quarter]' role='dimension' type='nominal' />
+      <column caption='Fiscal Year' datatype='integer' name='[fiscal_year]' role='dimension' type='ordinal' />
+      <column caption='Channel' datatype='string' name='[channel]' role='dimension' type='nominal' />
+      <column caption='Region' datatype='string' name='[region]' role='dimension' type='nominal' semantic-role='[State].[Name]' />
+      <column caption='Territory' datatype='string' name='[territory]' role='dimension' type='nominal' />
+      <column caption='Country' datatype='string' name='[country]' role='dimension' type='nominal' semantic-role='[Country].[Name]' />
+      <column caption='State' datatype='string' name='[state]' role='dimension' type='nominal' semantic-role='[State].[Name]' />
+      <column caption='City' datatype='string' name='[city]' role='dimension' type='nominal' semantic-role='[City].[Name]' />
+      <column caption='Postal Code' datatype='string' name='[postal_code]' role='dimension' type='nominal' semantic-role='[ZipCode].[Name]' />
+      <column caption='Latitude' datatype='real' name='[latitude]' role='measure' type='quantitative' semantic-role='[Geographical].[Latitude]' />
+      <column caption='Longitude' datatype='real' name='[longitude]' role='measure' type='quantitative' semantic-role='[Geographical].[Longitude]' />
+      <column caption='Quantity' datatype='real' name='[quantity]' role='measure' type='quantitative' />
+      <column caption='Unit Price' datatype='real' name='[unit_price]' role='measure' type='quantitative' />
+      <column caption='Unit Cost' datatype='real' name='[unit_cost]' role='measure' type='quantitative' />
+      <column caption='Discount %' datatype='real' name='[discount_pct]' role='measure' type='quantitative' />
+      <column caption='Tax Rate' datatype='real' name='[tax_rate]' role='measure' type='quantitative' />
+      <column caption='Shipping Cost' datatype='real' name='[shipping_cost]' role='measure' type='quantitative' />
+      <column caption='Currency' datatype='string' name='[currency_code]' role='dimension' type='nominal' />
+      <column caption='Order Status' datatype='string' name='[order_status]' role='dimension' type='nominal' />
+      <column caption='Payment Method' datatype='string' name='[payment_method]' role='dimension' type='nominal' />
+      <column caption='Sales Rep' datatype='string' name='[sales_rep]' role='dimension' type='nominal' />
+      <column caption='Promotion Code' datatype='string' name='[promotion_code]' role='dimension' type='nominal' />
+      <column caption='Returned?' datatype='boolean' name='[is_returned]' role='dimension' type='nominal' />
+      <column caption='Customer ID' datatype='string' name='[customer_id]' role='dimension' type='nominal' />
+      <column caption='Customer Name' datatype='string' name='[customer_name]' role='dimension' type='nominal' />
+      <column caption='Email' datatype='string' name='[email]' role='dimension' type='nominal' />
+      <column caption='Phone' datatype='string' name='[phone]' role='dimension' type='nominal' />
+      <column caption='Segment' datatype='string' name='[segment]' role='dimension' type='nominal' />
+      <column caption='Industry' datatype='string' name='[industry]' role='dimension' type='nominal' />
+      <column caption='Company Size' datatype='string' name='[company_size]' role='dimension' type='nominal' />
+      <column caption='First Order' datatype='date' name='[first_order_date]' role='dimension' type='ordinal' />
+      <column caption='Credit Limit' datatype='real' name='[credit_limit]' role='measure' type='quantitative' />
+      <column caption='Account Manager' datatype='string' name='[account_manager]' role='dimension' type='nominal' />
+      <column caption='Active?' datatype='boolean' name='[is_active]' role='dimension' type='nominal' />
+      <column caption='Product ID' datatype='string' name='[product_id]' role='dimension' type='nominal' />
+      <column caption='Product Name' datatype='string' name='[product_name]' role='dimension' type='nominal' />
+      <column caption='Category' datatype='string' name='[category]' role='dimension' type='nominal' />
+      <column caption='Subcategory' datatype='string' name='[subcategory]' role='dimension' type='nominal' />
+      <column caption='Brand' datatype='string' name='[brand]' role='dimension' type='nominal' />
+      <column caption='Supplier' datatype='string' name='[supplier]' role='dimension' type='nominal' />
+      <column caption='Weight (kg)' datatype='real' name='[weight_kg]' role='measure' type='quantitative' />
+      <column caption='Perishable?' datatype='boolean' name='[is_perishable]' role='dimension' type='nominal' />
+      <column caption='Launch Date' datatype='date' name='[launch_date]' role='dimension' type='ordinal' />
+
+      <!-- ════════════════════════════════════════════════════════
+           30 CALCULATIONS — every major category
+           ════════════════════════════════════════════════════════ -->
+
+      <!-- ── Revenue & Margin (SUM, SUM-IF, iterator, nested) ── -->
+      <column caption='Gross Revenue' datatype='real' name='[C_GrossRev]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='SUM([quantity] * [unit_price])' />
+      </column>
+      <column caption='Net Revenue' datatype='real' name='[C_NetRev]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='SUM(IF [order_status] != &quot;Cancelled&quot; AND [is_returned] = FALSE THEN [quantity] * [unit_price] * (1 - [discount_pct]) ELSE 0 END)' />
+      </column>
+      <column caption='COGS' datatype='real' name='[C_COGS]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='SUM([quantity] * [unit_cost])' />
+      </column>
+      <column caption='Gross Profit' datatype='real' name='[C_GrossProfit]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='[C_NetRev] - [C_COGS] - SUM([shipping_cost])' />
+      </column>
+      <column caption='Gross Margin %' datatype='real' name='[C_GrossMargin]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='ZN([C_GrossProfit] / [C_NetRev])' />
+      </column>
+      <column caption='Tax Amount' datatype='real' name='[C_TaxAmt]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='SUM([quantity] * [unit_price] * (1 - [discount_pct]) * [tax_rate])' />
+      </column>
+      <column caption='Total Revenue incl Tax' datatype='real' name='[C_TotalRevTax]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='[C_NetRev] + [C_TaxAmt]' />
+      </column>
+      <column caption='Return Rate' datatype='real' name='[C_ReturnRate]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='SUM(IF [is_returned] = TRUE THEN 1 ELSE 0 END) / COUNT([sale_id])' />
+      </column>
+
+      <!-- ── LOD expressions (FIXED, INCLUDE, EXCLUDE) ─────── -->
+      <column caption='Revenue per Customer' datatype='real' name='[C_RevPerCust]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='{FIXED [customer_id] : SUM([quantity] * [unit_price])}' />
+      </column>
+      <column caption='Revenue per Product' datatype='real' name='[C_RevPerProd]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='{FIXED [product_id] : SUM([quantity] * [unit_price])}' />
+      </column>
+      <column caption='Revenue by Region-Channel' datatype='real' name='[C_RevRegChan]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='{FIXED [region], [channel] : SUM([quantity] * [unit_price])}' />
+      </column>
+      <column caption='Revenue excl Territory' datatype='real' name='[C_RevExclTerr]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='{EXCLUDE [territory] : SUM([quantity] * [unit_price])}' />
+      </column>
+      <column caption='Revenue incl Subcategory' datatype='real' name='[C_RevInclSub]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='{INCLUDE [subcategory] : SUM([quantity] * [unit_price])}' />
+      </column>
+
+      <!-- ── Table calculations (running, rank, window, index) ─ -->
+      <column caption='Running Total Revenue' datatype='real' name='[C_RunTotal]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='RUNNING_SUM(SUM([quantity] * [unit_price]))' />
+      </column>
+      <column caption='Running Avg Revenue' datatype='real' name='[C_RunAvg]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='RUNNING_AVG(SUM([quantity] * [unit_price]))' />
+      </column>
+      <column caption='Running Count' datatype='integer' name='[C_RunCount]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='RUNNING_COUNT(SUM([quantity]))' />
+      </column>
+      <column caption='Revenue Rank' datatype='integer' name='[C_Rank]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='RANK(SUM([quantity] * [unit_price]))' />
+      </column>
+      <column caption='Revenue Rank Dense' datatype='integer' name='[C_RankDense]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='RANK_DENSE(SUM([quantity] * [unit_price]))' />
+      </column>
+      <column caption='Moving Avg 3-Period' datatype='real' name='[C_MovAvg3]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='WINDOW_AVG(SUM([quantity] * [unit_price]), -2, 0)' />
+      </column>
+      <column caption='Window Max Revenue' datatype='real' name='[C_WinMax]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='WINDOW_MAX(SUM([quantity] * [unit_price]))' />
+      </column>
+
+      <!-- ── Stats ─────────────────────────────────────────── -->
+      <column caption='Revenue StdDev' datatype='real' name='[C_StdDev]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='STDEV(SUM([quantity] * [unit_price]))' />
+      </column>
+
+      <!-- ── Count & Distinct ──────────────────────────────── -->
+      <column caption='Order Count' datatype='integer' name='[C_OrderCount]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='COUNTD([sale_id])' />
+      </column>
+      <column caption='Unique Customers' datatype='integer' name='[C_UniqueCust]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='COUNTD([customer_id])' />
+      </column>
+      <column caption='Unique Products Sold' datatype='integer' name='[C_UniqueProd]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='COUNTD([product_id])' />
+      </column>
+
+      <!-- ── Date, String, Logic, Null ─────────────────────── -->
+      <column caption='Days Since First Order' datatype='integer' name='[C_DaysSinceFirst]' role='dimension' type='ordinal'>
+        <calculation class='tableau' formula='DATEDIFF(&quot;day&quot;, [first_order_date], TODAY())' />
+      </column>
+      <column caption='Full Location' datatype='string' name='[C_FullLoc]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='UPPER([city]) + &quot;, &quot; + [state] + &quot; (&quot; + [country] + &quot;)&quot;' />
+      </column>
+      <column caption='Customer Tier' datatype='string' name='[C_CustTier]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='IF [C_RevPerCust] > 100000 THEN &quot;Enterprise&quot; ELSEIF [C_RevPerCust] > 50000 THEN &quot;Mid-Market&quot; ELSEIF [C_RevPerCust] > 10000 THEN &quot;SMB&quot; ELSE &quot;Startup&quot; END' />
+      </column>
+      <column caption='Discount Category' datatype='string' name='[C_DiscCat]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='IF ISNULL([discount_pct]) OR [discount_pct] = 0 THEN &quot;None&quot; ELSEIF [discount_pct] &lt; 0.1 THEN &quot;Low&quot; ELSEIF [discount_pct] &lt; 0.25 THEN &quot;Medium&quot; ELSEIF [discount_pct] &lt; 0.5 THEN &quot;High&quot; ELSE &quot;Extreme&quot; END' />
+      </column>
+      <column caption='Safe Discount' datatype='real' name='[C_SafeDisc]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='ZN([discount_pct])' />
+      </column>
+      <column caption='YTD Revenue' datatype='real' name='[C_YTDRev]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='{FIXED : SUM(IF [year] = YEAR(TODAY()) AND [is_returned] = FALSE THEN [quantity] * [unit_price] ELSE 0 END)}' />
+      </column>
+
+      <!-- ── Security ──────────────────────────────────────── -->
+      <column caption='Is My Account' datatype='boolean' name='[C_IsMyAcct]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='[email] = USERNAME()' />
+      </column>
+
+      <!-- ── User filters (RLS) ────────────────────────────── -->
+      <user-filter name='[Territory Access]' column='[territory]'>
+        <member user='alice@company.com' value='North America' />
+        <member user='alice@company.com' value='Europe' />
+        <member user='bob@company.com' value='Asia Pacific' />
+        <member user='carol@company.com' value='Latin America' />
+        <member user='dave@company.com' value='EMEA' />
+      </user-filter>
+
+      <column caption='Manager Access' datatype='boolean' name='[C_MgrAccess]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='ISMEMBEROF(&quot;Regional Managers&quot;)' />
+      </column>
+
+      <layout dim-ordering='alphabetic' dim-percentage='0.5' measure-ordering='alphabetic' measure-percentage='0.4' show-structure='true' />
+    </datasource>
+
+    <!-- ══════════════════════════════════════════════════════════
+         DS2: Custom SQL datasource (budget targets)
+         ══════════════════════════════════════════════════════════ -->
+    <datasource caption='Budget Targets' inline='true' name='federated.budget' version='18.1'>
+      <connection class='federated'>
+        <named-connections>
+          <named-connection caption='Budget DB' name='postgres.budget'>
+            <connection class='postgres' server='db.company.com' port='5432' dbname='finance_db' />
+          </named-connection>
+        </named-connections>
+        <relation connection='postgres.budget' name='Custom SQL Query' type='text'>
+          <expression>SELECT b.fiscal_year, b.fiscal_quarter, b.region, b.channel,
+       b.revenue_target, b.margin_target, b.growth_target_pct,
+       a.actual_revenue, a.actual_margin
+FROM budget_targets b
+LEFT JOIN actuals_summary a
+  ON b.fiscal_year = a.fiscal_year
+  AND b.fiscal_quarter = a.fiscal_quarter
+  AND b.region = a.region
+WHERE b.fiscal_year >= EXTRACT(YEAR FROM CURRENT_DATE) - 2</expression>
+        </relation>
+        <cols>
+          <map key='[fiscal_year]' value='[Custom SQL Query].[fiscal_year]' />
+          <map key='[fiscal_quarter]' value='[Custom SQL Query].[fiscal_quarter]' />
+          <map key='[budget_region]' value='[Custom SQL Query].[region]' />
+          <map key='[budget_channel]' value='[Custom SQL Query].[channel]' />
+          <map key='[revenue_target]' value='[Custom SQL Query].[revenue_target]' />
+          <map key='[margin_target]' value='[Custom SQL Query].[margin_target]' />
+          <map key='[growth_target_pct]' value='[Custom SQL Query].[growth_target_pct]' />
+          <map key='[actual_revenue]' value='[Custom SQL Query].[actual_revenue]' />
+          <map key='[actual_margin]' value='[Custom SQL Query].[actual_margin]' />
+        </cols>
+      </connection>
+      <column caption='Budget Region' datatype='string' name='[budget_region]' role='dimension' type='nominal' />
+      <column caption='Revenue Target' datatype='real' name='[revenue_target]' role='measure' type='quantitative' />
+      <column caption='Margin Target' datatype='real' name='[margin_target]' role='measure' type='quantitative' />
+      <column caption='Growth Target %' datatype='real' name='[growth_target_pct]' role='measure' type='quantitative' />
+      <column caption='Actual Revenue' datatype='real' name='[actual_revenue]' role='measure' type='quantitative' />
+      <column caption='Actual Margin' datatype='real' name='[actual_margin]' role='measure' type='quantitative' />
+      <column caption='Target Achievement' datatype='real' name='[C_TargetAchieve]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='ZN(SUM([actual_revenue]) / SUM([revenue_target]))' />
+      </column>
+    </datasource>
+  </datasources>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       PARAMETERS (5 — range, list, date, string, any-domain)
+       ═══════════════════════════════════════════════════════════ -->
+  <parameters>
+    <parameter name='[Parameters].[Target Margin]' caption='Target Margin %' datatype='real' value='0.20'>
+      <range max='0.60' min='0.00' granularity='0.01' />
+    </parameter>
+    <parameter name='[Parameters].[Top N]' caption='Top N Items' datatype='integer' value='15'>
+      <range max='100' min='1' granularity='1' />
+    </parameter>
+    <parameter name='[Parameters].[Analysis Start]' caption='Analysis Start Date' datatype='date' value='#2024-01-01#'>
+    </parameter>
+    <parameter name='[Parameters].[Metric Selector]' caption='Metric Selector' datatype='string' value='&quot;Revenue&quot;'>
+      <members>
+        <member value='&quot;Revenue&quot;' alias='Revenue' />
+        <member value='&quot;Profit&quot;' alias='Profit' />
+        <member value='&quot;Orders&quot;' alias='Orders' />
+        <member value='&quot;Customers&quot;' alias='Customers' />
+      </members>
+    </parameter>
+    <parameter name='[Parameters].[Currency]' caption='Display Currency' datatype='string' value='&quot;USD&quot;'>
+      <members>
+        <member value='&quot;USD&quot;' alias='US Dollar' />
+        <member value='&quot;EUR&quot;' alias='Euro' />
+        <member value='&quot;GBP&quot;' alias='British Pound' />
+        <member value='&quot;JPY&quot;' alias='Japanese Yen' />
+      </members>
+    </parameter>
+  </parameters>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       HIERARCHIES (3 drill-paths)
+       ═══════════════════════════════════════════════════════════ -->
+  <drill-paths>
+    <drill-path name='Geography'>
+      <field>[region]</field>
+      <field>[country]</field>
+      <field>[state]</field>
+      <field>[city]</field>
+      <field>[postal_code]</field>
+    </drill-path>
+    <drill-path name='Product'>
+      <field>[category]</field>
+      <field>[subcategory]</field>
+      <field>[brand]</field>
+      <field>[product_name]</field>
+    </drill-path>
+    <drill-path name='Time'>
+      <field>[fiscal_year]</field>
+      <field>[fiscal_quarter]</field>
+      <field>[month_name]</field>
+      <field>[full_date]</field>
+    </drill-path>
+  </drill-paths>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SETS (3)
+       ═══════════════════════════════════════════════════════════ -->
+  <sets>
+    <set name='Top Customers' datasource='federated.global'>
+      <condition>
+        <formula>[customer_name]</formula>
+        <values>
+          <value>"Acme Corp"</value>
+          <value>"GlobalTech Industries"</value>
+          <value>"MegaStore International"</value>
+          <value>"Prime Solutions Ltd"</value>
+          <value>"TechVentures Inc"</value>
+        </values>
+      </condition>
+    </set>
+    <set name='Premium Products' datasource='federated.global'>
+      <condition>
+        <formula>[brand]</formula>
+        <values>
+          <value>"Apple"</value>
+          <value>"Samsung"</value>
+          <value>"Sony"</value>
+          <value>"Microsoft"</value>
+          <value>"Dell"</value>
+        </values>
+      </condition>
+    </set>
+    <set name='High Growth Regions' datasource='federated.global'>
+      <condition>
+        <formula>[region]</formula>
+        <values>
+          <value>"Asia Pacific"</value>
+          <value>"Latin America"</value>
+          <value>"Middle East"</value>
+        </values>
+      </condition>
+    </set>
+  </sets>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       GROUPS (3)
+       ═══════════════════════════════════════════════════════════ -->
+  <groups>
+    <group name='Channel Group' column='[channel]' datasource='federated.global'>
+      <members>
+        <member key='"Online"' value='"Digital"' />
+        <member key='"Mobile App"' value='"Digital"' />
+        <member key='"Website"' value='"Digital"' />
+        <member key='"Retail Store"' value='"Physical"' />
+        <member key='"Pop-up"' value='"Physical"' />
+        <member key='"Wholesale"' value='"B2B"' />
+        <member key='"Marketplace"' value='"B2B"' />
+        <member key='"Partner"' value='"Indirect"' />
+        <member key='"Reseller"' value='"Indirect"' />
+      </members>
+    </group>
+    <group name='Company Tier' column='[company_size]' datasource='federated.global'>
+      <members>
+        <member key='"1-50"' value='"Small"' />
+        <member key='"51-200"' value='"Small"' />
+        <member key='"201-1000"' value='"Medium"' />
+        <member key='"1001-5000"' value='"Large"' />
+        <member key='"5001+"' value='"Enterprise"' />
+      </members>
+    </group>
+    <group name='Payment Type' column='[payment_method]' datasource='federated.global'>
+      <members>
+        <member key='"Credit Card"' value='"Card"' />
+        <member key='"Debit Card"' value='"Card"' />
+        <member key='"Wire Transfer"' value='"Bank"' />
+        <member key='"ACH"' value='"Bank"' />
+        <member key='"PayPal"' value='"Digital Wallet"' />
+        <member key='"Apple Pay"' value='"Digital Wallet"' />
+        <member key='"Net 30"' value='"Terms"' />
+        <member key='"Net 60"' value='"Terms"' />
+      </members>
+    </group>
+  </groups>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       BINS (3)
+       ═══════════════════════════════════════════════════════════ -->
+  <bins>
+    <bin name='Quantity Bin' column='[quantity]' datasource='federated.global' size='10' />
+    <bin name='Price Bin' column='[unit_price]' datasource='federated.global' size='25' />
+    <bin name='Discount Bin' column='[discount_pct]' datasource='federated.global' size='0.05' />
+  </bins>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       ALIASES
+       ═══════════════════════════════════════════════════════════ -->
+  <aliases>
+    <alias column='[order_status]' datasource='federated.global'>
+      <member key='"pending"' value='Pending' />
+      <member key='"processing"' value='Processing' />
+      <member key='"shipped"' value='Shipped' />
+      <member key='"delivered"' value='Delivered' />
+      <member key='"cancelled"' value='Cancelled' />
+      <member key='"returned"' value='Returned' />
+    </alias>
+  </aliases>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       FILTERS (Global + datasource)
+       ═══════════════════════════════════════════════════════════ -->
+  <filters>
+    <filter class='categorical' column='[federated.global].[order_status]'>
+      <groupfilter function='except'>
+        <groupfilter function='level-members' level='[none:order_status:nk]' />
+        <groupfilter function='member' level='[none:order_status:nk]' member='&quot;Cancelled&quot;' />
+      </groupfilter>
+    </filter>
+    <filter class='categorical' column='[federated.global].[year]'>
+      <groupfilter function='member' level='[none:year:nk]' member='2025' />
+    </filter>
+  </filters>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       DATASOURCE FILTERS (extract-level)
+       ═══════════════════════════════════════════════════════════ -->
+  <datasource-filter datasource='federated.global'>
+    <filter class='categorical' column='[is_active]'>
+      <groupfilter function='member' level='[is_active]' member='true' />
+    </filter>
+  </datasource-filter>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       12 WORKSHEETS — many visual types
+       ═══════════════════════════════════════════════════════════ -->
+  <worksheets>
+    <!-- 1. Executive KPI Cards (Text) -->
+    <worksheet name='Executive KPIs'>
+      <table>
+        <view>
+          <datasources><datasource caption='Global Sales Model' name='federated.global' /></datasources>
+          <datasource-dependencies datasource='federated.global'>
+            <column caption='Net Revenue' datatype='real' name='[C_NetRev]' role='measure' type='quantitative' />
+            <column caption='Gross Profit' datatype='real' name='[C_GrossProfit]' role='measure' type='quantitative' />
+            <column caption='Order Count' datatype='integer' name='[C_OrderCount]' role='measure' type='quantitative' />
+            <column caption='Unique Customers' datatype='integer' name='[C_UniqueCust]' role='measure' type='quantitative' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <panes><pane><view><breakdown value='auto' /></view><mark class='Text' /></pane></panes>
+        <rows>[federated.global].[Measure Values]</rows>
+        <cols>[federated.global].[Measure Names]</cols>
+      </table>
+    </worksheet>
+
+    <!-- 2. Revenue by Region (Stacked Bar) -->
+    <worksheet name='Revenue by Region'>
+      <table>
+        <view>
+          <datasources><datasource caption='Global Sales Model' name='federated.global' /></datasources>
+          <datasource-dependencies datasource='federated.global'>
+            <column caption='Net Revenue' datatype='real' name='[C_NetRev]' role='measure' type='quantitative' />
+            <column datatype='string' name='[region]' role='dimension' type='nominal' />
+            <column datatype='string' name='[channel]' role='dimension' type='nominal' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style><style-rule element='mark'><format attr='mark-labels-show' value='true' /></style-rule></style>
+        <panes><pane><view><breakdown value='auto' /></view><mark class='Stacked Bar' />
+          <encodings><color column='[federated.global].[none:channel:nk]' /><text column='[federated.global].[usr:C_NetRev:qk]' /></encodings>
+        </pane></panes>
+        <rows>[federated.global].[none:region:nk]</rows>
+        <cols>[federated.global].[usr:C_NetRev:qk]</cols>
+      </table>
+    </worksheet>
+
+    <!-- 3. Revenue Trend (Line with dual axis hint) -->
+    <worksheet name='Revenue Trend'>
+      <table>
+        <view>
+          <datasources><datasource caption='Global Sales Model' name='federated.global' /></datasources>
+          <datasource-dependencies datasource='federated.global'>
+            <column caption='Net Revenue' datatype='real' name='[C_NetRev]' role='measure' type='quantitative' />
+            <column caption='Moving Avg 3-Period' datatype='real' name='[C_MovAvg3]' role='measure' type='quantitative' />
+            <column datatype='date' name='[full_date]' role='dimension' type='ordinal' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <panes><pane><view><breakdown value='auto' /></view><mark class='Line' /></pane></panes>
+        <rows>[federated.global].[usr:C_NetRev:qk]</rows>
+        <cols>[federated.global].[tmn:full_date:qk]</cols>
+      </table>
+    </worksheet>
+
+    <!-- 4. Geo Map (filled map / choropleth) -->
+    <worksheet name='Sales Map'>
+      <table>
+        <view>
+          <datasources><datasource caption='Global Sales Model' name='federated.global' /></datasources>
+          <datasource-dependencies datasource='federated.global'>
+            <column caption='Net Revenue' datatype='real' name='[C_NetRev]' role='measure' type='quantitative' />
+            <column datatype='string' name='[country]' role='dimension' type='nominal' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <panes><pane><view><breakdown value='auto' /></view><mark class='Polygon' />
+          <encodings><color column='[federated.global].[usr:C_NetRev:qk]' /></encodings>
+        </pane></panes>
+        <rows>[federated.global].[none:country:nk]</rows>
+        <cols>[federated.global].[usr:C_NetRev:qk]</cols>
+      </table>
+    </worksheet>
+
+    <!-- 5. Category Treemap -->
+    <worksheet name='Category Mix'>
+      <table>
+        <view>
+          <datasources><datasource caption='Global Sales Model' name='federated.global' /></datasources>
+          <datasource-dependencies datasource='federated.global'>
+            <column caption='Net Revenue' datatype='real' name='[C_NetRev]' role='measure' type='quantitative' />
+            <column datatype='string' name='[category]' role='dimension' type='nominal' />
+            <column datatype='string' name='[subcategory]' role='dimension' type='nominal' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <panes><pane><view><breakdown value='auto' /></view><mark class='Square' />
+          <encodings>
+            <color column='[federated.global].[none:category:nk]' />
+            <size column='[federated.global].[usr:C_NetRev:qk]' />
+            <detail column='[federated.global].[none:subcategory:nk]' />
+          </encodings>
+        </pane></panes>
+        <rows />
+        <cols />
+      </table>
+    </worksheet>
+
+    <!-- 6. Customer Scatter Plot -->
+    <worksheet name='Customer Analysis'>
+      <table>
+        <view>
+          <datasources><datasource caption='Global Sales Model' name='federated.global' /></datasources>
+          <datasource-dependencies datasource='federated.global'>
+            <column caption='Revenue per Customer' datatype='real' name='[C_RevPerCust]' role='measure' type='quantitative' />
+            <column caption='Gross Margin %' datatype='real' name='[C_GrossMargin]' role='measure' type='quantitative' />
+            <column caption='Order Count' datatype='integer' name='[C_OrderCount]' role='measure' type='quantitative' />
+            <column datatype='string' name='[customer_name]' role='dimension' type='nominal' />
+            <column datatype='string' name='[segment]' role='dimension' type='nominal' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <panes><pane><view><breakdown value='auto' /></view><mark class='Circle' />
+          <encodings>
+            <color column='[federated.global].[none:segment:nk]' />
+            <size column='[federated.global].[usr:C_OrderCount:qk]' />
+            <detail column='[federated.global].[none:customer_name:nk]' />
+          </encodings>
+        </pane></panes>
+        <rows>[federated.global].[usr:C_GrossMargin:qk]</rows>
+        <cols>[federated.global].[usr:C_RevPerCust:qk]</cols>
+      </table>
+    </worksheet>
+
+    <!-- 7. Waterfall Chart (profit decomposition) -->
+    <worksheet name='Profit Waterfall'>
+      <table>
+        <view>
+          <datasources><datasource caption='Global Sales Model' name='federated.global' /></datasources>
+          <datasource-dependencies datasource='federated.global'>
+            <column caption='Gross Revenue' datatype='real' name='[C_GrossRev]' role='measure' type='quantitative' />
+            <column caption='COGS' datatype='real' name='[C_COGS]' role='measure' type='quantitative' />
+            <column caption='Tax Amount' datatype='real' name='[C_TaxAmt]' role='measure' type='quantitative' />
+            <column caption='Gross Profit' datatype='real' name='[C_GrossProfit]' role='measure' type='quantitative' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <panes><pane><view><breakdown value='auto' /></view><mark class='Gantt Bar' /></pane></panes>
+        <rows>[federated.global].[Measure Values]</rows>
+        <cols>[federated.global].[Measure Names]</cols>
+      </table>
+    </worksheet>
+
+    <!-- 8. Heat Map (highlight table) -->
+    <worksheet name='Monthly Heatmap'>
+      <table>
+        <view>
+          <datasources><datasource caption='Global Sales Model' name='federated.global' /></datasources>
+          <datasource-dependencies datasource='federated.global'>
+            <column caption='Net Revenue' datatype='real' name='[C_NetRev]' role='measure' type='quantitative' />
+            <column datatype='string' name='[month_name]' role='dimension' type='nominal' />
+            <column datatype='string' name='[category]' role='dimension' type='nominal' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <panes><pane><view><breakdown value='auto' /></view><mark class='Heat Map' />
+          <encodings><color column='[federated.global].[usr:C_NetRev:qk]' /></encodings>
+        </pane></panes>
+        <rows>[federated.global].[none:category:nk]</rows>
+        <cols>[federated.global].[none:month_name:nk]</cols>
+      </table>
+    </worksheet>
+
+    <!-- 9. Donut Chart (payment distribution) -->
+    <worksheet name='Payment Distribution'>
+      <table>
+        <view>
+          <datasources><datasource caption='Global Sales Model' name='federated.global' /></datasources>
+          <datasource-dependencies datasource='federated.global'>
+            <column caption='Order Count' datatype='integer' name='[C_OrderCount]' role='measure' type='quantitative' />
+            <column datatype='string' name='[payment_method]' role='dimension' type='nominal' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <panes><pane><view><breakdown value='auto' /></view><mark class='Donut' />
+          <encodings>
+            <color column='[federated.global].[none:payment_method:nk]' />
+            <size column='[federated.global].[usr:C_OrderCount:qk]' />
+          </encodings>
+        </pane></panes>
+        <rows />
+        <cols />
+      </table>
+    </worksheet>
+
+    <!-- 10. Funnel (conversion by status) -->
+    <worksheet name='Order Funnel'>
+      <table>
+        <view>
+          <datasources><datasource caption='Global Sales Model' name='federated.global' /></datasources>
+          <datasource-dependencies datasource='federated.global'>
+            <column caption='Order Count' datatype='integer' name='[C_OrderCount]' role='measure' type='quantitative' />
+            <column datatype='string' name='[order_status]' role='dimension' type='nominal' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <panes><pane><view><breakdown value='auto' /></view><mark class='Funnel' /></pane></panes>
+        <rows>[federated.global].[none:order_status:nk]</rows>
+        <cols>[federated.global].[usr:C_OrderCount:qk]</cols>
+      </table>
+    </worksheet>
+
+    <!-- 11. Box Plot (discount distribution) -->
+    <worksheet name='Discount Distribution'>
+      <table>
+        <view>
+          <datasources><datasource caption='Global Sales Model' name='federated.global' /></datasources>
+          <datasource-dependencies datasource='federated.global'>
+            <column datatype='real' name='[discount_pct]' role='measure' type='quantitative' />
+            <column datatype='string' name='[category]' role='dimension' type='nominal' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <panes><pane><view><breakdown value='auto' /></view><mark class='Box Plot' /></pane></panes>
+        <rows>[federated.global].[discount_pct]</rows>
+        <cols>[federated.global].[none:category:nk]</cols>
+      </table>
+    </worksheet>
+
+    <!-- 12. Tooltip worksheet (detail on hover) -->
+    <worksheet name='Customer Detail Tooltip'>
+      <table>
+        <view>
+          <datasources><datasource caption='Global Sales Model' name='federated.global' /></datasources>
+          <datasource-dependencies datasource='federated.global'>
+            <column caption='Net Revenue' datatype='real' name='[C_NetRev]' role='measure' type='quantitative' />
+            <column caption='Order Count' datatype='integer' name='[C_OrderCount]' role='measure' type='quantitative' />
+            <column datatype='string' name='[customer_name]' role='dimension' type='nominal' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <panes><pane><view><breakdown value='auto' /></view><mark class='Automatic' /></pane></panes>
+        <rows>[federated.global].[usr:C_NetRev:qk]</rows>
+        <cols>[federated.global].[none:customer_name:nk]</cols>
+        <viz-in-tooltip />
+      </table>
+    </worksheet>
+  </worksheets>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       3 DASHBOARDS with text, image, filter controls
+       ═══════════════════════════════════════════════════════════ -->
+  <dashboards>
+    <!-- Dashboard 1: Executive Summary -->
+    <dashboard name='Executive Summary'>
+      <style />
+      <size maxheight='1080' maxwidth='1920' minheight='1080' minwidth='1920' />
+      <zones>
+        <zone h='100' id='1' type='layout-basic' w='100' x='0' y='0'>
+          <zone h='6' id='2' type='title' w='100' x='0' y='0'>
+            <formatted-text><run fontstyle='bold' fontsize='20'>Global Sales — Executive Summary</run></formatted-text>
+          </zone>
+          <zone h='12' id='3' name='Executive KPIs' w='100' x='0' y='6'>
+            <zone-contains>Worksheet: Executive KPIs</zone-contains>
+          </zone>
+          <zone h='40' id='4' type='layout-flow' w='100' x='0' y='18'>
+            <zone h='40' id='5' name='Revenue by Region' w='55' x='0' y='0'>
+              <zone-contains>Worksheet: Revenue by Region</zone-contains>
+            </zone>
+            <zone h='40' id='6' name='Sales Map' w='45' x='55' y='0'>
+              <zone-contains>Worksheet: Sales Map</zone-contains>
+            </zone>
+          </zone>
+          <zone h='38' id='7' type='layout-flow' w='100' x='0' y='58'>
+            <zone h='38' id='8' name='Revenue Trend' w='60' x='0' y='0'>
+              <zone-contains>Worksheet: Revenue Trend</zone-contains>
+            </zone>
+            <zone h='38' id='9' name='Category Mix' w='40' x='60' y='0'>
+              <zone-contains>Worksheet: Category Mix</zone-contains>
+            </zone>
+          </zone>
+          <zone h='4' id='10' type='text' w='100' x='0' y='96'>
+            <formatted-text><run fontsize='9' fontcolor='#888888'>Data Source: Snowflake Enterprise DW | Updated: Daily at 06:00 UTC</run></formatted-text>
+          </zone>
+          <!-- Filter controls -->
+          <zone h='100' id='11' type='filter_control' w='15' x='85' y='0'>
+            <filter column='[federated.global].[region]' mode='dropdown' />
+          </zone>
+          <zone h='100' id='12' type='filter_control' w='15' x='70' y='0'>
+            <filter column='[federated.global].[year]' mode='list' />
+          </zone>
+        </zone>
+      </zones>
+    </dashboard>
+
+    <!-- Dashboard 2: Customer & Product Deep Dive -->
+    <dashboard name='Customer &amp; Product Analysis'>
+      <style />
+      <size maxheight='1080' maxwidth='1920' minheight='1080' minwidth='1920' />
+      <zones>
+        <zone h='100' id='20' type='layout-basic' w='100' x='0' y='0'>
+          <zone h='8' id='21' type='title' w='100' x='0' y='0'>
+            <formatted-text><run fontstyle='bold' fontsize='18'>Customer &amp; Product Deep Dive</run></formatted-text>
+          </zone>
+          <zone h='45' id='22' type='layout-flow' w='100' x='0' y='8'>
+            <zone h='45' id='23' name='Customer Analysis' w='50' x='0' y='0'>
+              <zone-contains>Worksheet: Customer Analysis</zone-contains>
+            </zone>
+            <zone h='45' id='24' name='Payment Distribution' w='25' x='50' y='0'>
+              <zone-contains>Worksheet: Payment Distribution</zone-contains>
+            </zone>
+            <zone h='45' id='25' name='Order Funnel' w='25' x='75' y='0'>
+              <zone-contains>Worksheet: Order Funnel</zone-contains>
+            </zone>
+          </zone>
+          <zone h='45' id='26' type='layout-flow' w='100' x='0' y='53'>
+            <zone h='45' id='27' name='Profit Waterfall' w='50' x='0' y='0'>
+              <zone-contains>Worksheet: Profit Waterfall</zone-contains>
+            </zone>
+            <zone h='45' id='28' name='Monthly Heatmap' w='30' x='50' y='0'>
+              <zone-contains>Worksheet: Monthly Heatmap</zone-contains>
+            </zone>
+            <zone h='45' id='29' name='Discount Distribution' w='20' x='80' y='0'>
+              <zone-contains>Worksheet: Discount Distribution</zone-contains>
+            </zone>
+          </zone>
+          <zone h='100' id='30' type='filter_control' w='12' x='88' y='0'>
+            <filter column='[federated.global].[segment]' mode='dropdown' />
+          </zone>
+          <zone h='100' id='31' type='filter_control' w='12' x='76' y='0'>
+            <filter column='[federated.global].[category]' mode='list' />
+          </zone>
+        </zone>
+      </zones>
+    </dashboard>
+
+    <!-- Dashboard 3: Drill-through detail page -->
+    <dashboard name='Order Detail'>
+      <style />
+      <size maxheight='800' maxwidth='1200' minheight='800' minwidth='1200' />
+      <zones>
+        <zone h='100' id='40' type='layout-basic' w='100' x='0' y='0'>
+          <zone h='100' id='41' name='Customer Detail Tooltip' w='100' x='0' y='0'>
+            <zone-contains>Worksheet: Customer Detail Tooltip</zone-contains>
+          </zone>
+        </zone>
+      </zones>
+      <!-- Drill-through filter -->
+      <drill-through-filter column='[customer_name]' />
+    </dashboard>
+  </dashboards>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       ACTIONS (filter, highlight, URL, navigate)
+       ═══════════════════════════════════════════════════════════ -->
+  <actions>
+    <action name='Filter by Region' type='filter'>
+      <source type='dashboard' dashboard='Executive Summary' worksheet='Revenue by Region' />
+      <target type='dashboard' dashboard='Executive Summary' />
+    </action>
+    <action name='Highlight Channel' type='highlight'>
+      <source type='dashboard' dashboard='Executive Summary' worksheet='Revenue by Region' />
+      <target type='dashboard' dashboard='Executive Summary' />
+    </action>
+    <action name='Navigate to Detail' type='filter'>
+      <source type='dashboard' dashboard='Executive Summary' worksheet='Sales Map' />
+      <target type='dashboard' dashboard='Customer &amp; Product Analysis' />
+    </action>
+    <action name='Open Customer CRM' type='url'>
+      <source type='dashboard' dashboard='Customer &amp; Product Analysis' worksheet='Customer Analysis' />
+      <url>https://crm.company.com/customer/&lt;customer_id&gt;</url>
+    </action>
+    <action name='Cross-filter Segment' type='filter'>
+      <source type='dashboard' dashboard='Customer &amp; Product Analysis' worksheet='Customer Analysis' />
+      <target type='dashboard' dashboard='Customer &amp; Product Analysis' />
+    </action>
+  </actions>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       STORIES (4 story points)
+       ═══════════════════════════════════════════════════════════ -->
+  <stories>
+    <story name='Quarterly Business Review'>
+      <story-points>
+        <story-point caption='Executive Summary' dashboard='Executive Summary' />
+        <story-point caption='Customer &amp; Product Insights' dashboard='Customer &amp; Product Analysis' />
+        <story-point caption='Order Details' dashboard='Order Detail' />
+      </story-points>
+    </story>
+    <story name='Sales Performance Deep Dive'>
+      <story-points>
+        <story-point caption='Revenue Overview' dashboard='Executive Summary' />
+        <story-point caption='Detailed Analysis' dashboard='Customer &amp; Product Analysis' />
+      </story-points>
+    </story>
+  </stories>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SORT ORDERS
+       ═══════════════════════════════════════════════════════════ -->
+  <sort-orders>
+    <sort column='[region]' datasource='federated.global' direction='descending' using='[C_NetRev]' />
+    <sort column='[category]' datasource='federated.global' direction='ascending' />
+    <sort column='[customer_name]' datasource='federated.global' direction='descending' using='[C_RevPerCust]' />
+    <sort column='[product_name]' datasource='federated.global' direction='descending' using='[C_NetRev]' />
+  </sort-orders>
+
+  <windows source-height='30'>
+    <window class='worksheet' name='Executive KPIs'>
+      <cards>
+        <edge name='left'><strip size='160'><card type='pages' /><card type='filters' /><card type='marks' /></strip></edge>
+        <edge name='top'><strip size='2147483647'><card type='columns' /></strip><strip size='2147483647'><card type='rows' /></strip></edge>
+      </cards>
+    </window>
+    <window class='dashboard' maximized='true' name='Executive Summary'>
+      <viewpoints />
+    </window>
+  </windows>
+</workbook>

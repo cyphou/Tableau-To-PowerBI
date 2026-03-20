@@ -1,0 +1,654 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<workbook source-build='2024.1.0 (20241.24.0213.0933)' source-platform='win' version='18.1' xmlns:user='http://www.tableausoftware.com/xml/user'>
+  <document-format-change-manifest>
+    <_.fcp.ObjectModelEncapsulateLegacy.true...ObjectModelEncapsulateLegacy />
+  </document-format-change-manifest>
+  <preferences>
+    <preference name='ui.encoding.shelf.height' value='24' />
+    <preference name='ui.shelf.height' value='26' />
+  </preferences>
+  <datasources>
+    <!-- ── Source principale : Ventes PostgreSQL ────────────── -->
+    <datasource caption='Ventes Entreprise' inline='true' name='federated.ventes' version='18.1'>
+      <connection class='federated'>
+        <named-connections>
+          <named-connection caption='PostgreSQL Ventes' name='postgres.ventes'>
+            <connection class='postgres' server='db.entreprise.fr' port='5432' dbname='ventes_db' username='lecteur' sslmode='require' />
+          </named-connection>
+        </named-connections>
+        <relation join='left' type='join'>
+          <clause type='join'>
+            <expression op='='>
+              <expression op='[Commandes].[client_id]' />
+              <expression op='[Clients].[client_id]' />
+            </expression>
+          </clause>
+          <relation join='left' type='join'>
+            <clause type='join'>
+              <expression op='='>
+                <expression op='[Commandes].[produit_id]' />
+                <expression op='[Produits].[produit_id]' />
+              </expression>
+            </clause>
+            <relation connection='postgres.ventes' name='Commandes' table='[public].[commandes]' type='table'>
+              <columns>
+                <column datatype='integer' name='commande_id' ordinal='0' />
+                <column datatype='date' name='date_commande' ordinal='1' />
+                <column datatype='date' name='date_livraison' ordinal='2' />
+                <column datatype='integer' name='client_id' ordinal='3' />
+                <column datatype='integer' name='produit_id' ordinal='4' />
+                <column datatype='string' name='region' ordinal='5' />
+                <column datatype='string' name='departement' ordinal='6' />
+                <column datatype='string' name='ville' ordinal='7' />
+                <column datatype='string' name='code_postal' ordinal='8' />
+                <column datatype='real' name='quantite' ordinal='9' />
+                <column datatype='real' name='prix_unitaire' ordinal='10' />
+                <column datatype='real' name='remise' ordinal='11' />
+                <column datatype='real' name='frais_port' ordinal='12' />
+                <column datatype='string' name='mode_paiement' ordinal='13' />
+                <column datatype='string' name='statut' ordinal='14' />
+                <column datatype='string' name='commercial' ordinal='15' />
+              </columns>
+            </relation>
+            <relation connection='postgres.ventes' name='Produits' table='[public].[produits]' type='table'>
+              <columns>
+                <column datatype='integer' name='produit_id' ordinal='0' />
+                <column datatype='string' name='nom_produit' ordinal='1' />
+                <column datatype='string' name='categorie' ordinal='2' />
+                <column datatype='string' name='sous_categorie' ordinal='3' />
+                <column datatype='string' name='marque' ordinal='4' />
+                <column datatype='real' name='cout_achat' ordinal='5' />
+              </columns>
+            </relation>
+          </relation>
+          <relation connection='postgres.ventes' name='Clients' table='[public].[clients]' type='table'>
+            <columns>
+              <column datatype='integer' name='client_id' ordinal='0' />
+              <column datatype='string' name='nom_client' ordinal='1' />
+              <column datatype='string' name='prenom_client' ordinal='2' />
+              <column datatype='string' name='email' ordinal='3' />
+              <column datatype='string' name='segment' ordinal='4' />
+              <column datatype='string' name='type_client' ordinal='5' />
+              <column datatype='date' name='date_inscription' ordinal='6' />
+            </columns>
+          </relation>
+        </relation>
+        <cols>
+          <map key='[commande_id]' value='[Commandes].[commande_id]' />
+          <map key='[date_commande]' value='[Commandes].[date_commande]' />
+          <map key='[date_livraison]' value='[Commandes].[date_livraison]' />
+          <map key='[client_id]' value='[Commandes].[client_id]' />
+          <map key='[produit_id]' value='[Commandes].[produit_id]' />
+          <map key='[region]' value='[Commandes].[region]' />
+          <map key='[departement]' value='[Commandes].[departement]' />
+          <map key='[ville]' value='[Commandes].[ville]' />
+          <map key='[code_postal]' value='[Commandes].[code_postal]' />
+          <map key='[quantite]' value='[Commandes].[quantite]' />
+          <map key='[prix_unitaire]' value='[Commandes].[prix_unitaire]' />
+          <map key='[remise]' value='[Commandes].[remise]' />
+          <map key='[frais_port]' value='[Commandes].[frais_port]' />
+          <map key='[mode_paiement]' value='[Commandes].[mode_paiement]' />
+          <map key='[statut]' value='[Commandes].[statut]' />
+          <map key='[commercial]' value='[Commandes].[commercial]' />
+          <map key='[nom_produit]' value='[Produits].[nom_produit]' />
+          <map key='[categorie]' value='[Produits].[categorie]' />
+          <map key='[sous_categorie]' value='[Produits].[sous_categorie]' />
+          <map key='[marque]' value='[Produits].[marque]' />
+          <map key='[cout_achat]' value='[Produits].[cout_achat]' />
+          <map key='[nom_client]' value='[Clients].[nom_client]' />
+          <map key='[prenom_client]' value='[Clients].[prenom_client]' />
+          <map key='[email]' value='[Clients].[email]' />
+          <map key='[segment]' value='[Clients].[segment]' />
+          <map key='[type_client]' value='[Clients].[type_client]' />
+          <map key='[date_inscription]' value='[Clients].[date_inscription]' />
+        </cols>
+      </connection>
+
+      <!-- Colonnes physiques avec captions français -->
+      <column caption='N° Commande' datatype='integer' name='[commande_id]' role='dimension' type='ordinal' />
+      <column caption='Date de Commande' datatype='date' name='[date_commande]' role='dimension' type='ordinal' />
+      <column caption='Date de Livraison' datatype='date' name='[date_livraison]' role='dimension' type='ordinal' />
+      <column caption='ID Client' datatype='integer' name='[client_id]' role='dimension' type='ordinal' />
+      <column caption='ID Produit' datatype='integer' name='[produit_id]' role='dimension' type='ordinal' />
+      <column caption='Région' datatype='string' name='[region]' role='dimension' type='nominal' semantic-role='[State].[Name]' />
+      <column caption='Département' datatype='string' name='[departement]' role='dimension' type='nominal' />
+      <column caption='Ville' datatype='string' name='[ville]' role='dimension' type='nominal' semantic-role='[City].[Name]' />
+      <column caption='Code Postal' datatype='string' name='[code_postal]' role='dimension' type='nominal' semantic-role='[ZipCode].[Name]' />
+      <column caption='Quantité' datatype='real' name='[quantite]' role='measure' type='quantitative' />
+      <column caption='Prix Unitaire' datatype='real' name='[prix_unitaire]' role='measure' type='quantitative' />
+      <column caption='Remise' datatype='real' name='[remise]' role='measure' type='quantitative' />
+      <column caption='Frais de Port' datatype='real' name='[frais_port]' role='measure' type='quantitative' />
+      <column caption='Mode de Paiement' datatype='string' name='[mode_paiement]' role='dimension' type='nominal' />
+      <column caption='Statut' datatype='string' name='[statut]' role='dimension' type='nominal' />
+      <column caption='Commercial' datatype='string' name='[commercial]' role='dimension' type='nominal' />
+      <column caption='Nom du Produit' datatype='string' name='[nom_produit]' role='dimension' type='nominal' />
+      <column caption='Catégorie' datatype='string' name='[categorie]' role='dimension' type='nominal' />
+      <column caption='Sous-Catégorie' datatype='string' name='[sous_categorie]' role='dimension' type='nominal' />
+      <column caption='Marque' datatype='string' name='[marque]' role='dimension' type='nominal' />
+      <column caption='Coût d&apos;Achat' datatype='real' name='[cout_achat]' role='measure' type='quantitative' />
+      <column caption='Nom du Client' datatype='string' name='[nom_client]' role='dimension' type='nominal' />
+      <column caption='Prénom du Client' datatype='string' name='[prenom_client]' role='dimension' type='nominal' />
+      <column caption='Email' datatype='string' name='[email]' role='dimension' type='nominal' />
+      <column caption='Segment' datatype='string' name='[segment]' role='dimension' type='nominal' />
+      <column caption='Type de Client' datatype='string' name='[type_client]' role='dimension' type='nominal' />
+      <column caption='Date d&apos;Inscription' datatype='date' name='[date_inscription]' role='dimension' type='ordinal' />
+
+      <!-- ── CALCULS (formules Tableau avec noms français) ───── -->
+
+      <!-- 1. Chiffre d'Affaires Brut -->
+      <column caption='Chiffre d&apos;Affaires Brut' datatype='real' name='[Calc_CA_Brut]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='SUM([quantite] * [prix_unitaire])' />
+      </column>
+
+      <!-- 2. Chiffre d'Affaires Net (exclut les annulées) -->
+      <column caption='Chiffre d&apos;Affaires Net' datatype='real' name='[Calc_CA_Net]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='SUM(IF [statut] != &quot;Annulée&quot; THEN [quantite] * [prix_unitaire] * (1 - [remise]) ELSE 0 END)' />
+      </column>
+
+      <!-- 3. Marge Brute -->
+      <column caption='Marge Brute' datatype='real' name='[Calc_Marge]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='SUM(IF [statut] != &quot;Annulée&quot; THEN ([quantite] * [prix_unitaire] * (1 - [remise])) - ([quantite] * [cout_achat]) - [frais_port] ELSE 0 END)' />
+      </column>
+
+      <!-- 4. Taux de Marge (%) -->
+      <column caption='Taux de Marge (%)' datatype='real' name='[Calc_TauxMarge]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='ZN([Calc_Marge] / [Calc_CA_Net])' />
+      </column>
+
+      <!-- 5. Montant Total des Remises -->
+      <column caption='Montant Remises' datatype='real' name='[Calc_MontantRemises]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='SUM([quantite] * [prix_unitaire] * [remise])' />
+      </column>
+
+      <!-- 6. Nombre de Commandes -->
+      <column caption='Nombre de Commandes' datatype='integer' name='[Calc_NbCommandes]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='COUNTD([commande_id])' />
+      </column>
+
+      <!-- 7. Nombre de Clients Uniques -->
+      <column caption='Clients Uniques' datatype='integer' name='[Calc_ClientsUniques]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='COUNTD([client_id])' />
+      </column>
+
+      <!-- 8. Panier Moyen -->
+      <column caption='Panier Moyen' datatype='real' name='[Calc_PanierMoyen]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='[Calc_CA_Net] / [Calc_NbCommandes]' />
+      </column>
+
+      <!-- 9. LOD FIXED : CA par Client -->
+      <column caption='CA par Client' datatype='real' name='[Calc_CAParClient]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='{FIXED [client_id] : SUM([quantite] * [prix_unitaire])}' />
+      </column>
+
+      <!-- 10. LOD FIXED multi-dim : CA Régional par Catégorie -->
+      <column caption='CA Régional par Catégorie' datatype='real' name='[Calc_CARegionCategorie]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='{FIXED [region], [categorie] : SUM([quantite] * [prix_unitaire])}' />
+      </column>
+
+      <!-- 11. LOD EXCLUDE : CA hors Produit -->
+      <column caption='CA hors Produit' datatype='real' name='[Calc_CAExclProduit]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='{EXCLUDE [nom_produit] : SUM([quantite] * [prix_unitaire])}' />
+      </column>
+
+      <!-- 12. Délai de Livraison (jours) -->
+      <column caption='Délai de Livraison' datatype='integer' name='[Calc_DelaiLivraison]' role='dimension' type='ordinal'>
+        <calculation class='tableau' formula='DATEDIFF(&quot;day&quot;, [date_commande], [date_livraison])' />
+      </column>
+
+      <!-- 13. Ancienneté Client (jours) -->
+      <column caption='Ancienneté Client' datatype='integer' name='[Calc_Anciennete]' role='dimension' type='ordinal'>
+        <calculation class='tableau' formula='DATEDIFF(&quot;day&quot;, [date_inscription], TODAY())' />
+      </column>
+
+      <!-- 14. Classification Client -->
+      <column caption='Classification Client' datatype='string' name='[Calc_ClassifClient]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='IF [Calc_CAParClient] > 50000 THEN &quot;Platine&quot; ELSEIF [Calc_CAParClient] > 20000 THEN &quot;Or&quot; ELSEIF [Calc_CAParClient] > 5000 THEN &quot;Argent&quot; ELSE &quot;Bronze&quot; END' />
+      </column>
+
+      <!-- 15. Nom Complet Client -->
+      <column caption='Nom Complet' datatype='string' name='[Calc_NomComplet]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='[prenom_client] + &quot; &quot; + UPPER([nom_client])' />
+      </column>
+
+      <!-- 16. Localisation Complète -->
+      <column caption='Localisation' datatype='string' name='[Calc_Localisation]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='[ville] + &quot; (&quot; + [departement] + &quot;) - &quot; + [region]' />
+      </column>
+
+      <!-- 17. Cumul Mobile CA -->
+      <column caption='Cumul Mobile CA' datatype='real' name='[Calc_CumulCA]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='RUNNING_SUM(SUM([quantite] * [prix_unitaire]))' />
+      </column>
+
+      <!-- 18. Moyenne Mobile 3 mois -->
+      <column caption='Moyenne Mobile 3M' datatype='real' name='[Calc_MoyMobile]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='WINDOW_AVG(SUM([quantite] * [prix_unitaire]), -2, 0)' />
+      </column>
+
+      <!-- 19. Classement par CA -->
+      <column caption='Classement CA' datatype='integer' name='[Calc_ClassementCA]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='RANK(SUM([quantite] * [prix_unitaire]))' />
+      </column>
+
+      <!-- 20. Catégorie de Remise -->
+      <column caption='Catégorie de Remise' datatype='string' name='[Calc_CategorieRemise]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='IF ISNULL([remise]) OR [remise] = 0 THEN &quot;Aucune Remise&quot; ELSEIF [remise] &lt; 0.1 THEN &quot;Faible (&lt;10%)&quot; ELSEIF [remise] &lt; 0.25 THEN &quot;Moyenne (10-25%)&quot; ELSE &quot;Forte (&gt;25%)&quot; END' />
+      </column>
+
+      <!-- 21. CA Année en Cours -->
+      <column caption='CA Année en Cours' datatype='real' name='[Calc_CAYTD]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='{FIXED : SUM(IF YEAR([date_commande]) = YEAR(TODAY()) THEN [quantite] * [prix_unitaire] ELSE 0 END)}' />
+      </column>
+
+      <!-- 22. Trimestre de Commande -->
+      <column caption='Trimestre' datatype='string' name='[Calc_Trimestre]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='&quot;T&quot; + STR(DATEPART(&quot;quarter&quot;, [date_commande])) + &quot; &quot; + STR(YEAR([date_commande]))' />
+      </column>
+
+      <!-- Sécurité : accès commercial -->
+      <user-filter name='[Accès Commercial]' column='[commercial]'>
+        <member user='marie.dupont@entreprise.fr' value='Marie Dupont' />
+        <member user='jean.martin@entreprise.fr' value='Jean Martin' />
+        <member user='sophie.bernard@entreprise.fr' value='Sophie Bernard' />
+        <member user='pierre.durand@entreprise.fr' value='Pierre Durand' />
+      </user-filter>
+
+      <layout dim-ordering='alphabetic' dim-percentage='0.5' measure-ordering='alphabetic' measure-percentage='0.4' show-structure='true' />
+    </datasource>
+  </datasources>
+
+  <parameters>
+    <parameter name='[Parameters].[Objectif Marge]' caption='Objectif Marge' datatype='real' value='0.15'>
+      <range max='0.5' min='0' granularity='0.01' />
+    </parameter>
+    <parameter name='[Parameters].[Top N Produits]' caption='Top N Produits' datatype='integer' value='10'>
+      <range max='50' min='1' granularity='1' />
+    </parameter>
+    <parameter name='[Parameters].[Période]' caption='Période d&apos;Analyse' datatype='string' value='&quot;Année&quot;'>
+      <members>
+        <member value='&quot;Mois&quot;' alias='Mois' />
+        <member value='&quot;Trimestre&quot;' alias='Trimestre' />
+        <member value='&quot;Année&quot;' alias='Année' />
+      </members>
+    </parameter>
+  </parameters>
+
+  <!-- Hiérarchies -->
+  <drill-paths>
+    <drill-path name='Géographie'>
+      <field>[region]</field>
+      <field>[departement]</field>
+      <field>[ville]</field>
+      <field>[code_postal]</field>
+    </drill-path>
+    <drill-path name='Produits'>
+      <field>[categorie]</field>
+      <field>[sous_categorie]</field>
+      <field>[nom_produit]</field>
+    </drill-path>
+    <drill-path name='Temps'>
+      <field>[date_commande]</field>
+    </drill-path>
+  </drill-paths>
+
+  <!-- Ensembles (Sets) -->
+  <sets>
+    <set name='Clients Fidèles' datasource='federated.ventes'>
+      <condition>
+        <formula>[nom_client]</formula>
+        <values>
+          <value>"Leclerc SA"</value>
+          <value>"Carrefour Distribution"</value>
+          <value>"Auchan Retail"</value>
+          <value>"FNAC Darty"</value>
+          <value>"Boulanger SAS"</value>
+        </values>
+      </condition>
+    </set>
+  </sets>
+
+  <!-- Groupes -->
+  <groups>
+    <group name='Zone Géographique' column='[region]' datasource='federated.ventes'>
+      <members>
+        <member key='"Île-de-France"' value='"Nord"' />
+        <member key='"Hauts-de-France"' value='"Nord"' />
+        <member key='"Grand Est"' value='"Nord"' />
+        <member key='"Normandie"' value='"Nord"' />
+        <member key='"Bretagne"' value='"Ouest"' />
+        <member key='"Pays de la Loire"' value='"Ouest"' />
+        <member key='"Nouvelle-Aquitaine"' value='"Sud-Ouest"' />
+        <member key='"Occitanie"' value='"Sud"' />
+        <member key='"Provence-Alpes-Côte d&apos;Azur"' value='"Sud-Est"' />
+        <member key='"Auvergne-Rhône-Alpes"' value='"Sud-Est"' />
+        <member key='"Bourgogne-Franche-Comté"' value='"Est"' />
+        <member key='"Centre-Val de Loire"' value='"Centre"' />
+        <member key='"Corse"' value='"Sud"' />
+      </members>
+    </group>
+    <group name='Catégorie Mode Paiement' column='[mode_paiement]' datasource='federated.ventes'>
+      <members>
+        <member key='"Carte Bancaire"' value='"Paiement Électronique"' />
+        <member key='"PayPal"' value='"Paiement Électronique"' />
+        <member key='"Virement"' value='"Paiement Bancaire"' />
+        <member key='"Chèque"' value='"Paiement Bancaire"' />
+        <member key='"Espèces"' value='"Paiement Comptant"' />
+      </members>
+    </group>
+  </groups>
+
+  <!-- Intervalles (Bins) -->
+  <bins>
+    <bin name='Tranche Quantité' column='[quantite]' datasource='federated.ventes' size='5' />
+    <bin name='Tranche Prix' column='[prix_unitaire]' datasource='federated.ventes' size='50' />
+  </bins>
+
+  <!-- Alias -->
+  <aliases>
+    <alias column='[statut]' datasource='federated.ventes'>
+      <member key='"pending"' value='En attente' />
+      <member key='"shipped"' value='Expédiée' />
+      <member key='"delivered"' value='Livrée' />
+      <member key='"cancelled"' value='Annulée' />
+      <member key='"returned"' value='Retournée' />
+    </alias>
+  </aliases>
+
+  <worksheets>
+    <!-- Feuille 1 : KPI Principaux -->
+    <worksheet name='Indicateurs Clés'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Ventes Entreprise' name='federated.ventes' />
+          </datasources>
+          <datasource-dependencies datasource='federated.ventes'>
+            <column caption='Chiffre d&apos;Affaires Net' datatype='real' name='[Calc_CA_Net]' role='measure' type='quantitative' />
+            <column caption='Marge Brute' datatype='real' name='[Calc_Marge]' role='measure' type='quantitative' />
+            <column caption='Clients Uniques' datatype='integer' name='[Calc_ClientsUniques]' role='measure' type='quantitative' />
+            <column caption='Nombre de Commandes' datatype='integer' name='[Calc_NbCommandes]' role='measure' type='quantitative' />
+            <column-instance column='[Calc_CA_Net]' derivation='User' name='[usr:Calc_CA_Net:qk]' pivot='key' type='quantitative' />
+            <column-instance column='[Calc_Marge]' derivation='User' name='[usr:Calc_Marge:qk]' pivot='key' type='quantitative' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane>
+            <view><breakdown value='auto' /></view>
+            <mark class='Text' />
+          </pane>
+        </panes>
+        <rows>[federated.ventes].[Measure Values]</rows>
+        <cols>[federated.ventes].[Measure Names]</cols>
+      </table>
+    </worksheet>
+
+    <!-- Feuille 2 : CA par Région (barres empilées) -->
+    <worksheet name='CA par Région'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Ventes Entreprise' name='federated.ventes' />
+          </datasources>
+          <datasource-dependencies datasource='federated.ventes'>
+            <column caption='Chiffre d&apos;Affaires Net' datatype='real' name='[Calc_CA_Net]' role='measure' type='quantitative' />
+            <column datatype='string' name='[region]' role='dimension' type='nominal' />
+            <column datatype='string' name='[categorie]' role='dimension' type='nominal' />
+            <column-instance column='[region]' derivation='None' name='[none:region:nk]' pivot='key' type='nominal' />
+            <column-instance column='[categorie]' derivation='None' name='[none:categorie:nk]' pivot='key' type='nominal' />
+            <column-instance column='[Calc_CA_Net]' derivation='User' name='[usr:Calc_CA_Net:qk]' pivot='key' type='quantitative' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style>
+          <style-rule element='mark'>
+            <format attr='mark-labels-show' value='true' />
+            <format attr='mark-labels-cull' value='true' />
+          </style-rule>
+        </style>
+        <panes>
+          <pane>
+            <view><breakdown value='auto' /></view>
+            <mark class='Stacked Bar' />
+            <encodings>
+              <color column='[federated.ventes].[none:categorie:nk]' />
+              <text column='[federated.ventes].[usr:Calc_CA_Net:qk]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[federated.ventes].[none:region:nk]</rows>
+        <cols>[federated.ventes].[usr:Calc_CA_Net:qk]</cols>
+      </table>
+    </worksheet>
+
+    <!-- Feuille 3 : Évolution Mensuelle du CA (ligne) -->
+    <worksheet name='Évolution du CA'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Ventes Entreprise' name='federated.ventes' />
+          </datasources>
+          <datasource-dependencies datasource='federated.ventes'>
+            <column caption='Chiffre d&apos;Affaires Net' datatype='real' name='[Calc_CA_Net]' role='measure' type='quantitative' />
+            <column caption='Moyenne Mobile 3M' datatype='real' name='[Calc_MoyMobile]' role='measure' type='quantitative' />
+            <column datatype='date' name='[date_commande]' role='dimension' type='ordinal' />
+            <column-instance column='[date_commande]' derivation='Month-Trunc' name='[tmn:date_commande:qk]' pivot='key' type='quantitative' />
+            <column-instance column='[Calc_CA_Net]' derivation='User' name='[usr:Calc_CA_Net:qk]' pivot='key' type='quantitative' />
+            <column-instance column='[Calc_MoyMobile]' derivation='User' name='[usr:Calc_MoyMobile:qk]' pivot='key' type='quantitative' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane>
+            <view><breakdown value='auto' /></view>
+            <mark class='Line' />
+          </pane>
+        </panes>
+        <rows>[federated.ventes].[usr:Calc_CA_Net:qk]</rows>
+        <cols>[federated.ventes].[tmn:date_commande:qk]</cols>
+      </table>
+    </worksheet>
+
+    <!-- Feuille 4 : Carte Géographique des Ventes -->
+    <worksheet name='Carte des Ventes'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Ventes Entreprise' name='federated.ventes' />
+          </datasources>
+          <datasource-dependencies datasource='federated.ventes'>
+            <column caption='Chiffre d&apos;Affaires Brut' datatype='real' name='[Calc_CA_Brut]' role='measure' type='quantitative' />
+            <column datatype='string' name='[region]' role='dimension' type='nominal' />
+            <column datatype='string' name='[departement]' role='dimension' type='nominal' />
+            <column-instance column='[region]' derivation='None' name='[none:region:nk]' pivot='key' type='nominal' />
+            <column-instance column='[Calc_CA_Brut]' derivation='User' name='[usr:Calc_CA_Brut:qk]' pivot='key' type='quantitative' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane>
+            <view><breakdown value='auto' /></view>
+            <mark class='Polygon' />
+            <encodings>
+              <color column='[federated.ventes].[usr:Calc_CA_Brut:qk]' />
+              <detail column='[federated.ventes].[none:region:nk]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[federated.ventes].[none:region:nk]</rows>
+        <cols>[federated.ventes].[usr:Calc_CA_Brut:qk]</cols>
+      </table>
+    </worksheet>
+
+    <!-- Feuille 5 : Top Produits -->
+    <worksheet name='Top Produits'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Ventes Entreprise' name='federated.ventes' />
+          </datasources>
+          <datasource-dependencies datasource='federated.ventes'>
+            <column caption='Chiffre d&apos;Affaires Net' datatype='real' name='[Calc_CA_Net]' role='measure' type='quantitative' />
+            <column caption='Marge Brute' datatype='real' name='[Calc_Marge]' role='measure' type='quantitative' />
+            <column datatype='string' name='[nom_produit]' role='dimension' type='nominal' />
+            <column-instance column='[nom_produit]' derivation='None' name='[none:nom_produit:nk]' pivot='key' type='nominal' />
+            <column-instance column='[Calc_CA_Net]' derivation='User' name='[usr:Calc_CA_Net:qk]' pivot='key' type='quantitative' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style>
+          <style-rule element='mark'>
+            <format attr='mark-labels-show' value='true' />
+          </style-rule>
+        </style>
+        <panes>
+          <pane>
+            <view><breakdown value='auto' /></view>
+            <mark class='Bar' />
+            <encodings>
+              <text column='[federated.ventes].[usr:Calc_CA_Net:qk]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[federated.ventes].[none:nom_produit:nk]</rows>
+        <cols>[federated.ventes].[usr:Calc_CA_Net:qk]</cols>
+      </table>
+    </worksheet>
+
+    <!-- Feuille 6 : Répartition par Mode de Paiement (camembert) -->
+    <worksheet name='Modes de Paiement'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Ventes Entreprise' name='federated.ventes' />
+          </datasources>
+          <datasource-dependencies datasource='federated.ventes'>
+            <column caption='Nombre de Commandes' datatype='integer' name='[Calc_NbCommandes]' role='measure' type='quantitative' />
+            <column datatype='string' name='[mode_paiement]' role='dimension' type='nominal' />
+            <column-instance column='[mode_paiement]' derivation='None' name='[none:mode_paiement:nk]' pivot='key' type='nominal' />
+            <column-instance column='[Calc_NbCommandes]' derivation='User' name='[usr:Calc_NbCommandes:qk]' pivot='key' type='quantitative' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane>
+            <view><breakdown value='auto' /></view>
+            <mark class='Pie' />
+            <encodings>
+              <color column='[federated.ventes].[none:mode_paiement:nk]' />
+              <size column='[federated.ventes].[usr:Calc_NbCommandes:qk]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows />
+        <cols />
+      </table>
+    </worksheet>
+  </worksheets>
+
+  <dashboards>
+    <!-- Tableau de bord 1 : Vue d'Ensemble -->
+    <dashboard name='Vue d&apos;Ensemble des Ventes'>
+      <style />
+      <size maxheight='900' maxwidth='1400' minheight='900' minwidth='1400' />
+      <zones>
+        <zone h='100' id='1' type='layout-basic' w='100' x='0' y='0'>
+          <zone h='8' id='2' type='title' w='100' x='0' y='0'>
+            <formatted-text>
+              <run fontstyle='bold' fontsize='18'>Tableau de Bord — Ventes France</run>
+            </formatted-text>
+          </zone>
+          <zone h='20' id='3' name='Indicateurs Clés' w='100' x='0' y='8'>
+            <zone-contains>Worksheet: Indicateurs Clés</zone-contains>
+          </zone>
+          <zone h='35' id='4' type='layout-flow' w='100' x='0' y='28'>
+            <zone h='35' id='5' name='CA par Région' w='50' x='0' y='0'>
+              <zone-contains>Worksheet: CA par Région</zone-contains>
+            </zone>
+            <zone h='35' id='6' name='Carte des Ventes' w='50' x='50' y='0'>
+              <zone-contains>Worksheet: Carte des Ventes</zone-contains>
+            </zone>
+          </zone>
+          <zone h='35' id='7' name='Évolution du CA' w='60' x='0' y='63'>
+            <zone-contains>Worksheet: Évolution du CA</zone-contains>
+          </zone>
+          <zone h='35' id='8' name='Modes de Paiement' w='40' x='60' y='63'>
+            <zone-contains>Worksheet: Modes de Paiement</zone-contains>
+          </zone>
+          <zone h='3' id='9' type='text' w='100' x='0' y='96'>
+            <formatted-text>
+              <run fontsize='9' fontcolor='#888888'>Source : Base de données PostgreSQL — Données mises à jour quotidiennement</run>
+            </formatted-text>
+          </zone>
+        </zone>
+      </zones>
+    </dashboard>
+
+    <!-- Tableau de bord 2 : Analyse Produits -->
+    <dashboard name='Analyse des Produits'>
+      <style />
+      <size maxheight='800' maxwidth='1200' minheight='800' minwidth='1200' />
+      <zones>
+        <zone h='100' id='10' type='layout-basic' w='100' x='0' y='0'>
+          <zone h='10' id='11' type='title' w='100' x='0' y='0'>
+            <formatted-text>
+              <run fontstyle='bold' fontsize='16'>Analyse Détaillée des Produits</run>
+            </formatted-text>
+          </zone>
+          <zone h='90' id='12' name='Top Produits' w='100' x='0' y='10'>
+            <zone-contains>Worksheet: Top Produits</zone-contains>
+          </zone>
+        </zone>
+      </zones>
+    </dashboard>
+  </dashboards>
+
+  <!-- Actions de filtrage -->
+  <actions>
+    <action name='Filtrer par Région' type='filter'>
+      <source type='dashboard' dashboard='Vue d&apos;Ensemble des Ventes' worksheet='CA par Région' />
+      <target type='dashboard' dashboard='Vue d&apos;Ensemble des Ventes' />
+    </action>
+    <action name='Naviguer vers Produits' type='filter'>
+      <source type='dashboard' dashboard='Vue d&apos;Ensemble des Ventes' worksheet='Carte des Ventes' />
+      <target type='dashboard' dashboard='Analyse des Produits' />
+    </action>
+  </actions>
+
+  <!-- Stories (Points d'histoire) -->
+  <stories>
+    <story name='Présentation Mensuelle'>
+      <story-points>
+        <story-point caption='Vue Globale' dashboard='Vue d&apos;Ensemble des Ventes' />
+        <story-point caption='Détail Produits' dashboard='Analyse des Produits' />
+      </story-points>
+    </story>
+  </stories>
+
+  <!-- Ordres de tri -->
+  <sort-orders>
+    <sort column='[region]' datasource='federated.ventes' direction='descending' using='[Calc_CA_Net]' />
+    <sort column='[nom_produit]' datasource='federated.ventes' direction='descending' using='[Calc_CA_Net]' />
+  </sort-orders>
+
+  <windows source-height='30'>
+    <window class='worksheet' name='Indicateurs Clés'>
+      <cards>
+        <edge name='left'>
+          <strip size='160'>
+            <card type='pages' />
+            <card type='filters' />
+            <card type='marks' />
+          </strip>
+        </edge>
+      </cards>
+    </window>
+    <window class='dashboard' maximized='true' name='Vue d&apos;Ensemble des Ventes'>
+      <viewpoints />
+    </window>
+  </windows>
+</workbook>
