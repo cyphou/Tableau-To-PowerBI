@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 # Pre-compiled patterns for field name cleaning
 _RE_DERIVATION_PREFIX = re.compile(
-    r'^(none|sum|avg|count|min|max|usr|yr|mn|dy|qr|wk|attr|md|mdy|hms|hr|mt|sc|thr|trunc|tyr|tqr|tmn|tdy|twk):'
+    r'^(none|sum|avg|count|cnt|ctd|countd|min|max|usr|yr|mn|dy|qr|wk|attr|md|mdy|hms|hr|mt|sc|thr|trunc|tyr|tqr|tmn|tdy|twk):'
 )
 _RE_TYPE_SUFFIX = re.compile(r':(nk|qk|ok|fn|tn)$')
 
@@ -2107,7 +2107,7 @@ class PowerBIProjectGenerator:
     def _make_scatter_axis_entry(self, field):
         """Creates projection entry for scatter chart axes.
         Named DAX measures → Measure wrapper.
-        Physical columns → Aggregation wrapper with Function 0 (Sum)."""
+        Physical columns → Aggregation wrapper with shelf-aware Function ID."""
         raw_name = field.get('name', 'Field')
         clean_name = self._clean_field_name(raw_name)
 
@@ -2128,6 +2128,15 @@ class PowerBIProjectGenerator:
             clean_name in self._bim_measure_names or prop in self._bim_measure_names
         )
 
+        # Tableau shelf aggregation → PBI Aggregation Function ID
+        _TABLEAU_AGG_TO_PBI_FUNC = {
+            'sum': 0, 'avg': 1, 'cnt': 2, 'count': 2,
+            'min': 3, 'max': 4, 'ctd': 6, 'countd': 6,
+            'median': 0, 'attr': 0,
+        }
+        shelf_agg = field.get('aggregation', '')
+        agg_func = _TABLEAU_AGG_TO_PBI_FUNC.get(shelf_agg, 0)
+
         if is_bim_measure:
             field_ref = {
                 "Measure": {
@@ -2136,7 +2145,7 @@ class PowerBIProjectGenerator:
                 }
             }
         else:
-            # Physical column: wrap as Aggregation (Sum) for scatter axes
+            # Physical column: wrap as Aggregation with shelf-aware Function ID
             field_ref = {
                 "Aggregation": {
                     "Expression": {
@@ -2145,7 +2154,7 @@ class PowerBIProjectGenerator:
                             "Property": prop
                         }
                     },
-                    "Function": 0
+                    "Function": agg_func
                 }
             }
 
@@ -2160,6 +2169,8 @@ class PowerBIProjectGenerator:
 
         Wrapper selection:
         - Named DAX measures (in _bim_measure_names) → ``Measure`` wrapper
+        - Physical columns with explicit Tableau aggregation (cnt, avg, etc.)
+          → ``Aggregation`` wrapper with the corresponding PBI Function ID
         - Physical numeric columns treated as measures by Tableau
           (in _measure_names but NOT in _bim_measure_names) → ``Aggregation``
           wrapper with Function 0 (Sum) so PBI shows explicit aggregation
@@ -2186,6 +2197,16 @@ class PowerBIProjectGenerator:
                         self._field_map[clean_name] = (entity, prop)
                         break
 
+        # Tableau shelf aggregation → PBI Aggregation Function ID
+        # 0=Sum, 1=Avg, 2=Count, 3=Min, 4=Max, 5=CountNonNull, 6=DistinctCount
+        _TABLEAU_AGG_TO_PBI_FUNC = {
+            'sum': 0, 'avg': 1, 'cnt': 2, 'count': 2,
+            'min': 3, 'max': 4, 'ctd': 6, 'countd': 6,
+            'median': 0, 'attr': 0,
+        }
+        shelf_agg = field.get('aggregation', '')
+        explicit_agg_func = _TABLEAU_AGG_TO_PBI_FUNC.get(shelf_agg)
+
         # Determine wrapper type
         is_bim_measure = hasattr(self, '_bim_measure_names') and (
             clean_name in self._bim_measure_names or prop in self._bim_measure_names
@@ -2204,8 +2225,9 @@ class PowerBIProjectGenerator:
                     "Property": prop
                 }
             }
-        elif is_physical_measure:
-            # Physical numeric column (role='measure') → Aggregation(Sum)
+        elif is_physical_measure or explicit_agg_func is not None:
+            # Physical column with aggregation — use shelf aggregation if present
+            agg_func = explicit_agg_func if explicit_agg_func is not None else 0
             field_ref = {
                 "Aggregation": {
                     "Expression": {
@@ -2214,7 +2236,7 @@ class PowerBIProjectGenerator:
                             "Property": prop
                         }
                     },
-                    "Function": 0
+                    "Function": agg_func
                 }
             }
         else:

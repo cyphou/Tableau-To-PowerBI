@@ -39,7 +39,7 @@ if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
 
 _RE_FIELD_REF = re.compile(r'\[([^\]]+)\]\.\[([^\]]+)\]')
 _RE_DERIVATION_PREFIX = re.compile(
-    r'^(none|sum|avg|count|min|max|usr|yr|mn|dy|qr|wk|attr|md|mdy|hms|hr|mt|sc|thr|trunc|tyr|tqr|tmn|tdy|twk):'
+    r'^(none|sum|avg|count|cnt|ctd|countd|min|max|usr|yr|mn|dy|qr|wk|attr|md|mdy|hms|hr|mt|sc|thr|trunc|tyr|tqr|tmn|tdy|twk):'
 )
 _RE_TABLE_CALC_PREFIX = re.compile(
     r'^(pcto|pctd|diff|running_sum|running_avg|running_count|running_min|running_max|rank|rank_unique|rank_dense):(sum|avg|count|min|max|countd)?:?'
@@ -710,7 +710,7 @@ class TableauExtractor:
         fields = []
         
         # Regex for Tableau derivation prefixes (none, sum, avg, count, usr, yr, etc.)
-        derivation_re = r'^(none|sum|avg|count|min|max|usr|yr|mn|dy|qr|wk|attr|md|mdy|hms|hr|mt|sc|thr|trunc):'
+        derivation_re = r'^(none|sum|avg|count|cnt|ctd|countd|min|max|usr|yr|mn|dy|qr|wk|attr|md|mdy|hms|hr|mt|sc|thr|trunc|tyr|tqr|tmn|tdy|twk):'
         suffix_re = r':(nk|qk|ok|fn|tn)$'
         # Quick table calc prefixes (pcto = % of total, pctd = % difference, running_*)
         table_calc_re = r'^(pcto|pctd|diff|running_sum|running_avg|running_count|running_min|running_max|rank|rank_unique|rank_dense):(sum|avg|count|min|max|countd)?:?'
