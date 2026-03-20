@@ -1,8 +1,8 @@
 # Comprehensive Gap Analysis — Tableau to Power BI Migration Tool
 
-**Date:** 2026-03-19 — updated through v18.0.0 (Sprints 54-64)  
+**Date:** 2026-03-20 — updated through v19.0.0 (Sprints 54-65)  
 **Scope:** Every source file, test file, CI/CD, docs, config, and cross-project comparison with TableauToFabric  
-**Status:** 4,813 tests passing across 101 test files
+**Status:** 4,923 tests passing across 106 test files
 
 ### Implementation Coverage
 
@@ -22,7 +22,7 @@
         |            +-------+--------+          |                    |
         +--------------------+--------------------+--------------------+
                                      |
-                          v9.0.0 → v16.0.0
+                          v9.0.0 → v19.0.0
                      +-------------------------------+
                      | Shared semantic model merge   |
                      | Multi-workbook thin reports   |
@@ -32,6 +32,11 @@
                      | Data alerts & visual diff     |
                      | OneDrive lock retry/backoff   |
                      | Memory optimization (TMDL)    |
+                     | Lineage tracking & reporting  |
+                     | Multi-tenant deployment       |
+                     | Live connection (byConnection)|
+                     | Custom SQL fingerprinting     |
+                     | Benchmark test suite          |
                      +-------------------------------+
 ```
 
@@ -143,7 +148,7 @@
 - **Deployment not end-to-end tested**: Integration test structure added in v5.0 (`test_fabric_integration.py`) — opt-in with `@pytest.mark.integration`
 - **Stale file cleanup race conditions**: OneDrive lock leftovers handled via try/except but may still leave artifacts on Windows
 - **`import_to_powerbi.py` loads JSON from hardcoded paths**: ✅ IMPLEMENTED — `source_dir` parameter allows configurable JSON source directory
-- **No shared semantic model**: ✅ IMPLEMENTED — `--shared-model` CLI flag merges multiple workbooks into one shared SemanticModel + N thin Reports; fingerprint-based table matching, Jaccard column overlap scoring, measure conflict resolution, merge assessment with 0–100 scoring, `--global-assess` cross-workbook analysis with HTML heatmap, `--deploy-bundle` Fabric bundle deployment; **v18 Sprint 54**: artifact-level merge (calc groups, field params, perspectives, cultures, goals, hierarchies); **v18 Sprint 55**: post-merge safety validation (cycle detection, column type compatibility matrix, DAX reference validation, RELATED/LOOKUPVALUE cardinality audit, `--strict-merge` flag); **v18 Sprint 64**: incremental merge (`--add-to-model DIR WB.twbx`, `--remove-from-model DIR WB_NAME`), `MergeManifest` provenance tracking, TMDL reverse-engineering parser, `diff_manifests()` for CI audit trail
+- **No shared semantic model**: ✅ IMPLEMENTED — `--shared-model` CLI flag merges multiple workbooks into one shared SemanticModel + N thin Reports; fingerprint-based table matching, Jaccard column overlap scoring, measure conflict resolution, merge assessment with 0–100 scoring, `--global-assess` cross-workbook analysis with HTML heatmap, `--deploy-bundle` Fabric bundle deployment; **v18 Sprint 54**: artifact-level merge (calc groups, field params, perspectives, cultures, goals, hierarchies); **v18 Sprint 55**: post-merge safety validation (cycle detection, column type compatibility matrix, DAX reference validation, RELATED/LOOKUPVALUE cardinality audit, `--strict-merge` flag); **v18 Sprint 64**: incremental merge (`--add-to-model DIR WB.twbx`, `--remove-from-model DIR WB_NAME`), `MergeManifest` provenance tracking, TMDL reverse-engineering parser, `diff_manifests()` for CI audit trail; **v19 Sprint 65**: lineage metadata injection (TMDL annotations + Sankey HTML report), custom SQL fingerprinting (SHA-256 normalized SQL), `--live-connection WORKSPACE_ID/MODEL_NAME` (byConnection PBIR wiring), `--multi-tenant CONFIG_FILE` (per-tenant connection overrides + deploy), fingerprint hash cache, end-to-end merge integration tests, benchmark suite (100 workbooks in <1s)
 - **No composite model support**: ✅ IMPLEMENTED — `--mode composite` enables DirectQuery + Import hybrid
 - **No Small Multiples**: ✅ IMPLEMENTED — `_build_small_multiples_config()` auto-detects suitable fields
 ### What is APPROXIMATED
@@ -158,7 +163,7 @@
 ## 3. Test Coverage
 
 ### What IS implemented
-- **887 tests across 18 test files** (original) + **3,875 additional tests in v3.6–v18.0.0**, totaling **4,762 tests across 100 test files** including shared fixtures in `conftest.py`:
+- **887 tests across 18 test files** (original) + **4,036 additional tests in v3.6–v19.0.0**, totaling **4,923 tests across 106 test files** including shared fixtures in `conftest.py`:
 
 | Test File | Tests | Lines | Coverage Focus |
 |-----------|-------|-------|----------------|
@@ -417,8 +422,8 @@
 | **M Query** | **37 connectors** (+12: OData, Google Analytics, Azure Blob/ADLS, Vertica, Impala, Hadoop Hive, Presto, MongoDB, Cosmos DB, Athena, DB2), 47+ transforms (+regex extract, JSON/XML parse, connection parameterize), **DAX-to-M expression converter** (calc columns as M steps), **Hyper data → M #table()** | OAuth, gateway, incremental refresh | Fallback #table, BigQuery/Oracle config | Low |
 | **Prep Flow** | DAG traversal, 20+ action types, **ExtractValues**, **CustomCalculation**, **Script/Prediction/CrossJoin/PublishedDataSource** handlers, 5 new connection mappings, **Hyper data loading** | — | Prep VAR/VARP joins | Low |
 | **Pre-Migration** | **Assessment** (14-category scoring + connection string audit + performance + volume + Prep complexity + licensing + multi-datasource), **Strategy advisor** (Import/DQ/Composite), **Global assessment** (`--global-assess`, N×N heatmap, BFS clustering), **Migration completeness scoring** (0–100, letter grade), JSON + HTML reports | — | — | Low |
-| **Shared Model** | **Merge engine** (fingerprint, Jaccard, 0–100 scoring), **thin reports** (byPath), **merge config**, **field validation**, **column lineage**, **RLS consolidation** (predicate merge + propagation + principal scoping), **measure risk analyzer**, **global assessment** (cross-workbook clusters), **table isolation**, **Fabric bundle deployment** (`--deploy-bundle`, permission pre-flight, conflict detection, rollback, refresh polling, DeploymentManifest), **artifact-level merge** (calc groups, field params, perspectives, cultures, goals, hierarchy level-aware dedup), **post-merge safety** (cycle detection, type validation, DAX reference integrity), **thin report binding validation** | — | — | Low |
-| **Test Coverage** | **4,762 tests across 100 files** (+conftest.py shared fixtures) | — | — | Low |
+| **Shared Model** | **Merge engine** (fingerprint, Jaccard, 0–100 scoring), **thin reports** (byPath + byConnection), **merge config**, **field validation**, **column lineage**, **RLS consolidation** (predicate merge + propagation + principal scoping), **measure risk analyzer**, **global assessment** (cross-workbook clusters), **table isolation**, **Fabric bundle deployment** (`--deploy-bundle`, permission pre-flight, conflict detection, rollback, refresh polling, DeploymentManifest), **artifact-level merge** (calc groups, field params, perspectives, cultures, goals, hierarchy level-aware dedup), **post-merge safety** (cycle detection, type validation, DAX reference integrity), **thin report binding validation**, **lineage tracking** (TMDL annotations + Sankey HTML), **custom SQL fingerprinting** (SHA-256), **multi-tenant deployment** (`--multi-tenant`), **live connection** (`--live-connection`), **fingerprint cache**, **benchmark suite** (100 workbooks) | — | — | Low |
+| **Test Coverage** | **4,923 tests across 106 files** (+conftest.py shared fixtures) | — | — | Low |
 | **CI/CD** | **5-stage pipeline** (lint+ruff, test, **strict validate+twbx**, **staging deploy**, production deploy), **pip caching**, **PBIR schema forward-compat check** (`--check-schema`), **PyPI auto-publish workflow** (`publish.yml`), **plugin system** (`plugins.py` + `examples/plugins/`), **Windows/macOS/Linux CI matrix** (3 OS × 6 Python versions) | Coverage reporting | — | Low |
 | **Documentation** | **14 docs** + copilot instructions (ARCHITECTURE, KNOWN_LIMITATIONS, MIGRATION_CHECKLIST, DEPLOYMENT_GUIDE, TABLEAU_VERSION_COMPATIBILITY, CONTRIBUTING), **auto-generated API docs** (42 modules) | — | — | Low |
 | **Config** | 11 env vars, 3 environments, **settings validation**, **dry-run**, **calendar/culture CLI**, **.env.example** | Config file, connection templating | — | Low |
