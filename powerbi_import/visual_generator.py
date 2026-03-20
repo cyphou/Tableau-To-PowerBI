@@ -1138,8 +1138,8 @@ def _apply_visual_decorations(worksheet, visual_type, pbi_type, visual_name, ctm
     data bars, small multiples, and axis config."""
 
     # ── Title ─────────────────────────────────────────────────
-    visual_obj.setdefault("vcObjects", {})
-    visual_obj["vcObjects"]["title"] = [{
+    visual_obj.setdefault("visualContainerObjects", {})
+    visual_obj["visualContainerObjects"]["title"] = [{
         "properties": {
             "show": _L("true"),
             "text": _L(json.dumps(visual_name)),
@@ -1149,7 +1149,7 @@ def _apply_visual_decorations(worksheet, visual_type, pbi_type, visual_name, ctm
     # ── Subtitle ──────────────────────────────────────────────
     subtitle = worksheet.get('subtitle', '')
     if subtitle:
-        visual_obj["vcObjects"]["subTitle"] = [{
+        visual_obj["visualContainerObjects"]["subTitle"] = [{
             "properties": {
                 "show": _L("true"),
                 "text": _L(json.dumps(subtitle)),

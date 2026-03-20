@@ -224,13 +224,13 @@ class TestApplyVisualDecorations(unittest.TestCase):
         ws = {"name": "Test", "subtitle": "My Subtitle"}
         vo = self._make_visual_obj()
         _apply_visual_decorations(ws, "bar", "clusteredBarChart", "Test", {}, vo)
-        self.assertIn("subTitle", vo["vcObjects"])
+        self.assertIn("subTitle", vo["visualContainerObjects"])
 
     def test_no_subtitle(self):
         ws = {"name": "Test"}
         vo = self._make_visual_obj()
         _apply_visual_decorations(ws, "bar", "clusteredBarChart", "Test", {}, vo)
-        self.assertNotIn("subTitle", vo.get("vcObjects", {}))
+        self.assertNotIn("subTitle", vo.get("visualContainerObjects", {}))
 
     def test_color_by_measure(self):
         ws = {"name": "Test", "colorBy": {"mode": "byMeasure"}}
@@ -297,9 +297,9 @@ class TestApplyVisualDecorations(unittest.TestCase):
         }
         vo = self._make_visual_obj()
         _apply_visual_decorations(ws, "bar", "clusteredBarChart", "Test", {"Date": "Orders"}, vo)
-        # Sort is processed (implementation stores it in vcObjects or annotations)
-        # Just verify no crash — the sort code writes to vcObjects
-        self.assertIn("vcObjects", vo)
+        # Sort is processed (implementation stores it in visualContainerObjects or annotations)
+        # Just verify no crash — the sort code writes to visualContainerObjects
+        self.assertIn("visualContainerObjects", vo)
 
     def test_reference_lines_constant(self):
         ws = {

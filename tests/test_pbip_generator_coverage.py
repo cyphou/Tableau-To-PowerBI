@@ -2088,11 +2088,12 @@ class TestGenerateProjectPaginated(unittest.TestCase):
 class TestBuildVisualObjectsOrchestrator(unittest.TestCase):
     """Orchestrator delegates to sub-methods."""
 
-    def test_title_always_present(self):
+    def test_title_in_visualContainerObjects(self):
         gen = _make_generator()
         _init_field_map(gen, main_table='T')
         objects = gen._build_visual_objects('MySheet', None, 'bar')
-        self.assertIn('title', objects)
+        # Title is in visualContainerObjects, not in visual.objects
+        self.assertNotIn('title', objects)
 
     def test_with_formatting(self):
         gen = _make_generator()

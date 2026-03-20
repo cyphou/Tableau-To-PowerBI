@@ -234,18 +234,18 @@ class TestVisualContainerCreation(unittest.TestCase):
     def test_title_set(self):
         ws = self._make_worksheet(name="Sales by Region")
         container = create_visual_container(ws)
-        title = container["visual"]["vcObjects"]["title"]
+        title = container["visual"]["visualContainerObjects"]["title"]
         self.assertTrue(len(title) > 0)
 
     def test_subtitle_set(self):
         ws = self._make_worksheet(subtitle="Q1 2025")
         container = create_visual_container(ws)
-        self.assertIn("subTitle", container["visual"]["vcObjects"])
+        self.assertIn("subTitle", container["visual"]["visualContainerObjects"])
 
     def test_no_subtitle_when_empty(self):
         ws = self._make_worksheet()
         container = create_visual_container(ws)
-        self.assertNotIn("subTitle", container["visual"].get("vcObjects", {}))
+        self.assertNotIn("subTitle", container["visual"].get("visualContainerObjects", {}))
 
 
 class TestSlicerSyncGroups(unittest.TestCase):

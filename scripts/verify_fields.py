@@ -187,7 +187,7 @@ def extract_pbi_visuals(pbip_dir):
 
         # Extract title
         title = ''
-        vc_objs = vis.get('vcObjects', {})
+        vc_objs = vis.get('visualContainerObjects', vis.get('vcObjects', {}))
         for t_item in vc_objs.get('title', []):
             txt = t_item.get('properties', {}).get('text', {})
             if isinstance(txt, dict):

@@ -198,7 +198,7 @@ def _compare_field_bindings(extracted, pbip_dir):
         vtype = vis.get('visualType', 'unknown')
         # Extract title
         title = ''
-        for t_item in vis.get('vcObjects', {}).get('title', []):
+        for t_item in vis.get('visualContainerObjects', vis.get('vcObjects', {})).get('title', []):
             txt = t_item.get('properties', {}).get('text', {})
             if isinstance(txt, dict):
                 val = txt.get('expr', {}).get('Literal', {}).get('Value', '')
