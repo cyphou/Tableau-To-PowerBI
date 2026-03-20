@@ -15,6 +15,8 @@ These files were downloaded from public GitHub repositories for testing purposes
 | `ephemeral_field.twb` | [tableau/document-api-python](https://github.com/tableau/document-api-python) | MIT | Workbook with calculated/ephemeral fields |
 | `global_superstores_db.twb` | [bijenmanandhar/tableau](https://github.com/bijenmanandhar/tableau) | Public | Global Superstores dashboard with multiple worksheets, calculations, and data blending (592 KB) |
 | `RESTAPISample.twb` | [tableau/server-client-python](https://github.com/tableau/server-client-python) | MIT | REST API sample workbook with multiple views (241 KB) |
+| `vishnu_dashboard.twb` | [vishnu-t-r/tableau_twbx](https://github.com/vishnu-t-r/tableau_twbx) | Public | Multi-sheet dashboard with 5 worksheets, 6 calculations, 2 parameters, groups, bins — Superstore data (450 KB) |
+| `feedback_dashboard.twb` | [datasciencekibaatein/30-Days-30-Dashboards-in-tableau](https://github.com/datasciencekibaatein/30-Days-30-Dashboards-in-tableau) | Public | Customer Feedback Analysis Dashboard with 7 worksheets, 1 dashboard, calculations, groups — extracted from .twbx (68 KB) |
 
 ## Tableau Packaged Workbook Files (.twbx)
 
@@ -46,6 +48,8 @@ These files were downloaded from public GitHub repositories for testing purposes
 - **aloth/tableau-book-resources**: Copyright © Alexander Loth. Licensed under [Creative Commons Attribution 4.0 International (CC-BY-4.0)](https://creativecommons.org/licenses/by/4.0/). Citation: Loth, A. (2019). *Visual Analytics with Tableau*. Wiley.
 - **bijenmanandhar/tableau**: Public repository. No explicit license. Files used for testing purposes only.
 - **Nishit-soni-01/Superstore-Sales-Performance-Dashboard-with-Tableau**: Public repository. No explicit license. Files used for testing purposes only.
+- **vishnu-t-r/tableau_twbx**: Public repository. No explicit license. Files used for testing purposes only.
+- **datasciencekibaatein/30-Days-30-Dashboards-in-tableau**: Public repository. No explicit license. Files used for testing purposes only.
 
 ## Migration Test Results
 
@@ -57,3 +61,5 @@ These files were downloaded from public GitHub repositories for testing purposes
 | `nba_player_stats.twbx` | 100.0% | 5 | 2 | 3 calcs, 1 param |
 | `sample-superstore.twb` + `tableau_prep_book.tfl` | 100.0% | 1 | 1 | Prep flow merged |
 | `filtering.twb` | 80.0% | — | — | 1 set-ref calc skipped |
+| `vishnu_dashboard.twb` | 100.0% | 5 | 4 | 6 calcs, 2 params, 1 group, 1 bin |
+| `feedback_dashboard.twb` | 100.0% | 7 | 2 | 1 calc, 2 groups, 1 dashboard |
