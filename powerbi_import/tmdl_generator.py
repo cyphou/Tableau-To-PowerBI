@@ -2508,10 +2508,6 @@ def _create_calculation_groups(model, parameters, main_table_name):
         for m in table.get('measures', []):
             measure_names.add(m.get('name', ''))
 
-    # Track parameter tables and measures to remove after numeric CG creation
-    tables_to_remove = set()
-    measures_to_remove = []  # list of (table_name, measure_name)
-
     for param in parameters:
         caption = param.get('caption', '')
         domain_type = param.get('domain_type', '')
@@ -2653,27 +2649,6 @@ def _create_calculation_groups(model, parameters, main_table_name):
         }
         model['model']['tables'].append(cg_table)
         existing_tables.add(cg_name)
-
-        # Mark the SWITCH measure and What-If parameter table for removal
-        measures_to_remove.append((found_table.get('name', ''), found_measure.get('name', '')))
-        tables_to_remove.add(caption)  # What-If table has same name as param caption
-
-    # Remove replaced SWITCH measures
-    for tbl_name, msr_name in measures_to_remove:
-        for table in model['model']['tables']:
-            if table.get('name', '') == tbl_name:
-                table['measures'] = [
-                    m for m in table.get('measures', [])
-                    if m.get('name', '') != msr_name
-                ]
-                break
-
-    # Remove replaced What-If parameter tables
-    if tables_to_remove:
-        model['model']['tables'] = [
-            t for t in model['model']['tables']
-            if t.get('name', '') not in tables_to_remove
-        ]
 
 
 def _parse_switch_branches(args_str):

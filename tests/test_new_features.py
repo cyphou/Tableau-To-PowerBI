@@ -241,18 +241,20 @@ class TestNumericParamCalcGroup(unittest.TestCase):
         self.assertEqual(items[1]['name'], "Average Offensive Rebounds")
         self.assertEqual(items[2]['name'], "Average Rebound")
 
-    def test_numeric_param_removes_switch_measure(self):
+    def test_numeric_param_keeps_switch_measure(self):
+        """SWITCH measure is kept so existing visuals remain functional."""
         model = self._model_with_switch()
         _create_calculation_groups(model, [self._rebounds_param()], "Data")
         data_table = next(t for t in model['model']['tables'] if t['name'] == 'Data')
         measure_names = [m['name'] for m in data_table.get('measures', [])]
-        self.assertNotIn("p. Rebounds", measure_names)
+        self.assertIn("p. Rebounds", measure_names)
 
-    def test_numeric_param_removes_whatif_table(self):
+    def test_numeric_param_keeps_whatif_table(self):
+        """What-If table is kept alongside the CG for backward compat."""
         model = self._model_with_switch()
         _create_calculation_groups(model, [self._rebounds_param()], "Data")
         table_names = [t['name'] for t in model['model']['tables']]
-        self.assertNotIn("Rebounds", table_names)
+        self.assertIn("Rebounds", table_names)
 
     def test_numeric_param_items_have_calculate(self):
         model = self._model_with_switch()
