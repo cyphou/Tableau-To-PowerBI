@@ -1,16 +1,16 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
-  "name": "64f17776bc8b40769bee",
+  "name": "f4c2119972cf495bbb32",
   "position": {
-    "x": 6,
-    "y": 523,
-    "z": 0,
-    "height": 197,
-    "width": 1274,
-    "tabOrder": 0
+    "x": 919,
+    "y": 6,
+    "z": 2000,
+    "height": 277,
+    "width": 352,
+    "tabOrder": 2000
   },
   "visual": {
-    "visualType": "lineChart",
+    "visualType": "pieChart",
     "drillFilterOtherVisuals": true,
     "query": {
       "queryState": {
@@ -24,33 +24,10 @@
                       "Entity": "Orders"
                     }
                   },
-                  "Property": "Order Date"
+                  "Property": "Region"
                 }
               },
-              "queryRef": "Orders.Order Date",
-              "active": true
-            }
-          ]
-        },
-        "Y": {
-          "projections": [
-            {
-              "field": {
-                "Aggregation": {
-                  "Expression": {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "Orders"
-                        }
-                      },
-                      "Property": "Order Quantity"
-                    }
-                  },
-                  "Function": 0
-                }
-              },
-              "queryRef": "Orders.Order Quantity",
+              "queryRef": "Orders.Region",
               "active": true
             }
           ]
@@ -75,6 +52,20 @@
               },
               "queryRef": "Orders.Sales",
               "active": true
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Orders"
+                    }
+                  },
+                  "Property": "pcto:sum:Sales"
+                }
+              },
+              "queryRef": "Orders.pcto:sum:Sales",
+              "active": true
             }
           ]
         }
@@ -87,7 +78,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Line chart'"
+                  "Value": "'Pie chart'"
                 }
               }
             }
@@ -103,15 +94,24 @@
                   "Value": "true"
                 }
               }
+            }
+          }
+        }
+      ],
+      "legend": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
             },
-            "color": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#000000'"
-                    }
-                  }
+            "position": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Right'"
                 }
               }
             }

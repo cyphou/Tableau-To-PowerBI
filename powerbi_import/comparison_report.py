@@ -180,6 +180,115 @@ def _compare_calculations(extracted, pbip_data):
     return results
 
 
+def _compare_field_bindings(extracted, pbip_dir):
+    """Compare Tableau worksheet field bindings against PBI visual fields.
+
+    Returns a list of per-worksheet results with match status and field details.
+    """
+    worksheets = extracted.get('worksheets', [])
+    if isinstance(worksheets, dict):
+        worksheets = worksheets.get('worksheets', [])
+
+    # ── Load PBI visuals from disk ──
+    pbi_visuals = []
+    vis_pattern = os.path.join(pbip_dir, '**', 'visual.json')
+    for filepath in sorted(glob.glob(vis_pattern, recursive=True)):
+        data = _load_json(filepath)
+        vis = data.get('visual', {})
+        vtype = vis.get('visualType', 'unknown')
+        # Extract title
+        title = ''
+        for t_item in vis.get('vcObjects', {}).get('title', []):
+            txt = t_item.get('properties', {}).get('text', {})
+            if isinstance(txt, dict):
+                val = txt.get('expr', {}).get('Literal', {}).get('Value', '')
+                title = val.strip("'").strip('"')
+        # Extract fields from queryState
+        qs = vis.get('query', {}).get('queryState', {})
+        fields = []
+        for role, role_data in qs.items():
+            for proj in role_data.get('projections', []):
+                fi = proj.get('field', {})
+                agg_node = fi.get('Aggregation', {})
+                if agg_node:
+                    prop = agg_node.get('Expression', {}).get('Column', {}).get('Property', '')
+                else:
+                    prop = fi.get('Column', {}).get('Property', '')
+                if prop:
+                    fields.append(prop)
+        pbi_visuals.append({
+            'type': vtype,
+            'title': title,
+            'fields': fields,
+            'is_empty': len(fields) == 0,
+        })
+
+    # ── Generated fields to ignore ──
+    _GENERATED = {'Latitude (generated)', 'Longitude (generated)',
+                  'Number of Records', 'Multiple Values'}
+
+    results = []
+    used_indices = set()
+
+    for ws in worksheets:
+        ws_name = ws.get('name', '')
+        ws_raw_fields = ws.get('fields', [])
+        ws_field_names = set()
+        for f in ws_raw_fields:
+            name = f.get('name', '') if isinstance(f, dict) else str(f)
+            if name and name not in _GENERATED:
+                ws_field_names.add(name)
+        ws_is_empty = len(ws_field_names) == 0
+
+        # Match by best field overlap (Jaccard)
+        best_idx, best_score = None, -1
+        for i, v in enumerate(pbi_visuals):
+            if i in used_indices:
+                continue
+            pbi_set = set(v['fields'])
+            overlap = len(ws_field_names & pbi_set)
+            union = len(ws_field_names | pbi_set)
+            score = overlap / union if union else (1.0 if ws_is_empty and v['is_empty'] else 0)
+            if score > best_score:
+                best_score = score
+                best_idx = i
+
+        pbi = pbi_visuals[best_idx] if best_idx is not None else None
+        if pbi:
+            used_indices.add(best_idx)
+
+        pbi_field_names = set(pbi['fields']) if pbi else set()
+        matched = ws_field_names & pbi_field_names
+        missing = ws_field_names - pbi_field_names
+        extra = pbi_field_names - ws_field_names
+
+        if ws_is_empty:
+            status = 'EMPTY'
+        elif not pbi:
+            status = 'NO_VISUAL'
+        elif missing and not extra:
+            status = 'MISSING'
+        elif missing and extra:
+            status = 'PARTIAL'
+        elif extra and not missing:
+            status = 'EXTRA'
+        else:
+            status = 'OK'
+
+        results.append({
+            'worksheet': ws_name,
+            'visual_type': pbi['type'] if pbi else None,
+            'status': status,
+            'matched': sorted(matched),
+            'missing': sorted(missing),
+            'extra': sorted(extra),
+            'tab_count': len(ws_field_names),
+            'pbi_count': len(pbi_field_names),
+        })
+
+    return results
+
+
 def _compare_datasources(extracted):
     """Summarize datasource comparison."""
     ds = extracted.get('datasources', [])
@@ -226,6 +335,7 @@ def generate_comparison_report(extract_dir, pbip_dir, output_path=None):
     ws_compare = _compare_worksheets(extracted, pbip_data)
     calc_compare = _compare_calculations(extracted, pbip_data)
     ds_compare = _compare_datasources(extracted)
+    field_compare = _compare_field_bindings(extracted, pbip_dir)
     migration_report = pbip_data.get('migration_report', {})
 
     # Counts
@@ -233,6 +343,8 @@ def generate_comparison_report(extract_dir, pbip_dir, output_path=None):
     ws_matched = sum(1 for w in ws_compare if w['status'] == 'pass')
     calc_total = len(calc_compare)
     ds_total = len(ds_compare)
+    field_ok = sum(1 for f in field_compare if f['status'] in ('OK', 'EMPTY', 'EXTRA'))
+    field_issues = len(field_compare) - field_ok
 
     if output_path is None:
         output_path = os.path.join(os.path.dirname(pbip_dir), 'comparison_report.html')
@@ -255,10 +367,12 @@ def generate_comparison_report(extract_dir, pbip_dir, output_path=None):
 
     # Summary cards
     fidelity = migration_report.get('overall_fidelity', 'N/A')
+    field_cls = 'pass' if field_issues == 0 else 'warn'
     parts.append(f"""
 <div class="summary">
   <div class="card"><h3>Worksheets</h3><div class="val">{ws_total}</div></div>
   <div class="card"><h3>Matched Visuals</h3><div class="val">{ws_matched}/{ws_total}</div></div>
+  <div class="card"><h3>Field Bindings</h3><div class="val {field_cls}">{field_ok}/{len(field_compare)}</div></div>
   <div class="card"><h3>Calculations</h3><div class="val">{calc_total}</div></div>
   <div class="card"><h3>Datasources</h3><div class="val">{ds_total}</div></div>
   <div class="card"><h3>Fidelity</h3><div class="val">{_esc(str(fidelity))}</div></div>
@@ -289,6 +403,33 @@ def generate_comparison_report(extract_dir, pbip_dir, output_path=None):
     </div>
   </div>
 </div>""")
+
+    # ── Field Binding Verification ──
+    if field_compare:
+        parts.append('<h2>Field Binding Verification</h2>')
+        parts.append('<table><tr>'
+                     '<th>Worksheet</th><th>Visual Type</th><th>Status</th>'
+                     '<th>Tableau</th><th>PBI</th><th>Matched</th>'
+                     '<th>Missing in PBI</th><th>Extra in PBI</th></tr>')
+        _STATUS_BADGE = {
+            'OK': ('pass', 'OK'), 'EMPTY': ('', 'Empty'),
+            'EXTRA': ('pass', 'Extra'), 'MISSING': ('fail', 'Missing'),
+            'PARTIAL': ('warn', 'Partial'), 'NO_VISUAL': ('fail', 'No Visual'),
+        }
+        for fc in field_compare:
+            cls, label = _STATUS_BADGE.get(fc['status'], ('', fc['status']))
+            missing_str = ', '.join(fc['missing']) if fc['missing'] else '—'
+            extra_str = ', '.join(fc['extra']) if fc['extra'] else '—'
+            parts.append(
+                f"<tr><td>{_esc(fc['worksheet'])}</td>"
+                f"<td>{_esc(fc['visual_type'] or 'N/A')}</td>"
+                f"<td class=\"{cls}\">{_esc(label)}</td>"
+                f"<td>{fc['tab_count']}</td><td>{fc['pbi_count']}</td>"
+                f"<td>{len(fc['matched'])}</td>"
+                f"<td>{_esc(missing_str)}</td>"
+                f"<td>{_esc(extra_str)}</td></tr>"
+            )
+        parts.append('</table>')
 
     # ── Calculation comparison ──
     if calc_compare:

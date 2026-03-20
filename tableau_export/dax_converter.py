@@ -399,6 +399,9 @@ def convert_tableau_formula_to_dax(formula, column_name='Measure', table_name='T
     if calc_datatype and calc_datatype.lower() in ('string', 'str'):
         dax = _convert_string_concat(dax)
 
+    # === Phase 5e: Tableau single-quoted string literals → DAX double-quoted ===
+    dax = _convert_single_quoted_strings(dax)
+
     # === Phase 6: Final cleanup ===
     dax = _normalize_spaces_outside_identifiers(dax).strip()
     dax = _RE_NEWLINES.sub(' ', dax)
@@ -1422,6 +1425,83 @@ def _fix_date_literals(dax):
         y, mo, d = int(m.group(1)), int(m.group(2)), int(m.group(3))
         return f'DATE({y}, {mo}, {d})'
     return _RE_DATE_LITERAL.sub(_date_repl, dax)
+
+
+def _convert_single_quoted_strings(dax):
+    """Convert Tableau single-quoted string literals to DAX double-quoted.
+
+    Tableau uses ``'text'`` for string literals.  In DAX, single quotes
+    delimit table names (``'Table Name'[Col]`` or ``ALL('Table')``).
+
+    We identify Tableau string literals by context: a single-quoted token
+    that is NOT followed by ``[`` (column ref) and whose content is NOT
+    a known table name appearing elsewhere in the expression.
+    """
+    # Collect all table names from 'name'[ patterns (handles '' escape)
+    table_names = set()
+    i = 0
+    while i < len(dax):
+        if dax[i] == "'":
+            j = i + 1
+            while j < len(dax):
+                if dax[j] == "'" and j + 1 < len(dax) and dax[j + 1] == "'":
+                    j += 2
+                    continue
+                if dax[j] == "'":
+                    break
+                j += 1
+            if j < len(dax) and j + 1 < len(dax) and dax[j + 1] == '[':
+                table_names.add(dax[i + 1:j])
+            i = j + 1
+        else:
+            i += 1
+
+    # Also add table names that appear in ALL/ALLEXCEPT/VALUES/RELATED
+    for m in re.finditer(r"(?:ALL|ALLEXCEPT|VALUES|RELATED|RELATEDTABLE)\s*\(\s*'((?:[^']|'')+)'", dax, re.IGNORECASE):
+        table_names.add(m.group(1))
+
+    # If no table names found, any 'token' with spaces or mixed case is likely a table name
+    # Only convert simple short tokens that look like Tableau string literals
+    result = []
+    i = 0
+    while i < len(dax):
+        ch = dax[i]
+        # Skip double-quoted strings
+        if ch == '"':
+            j = i + 1
+            while j < len(dax) and dax[j] != '"':
+                j += 1
+            result.append(dax[i:j + 1])
+            i = j + 1
+            continue
+        # Handle single-quoted tokens (with '' escape support)
+        if ch == "'":
+            j = i + 1
+            while j < len(dax):
+                if dax[j] == "'" and j + 1 < len(dax) and dax[j + 1] == "'":
+                    j += 2
+                    continue
+                if dax[j] == "'":
+                    break
+                j += 1
+            if j < len(dax):
+                content = dax[i + 1:j]
+                after = dax[j + 1:j + 2]
+                if after == '[' or content in table_names:
+                    # Table reference — keep single quotes
+                    result.append(dax[i:j + 1])
+                elif any(content in tn or tn.startswith(content) for tn in table_names):
+                    # Partial match — likely a broken table ref with unescaped apostrophe
+                    result.append(dax[i:j + 1])
+                else:
+                    # String literal — convert to double quotes
+                    str_content = content.replace("''", "'").replace('"', '""')
+                    result.append('"' + str_content + '"')
+                i = j + 1
+                continue
+        result.append(ch)
+        i += 1
+    return ''.join(result)
 
 
 def _convert_string_concat(dax):

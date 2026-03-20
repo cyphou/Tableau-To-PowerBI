@@ -1,16 +1,16 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
-  "name": "16410ddb9a2a4cf5b51b",
+  "name": "dab6c778d4e64f8ca812",
   "position": {
-    "x": 919,
-    "y": 6,
-    "z": 2000,
-    "height": 277,
-    "width": 352,
-    "tabOrder": 2000
+    "x": 144,
+    "y": 5,
+    "z": 3000,
+    "height": 276,
+    "width": 769,
+    "tabOrder": 3000
   },
   "visual": {
-    "visualType": "pieChart",
+    "visualType": "clusteredBarChart",
     "drillFilterOtherVisuals": true,
     "query": {
       "queryState": {
@@ -32,7 +32,25 @@
             }
           ]
         },
-        "Tooltips": {
+        "Series": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Orders"
+                    }
+                  },
+                  "Property": "Customer Segment"
+                }
+              },
+              "queryRef": "Orders.Customer Segment",
+              "active": true
+            }
+          ]
+        },
+        "Y": {
           "projections": [
             {
               "field": {
@@ -52,20 +70,6 @@
               },
               "queryRef": "Orders.Sales",
               "active": true
-            },
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Orders"
-                    }
-                  },
-                  "Property": "pcto:sum:Sales"
-                }
-              },
-              "queryRef": "Orders.pcto:sum:Sales",
-              "active": true
             }
           ]
         }
@@ -78,7 +82,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Pie chart'"
+                  "Value": "'Bar Chart'"
                 }
               }
             }
@@ -92,6 +96,17 @@
               "expr": {
                 "Literal": {
                   "Value": "true"
+                }
+              }
+            },
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#000000'"
+                    }
+                  }
                 }
               }
             }
