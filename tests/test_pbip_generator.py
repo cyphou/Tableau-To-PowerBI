@@ -160,14 +160,15 @@ class TestBuildVisualObjects(unittest.TestCase):
     def setUp(self):
         self.gen = _make_generator()
 
-    def test_title_not_in_objects(self):
+    def test_title_present(self):
         result = self.gen._build_visual_objects("My Chart", None, "clusteredBarChart")
-        # Title is now in vcObjects, not in visual.objects
-        self.assertNotIn("title", result)
+        self.assertIn("title", result)
+        title_value = result["title"][0]["properties"]["text"]["expr"]["Literal"]["Value"]
+        self.assertIn("My Chart", title_value)
 
-    def test_no_ws_data_empty_objects(self):
+    def test_no_ws_data_only_title(self):
         result = self.gen._build_visual_objects("Chart", None, "lineChart")
-        self.assertNotIn("title", result)
+        self.assertIn("title", result)
         # Without ws_data, no extra objects
         self.assertNotIn("labels", result)
         self.assertNotIn("legend", result)
