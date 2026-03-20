@@ -2805,6 +2805,38 @@ def _extract_twbx_data_files(args, source_basename):
 
     print(f"  📁 Extracted {len(extracted_files)} data file(s) from TWBX into {data_dir}")
 
+    # Resolve embedded image references in visual.json files to base64 data URIs
+    import base64 as _b64
+    import glob as _glob
+    _MIME_MAP = {'.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+                 '.gif': 'image/gif', '.svg': 'image/svg+xml', '.bmp': 'image/bmp'}
+    report_dir = os.path.join(project_dir, f'{source_basename}.Report', 'definition')
+    for vj_path in _glob.glob(os.path.join(report_dir, 'pages', '*', 'visuals', '*', 'visual.json')):
+        try:
+            with open(vj_path, 'r', encoding='utf-8') as f:
+                vj = json.load(f)
+            gen_props = (vj.get('visual', {}).get('objects', {}).get('general', [{}])[0]
+                         .get('properties', {}))
+            url_obj = gen_props.get('imageUrl', {})
+            url_val = url_obj.get('expr', {}).get('Literal', {}).get('Value', '')
+            # Strip surrounding quotes
+            img_ref = url_val.strip("'\"")
+            if not img_ref or img_ref.startswith(('http://', 'https://', 'data:')):
+                continue
+            # Try to find the image in extracted Data directory
+            img_file = os.path.join(data_dir, img_ref)
+            if os.path.isfile(img_file):
+                ext = os.path.splitext(img_ref)[1].lower()
+                mime = _MIME_MAP.get(ext, 'application/octet-stream')
+                with open(img_file, 'rb') as f:
+                    b64 = _b64.b64encode(f.read()).decode('ascii')
+                data_uri = f'data:{mime};base64,{b64}'
+                gen_props['imageUrl'] = {"expr": {"Literal": {"Value": f"'{data_uri}'"}}}
+                with open(vj_path, 'w', encoding='utf-8') as f:
+                    json.dump(vj, f, indent=2, ensure_ascii=False)
+        except (OSError, KeyError, IndexError, json.JSONDecodeError):
+            continue
+
 
 def _run_post_generation_reports(args, source_basename, results):
     """Run comparison report and telemetry dashboard if requested."""

@@ -1,18 +1,18 @@
 table 'Profit Bin Size'
-	lineageTag: bafd3fbc-c944-4cb1-b28d-771bc802ba84
+	lineageTag: c82adb0b-5702-4e1e-aba0-d558aa13665a
 
 	measure 'Profit Bin Size' = SELECTEDVALUE('Profit Bin Size'[Value], 200)
-		lineageTag: 5bccc6d4-82c2-4301-96bb-403c498c540f
+		lineageTag: df261149-35b3-4839-ace3-b212aeb96219
 
 	column Value
 		dataType: int64
-		lineageTag: ae45c6a8-907a-46f7-ba5d-92376627a31d
+		lineageTag: cba15f6f-6934-42e1-aa2a-954a0f0a8e69
 		summarizeBy: none
 		sourceColumn: Value
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Profit Bin Size-8aadb987-ea38-459e-9217-3c0b1650c99f' = calculated
+	partition 'Profit Bin Size-1f90d341-a57f-43d2-a244-e8ec78735ed1' = calculated
 		mode: import
 		source = GENERATESERIES(50, 200, 50)
 

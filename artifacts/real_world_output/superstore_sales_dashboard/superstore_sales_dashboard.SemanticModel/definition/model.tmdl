@@ -12,9 +12,9 @@ ref table Orders
 ref table Extract
 ref table Calendar
 
-ref relationship 74c1ec75-b277-4a9c-af55-7a7a178fc8c9
-ref relationship cf6f1e41-87d7-4848-a9f1-909718637983
-ref relationship 0870a7bf-db54-428e-9bbe-c0859426fece
+ref relationship c17dc8a2-3e1e-41de-b308-45c82fab2faf
+ref relationship 0253993a-2a7d-4725-8f46-a8c21b7e4062
+ref relationship 253cd4aa-cb4a-413f-8c2c-42151960bb26
 
 ref expression DataFolder
 

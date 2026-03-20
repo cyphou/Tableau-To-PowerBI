@@ -1079,7 +1079,19 @@ class TableauExtractor:
             zone_name = zone.get('name', '')
             zone_type = zone.get('type', '')
             zone_id = zone.get('id', '')
-            is_fixed = zone.get('is-fixed') == 'true' or zone.get('type-v2') == 'fix'
+            # Tableau FCP-prefixed attributes: _.fcp.XXX...type / _.fcp.XXX...type-v2
+            if not zone_type:
+                for attr_name, attr_val in zone.attrib.items():
+                    if attr_name.endswith('...type') and not attr_name.endswith('...type-v2'):
+                        zone_type = attr_val
+                        break
+            zone_type_v2 = zone.get('type-v2', '')
+            if not zone_type_v2:
+                for attr_name, attr_val in zone.attrib.items():
+                    if attr_name.endswith('...type-v2'):
+                        zone_type_v2 = attr_val
+                        break
+            is_fixed = zone.get('is-fixed') == 'true' or zone_type_v2 == 'fix'
             is_floating = zone.get('is-floating') == 'true'
             
             pos = {
@@ -1092,7 +1104,7 @@ class TableauExtractor:
             layout_mode = 'floating' if is_floating else ('fixed' if is_fixed else 'tiled')
             
             # Texte
-            if zone_type == 'text' or zone.get('type-v2') == 'text':
+            if zone_type == 'text' or zone_type_v2 == 'text':
                 text_content = ''
                 text_runs = []
                 formatted = zone.find('.//formatted-text')
@@ -1128,11 +1140,14 @@ class TableauExtractor:
                 continue
             
             # Image
-            if zone_type == 'bitmap' or zone.get('type-v2') == 'bitmap':
+            if zone_type == 'bitmap' or zone_type_v2 == 'bitmap':
                 img_src = ''
                 img_elem = zone.find('.//zone-style/format[@attr="image"]')
                 if img_elem is not None:
                     img_src = img_elem.get('value', '')
+                # Fallback: use 'param' attribute (embedded TWBX images)
+                if not img_src:
+                    img_src = zone.get('param', '')
                 objects.append({
                     'type': 'image',
                     'name': zone_name or f'image_{zone_id}',
@@ -1143,7 +1158,7 @@ class TableauExtractor:
                 continue
             
             # Page web
-            if zone_type == 'web' or zone.get('type-v2') == 'web':
+            if zone_type == 'web' or zone_type_v2 == 'web':
                 url = zone.get('url', '') or zone.findtext('.//url', '')
                 objects.append({
                     'type': 'web',
@@ -1155,7 +1170,7 @@ class TableauExtractor:
                 continue
             
             # Blank / spacer
-            if zone_type == 'empty' or zone.get('type-v2') == 'empty':
+            if zone_type == 'empty' or zone_type_v2 == 'empty':
                 objects.append({
                     'type': 'blank',
                     'name': f'blank_{zone_id}',
@@ -1165,7 +1180,7 @@ class TableauExtractor:
                 continue
             
             # Navigation button
-            if zone_type == 'nav' or zone.get('type-v2') == 'nav' or zone.get('type-v2') == 'button':
+            if zone_type == 'nav' or zone_type_v2 == 'nav' or zone_type_v2 == 'button':
                 target = zone.get('target-sheet', zone.get('param', ''))
                 objects.append({
                     'type': 'navigation_button',
@@ -1177,7 +1192,7 @@ class TableauExtractor:
                 continue
             
             # Download button (export)
-            if zone_type == 'export' or zone.get('type-v2') == 'export':
+            if zone_type == 'export' or zone_type_v2 == 'export':
                 objects.append({
                     'type': 'download_button',
                     'name': zone_name or f'download_{zone_id}',
@@ -1187,7 +1202,7 @@ class TableauExtractor:
                 continue
             
             # Extension object
-            if zone_type == 'extension' or zone.get('type-v2') == 'extension':
+            if zone_type == 'extension' or zone_type_v2 == 'extension':
                 ext_id = zone.get('extension-id', '')
                 objects.append({
                     'type': 'extension',
@@ -1224,7 +1239,7 @@ class TableauExtractor:
                         pass
             
             # Filtre (quick filter / parameter control)
-            if zone_type == 'filter' or zone.get('type-v2') == 'filter':
+            if zone_type == 'filter' or zone_type_v2 == 'filter':
                 param_ref = zone.get('param', '')
                 # Deduplicate by param (nested zones create duplicates)
                 dedup_key = f"fc_{param_ref}" if param_ref else f"fc_{zone_name}_{zone_id}"

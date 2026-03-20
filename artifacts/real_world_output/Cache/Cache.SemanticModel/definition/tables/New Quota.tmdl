@@ -1,18 +1,18 @@
 table 'New Quota'
-	lineageTag: cf1b874c-89f1-4934-8d2d-e9185ff8e312
+	lineageTag: 509ebf4a-5c9e-4ce8-8c62-3fcca41f2e21
 
 	measure 'New Quota' = SELECTEDVALUE('New Quota'[Value], 500000)
-		lineageTag: 80ce7bbc-dd59-496b-8809-5c1584cd18f4
+		lineageTag: ad79a553-014f-4c1a-bde1-228025324758
 
 	column Value
 		dataType: int64
-		lineageTag: 5f945af7-bf3a-437b-b388-1564f016a1a9
+		lineageTag: ceec592d-5c62-4f0a-ada2-189a0bc100f5
 		summarizeBy: none
 		sourceColumn: Value
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'New Quota-89e037bc-ee3b-41d8-bf96-480f0b519ef1' = calculated
+	partition 'New Quota-33a63d40-323e-4487-9202-1489aeda6245' = calculated
 		mode: import
 		source = GENERATESERIES(100000, , 25000)
 

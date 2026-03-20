@@ -1,0 +1,30 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
+  "name": "6b2db79bbad749d3802f",
+  "position": {
+    "x": 6,
+    "y": 7,
+    "z": 8000,
+    "height": 60,
+    "width": 1274,
+    "tabOrder": 8000
+  },
+  "visual": {
+    "visualType": "textbox",
+    "objects": {
+      "general": [
+        {
+          "properties": {
+            "paragraphs": {
+              "expr": {
+                "Literal": {
+                  "Value": "[{\"textRuns\": [{\"value\": \"Customers Feedback analysis Dashboard\", \"textStyle\": {\"fontWeight\": \"bold\", \"color\": \"#4e79a7\", \"fontSize\": \"20.0pt\"}}]}]"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

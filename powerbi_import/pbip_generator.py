@@ -661,6 +661,17 @@ class PowerBIProjectGenerator:
         visual_dir = os.path.join(visuals_dir, visual_id)
 
         pos = obj.get('position', {})
+        img_source = obj.get('source', '')
+
+        # For embedded TWBX images, convert to base64 data URI
+        if img_source and not img_source.startswith(('http://', 'https://', 'data:')):
+            # Track for later resolution by _extract_twbx_data_files
+            if not hasattr(self, '_embedded_image_paths'):
+                self._embedded_image_paths = {}
+            self._embedded_image_paths[visual_id] = {
+                'relative_path': img_source,
+                'visual_dir': visual_dir,
+            }
 
         visual_json = {
             "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
@@ -671,7 +682,7 @@ class PowerBIProjectGenerator:
                 "objects": {
                     "general": [{
                         "properties": {
-                            "imageUrl": _L(f"'{obj.get('source', '')}'")
+                            "imageUrl": _L(f"'{img_source}'")
                         }
                     }]
                 }
@@ -2568,6 +2579,7 @@ class PowerBIProjectGenerator:
         # Title
         objects["title"] = [{
             "properties": {
+                "show": _L("true"),
                 "text": _L(f"'{ws_name}'")
             }
         }]

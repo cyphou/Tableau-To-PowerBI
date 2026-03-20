@@ -1,9 +1,9 @@
 table Extract
-	lineageTag: 3c8bfe55-0bda-41d4-9f71-fc8b3589077e
+	lineageTag: 298c244e-0ab8-472e-8404-0750391277f0
 
 	column 'Document Index (generated)'
 		dataType: int64
-		lineageTag: 25c70361-9d19-4915-be81-baf722835821
+		lineageTag: 1a04d175-5a4e-47dc-83b0-f09720703d8c
 		summarizeBy: sum
 		sourceColumn: 'Document Index (generated)'
 
@@ -11,7 +11,7 @@ table Extract
 
 	column category
 		dataType: string
-		lineageTag: 8184ad69-cf06-4be9-8614-f79cf52d05ce
+		lineageTag: 913dc0ff-0f21-4a54-9d9f-53a27af942f1
 		summarizeBy: none
 		sourceColumn: category
 
@@ -19,7 +19,7 @@ table Extract
 
 	column customer_id
 		dataType: string
-		lineageTag: cf95ff94-71af-49c6-b25b-944c2576d60f
+		lineageTag: 3de00dd8-188c-458f-a4b4-3239d9d343c2
 		summarizeBy: none
 		sourceColumn: customer_id
 
@@ -27,7 +27,7 @@ table Extract
 
 	column date
 		dataType: string
-		lineageTag: 66083e5e-9acb-4ea1-af17-82879e055bb2
+		lineageTag: 314562b5-7714-45fe-9939-365ed63e3200
 		summarizeBy: none
 		sourceColumn: date
 
@@ -35,7 +35,7 @@ table Extract
 
 	column email
 		dataType: string
-		lineageTag: 9bbd40c2-21d8-47f9-8df3-bcc7c6422130
+		lineageTag: d6a1e564-bb82-42e3-b4f0-cafdd1386a28
 		summarizeBy: none
 		sourceColumn: email
 
@@ -44,7 +44,7 @@ table Extract
 	column feedback_score
 		dataType: double
 		formatString: #,0.00
-		lineageTag: a4f528bc-b0bb-4c40-a6d9-59d046f46dd5
+		lineageTag: 9642735b-483e-4154-ab15-c439c05a9cd8
 		summarizeBy: sum
 		sourceColumn: feedback_score
 
@@ -52,7 +52,7 @@ table Extract
 
 	column feedback_text
 		dataType: string
-		lineageTag: 8e83abeb-a324-492c-a04a-c38f8c016391
+		lineageTag: d7d8ca73-6d6c-45c1-b085-e349b74017ae
 		summarizeBy: none
 		sourceColumn: feedback_text
 
@@ -60,7 +60,7 @@ table Extract
 
 	column name
 		dataType: string
-		lineageTag: 36c49296-3086-4b74-a99f-6ac8f0cda30b
+		lineageTag: 7ad489a0-5787-49f6-9827-b84c016aa5ab
 		summarizeBy: none
 		sourceColumn: name
 
@@ -68,13 +68,13 @@ table Extract
 
 	column sentiment
 		dataType: string
-		lineageTag: 08fa9bc7-17cf-4b1b-aac1-21f2de44ede7
+		lineageTag: 58088a0a-6aed-4f28-83f9-1ae3b458c765
 		summarizeBy: none
 		sourceColumn: sentiment
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Extract-1b025783-4fb9-4b3c-8147-e4d631590346' = m
+	partition 'Extract-535b4dc1-031e-494f-a94c-c0bc5fc89d62' = m
 		mode: import
 		source =
 				let

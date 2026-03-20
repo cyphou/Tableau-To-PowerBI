@@ -1,9 +1,9 @@
 table Extract
-	lineageTag: cc2ae3ee-1ea2-4f51-a660-fe925a257aa7
+	lineageTag: 2ad6c3f7-3870-4293-b3ce-11ea125c9008
 
 	column 'Row ID'
 		dataType: int64
-		lineageTag: c476a7f8-3fcb-4e40-acd8-7730ed6b2257
+		lineageTag: 30f0c614-fb56-4ec1-a709-a54fe8f8fa8d
 		summarizeBy: sum
 		sourceColumn: 'Row ID'
 
@@ -11,7 +11,7 @@ table Extract
 
 	column 'Order ID'
 		dataType: int64
-		lineageTag: 9f36d8f6-d00d-494a-af12-b8564465c700
+		lineageTag: c7cb1a66-81a9-4ffb-910d-b4c735a02c3c
 		summarizeBy: sum
 		sourceColumn: 'Order ID'
 
@@ -20,7 +20,7 @@ table Extract
 	column 'Order Date'
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: bee7025e-da35-4174-94dc-a9c7b18dc618
+		lineageTag: 7966a3ae-c534-4d32-a775-cd7c0bbd7e02
 		summarizeBy: none
 		sourceColumn: 'Order Date'
 		dataCategory: DateTime
@@ -29,7 +29,7 @@ table Extract
 
 	column 'Order Priority'
 		dataType: string
-		lineageTag: e99805af-8099-472f-829e-167794b1c761
+		lineageTag: 95fc6668-f652-42c1-ba29-f685a1cb5abe
 		summarizeBy: none
 		sourceColumn: 'Order Priority'
 
@@ -37,7 +37,7 @@ table Extract
 
 	column 'Order Quantity'
 		dataType: int64
-		lineageTag: ba3c446b-cbff-40c6-8e1a-f31ffdf4ca01
+		lineageTag: d6a5cefd-5f25-40ec-81bd-a0afd014b0bd
 		summarizeBy: sum
 		sourceColumn: 'Order Quantity'
 
@@ -46,7 +46,7 @@ table Extract
 	column Sales
 		dataType: double
 		formatString: #,0.00
-		lineageTag: cb7f4a5f-98be-42e5-a9cc-072275662f84
+		lineageTag: fa47e77e-563a-4bf1-8736-56f05d647326
 		summarizeBy: sum
 		sourceColumn: Sales
 
@@ -55,7 +55,7 @@ table Extract
 	column Discount
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 8ccc856c-5235-4a21-8c0e-70aac28d5a0e
+		lineageTag: 83e6add0-6777-4147-a79e-853a56d03cc8
 		summarizeBy: sum
 		sourceColumn: Discount
 
@@ -63,7 +63,7 @@ table Extract
 
 	column 'Ship Mode'
 		dataType: string
-		lineageTag: ed89f1a1-cdee-4845-a3fd-bd5096c10229
+		lineageTag: 75013adb-cb76-4872-b6b5-e40bb78d7508
 		summarizeBy: none
 		sourceColumn: 'Ship Mode'
 
@@ -72,7 +72,7 @@ table Extract
 	column Profit
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 1bc8eb8b-cdfb-4b4d-8eab-743af4cca306
+		lineageTag: b4e721d4-b5f9-4523-820e-963b6a5f133b
 		summarizeBy: sum
 		sourceColumn: Profit
 
@@ -81,7 +81,7 @@ table Extract
 	column 'Unit Price'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 93124bba-35b9-4a66-b2ae-10de1d8c5bc8
+		lineageTag: 0dc58d36-a432-44a8-b681-6470c66594e8
 		summarizeBy: sum
 		sourceColumn: 'Unit Price'
 
@@ -90,7 +90,7 @@ table Extract
 	column 'Shipping Cost'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 387cdda7-ab38-4ce8-a2df-541a30e09d71
+		lineageTag: 3649572d-95f9-4e02-8458-9befedcd1951
 		summarizeBy: sum
 		sourceColumn: 'Shipping Cost'
 
@@ -98,7 +98,7 @@ table Extract
 
 	column 'Customer Name'
 		dataType: string
-		lineageTag: 7acbe6c4-d9b8-458a-b983-9f25f31c5236
+		lineageTag: dc08ded3-c9e4-4cbe-80b9-48ebba64a0a1
 		summarizeBy: none
 		sourceColumn: 'Customer Name'
 
@@ -106,7 +106,7 @@ table Extract
 
 	column City
 		dataType: string
-		lineageTag: c641f71e-ac47-4de6-9daf-41a43611bce8
+		lineageTag: 3fa0bd48-c917-486f-8978-cfd0b06e3f2e
 		summarizeBy: none
 		sourceColumn: City
 		dataCategory: City
@@ -115,7 +115,7 @@ table Extract
 
 	column 'Zip Code'
 		dataType: string
-		lineageTag: f4245c39-7fb0-4cb8-a9d4-17bef893c764
+		lineageTag: 0a55a9d6-6b92-48f3-b68f-19bb52d32e6e
 		summarizeBy: none
 		sourceColumn: 'Zip Code'
 		dataCategory: PostalCode
@@ -124,7 +124,7 @@ table Extract
 
 	column State
 		dataType: string
-		lineageTag: e5307f23-d69a-4974-bd71-40f347e41b85
+		lineageTag: f7e9f203-b737-4bfc-a232-c24251c40ac0
 		summarizeBy: none
 		sourceColumn: State
 		dataCategory: StateOrProvince
@@ -133,7 +133,7 @@ table Extract
 
 	column Region
 		dataType: string
-		lineageTag: a4cddcee-c08c-43a3-a7e8-95b9bc301f8e
+		lineageTag: b5f30beb-cf22-44fe-8859-a3769b5795a8
 		summarizeBy: none
 		sourceColumn: Region
 		dataCategory: StateOrProvince
@@ -142,7 +142,7 @@ table Extract
 
 	column 'Customer Segment'
 		dataType: string
-		lineageTag: 7dc15723-fb87-4787-ae36-d6a5678c02b0
+		lineageTag: 3745eb6c-e739-4d6d-83cf-d6098a3c0c27
 		summarizeBy: none
 		sourceColumn: 'Customer Segment'
 
@@ -150,7 +150,7 @@ table Extract
 
 	column 'Product Category'
 		dataType: string
-		lineageTag: ec25a2dd-1258-4894-89f9-aefb7d91f19f
+		lineageTag: 4cedb6cd-35c8-4b97-bf50-d984ec08b84e
 		summarizeBy: none
 		sourceColumn: 'Product Category'
 
@@ -158,7 +158,7 @@ table Extract
 
 	column 'Product Sub-Category'
 		dataType: string
-		lineageTag: c2a67f70-9b38-443c-b7c9-ad7ea7bf4681
+		lineageTag: 70e46fbf-150d-4eac-8b3b-900cbcc13575
 		summarizeBy: none
 		sourceColumn: 'Product Sub-Category'
 
@@ -166,7 +166,7 @@ table Extract
 
 	column 'Product Name'
 		dataType: string
-		lineageTag: 11f562ac-8524-4647-a8f4-7d64f1cd8faf
+		lineageTag: 3d61482c-9fde-4cb8-a2ae-30f0dadd886e
 		summarizeBy: none
 		sourceColumn: 'Product Name'
 
@@ -174,7 +174,7 @@ table Extract
 
 	column 'Product Container'
 		dataType: string
-		lineageTag: f1647a8f-147b-43f0-b290-a79a95709fda
+		lineageTag: c61b92c3-a09f-4370-a4b6-7568433464f6
 		summarizeBy: none
 		sourceColumn: 'Product Container'
 
@@ -183,7 +183,7 @@ table Extract
 	column 'Product Base Margin'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: e2eeee80-72c5-4ae3-aca6-9a55f1726d8c
+		lineageTag: 7985e5a9-0dd1-472c-98e4-6de392944539
 		summarizeBy: sum
 		sourceColumn: 'Product Base Margin'
 
@@ -192,14 +192,14 @@ table Extract
 	column 'Ship Date'
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: d64f02fb-e6d7-42f0-a85d-9fa4a9e2731b
+		lineageTag: c1ea959e-9ac2-4b27-936c-b9d2ef2818e3
 		summarizeBy: none
 		sourceColumn: 'Ship Date'
 		dataCategory: DateTime
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Extract-0a5a0cd2-1460-4284-bedf-6421ac8871e3' = m
+	partition 'Extract-cad74546-80d4-4bf4-ada8-7e0bcfbd546a' = m
 		mode: import
 		source =
 				let
