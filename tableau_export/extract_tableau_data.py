@@ -1129,6 +1129,11 @@ class TableauExtractor:
                                 run_data['url'] = url
                             text_runs.append(run_data)
                     text_content = ''.join(parts)
+                # Deduplicate text zones (desktop+device layouts)
+                dedup_txt = f"txt_{zone_id}_{text_content}"
+                if dedup_txt in seen_names:
+                    continue
+                seen_names.add(dedup_txt)
                 objects.append({
                     'type': 'text',
                     'name': zone_name or f'text_{zone_id}',
@@ -1148,6 +1153,11 @@ class TableauExtractor:
                 # Fallback: use 'param' attribute (embedded TWBX images)
                 if not img_src:
                     img_src = zone.get('param', '')
+                # Deduplicate image zones (desktop+device layouts)
+                dedup_img = f"img_{zone_id}_{img_src}"
+                if dedup_img in seen_names:
+                    continue
+                seen_names.add(dedup_img)
                 objects.append({
                     'type': 'image',
                     'name': zone_name or f'image_{zone_id}',

@@ -508,7 +508,17 @@ class PowerBIProjectGenerator:
                         query["queryState"] = query.get("queryState", {})
                         query["sortDefinition"] = {"sort": [sort_entry]}
 
-        # Visual objects: title + encodings
+        # Visual container title (vcObjects — displayed above the chart)
+        visual_json["vcObjects"] = {
+            "title": [{
+                "properties": {
+                    "show": _L("true"),
+                    "text": _L(f"'{ws_name}'")
+                }
+            }]
+        }
+
+        # Visual objects: encodings (labels, legend, axes, colors)
         visual_objects = self._build_visual_objects(ws_name, ws_data, visual_type)
         visual_json["visual"]["objects"] = visual_objects
 
@@ -2575,14 +2585,6 @@ class PowerBIProjectGenerator:
         Orchestrator that delegates to focused sub-methods.
         """
         objects = {}
-
-        # Title
-        objects["title"] = [{
-            "properties": {
-                "show": _L("true"),
-                "text": _L(f"'{ws_name}'")
-            }
-        }]
 
         if not ws_data:
             return objects
