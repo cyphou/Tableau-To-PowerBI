@@ -1,5 +1,36 @@
 # Changelog
 
+## v21.0.0 — Interactive Migration, Observability & Test Depth
+
+### Sprint 72 — Notebook-Based Interactive Migration ✅
+- **MigrationSession API** (`notebook_api.py`): New interactive migration API — `load()`, `assess()`, `preview_dax()`, `list_approximated()`, `edit_dax()`, `clear_dax_override()`, `preview_m()`, `preview_visuals()`, `override_visual_type()`, `configure()`, `generate()`, `validate()`, `deploy()`
+- **DAX override persistence**: Edit/clear overrides reflected in previews, applied at generation time
+- **Visual type override**: Override any worksheet's PBI visual mapping before generation
+- **Jupyter notebook generation**: `generate_notebook()` creates 8-step .ipynb (load→assess→DAX preview→M preview→visual preview→generate→validate→deploy)
+- **35 new tests** in `test_notebook_api.py`
+
+### Sprint 73 — Scheduled Refresh & Subscription Migration ✅
+- **Refresh generator** (`refresh_generator.py`): Converts Tableau Server extract-refresh schedules to PBI refresh config JSON — frequency mapping (Hourly→Daily with Pro/Premium warnings), time deduplication, max 8 time slots for Pro, weekly day mapping
+- **Subscription config**: Tableau email subscriptions → PBI subscription JSON with recipient, frequency, licensing notes
+- **Server client extensions** (`server_client.py`): `get_workbook_extract_tasks(workbook_id)` and `get_workbook_subscriptions(workbook_id)` — per-workbook schedule/subscription extraction via REST API
+- **PBI deployer extension** (`pbi_deployer.py`): `deploy_refresh_schedule(dataset_id, refresh_config)` — configures scheduled refresh via PBI REST API PATCH
+- **`--migrate-schedules` CLI flag**: Extract Tableau refresh schedules and generate `refresh_config.json` in the output project directory
+- **38 new tests** in `test_refresh_generator.py`
+
+### Sprint 74 — Migration Observability Dashboard ✅
+- **Telemetry v2** (`telemetry.py`): `TELEMETRY_VERSION=2`, new `record_event(event_type, **data)` method for per-workbook, per-visual, and per-measure granular event logging; backward-compatible with v1 stats/errors
+- **Interactive observability dashboard** (`telemetry_dashboard.py`): Complete rewrite — 4-tab layout (Overview, Portfolio, Bottlenecks, Telemetry), JavaScript interactivity (column sort, text search, date filter), JSONL telemetry integration, portfolio progress tracker with completion bar, bottleneck analyzer
+- **JSONL telemetry loading**: `_load_telemetry_events()` reads `~/.ttpbi_telemetry.json` for session-level drill-down
+- **Bottleneck analysis**: `_analyze_bottlenecks()` identifies partial/failed items and error categories sorted by impact
+- **Portfolio progress**: `_compute_portfolio_progress()` classifies workbooks as completed (≥80% fidelity), partial, or pending
+- **28 new tests** in `test_observability.py`
+
+### Sprint 75 — Test Depth, Legacy Cleanup & v21.0.0 Release ✅
+- **DAX test expansion**: 86→176 tests covering trig functions, expanded text (ASCII→UNICODE, MID, REPLACE→SUBSTITUTE, SPACE→REPT, CHAR→UNICHAR), expanded date (DATETRUNC quarter/month, DATEPART all units, MAKEDATE), stats (STDEVP, VARP, PERCENTILE, CORR, COVAR), converter functions (ATTR, ENDSWITH, STARTSWITH, PROPER, SPLIT, FIND, ISDATE, DATEPARSE), table calcs (RUNNING_COUNT/MAX/MIN, RANK_DENSE, WINDOW_AVG/MAX/MIN, INDEX, FIRST, LAST, SIZE, TOTAL), spatial, REGEXP, SCRIPT_, security, AGG(IF), output quality
+- **M connector test expansion**: 114→148 tests covering 32 additional connectors (Oracle, Snowflake, Teradata, SAP HANA, Redshift, Databricks, Spark, Azure SQL, Synapse, Google Sheets, SharePoint, JSON, XML, PDF, Salesforce, Web, OData, Azure Blob, Vertica, Impala, Presto/Trino, Fabric Lakehouse, Dataverse, MongoDB, Cosmos DB, Athena, DB2, Hyper, Hive/HDInsight, Google Analytics, SAP BW, GeoJSON)
+- **Version bump**: 19.0.0 → 21.0.0 (pyproject.toml + `__init__.py`)
+- **Overall: 5,024+ tests**, 0 failures
+
 ## v19.0.0 — Lineage, Multi-Tenant Deployment & Performance
 
 ### Sprint 65 — Lineage, Multi-Tenant, Performance & v19.0.0 Release ✅

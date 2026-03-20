@@ -417,7 +417,7 @@ v20.0.0 delivers a Web UI, AI-assisted DAX, CI maturity, and composite model dep
 | 71.5 | **CLI integration** | `migrate.py` | Low | `--screenshots` flag: after migration, capture and compare. `--tableau-url URL` for Tableau source. `--screenshot-pages PAGE1,PAGE2` to limit scope. |
 | 71.6 | **Tests** | `tests/test_screenshot.py` (new) | Medium | 20+ tests: capture mock (no real browser), diff calculation (identical/different/partial), SSIM scoring, HTML report generation, CLI flag parsing |
 
-### Sprint 72 — Notebook-Based Interactive Migration
+### Sprint 72 — Notebook-Based Interactive Migration ✅
 
 **Goal:** Jupyter notebook interface for interactive migration with cell-by-cell control, inline DAX/M editing, and visual preview.
 
@@ -430,7 +430,7 @@ v20.0.0 delivers a Web UI, AI-assisted DAX, CI maturity, and composite model dep
 | 72.5 | **Notebook generator** | `powerbi_import/notebook_api.py` | Medium | `generate_notebook(workbook_path)`: auto-generate a pre-filled Jupyter notebook with extraction results, assessment data, and conversion previews already populated. Save as `.ipynb`. |
 | 72.6 | **Tests** | `tests/test_notebook_api.py` (new) | Medium | 25+ tests: session lifecycle, load/extract/assess/generate pipeline, DAX override persistence, visual type override, notebook generation, DataFrame output format |
 
-### Sprint 73 — Scheduled Refresh & Subscription Migration
+### Sprint 73 — Scheduled Refresh & Subscription Migration ✅
 
 **Goal:** Extract Tableau extract refresh schedules and subscriptions, map them to Power BI refresh configurations and alert subscriptions.
 
@@ -444,7 +444,7 @@ v20.0.0 delivers a Web UI, AI-assisted DAX, CI maturity, and composite model dep
 | 73.6 | **CLI integration** | `migrate.py` | Low | `--migrate-schedules` flag (with `--server`): extract schedules + subscriptions during server-mode migration. Include in migration report. |
 | 73.7 | **Tests** | `tests/test_refresh_generator.py` (new) | Medium | 25+ tests: schedule extraction mock, frequency mapping (hourly/daily/weekly/monthly), subscription mapping, PBI config structure, API deployment mock, licensing warning detection |
 
-### Sprint 74 — Migration Observability Dashboard
+### Sprint 74 — Migration Observability Dashboard ✅
 
 **Goal:** Build an organization-wide migration tracking dashboard: progress tracking, fidelity trends, bottleneck identification, and migration health scoring.
 
@@ -458,7 +458,7 @@ v20.0.0 delivers a Web UI, AI-assisted DAX, CI maturity, and composite model dep
 | 74.6 | **CLI integration** | `migrate.py` | Low | `--dashboard DIR` flag: generate observability dashboard from telemetry data in DIR. `--dashboard-serve` flag: start local HTTP server to serve interactive dashboard. |
 | 74.7 | **Tests** | `tests/test_observability.py` (new) | Medium | 25+ tests: event store write/read, aggregation correctness, dashboard generation, progress tracking, bottleneck detection, date range filtering, empty data handling |
 
-### Sprint 75 — Test Depth, Legacy Cleanup & v21.0.0 Release
+### Sprint 75 — Test Depth, Legacy Cleanup & v21.0.0 Release ✅
 
 **Goal:** Expand DAX test coverage to match documented conversions, remove legacy `conversion/` folder, update all documentation, and ship v21.0.0.
 

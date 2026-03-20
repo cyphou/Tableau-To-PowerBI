@@ -21,7 +21,7 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
   - `dax_converter.py`: 180+ Tableau → DAX formula conversions (LOD, table calcs, security, etc.)
   - `m_query_builder.py`: Power Query M generator (33 connector types + 43 transformation generators: rename, filter, aggregate, pivot/unpivot, join, union, sort, conditional columns — chainable via `inject_m_steps()`)
   - `prep_flow_parser.py`: Tableau Prep flow parser (.tfl/.tflx → Power Query M) — DAG traversal, Clean/Join/Aggregate/Union/Pivot steps, expression converter, merge with TWB datasources
-  - `server_client.py`: Tableau Server/Cloud REST API client — PAT/password auth, workbook download, datasource listing, batch download, regex search, context manager, paginated API fetching (`_paginated_get`), 9 new endpoints: `list_users`, `list_groups`, `list_views`, `get_workbook_connections`, `list_schedules`, `get_site_info`, `list_prep_flows`, `download_prep_flow`, `get_server_summary`
+  - `server_client.py`: Tableau Server/Cloud REST API client — PAT/password auth, workbook download, datasource listing, batch download, regex search, context manager, paginated API fetching (`_paginated_get`), 9 new endpoints: `list_users`, `list_groups`, `list_views`, `get_workbook_connections`, `list_schedules`, `get_site_info`, `list_prep_flows`, `download_prep_flow`, `get_server_summary`, `get_workbook_extract_tasks`, `get_workbook_subscriptions`
   - `hyper_reader.py`: Hyper file data loader — reads `.hyper` files via SQLite interface (column metadata + row data), schema discovery, type mapping to M/TMDL types
   - `pulse_extractor.py`: Tableau Pulse metric extractor — parses Pulse metric definitions from TWB XML (metric name, measure, time dimension, filters, goals)
 - **powerbi_import/**: Power BI project generation
@@ -47,8 +47,10 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
   - `global_assessment.py`: Global cross-workbook assessment — pairwise merge scoring, BFS clustering, HTML heatmap report
   - `merge_config.py`: Merge configuration — per-table merge rules, conflict resolution settings
   - `merge_report_html.py`: Merge assessment HTML report generator
-  - `telemetry.py`: Migration telemetry collector — timing, counts, version, with opt-in reporting
-  - `telemetry_dashboard.py`: Telemetry dashboard HTML generator — migration trends, timing, success rates
+  - `telemetry.py`: Migration telemetry collector (v2) — timing, counts, version, `record_event()` for granular per-workbook/visual/measure event logging, opt-in reporting
+  - `telemetry_dashboard.py`: Interactive observability dashboard — 4-tab layout (Overview/Portfolio/Bottlenecks/Telemetry), JS interactivity (sort/search/date filter), JSONL telemetry, portfolio progress tracker, bottleneck analyzer
+  - `notebook_api.py`: Interactive Jupyter migration API — `MigrationSession` class with load/assess/preview_dax/preview_m/preview_visuals/edit_dax/override_visual_type/configure/generate/validate/deploy, notebook .ipynb generation
+  - `refresh_generator.py`: Scheduled refresh migration — Tableau Server extract-refresh schedules → PBI refresh config JSON, subscription mapping, frequency/time/day-of-week conversion
   - `progress.py`: Progress tracking — real-time progress bar and ETA for batch migrations
   - `wizard.py`: Interactive migration wizard — guided step-by-step CLI for first-time users
   - `incremental.py`: Incremental migration — track changes, skip unchanged artifacts
@@ -61,10 +63,10 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
     - `config/environments.py`: Per-environment configs (development/staging/production)
     - `pbi_client.py`: Power BI Service REST API client — Azure AD auth (SP/MI/token), import .pbix, refresh, list/delete datasets/reports
     - `pbix_packager.py`: .pbip → .pbix ZIP packager with OPC content types
-    - `pbi_deployer.py`: PBI Service deployment orchestrator — package, upload, poll, refresh, validate
+    - `pbi_deployer.py`: PBI Service deployment orchestrator — package, upload, poll, refresh, validate, `deploy_refresh_schedule()` for PBI REST API refresh config
     - `bundle_deployer.py`: Fabric bundle deployer — deploy shared model + thin reports as atomic bundle, artifact discovery, per-report error isolation, rebind, refresh, `BundleDeploymentResult`
     - `multi_tenant.py`: Multi-tenant deployment — `TenantConfig`/`MultiTenantConfig` (validate/load/save JSON), `_apply_connection_overrides()` (template substitution: `${TENANT_SERVER}`, `${TENANT_DATABASE}`), `deploy_multi_tenant()` orchestrator with per-tenant results
-- **tests/**: Unit and integration tests (4,923+ tests across 106 test files + conftest.py shared fixtures)
+- **tests/**: Unit and integration tests (5,024+ tests across 110 test files + conftest.py shared fixtures)
 - **docs/**: FAQ, PBI project guide, mapping reference
 - **.github/workflows/ci.yml**: CI/CD pipeline (lint → test → validate → deploy)
 - **.github/workflows/publish.yml**: PyPI auto-publish workflow (tag-triggered, OIDC trusted publisher)
@@ -105,6 +107,7 @@ python migrate.py --shared-model wb1.twbx wb2.twbx --deploy-bundle WORKSPACE_ID 
 python migrate.py --deploy-bundle WORKSPACE_ID --output-dir artifacts/shared/MyModel
 python migrate.py --shared-model wb1.twbx wb2.twbx --multi-tenant tenants.json
 python migrate.py --shared-model wb1.twbx wb2.twbx --live-connection WORKSPACE_ID/ModelName
+python migrate.py --server https://tableau.company.com --workbook "Sales" --token-name pat --token-secret secret --migrate-schedules
 ```
 
 ## Extracted Objects (16 types)

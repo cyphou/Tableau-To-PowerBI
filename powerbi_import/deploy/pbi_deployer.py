@@ -292,3 +292,63 @@ class PBIWorkspaceDeployer:
         all_passed = all(c['passed'] for c in validation['checks'])
         validation['overall'] = 'passed' if all_passed else 'failed'
         return validation
+
+    def deploy_refresh_schedule(self, dataset_id, refresh_config):
+        """Deploy a refresh schedule to a PBI dataset.
+
+        Uses the Power BI REST API to configure scheduled refresh.
+
+        Args:
+            dataset_id: Dataset ID in the workspace.
+            refresh_config: dict from refresh_generator.generate_refresh_config()
+                with keys: enabled, frequency, times, days, localTimeZoneId, notifyOption.
+
+        Returns:
+            dict: {status, dataset_id, notes}.
+        """
+        if not refresh_config or not refresh_config.get('enabled'):
+            logger.info('Refresh schedule not enabled — skipping.')
+            return {
+                'status': 'skipped',
+                'dataset_id': dataset_id,
+                'notes': refresh_config.get('notes', []),
+            }
+
+        # Build PBI refresh schedule payload
+        schedule = {
+            'value': {
+                'enabled': True,
+                'notifyOption': refresh_config.get(
+                    'notifyOption', 'MailOnFailure'
+                ),
+                'localTimeZoneId': refresh_config.get(
+                    'localTimeZoneId', 'UTC'
+                ),
+                'times': refresh_config.get('times', ['06:00']),
+            }
+        }
+        if refresh_config.get('days'):
+            schedule['value']['days'] = refresh_config['days']
+
+        try:
+            url = (
+                f'groups/{self.workspace_id}/datasets/{dataset_id}'
+                f'/refreshSchedule'
+            )
+            self.client._request('PATCH', url, json_body=schedule)
+            logger.info(
+                'Refresh schedule deployed for dataset %s', dataset_id
+            )
+            return {
+                'status': 'succeeded',
+                'dataset_id': dataset_id,
+                'notes': refresh_config.get('notes', []),
+            }
+        except Exception as e:
+            logger.error('Failed to deploy refresh schedule: %s', e)
+            return {
+                'status': 'failed',
+                'dataset_id': dataset_id,
+                'error': str(e),
+                'notes': refresh_config.get('notes', []),
+            }

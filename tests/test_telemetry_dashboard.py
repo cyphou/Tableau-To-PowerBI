@@ -136,7 +136,7 @@ class TestGenerateDashboard(unittest.TestCase):
                 html = f.read()
 
             self.assertIn('<!DOCTYPE html>', html)
-            self.assertIn('Migration Telemetry Dashboard', html)
+            self.assertIn('Migration Observability Dashboard', html)
             self.assertIn('Sales Dashboard', html)
             self.assertIn('92', html)
             # Status distribution table

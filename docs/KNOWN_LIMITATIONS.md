@@ -2,9 +2,9 @@
 
 This document lists known limitations and approximations in the Tableau to Power BI migration tool.
 
-> **Last updated:** v19.0.0 (Sprint 65) — many previous limitations have been addressed in Sprints 27-65. See below for current status.
+> **Last updated:** v21.0.0 (Sprint 75) — many previous limitations have been addressed in Sprints 27-75. See below for current status.
 >
-> **v19.0.0 notes:** Lineage metadata injection (TMDL annotations + Sankey HTML report). Custom SQL fingerprinting for merge candidates. Multi-tenant deployment (`--multi-tenant CONFIG_FILE`). Live connection mode (`--live-connection WORKSPACE_ID/MODEL_NAME`). Fingerprint hash cache for O(n) global assessment. End-to-end merge integration tests. Benchmark suite (100 workbooks in <1s).
+> **v21.0.0 notes:** Interactive Jupyter migration API (`notebook_api.py`). Scheduled refresh & subscription migration (`refresh_generator.py`, `--migrate-schedules`). Observability dashboard v2 with 4-tab interactive layout, JSONL telemetry, portfolio progress, bottleneck analysis. DAX test coverage expanded (86→176 tests). M connector test coverage expanded (114→148 tests, 32+ connectors).
 
 ---
 
@@ -126,3 +126,5 @@ For most limitations, the recommended workflow is:
 13. Use `--check-schema` to verify PBIR schema forward-compatibility before opening in newer PBI Desktop versions
 14. Use `--shared-model wb1.twbx wb2.twbx` to merge multiple workbooks into a shared semantic model with thin reports
 15. Use `--assess-merge` to preview merge feasibility before generating
+16. Use `--migrate-schedules` (with `--server`) to extract Tableau refresh schedules and generate PBI refresh config JSON
+17. Use `notebook_api.MigrationSession` for interactive Jupyter-based migration with DAX/visual override and notebook generation

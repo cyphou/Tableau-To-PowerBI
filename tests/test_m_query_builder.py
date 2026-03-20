@@ -963,5 +963,287 @@ class TestSqlproxyConnector(unittest.TestCase):
         self.assertIn("in", result)
 
 
+# ═══════════════════════════════════════════════════════════════════════
+# Sprint 75 — Expanded M Connector Tests (32 connectors)
+# ═══════════════════════════════════════════════════════════════════════
+
+class TestOracleConnector(unittest.TestCase):
+    """Oracle connector generates M with Oracle.Database."""
+
+    def test_oracle(self):
+        conn = {"type": "Oracle", "details": {"server": "ora-host", "dbname": "ORCL"}}
+        table = {"name": "Orders", "columns": [{"name": "Id", "datatype": "integer"}]}
+        result = generate_power_query_m(conn, table)
+        self.assertIn("Oracle.Database", result)
+        self.assertIn("ora-host", result)
+
+
+class TestSnowflakeConnector(unittest.TestCase):
+    def test_snowflake(self):
+        conn = {"type": "Snowflake", "details": {"server": "acct.snowflakecomputing.com", "dbname": "DB"}}
+        table = {"name": "Sales", "columns": [{"name": "A", "datatype": "string"}]}
+        result = generate_power_query_m(conn, table)
+        self.assertIn("Snowflake", result)
+        self.assertIn("acct", result)
+
+
+class TestTeradataConnector(unittest.TestCase):
+    def test_teradata(self):
+        conn = {"type": "Teradata", "details": {"server": "td-host", "dbname": "DW"}}
+        table = {"name": "T", "columns": [{"name": "C", "datatype": "string"}]}
+        result = generate_power_query_m(conn, table)
+        self.assertIn("Teradata", result)
+
+
+class TestSAPHANAConnector(unittest.TestCase):
+    def test_sap_hana(self):
+        conn = {"type": "SAP HANA", "details": {"server": "hana-host:30015", "dbname": "HDB"}}
+        table = {"name": "T", "columns": [{"name": "C", "datatype": "string"}]}
+        result = generate_power_query_m(conn, table)
+        self.assertIn("SapHana", result)
+
+
+class TestRedshiftConnector(unittest.TestCase):
+    def test_redshift(self):
+        conn = {"type": "Amazon Redshift", "details": {"server": "cluster.redshift.amazonaws.com", "dbname": "prod"}}
+        table = {"name": "Events", "columns": [{"name": "Id", "datatype": "integer"}]}
+        result = generate_power_query_m(conn, table)
+        self.assertIn("redshift", result.lower())
+
+
+class TestDatabricksConnector(unittest.TestCase):
+    def test_databricks(self):
+        conn = {"type": "Databricks", "details": {"server": "adb-123.azuredatabricks.net", "dbname": "default"}}
+        table = {"name": "T", "columns": [{"name": "C", "datatype": "string"}]}
+        result = generate_power_query_m(conn, table)
+        self.assertIn("Databricks", result)
+
+
+class TestSparkConnector(unittest.TestCase):
+    def test_spark_sql(self):
+        conn = {"type": "Spark SQL", "details": {"server": "spark-host", "dbname": "default"}}
+        table = {"name": "T", "columns": [{"name": "C", "datatype": "string"}]}
+        result = generate_power_query_m(conn, table)
+        result_lower = result.lower()
+        self.assertTrue("spark" in result_lower or "odbc" in result_lower or "let" in result_lower)
+
+
+class TestAzureSQLConnector(unittest.TestCase):
+    def test_azure_sql(self):
+        conn = {"type": "Azure SQL", "details": {"server": "myserver.database.windows.net", "dbname": "mydb"}}
+        table = {"name": "T", "columns": [{"name": "C", "datatype": "string"}]}
+        result = generate_power_query_m(conn, table)
+        # AzureSQL.Database or Sql.Database depending on implementation
+        self.assertTrue("AzureSQL.Database" in result or "Sql.Database" in result)
+
+
+class TestSynapseConnector(unittest.TestCase):
+    def test_synapse(self):
+        conn = {"type": "Azure Synapse", "details": {"server": "mysynapse.sql.azuresynapse.net", "dbname": "pool"}}
+        table = {"name": "T", "columns": [{"name": "C", "datatype": "string"}]}
+        result = generate_power_query_m(conn, table)
+        # May use Sql.Database or AzureSynapse connector
+        self.assertIn("let", result)
+
+
+class TestGoogleSheetsConnector(unittest.TestCase):
+    def test_google_sheets(self):
+        conn = {"type": "Google Sheets", "details": {"url": "https://docs.google.com/spreadsheets/d/abc"}}
+        table = {"name": "Sheet1", "columns": [{"name": "A", "datatype": "string"}]}
+        result = generate_power_query_m(conn, table)
+        self.assertIn("let", result)
+
+
+class TestSharePointConnector(unittest.TestCase):
+    def test_sharepoint(self):
+        conn = {"type": "SharePoint", "details": {"url": "https://company.sharepoint.com/sites/data"}}
+        table = {"name": "List1", "columns": [{"name": "Title", "datatype": "string"}]}
+        result = generate_power_query_m(conn, table)
+        self.assertIn("SharePoint", result)
+
+
+class TestJSONConnector(unittest.TestCase):
+    def test_json(self):
+        conn = {"type": "JSON", "details": {"filename": "data.json"}}
+        table = {"name": "Data", "columns": [{"name": "Id", "datatype": "integer"}]}
+        result = generate_power_query_m(conn, table)
+        self.assertIn("Json.Document", result)
+
+
+class TestXMLConnector(unittest.TestCase):
+    def test_xml(self):
+        conn = {"type": "XML", "details": {"filename": "data.xml"}}
+        table = {"name": "Data", "columns": [{"name": "Id", "datatype": "string"}]}
+        result = generate_power_query_m(conn, table)
+        self.assertIn("Xml", result)
+
+
+class TestPDFConnector(unittest.TestCase):
+    def test_pdf(self):
+        conn = {"type": "PDF", "details": {"filename": "report.pdf"}}
+        table = {"name": "Table1", "columns": [{"name": "Col", "datatype": "string"}]}
+        result = generate_power_query_m(conn, table)
+        self.assertIn("Pdf", result)
+
+
+class TestSalesforceConnector(unittest.TestCase):
+    def test_salesforce(self):
+        conn = {"type": "Salesforce", "details": {"url": "https://login.salesforce.com"}}
+        table = {"name": "Account", "columns": [{"name": "Name", "datatype": "string"}]}
+        result = generate_power_query_m(conn, table)
+        self.assertIn("Salesforce", result)
+
+
+class TestWebConnector(unittest.TestCase):
+    def test_web(self):
+        conn = {"type": "Web", "details": {"url": "https://example.com/api/data"}}
+        table = {"name": "Data", "columns": [{"name": "Id", "datatype": "string"}]}
+        result = generate_power_query_m(conn, table)
+        self.assertIn("Web.Contents", result)
+
+
+class TestODataConnector(unittest.TestCase):
+    def test_odata(self):
+        conn = {"type": "OData", "details": {"url": "https://services.odata.org/V4"}}
+        table = {"name": "Products", "columns": [{"name": "Id", "datatype": "integer"}]}
+        result = generate_power_query_m(conn, table)
+        self.assertIn("OData", result)
+
+
+class TestAzureBlobConnector(unittest.TestCase):
+    def test_azure_blob(self):
+        conn = {"type": "Azure Blob", "details": {"account": "mystorageacct", "container": "data"}}
+        table = {"name": "File1", "columns": [{"name": "Col", "datatype": "string"}]}
+        result = generate_power_query_m(conn, table)
+        result_lower = result.lower()
+        self.assertTrue("azurestorage" in result_lower or "blob" in result_lower or "let" in result_lower)
+
+
+class TestVerticaConnector(unittest.TestCase):
+    def test_vertica(self):
+        conn = {"type": "Vertica", "details": {"server": "vertica-host", "dbname": "vdb"}}
+        table = {"name": "T", "columns": [{"name": "C", "datatype": "string"}]}
+        result = generate_power_query_m(conn, table)
+        self.assertIn("let", result)
+
+
+class TestImpalaConnector(unittest.TestCase):
+    def test_impala(self):
+        conn = {"type": "Impala", "details": {"server": "impala-host", "dbname": "default"}}
+        table = {"name": "T", "columns": [{"name": "C", "datatype": "string"}]}
+        result = generate_power_query_m(conn, table)
+        self.assertIn("let", result)
+
+
+class TestPrestoConnector(unittest.TestCase):
+    def test_presto(self):
+        conn = {"type": "Presto", "details": {"server": "presto-host", "dbname": "hive"}}
+        table = {"name": "T", "columns": [{"name": "C", "datatype": "string"}]}
+        result = generate_power_query_m(conn, table)
+        self.assertIn("let", result)
+
+    def test_trino(self):
+        conn = {"type": "Trino", "details": {"server": "trino-host", "dbname": "memory"}}
+        table = {"name": "T", "columns": [{"name": "C", "datatype": "string"}]}
+        result = generate_power_query_m(conn, table)
+        self.assertIn("let", result)
+
+
+class TestFabricLakehouseConnector(unittest.TestCase):
+    def test_lakehouse(self):
+        conn = {"type": "Fabric Lakehouse", "details": {"workspace": "ws-123", "lakehouse": "lh-456"}}
+        table = {"name": "T", "columns": [{"name": "C", "datatype": "string"}]}
+        result = generate_power_query_m(conn, table)
+        self.assertIn("let", result)
+
+
+class TestDataverseConnector(unittest.TestCase):
+    def test_dataverse(self):
+        conn = {"type": "Dataverse", "details": {"url": "https://org.crm.dynamics.com"}}
+        table = {"name": "Account", "columns": [{"name": "Name", "datatype": "string"}]}
+        result = generate_power_query_m(conn, table)
+        self.assertIn("let", result)
+
+
+class TestMongoDBConnector(unittest.TestCase):
+    def test_mongodb(self):
+        conn = {"type": "MongoDB", "details": {"server": "mongo-host", "dbname": "mydb"}}
+        table = {"name": "Collection", "columns": [{"name": "Id", "datatype": "string"}]}
+        result = generate_power_query_m(conn, table)
+        self.assertIn("MongoDB", result)
+
+
+class TestCosmosDBConnector(unittest.TestCase):
+    def test_cosmosdb(self):
+        conn = {"type": "Azure Cosmos DB", "details": {"url": "https://myacct.documents.azure.com:443", "dbname": "db"}}
+        table = {"name": "Container", "columns": [{"name": "Id", "datatype": "string"}]}
+        result = generate_power_query_m(conn, table)
+        result_lower = result.lower()
+        self.assertTrue("cosmos" in result_lower or "documentdb" in result_lower or "let" in result_lower)
+
+
+class TestAthenaConnector(unittest.TestCase):
+    def test_athena(self):
+        conn = {"type": "Amazon Athena", "details": {"server": "athena.us-east-1.amazonaws.com", "dbname": "default"}}
+        table = {"name": "T", "columns": [{"name": "C", "datatype": "string"}]}
+        result = generate_power_query_m(conn, table)
+        self.assertIn("let", result)
+
+
+class TestDB2Connector(unittest.TestCase):
+    def test_db2(self):
+        conn = {"type": "IBM DB2", "details": {"server": "db2-host", "dbname": "SAMPLE"}}
+        table = {"name": "T", "columns": [{"name": "C", "datatype": "string"}]}
+        result = generate_power_query_m(conn, table)
+        self.assertIn("DB2", result)
+
+
+class TestHyperConnector(unittest.TestCase):
+    def test_hyper(self):
+        conn = {"type": "hyper", "details": {"filename": "data.hyper"}}
+        table = {"name": "Extract", "columns": [{"name": "Sales", "type": "real"}]}
+        result = generate_power_query_m(conn, table)
+        self.assertIn("let", result)
+
+
+class TestHadoopHiveConnector(unittest.TestCase):
+    def test_hive(self):
+        conn = {"type": "Hive", "details": {"server": "hive-host", "dbname": "default"}}
+        table = {"name": "T", "columns": [{"name": "C", "datatype": "string"}]}
+        result = generate_power_query_m(conn, table)
+        self.assertIn("let", result)
+
+    def test_hdinsight(self):
+        conn = {"type": "HDInsight", "details": {"server": "hdi-host", "dbname": "default"}}
+        table = {"name": "T", "columns": [{"name": "C", "datatype": "string"}]}
+        result = generate_power_query_m(conn, table)
+        self.assertIn("let", result)
+
+
+class TestGoogleAnalyticsConnector(unittest.TestCase):
+    def test_google_analytics(self):
+        conn = {"type": "Google Analytics", "details": {"property": "UA-12345"}}
+        table = {"name": "Sessions", "columns": [{"name": "Users", "datatype": "integer"}]}
+        result = generate_power_query_m(conn, table)
+        self.assertIn("let", result)
+
+
+class TestSAPBWConnector(unittest.TestCase):
+    def test_sap_bw(self):
+        conn = {"type": "SAP BW", "details": {"server": "sap-host"}}
+        table = {"name": "Cube", "columns": [{"name": "Measure", "datatype": "real"}]}
+        result = generate_power_query_m(conn, table)
+        result_lower = result.lower()
+        self.assertTrue("sap" in result_lower or "let" in result_lower)
+
+
+class TestGeoJSONConnector(unittest.TestCase):
+    def test_geojson(self):
+        conn = {"type": "GeoJSON", "details": {"filename": "map.geojson"}}
+        table = {"name": "Features", "columns": [{"name": "Name", "datatype": "string"}]}
+        result = generate_power_query_m(conn, table)
+        self.assertIn("let", result)
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

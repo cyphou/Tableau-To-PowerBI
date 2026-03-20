@@ -427,6 +427,43 @@ class TableauServerClient:
         url = f'{self.base_url}/schedules'
         return self._paginated_get(url, 'schedules', 'schedule')
 
+    # ── Extract Tasks ─────────────────────────────────────────
+
+    def get_workbook_extract_tasks(self, workbook_id):
+        """Get extract refresh tasks for a specific workbook.
+
+        Args:
+            workbook_id: Workbook LUID.
+
+        Returns:
+            list[dict]: Extract task metadata (id, schedule, priority, type).
+        """
+        url = f'{self.site_url}/tasks/extractRefreshes'
+        all_tasks = self._paginated_get(url, 'tasks', 'extractRefresh')
+        # Filter to this workbook
+        return [
+            t for t in all_tasks
+            if t.get('workbook', {}).get('id') == workbook_id
+        ]
+
+    def get_workbook_subscriptions(self, workbook_id):
+        """Get email subscriptions for a specific workbook.
+
+        Args:
+            workbook_id: Workbook LUID.
+
+        Returns:
+            list[dict]: Subscription metadata (id, subject, user, schedule).
+        """
+        url = f'{self.site_url}/subscriptions'
+        all_subs = self._paginated_get(url, 'subscriptions', 'subscription')
+        # Filter to subscriptions targeting this workbook
+        return [
+            s for s in all_subs
+            if s.get('content', {}).get('id') == workbook_id
+            and s.get('content', {}).get('type', '').lower() == 'workbook'
+        ]
+
     # ── Prep Flows ────────────────────────────────────────────
 
     def list_prep_flows(self):

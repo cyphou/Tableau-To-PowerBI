@@ -33,7 +33,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 # Telemetry version — bump when schema changes
-TELEMETRY_VERSION = 1
+TELEMETRY_VERSION = 2
 
 # Default local log location
 DEFAULT_LOG_PATH = os.path.join(
@@ -90,6 +90,7 @@ class TelemetryCollector:
             'tool_version': self._get_tool_version(),
             'stats': {},
             'errors': [],
+            'events': [],
         }
 
     def start(self):
@@ -120,6 +121,34 @@ class TelemetryCollector:
             'category': category,
             'message': message[:200],  # truncate to avoid large payloads
         })
+
+    def record_event(self, event_type, **data):
+        """Record a structured event with granular detail.
+
+        Supports per-workbook, per-visual, and per-measure events.
+
+        Args:
+            event_type: Event type string, e.g. ``'workbook_start'``,
+                ``'visual_converted'``, ``'measure_converted'``,
+                ``'dax_accuracy'``, ``'workbook_end'``.
+            **data: Arbitrary key-value pairs for the event.
+                No PII — use anonymized identifiers only.
+        """
+        if not self.enabled:
+            return
+        event = {
+            'type': event_type,
+            'ts': datetime.now().isoformat(),
+        }
+        # Sanitize: truncate string values, skip None
+        for k, v in data.items():
+            if v is None:
+                continue
+            if isinstance(v, str):
+                event[k] = v[:200]
+            else:
+                event[k] = v
+        self._data['events'].append(event)
 
     def finish(self):
         """Record the end of migration and compute duration."""

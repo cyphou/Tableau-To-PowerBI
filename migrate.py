@@ -1510,6 +1510,13 @@ def _add_server_args(parser):
         help='Download and migrate all workbooks from a Tableau Server project (requires --server)'
     )
 
+    parser.add_argument(
+        '--migrate-schedules',
+        action='store_true',
+        default=False,
+        help='Extract Tableau refresh schedules / subscriptions and generate PBI refresh config JSON'
+    )
+
 
 def _add_enterprise_args(parser):
     """Add enterprise and scale arguments (parallel, resume, manifest, etc.)."""
@@ -2789,6 +2796,60 @@ def _run_deploy_to_pbi_service(args, source_basename):
         logger.error("Deployment failed: %s", exc, exc_info=True)
 
 
+def _run_schedule_migration(args, source_basename):
+    """Extract Tableau refresh schedules and generate PBI refresh config."""
+    try:
+        from powerbi_import.refresh_generator import generate_refresh_json
+        print_header("REFRESH SCHEDULE MIGRATION")
+        out_dir = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
+        project_dir = os.path.join(out_dir, source_basename)
+
+        extract_tasks = []
+        subscriptions = []
+        schedules = []
+
+        # Try to fetch from server if connected
+        if getattr(args, 'server', None) and getattr(args, '_server_workbook_id', None):
+            try:
+                from tableau_export.server_client import TableauServerClient
+                ts_client = TableauServerClient(
+                    server_url=args.server,
+                    token_name=getattr(args, 'token_name', None),
+                    token_secret=getattr(args, 'token_secret', None),
+                    site_id=getattr(args, 'site', ''),
+                )
+                ts_client.sign_in()
+                wb_id = args._server_workbook_id
+                extract_tasks = ts_client.get_workbook_extract_tasks(wb_id)
+                subscriptions = ts_client.get_workbook_subscriptions(wb_id)
+                schedules = ts_client.list_schedules()
+                ts_client.sign_out()
+                print(f"  Extract tasks: {len(extract_tasks)}")
+                print(f"  Subscriptions: {len(subscriptions)}")
+            except Exception as exc:
+                print(f"  ⚠ Could not fetch schedules from server: {exc}")
+                logger.warning("Schedule fetch failed: %s", exc)
+
+        config = generate_refresh_json(extract_tasks, subscriptions, schedules)
+
+        # Write to project dir
+        config_path = os.path.join(project_dir, 'refresh_config.json')
+        os.makedirs(project_dir, exist_ok=True)
+        import json as _json
+        with open(config_path, 'w', encoding='utf-8') as f:
+            _json.dump(config, f, indent=2)
+        print(f"  ✓ Refresh config: {config_path}")
+
+        for note in config.get('migration_notes', []):
+            print(f"  ℹ {note}")
+        for note in config.get('refresh', {}).get('notes', []):
+            print(f"  ⚠ {note}")
+
+    except Exception as exc:
+        print(f"  ✗ Schedule migration error: {exc}")
+        logger.error("Schedule migration failed: %s", exc, exc_info=True)
+
+
 def _run_single_migration(args):
     """Execute the full single-file migration pipeline.
 
@@ -2915,6 +2976,10 @@ def _run_single_migration(args):
     # Step 5: Deploy to Power BI Service (optional)
     if getattr(args, 'deploy', None) and results.get('generation') and not args.dry_run:
         _run_deploy_to_pbi_service(args, source_basename)
+
+    # Step 5b: Migrate refresh schedules (optional, requires --server + --migrate-schedules)
+    if getattr(args, 'migrate_schedules', False) and results.get('generation'):
+        _run_schedule_migration(args, source_basename)
 
     # Final report
     all_success = _print_migration_summary(results, report_summary, start_time)

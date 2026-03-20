@@ -144,7 +144,7 @@ class TestTelemetryDashboard(unittest.TestCase):
             self.assertTrue(os.path.exists(result))
             with open(result, 'r', encoding='utf-8') as f:
                 html = f.read()
-            self.assertIn('Telemetry Dashboard', html)
+            self.assertIn('Observability Dashboard', html)
 
     def test_generate_dashboard_with_reports(self):
         from powerbi_import.telemetry_dashboard import generate_dashboard
