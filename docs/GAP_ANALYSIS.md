@@ -1,16 +1,16 @@
 # Comprehensive Gap Analysis — Tableau to Power BI Migration Tool
 
-**Date:** 2026-03-21 — updated through v22.0.0 + Sprint 84  
+**Date:** 2026-03-21 — updated through v25.0.0  
 **Scope:** Every source file, test file, CI/CD, docs, config, and cross-project comparison with TableauToFabric  
-**Status:** 5,756 tests passing across 115 test files · 38,194 source lines (tableau_export + powerbi_import)
+**Status:** 6,192 tests passing across 128 test files · 44,715 source lines (tableau_export + powerbi_import)
 
 ### Implementation Coverage
 
 ```
  EXTRACTION          GENERATION         INFRA / CI         DOCUMENTATION
 +----------------+  +----------------+  +----------------+  +----------------+
-| 20 object types|  | PBIR v4.0      |  | 5-stage CI/CD  |  | 14 doc files   |
-| .twb/.twbx/.tfl|  | TMDL semantic  |  | 5,727 tests    |  | DAX reference  |
+| 20 object types|  | PBIR v4.0      |  | 5-stage CI/CD  |  | 18 doc files   |
+| .twb/.twbx/.tfl|  | TMDL semantic  |  | 6,192 tests    |  | DAX reference  |
 | 195+ DAX conv  |  | 118 visuals    |  | Artifact valid |  | M query ref    |
 | 42 connectors  |  | 7 slicer modes |  | Fabric deploy  |  | Prep ref       |
 | 47+ transforms |  | 4 cond format  |  | Env configs    |  | Architecture   |
@@ -22,7 +22,7 @@
         |                    |                    |                    |
         +--------------------+--------------------+--------------------+
                                      |
-                     v9.0.0 → v22.0.0 + Sprint 84
+                     v9.0.0 → v25.0.0
                      +-------------------------------+
                      | Grid-snapped layout engine    |
                      | 7 slicer modes (S77)          |
@@ -38,6 +38,11 @@
                      | Live connection (byConnection)|
                      | Custom SQL fingerprinting     |
                      | PyPI auto-publish workflow    |
+                     | Composite model (S86)         |
+                     | Live sync / --sync (S89)      |
+                     | Fabric-native output (S91)    |
+                     | DAX optimizer engine (S93)    |
+                     | Cross-platform validation (S94)|
                      +-------------------------------+
 ```
 
@@ -165,7 +170,7 @@
 ## 3. Test Coverage
 
 ### What IS implemented
-- **887 tests across 18 test files** (original) + **4,840 additional tests in v3.6–v22.0.0+S84**, totaling **5,727 tests across 114 test files** including shared fixtures in `conftest.py`:
+- **887 tests across 18 test files** (original) + **5,305 additional tests in v3.6–v25.0.0**, totaling **6,192 tests across 128 test files** including shared fixtures in `conftest.py`:
 
 | Test File | Tests | Lines | Coverage Focus |
 |-----------|-------|-------|----------------|
@@ -439,9 +444,9 @@
 | **Prep Flow** | DAG traversal (1,190 lines), 20+ action types, **ExtractValues**, **CustomCalculation**, **Script/Prediction/CrossJoin/PublishedDataSource** handlers, 5 new connection mappings, **Hyper data loading** | — | ✅ VAR/VARP fixed (S84) | Low |
 | **Pre-Migration** | **Assessment** (1,487 lines, 14-category scoring + connection string audit + performance + volume + Prep complexity + licensing + multi-datasource + **formatting coverage** S79), **Strategy advisor** (Import/DQ/Composite), **Global assessment** (`--global-assess`, N×N heatmap, BFS clustering), **Migration completeness scoring** (0–100, letter grade), JSON + HTML reports | — | — | Low |
 | **Shared Model** | **Merge engine** (3,736 lines, fingerprint, Jaccard, 0–100 scoring), **thin reports** (byPath + byConnection), **merge config**, **field validation**, **column lineage**, **RLS consolidation**, **measure risk analyzer**, **global assessment**, **table isolation**, **Fabric bundle deployment**, **artifact-level merge**, **post-merge safety**, **thin report binding validation**, **lineage tracking**, **custom SQL fingerprinting** (SHA-256), **multi-tenant deployment**, **live connection**, **fingerprint cache**, **benchmark suite** (100 workbooks) | — | — | Low |
-| **Test Coverage** | **5,727 tests across 114 files** (+conftest.py shared fixtures), **26 real-world E2E workbooks** (S80), **layout regression** (S80), **performance regression** (S80) | — | — | Low |
+| **Test Coverage** | **6,192 tests across 128 files** (+conftest.py shared fixtures), **26 real-world E2E workbooks** (S80), **layout regression** (S80), **performance regression** (S80), **Fabric-native** (S91), **DAX optimizer** (S93), **equivalence** (S94) | — | — | Low |
 | **CI/CD** | **5-stage pipeline** (lint+ruff, test, **strict validate+twbx**, **staging deploy**, production deploy), **pip caching**, **PBIR schema forward-compat check** (`--check-schema`), **PyPI auto-publish workflow** (`publish.yml`), **plugin system** (`plugins.py` + `examples/plugins/`), **Windows/macOS/Linux CI matrix** (3 OS × 6 Python versions) | Coverage reporting, PR diff preview | — | Medium |
-| **Documentation** | **14 docs** + copilot instructions (ARCHITECTURE, KNOWN_LIMITATIONS, MIGRATION_CHECKLIST, DEPLOYMENT_GUIDE, TABLEAU_VERSION_COMPATIBILITY, CONTRIBUTING), **auto-generated API docs** (42 modules) | — | — | Low |
+| **Documentation** | **18 docs** + copilot instructions (ARCHITECTURE, KNOWN_LIMITATIONS, MIGRATION_CHECKLIST, DEPLOYMENT_GUIDE, TABLEAU_VERSION_COMPATIBILITY, CONTRIBUTING, ENTERPRISE_GUIDE, AGENTS, ROADMAP), **auto-generated API docs** (54 modules) | — | — | Low |
 | **Config** | 11 env vars, 3 environments, **settings validation**, **dry-run**, **calendar/culture CLI**, **.env.example**, **config.json** | — | — | Low |
 
 ---
@@ -542,7 +547,7 @@
 | Metric | Fabric | PBI |
 |--------|--------|-----|
 | Test files | 40 | 37 (+conftest.py) |
-| Total tests | ~1,205 | **5,727** |
+| Total tests | ~1,205 | **6,192** |
 | Coverage test files (Fabric-style) | 9 files, ~750 tests (e.g., `test_*_coverage.py`) | None |
 | PBI-only broad-scope tests | None | 5 files (feature_gaps, gap_implementations, new_features, non_regression, migration_validation) |
 | Real-world E2E | None | **26 workbooks, 369 tests** (v22/S80) |

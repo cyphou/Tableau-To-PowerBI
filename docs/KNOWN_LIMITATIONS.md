@@ -2,9 +2,13 @@
 
 This document lists known limitations and approximations in the Tableau to Power BI migration tool.
 
-> **Last updated:** v22.0.0 + Sprint 84 — many previous limitations have been addressed in Sprints 27-84. See below for current status.
+> **Last updated:** v25.0.0 — many previous limitations have been addressed in Sprints 27-95. See below for current status.
 >
-> **v22.0.0 notes:** Grid-snapping dashboard layout engine (S76). 7 slicer modes: dropdown, list, slider, date picker, relative date, search, between (S77). Visual fidelity depth: stacked bar orientation, dual-axis combo charts, reference band shading, trend line preservation (S78). Conditional formatting: diverging, stepped, categorical color scales, icon sets (S79). Real-world E2E suite: 26 workbooks, layout/performance regression tests (S80). **Sprint 84:** Prep VAR/VARP proper M variance formulas, bump chart RANKX auto-injection, PDF connector page range, Salesforce SOQL/API depth, REGEX→M fallback. 5,727 tests across 114 files.
+> **v25.0.0 notes:** Fabric-native artifact generation — `--output-format fabric` generates Lakehouse, Dataflow Gen2, PySpark Notebook, DirectLake Semantic Model, and Data Pipeline (S91). Deep extraction of Tableau 2024+ features: dynamic zone visibility, table extensions, multi-connection blending, linguistic schema for Q&A (S92). DAX optimizer engine: IF→SWITCH, COALESCE, constant folding, Time Intelligence auto-injection (S93). Cross-platform validation: query equivalence framework, SSIM visual comparison, regression suite generator (S94). 6,192 tests across 128 files.
+>
+> **v24.0.0 notes:** Composite model support: per-table StorageMode, aggregation tables, hybrid relationship constraints (S86). Extraction hardening: published datasource resolution, nested LOD, complex join graphs, multi-connection M queries, data type coercion (S87). Enterprise portfolio intelligence: data lineage graph, consolidation recommender, resource allocation planner, governance report (S88). Live sync: source change detection, incremental diff, auto-deploy, change notification (S89). Enterprise scale: parallel batch, 500-workbook benchmark (S90).
+>
+> **v22.0.0 notes:** Grid-snapping dashboard layout engine (S76). 7 slicer modes: dropdown, list, slider, date picker, relative date, search, between (S77). Visual fidelity depth: stacked bar orientation, dual-axis combo charts, reference band shading, trend line preservation (S78). Conditional formatting: diverging, stepped, categorical color scales, icon sets (S79). Real-world E2E suite: 26 workbooks, layout/performance regression tests (S80). **Sprint 84:** Prep VAR/VARP proper M variance formulas, bump chart RANKX auto-injection, PDF connector page range, Salesforce SOQL/API depth, REGEX→M fallback.
 
 ---
 
@@ -14,7 +18,7 @@ This document lists known limitations and approximations in the Tableau to Power
 |------|-----------|--------|
 | **Hyper files** | ✅ `.hyper` file column metadata AND row-level data loaded via 3-tier reader chain: (1) `tableauhyperapi` optional package for full v2+ support, (2) SQLite fallback for older formats, (3) header-only scan. Multi-schema discovery (`Extract`, `public`, `stg`). Configurable sample rows via `--hyper-rows N`. Column stats (distinct_count, min, max) and metadata enrichment with DirectQuery recommendations | Requires optional `tableauhyperapi` pip package for proprietary v2+ Hyper formats; without it, some v2+ files still fall back to metadata-only |
 | **Tableau Server/Cloud** | ✅ `--server` CLI flag enables direct extraction from Tableau Server/Cloud via REST API (PAT or password auth). Live connections still need reconfiguration in PBI |
-| **Tableau 2024.3+** | ✅ Dynamic parameters with database queries are now fully extracted and converted to M partition with `Value.NativeQuery()`. Dynamic zone visibility may still be partially handled | Newer dynamic zone features may need manual adjustment |
+| **Tableau 2024.3+** | ✅ Dynamic parameters with database queries fully extracted and converted to M partition with `Value.NativeQuery()`. Dynamic zone visibility (S92) parses conditions and maps to PBI bookmark visibility toggles. Table extensions (Einstein Discovery, external API) generate M `Web.Contents()` or placeholder. Linguistic schema extraction feeds PBI Q&A synonyms. | Some newer Tableau 2024.3+ features may still need manual adjustment |
 | **Custom shapes** | Shape encoding extracts the field reference only — actual image files are not migrated | Custom shape visuals will show default markers |
 | **OAuth credentials** | Credential metadata is stripped by design | Data source connections need re-authentication in Power BI |
 | **Nested layout containers** | ✅ IMPROVED (v22/S76) — Grid-snapping engine handles 3-level nesting; 4+ levels may lose precision | Very deeply nested containers may need manual adjustment |
@@ -27,6 +31,8 @@ This document lists known limitations and approximations in the Tableau to Power
 | **Visual positioning** | ✅ IMPROVED (v22/S76) — Grid-snapping layout engine replaces proportional scaling. Container hierarchy extraction, row/column grid cells, floating z-order, responsive breakpoints. Not pixel-perfect but preserves grid structure | Some manual layout adjustment may still be needed for deeply nested containers |
 | **Sparklines** | Table/matrix sparkline columns are generated as lineChart sparkline configs | Limited to basic line sparklines; area/bar sparklines not supported |
 | **Bump charts** | ✅ IMPROVED (Sprint 84) — Auto-generated RANKX measure injected for ranking semantics | Maps to lineChart; ranking is approximated via `RANKX(ALL(), [measure],, ASC, Dense)` |
+| **Fabric-native output** | ✅ NEW (v25/S91) — `--output-format fabric` generates Lakehouse, Dataflow Gen2, PySpark Notebook, DirectLake Semantic Model, and Data Pipeline. Activity IDs in pipelines are placeholders requiring workspace binding. | Fabric artifacts require Fabric workspace capacity to deploy and test |
+| **DAX optimizer** | ✅ NEW (v25/S93) — `--optimize-dax` rewrites verbose DAX (IF→SWITCH, COALESCE, constant fold, SUMX simplify). `--time-intelligence auto` injects YTD/PY/YoY%. Opt-in only to preserve original semantics by default. | Optimized DAX may differ from direct Tableau→DAX conversion; original preserved as annotation |
 
 ## DAX Conversion Limitations
 

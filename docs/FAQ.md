@@ -141,6 +141,24 @@ Tableau parameters are converted to Power BI What-If parameter tables:
 
 When a calculated column references a parameter, the value is **inlined** (since calc columns can't reference measures in DAX).
 
+### How do I generate Fabric-native output?
+
+Use `--output-format fabric` to generate Lakehouse, Dataflow Gen2, PySpark Notebook, DirectLake Semantic Model, and Data Pipeline artifacts instead of a .pbip project:
+
+```bash
+python migrate.py workbook.twbx --output-format fabric --output-dir /tmp/fabric_output
+```
+
+### How do I optimize the generated DAX formulas?
+
+Use `--optimize-dax` to run an AST-based DAX optimizer pass after conversion. This rewrites verbose formulas for readability and performance:
+
+```bash
+python migrate.py workbook.twbx --optimize-dax --time-intelligence auto
+```
+
+The optimizer applies: nested IF→SWITCH, IF(ISBLANK)→COALESCE, redundant CALCULATE collapse, constant folding, SUMX simplification, and optional Time Intelligence auto-injection (YTD, PY, YoY%).
+
 ### How do I reconfigure the data sources?
 
 1. Open the `.pbip` in Power BI Desktop
@@ -271,7 +289,7 @@ The `merge_assessment.json` file lists all conflicts detected.
 ### How do I run the tests?
 
 ```bash
-python -m unittest discover tests/ -v
+python -m pytest tests/ -v
 ```
 
-The project includes 500 tests across 10 test files covering DAX conversion, Power Query M generation, TMDL model building, visual generation, project structure, artifact validation, deployment utilities, and end-to-end non-regression migration of all 8 sample workbooks.
+The project includes **6,192 tests across 128 test files** covering DAX conversion, Power Query M generation, TMDL model building, visual generation, project structure, artifact validation, deployment utilities, Fabric-native generation, DAX optimization, cross-platform equivalence testing, and end-to-end non-regression migration of all 16 real-world workbooks.

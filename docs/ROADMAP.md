@@ -1,8 +1,8 @@
-# Development Roadmap — v24.0.0 → v26.0.0
+# Development Roadmap — v22.0.0 → v26.0.0
 
-**Date:** 2025-07-24
-**Baseline:** v24.0.0 — 5,897+ tests across 121 test files, 0 failures
-**Current state:** v24.0.0 shipped. Composite models, live sync, enterprise portfolio intelligence, and 500-workbook scale validation complete.
+**Date:** 2026-03-21
+**Baseline:** v25.0.0 — 6,192+ tests across 128 test files, 0 failures
+**Current state:** v25.0.0 shipped. Fabric-native output, DAX optimizer, Tableau 2024+ extraction, cross-platform validation, and semantic intelligence complete.
 
 ---
 
