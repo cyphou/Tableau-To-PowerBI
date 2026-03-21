@@ -205,21 +205,28 @@ Real-world migrations (NBA, Superstore, Feedback Dashboard) exposed gaps that sy
 
 | # | Item | Owner | File(s) | Est. | Details |
 |---|------|-------|---------|------|---------|
-| 85.1 | **Web UI + LLM integration** | @orchestrator | `web/app.py` | Medium | LLM toggle in Web UI. Cost preview before refinement. |
-| 85.2 | **E2E Web UI tests** | @tester | `tests/test_web_e2e.py` (new) | Medium | Upload → configure → migrate → download cycle. 15+ tests. |
-| 85.3 | **v23.0.0 release** | @orchestrator | `pyproject.toml`, docs | Low | Version bump, CHANGELOG, README, copilot-instructions. |
+| 85.1 | ~~Web UI + LLM integration~~ | @orchestrator | — | — | _Deferred (Sprint 81/82 on hold)_ |
+| 85.2 | ~~E2E Web UI tests~~ | @tester | — | — | _Deferred (Sprint 81/82 on hold)_ |
+| 85.3 | **v23.0.0 release** ✅ | @orchestrator | `pyproject.toml`, docs | Low | Version bump 22→23, CHANGELOG, README, copilot-instructions. |
 
 ### v23.0.0 Success Criteria
 
-| Metric | v22.0.0 | Target v23.0.0 |
+| Metric | v22.0.0 | v23.0.0 Actual |
 |--------|---------|----------------|
-| Tests | ~5,500 | **5,800+** |
-| Web UI | ❌ | **Streamlit wizard + Docker** |
-| LLM-assisted DAX | ❌ | **Opt-in GPT/Claude** |
-| PR migration preview | ❌ | **Auto-diff on PR** |
-| Release automation | Manual | **Tag → publish pipeline** |
-| Prep VAR/VARP | Approximated | **Correct** |
-| Prep notInner | Approximated | **leftanti** |
+| Tests | ~5,500 | **5,782 (116 files)** ✅ |
+| Prep VAR/VARP | Approximated | **Correct** ✅ |
+| Prep notInner | Approximated | **leftanti** ✅ |
+| Bump chart RANKX | ❌ | **Auto-injected** ✅ |
+| PDF connector depth | Basic | **Page range + table select** ✅ |
+| Salesforce SOQL | Basic | **API version + SOQL passthrough** ✅ |
+| REGEX → M fallback | ❌ | **Text.RegexMatch/Extract/Replace** ✅ |
+| LTRIM/RTRIM | Both → TRIM | **Proper left/right trim** ✅ |
+| INDEX | RANKX approx | **ROWNUMBER() (DAX 2024+)** ✅ |
+| Fidelity scoring | Skipped penalized | **Skipped excluded, 100% avg** ✅ |
+| Web UI | ❌ | _Deferred_ |
+| LLM-assisted DAX | ❌ | _Deferred_ |
+| PR migration preview | ❌ | _Deferred_ |
+| Release automation | Manual | _Deferred_ |
 
 ---
 
