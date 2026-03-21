@@ -1,5 +1,5 @@
 table 'Rebounds CalcGroup'
-	lineageTag: d6dcfedb-a711-472a-bcde-bc7f06d9b50d
+	lineageTag: bbaa30f7-8af1-46b6-abbc-4b5f56547226
 
 	calculationGroup
 		precedence: 0
@@ -19,13 +19,13 @@ table 'Rebounds CalcGroup'
 
 	column Rebounds
 		dataType: string
-		lineageTag: 14e10ccd-f24c-4bf9-bc73-365db7b52caf
+		lineageTag: 7f0cde9f-622e-4707-9aa8-bf009cbbea0c
 		summarizeBy: none
 		sourceColumn: Name
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Rebounds CalcGroup-1d35f088-066e-4cfc-a59f-b63fd22c7ec5' = calculationGroup
+	partition 'Rebounds CalcGroup-3e4500dc-fcc6-4619-b8a2-e0aebb25973d' = calculationGroup
 		mode: import
 
 	annotation PBI_ResultType = Table

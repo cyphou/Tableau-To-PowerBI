@@ -1,6 +1,50 @@
 # Changelog
 
-## v21.0.0 — Interactive Migration, Observability & Test Depth
+## v22.0.0 — Real-World Fidelity & Layout Intelligence
+
+### Sprint 76 — Dashboard Layout Engine ✅
+- **Zone hierarchy extraction** (`extract_tableau_data.py`): Recursive `<zone>` tree parser — builds parent→child hierarchy with container orientation, `is-fixed`/`is-floating` flags, padding/margin from zone-style, zone type classification (layout-basic, layout-flow, worksheet, text, bitmap, filter, paramctrl)
+- **Grid-snapping layout algorithm** (`pbip_generator.py`): `_build_zone_layout_map()` + `_layout_zone()` — recursively subdivides PBI pixel space per container orientation (horz/vert) or proportional coordinate mapping for 2-D grids; replaces proportional `scale_x/scale_y` fallback
+- **Floating vs tiled distinction**: Floating zones → absolute-scaled PBI positions; tiled zones → grid-based allocation within parent container
+- **Responsive breakpoints**: `<device-layout>` phone zones → PBI `mobileState` with scaled mobile visuals (320×568 viewport)
+- **Dashboard padding propagation**: Zone padding/margin → PBI visual `padding` properties via `_apply_padding_to_visual()`
+- **Proportional coordinate fix**: Layout engine no longer defaults to vertical stacking for containers without explicit orientation — uses 2-D proportional mapping to preserve side-by-side layouts
+- **42 tests** in `test_layout_engine.py`
+
+### Sprint 77 — Advanced Slicer & Filter Intelligence ✅
+- **Filter type classification** (`extract_tableau_data.py`): Classifies filters as categorical, range, relative-date, wildcard, top-n, or context based on XML attributes; adds `filter_mode`, `exclude`, `min`/`max`, `period`/`period_type`, `match`/`match_type`, `top_n_count`/`top_n_field`, `is_context`
+- **Dropdown vs list slicer** (`pbip_generator.py`): Selection mode per slicer with search toggle
+- **Range slicer with bounds**: Numeric/date range filters → PBI between slicer
+- **Relative date slicer**: Last N days/weeks/months/years → PBI relative date configuration
+- **Wildcard filter**: Contains/starts-with → PBI slicer with search mode
+- **Context filter → report-level filter**: Context filters promoted to report-level
+
+### Sprint 78 — Visual Fidelity Depth ✅
+- **Stacked bar orientation detection** (`visual_generator.py`): `stackedBarChart` ↔ `stackedColumnChart` and `hundredPercentStackedBarChart` ↔ `hundredPercentStackedColumnChart` based on shelf axis analysis
+- **Dual-axis → combo chart**: `dual_axis: true` → `lineClusteredColumnComboChart` with primary/secondary axis split
+- **Reference band shading**: Tableau reference bands → PBI constant line pairs with shade area
+- **Data label formatting propagation**: Label font size, color, orientation → PBI labels properties
+- **Mark size encoding → bubble size**: Size encoding → PBI Size data role on scatter/bubble charts
+- **Trend line preservation**: Linear/logarithmic/exponential/polynomial/power → PBI analytics pane trendLine
+
+### Sprint 79 — Conditional Formatting & Theme Depth ✅
+- **Diverging color scale**: Min→center→max 3-stop gradient → PBI conditional formatting rules
+- **Stepped color (bins)**: N discrete color bins → PBI rules-based threshold conditional formatting
+- **Categorical color assignment**: Explicit dimension→color assignments → PBI dataPoint fill rules
+- **Theme background & border**: Dashboard background, visual border color/width → PBI theme and visualContainerObjects
+- **Font style migration**: Tableau font family/size/bold/italic → PBI textClasses in theme JSON
+
+### Sprint 80 — Integration Testing & v22.0.0 Release ✅
+- **Real-world E2E test suite** (`test_real_world_e2e.py`): Extract→generate→validate for all 26 workbooks (16 real-world + 10 samples); 13 assertions per workbook (structure, content, JSON validity, TMDL, visual references, page order)
+- **Layout regression tests** (`test_layout_regression.py`): Golden-file position comparison for Superstore, Complex_Enterprise, Enterprise_Sales; layout invariants for all 9 sample workbooks; no-overlap detection; proportional mapping algebra
+- **Performance regression tests** (`test_performance_regression.py`): Single workbook <5s, batch 10 <45s, extraction <2s, generation <3s; covers samples + real-world
+- **26-bug hardening pass**: Fixes across extraction (top-N int parse), DAX converter (STR→FORMAT, RUNNING_SUM table ref, MID 0-based, SUBSTITUTE args), M query builder (wrap source + nav in try/otherwise), TMDL generator (culture pop order, displayFolder, _datasources ref), deploy layer (multi-tenant paths, PBI client retry)
+- **Version bump**: 21.0.0 → 22.0.0
+- **Overall: 5,680+ tests** across 109 test files, 0 failures
+
+### Bug Fixes (post-Sprint 79)
+- **try/otherwise navigation fix** (`m_query_builder.py`): When Source step uses key-based navigation (e.g. `Source{[Item="Sheet1",Kind="Sheet"]}[Data]`), both steps are absorbed into a single `try` block to prevent "key didn't match" errors on fallback data
+- **Layout engine coordinate mapping** (`pbip_generator.py`): Fixed Sprint 76 regression where containers without explicit orientation defaulted to vertical stacking instead of preserving 2-D grid positions
 
 ### Sprint 72 — Notebook-Based Interactive Migration ✅
 - **MigrationSession API** (`notebook_api.py`): New interactive migration API — `load()`, `assess()`, `preview_dax()`, `list_approximated()`, `edit_dax()`, `clear_dax_override()`, `preview_m()`, `preview_visuals()`, `override_visual_type()`, `configure()`, `generate()`, `validate()`, `deploy()`
