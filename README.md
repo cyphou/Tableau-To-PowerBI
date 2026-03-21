@@ -151,6 +151,20 @@ One-command deploy to **Power BI Service** or **Microsoft Fabric** with Azure AD
 </td>
 </tr>
 <tr>
+<td>
+
+### 🏭 Fabric-Native Output
+Generate **Lakehouse + Dataflow Gen2 + PySpark Notebook + DirectLake Semantic Model + Data Pipeline** with `--output-format fabric`. Full Fabric project from a single Tableau workbook.
+
+</td>
+<td>
+
+### ⚡ DAX Optimizer
+`--optimize-dax` rewrites verbose DAX: nested IF→SWITCH, IF(ISBLANK)→COALESCE, constant folding, SUMX simplification. `--time-intelligence auto` auto-injects YTD, PY, YoY% measures.
+
+</td>
+</tr>
+<tr>
 <td colspan="2">
 
 ### 🔗 Shared Semantic Model
@@ -173,8 +187,10 @@ flowchart LR
     P["📋 .tfl/.tflx\nPrep Flow"] -.-> B
     S["☁️ Tableau Server\n(optional)"] -.-> B
     B --> C["⚙️ GENERATE\n.pbip project"]
+    B --> F["🏭 GENERATE\nFabric artifacts"]
     C --> D["📊 Power BI Desktop\nOpen & validate"]
     C -.-> E["🚀 DEPLOY\nPBI Service / Fabric"]
+    F -.-> E
 
     style A fill:#E97627,color:#fff,stroke:#E97627
     style P fill:#E97627,color:#fff,stroke:#E97627
@@ -183,6 +199,7 @@ flowchart LR
     style E fill:#F2C811,color:#000,stroke:#F2C811
     style B fill:#4B8BBE,color:#fff,stroke:#4B8BBE
     style C fill:#4B8BBE,color:#fff,stroke:#4B8BBE
+    style F fill:#0078D4,color:#fff,stroke:#0078D4
 ```
 
 **Step 1 — Extract:** Parses Tableau XML into 16 structured JSON files (worksheets, datasources, calculations, etc.)
@@ -191,7 +208,52 @@ flowchart LR
 
 **Step 3 — Deploy** *(optional):* Packages and uploads to Power BI Service or Microsoft Fabric
 
-### � Shared Semantic Model Mode
+### 🏭 Fabric-Native Output Mode
+
+Use `--output-format fabric` to generate a **full Microsoft Fabric project** instead of a `.pbip`:
+
+```mermaid
+flowchart LR
+    A["📄 .twbx/.twb\nTableau Workbook"] --> B["🔍 EXTRACT\n16 JSON files"]
+    B --> C["⚙️ GENERATE\nFabric artifacts"]
+    C --> LH["🗄️ Lakehouse\nDelta tables + DDL"]
+    C --> DF["🔄 Dataflow Gen2\nPower Query M"]
+    C --> NB["📓 PySpark Notebook\nETL pipeline"]
+    C --> SM["📦 DirectLake\nSemantic Model"]
+    C --> PL["⚡ Data Pipeline\n3-stage orchestration"]
+    PL -.-> DF
+    PL -.-> NB
+    PL -.-> SM
+
+    style A fill:#E97627,color:#fff,stroke:#E97627
+    style B fill:#4B8BBE,color:#fff,stroke:#4B8BBE
+    style C fill:#4B8BBE,color:#fff,stroke:#4B8BBE
+    style LH fill:#0078D4,color:#fff,stroke:#0078D4
+    style DF fill:#0078D4,color:#fff,stroke:#0078D4
+    style NB fill:#0078D4,color:#fff,stroke:#0078D4
+    style SM fill:#0078D4,color:#fff,stroke:#0078D4
+    style PL fill:#0078D4,color:#fff,stroke:#0078D4
+```
+
+The pipeline generates **5 Fabric artifacts** from a single Tableau workbook:
+
+| Artifact | Description |
+|----------|-------------|
+| **Lakehouse** | Delta table schemas, Spark SQL DDL scripts, table metadata |
+| **Dataflow Gen2** | Power Query M ingestion queries with Lakehouse destinations |
+| **PySpark Notebook** | ETL pipeline (9 connector templates) + transformation notebook |
+| **Semantic Model** | DirectLake TMDL pointing to Lakehouse Delta tables |
+| **Data Pipeline** | 3-stage orchestration: Dataflow → Notebook → Semantic Model refresh |
+
+```bash
+# Generate Fabric-native output
+python migrate.py workbook.twbx --output-format fabric
+
+# With custom output directory
+python migrate.py workbook.twbx --output-format fabric --output-dir /tmp/fabric_output
+```
+
+### 🔗 Shared Semantic Model Mode
 
 When migrating multiple workbooks that share the same data sources, use `--shared-model` to produce **one shared semantic model** + **N thin reports**:
 
