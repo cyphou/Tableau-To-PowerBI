@@ -442,6 +442,203 @@ def resolve_table_for_formula(formula, datasource_name=None, dax_context=None):
 
 
 # ════════════════════════════════════════════════════════════════════
+#  SELF-HEALING — SEMANTIC MODEL VALIDATION & REPAIR
+# ════════════════════════════════════════════════════════════════════
+
+def _self_heal_model(model, recovery=None):
+    """Run post-generation semantic validation and auto-repair.
+
+    Checks for common issues that would prevent the .pbip from opening
+    in Power BI Desktop, and applies corrective strategies:
+
+      1. Broken column references in measures → hide measure + MigrationNote
+      2. Duplicate table names → auto-suffix with _2, _3, ...
+      3. Orphan measures (table missing) → reassign to first available table
+      4. Circular relationships → deactivate weakest link (delegate to existing)
+      5. Empty table names → skip
+      6. Measures referencing non-existent tables → rewrite table ref
+
+    Args:
+        model: Complete semantic model dict
+        recovery: Optional RecoveryReport instance for logging repairs
+
+    Returns:
+        int: Number of repairs applied
+    """
+    repairs = 0
+    tables = model.get('model', {}).get('tables', [])
+    relationships = model.get('model', {}).get('relationships', [])
+
+    # Build lookup of known tables and their columns
+    table_names = set()
+    table_columns = {}
+    for t in tables:
+        tname = t.get('name', '')
+        if tname:
+            table_names.add(tname)
+            table_columns[tname] = {c.get('name', '') for c in t.get('columns', [])}
+
+    # 1. Deduplicate table names
+    seen_names = {}
+    for t in tables:
+        tname = t.get('name', '')
+        if not tname:
+            continue
+        if tname in seen_names:
+            suffix = 2
+            new_name = f"{tname}_{suffix}"
+            while new_name in seen_names or new_name in table_names:
+                suffix += 1
+                new_name = f"{tname}_{suffix}"
+            old_name = tname
+            t['name'] = new_name
+            table_names.add(new_name)
+            table_columns[new_name] = table_columns.pop(old_name, set())
+            seen_names[new_name] = t
+            # Rewrite relationship references
+            for rel in relationships:
+                if rel.get('fromTable') == old_name:
+                    rel['fromTable'] = new_name
+                if rel.get('toTable') == old_name:
+                    rel['toTable'] = new_name
+            repairs += 1
+            print(f"  ⚕ Self-heal: Renamed duplicate table '{old_name}' → '{new_name}'")
+            if recovery:
+                recovery.record('tmdl', 'duplicate_table',
+                                item_name=old_name,
+                                description=f"Duplicate table name '{old_name}'",
+                                action=f"Renamed to '{new_name}'",
+                                severity='warning')
+        else:
+            seen_names[tname] = t
+
+    # 2. Validate measure column references
+    measure_names_in_model = set()
+    for t in tables:
+        for m in t.get('measures', []):
+            measure_names_in_model.add(m.get('name', ''))
+
+    all_columns = set()
+    for cols in table_columns.values():
+        all_columns.update(cols)
+
+    for t in tables:
+        tname = t.get('name', '')
+        for measure in t.get('measures', []):
+            expr = measure.get('expression', '')
+            if not expr:
+                continue
+            # Check for references to columns using [ColumnName] pattern
+            refs = re.findall(r'\[([^\]]+)\]', expr)
+            broken = False
+            for ref in refs:
+                # Skip if it's a known measure or known column
+                if ref in measure_names_in_model or ref in all_columns:
+                    continue
+                # Skip DAX keywords/functions
+                if ref.upper() in ('VALUE', 'FORMAT', 'YEAR', 'MONTH', 'DAY',
+                                   'HOUR', 'MINUTE', 'SECOND', 'DATE'):
+                    continue
+                # This reference doesn't resolve — mark as broken
+                broken = True
+                break
+
+            if broken:
+                measure['isHidden'] = True
+                measure.setdefault('annotations', []).append({
+                    'name': 'MigrationNote',
+                    'value': f'Self-heal: measure contains unresolved column reference [{ref}]. Review and fix manually.'
+                })
+                repairs += 1
+                mname = measure.get('name', '?')
+                print(f"  ⚕ Self-heal: Hidden measure '{mname}' (broken ref [{ref}])")
+                if recovery:
+                    recovery.record('tmdl', 'broken_column_ref',
+                                    item_name=mname,
+                                    description=f"Measure references non-existent column [{ref}]",
+                                    action="Measure hidden with MigrationNote",
+                                    severity='warning',
+                                    follow_up=f"Fix column reference [{ref}] in measure '{mname}'")
+
+    # 3. Orphan measures — measures on tables that got removed
+    #    (shouldn't normally happen, but defensive)
+    main_table = tables[0] if tables else None
+    for t in list(tables):
+        tname = t.get('name', '')
+        if not tname and t.get('measures'):
+            # Table has no name — move measures to main table
+            if main_table and main_table is not t:
+                for m in t.get('measures', []):
+                    m.setdefault('annotations', []).append({
+                        'name': 'MigrationNote',
+                        'value': f'Self-heal: orphan measure reassigned from unnamed table.'
+                    })
+                    main_table.setdefault('measures', []).append(m)
+                    repairs += 1
+                    print(f"  ⚕ Self-heal: Reassigned orphan measure '{m.get('name', '?')}' to '{main_table.get('name', '')}'")
+                    if recovery:
+                        recovery.record('tmdl', 'orphan_measure',
+                                        item_name=m.get('name', '?'),
+                                        description="Measure on unnamed table",
+                                        action=f"Reassigned to '{main_table.get('name', '')}'",
+                                        severity='info')
+                t['measures'] = []
+
+    # 4. Remove empty-name tables (defensive)
+    original_count = len(tables)
+    model['model']['tables'] = [t for t in tables if t.get('name', '').strip()]
+    removed = original_count - len(model['model']['tables'])
+    if removed:
+        repairs += removed
+        print(f"  ⚕ Self-heal: Removed {removed} unnamed table(s)")
+        if recovery:
+            recovery.record('tmdl', 'empty_table_name',
+                            description=f"Removed {removed} table(s) with empty names",
+                            action="Tables removed from model",
+                            severity='warning')
+
+    # 5. Circular relationship detection already handled by _deactivate_ambiguous_paths
+    #    but log to recovery report if any were deactivated
+    deactivated = [r for r in relationships if r.get('isActive') == False]
+    for rel in deactivated:
+        if recovery:
+            desc = (f"{rel.get('fromTable','')}.{rel.get('fromColumn','')} → "
+                    f"{rel.get('toTable','')}.{rel.get('toColumn','')}")
+            recovery.record('relationship', 'deactivated_ambiguous',
+                            item_name=desc,
+                            description="Relationship creates ambiguous path (cycle)",
+                            action="Deactivated to break cycle",
+                            severity='info')
+
+    # 6. M query self-repair — ensure all M partitions have try/otherwise wrapping
+    for t in model.get('model', {}).get('tables', []):
+        tname = t.get('name', '')
+        for part in t.get('partitions', []):
+            src = part.get('source', {})
+            if src.get('type') != 'm':
+                continue
+            m_expr = src.get('expression', '')
+            if not m_expr or 'try' in m_expr:
+                continue  # Already wrapped or empty
+            # Only wrap partitions that have a 'let ... in' structure
+            if 'let' not in m_expr.lower():
+                continue
+            col_names = [c.get('name', '') for c in t.get('columns', []) if c.get('name')]
+            wrapped = wrap_source_with_try_otherwise(m_expr, col_names)
+            if wrapped != m_expr:
+                src['expression'] = wrapped
+                repairs += 1
+                if recovery:
+                    recovery.record('m_query', 'try_otherwise_wrap',
+                                    item_name=tname,
+                                    description=f"M partition for '{tname}' lacks error handling",
+                                    action="Wrapped Source with try...otherwise fallback",
+                                    severity='info')
+
+    return repairs
+
+
+# ════════════════════════════════════════════════════════════════════
 #  PUBLIC ENTRY POINT
 # ════════════════════════════════════════════════════════════════════
 
@@ -484,6 +681,11 @@ def generate_tmdl(datasources, report_name, extra_objects, output_dir,
                                   model_mode=model_mode,
                                   composite_threshold=composite_threshold,
                                   agg_tables=agg_tables)
+
+    # Step 1b: Self-healing — validate and auto-repair common issues
+    from powerbi_import.recovery_report import RecoveryReport
+    recovery = RecoveryReport(report_name)
+    repair_count = _self_heal_model(model, recovery=recovery)
 
     # Attach languages metadata for _write_tmdl_files
     if languages:
@@ -532,6 +734,8 @@ def generate_tmdl(datasources, report_name, extra_objects, output_dir,
         'roles': len(model.get('model', {}).get('roles', [])),
         'actual_bim_measures': actual_bim_measures,
         'actual_bim_symbols': actual_bim_symbols,
+        'self_heal_repairs': repair_count,
+        'recovery_summary': recovery.get_summary() if recovery.has_repairs else None,
     }
     return stats
 

@@ -67,6 +67,7 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
   - `dax_optimizer.py`: DAX optimizer engine — AST-based rewriter (nested IF→SWITCH, IF(ISBLANK)→COALESCE, redundant CALCULATE collapse, constant folding, SUMX simplification), Time Intelligence auto-injection (YTD, PY, YoY%), measure dependency DAG, optimization report
   - `equivalence_tester.py`: Cross-platform validation — measure value comparison with tolerance, SSIM-based screenshot comparison, validation report generation
   - `regression_suite.py`: Regression suite — snapshot generation (tables, measures, filters, formula hashes), snapshot comparison with drift detection
+  - `recovery_report.py`: Self-healing recovery report — records every auto-repair action (category, severity, description, action, follow-up), JSON export, MigrationReport integration via `merge_into()`
   - `deploy/`: Fabric deployment subpackage
     - `auth.py`: Azure AD authentication — Service Principal + Managed Identity (optional `azure-identity`)
     - `client.py`: Fabric REST API client — auto-detects `requests` with retry, falls back to `urllib`
@@ -79,7 +80,7 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
     - `pbi_deployer.py`: PBI Service deployment orchestrator — package, upload, poll, refresh, validate, `deploy_refresh_schedule()` for PBI REST API refresh config
     - `bundle_deployer.py`: Fabric bundle deployer — deploy shared model + thin reports as atomic bundle, artifact discovery, per-report error isolation, rebind, refresh, `BundleDeploymentResult`
     - `multi_tenant.py`: Multi-tenant deployment — `TenantConfig`/`MultiTenantConfig` (validate/load/save JSON), `_apply_connection_overrides()` (template substitution: `${TENANT_SERVER}`, `${TENANT_DATABASE}`), `deploy_multi_tenant()` orchestrator with per-tenant results
-- **tests/**: Unit and integration tests (6,137+ tests across 128 test files + conftest.py shared fixtures)
+- **tests/**: Unit and integration tests (6,187+ tests across 129 test files + conftest.py shared fixtures)
 - **docs/**: FAQ, PBI project guide, mapping reference, **ROADMAP.md** (v22–v24 development roadmap per agent)
 - **.github/workflows/ci.yml**: CI/CD pipeline (lint → test → validate → deploy)
 - **.github/workflows/publish.yml**: PyPI auto-publish workflow (tag-triggered, OIDC trusted publisher)

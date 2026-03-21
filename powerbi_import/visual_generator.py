@@ -722,6 +722,124 @@ def get_custom_visual_guid_for_approx(source_type):
 
 
 # ═══════════════════════════════════════════════════════════════════
+# Visual Fallback Cascade — Self-Healing for Invalid Visual Configs
+# ═══════════════════════════════════════════════════════════════════
+
+# When a visual config is invalid (missing required data role, unsupported
+# config), degrade through this cascade: complex → simpler → table → card.
+
+VISUAL_FALLBACK_CASCADE = {
+    # Complex visuals → simpler alternatives
+    'scatterChart':                      'tableEx',
+    'lineClusteredColumnComboChart':     'clusteredBarChart',
+    'lineStackedColumnComboChart':       'stackedBarChart',
+    'boxAndWhisker':                     'clusteredColumnChart',
+    'bulletChart':                       'clusteredBarChart',
+    'decompositionTree':                 'tableEx',
+    'waterfallChart':                    'clusteredColumnChart',
+    'ribbonChart':                       'stackedBarChart',
+    'sunburst':                          'treemap',
+    'treemap':                           'tableEx',
+    'funnel':                            'clusteredBarChart',
+    'map':                               'tableEx',
+    'filledMap':                         'tableEx',
+    'shapeMap':                          'tableEx',
+    'gauge':                             'card',
+    'kpi':                               'card',
+    # Simple visuals → table as last resort
+    'clusteredBarChart':                 'tableEx',
+    'stackedBarChart':                   'tableEx',
+    'clusteredColumnChart':              'tableEx',
+    'stackedColumnChart':                'tableEx',
+    'lineChart':                         'tableEx',
+    'areaChart':                         'tableEx',
+    'pieChart':                          'tableEx',
+    'donutChart':                        'tableEx',
+    'matrix':                            'tableEx',
+    # Terminal: table → card
+    'tableEx':                           'card',
+}
+
+
+def _validate_visual_data_roles(pbi_type, has_dimensions, has_measures):
+    """Check if the visual has enough data roles to render.
+
+    Returns True if the visual can render, False if it needs fallback.
+    """
+    roles = VISUAL_DATA_ROLES.get(pbi_type)
+    if not roles:
+        return True  # Unknown type — let PBI handle it
+
+    dim_roles, meas_roles = roles
+
+    # Textbox, image, actionButton — no data needed
+    if not dim_roles and not meas_roles:
+        return True
+
+    # Card only needs measures
+    if pbi_type in ('card', 'multiRowCard', 'kpi'):
+        return has_measures
+
+    # Gauge only needs at least one measure
+    if pbi_type == 'gauge':
+        return has_measures
+
+    # Slicer only needs dimensions
+    if pbi_type == 'slicer':
+        return has_dimensions
+
+    # Table/matrix can work with either
+    if pbi_type in ('tableEx', 'matrix', 'pivotTable'):
+        return has_dimensions or has_measures
+
+    # Most chart types need at least a category dimension
+    if dim_roles and not has_dimensions:
+        return False
+
+    return True
+
+
+def _apply_visual_fallback(pbi_type, has_dimensions, has_measures, source_type=''):
+    """Apply fallback cascade when a visual doesn't have required data.
+
+    Returns:
+        tuple: (new_pbi_type, fallback_note or None)
+    """
+    original = pbi_type
+    visited = {pbi_type}
+    max_depth = 5
+
+    for _ in range(max_depth):
+        if _validate_visual_data_roles(pbi_type, has_dimensions, has_measures):
+            if pbi_type != original:
+                note = (f"Self-heal: '{original}' degraded to '{pbi_type}' — "
+                        f"missing required data roles for original type")
+                return pbi_type, note
+            return pbi_type, None
+
+        # Try next in cascade
+        fallback = VISUAL_FALLBACK_CASCADE.get(pbi_type)
+        if not fallback or fallback in visited:
+            break
+        visited.add(fallback)
+        pbi_type = fallback
+
+    # Ultimate fallback: card (always renders)
+    if pbi_type != original:
+        note = (f"Self-heal: '{original}' degraded to '{pbi_type}' — "
+                f"no compatible visual type found, showing as placeholder")
+        return pbi_type, note
+
+    # If nothing worked, use card
+    if not _validate_visual_data_roles(pbi_type, has_dimensions, has_measures):
+        note = (f"Self-heal: '{original}' degraded to 'card' — "
+                f"no data roles could be satisfied")
+        return 'card', note
+
+    return pbi_type, None
+
+
+# ═══════════════════════════════════════════════════════════════════
 # Small Multiples support — visual types that support this feature
 # ═══════════════════════════════════════════════════════════════════
 
@@ -1026,6 +1144,20 @@ def create_visual_container(worksheet, visual_id=None, x=10, y=10,
 
     # Check for approximation note
     approx_note = get_approximation_note(visual_type)
+
+    # Sprint 96: Visual fallback cascade — degrade if data roles can't be satisfied
+    # Only apply when the worksheet has SOME data; empty worksheets are kept as-is.
+    data_fields = worksheet.get('dataFields', [])
+    has_dims = bool(worksheet.get('dimensions')) or any(
+        f.get('role') == 'dimension' for f in data_fields)
+    has_meas = (bool(worksheet.get('measures'))
+                or any(f.get('role') == 'measure' for f in data_fields)
+                or bool(data_fields))
+    has_any_data = has_dims or has_meas
+    if has_any_data:
+        pbi_type, fallback_note = _apply_visual_fallback(pbi_type, has_dims, has_meas, visual_type)
+        if fallback_note:
+            approx_note = f"{approx_note}; {fallback_note}" if approx_note else fallback_note
 
     # Generate a unique GUID for the visual
     vid = visual_id or _new_guid()

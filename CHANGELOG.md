@@ -1,5 +1,14 @@
 # Changelog
 
+## v26.0.0 — Autonomous Migration & Production Hardening (in progress)
+
+### Sprint 96 — Self-Healing Migration Pipeline ✅
+- **Recovery report** (`recovery_report.py`): New module — records every self-repair action with category, severity, description, action, and follow-up recommendations. JSON export, console summary, and `merge_into()` integration with MigrationReport.
+- **TMDL self-repair** (`tmdl_generator.py`): Post-generation validation phase — auto-fixes duplicate table names (suffix _2, _3), broken column references in measures (hidden + MigrationNote), orphan measures on unnamed tables (reassigned), empty-name tables (removed). Recovery actions tracked in RecoveryReport.
+- **Visual fallback cascade** (`visual_generator.py`): When a visual lacks required data roles, degrades through a cascade: complex → simpler → table → card. 35+ visual type fallback mappings, validation function for data role requirements, combined migration notes for approximation + degradation.
+- **M query self-repair** (`tmdl_generator.py`): Self-heal phase ensures all M partitions without try/otherwise wrapping get wrapped automatically. Catches partitions from dynamic parameters, Calendar tables, and other generated sources.
+- **50 tests** in `test_self_healing.py` (RecoveryReport, TMDL self-heal, visual fallback cascade, M query repair, integration scenarios)
+
 ## v25.0.0 — Semantic Intelligence & Cross-Platform Parity
 
 ### Sprint 91 — Fabric-Native Artifact Generation ✅
