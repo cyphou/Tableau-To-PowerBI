@@ -953,3 +953,292 @@ def save_global_assessment_json(
         json.dump(data, f, indent=2, ensure_ascii=False)
     logger.info("Global assessment JSON saved to %s", output_path)
     return output_path
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Sprint 88 — Enterprise Portfolio Intelligence
+# ══════════════════════════════════════════════════════════════════════════════
+
+def build_data_lineage(
+    all_extracted: List[dict],
+    workbook_names: List[str],
+) -> Dict:
+    """Build a cross-workbook data lineage graph.
+
+    Traces: datasource → tables → calculations → visuals for each workbook,
+    and identifies shared datasources/tables across workbooks.
+
+    Returns:
+        dict with 'nodes' (list) and 'edges' (list) for a directed graph.
+    """
+    nodes = []
+    edges = []
+    node_id = 0
+    node_map = {}  # (type, name) -> id
+
+    def _get_or_create(ntype, name, wb=None):
+        nonlocal node_id
+        key = (ntype, name)
+        if key not in node_map:
+            node_map[key] = node_id
+            nodes.append({
+                'id': node_id,
+                'type': ntype,
+                'name': name,
+                'workbooks': [],
+            })
+            node_id += 1
+        nid = node_map[key]
+        if wb and wb not in nodes[nid]['workbooks']:
+            nodes[nid]['workbooks'].append(wb)
+        return nid
+
+    for wb_name, ext in zip(workbook_names, all_extracted):
+        # Datasources → tables
+        for ds in ext.get('datasources', []):
+            ds_name = ds.get('caption', ds.get('name', ''))
+            ds_id = _get_or_create('datasource', ds_name, wb_name)
+            for tbl in ds.get('tables', []):
+                tbl_name = tbl.get('name', '')
+                if not tbl_name:
+                    continue
+                tbl_id = _get_or_create('table', tbl_name, wb_name)
+                edges.append({'source': ds_id, 'target': tbl_id, 'type': 'contains'})
+
+            # Calculations
+            for calc in ds.get('calculations', []):
+                calc_name = calc.get('name', '')
+                if not calc_name:
+                    continue
+                calc_id = _get_or_create('calculation', calc_name, wb_name)
+                # Link to parent table if known
+                for tbl in ds.get('tables', []):
+                    tbl_id = node_map.get(('table', tbl.get('name', '')))
+                    if tbl_id is not None:
+                        edges.append({'source': tbl_id, 'target': calc_id, 'type': 'computes'})
+                        break
+
+        # Worksheets → visuals (use fields to link to tables/calculations)
+        for ws in ext.get('worksheets', []):
+            ws_name = ws.get('name', '')
+            if not ws_name:
+                continue
+            vis_id = _get_or_create('visual', ws_name, wb_name)
+            for fld in ws.get('fields', []):
+                fld_name = fld if isinstance(fld, str) else fld.get('name', '')
+                for ntype in ('calculation', 'table'):
+                    src_id = node_map.get((ntype, fld_name))
+                    if src_id is not None:
+                        edges.append({'source': src_id, 'target': vis_id, 'type': 'displays'})
+                        break
+
+    return {'nodes': nodes, 'edges': edges}
+
+
+def recommend_consolidation(
+    global_result: GlobalAssessment,
+) -> List[Dict]:
+    """Recommend whether each workbook cluster should share a model or stay standalone.
+
+    Enhances merge cluster analysis with actionable recommendations based on
+    data overlap, update frequency patterns, and audience segmentation.
+
+    Returns:
+        list of recommendation dicts per cluster/isolated workbook.
+    """
+    recommendations = []
+
+    for cluster in global_result.merge_clusters:
+        score = cluster.avg_score
+        wbs = cluster.workbooks
+        shared = cluster.shared_tables
+
+        if score >= 70:
+            action = 'shared_model'
+            reason = (f"High overlap ({score:.0f}%) with {len(shared)} shared tables. "
+                      f"Consolidate into a single shared semantic model.")
+        elif score >= 45:
+            action = 'partial_merge'
+            reason = (f"Moderate overlap ({score:.0f}%). Merge shared tables into "
+                      f"a base model; keep workbook-specific tables as thin reports.")
+        else:
+            action = 'review'
+            reason = (f"Low overlap ({score:.0f}%). Consider keeping separate "
+                      f"but standardizing connection strings and naming.")
+
+        recommendations.append({
+            'workbooks': wbs,
+            'action': action,
+            'score': score,
+            'shared_tables': shared,
+            'reason': reason,
+        })
+
+    for wb_name in global_result.isolated_workbooks:
+        recommendations.append({
+            'workbooks': [wb_name],
+            'action': 'standalone',
+            'score': 0,
+            'shared_tables': [],
+            'reason': 'No overlap with other workbooks. Migrate independently.',
+        })
+
+    return recommendations
+
+
+def plan_resource_allocation(
+    server_assessment,
+    team_size: int = 3,
+) -> Dict:
+    """Plan team allocation based on complexity and wave structure.
+
+    Args:
+        server_assessment: ServerAssessment result from server_assessment module.
+        team_size: Available team members (default: 3).
+
+    Returns:
+        dict with per-wave resource allocation and timeline.
+    """
+    waves = server_assessment.waves if hasattr(server_assessment, 'waves') else []
+    total_effort = server_assessment.total_effort_hours if hasattr(server_assessment, 'total_effort_hours') else 0
+
+    allocation = {
+        'team_size': team_size,
+        'total_effort_hours': total_effort,
+        'waves': [],
+    }
+
+    for wave in waves:
+        w_effort = wave.total_effort if hasattr(wave, 'total_effort') else 0
+        w_count = len(wave.workbooks) if hasattr(wave, 'workbooks') else 0
+        # Skill mix recommendation based on wave label
+        label = wave.label if hasattr(wave, 'label') else ''
+        if 'complex' in label.lower():
+            skills = {'dax_expert': 1, 'm_expert': 1, 'visual_designer': max(1, team_size - 2)}
+        elif 'easy' in label.lower():
+            skills = {'dax_expert': 0, 'm_expert': 0, 'visual_designer': team_size}
+        else:
+            skills = {'dax_expert': 1, 'm_expert': 0, 'visual_designer': max(1, team_size - 1)}
+
+        # Parallel weeks: effort / (team_size * 40h/week), minimum 1 week
+        weeks = max(1, round(w_effort / (team_size * 40), 1)) if team_size > 0 else 0
+
+        allocation['waves'].append({
+            'wave': wave.wave_number if hasattr(wave, 'wave_number') else 0,
+            'label': label,
+            'workbooks': w_count,
+            'effort_hours': w_effort,
+            'estimated_weeks': weeks,
+            'skill_mix': skills,
+        })
+
+    return allocation
+
+
+def generate_governance_report(
+    global_result: GlobalAssessment,
+    server_assessment=None,
+    output_path: str = 'governance_report.html',
+) -> str:
+    """Generate an executive governance report (HTML).
+
+    Combines global assessment (merge clusters, overlap) with server assessment
+    (complexity, effort, waves) into a single executive summary.
+
+    Returns:
+        Path to the generated HTML file.
+    """
+    total = global_result.total_workbooks
+    clusters = global_result.merge_clusters
+    isolated = global_result.isolated_workbooks
+
+    # Build wave summary from server assessment
+    wave_rows = ''
+    total_effort = 0
+    if server_assessment:
+        for wave in getattr(server_assessment, 'waves', []):
+            label = getattr(wave, 'label', '')
+            count = len(getattr(wave, 'workbooks', []))
+            effort = getattr(wave, 'total_effort', 0)
+            total_effort += effort
+            wave_rows += (
+                f'<tr><td>Wave {getattr(wave, "wave_number", "?")}</td>'
+                f'<td>{label}</td><td>{count}</td>'
+                f'<td>{effort:.1f}h</td></tr>\n'
+            )
+
+    # Risk matrix
+    green = getattr(server_assessment, 'green_count', 0) if server_assessment else 0
+    yellow = getattr(server_assessment, 'yellow_count', 0) if server_assessment else 0
+    red = getattr(server_assessment, 'red_count', 0) if server_assessment else 0
+
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Migration Governance Report</title>
+<style>
+body {{ font-family: Segoe UI, sans-serif; margin: 2em; color: #333; }}
+h1 {{ color: #0078d4; }}
+h2 {{ border-bottom: 2px solid #0078d4; padding-bottom: 4px; }}
+table {{ border-collapse: collapse; margin: 1em 0; }}
+th, td {{ border: 1px solid #ddd; padding: 8px 12px; text-align: left; }}
+th {{ background: #0078d4; color: white; }}
+.green {{ color: #107c10; font-weight: bold; }}
+.yellow {{ color: #ca5010; font-weight: bold; }}
+.red {{ color: #d13438; font-weight: bold; }}
+.metric {{ display: inline-block; margin: 1em 2em 1em 0; text-align: center; }}
+.metric-value {{ font-size: 2em; font-weight: bold; color: #0078d4; }}
+.metric-label {{ font-size: 0.9em; color: #666; }}
+</style>
+</head>
+<body>
+<h1>Migration Governance Report</h1>
+<p>Generated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}</p>
+
+<h2>Executive Summary</h2>
+<div>
+<div class="metric"><div class="metric-value">{total}</div><div class="metric-label">Total Workbooks</div></div>
+<div class="metric"><div class="metric-value">{len(clusters)}</div><div class="metric-label">Merge Clusters</div></div>
+<div class="metric"><div class="metric-value">{len(isolated)}</div><div class="metric-label">Standalone</div></div>
+<div class="metric"><div class="metric-value">{total_effort:.0f}h</div><div class="metric-label">Estimated Effort</div></div>
+</div>
+
+<h2>Risk Matrix</h2>
+<table>
+<tr><th>Status</th><th>Count</th><th>Percentage</th></tr>
+<tr><td class="green">GREEN (ready)</td><td>{green}</td><td>{green/max(total,1)*100:.0f}%</td></tr>
+<tr><td class="yellow">YELLOW (review)</td><td>{yellow}</td><td>{yellow/max(total,1)*100:.0f}%</td></tr>
+<tr><td class="red">RED (complex)</td><td>{red}</td><td>{red/max(total,1)*100:.0f}%</td></tr>
+</table>
+
+<h2>Migration Waves</h2>
+<table>
+<tr><th>Wave</th><th>Label</th><th>Workbooks</th><th>Effort</th></tr>
+{wave_rows if wave_rows else '<tr><td colspan="4">No wave data available</td></tr>'}
+</table>
+
+<h2>Model Consolidation</h2>
+<table>
+<tr><th>Cluster</th><th>Workbooks</th><th>Shared Tables</th><th>Avg Score</th><th>Recommendation</th></tr>
+"""
+    for c in clusters:
+        html += (
+            f'<tr><td>Cluster {c.cluster_id}</td>'
+            f'<td>{", ".join(c.workbooks)}</td>'
+            f'<td>{len(c.shared_tables)}</td>'
+            f'<td>{c.avg_score:.0f}</td>'
+            f'<td>{c.recommendation}</td></tr>\n'
+        )
+    if not clusters:
+        html += '<tr><td colspan="5">No merge clusters detected</td></tr>\n'
+
+    html += """</table>
+</body>
+</html>"""
+
+    os.makedirs(os.path.dirname(os.path.abspath(output_path)) or '.', exist_ok=True)
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(html)
+    logger.info("Governance report saved to %s", output_path)
+    return output_path

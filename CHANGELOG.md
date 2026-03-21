@@ -1,5 +1,51 @@
 # Changelog
 
+## v24.0.0 — Composite Models, Live Sync & Enterprise Scale
+
+### Sprint 86 — Composite Model Depth ✅
+- **Per-table StorageMode** (`tmdl_generator.py`): `--composite-threshold COLS` classifies tables — tables with fewer columns than threshold → Import mode, others → DirectQuery. TMDL `mode` property on partitions.
+- **Aggregation table generation** (`tmdl_generator.py`): `--agg-tables auto` auto-generates Import-mode `Agg_{tablename}` tables for DirectQuery fact tables with `alternateOf` column annotations linking to detail columns.
+- **Hybrid relationship constraints** (`tmdl_generator.py`): Cross-storage-mode relationships auto-set to `crossFilteringBehavior: oneDirection`. Warns on bi-directional cross-mode relationships.
+- **Composite CLI flags** (`migrate.py`): `--composite-threshold COLS` and `--agg-tables auto|none` flags.
+- **32 tests** in `test_composite_model.py`
+
+### Sprint 87 — Extraction & Conversion Hardening ✅
+- **Published datasource resolution** (`datasource_extractor.py`): For sqlproxy connections, calls Tableau Server API to fetch full datasource definition. Merges remote tables/columns/connection into extraction pipeline.
+- **Nested LOD regression tests** (`dax_converter.py`): Confirmed nested LOD (LOD within LOD) already works via iterative inside-out conversion (50 iterations). Added regression tests.
+- **Complex join graph detection** (`tmdl_generator.py`): Multi-hop chain (A→B→C) and diamond join (A→B→D, A→C→D) detection via adjacency graph analysis. Returns deduped warning list.
+- **Multi-connection M queries** (`m_query_builder.py`): Workbooks connecting to multiple databases → separate Power Query parameters per connection (`ServerName`/`DatabaseName` for first, `Conn2ServerName`/`Conn2DatabaseName` for subsequent).
+- **Data type coercion detection** (`datasource_extractor.py`): Detects Tableau auto-coercion patterns (string→date, string→number) for explicit M `Table.TransformColumnTypes` step generation.
+- **30 tests** in `test_edge_cases.py`
+
+### Sprint 88 — Enterprise Portfolio Intelligence ✅
+- **Data lineage graph** (`global_assessment.py`): Cross-workbook data lineage: datasource → tables → calculations → visuals as directed graph with nodes and edges.
+- **Consolidation recommender** (`global_assessment.py`): Per-cluster recommendations: score≥70 → shared_model, ≥45 → partial_merge, else → review; isolated workbooks → standalone.
+- **Resource allocation planner** (`global_assessment.py`): Per-wave team size, skill mix (DAX expert, M expert, visual designer), estimated weeks based on complexity scores.
+- **Governance report** (`global_assessment.py`): Executive HTML report with metrics, risk matrix (GREEN/YELLOW/RED), migration waves table, model consolidation clusters.
+- **22 tests** in `test_portfolio_intelligence.py`
+
+### Sprint 89 — Live Sync & Incremental Refresh ✅
+- **Source change detection** (`incremental.py`): `SourceChangeDetector` class — manifest-based change detection comparing `updatedAt` + content hash against last migration.
+- **Incremental diff generation** (`incremental.py`): `IncrementalDiffGenerator` — targeted incremental updates with added/modified/removed/unchanged artifact tracking.
+- **Auto-deploy sync** (`deploy/pbi_deployer.py`): `deploy_sync()` method — detects changes via incremental diff, skips deployment if no changes, otherwise calls `deploy_project()`.
+- **Change notification** (`telemetry.py`): `ChangeNotifier` class — structured change events with optional webhook notification (Teams/Slack compatible JSON).
+- **19 tests** in `test_live_sync.py`
+
+### Sprint 90 — Enterprise Scale & v24.0.0 Release ✅
+- **Parallel batch processing** (`migrate.py`): `--workers N` alias for `--parallel N` for enterprise batch migrations.
+- **Sync deployment flag** (`migrate.py`): `--sync` flag for auto-deploy after change detection.
+- **Enterprise deployment guide** (`docs/ENTERPRISE_GUIDE.md`): 8-phase step-by-step guide (Discovery → Assessment → Wave Planning → Pilot → Batch Migration → Validation → Deployment → Live Sync).
+- **Enterprise scale validation**: Synthetic 50-table / 10-workbook batch benchmarks under 5 seconds.
+- **12 tests** in `test_enterprise_scale.py`
+
+### Version Summary
+- **Version bump**: 23.0.0 → 24.0.0
+- **New test files**: 5 (test_composite_model.py, test_edge_cases.py, test_portfolio_intelligence.py, test_live_sync.py, test_enterprise_scale.py)
+- **New tests**: 115 (32 + 30 + 22 + 19 + 12)
+- **New docs**: `docs/ENTERPRISE_GUIDE.md`
+
+---
+
 ## v23.0.0 — Conversion Accuracy & Fidelity Perfection
 
 ### Sprint 84 — Conversion Accuracy Depth ✅

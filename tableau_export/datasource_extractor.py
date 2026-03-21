@@ -109,6 +109,153 @@ def extract_datasource(datasource_elem, twbx_path=None):
     return datasource
 
 
+# ── Type coercion detection ────────────────────────────────────────────────────
+
+# Tableau type patterns that look like auto-coerced values
+_COERCION_PATTERNS = {
+    ('string', 'date'): 'date',
+    ('string', 'datetime'): 'datetime',
+    ('string', 'integer'): 'integer',
+    ('string', 'real'): 'real',
+}
+
+
+def detect_type_coercions(datasource):
+    """Detect columns where Tableau may auto-coerce types.
+
+    Compares the raw source type (from ``<relation>`` column metadata) against
+    the semantic type (from ``<column>`` metadata).  When they differ in a way
+    that indicates implicit coercion (e.g. string→date), returns a list of
+    coercion hints that should be emitted as explicit ``Table.TransformColumnTypes``
+    steps in Power Query M.
+
+    Args:
+        datasource: Datasource dict from ``extract_datasource()``.
+
+    Returns:
+        list of dicts ``{'table', 'column', 'from_type', 'to_type'}``
+    """
+    coercions = []
+    col_metadata = {c['name']: c for c in datasource.get('columns', [])
+                    if isinstance(c, dict)}
+
+    for table in datasource.get('tables', []):
+        tbl_name = table.get('name', '')
+        for col in table.get('columns', []):
+            col_name = col.get('name', '')
+            raw_type = (col.get('datatype') or 'string').lower()
+            # Check if metadata declares a different semantic type
+            meta = col_metadata.get(col_name, {})
+            semantic_type = (meta.get('datatype') or raw_type).lower()
+
+            key = (raw_type, semantic_type)
+            if key in _COERCION_PATTERNS:
+                coercions.append({
+                    'table': tbl_name,
+                    'column': col_name,
+                    'from_type': raw_type,
+                    'to_type': semantic_type,
+                })
+    return coercions
+
+
+def resolve_published_datasource(datasource, server_client=None):
+    """Resolve a published (sqlproxy) datasource via Tableau Server API.
+
+    If the datasource connection type is 'Tableau Server' (sqlproxy), and a
+    ``server_client`` is provided, fetch the published datasource definition
+    and merge its tables, columns, and connection info into the local datasource.
+
+    Args:
+        datasource: Datasource dict from extract_datasource().
+        server_client: Optional TableauServerClient (from server_client.py).
+
+    Returns:
+        The datasource dict (mutated in place, or unchanged if not sqlproxy).
+    """
+    conn = datasource.get('connection', {})
+    if conn.get('type') != 'Tableau Server':
+        return datasource
+
+    ds_name = conn.get('details', {}).get('server_ds_name', '')
+    if not ds_name or server_client is None:
+        # Mark as unresolved — caller can warn or skip
+        datasource['_published_unresolved'] = True
+        return datasource
+
+    try:
+        # Attempt to list datasources and find matching one
+        remote_datasources = server_client.list_datasources()
+        match = None
+        for rds in remote_datasources:
+            if rds.get('name', '') == ds_name:
+                match = rds
+                break
+
+        if not match:
+            datasource['_published_unresolved'] = True
+            logger.warning('Published datasource %r not found on server', ds_name)
+            return datasource
+
+        # Download and extract the remote datasource
+        ds_id = match.get('id', '')
+        if ds_id and hasattr(server_client, 'download_datasource'):
+            import tempfile
+            tmp_path = server_client.download_datasource(ds_id)
+            if tmp_path and os.path.exists(tmp_path):
+                try:
+                    remote_ds = _parse_published_datasource_file(tmp_path)
+                    if remote_ds:
+                        # Merge: take connection, tables, columns from remote
+                        if remote_ds.get('connection'):
+                            datasource['connection'] = remote_ds['connection']
+                        if remote_ds.get('tables'):
+                            datasource['tables'] = remote_ds['tables']
+                        if remote_ds.get('columns'):
+                            datasource['columns'] = remote_ds['columns']
+                        if remote_ds.get('relationships'):
+                            datasource['relationships'] = remote_ds['relationships']
+                        if remote_ds.get('connection_map'):
+                            datasource['connection_map'] = remote_ds['connection_map']
+                        datasource['_published_resolved'] = True
+                finally:
+                    try:
+                        os.remove(tmp_path)
+                    except OSError:
+                        pass
+    except Exception as e:
+        logger.warning('Failed to resolve published datasource %r: %s', ds_name, e)
+        datasource['_published_unresolved'] = True
+
+    return datasource
+
+
+def _parse_published_datasource_file(file_path):
+    """Parse a downloaded .tdsx/.tds file into a datasource dict."""
+    try:
+        ext = os.path.splitext(file_path)[1].lower()
+        if ext == '.tdsx':
+            with zipfile.ZipFile(file_path, 'r') as z:
+                tds_names = [n for n in z.namelist() if n.endswith('.tds')]
+                if not tds_names:
+                    return None
+                with z.open(tds_names[0]) as f:
+                    tree = ET.parse(f)
+        else:
+            tree = ET.parse(file_path)
+
+        root = tree.getroot()
+        ds_elem = root.find('.//datasource')
+        if ds_elem is None:
+            ds_elem = root if root.tag == 'datasource' else None
+        if ds_elem is None:
+            return None
+        return extract_datasource(ds_elem, twbx_path=file_path if ext == '.tdsx' else None)
+    except Exception as e:
+        logger.warning('Could not parse published datasource file %s: %s', file_path, e)
+        return None
+
+
 def _parse_connection_class(inner_conn, named_conn=None, twbx_path=None):
     """Parses a single Tableau <connection> element into {type, details}.
     

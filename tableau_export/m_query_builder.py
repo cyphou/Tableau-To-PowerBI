@@ -1846,3 +1846,50 @@ def parameterize_connection(m_expression, param_map=None):
         # Replace quoted values with parameter references
         result = result.replace(f'"{placeholder}"', f'#"{pq_param}"')
     return result
+
+
+def generate_connection_parameters(connection_map):
+    """Generate Power Query parameter M expressions for multi-connection workbooks.
+
+    When a workbook connects to multiple databases, each unique connection
+    gets its own server/database parameters to allow independent configuration.
+
+    Args:
+        connection_map: Dict of connection_name -> connection_details
+            from datasource_extractor.
+
+    Returns:
+        list of dicts with ``name`` and ``m_expression`` for PBI parameters.
+    """
+    params = []
+    seen_servers = {}  # (server, database) -> param_prefix
+    idx = 0
+
+    for conn_name, conn in connection_map.items():
+        details = conn.get('details', {})
+        server = details.get('server', '')
+        database = details.get('database', '')
+        if not server:
+            continue
+
+        key = (server, database)
+        if key in seen_servers:
+            continue  # Same connection already parameterized
+
+        idx += 1
+        prefix = f"Conn{idx}" if idx > 1 else ""
+        seen_servers[key] = prefix
+
+        # Server parameter
+        params.append({
+            'name': f'{prefix}ServerName' if prefix else 'ServerName',
+            'm_expression': f'"{server}" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]',
+        })
+        # Database parameter (if applicable)
+        if database:
+            params.append({
+                'name': f'{prefix}DatabaseName' if prefix else 'DatabaseName',
+                'm_expression': f'"{database}" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]',
+            })
+
+    return params

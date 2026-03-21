@@ -447,7 +447,8 @@ def resolve_table_for_formula(formula, datasource_name=None, dax_context=None):
 
 def generate_tmdl(datasources, report_name, extra_objects, output_dir,
                   calendar_start=None, calendar_end=None, culture=None,
-                  model_mode='import', languages=None):
+                  model_mode='import', languages=None,
+                  composite_threshold=None, agg_tables='none'):
     """
     Main entry point: directly convert extracted Tableau data to TMDL files.
 
@@ -463,6 +464,11 @@ def generate_tmdl(datasources, report_name, extra_objects, output_dir,
         model_mode: 'import', 'directquery', or 'composite'
                     Controls partition mode for all tables
         languages: Comma-separated additional locales (e.g. 'fr-FR,de-DE')
+        composite_threshold: Column count threshold for composite mode.
+                    Tables with more columns than this → directQuery, fewer → import.
+                    Default: 10 columns.
+        agg_tables: 'auto' to generate Import-mode aggregation tables for
+                    directQuery fact tables, 'none' to skip (default).
 
     Returns:
         dict: Statistics about the generated model
@@ -475,7 +481,9 @@ def generate_tmdl(datasources, report_name, extra_objects, output_dir,
                                   calendar_start=calendar_start,
                                   calendar_end=calendar_end,
                                   culture=culture,
-                                  model_mode=model_mode)
+                                  model_mode=model_mode,
+                                  composite_threshold=composite_threshold,
+                                  agg_tables=agg_tables)
 
     # Attach languages metadata for _write_tmdl_files
     if languages:
@@ -529,7 +537,8 @@ def generate_tmdl(datasources, report_name, extra_objects, output_dir,
 
 def _build_semantic_model(datasources, report_name="Report", extra_objects=None,
                           calendar_start=None, calendar_end=None, culture=None,
-                          model_mode='import'):
+                          model_mode='import', composite_threshold=None,
+                          agg_tables='none'):
     """
     Build a complete semantic model from extracted Tableau datasources.
 
@@ -562,6 +571,8 @@ def _build_semantic_model(datasources, report_name="Report", extra_objects=None,
 
     # Store model mode for partition generation
     model['_model_mode'] = model_mode or 'import'
+    model['_composite_threshold'] = composite_threshold
+    model['_agg_tables'] = agg_tables or 'none'
 
     # Store raw datasources for M parameter generation (server/database)
     model['_datasources'] = datasources
@@ -579,7 +590,87 @@ def _build_semantic_model(datasources, report_name="Report", extra_objects=None,
     _apply_semantic_enrichments(model, extra_objects, ctx['main_table_name'],
                                 ctx['column_table_map'], datasources)
 
+    # Phase 13: Composite model post-processing
+    if (model_mode or 'import') == 'composite':
+        _enforce_hybrid_relationship_constraints(model)
+        if (agg_tables or 'none') == 'auto':
+            _generate_aggregation_tables(model)
+
     return model
+
+
+def _enforce_hybrid_relationship_constraints(model):
+    """Enforce oneDirection cross-filtering for relationships spanning storage modes."""
+    table_modes = {}
+    for table in model['model']['tables']:
+        tname = table.get('name', '')
+        partitions = table.get('partitions', [])
+        mode = partitions[0].get('mode', 'import') if partitions else 'import'
+        table_modes[tname] = mode
+
+    for rel in model['model']['relationships']:
+        from_mode = table_modes.get(rel.get('fromTable', ''), 'import')
+        to_mode = table_modes.get(rel.get('toTable', ''), 'import')
+        if from_mode != to_mode:
+            rel['crossFilteringBehavior'] = 'oneDirection'
+
+
+def _generate_aggregation_tables(model):
+    """Generate Import-mode aggregation tables for directQuery fact tables."""
+    new_tables = []
+    new_rels = []
+    for table in model['model']['tables']:
+        partitions = table.get('partitions', [])
+        if not partitions or partitions[0].get('mode') != 'directQuery':
+            continue
+        tname = table.get('name', '')
+        measures = table.get('measures', [])
+        columns = table.get('columns', [])
+        if not measures:
+            continue
+
+        agg_name = f"Agg_{tname}"
+        agg_columns = []
+        for col in columns:
+            col_type = col.get('dataType', 'string')
+            if col_type in ('DateTime', 'int64', 'double', 'decimal'):
+                agg_col = {
+                    'name': col['name'],
+                    'dataType': col_type,
+                    'sourceColumn': col.get('sourceColumn', col['name']),
+                    'summarizeBy': 'none',
+                    'annotations': [{'name': 'alternateOf', 'value': f"'{tname}'[{col['name']}]"}],
+                }
+                agg_columns.append(agg_col)
+
+        if not agg_columns:
+            continue
+
+        # M query for agg table: group-by on dimension keys, summarize measures
+        dim_cols = [c['name'] for c in agg_columns if c['dataType'] in ('DateTime', 'int64')]
+        m_lines = [f'let\n    Source = {tname},']
+        if dim_cols:
+            group_cols = ', '.join(f'"{c}"' for c in dim_cols)
+            m_lines.append(f'    Grouped = Table.Group(Source, {{{group_cols}}}, {{}})')
+        else:
+            m_lines.append('    Grouped = Source')
+        m_lines.append('in\n    Grouped')
+        m_query = '\n'.join(m_lines)
+
+        agg_table = {
+            'name': agg_name,
+            'columns': agg_columns,
+            'partitions': [{
+                'name': f"Partition-{agg_name}",
+                'mode': 'import',
+                'source': {'type': 'm', 'expression': m_query},
+            }],
+            'measures': [],
+            'annotations': [{'name': 'isAggregationTable', 'value': 'true'}],
+        }
+        new_tables.append(agg_table)
+
+    model['model']['tables'].extend(new_tables)
 
 
 def _collect_semantic_context(datasources, extra_objects):
@@ -881,6 +972,7 @@ def _create_semantic_tables(model, ctx, datasources):
             extra_objects={},
             m_query_override=m_query_overrides.get(table_name, ''),
             model_mode=model.get('_model_mode', 'import'),
+            composite_threshold=model.get('_composite_threshold'),
         )
         model["model"]["tables"].append(tbl)
 
@@ -1057,7 +1149,7 @@ def _build_m_transform_steps(columns, col_metadata_map):
 
 def _build_table(table, connection, calculations, columns_metadata, dax_context=None,
                  col_metadata_map=None, extra_objects=None, m_query_override='',
-                 model_mode='import'):
+                 model_mode='import', composite_threshold=None):
     """
     Create a semantic model table with columns, partitions and measures.
 
@@ -1103,10 +1195,9 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
     # For composite: large tables use directQuery, small/lookup use import
     partition_mode = model_mode if model_mode in ('import', 'directQuery') else 'import'
     if model_mode == 'composite':
-        # Heuristic: tables with many columns are likely fact tables → directQuery
-        # Small tables with few columns are likely dimension/lookup → import
+        threshold = composite_threshold if composite_threshold is not None else 10
         col_count = len(columns)
-        if col_count > 10:
+        if col_count > threshold:
             partition_mode = 'directQuery'
         else:
             partition_mode = 'import'
@@ -1459,6 +1550,65 @@ def _build_relationships(relationships):
         })
 
     return result
+
+
+def _detect_join_graph_issues(relationships):
+    """Detect multi-hop chains and diamond joins in the relationship graph.
+
+    Returns a list of warning dicts:
+      - {'type': 'diamond', 'tables': [A, B, C, D], 'message': ...}
+      - {'type': 'multi_hop', 'chain': [A, B, C], 'message': ...}
+    """
+    warnings = []
+    # Build adjacency list (undirected)
+    adj = {}  # table -> set of connected tables
+    for rel in relationships:
+        ft = rel.get('fromTable', '')
+        tt = rel.get('toTable', '')
+        if ft and tt:
+            adj.setdefault(ft, set()).add(tt)
+            adj.setdefault(tt, set()).add(ft)
+
+    # Detect multi-hop chains: A→B→C where A has no direct link to C
+    all_tables = list(adj.keys())
+    for a in all_tables:
+        for b in adj.get(a, set()):
+            for c in adj.get(b, set()):
+                if c != a and c not in adj.get(a, set()):
+                    warnings.append({
+                        'type': 'multi_hop',
+                        'chain': [a, b, c],
+                        'message': (
+                            f"Multi-hop join path: '{a}' → '{b}' → '{c}'. "
+                            f"PBI may need an intermediate relationship or bridge table."
+                        ),
+                    })
+
+    # Detect diamond joins: A→B, A→C, B→D, C→D
+    for a in all_tables:
+        neighbors = list(adj.get(a, set()))
+        for i, b in enumerate(neighbors):
+            for c in neighbors[i + 1:]:
+                shared = adj.get(b, set()) & adj.get(c, set()) - {a}
+                for d in shared:
+                    warnings.append({
+                        'type': 'diamond',
+                        'tables': [a, b, c, d],
+                        'message': (
+                            f"Diamond join: '{a}'→'{b}'→'{d}' and "
+                            f"'{a}'→'{c}'→'{d}'. May cause ambiguous paths in PBI."
+                        ),
+                    })
+
+    # Deduplicate
+    seen = set()
+    unique = []
+    for w in warnings:
+        key = (w['type'], tuple(sorted(w.get('chain', w.get('tables', [])))))
+        if key not in seen:
+            seen.add(key)
+            unique.append(w)
+    return unique
 
 
 def _infer_cross_table_relationships(model):
@@ -4507,6 +4657,13 @@ def _write_column_flags(lines, column):
     sort_by = column.get('sortByColumn', '')
     if sort_by:
         lines.append(f"\t\tsortByColumn: {_quote_name(sort_by)}")
+
+    # Custom annotations (e.g. alternateOf for agg tables)
+    for ann in column.get('annotations', []):
+        ann_name = ann.get('name', '')
+        ann_value = ann.get('value', '')
+        if ann_name and ann_value:
+            lines.append(f"\t\tannotation {ann_name} = {ann_value}")
 
     lines.append("")
     lines.append("\t\tannotation SummarizationSetBy = Automatic")

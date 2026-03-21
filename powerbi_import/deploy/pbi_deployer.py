@@ -353,3 +353,38 @@ class PBIWorkspaceDeployer:
                 'error': str(e),
                 'notes': refresh_config.get('notes', []),
             }
+
+    # ── Sprint 89: Sync deployment ─────────────────────────────────────────
+
+    def deploy_sync(self, project_dir, previous_dir=None, refresh=False):
+        """Incremental sync deployment: detect changes, deploy only if modified.
+
+        Args:
+            project_dir: Path to the new .pbip project.
+            previous_dir: Path to the previously deployed project (for diff).
+            refresh: Whether to trigger a refresh after deploy.
+
+        Returns:
+            dict with sync result: {status, changes, deployment}.
+        """
+        from powerbi_import.incremental import IncrementalDiffGenerator
+
+        result = {'status': 'no_changes', 'changes': None, 'deployment': None}
+
+        if previous_dir and os.path.isdir(previous_dir):
+            diff = IncrementalDiffGenerator.generate_incremental_update(
+                previous_dir, project_dir
+            )
+            result['changes'] = diff
+            if not diff.get('has_changes'):
+                logger.info('No changes detected — skipping deployment.')
+                return result
+        else:
+            logger.info('No previous project for diff — full deployment.')
+
+        deploy_result = self.deploy_project(
+            project_dir, overwrite=True, refresh=refresh
+        )
+        result['status'] = deploy_result.status
+        result['deployment'] = deploy_result
+        return result

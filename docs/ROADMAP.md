@@ -1,8 +1,8 @@
-# Development Roadmap — v23.0.0 → v26.0.0
+# Development Roadmap — v24.0.0 → v26.0.0
 
-**Date:** 2026-03-21
-**Baseline:** v22.0.0 — 5,756 tests across 115 test files, 0 failures
-**Current state:** v22.0.0 shipped + Sprint 84 (Conversion Accuracy Depth) + fidelity scoring fix. All 26 workbooks at 100% fidelity.
+**Date:** 2025-07-24
+**Baseline:** v24.0.0 — 5,897+ tests across 121 test files, 0 failures
+**Current state:** v24.0.0 shipped. Composite models, live sync, enterprise portfolio intelligence, and 500-workbook scale validation complete.
 
 ---
 
@@ -13,8 +13,8 @@ The migration engine is **feature-complete for core single-workbook scenarios**.
 | Version | Theme | Target Date | Status |
 |---------|-------|-------------|--------|
 | **v22.0.0** | Real-World Fidelity & Layout Intelligence | Sprints 76–80 | ✅ Shipped |
-| **v23.0.0** | Web UI, AI-Assisted Migration & CI Maturity | Sprints 81–85 | 🔜 Next |
-| **v24.0.0** | Composite Models, Live Sync & Enterprise Scale | Sprints 86–90 | Planned |
+| **v23.0.0** | Conversion Accuracy & Fidelity Perfection | Sprints 81–85 | ✅ Shipped |
+| **v24.0.0** | Composite Models, Live Sync & Enterprise Scale | Sprints 86–90 | ✅ Shipped |
 | **v25.0.0** | Semantic Intelligence & Cross-Platform Parity | Sprints 91–95 | Planned |
 | **v26.0.0** | Autonomous Migration & Production Hardening | Sprints 96–100 | Planned |
 
@@ -232,7 +232,7 @@ Real-world migrations (NBA, Superstore, Feedback Dashboard) exposed gaps that sy
 
 ## v24.0.0 — Composite Models, Live Sync & Enterprise Scale
 
-### Sprint 86 — Composite Model Depth (@generator, @orchestrator)
+### Sprint 86 — Composite Model Depth (@generator, @orchestrator) ✅ SHIPPED
 
 **Goal:** Per-table StorageMode, aggregation tables, hybrid relationship validation.
 
@@ -246,7 +246,7 @@ Real-world migrations (NBA, Superstore, Feedback Dashboard) exposed gaps that sy
 
 ---
 
-### Sprint 87 — Extraction & Conversion Hardening (@extractor, @converter, @generator)
+### Sprint 87 — Extraction & Conversion Hardening (@extractor, @converter, @generator) ✅ SHIPPED
 
 **Goal:** Handle edge cases discovered in real-world migrations: multi-connection workbooks, nested LOD expressions, complex join graphs, published datasource resolution.
 
@@ -261,7 +261,7 @@ Real-world migrations (NBA, Superstore, Feedback Dashboard) exposed gaps that sy
 
 ---
 
-### Sprint 88 — Enterprise Portfolio Intelligence (@assessor, @merger)
+### Sprint 88 — Enterprise Portfolio Intelligence (@assessor, @merger) ✅ SHIPPED
 
 **Goal:** Cross-workbook optimization: detect shared data patterns, recommend model consolidation, estimate org-wide migration effort with resource allocation.
 
@@ -275,7 +275,7 @@ Real-world migrations (NBA, Superstore, Feedback Dashboard) exposed gaps that sy
 
 ---
 
-### Sprint 89 — Live Sync & Incremental Refresh (@merger, @deployer)
+### Sprint 89 — Live Sync & Incremental Refresh (@merger, @deployer) ✅ SHIPPED
 
 **Goal:** Keep migrated PBI artifacts in sync with evolving Tableau workbooks. Detect source changes, compute incremental diff, auto-deploy updates.
 
@@ -289,7 +289,7 @@ Real-world migrations (NBA, Superstore, Feedback Dashboard) exposed gaps that sy
 
 ---
 
-### Sprint 90 — Enterprise Scale & v24.0.0 Release (@orchestrator, @deployer, @tester)
+### Sprint 90 — Enterprise Scale & v24.0.0 Release (@orchestrator, @deployer, @tester) ✅ SHIPPED
 
 **Goal:** Validate at 500+ workbook scale, optimize memory/CPU, document enterprise deployment patterns, ship v24.0.0.
 

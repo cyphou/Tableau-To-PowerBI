@@ -264,3 +264,72 @@ class TelemetryCollector:
             'total_errors': total_errors,
             'platforms': platforms,
         }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Sprint 89 — Change Notification
+# ══════════════════════════════════════════════════════════════════════════════
+
+class ChangeNotifier:
+    """Emit structured events for detected workbook changes.
+
+    Optionally posts to a webhook URL (Teams/Slack compatible JSON payload).
+    """
+
+    def __init__(self, webhook_url=None, telemetry_collector=None):
+        self._webhook_url = webhook_url
+        self._telemetry = telemetry_collector
+
+    def notify(self, workbook_name, change_type, affected_artifacts=None):
+        """Emit a change notification event.
+
+        Args:
+            workbook_name: Name of the changed workbook.
+            change_type: 'new', 'modified', 'deleted'.
+            affected_artifacts: list of artifact names/paths affected.
+
+        Returns:
+            dict with the event payload.
+        """
+        payload = {
+            'workbook': workbook_name,
+            'change_type': change_type,
+            'affected_artifacts': affected_artifacts or [],
+            'timestamp': _iso_now(),
+        }
+
+        # Record in telemetry
+        if self._telemetry:
+            self._telemetry.record_event(
+                'source_change_detected',
+                workbook=workbook_name,
+                change_type=change_type,
+                artifact_count=len(affected_artifacts or []),
+            )
+
+        # Post to webhook (best effort)
+        if self._webhook_url:
+            self._post_webhook(payload)
+
+        return payload
+
+    def _post_webhook(self, payload):
+        """Post to Teams/Slack webhook. Best-effort, no exceptions raised."""
+        import json as _json
+        try:
+            import urllib.request
+            data = _json.dumps(payload).encode('utf-8')
+            req = urllib.request.Request(
+                self._webhook_url,
+                data=data,
+                headers={'Content-Type': 'application/json'},
+                method='POST',
+            )
+            urllib.request.urlopen(req, timeout=10)
+        except Exception as e:
+            logging.getLogger(__name__).debug('Webhook post failed: %s', e)
+
+
+def _iso_now():
+    from datetime import datetime, timezone
+    return datetime.now(timezone.utc).isoformat()

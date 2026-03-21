@@ -204,7 +204,8 @@ def run_extraction(tableau_file, hyper_max_rows=None):
 
 def run_generation(report_name=None, output_dir=None, calendar_start=None,
                    calendar_end=None, culture=None, model_mode='import',
-                   output_format='pbip', paginated=False, languages=None):
+                   output_format='pbip', paginated=False, languages=None,
+                   composite_threshold=None, agg_tables='none'):
     """Generate Power BI project (.pbip) from extracted data
 
     Args:
@@ -227,7 +228,8 @@ def run_generation(report_name=None, output_dir=None, calendar_start=None,
         importer.import_all(generate_pbip=True, report_name=report_name, output_dir=output_dir,
                             calendar_start=calendar_start, calendar_end=calendar_end,
                             culture=culture, model_mode=model_mode,
-                            output_format=output_format, languages=languages)
+                            output_format=output_format, languages=languages,
+                            composite_threshold=composite_threshold, agg_tables=agg_tables)
 
         # Collect generation stats from the output
         base_dir = output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
@@ -1363,6 +1365,21 @@ def _add_migration_args(parser):
     )
 
     parser.add_argument(
+        '--composite-threshold',
+        metavar='COLS',
+        type=int,
+        default=None,
+        help='Column count threshold for composite mode: tables with more columns → directQuery (default: 10)'
+    )
+
+    parser.add_argument(
+        '--agg-tables',
+        choices=['auto', 'none'],
+        default='none',
+        help='Generate Import-mode aggregation tables for directQuery fact tables (composite mode only)'
+    )
+
+    parser.add_argument(
         '--rollback',
         action='store_true',
         help='Backup existing .pbip project before overwriting'
@@ -1471,6 +1488,16 @@ def _add_deploy_args(parser):
         )
     )
 
+    parser.add_argument(
+        '--sync',
+        action='store_true',
+        default=False,
+        help=(
+            'Sync mode: detect changed workbooks, incrementally migrate only '
+            'modified artifacts, and deploy updates. Use with --deploy or --batch.'
+        )
+    )
+
 
 def _add_server_args(parser):
     """Add Tableau Server extraction arguments."""
@@ -1527,10 +1554,11 @@ def _add_server_args(parser):
 def _add_enterprise_args(parser):
     """Add enterprise and scale arguments (parallel, resume, manifest, etc.)."""
     parser.add_argument(
-        '--parallel',
+        '--parallel', '--workers',
         metavar='N',
         type=int,
         default=None,
+        dest='parallel',
         help='Number of parallel workers for batch migration (default: sequential)'
     )
 

@@ -26,7 +26,8 @@ class PowerBIImporter:
     
     def import_all(self, generate_pbip=True, report_name=None, output_dir=None,
                    calendar_start=None, calendar_end=None, culture=None,
-                   model_mode='import', output_format='pbip', languages=None):
+                   model_mode='import', output_format='pbip', languages=None,
+                   composite_threshold=None, agg_tables='none'):
         """
         Import all extracted objects and generate Power BI project
         
@@ -70,7 +71,8 @@ class PowerBIImporter:
             self.generate_powerbi_project(report_name, converted_objects, output_dir=output_dir,
                                           calendar_start=calendar_start, calendar_end=calendar_end,
                                           culture=culture, model_mode=model_mode,
-                                          output_format=output_format, languages=languages)
+                                          output_format=output_format, languages=languages,
+                                          composite_threshold=composite_threshold, agg_tables=agg_tables)
         
         print()
         print("=" * 80)
@@ -120,7 +122,7 @@ class PowerBIImporter:
     def generate_powerbi_project(self, report_name, converted_objects, output_dir=None,
                                  calendar_start=None, calendar_end=None, culture=None,
                                  model_mode='import', output_format='pbip', paginated=False,
-                                 languages=None):
+                                 languages=None, composite_threshold=None, agg_tables='none'):
         """Generate a Power BI Project (.pbip)
 
         Args:
@@ -154,7 +156,9 @@ class PowerBIImporter:
                                                        model_mode=model_mode,
                                                        output_format=output_format,
                                                        paginated=paginated,
-                                                       languages=languages)
+                                                       languages=languages,
+                                                       composite_threshold=composite_threshold,
+                                                       agg_tables=agg_tables)
             print(f"  [OK] Power BI Project created: {project_path}")
             
         except Exception as e:

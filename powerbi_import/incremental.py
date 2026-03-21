@@ -329,3 +329,125 @@ class IncrementalMerger:
                 lines.append(f'  [{d.kind.upper():>8}] {d.path}{detail}')
 
         return '\n'.join(lines)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Sprint 89 — Live Sync & Incremental Refresh
+# ══════════════════════════════════════════════════════════════════════════════
+
+class SourceChangeDetector:
+    """Detect changed Tableau workbooks by comparing against a manifest.
+
+    The manifest stores workbook name → {hash, updated_at, last_migration_ts}
+    so we can quickly determine which workbooks need re-migration.
+    """
+
+    MANIFEST_FILENAME = '.migration_manifest.json'
+
+    @classmethod
+    def load_manifest(cls, manifest_path):
+        """Load an existing manifest, or return empty dict."""
+        if os.path.isfile(manifest_path):
+            try:
+                with open(manifest_path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except (json.JSONDecodeError, OSError):
+                pass
+        return {}
+
+    @classmethod
+    def save_manifest(cls, manifest_path, manifest):
+        """Save manifest to disk."""
+        os.makedirs(os.path.dirname(os.path.abspath(manifest_path)) or '.', exist_ok=True)
+        with open(manifest_path, 'w', encoding='utf-8') as f:
+            json.dump(manifest, f, indent=2)
+
+    @classmethod
+    def detect_changes(cls, workbook_infos, manifest):
+        """Compare workbook metadata against manifest to find changes.
+
+        Args:
+            workbook_infos: list of dicts with 'name', 'updated_at' (ISO string),
+                and optionally 'content_hash' (e.g. from Server API).
+            manifest: dict from load_manifest().
+
+        Returns:
+            list of workbook names that have changed or are new.
+        """
+        changed = []
+        for info in workbook_infos:
+            name = info.get('name', '')
+            if not name:
+                continue
+            prev = manifest.get(name, {})
+            # New workbook
+            if not prev:
+                changed.append(name)
+                continue
+            # Check updated_at timestamp
+            new_ts = info.get('updated_at', '')
+            prev_ts = prev.get('updated_at', '')
+            if new_ts and new_ts != prev_ts:
+                changed.append(name)
+                continue
+            # Check content hash
+            new_hash = info.get('content_hash', '')
+            prev_hash = prev.get('content_hash', '')
+            if new_hash and prev_hash and new_hash != prev_hash:
+                changed.append(name)
+        return changed
+
+    @classmethod
+    def update_manifest(cls, manifest, workbook_name, updated_at='', content_hash=''):
+        """Update manifest entry for a workbook after successful migration."""
+        manifest[workbook_name] = {
+            'updated_at': updated_at,
+            'content_hash': content_hash,
+            'last_migration_ts': datetime.now().isoformat(),
+        }
+        return manifest
+
+
+class IncrementalDiffGenerator:
+    """Generate incremental diffs for changed workbooks only.
+
+    Combines SourceChangeDetector with IncrementalMerger to produce
+    targeted updates: only changed measures, visuals, or M queries are
+    regenerated rather than the full project.
+    """
+
+    @classmethod
+    def generate_incremental_update(cls, existing_dir, incoming_dir):
+        """Compare two project trees and generate a change summary.
+
+        Returns:
+            dict with 'added', 'modified', 'removed' lists of file paths,
+            plus 'has_changes' boolean.
+        """
+        diffs = IncrementalMerger.diff_projects(existing_dir, incoming_dir)
+        result = {
+            'added': [],
+            'modified': [],
+            'removed': [],
+            'unchanged': [],
+            'has_changes': False,
+        }
+        for d in diffs:
+            result[d.kind].append(d.path)
+
+        result['has_changes'] = bool(
+            result['added'] or result['modified'] or result['removed']
+        )
+        return result
+
+    @classmethod
+    def apply_incremental_update(cls, existing_dir, incoming_dir, output_dir=None):
+        """Apply incremental changes to existing project.
+
+        Only copies files that are new or modified. Preserves user edits
+        via IncrementalMerger's merge logic.
+
+        Returns:
+            dict with merge results from IncrementalMerger.
+        """
+        return IncrementalMerger.merge(existing_dir, incoming_dir, output_dir)
