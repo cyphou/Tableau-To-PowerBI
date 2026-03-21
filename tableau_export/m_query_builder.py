@@ -1893,3 +1893,121 @@ def generate_connection_parameters(connection_map):
             })
 
     return params
+
+
+def generate_blend_merge_query(primary_query_name, secondary_query_name,
+                                link_columns, join_kind='left'):
+    """Generate a Power Query M merge step that blends two datasource queries.
+
+    Simulates Tableau data blending by creating a Table.NestedJoin that links
+    a primary query to a secondary query on the specified columns, then expands
+    the secondary columns.
+
+    Args:
+        primary_query_name: Name of the primary M query (e.g. 'Orders')
+        secondary_query_name: Name of the secondary M query (e.g. 'Returns')
+        link_columns: List of dicts with 'primary' and 'secondary' column names
+        join_kind: Join type — 'left' (default, matches Tableau blend), 'inner', 'full'
+
+    Returns:
+        str: Complete M query for the blended/merged result
+    """
+    if not link_columns:
+        # No link columns — just combine (append)
+        return (
+            f'let\n'
+            f'    Primary = {primary_query_name},\n'
+            f'    Secondary = {secondary_query_name},\n'
+            f'    Combined = Table.Combine({{Primary, Secondary}})\n'
+            f'in\n'
+            f'    Combined'
+        )
+    
+    primary_keys = [lc.get('primary', lc.get('column', '')) for lc in link_columns]
+    secondary_keys = [lc.get('secondary', lc.get('column', '')) for lc in link_columns]
+    
+    pk_list = ', '.join(f'"{k}"' for k in primary_keys)
+    sk_list = ', '.join(f'"{k}"' for k in secondary_keys)
+    
+    kind_map = {
+        'left': 'JoinKind.LeftOuter',
+        'inner': 'JoinKind.Inner',
+        'full': 'JoinKind.FullOuter',
+        'right': 'JoinKind.RightOuter',
+        'leftanti': 'JoinKind.LeftAnti',
+    }
+    m_join_kind = kind_map.get(join_kind, 'JoinKind.LeftOuter')
+    
+    return (
+        f'let\n'
+        f'    Primary = {primary_query_name},\n'
+        f'    Secondary = {secondary_query_name},\n'
+        f'    Merged = Table.NestedJoin(\n'
+        f'        Primary, {{{pk_list}}},\n'
+        f'        Secondary, {{{sk_list}}},\n'
+        f'        "Blended", {m_join_kind}\n'
+        f'    ),\n'
+        f'    Expanded = Table.ExpandTableColumn(\n'
+        f'        Merged, "Blended",\n'
+        f'        Table.ColumnNames(Secondary)\n'
+        f'    )\n'
+        f'in\n'
+        f'    Expanded'
+    )
+
+
+def generate_table_extension_query(extension):
+    """Generate a Power Query M query for a Tableau table extension.
+
+    Converts Tableau 2024.2+ table extensions (Einstein Discovery, external API)
+    to Web.Contents() M queries or placeholder queries with migration notes.
+
+    Args:
+        extension: Dict from extract_table_extensions with name, extension_type,
+                   endpoint, schema, config.
+
+    Returns:
+        str: M query string
+    """
+    name = extension.get('name', 'Extension')
+    endpoint = extension.get('endpoint', '')
+    ext_type = extension.get('extension_type', 'unknown')
+    schema = extension.get('schema', [])
+
+    if endpoint:
+        # Generate Web.Contents query for API-based extensions
+        col_types = []
+        for col in schema:
+            dt = col.get('datatype', 'string')
+            m_type = {'integer': 'Int64.Type', 'real': 'Number.Type',
+                      'boolean': 'Logical.Type', 'date': 'Date.Type',
+                      'datetime': 'DateTime.Type'}.get(dt, 'Text.Type')
+            col_types.append(f'{{"{col["name"]}", {m_type}}}')
+
+        type_list = ', '.join(col_types) if col_types else ''
+        lines = [
+            'let',
+            f'    // Table Extension: {name} (type: {ext_type})',
+            f'    Source = Json.Document(Web.Contents("{endpoint}")),',
+            '    AsTable = Table.FromRecords(Source)',
+        ]
+        if type_list:
+            lines.append(f'    ,Typed = Table.TransformColumnTypes(AsTable, {{{type_list}}})')
+            lines.append('in')
+            lines.append('    Typed')
+        else:
+            lines.append('in')
+            lines.append('    AsTable')
+        return '\n'.join(lines)
+    else:
+        # Placeholder for extensions without a direct endpoint
+        cols = [f'"{c["name"]}"' for c in schema] if schema else ['"Value"']
+        return (
+            f'let\n'
+            f'    // MigrationNote: Tableau table extension "{name}" (type: {ext_type})\n'
+            f'    // requires manual configuration — no direct endpoint available.\n'
+            f'    Source = #table({{{", ".join(cols)}}}, {{}})\n'
+            f'in\n'
+            f'    Source'
+        )
+

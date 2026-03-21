@@ -729,6 +729,57 @@ def extract_tables_with_columns(datasource_elem, connection_map=None):
     return tables
 
 
+def extract_table_extensions(datasource_elem):
+    """Extracts Tableau 2024.2+ table extensions (Einstein Discovery, external API data).
+
+    Table extensions allow Tableau to augment datasources with data from
+    external APIs or Einstein Discovery predictions. This function extracts
+    their configuration for migration to Power Query Web.Contents() or
+    placeholder notes.
+
+    Returns:
+        list of dicts with extension_type, name, endpoint, schema, config.
+    """
+    extensions = []
+    for ext_elem in datasource_elem.findall('.//table-extension'):
+        ext_type = ext_elem.get('type', 'unknown')
+        ext_name = ext_elem.get('name', ext_elem.get('caption', ''))
+
+        # Extract API endpoint if present
+        endpoint = ''
+        config_elem = ext_elem.find('.//connection')
+        if config_elem is not None:
+            endpoint = config_elem.get('url', config_elem.get('server', ''))
+
+        # Extract schema (output columns)
+        schema = []
+        for col_elem in ext_elem.findall('.//column'):
+            schema.append({
+                'name': col_elem.get('name', '').strip('[]'),
+                'datatype': col_elem.get('datatype', 'string'),
+            })
+
+        # Extract extension configuration
+        config = {}
+        for attr in ext_elem.attrib:
+            if attr not in ('type', 'name', 'caption'):
+                config[attr] = ext_elem.get(attr)
+
+        # Check for nested config elements
+        for cfg_elem in ext_elem.findall('.//configuration/*'):
+            config[cfg_elem.tag] = cfg_elem.text or cfg_elem.get('value', '')
+
+        extensions.append({
+            'name': ext_name or f'Extension_{len(extensions) + 1}',
+            'extension_type': ext_type,
+            'endpoint': endpoint,
+            'schema': schema,
+            'config': config,
+        })
+
+    return extensions
+
+
 def extract_column_metadata(datasource_elem):
     """Extracts complete column metadata"""
     columns = []

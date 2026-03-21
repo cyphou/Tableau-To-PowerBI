@@ -2588,6 +2588,9 @@ class PowerBIProjectGenerator:
         Each dynamic zone maps to a bookmark that toggles visual visibility
         for its zone. This simulates Tableau's show/hide sheet feature.
 
+        When a zone's default_visible is False, the bookmark shows it (and
+        vice versa), enabling swap behaviour via bookmark selection.
+
         Args:
             dynamic_zones: List from extract_dynamic_zone_visibility
             page_name: The PBI page name these bookmarks belong to
@@ -2596,24 +2599,42 @@ class PowerBIProjectGenerator:
             List of PBI bookmark dicts
         """
         bookmarks = []
+        # Build visibility map: each bookmark shows its target zone
+        # and hides all other dynamic zones on the same page
+        zone_names = [dz.get('zone_name', '') for dz in dynamic_zones if dz.get('zone_name')]
+
         for dz in dynamic_zones:
             zone_name = dz.get('zone_name', 'Zone')
             field = dz.get('field', '')
             value = dz.get('value', '')
+            condition = dz.get('condition', 'equals')
+            default_visible = dz.get('default_visible', True)
             label = f"Show {zone_name}" if zone_name else f"Swap: {field}={value}"
+
+            # Build visualsVisibility: show this zone, hide others
+            visuals_visibility = {}
+            for zn in zone_names:
+                visuals_visibility[zn] = zn == zone_name
+
             bookmark = {
                 "name": f"Swap_{uuid.uuid4().hex[:12]}",
                 "displayName": label,
                 "explorationState": {
                     "version": "1.0",
                     "activeSection": page_name,
+                    "visualsVisibility": visuals_visibility,
                 },
                 "options": {
+                    "targetVisualName": zone_name,
+                    "field": field,
+                    "value": value,
+                    "condition": condition,
+                    "defaultVisible": default_visible,
                     "MigrationNote": (
                         f"Dynamic zone visibility: zone '{zone_name}', "
                         f"field='{field}', value='{value}', "
-                        f"condition='{dz.get('condition', 'equals')}'. "
-                        "Assign visual visibility toggles in Power BI Desktop."
+                        f"condition='{condition}'. "
+                        "Review visual visibility toggles in Power BI Desktop."
                     )
                 },
             }

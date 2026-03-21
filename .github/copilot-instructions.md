@@ -54,6 +54,19 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
   - `progress.py`: Progress tracking — real-time progress bar and ETA for batch migrations
   - `wizard.py`: Interactive migration wizard — guided step-by-step CLI for first-time users
   - `incremental.py`: Incremental migration — track changes, skip unchanged artifacts
+  - **Fabric-native generators** (`--output-format fabric`):
+    - `fabric_constants.py`: Shared constants — Spark type maps, PySpark type maps, aggregation detection regex, artifact list
+    - `fabric_naming.py`: Name sanitisation for Lakehouse tables, Spark columns, Dataflow queries, Pipeline names, Python variables
+    - `calc_column_utils.py`: Calculation classification (calc columns vs measures), Tableau→M formula conversion, Tableau→PySpark conversion, M Table.AddColumn step builder
+    - `lakehouse_generator.py`: Lakehouse definition generator — Delta table schemas, DDL scripts, table metadata JSON
+    - `dataflow_generator.py`: Dataflow Gen2 generator — Power Query M ingestion queries, mashup document, Lakehouse destination config per query, calculated column injection
+    - `notebook_generator.py`: PySpark Notebook generator — ETL pipeline notebook (9 connector templates), transformations notebook (withColumn materialisation), Synapse PySpark kernel
+    - `pipeline_generator.py`: Data Pipeline generator — 3-stage orchestration (Dataflow refresh → Notebook ETL → Semantic Model refresh), placeholder activity IDs
+    - `fabric_semantic_model_generator.py`: DirectLake Semantic Model generator — delegates to tmdl_generator, wraps in .SemanticModel item with .platform manifest
+    - `fabric_project_generator.py`: Fabric project orchestrator — coordinates all 5 generators (Lakehouse + Dataflow + Notebook + SemanticModel + Pipeline)
+  - `dax_optimizer.py`: DAX optimizer engine — AST-based rewriter (nested IF→SWITCH, IF(ISBLANK)→COALESCE, redundant CALCULATE collapse, constant folding, SUMX simplification), Time Intelligence auto-injection (YTD, PY, YoY%), measure dependency DAG, optimization report
+  - `equivalence_tester.py`: Cross-platform validation — measure value comparison with tolerance, SSIM-based screenshot comparison, validation report generation
+  - `regression_suite.py`: Regression suite — snapshot generation (tables, measures, filters, formula hashes), snapshot comparison with drift detection
   - `deploy/`: Fabric deployment subpackage
     - `auth.py`: Azure AD authentication — Service Principal + Managed Identity (optional `azure-identity`)
     - `client.py`: Fabric REST API client — auto-detects `requests` with retry, falls back to `urllib`
@@ -66,7 +79,7 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
     - `pbi_deployer.py`: PBI Service deployment orchestrator — package, upload, poll, refresh, validate, `deploy_refresh_schedule()` for PBI REST API refresh config
     - `bundle_deployer.py`: Fabric bundle deployer — deploy shared model + thin reports as atomic bundle, artifact discovery, per-report error isolation, rebind, refresh, `BundleDeploymentResult`
     - `multi_tenant.py`: Multi-tenant deployment — `TenantConfig`/`MultiTenantConfig` (validate/load/save JSON), `_apply_connection_overrides()` (template substitution: `${TENANT_SERVER}`, `${TENANT_DATABASE}`), `deploy_multi_tenant()` orchestrator with per-tenant results
-- **tests/**: Unit and integration tests (5,927+ tests across 122 test files + conftest.py shared fixtures)
+- **tests/**: Unit and integration tests (6,137+ tests across 128 test files + conftest.py shared fixtures)
 - **docs/**: FAQ, PBI project guide, mapping reference, **ROADMAP.md** (v22–v24 development roadmap per agent)
 - **.github/workflows/ci.yml**: CI/CD pipeline (lint → test → validate → deploy)
 - **.github/workflows/publish.yml**: PyPI auto-publish workflow (tag-triggered, OIDC trusted publisher)
@@ -79,7 +92,7 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
 - Optional dependencies: `azure-identity` (Fabric auth), `requests` (HTTP client with retry), `pydantic-settings` (typed config)
 - Modules: xml.etree, json, os, uuid, re, zipfile, argparse, datetime, copy, logging, glob
 - Power BI Desktop (December 2025+)
-- Output format: PBIR v4.0 + TMDL
+- Output format: PBIR v4.0 + TMDL (default), or Fabric-native (Lakehouse + Dataflow Gen2 + Notebook + DirectLake Semantic Model + Pipeline)
 
 ## Main Command
 
@@ -108,6 +121,8 @@ python migrate.py --deploy-bundle WORKSPACE_ID --output-dir artifacts/shared/MyM
 python migrate.py --shared-model wb1.twbx wb2.twbx --multi-tenant tenants.json
 python migrate.py --shared-model wb1.twbx wb2.twbx --live-connection WORKSPACE_ID/ModelName
 python migrate.py --server https://tableau.company.com --workbook "Sales" --token-name pat --token-secret secret --migrate-schedules
+python migrate.py path/to/workbook.twbx --output-format fabric
+python migrate.py path/to/workbook.twbx --output-format fabric --output-dir /tmp/fabric_output
 ```
 
 ## Extracted Objects (16 types)

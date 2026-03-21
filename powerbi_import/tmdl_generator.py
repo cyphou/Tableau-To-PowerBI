@@ -489,6 +489,11 @@ def generate_tmdl(datasources, report_name, extra_objects, output_dir,
     if languages:
         model['model']['_languages'] = languages
 
+    # Attach linguistic synonyms for Q&A support
+    linguistic_synonyms = extra_objects.get('linguistic_schema', {})
+    if linguistic_synonyms:
+        model['model']['_linguistic_synonyms'] = linguistic_synonyms
+
     # Step 2a: Collect stats and symbols BEFORE writing (the writer
     #          clears column/measure data from tables to free memory).
     tables = model.get('model', {}).get('tables', [])
@@ -3952,10 +3957,16 @@ def _write_tmdl_files(model_data, output_dir):
         _write_perspectives_tmdl(def_dir, perspectives)
 
     # 9. cultures/*.tmdl (model culture)
+    linguistic_synonyms = model.get('_linguistic_synonyms', {})
     if culture and culture != 'en-US':
         cultures_dir = os.path.join(def_dir, 'cultures')
         os.makedirs(cultures_dir, exist_ok=True)
-        _write_culture_tmdl(cultures_dir, culture, tables)
+        _write_culture_tmdl(cultures_dir, culture, tables, linguistic_synonyms=linguistic_synonyms)
+    elif linguistic_synonyms:
+        # Even for en-US, write culture with synonyms for Q&A
+        cultures_dir = os.path.join(def_dir, 'cultures')
+        os.makedirs(cultures_dir, exist_ok=True)
+        _write_culture_tmdl(cultures_dir, 'en-US', tables, linguistic_synonyms=linguistic_synonyms)
 
     # 9b. Additional language cultures (--languages flag)
     extra_languages = model.get('_languages', '')
@@ -4000,7 +4011,7 @@ def _write_perspectives_tmdl(def_dir, perspectives):
         f.write('\n'.join(lines))
 
 
-def _write_culture_tmdl(cultures_dir, culture_name, tables):
+def _write_culture_tmdl(cultures_dir, culture_name, tables, linguistic_synonyms=None):
     """
     Write a culture TMDL file with linguistic metadata and translations.
 
@@ -4013,10 +4024,12 @@ def _write_culture_tmdl(cultures_dir, culture_name, tables):
         cultures_dir: Path to the cultures/ folder
         culture_name: Locale string (e.g. 'fr-FR')
         tables: List of table definitions (for generating metadata entries)
+        linguistic_synonyms: Optional dict of field_name -> list of synonyms
+            from Tableau captions/aliases for Q&A support
     """
     lines = [f"culture {_quote_name(culture_name)}"]
 
-    # Linguistic metadata
+    # Linguistic metadata with synonyms
     lines.append("\tlinguisticMetadata =")
     lines.append('\t\t```')
     metadata = {
@@ -4024,6 +4037,21 @@ def _write_culture_tmdl(cultures_dir, culture_name, tables):
         "Language": culture_name,
         "DynamicImprovement": "HighConfidence"
     }
+    # Inject synonyms from Tableau field captions
+    if linguistic_synonyms:
+        entities = {}
+        for field_name, syns in linguistic_synonyms.items():
+            if syns:
+                entities[field_name] = {
+                    "State": "Generated",
+                    "Terms": [{
+                        "Value": s,
+                        "State": "Suggested",
+                        "Weight": 0.9
+                    } for s in syns[:5]]  # Limit to 5 synonyms per field
+                }
+        if entities:
+            metadata["Entities"] = entities
     lines.append(f'\t\t\t{json.dumps(metadata, ensure_ascii=False)}')
     lines.append('\t\t\t```')
     lines.append("")

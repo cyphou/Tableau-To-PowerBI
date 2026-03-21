@@ -202,6 +202,66 @@ def run_extraction(tableau_file, hyper_max_rows=None):
         return False
 
 
+def _run_fabric_generation(report_name=None, output_dir=None,
+                           calendar_start=None, calendar_end=None,
+                           culture=None, languages=None):
+    """Generate Fabric-native artifacts (Lakehouse + Dataflow Gen2 +
+    Notebook + DirectLake Semantic Model + Pipeline).
+
+    Returns True on success, False on failure.
+    """
+    global _stats
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'powerbi_import'))
+    try:
+        from fabric_project_generator import FabricProjectGenerator
+        from import_to_powerbi import PowerBIImporter
+
+        # Load extracted JSON files
+        loader = PowerBIImporter()
+        extracted = loader._load_converted_objects()
+
+        if not extracted.get('datasources'):
+            print("  [ERROR] No datasources found — run extraction first")
+            return False
+
+        # Determine report name
+        if not report_name:
+            dashboards = extracted.get('dashboards', [])
+            if dashboards:
+                report_name = dashboards[0].get('name', 'Report')
+            else:
+                report_name = 'Report'
+
+        base_dir = output_dir or os.path.join('artifacts', 'fabric_projects', 'migrated')
+
+        generator = FabricProjectGenerator(output_dir=base_dir)
+        results = generator.generate_project(
+            project_name=report_name,
+            extracted_data=extracted,
+            calendar_start=calendar_start,
+            calendar_end=calendar_end,
+            culture=culture,
+            languages=languages,
+        )
+
+        project_dir = results.get('project_path', '')
+        if project_dir and os.path.exists(project_dir):
+            _stats.pbip_path = project_dir
+            sm = results.get('artifacts', {}).get('semantic_model', {})
+            _stats.tmdl_tables = sm.get('tables', 0)
+            _stats.tmdl_columns = sm.get('columns', 0)
+            _stats.tmdl_measures = sm.get('measures', 0)
+            _stats.tmdl_relationships = sm.get('relationships', 0)
+
+        print("\n✓ Fabric project generated successfully")
+        return True
+
+    except Exception as e:
+        logger.error(f"Fabric generation failed: {e}", exc_info=True)
+        print(f"\nError during Fabric generation: {str(e)}")
+        return False
+
+
 def run_generation(report_name=None, output_dir=None, calendar_start=None,
                    calendar_end=None, culture=None, model_mode='import',
                    output_format='pbip', paginated=False, languages=None,
@@ -219,6 +279,14 @@ def run_generation(report_name=None, output_dir=None, calendar_start=None,
     """
     global _stats
     print_step(2, 2, "POWER BI PROJECT GENERATION")
+
+    # ── Fabric-native output format ──────────────────────────────
+    if output_format == 'fabric':
+        return _run_fabric_generation(
+            report_name=report_name, output_dir=output_dir,
+            calendar_start=calendar_start, calendar_end=calendar_end,
+            culture=culture, languages=languages,
+        )
 
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'powerbi_import'))
     try:
@@ -1492,9 +1560,9 @@ def _add_migration_args(parser):
 
     parser.add_argument(
         '--output-format',
-        choices=['pbip', 'tmdl', 'pbir'],
+        choices=['pbip', 'tmdl', 'pbir', 'fabric'],
         default='pbip',
-        help='Output format: pbip (default, full project), tmdl (semantic model only), pbir (report only)'
+        help='Output format: pbip (default, full project), tmdl (semantic model only), pbir (report only), fabric (Fabric-native: Lakehouse + Dataflow Gen2 + Notebook + DirectLake Semantic Model + Pipeline)'
     )
 
     parser.add_argument(
@@ -1509,6 +1577,27 @@ def _add_migration_args(parser):
         metavar='DIR',
         default=None,
         help='Path to an existing .pbip project — merge changes incrementally, preserving manual edits'
+    )
+
+    parser.add_argument(
+        '--optimize-dax',
+        action='store_true',
+        default=False,
+        help='Run DAX optimizer on converted measures (nested IF→SWITCH, COALESCE, constant fold)'
+    )
+
+    parser.add_argument(
+        '--time-intelligence',
+        choices=['auto', 'none'],
+        default='none',
+        help='Auto-inject Time Intelligence measures (YTD, PY, YoY%%) for date-based measures'
+    )
+
+    parser.add_argument(
+        '--validate-data',
+        action='store_true',
+        default=False,
+        help='Run post-migration data validation comparing expected vs actual measure values'
     )
 
 

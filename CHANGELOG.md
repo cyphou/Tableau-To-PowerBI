@@ -1,5 +1,47 @@
 # Changelog
 
+## v25.0.0 — Semantic Intelligence & Cross-Platform Parity
+
+### Sprint 91 — Fabric-Native Artifact Generation ✅
+- **Fabric constants & naming** (`fabric_constants.py`, `fabric_naming.py`): Spark/PySpark type maps (14 types each), aggregation pattern regex, 6 sanitisation functions for Lakehouse tables, Spark columns, Dataflow queries, Pipeline names, Python variables, filesystem names.
+- **Calculation column utilities** (`calc_column_utils.py`): 3-factor classification (calc columns vs measures), Tableau→M formula conversion (IF/THEN, string functions), Tableau→PySpark conversion (F.when, F.col), M Table.AddColumn step builder.
+- **Lakehouse generator** (`lakehouse_generator.py`): Delta table schemas, Spark SQL DDL scripts, table metadata JSON with column types and calc column injection.
+- **Dataflow Gen2 generator** (`dataflow_generator.py`): Power Query M ingestion queries per datasource, mashup document, Lakehouse destination config (tableName, updateMethod, schemaMapping), calculated column injection as M Table.AddColumn steps.
+- **PySpark Notebook generator** (`notebook_generator.py`): ETL pipeline notebook (9 connector templates: SQL Server, PostgreSQL, Oracle, MySQL, Snowflake, BigQuery, CSV, Excel, Custom SQL) + transformations notebook (withColumn materialisation), Synapse PySpark kernel.
+- **Data Pipeline generator** (`pipeline_generator.py`): 3-stage orchestration — Stage 1: RefreshDataflow (one per datasource), Stage 2: TridentNotebook (depends on all dataflows), Stage 3: TridentDatasetRefresh (depends on notebook). Placeholder activity IDs for workspace binding.
+- **DirectLake Semantic Model generator** (`fabric_semantic_model_generator.py`): Delegates to tmdl_generator for TMDL output, wraps in .SemanticModel item with .platform manifest and DirectLake metadata.
+- **Fabric project orchestrator** (`fabric_project_generator.py`): Coordinates all 5 generators (Lakehouse + Dataflow + Notebook + SemanticModel + Pipeline), writes fabric_project_metadata.json with generation stats.
+- **CLI integration** (`migrate.py`): `--output-format fabric` routes to FabricProjectGenerator. Early return in `run_generation()` for Fabric path.
+- **91 tests** in `test_fabric_native.py` (10 test classes)
+
+### Sprint 92 — Deep Extraction: Tableau 2024+ Features ✅
+- **Dynamic zone visibility** (`extract_tableau_data.py`): Parses `<dynamic-zone-visibility>` with calculation conditions on zone elements. Extracts show/hide field refs and threshold logic. Maps to PBI bookmark visibility toggles.
+- **Table extensions** (`datasource_extractor.py`): Tableau 2024.2+ table extensions (Einstein Discovery, external API). Extracts extension config, API endpoint, schema. Generates M `Web.Contents()` query or placeholder with migration note.
+- **Multi-connection blending** (`m_query_builder.py`): Single worksheets referencing 2+ datasources → separate M partitions per connection + merge-append M step combining them. Tracks blend relationships.
+- **Linguistic schema** (`extract_tableau_data.py`): Extracts field captions as Q&A synonyms. Generates `linguisticSchema.xml` for PBI Q&A natural language support.
+- **30 tests** in `test_tableau_2024.py`
+
+### Sprint 93 — Semantic DAX Optimization ✅
+- **DAX optimizer engine** (`dax_optimizer.py`): AST-based rewriter — nested IF→SWITCH, redundant CALCULATE collapse, constant folding, IF(ISBLANK)→COALESCE, VAR/RETURN extraction, SUMX simplification.
+- **Time Intelligence auto-injection** (`tmdl_generator.py`): Auto-detects date-based measures → injects YTD, PY, YoY% measures using TOTALYTD, SAMEPERIODLASTYEAR, DIVIDE. Configurable via `--time-intelligence auto|none`.
+- **Measure dependency DAG** (`dax_optimizer.py`): Directed acyclic graph of measure-to-measure references. Circular ref detection, unused measure identification, dependency-cluster folder recommendations.
+- **Optimization report** (`dax_optimizer.py`): Per-measure before/after JSON report with simplification type and rule applied.
+- **35 tests** in `test_dax_optimizer.py`
+
+### Sprint 94 — Cross-Platform Validation & Regression ✅
+- **Query equivalence framework** (`equivalence_tester.py`): Compares Tableau vs PBI measure values with configurable tolerance. Generates pass/fail per-measure validation report.
+- **Visual comparison** (`equivalence_tester.py`): SSIM-based screenshot comparison framework (Tableau Server image API vs PBI export API) with configurable threshold.
+- **Regression suite generator** (`regression_suite.py`): Auto-generates regression test JSON capturing visual values, filter states, row counts. Re-run detection for quality drift.
+- **Validation CLI** (`migrate.py`): `--validate-data` flag for post-migration data validation.
+- **28 tests** in `test_equivalence.py`
+
+### Sprint 95 — v25.0.0 Integration & Release ✅
+- **Version bump**: 24.0.0 → 25.0.0
+- **New modules**: 12 (fabric_constants, fabric_naming, calc_column_utils, lakehouse_generator, dataflow_generator, notebook_generator, pipeline_generator, fabric_semantic_model_generator, fabric_project_generator, dax_optimizer, equivalence_tester, regression_suite)
+- **New test files**: 5 (test_fabric_native.py, test_tableau_2024.py, test_dax_optimizer.py, test_equivalence.py, test_v25_integration.py)
+
+---
+
 ## v24.0.0 — Composite Models, Live Sync & Enterprise Scale
 
 ### Sprint 86 — Composite Model Depth ✅

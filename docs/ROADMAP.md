@@ -15,7 +15,7 @@ The migration engine is **feature-complete for core single-workbook scenarios**.
 | **v22.0.0** | Real-World Fidelity & Layout Intelligence | Sprints 76–80 | ✅ Shipped |
 | **v23.0.0** | Conversion Accuracy & Fidelity Perfection | Sprints 81–85 | ✅ Shipped |
 | **v24.0.0** | Composite Models, Live Sync & Enterprise Scale | Sprints 86–90 | ✅ Shipped |
-| **v25.0.0** | Semantic Intelligence & Cross-Platform Parity | Sprints 91–95 | Planned |
+| **v25.0.0** | Semantic Intelligence & Cross-Platform Parity | Sprints 91–95 | ✅ Shipped |
 | **v26.0.0** | Autonomous Migration & Production Hardening | Sprints 96–100 | Planned |
 
 ---
@@ -530,7 +530,7 @@ v22–v24 delivered layout fidelity, AI-assisted DAX, and enterprise-scale deplo
 
 ---
 
-### Sprint 91 — Fabric-Native Artifact Generation (@generator, @orchestrator)
+### Sprint 91 — Fabric-Native Artifact Generation (@generator, @orchestrator) ✅ SHIPPED
 
 **Goal:** Generate Fabric Lakehouse notebooks, Dataflows Gen2, and Direct Lake semantic models as first-class output formats alongside .pbip.
 
@@ -546,7 +546,7 @@ v22–v24 delivered layout fidelity, AI-assisted DAX, and enterprise-scale deplo
 
 ---
 
-### Sprint 92 — Deep Extraction: Tableau 2024+ Features (@extractor, @converter)
+### Sprint 92 — Deep Extraction: Tableau 2024+ Features (@extractor, @converter) ✅ SHIPPED
 
 **Goal:** Complete coverage of Tableau 2024.1–2024.3+ features: dynamic zone visibility with conditions, table extensions, Explain Data config, and multi-connection worksheet resolution.
 
@@ -560,7 +560,7 @@ v22–v24 delivered layout fidelity, AI-assisted DAX, and enterprise-scale deplo
 
 ---
 
-### Sprint 93 — Semantic DAX Optimization (@converter, @generator)
+### Sprint 93 — Semantic DAX Optimization (@converter, @generator) ✅ SHIPPED
 
 **Goal:** Post-conversion DAX optimization pass that rewrites verbose converted formulas into idiomatic Power BI DAX, improving readability and performance.
 
@@ -576,7 +576,7 @@ v22–v24 delivered layout fidelity, AI-assisted DAX, and enterprise-scale deplo
 
 ---
 
-### Sprint 94 — Cross-Platform Validation & Regression (@assessor, @deployer)
+### Sprint 94 — Cross-Platform Validation & Regression (@assessor, @deployer) ✅ SHIPPED
 
 **Goal:** Automated equivalence testing: run the same queries against Tableau and Power BI to verify that migrated reports produce identical data.
 
@@ -590,7 +590,7 @@ v22–v24 delivered layout fidelity, AI-assisted DAX, and enterprise-scale deplo
 
 ---
 
-### Sprint 95 — v25.0.0 Integration & Release (@orchestrator, @tester)
+### Sprint 95 — v25.0.0 Integration & Release (@orchestrator, @tester) ✅ SHIPPED
 
 **Goal:** Cross-feature integration testing, Fabric-native + optimization + validation E2E, documentation, release.
 

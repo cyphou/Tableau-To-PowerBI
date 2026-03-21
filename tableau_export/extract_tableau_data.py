@@ -175,6 +175,8 @@ class TableauExtractor:
         self.extract_published_datasources(root)
         self.extract_data_blending(root)
         self.extract_hyper_metadata()
+        self.extract_table_extensions(root)
+        self.extract_linguistic_schema(root)
         
         # Save the exports
         self.save_extractions()
@@ -3252,6 +3254,56 @@ class TableauExtractor:
                     'scope': ref.get('scope', 'per-pane'),
                 })
         return stats
+
+    def extract_table_extensions(self, root):
+        """Extracts Tableau 2024.2+ table extensions across all datasources."""
+        from tableau_export.datasource_extractor import extract_table_extensions
+        extensions = []
+        for ds in root.findall('.//datasource'):
+            ds_name = ds.get('caption', ds.get('name', ''))
+            for ext in extract_table_extensions(ds):
+                ext['datasource'] = ds_name
+                extensions.append(ext)
+        self.workbook_data['table_extensions'] = extensions
+        print(f"  ✓ {len(extensions)} table extensions extracted")
+
+    def extract_linguistic_schema(self, root):
+        """Extracts field captions and aliases as Q&A linguistic synonyms.
+
+        Builds a synonym map from Tableau field captions, column aliases,
+        and calculation captions for Power BI Q&A linguistic schema generation.
+        """
+        synonyms = {}  # internal_name -> list of synonyms
+        for ds in root.findall('.//datasource'):
+            for col in ds.findall('.//column'):
+                name = col.get('name', '').strip('[]')
+                if not name:
+                    continue
+                caption = col.get('caption', '')
+                desc = col.get('desc', '')
+                syns = set()
+                if caption and caption != name:
+                    syns.add(caption)
+                if desc:
+                    syns.add(desc)
+                # Check for aliases
+                alias = col.find('.//alias')
+                if alias is not None:
+                    alias_val = alias.get('value', alias.text or '')
+                    if alias_val and alias_val != name:
+                        syns.add(alias_val)
+                # Also collect from aliases element
+                for alias_elem in col.findall('.//aliases/alias'):
+                    alias_val = alias_elem.get('value', alias_elem.text or '')
+                    if alias_val and alias_val != name:
+                        syns.add(alias_val)
+                if syns:
+                    key = name
+                    existing = set(synonyms.get(key, []))
+                    existing.update(syns)
+                    synonyms[key] = sorted(existing)
+        self.workbook_data['linguistic_schema'] = synonyms
+        print(f"  ✓ {len(synonyms)} linguistic synonyms extracted")
 
     def save_extractions(self):
         """Saves extractions to JSON"""
