@@ -1,8 +1,8 @@
-# Development Roadmap — v22.0.0 → v24.0.0
+# Development Roadmap — v23.0.0 → v24.0.0
 
-**Date:** 2026-03-20
-**Baseline:** v21.0.0 — 5,170 tests across 106 test files, 0 failures
-**Current state:** Post-v21 hardening — dashboard size extraction, bar/column orientation detection, calculation groups, visual title PBIR compliance, base64 image embedding, FCP zone extraction, textbox fix, aggregation passthrough
+**Date:** 2026-03-21
+**Baseline:** v22.0.0 — 5,683 tests across 113 test files, 0 failures
+**Current state:** v22.0.0 shipped — dashboard layout engine, slicer intelligence (7 modes), visual fidelity depth (dual-axis, stacked bar orientation, trend lines), conditional formatting (diverging/stepped/categorical), real-world E2E suite (26 workbooks), layout regression tests, performance regression tests
 
 ---
 
@@ -10,11 +10,11 @@
 
 The migration engine is **feature-complete for core single-workbook scenarios**. v22–v24 shift focus to:
 
-| Version | Theme | Target Date |
-|---------|-------|-------------|
-| **v22.0.0** | Real-World Fidelity & Layout Intelligence | Sprints 76–80 |
-| **v23.0.0** | Web UI, AI-Assisted Migration & CI Maturity | Sprints 81–85 |
-| **v24.0.0** | Composite Models, Live Sync & Enterprise Scale | Sprints 86–90 |
+| Version | Theme | Target Date | Status |
+|---------|-------|-------------|--------|
+| **v22.0.0** | Real-World Fidelity & Layout Intelligence | Sprints 76–80 | ✅ Shipped |
+| **v23.0.0** | Web UI, AI-Assisted Migration & CI Maturity | Sprints 81–85 | 🔜 Next |
+| **v24.0.0** | Composite Models, Live Sync & Enterprise Scale | Sprints 86–90 | Planned |
 
 ---
 
@@ -41,7 +41,7 @@ Real-world migrations (NBA, Superstore, Feedback Dashboard) exposed gaps that sy
 
 ---
 
-### Sprint 76 — Dashboard Layout Engine (@extractor, @generator, @orchestrator)
+### Sprint 76 — Dashboard Layout Engine ✅ SHIPPED
 
 **Goal:** Replace proportional scaling with a constraint-based layout engine that preserves Tableau's grid structure, container nesting, and alignment relationships.
 
@@ -58,7 +58,7 @@ Real-world migrations (NBA, Superstore, Feedback Dashboard) exposed gaps that sy
 
 ---
 
-### Sprint 77 — Advanced Slicer & Filter Intelligence (@extractor, @generator)
+### Sprint 77 — Advanced Slicer & Filter Intelligence ✅ SHIPPED
 
 **Goal:** Fully migrate Tableau filter controls (dropdown, slider, relative date, wildcard, top-N, context filters) to PBI slicer equivalents with correct configuration.
 
@@ -74,7 +74,7 @@ Real-world migrations (NBA, Superstore, Feedback Dashboard) exposed gaps that sy
 
 ---
 
-### Sprint 78 — Visual Fidelity Depth (@converter, @generator)
+### Sprint 78 — Visual Fidelity Depth ✅ SHIPPED
 
 **Goal:** Close the remaining visual accuracy gaps: stacked/grouped bar orientation, dual-axis combo charts, reference band shading, data label formatting, mark size encoding, and trend line preservation.
 
@@ -90,7 +90,7 @@ Real-world migrations (NBA, Superstore, Feedback Dashboard) exposed gaps that sy
 
 ---
 
-### Sprint 79 — Conditional Formatting & Theme Depth (@generator, @assessor)
+### Sprint 79 — Conditional Formatting & Theme Depth ✅ SHIPPED
 
 **Goal:** Fully map Tableau quantitative/categorical color encoding to PBI conditional formatting rules, and deepen theme migration for background, border, and font styles.
 
@@ -107,7 +107,7 @@ Real-world migrations (NBA, Superstore, Feedback Dashboard) exposed gaps that sy
 
 ---
 
-### Sprint 80 — Integration Testing & v22.0.0 Release (@orchestrator, @tester)
+### Sprint 80 — Integration Testing & v22.0.0 Release ✅ SHIPPED
 
 **Goal:** End-to-end validation against all 16 real-world workbooks, performance regression suite, documentation update, and v22.0.0 release.
 
@@ -119,18 +119,18 @@ Real-world migrations (NBA, Superstore, Feedback Dashboard) exposed gaps that sy
 | 80.4 | **v22.0.0 release prep** | @orchestrator | `CHANGELOG.md`, `pyproject.toml`, docs | Low | Version bump 21.0.0 → 22.0.0. Update CHANGELOG, GAP_ANALYSIS, KNOWN_LIMITATIONS, README, copilot-instructions. |
 | 80.5 | **Tests** | @tester | across above | — | Target: **5,500+** total tests (330+ new in v22) |
 
-### v22.0.0 Success Criteria
+### v22.0.0 Success Criteria — ✅ ALL MET
 
-| Metric | v21.0.0 | Target v22.0.0 |
-|--------|---------|----------------|
-| Tests | 5,170 | **5,500+** |
-| Visual layout accuracy | Proportional scaling | **Grid-snapped** |
-| Slicer modes | Basic dropdown | **7 modes** (dropdown, list, slider, date picker, relative date, search, between) |
-| Conditional formatting types | Gradient only | **4 types** (gradient, diverging, stepped, categorical) |
-| Stacked bar orientation | Always horizontal | **Orientation-aware** |
-| Dual-axis combo charts | Mapped to lineChart | **lineClusteredColumnComboChart** with Y2 |
-| Reference bands | Not migrated | **Shaded region pairs** |
-| Real-world E2E tests | Manual | **16 automated tests** |
+| Metric | v21.0.0 | Target v22.0.0 | Actual |
+|--------|---------|----------------|--------|
+| Tests | 5,170 | **5,500+** | **5,683** ✅ |
+| Visual layout accuracy | Proportional scaling | **Grid-snapped** | **Grid-snapped** ✅ |
+| Slicer modes | Basic dropdown | **7 modes** (dropdown, list, slider, date picker, relative date, search, between) | **7 modes** ✅ |
+| Conditional formatting types | Gradient only | **4 types** (gradient, diverging, stepped, categorical) | **4 types** ✅ |
+| Stacked bar orientation | Always horizontal | **Orientation-aware** | **Orientation-aware** ✅ |
+| Dual-axis combo charts | Mapped to lineChart | **lineClusteredColumnComboChart** with Y2 | **Combo chart** ✅ |
+| Reference bands | Not migrated | **Shaded region pairs** | **Shaded** ✅ |
+| Real-world E2E tests | Manual | **16 automated tests** | **26 workbooks, 369 tests** ✅ |
 
 ---
 
