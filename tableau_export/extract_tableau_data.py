@@ -542,7 +542,11 @@ class TableauExtractor:
             top_n = filt.findtext('.//top', '')
             if count_type or top_n:
                 filter_mode = 'top-n'
-                filter_data['top_n_count'] = int(top_n or count_type or '10')
+                raw_top_n = top_n or count_type or '10'
+                try:
+                    filter_data['top_n_count'] = int(raw_top_n)
+                except (ValueError, TypeError):
+                    filter_data['top_n_count'] = 10
                 filter_data['top_n_field'] = filt.get('count-field',
                                                        filt.findtext('.//count-field', ''))
 

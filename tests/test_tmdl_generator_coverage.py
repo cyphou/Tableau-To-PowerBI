@@ -266,7 +266,7 @@ class TestDaxToMExpression(unittest.TestCase):
 
     def test_mid(self):
         result = _dax_to_m_expression("MID([Name], 2, 5)", 'T')
-        self.assertEqual(result, 'Text.Middle([Name], 2, 5)')
+        self.assertEqual(result, 'Text.Middle([Name], 2 - 1, 5)')
 
     def test_round(self):
         result = _dax_to_m_expression("ROUND([Value], 2)", 'T')

@@ -335,7 +335,8 @@ class PBIWorkspaceDeployer:
                 f'groups/{self.workspace_id}/datasets/{dataset_id}'
                 f'/refreshSchedule'
             )
-            self.client._request('PATCH', url, json_body=schedule)
+            from .pbi_client import PBI_API_BASE
+            self.client._request('PATCH', f'{PBI_API_BASE}/{url}', data=schedule)
             logger.info(
                 'Refresh schedule deployed for dataset %s', dataset_id
             )

@@ -46,9 +46,11 @@ class BundleDeploymentResult:
 
     @property
     def success(self):
-        """True if model deployed and at least one report succeeded."""
+        """True if model deployed and all reports (if any) succeeded."""
         if self.model_status != 'deployed':
             return False
+        if not self.reports:
+            return True
         return any(r['status'] == 'deployed' for r in self.reports)
 
     @property

@@ -182,6 +182,8 @@ class TableauServerClient:
             resp = self._request('GET', paged_url)
 
             items = resp.get(root_key, {}).get(item_key, [])
+            if isinstance(items, dict):
+                items = [items]
             all_items.extend(items)
 
             pagination = resp.get('pagination', {})

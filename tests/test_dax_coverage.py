@@ -1418,7 +1418,7 @@ class TestLODMultiDimension(unittest.TestCase):
         self.assertIn("'Geo'[City]", result)
 
     def test_fixed_cross_table_dims(self):
-        """Dimensions from different tables."""
+        """Dimensions from different tables use REMOVEFILTERS instead of invalid ALLEXCEPT."""
         result = convert_tableau_formula_to_dax(
             "{FIXED [Region], [ProductName] : SUM([Sales])}",
             table_name="Orders",
@@ -1426,7 +1426,7 @@ class TestLODMultiDimension(unittest.TestCase):
                 "Region": "Orders", "ProductName": "Products", "Sales": "Orders"
             },
         )
-        self.assertIn('ALLEXCEPT', result)
+        self.assertIn('REMOVEFILTERS', result)
         self.assertIn("'Products'[ProductName]", result)
         self.assertIn("'Orders'[Region]", result)
 

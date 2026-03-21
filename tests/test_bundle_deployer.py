@@ -31,7 +31,7 @@ class TestBundleDeploymentResult(unittest.TestCase):
     def test_success_requires_model_and_report(self):
         r = self._make_result()
         r.model_status = 'deployed'
-        self.assertFalse(r.success)  # no reports
+        self.assertTrue(r.success)  # model-only deployment is valid
 
         r.reports.append({'name': 'R1', 'status': 'deployed', 'id': 'r1'})
         self.assertTrue(r.success)

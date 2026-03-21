@@ -280,6 +280,7 @@ def deploy_multi_tenant(
             workspace_id=tenant.workspace_id,
         )
 
+        temp_dir = None
         try:
             # Create tenant-specific copy with overrides
             temp_dir = tempfile.mkdtemp(prefix=f'tenant_{tenant.name}_')
@@ -321,10 +322,11 @@ def deploy_multi_tenant(
 
         finally:
             # Clean up temp dir
-            try:
-                shutil.rmtree(temp_dir, ignore_errors=True)
-            except Exception:
-                pass
+            if temp_dir:
+                try:
+                    shutil.rmtree(temp_dir, ignore_errors=True)
+                except Exception:
+                    pass
 
         aggregate.results.append(tenant_result)
 

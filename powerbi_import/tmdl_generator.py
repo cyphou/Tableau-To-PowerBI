@@ -283,9 +283,8 @@ def _dax_to_m_expression(dax_expr, table_name=''):
     # ── Multi-argument DAX → M function map ─────────────────────────
     _MULTI = [
         ('LEFT', 'Text.Start'), ('RIGHT', 'Text.End'),
-        ('MID', 'Text.Middle'), ('ROUND', 'Number.Round'),
+        ('ROUND', 'Number.Round'),
         ('CONTAINSSTRING', 'Text.Contains'),
-        ('SUBSTITUTE', 'Text.Replace'),
     ]
     for dax_fn, m_fn in _MULTI:
         body = _extract_function_body(expr, dax_fn)
@@ -295,6 +294,26 @@ def _dax_to_m_expression(dax_expr, table_name=''):
             if any(c is None for c in converted):
                 return None
             return f'{m_fn}({", ".join(converted)})'
+
+    # MID → Text.Middle with 1-based to 0-based start position adjustment
+    body = _extract_function_body(expr, 'MID')
+    if body is not None:
+        args = _split_dax_args(body)
+        if len(args) >= 3:
+            converted = [_dax_to_m_expression(a, table_name) for a in args]
+            if any(c is None for c in converted):
+                return None
+            return f'Text.Middle({converted[0]}, {converted[1]} - 1, {converted[2]})'
+
+    # SUBSTITUTE → Text.Replace (ignore optional 4th arg: instance_num)
+    body = _extract_function_body(expr, 'SUBSTITUTE')
+    if body is not None:
+        args = _split_dax_args(body)
+        if len(args) >= 3:
+            converted = [_dax_to_m_expression(a, table_name) for a in args[:3]]
+            if any(c is None for c in converted):
+                return None
+            return f'Text.Replace({", ".join(converted)})'
 
     # ── DATEDIFF(start, end, interval) → Duration.Days/Months/Years ──
     body = _extract_function_body(expr, 'DATEDIFF')
@@ -3732,7 +3751,7 @@ def _write_tmdl_files(model_data, output_dir):
     _write_relationships_tmdl(def_dir, relationships)
 
     # 4. expressions.tmdl (with datasource parameters)
-    _write_expressions_tmdl(def_dir, tables, datasources=model.get('_datasources'))
+    _write_expressions_tmdl(def_dir, tables, datasources=model_data.get('_datasources'))
 
     # 5. roles.tmdl
     if roles:
@@ -3766,22 +3785,6 @@ def _write_tmdl_files(model_data, output_dir):
     for table in tables:
         _write_table_tmdl(tables_dir, table)
 
-    # Collect table names before releasing table data from memory.
-    # Post-write steps (perspectives, cultures) only need names, not
-    # full column/measure data — freeing the heavy dicts reduces peak
-    # memory for large workbooks (50+ tables).
-    # Preserve lightweight summaries so callers (generate_tmdl) can still
-    # compute stats without holding the full column/measure lists.
-    table_names = [t.get('name', '') for t in tables]
-    table_count = len(tables)
-    for t in tables:
-        t['_n_columns'] = len(t.get('columns', []))
-        t['_n_measures'] = len(t.get('measures', []))
-        # Clear column/measure/partition data (heaviest part) but keep names
-        t.pop('columns', None)
-        t.pop('measures', None)
-        t.pop('partitions', None)
-
     # 7. diagramLayout.json (empty — Power BI Desktop fills it on first open)
     diagram_path = os.path.join(def_dir, 'diagramLayout.json')
     with open(diagram_path, 'w', encoding='utf-8') as f:
@@ -3808,6 +3811,15 @@ def _write_tmdl_files(model_data, output_dir):
     extra_languages = model.get('_languages', '')
     if extra_languages:
         _write_multi_language_cultures(def_dir, extra_languages, tables)
+
+    # Release heavy table data after all writing steps (culture/perspectives)
+    # are done. Post-write callers only need names and counts.
+    for t in tables:
+        t['_n_columns'] = len(t.get('columns', []))
+        t['_n_measures'] = len(t.get('measures', []))
+        t.pop('columns', None)
+        t.pop('measures', None)
+        t.pop('partitions', None)
 
     return def_dir
 
@@ -3875,28 +3887,34 @@ def _write_culture_tmdl(cultures_dir, culture_name, tables):
                 continue
             # Translate display folders for measures
             for measure in table.get('measures', []):
-                for ann in measure.get('annotations', []):
-                    if ann.get('name') == 'displayFolder':
-                        orig = ann.get('value', '')
-                        translated = folder_translations.get(orig, '')
-                        if translated and translated != orig:
-                            lines.append(
-                                f"\ttranslatedDisplayFolder {_quote_name(tbl_name)}"
-                                f".{_quote_name(measure.get('name', ''))}"
-                                f" = {_quote_name(translated)}"
-                            )
+                orig = measure.get('displayFolder', '')
+                if not orig:
+                    for ann in measure.get('annotations', []):
+                        if ann.get('name') == 'displayFolder':
+                            orig = ann.get('value', '')
+                            break
+                translated = folder_translations.get(orig, '')
+                if translated and translated != orig:
+                    lines.append(
+                        f"\ttranslatedDisplayFolder {_quote_name(tbl_name)}"
+                        f".{_quote_name(measure.get('name', ''))}"
+                        f" = {_quote_name(translated)}"
+                    )
             # Translate display folders for columns
             for col in table.get('columns', []):
-                for ann in col.get('annotations', []):
-                    if ann.get('name') == 'displayFolder':
-                        orig = ann.get('value', '')
-                        translated = folder_translations.get(orig, '')
-                        if translated and translated != orig:
-                            lines.append(
-                                f"\ttranslatedDisplayFolder {_quote_name(tbl_name)}"
-                                f".{_quote_name(col.get('name', ''))}"
-                                f" = {_quote_name(translated)}"
-                            )
+                orig = col.get('displayFolder', '')
+                if not orig:
+                    for ann in col.get('annotations', []):
+                        if ann.get('name') == 'displayFolder':
+                            orig = ann.get('value', '')
+                            break
+                translated = folder_translations.get(orig, '')
+                if translated and translated != orig:
+                    lines.append(
+                        f"\ttranslatedDisplayFolder {_quote_name(tbl_name)}"
+                        f".{_quote_name(col.get('name', ''))}"
+                        f" = {_quote_name(translated)}"
+                    )
         lines.append("")
 
     filepath = os.path.join(cultures_dir, f'{culture_name}.tmdl')

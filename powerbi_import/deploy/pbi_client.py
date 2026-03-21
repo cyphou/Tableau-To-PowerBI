@@ -48,6 +48,7 @@ class PBIServiceClient:
         self.client_secret = client_secret or os.getenv('PBI_CLIENT_SECRET', '')
         self.use_managed_identity = use_managed_identity
         self._token = None
+        self._token_expires_on = 0
         self._session = None
 
         # Try requests library
@@ -60,8 +61,10 @@ class PBIServiceClient:
 
     def _get_token(self):
         """Acquire an Azure AD access token."""
-        if self._token:
-            return self._token
+        if self._token and self._token_expires_on:
+            import time
+            if time.time() < self._token_expires_on - 300:  # 5 min buffer
+                return self._token
 
         try:
             from azure.identity import (  # type: ignore[import-not-found]
@@ -78,9 +81,11 @@ class PBIServiceClient:
                 )
             token = cred.get_token(PBI_SCOPE)
             self._token = token.token
+            self._token_expires_on = getattr(token, 'expires_on', 0)
         except ImportError:
             # No azure-identity — check for pre-set token
             self._token = os.getenv('PBI_ACCESS_TOKEN', '')
+            self._token_expires_on = 0
             if not self._token:
                 raise RuntimeError(
                     'azure-identity not installed and PBI_ACCESS_TOKEN not set. '

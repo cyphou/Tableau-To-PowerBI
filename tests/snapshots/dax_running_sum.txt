@@ -1,1 +1,1 @@
-CALCULATE(SUM('Table'[Sales]))
+CALCULATE(SUM('Table'[Sales]), FILTER(ALLSELECTED('Table'), TRUE())) /* RUNNING_SUM: converted to cumulative — verify window scope */

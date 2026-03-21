@@ -470,7 +470,7 @@ def _gen_m_custom_sql(details, table_name, columns):
     m_query += '    // Source: Custom SQL Query\n'
     if params:
         # Build parameter record:  [Param1="value1", Param2="value2"]
-        param_items = ', '.join(f'{k}="{v}"' for k, v in params.items())
+        param_items = ', '.join(f'{k}="{str(v).replace(chr(34), chr(34)+chr(34))}"' for k, v in params.items())
         m_query += f'    Source = Value.NativeQuery(Sql.Database("{server}", "{database}"), "'
         m_query += sql_escaped
         m_query += f'", [{param_items}], [EnableFolding=true]),\n'
@@ -1094,7 +1094,7 @@ def m_transform_replace_value(column, old_value, new_value, replace_text=True):
     """Replace values in a column."""
     replacer = 'Replacer.ReplaceText' if replace_text else 'Replacer.ReplaceValue'
     old_repr = f'"{old_value}"' if isinstance(old_value, str) else ('null' if old_value is None else str(old_value))
-    new_repr = f'"{new_value}"' if isinstance(new_value, str) else str(new_value)
+    new_repr = f'"{new_value}"' if isinstance(new_value, str) else ('null' if new_value is None else str(new_value))
     return ('#"Replaced Values"',
             f'Table.ReplaceValue({{prev}}, {old_repr}, {new_repr}, {replacer}, {{"{column}"}})')
 
@@ -1153,6 +1153,8 @@ def m_transform_fill_up(columns):
 
 def m_transform_filter_values(column, keep_values):
     """Keep only rows where column matches specified values (categorical)."""
+    if not keep_values:
+        return ('#"Filtered Rows"', '{prev}')
     if len(keep_values) == 1:
         condition = f'each [#"{column}"] = "{keep_values[0]}"'
     else:
@@ -1515,11 +1517,19 @@ def wrap_source_with_try_otherwise(m_query, empty_table_columns=None):
     # Find the end of the Source expression (next line starting with a step name or 'in')
     lines = after_assign.split('\n')
     # Find how many lines belong to the Source expression
+    # Track nesting depth to avoid matching option keys inside [...] or (...)
     source_lines = []
     remaining_idx = len(lines)
+    nesting = 0
     for idx, line in enumerate(lines):
         stripped = line.strip()
-        if idx > 0 and (stripped.startswith('#"') or stripped.startswith('Result')
+        # Update nesting based on brackets/parens in this line
+        for ch in line:
+            if ch in ('(', '['):
+                nesting += 1
+            elif ch in (')', ']'):
+                nesting -= 1
+        if idx > 0 and nesting <= 0 and (stripped.startswith('#"') or stripped.startswith('Result')
                         or stripped == 'in' or _re.match(r'\w+\s*=', stripped)):
             remaining_idx = idx
             break

@@ -328,7 +328,7 @@ _RE_IF = re.compile(r'\bIF\b', re.IGNORECASE)
 _RE_THEN = re.compile(r'\bTHEN\b', re.IGNORECASE)
 _RE_ELSE = re.compile(r'\bELSE\b', re.IGNORECASE)
 _RE_ELSEIF = re.compile(r'\bELSEIF\b', re.IGNORECASE)
-_RE_END = re.compile(r'\bEND\b', re.IGNORECASE)
+_RE_END = re.compile(r'(?<!\[)\bEND\b(?!\s*\w*\])', re.IGNORECASE)
 _RE_AND = re.compile(r'\bAND\b', re.IGNORECASE)
 _RE_OR = re.compile(r'\bOR\b', re.IGNORECASE)
 _RE_NOT = re.compile(r'\bNOT\b', re.IGNORECASE)
@@ -395,7 +395,7 @@ def _parse_clean_actions(node):
     """
     steps = []
     action_group = node.get('beforeActionGroup', node.get('actionGroup', {}))
-    actions = action_group.get('actions', [])
+    actions = list(action_group.get('actions', []))
 
     # Also check afterActionGroup
     after_group = node.get('afterActionGroup', {})

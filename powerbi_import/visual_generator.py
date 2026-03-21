@@ -1531,7 +1531,7 @@ def _build_visual_filters(viz_filters, col_table_map):
                         "Property": field_name,
                     }
                 },
-                "values": [[{"Literal": {"Value": json.dumps(v)}} for v in values]],
+                "values": [[{"Literal": {"Value": f"'{v}'"}}] for v in values],
             }
             filter_list.append(filter_entry)
 

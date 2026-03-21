@@ -160,28 +160,16 @@ _SIMPLE_FUNCTION_MAP = [
     (r'\bHEXBINX\s*\(', '/* HEXBINX: no DAX equivalent */ 0 + ( /*'),
     (r'\bHEXBINY\s*\(', '/* HEXBINY: no DAX equivalent */ 0 + ( /*'),
 
-    # Table calculations — RUNNING_* already wraps an aggregation, so just add CALCULATE
-    (r'\bRUNNING_SUM\s*\(', 'CALCULATE('),
-    (r'\bRUNNING_AVG\s*\(', 'CALCULATE('),
-    (r'\bRUNNING_COUNT\s*\(', 'CALCULATE('),
-    (r'\bRUNNING_MAX\s*\(', 'CALCULATE('),
-    (r'\bRUNNING_MIN\s*\(', 'CALCULATE('),
+    # Table calculations — RUNNING_*/TOTAL handled by dedicated converters (_convert_running_functions, _convert_total_function)
     # RANK/RANK_UNIQUE/RANK_DENSE/RANK_MODIFIED/RANK_PERCENTILE handled by _convert_rank_functions
     (r'\bINDEX\s*\(\s*\)', 'RANKX(ALLSELECTED(), [Value], , ASC, DENSE) /* INDEX: row number within partition */'),
     (r'\bFIRST\s*\(\s*\)', '/* FIRST(): rows from first row — use ORDERBY column */ -(RANKX(ALLSELECTED(), [__SortColumn__], , ASC, DENSE) - 1)'),
     (r'\bLAST\s*\(\s*\)', '/* LAST(): rows to last row — use ORDERBY column */ COUNTROWS(ALLSELECTED()) - RANKX(ALLSELECTED(), [__SortColumn__], , ASC, DENSE)'),
-    (r'\bTOTAL\s*\(', 'CALCULATE('),
     # PREVIOUS_VALUE and LOOKUP handled by dedicated converters below
     (r'\bSIZE\s*\(\s*\)', 'COUNTROWS(ALLSELECTED()) /* SIZE: partition row count */'),
 
-    # Additional WINDOW_* table calculations
-    (r'\bWINDOW_MEDIAN\s*\(', 'CALCULATE(MEDIAN('),
-    (r'\bWINDOW_STDEVP\s*\(', 'CALCULATE(STDEV.P('),
-    (r'\bWINDOW_STDEV\s*\(', 'CALCULATE(STDEV.S('),
-    (r'\bWINDOW_VARP\s*\(', 'CALCULATE(VAR.P('),
-    (r'\bWINDOW_VAR\s*\(', 'CALCULATE(VAR.S('),
-    # WINDOW_CORR/COVAR/COVARP handled by dedicated converter in _convert_window_functions
-    (r'\bWINDOW_PERCENTILE\s*\(', 'CALCULATE(PERCENTILE.INC('),
+    # WINDOW_* table calculations handled by _convert_window_functions (SUM/AVG/MAX/MIN/COUNT/MEDIAN/STDEV/VAR/PERCENTILE)
+    # WINDOW_CORR/COVAR/COVARP also handled by dedicated converter in _convert_window_functions
 
     # Script/Analytics Extensions (no DAX equivalent)
     (r'\bSCRIPT_BOOL\s*\(', '/* SCRIPT_BOOL: analytics extension — manual conversion needed */ BLANK( /*'),
@@ -1522,6 +1510,7 @@ def _convert_string_concat(dax):
     """
     result = []
     in_string = False
+    in_single_quote = False
     i = 0
     while i < len(dax):
         ch = dax[i]
@@ -1531,8 +1520,24 @@ def _convert_string_concat(dax):
                 in_string = False
             i += 1
             continue
+        if in_single_quote:
+            result.append(ch)
+            if ch == "'":
+                # Check for escaped '' inside table names
+                if i + 1 < len(dax) and dax[i + 1] == "'":
+                    result.append("'")
+                    i += 2
+                    continue
+                in_single_quote = False
+            i += 1
+            continue
         if ch == '"':
             in_string = True
+            result.append(ch)
+            i += 1
+            continue
+        if ch == "'":
+            in_single_quote = True
             result.append(ch)
             i += 1
             continue
@@ -1646,7 +1651,14 @@ def _convert_lod_expressions(dax, table_name, column_table_map):
         if keyword == 'FIXED':
             if dim_refs:
                 allexcept_table = column_table_map.get(dims[0], table_name)
-                replacement = f"CALCULATE({agg_str}, ALLEXCEPT('{allexcept_table}', {', '.join(dim_refs)}))"
+                # Check if all dims belong to the same table for valid ALLEXCEPT
+                dim_tables = set(column_table_map.get(d, table_name) for d in dims)
+                if len(dim_tables) == 1:
+                    replacement = f"CALCULATE({agg_str}, ALLEXCEPT('{allexcept_table}', {', '.join(dim_refs)}))"
+                else:
+                    # Multi-table dims: use individual REMOVEFILTERS per column
+                    filters = ', '.join(f"REMOVEFILTERS({ref})" for ref in dim_refs)
+                    replacement = f"CALCULATE({agg_str}, {filters})"
             else:
                 replacement = f"CALCULATE({agg_str}, ALL('{table_name}'))"
         elif keyword == 'INCLUDE':
@@ -1741,7 +1753,16 @@ def _convert_window_functions(dax, table_name, compute_using=None, column_table_
     DAX patterns to approximate the sliding window.
     """
     ctm = column_table_map or {}
-    for window_func in ['WINDOW_SUM', 'WINDOW_AVG', 'WINDOW_MAX', 'WINDOW_MIN', 'WINDOW_COUNT']:
+    # Mapping of WINDOW functions that need an extra wrapping DAX aggregate function
+    _WINDOW_WRAP = {
+        'WINDOW_MEDIAN': 'MEDIAN',
+        'WINDOW_STDEV': 'STDEV.S',
+        'WINDOW_STDEVP': 'STDEV.P',
+        'WINDOW_VAR': 'VAR.S',
+        'WINDOW_VARP': 'VAR.P',
+        'WINDOW_PERCENTILE': 'PERCENTILE.INC',
+    }
+    for window_func in ['WINDOW_SUM', 'WINDOW_AVG', 'WINDOW_MAX', 'WINDOW_MIN', 'WINDOW_COUNT'] + list(_WINDOW_WRAP.keys()):
         pattern = _get_func_pattern(window_func)
         match = pattern.search(dax)
         while match:
@@ -1761,6 +1782,10 @@ def _convert_window_functions(dax, table_name, compute_using=None, column_table_
 
             # Determine the inner aggregation expression and optional frame bounds
             inner_expr = args[0].strip() if args else inner
+            # Wrap inner expression for WINDOW functions that need an extra aggregate
+            wrap_fn = _WINDOW_WRAP.get(window_func)
+            if wrap_fn:
+                inner_expr = f'{wrap_fn}({inner_expr})'
             frame_start = None
             frame_end = None
             if len(args) >= 3:
@@ -2169,9 +2194,23 @@ def _normalize_spaces_outside_identifiers(text):
     result = []
     i = 0
     while i < len(text):
-        if text[i] in ("'", "["):
-            close = "'" if text[i] == "'" else "]"
+        if text[i] == '[':
+            close = ']'
             j = text.index(close, i + 1) + 1 if close in text[i + 1:] else len(text)
+            result.append(text[i:j])
+            i = j
+        elif text[i] == "'":
+            # Handle single-quoted table names, skipping escaped '' pairs
+            j = i + 1
+            while j < len(text):
+                if text[j] == "'":
+                    if j + 1 < len(text) and text[j + 1] == "'":
+                        j += 2  # skip escaped ''
+                    else:
+                        j += 1  # closing quote
+                        break
+                else:
+                    j += 1
             result.append(text[i:j])
             i = j
         elif text[i] in (' ', '\t'):
