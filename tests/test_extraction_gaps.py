@@ -23,13 +23,15 @@ class TestMQueryAggMapVarVarp(unittest.TestCase):
     def test_var_in_map(self):
         self.assertIn('var', _M_AGG_MAP)
         func_name, m_type = _M_AGG_MAP['var']
-        self.assertIn('StandardDeviation', func_name)
+        # VAR is now special-cased (None) — variance uses StdDev² in code
+        self.assertIsNone(func_name)
         self.assertEqual(m_type, 'type number')
 
     def test_varp_in_map(self):
         self.assertIn('varp', _M_AGG_MAP)
         func_name, m_type = _M_AGG_MAP['varp']
-        self.assertIn('StandardDeviation', func_name)
+        # VARP is now special-cased (None) — population variance via custom formula
+        self.assertIsNone(func_name)
         self.assertEqual(m_type, 'type number')
 
     def test_existing_agg_map_entries(self):

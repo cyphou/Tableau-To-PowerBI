@@ -26,6 +26,25 @@ from powerbi_import.pbip_generator import _L
 
 logger = logging.getLogger(__name__)
 
+# ── Auto-generated measures (e.g. RANKX for bump charts) ─────────────────────
+# Populated during visual generation; consumed by tmdl_generator to emit
+# the corresponding DAX measures in the semantic model.
+_AUTO_GENERATED_MEASURES = []
+
+
+def get_auto_generated_measures():
+    """Return list of measures auto-generated during visual creation.
+
+    Each entry is a dict with keys: name, table, expression, description.
+    Call ``clear_auto_generated_measures()`` before a new generation run.
+    """
+    return list(_AUTO_GENERATED_MEASURES)
+
+
+def clear_auto_generated_measures():
+    """Reset the auto-generated measures list for a fresh run."""
+    _AUTO_GENERATED_MEASURES.clear()
+
 
 def _new_guid():
     return str(uuid.uuid4())
@@ -645,7 +664,7 @@ APPROXIMATION_MAP = {
     "chord":       ("chordChart",                        "Chord diagram mapped to custom visual (ChicagoITChord1.0.0) — install from AppSource"),
     "network":     ("networkNavigator",                  "Network graph mapped to custom visual (NetworkNavigator1.0.0) — install from AppSource"),
     "ganttbar":    ("ganttChart",                         "Gantt bar mapped to custom visual (GanttByMAQSoftware1.0.0) — install from AppSource"),
-    "bumpchart":   ("lineChart",                         "Bump chart mapped to Line Chart — ranking semantics lost"),
+    "bumpchart":   ("lineChart",                         "Bump chart mapped to Line Chart with auto-generated RANKX measure for ranking"),
     "slopechart":  ("lineChart",                         "Slope chart mapped to Line Chart — period comparison semantics lost"),
     "timeline":    ("lineChart",                         "Timeline mapped to Line Chart — event markers not supported"),
     "butterfly":   ("hundredPercentStackedBarChart",     "Butterfly chart mapped to 100% Stacked Bar — negate one measure to simulate symmetry"),
@@ -1125,6 +1144,28 @@ def _build_visual_query_state(worksheet, pbi_type, ctm, ml, visual_obj):
             measures.append({'name': size_field, 'label': size_field,
                              'expression': f'SUM({size_field})'})
 
+    # ── Bump chart: inject RANKX measure for ranking semantics ─
+    source_type = (worksheet.get('visualType', '') or '').lower().replace(' ', '').replace('_', '')
+    if source_type in ('bumpchart', 'bump chart', 'bump') and measures:
+        # Use the first measure as the basis for ranking
+        base_measure = measures[0]
+        base_name = base_measure.get('label') or base_measure.get('name', 'Measure')
+        rank_name = f'_bump_rank_{base_name}'
+        # Determine table for RANKX (from col_table_map or first available)
+        rank_table = ''
+        if ctm:
+            rank_table = next(iter(ctm.values()), 'Table')
+        rank_expr = f'RANKX(ALL(\'{rank_table}\'), [{base_name}],, ASC, Dense)'
+        # Add rank measure to the visual's Y axis (replaces original for rank positioning)
+        measures.append({'name': rank_name, 'label': rank_name,
+                         'expression': rank_expr})
+        # Register as auto-generated so tmdl_generator can emit the DAX
+        _AUTO_GENERATED_MEASURES.append({
+            'name': rank_name,
+            'table': rank_table,
+            'expression': rank_expr,
+            'description': f'Auto-generated RANKX measure for bump chart (ranks by [{base_name}])',
+        })
     if dimensions or measures:
         query_state = build_query_state(
             pbi_type, dimensions, measures, ctm, ml,

@@ -422,22 +422,72 @@ def _gen_m_pdf(details, table_name, columns):
     full_path = f"{directory}/{filename}" if directory else filename
     full_path_bs = full_path.replace('/', '\\')
 
+    # PDF connector depth: page range and table selection
+    start_page = details.get('start_page')
+    end_page = details.get('end_page')
+    table_index = details.get('table_index', 0)
+
+    options_parts = []
+    if start_page is not None:
+        options_parts.append(f'[StartPage={int(start_page)}]')
+    if end_page is not None:
+        options_parts.append(f'[EndPage={int(end_page)}]')
+    options_str = ', '.join(options_parts)
+
     m_query = 'let\n'
     m_query += f'    // Source PDF: {filename}\n'
-    m_query += f'    Source = Pdf.Tables(File.Contents(DataFolder & "\\{full_path_bs}")),\n'
-    m_query += '    Table1 = Source{{0}}[Data],\n'
+    if options_str:
+        m_query += f'    Source = Pdf.Tables(File.Contents(DataFolder & "\\{full_path_bs}"), {options_str}),\n'
+    else:
+        m_query += f'    Source = Pdf.Tables(File.Contents(DataFolder & "\\{full_path_bs}")),\n'
+    m_query += f'    Table1 = Source{{{{{table_index}}}}}[Data],\n'
     m_query += '    #"Promoted Headers" = Table.PromoteHeaders(Table1, [PromoteAllScalars=true]),\n'
     return _append_type_step(m_query, columns)
 
 
 def _gen_m_salesforce(details, table_name, columns):
     safe = '#"' + table_name + ' Table"'
+    soql = details.get('soql', '')
+    api_version = details.get('api_version', '')
+    include_relationships = details.get('include_relationships', False)
 
     m_query = 'let\n'
     m_query += '    // Source Salesforce\n'
-    m_query += '    Source = Salesforce.Data(),\n'
-    m_query += f'    {safe} = Source{{[Name="{table_name}"]}}[Data],\n'
-    m_query += f'    Result = {safe}\nin\n    Result'
+
+    # Build Salesforce.Data options
+    sf_options = []
+    if api_version:
+        sf_options.append(f'[ApiVersion="{api_version}"]')
+
+    if soql:
+        # SOQL passthrough query
+        if sf_options:
+            m_query += f'    Source = Salesforce.Data(null, {sf_options[0]}),\n'
+        else:
+            m_query += '    Source = Salesforce.Data(),\n'
+        m_query += f'    {safe} = Value.NativeQuery(Source, "{soql}"),\n'
+    else:
+        # Standard table navigation
+        if sf_options:
+            m_query += f'    Source = Salesforce.Data(null, {sf_options[0]}),\n'
+        else:
+            m_query += '    Source = Salesforce.Data(),\n'
+        m_query += f'    {safe} = Source{{[Name="{table_name}"]}}[Data],\n'
+
+    # Relationship traversal: expand lookup columns
+    relationships = details.get('relationships', [])
+    prev_step = safe
+    for i, rel in enumerate(relationships):
+        rel_col = rel.get('column', '')
+        expand_cols = rel.get('expand', [])
+        if rel_col and expand_cols:
+            expand_list = ', '.join([f'"{c}"' for c in expand_cols])
+            step_name = f'#"Expanded {rel_col}"'
+            m_query += (f'    {step_name} = Table.ExpandRecordColumn({prev_step}, '
+                        f'"{rel_col}", {{{expand_list}}}),\n')
+            prev_step = step_name
+
+    m_query += f'    Result = {prev_step}\nin\n    Result'
     return m_query
 
 
@@ -1223,8 +1273,8 @@ _M_AGG_MAP = {
     'max':     ('List.Max', 'type number'),
     'median':  ('List.Median', 'type number'),
     'stdev':   ('List.StandardDeviation', 'type number'),
-    'var':     ('List.StandardDeviation', 'type number'),   # M: no List.Variance; approximate via StdDev²
-    'varp':    ('List.StandardDeviation', 'type number'),   # M: no List.VarianceP; approximate via StdDev²
+    'var':     (None, 'type number'),   # special: List.StandardDeviation² (sample variance)
+    'varp':    (None, 'type number'),   # special: population variance via custom formula
 }
 
 
@@ -1245,6 +1295,16 @@ def m_transform_aggregate(group_by_columns, aggregations):
             agg_parts.append(f'{{"{name}", each Table.RowCount(_), Int64.Type}}')
         elif agg == 'countd':
             agg_parts.append(f'{{"{name}", each List.Count(List.Distinct([{col}])), Int64.Type}}')
+        elif agg == 'var':
+            # Sample variance = StdDev² (M has no built-in List.Variance)
+            agg_parts.append(f'{{"{name}", each Number.Power(List.StandardDeviation([{col}]), 2), type number}}')
+        elif agg == 'varp':
+            # Population variance = avg((x - mean)²)
+            agg_parts.append(
+                f'{{"{name}", each '
+                f'List.Average(List.Transform([{col}], (x) => Number.Power(x - List.Average([{col}]), 2))), '
+                f'type number}}'
+            )
         else:
             mapping = _M_AGG_MAP.get(agg, ('List.Sum', 'type number'))
             func, m_type = mapping
@@ -1471,6 +1531,80 @@ def m_transform_replace_errors(columns, replacement=None):
     transforms = ', '.join([f'{{"{c}", each {repl}}}' for c in columns])
     return ('#"Replaced Errors"',
             f'Table.ReplaceErrorValues({{prev}}, {{{transforms}}})')
+
+
+# ── Regex → M fallback transforms ─────────────────────────────────────────────
+
+def m_regex_match(column, pattern):
+    """Generate M step for regex match (returns boolean column).
+
+    Uses ``Text.RegexMatch`` available in Power Query (December 2024+).
+    Falls back to a ``Text.Contains`` approximation comment for older engines.
+    """
+    safe_col = f'[{column}]' if not column.startswith('[') else column
+    return (f'#"Regex Match {column}"',
+            f'Table.AddColumn({{prev}}, "{column}_match", '
+            f'each try Text.RegexMatch({safe_col}, "{pattern}") otherwise false, type logical)')
+
+
+def m_regex_extract(column, pattern, new_column=None):
+    """Generate M step for regex extract (captures first group).
+
+    Uses ``Text.RegexExtract`` to pull the first capture group from *pattern*.
+    """
+    safe_col = f'[{column}]' if not column.startswith('[') else column
+    out_col = new_column or f'{column}_extract'
+    return (f'#"Regex Extract {column}"',
+            f'Table.AddColumn({{prev}}, "{out_col}", '
+            f'each try Text.RegexExtract({safe_col}, "{pattern}") otherwise null, type text)')
+
+
+def m_regex_replace(column, pattern, replacement):
+    """Generate M step for regex replace.
+
+    Uses ``Text.RegexReplace`` to substitute all matches of *pattern*.
+    """
+    safe_col = f'[{column}]' if not column.startswith('[') else column
+    return (f'#"Regex Replace {column}"',
+            f'Table.TransformColumns({{prev}}, {{{{"{column}", '
+            f'each try Text.RegexReplace({safe_col}, "{pattern}", "{replacement}") otherwise {safe_col}}}}})')
+
+
+def convert_tableau_regex_to_m(formula, column_name):
+    """Convert a Tableau REGEXP_* formula to a Power Query M step tuple.
+
+    Recognises REGEXP_MATCH, REGEXP_EXTRACT, REGEXP_EXTRACT_NTH, and
+    REGEXP_REPLACE.  Returns a ``(step_name, step_expression)`` tuple that
+    can be injected via ``inject_m_steps()``, or *None* if the formula does
+    not contain a recognised REGEXP function.
+    """
+    import re as _re
+
+    # REGEXP_MATCH(field, "pattern")
+    m = _re.search(r'REGEXP_MATCH\s*\(\s*\[?([^\],]+?)\]?\s*,\s*["\'](.+?)["\']\s*\)', formula, _re.IGNORECASE)
+    if m:
+        return m_regex_match(m.group(1).strip(), m.group(2))
+
+    # REGEXP_EXTRACT(field, "pattern")
+    m = _re.search(r'REGEXP_EXTRACT\s*\(\s*\[?([^\],]+?)\]?\s*,\s*["\'](.+?)["\']\s*\)', formula, _re.IGNORECASE)
+    if m:
+        return m_regex_extract(m.group(1).strip(), m.group(2), new_column=column_name)
+
+    # REGEXP_EXTRACT_NTH(field, "pattern", n)
+    m = _re.search(r'REGEXP_EXTRACT_NTH\s*\(\s*\[?([^\],]+?)\]?\s*,\s*["\'](.+?)["\']\s*,\s*(\d+)\s*\)',
+                    formula, _re.IGNORECASE)
+    if m:
+        pat_with_group = m.group(2)
+        return m_regex_extract(m.group(1).strip(), pat_with_group,
+                               new_column=column_name)
+
+    # REGEXP_REPLACE(field, "pattern", "replacement")
+    m = _re.search(r'REGEXP_REPLACE\s*\(\s*\[?([^\],]+?)\]?\s*,\s*["\'](.+?)["\']\s*,\s*["\'](.*)["\']\s*\)',
+                    formula, _re.IGNORECASE)
+    if m:
+        return m_regex_replace(m.group(1).strip(), m.group(2), m.group(3))
+
+    return None
 
 
 def m_transform_try_otherwise(step_name, expression, fallback_expression):
