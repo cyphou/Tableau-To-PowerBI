@@ -2,9 +2,9 @@
 
 This document lists known limitations and approximations in the Tableau to Power BI migration tool.
 
-> **Last updated:** v21.0.0 (Sprint 75) — many previous limitations have been addressed in Sprints 27-75. See below for current status.
+> **Last updated:** v22.0.0 + Sprint 84 — many previous limitations have been addressed in Sprints 27-84. See below for current status.
 >
-> **v21.0.0 notes:** Interactive Jupyter migration API (`notebook_api.py`). Scheduled refresh & subscription migration (`refresh_generator.py`, `--migrate-schedules`). Observability dashboard v2 with 4-tab interactive layout, JSONL telemetry, portfolio progress, bottleneck analysis. DAX test coverage expanded (86→176 tests). M connector test coverage expanded (114→148 tests, 32+ connectors).
+> **v22.0.0 notes:** Grid-snapping dashboard layout engine (S76). 7 slicer modes: dropdown, list, slider, date picker, relative date, search, between (S77). Visual fidelity depth: stacked bar orientation, dual-axis combo charts, reference band shading, trend line preservation (S78). Conditional formatting: diverging, stepped, categorical color scales, icon sets (S79). Real-world E2E suite: 26 workbooks, layout/performance regression tests (S80). **Sprint 84:** Prep VAR/VARP proper M variance formulas, bump chart RANKX auto-injection, PDF connector page range, Salesforce SOQL/API depth, REGEX→M fallback. 5,727 tests across 114 files.
 
 ---
 
@@ -17,15 +17,16 @@ This document lists known limitations and approximations in the Tableau to Power
 | **Tableau 2024.3+** | ✅ Dynamic parameters with database queries are now fully extracted and converted to M partition with `Value.NativeQuery()`. Dynamic zone visibility may still be partially handled | Newer dynamic zone features may need manual adjustment |
 | **Custom shapes** | Shape encoding extracts the field reference only — actual image files are not migrated | Custom shape visuals will show default markers |
 | **OAuth credentials** | Credential metadata is stripped by design | Data source connections need re-authentication in Power BI |
-| **Nested layout containers** | Deeply nested containers may lose relative positioning | Some dashboard layouts may need manual adjustment |
+| **Nested layout containers** | ✅ IMPROVED (v22/S76) — Grid-snapping engine handles 3-level nesting; 4+ levels may lose precision | Very deeply nested containers may need manual adjustment |
 | **Rich tooltips** | HTML/custom layout tooltips are converted to run-level text (bold, color, font_size extracted) | Complex HTML tooltip layouts are not preserved |
 
 ## Generation Limitations
 
 | Area | Limitation | Impact |
 |------|-----------|--------|
-| **Visual positioning** | Dashboard objects are scaled proportionally with overlap detection, but not pixel-perfect | Some manual layout adjustment may be needed |
+| **Visual positioning** | ✅ IMPROVED (v22/S76) — Grid-snapping layout engine replaces proportional scaling. Container hierarchy extraction, row/column grid cells, floating z-order, responsive breakpoints. Not pixel-perfect but preserves grid structure | Some manual layout adjustment may still be needed for deeply nested containers |
 | **Sparklines** | Table/matrix sparkline columns are generated as lineChart sparkline configs | Limited to basic line sparklines; area/bar sparklines not supported |
+| **Bump charts** | ✅ IMPROVED (Sprint 84) — Auto-generated RANKX measure injected for ranking semantics | Maps to lineChart; ranking is approximated via `RANKX(ALL(), [measure],, ASC, Dense)` |
 
 ## DAX Conversion Limitations
 
@@ -74,6 +75,9 @@ This document lists known limitations and approximations in the Tableau to Power
 | **Custom SQL params** | ✅ IMPLEMENTED — `Value.NativeQuery()` with parameter record binding and `[EnableFolding=true]` |
 | **Hyper data** | ✅ `.hyper` files are now loaded via SQLite interface — row data injected into M `#table()` expressions. Some proprietary `.hyper` v2+ formats may fall back to metadata-only |
 | **Query folding** | ✅ IMPLEMENTED — `m_transform_buffer()` + `m_transform_join(buffer_right=True)` for `Table.Buffer()` folding boundaries |
+| **PDF connector** | ✅ IMPROVED (Sprint 84) — `Pdf.Tables(File.Contents(...), [StartPage=N, EndPage=M])` with page range and table index selection |
+| **Salesforce connector** | ✅ IMPROVED (Sprint 84) — SOQL passthrough via `Value.NativeQuery()`, API version specification, relationship traversal via `Table.ExpandRecordColumn()` |
+| **REGEX in M** | ✅ IMPLEMENTED (Sprint 84) — `m_regex_match/extract/replace()` + `convert_tableau_regex_to_m()` dispatcher using `Text.RegexMatch/Extract/Replace` with `try/otherwise` |
 
 ## Deployment Limitations
 
