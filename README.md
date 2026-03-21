@@ -97,7 +97,8 @@ python migrate.py --shared-model wb1.twbx wb2.twbx --assess-merge
 python migrate.py workbook.twbx --output-format fabric
 
 # ⚡ Optimize DAX + auto-inject Time Intelligence measures
-python migrate.py workbook.twbx --optimize-dax --time-intelligence auto```
+python migrate.py workbook.twbx --optimize-dax --time-intelligence auto
+```
 
 ---
 
