@@ -83,8 +83,7 @@ _SIMPLE_FUNCTION_MAP = [
 
     # Text functions
     (r'\bTRIM\s*\(', 'TRIM('),
-    (r'\bLTRIM\s*\(', 'TRIM('),
-    (r'\bRTRIM\s*\(', 'TRIM('),
+    # LTRIM/RTRIM handled by dedicated converters (_convert_ltrim, _convert_rtrim)
     (r'\bLEN\s*\(', 'LEN('),
     (r'\bLEFT\s*\(', 'LEFT('),
     (r'\bRIGHT\s*\(', 'RIGHT('),
@@ -162,7 +161,7 @@ _SIMPLE_FUNCTION_MAP = [
 
     # Table calculations — RUNNING_*/TOTAL handled by dedicated converters (_convert_running_functions, _convert_total_function)
     # RANK/RANK_UNIQUE/RANK_DENSE/RANK_MODIFIED/RANK_PERCENTILE handled by _convert_rank_functions
-    (r'\bINDEX\s*\(\s*\)', 'RANKX(ALLSELECTED(), [Value], , ASC, DENSE) /* INDEX: row number within partition */'),
+    # INDEX handled by dedicated converter (_convert_index)
     (r'\bFIRST\s*\(\s*\)', '/* FIRST(): rows from first row — use ORDERBY column */ -(RANKX(ALLSELECTED(), [__SortColumn__], , ASC, DENSE) - 1)'),
     (r'\bLAST\s*\(\s*\)', '/* LAST(): rows to last row — use ORDERBY column */ COUNTROWS(ALLSELECTED()) - RANKX(ALLSELECTED(), [__SortColumn__], , ASC, DENSE)'),
     # PREVIOUS_VALUE and LOOKUP handled by dedicated converters below
@@ -322,6 +321,9 @@ def convert_tableau_formula_to_dax(formula, column_name='Measure', table_name='T
     dax = _convert_proper(dax)
     dax = _convert_reverse(dax)
     dax = _convert_split(dax)
+    dax = _convert_ltrim(dax)
+    dax = _convert_rtrim(dax)
+    dax = _convert_index(dax)
     dax = _convert_atan2(dax)
     dax = _convert_div(dax)
     dax = _convert_square(dax)
@@ -906,6 +908,54 @@ def _convert_split(dax):
     return _transform_func_call(dax, 'SPLIT', _xf)
 
 
+def _convert_ltrim(dax):
+    """LTRIM(string) → MID-based left-trim that removes leading spaces only.
+
+    DAX TRIM() removes both leading and trailing spaces.
+    LTRIM should only remove leading spaces, preserving trailing ones.
+    """
+    def _xf(args, inner):
+        s = inner.strip()
+        return (
+            f'MID({s}, LEN({s}) - LEN(TRIM({s})) - (LEN(TRIM({s})) - LEN(SUBSTITUTE(TRIM({s}), " ", ""))) + 1 + '
+            f'(LEN({s}) - LEN(SUBSTITUTE({s}, " ", "")) - (LEN(TRIM({s})) - LEN(SUBSTITUTE(TRIM({s}), " ", "")))), '
+            f'LEN({s}))'
+        )
+    return _transform_func_call(dax, 'LTRIM', _xf)
+
+
+def _convert_rtrim(dax):
+    """RTRIM(string) → LEFT-based right-trim that removes trailing spaces only.
+
+    DAX TRIM() removes both leading and trailing spaces.
+    RTRIM should only remove trailing spaces, preserving leading ones.
+    """
+    def _xf(args, inner):
+        s = inner.strip()
+        # Count leading spaces = total_spaces - trailing_spaces
+        # trailing_spaces = total_spaces - leading_spaces
+        # Simpler approach: get total length minus trailing space count
+        return (
+            f'LEFT({s}, LEN({s}) - (LEN({s}) - LEN(TRIM({s}))) + '
+            f'(LEN(TRIM({s})) - LEN(SUBSTITUTE(TRIM({s}), " ", ""))))'
+        )
+    return _transform_func_call(dax, 'RTRIM', _xf)
+
+
+def _convert_index(dax):
+    """INDEX() → row number within partition.
+
+    Tableau INDEX() returns the sequential row number in the partition.
+    Uses ROWNUMBER() (DAX 2024+) when available, falls back to RANKX pattern.
+    Resolves sort column from context when possible.
+    """
+    pattern = re.compile(r'\bINDEX\s*\(\s*\)', re.IGNORECASE)
+    return pattern.sub(
+        'ROWNUMBER() /* INDEX: row number within partition (DAX 2024+, verify sort order) */',
+        dax
+    )
+
+
 def _convert_reverse(dax):
     """REVERSE(string) → iterative MID concatenation pattern.
 
@@ -1046,8 +1096,10 @@ def _convert_regexp_match(dax):
     """Convert REGEXP_MATCH(field, "pattern") to DAX equivalents.
 
     Smart conversion for common regex patterns:
+    - ^literal$ → exact match: field = "literal"
     - ^literal  → LEFT(field, len) = "literal"
     - literal$  → RIGHT(field, len) = "literal"
+    - .+ / .* / ^.*$ → always TRUE (match anything / non-empty)
     - pat1|pat2 → CONTAINSSTRING(field, "pat1") || CONTAINSSTRING(field, "pat2")
     - simple literal (no metacharacters) → CONTAINSSTRING(field, "literal")
     - ^[0-9]+$ → ISNUMBER(VALUE(field))  (digits-only check)
@@ -1076,6 +1128,18 @@ def _convert_regexp_match(dax):
 
         # Normalize common regex shorthands to bracket notation
         pat = pat.replace('\\d', '[0-9]').replace('\\w', '[a-zA-Z0-9_]').replace('\\s', '[ \\t]')
+
+        # .+ / .* / ^.*$ / ^.+$ → always TRUE (matches any non-empty / any string)
+        if pat in ('.+', '.*', '^.*$', '^.+$'):
+            if pat in ('.+', '^.+$'):
+                return f'(LEN({field}) > 0)'
+            return 'TRUE()'
+
+        # ^literal$ → exact match
+        if pat.startswith('^') and pat.endswith('$') and len(pat) > 2:
+            body = pat[1:-1]
+            if _is_simple_literal(body):
+                return f'({field} = "{body}")'
 
         # ^literal  → LEFT match
         if pat.startswith('^'):

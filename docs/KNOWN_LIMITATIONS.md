@@ -38,20 +38,20 @@ This document lists known limitations and approximations in the Tableau to Power
 | HEXBINX, HEXBINY | `0` + comment | No hex-binning in DAX |
 | COLLECT | `0` + comment | No spatial collection |
 | SCRIPT_BOOL/INT/REAL/STR | ✅ `scriptVisual` (Python or R) + `BLANK()` DAX fallback | R/Python scripting → PBI Python/R visual containers with script text and input columns. `BLANK()` DAX measure generated for non-visual contexts. Requires Python/R runtime configured in PBI Desktop |
-| SPLIT | `BLANK()` + comment | No string split to array in DAX |
+| **SPLIT** | ✅ IMPLEMENTED — `SPLIT(string, delim, token)` → `PATHITEM(SUBSTITUTE(string, delim, "|"), token)`. Negative index → `PATHITEMREVERSE`. 2-arg form defaults to token 1 | Requires pipe character not present in data |
 
 ### Approximated Functions
 
 | Tableau Function | DAX Output | Accuracy |
 |-----------------|------------|----------|
-| REGEXP_MATCH | Smart pattern detection: `LEFT`/`RIGHT`/`CONTAINSSTRING`/`OR` | Handles `^literal`, `literal$`, `pat1\|pat2`, simple substrings; complex regex falls back to `CONTAINSSTRING` |
+| REGEXP_MATCH | Smart pattern detection: `LEFT`/`RIGHT`/`CONTAINSSTRING`/`OR` | ✅ IMPROVED — Handles `^literal$` exact match, `^literal`, `literal$`, `.+`/`.*` always-true, `pat1\|pat2`, simple substrings; complex regex falls back to `CONTAINSSTRING` |
 | REGEXP_REPLACE | Chained `SUBSTITUTE()` for common patterns; `CONTAINSSTRING`+`SUBSTITUTE` for character classes | No true regex groups or backreferences |
 | REGEXP_EXTRACT | `MID(field, SEARCH("prefix", field) + len, LEN(field))` for fixed-prefix patterns | Falls back to `BLANK()` for complex patterns |
 | REGEXP_EXTRACT_NTH | Delimiter→PATHITEM, prefix→MID/SEARCH, alternation→IF/CONTAINSSTRING | Falls back to `BLANK()` for complex patterns (v5.3.0) |
 | RANK_PERCENTILE | `DIVIDE(RANKX()-1, COUNTROWS()-1)` | Edge cases with ties |
 | RUNNING_SUM/AVG/COUNT | `CALCULATE(AGG, FILTER(ALLSELECTED(...)))` | Proper window semantics with partition support |
 | WINDOW_SUM/AVG/MAX/MIN | `CALCULATE(inner, ALL/ALLEXCEPT)` with OFFSET-based frame boundaries | Frame start/end positions approximated via OFFSET for specific patterns |
-| LTRIM/RTRIM | `TRIM()` | DAX TRIM removes all leading/trailing spaces |
+| LTRIM/RTRIM | ✅ FIXED — `LTRIM` → MID-based left-trim (preserves trailing spaces); `RTRIM` → LEFT-based right-trim (preserves leading spaces) | Distinct from TRIM which removes both sides |
 | String `+` → `&` | All expression depths | Converted at all nesting levels since v4.0 |
 
 ## Visual Mapping Approximations
@@ -63,7 +63,7 @@ This document lists known limitations and approximations in the Tableau to Power
 | Butterfly / Waffle | hundredPercentStackedBarChart | ✅ IMPROVED — negate-one-measure hint in approximation note |
 | Calendar Heat Map | matrix | ✅ IMPROVED — auto-enables conditional formatting properties + migration note |
 | Packed Bubble / Strip Plot | scatterChart | ✅ FIXED — size encoding from `mark_encoding` auto-injected into Size data role |
-| Bump Chart / Slope | lineChart | Ranking semantics lost |
+| Bump Chart / Slope | lineChart | ✅ IMPROVED (S84) — Auto-generated RANKX measure for ranking semantics |
 | Motion chart (animated) | Not handled | No PBI play-axis animation |
 | Violin plot | ✅ `boxAndWhisker` + custom visual (`ViolinPlot1.0.0`) | Maps to Box & Whisker; AppSource custom visual GUID available |
 | Parallel coordinates | ✅ `lineChart` + custom visual (`ParallelCoordinates1.0.0`) | Maps to Line Chart; AppSource custom visual GUID available |

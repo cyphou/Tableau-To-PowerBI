@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-21 — updated through v22.0.0 + Sprint 84  
 **Scope:** Every source file, test file, CI/CD, docs, config, and cross-project comparison with TableauToFabric  
-**Status:** 5,727 tests passing across 114 test files · 38,194 source lines (tableau_export + powerbi_import)
+**Status:** 5,756 tests passing across 115 test files · 38,194 source lines (tableau_export + powerbi_import)
 
 ### Implementation Coverage
 
@@ -295,7 +295,7 @@
 | **CORR, COVAR, COVARP** | VAR/iterator DAX patterns | ✅ IMPLEMENTED — Pearson correlation formula with SUMX/VAR, proper N vs N-1 divisor |
 | **RANK_PERCENTILE** | `DIVIDE(RANKX()-1, COUNTROWS()-1)` | Approximate — edge cases with ties |
 | **RANK_MODIFIED** | `RANKX(..., ASC, SKIP)` | ✅ FIXED — uses SKIP parameter for modified competition ranking |
-| **INDEX()** | `RANKX()` | Row number vs rank — different semantics |
+| **INDEX()** | `ROWNUMBER()` (DAX 2024+) | ✅ FIXED — Uses ROWNUMBER() which is semantically correct for row number within partition |
 | **SIZE()** | `COUNTROWS(ALLSELECTED())` | ✅ FIXED — simplified to COUNTROWS(ALLSELECTED()) for partition-aware row count |
 | **RUNNING_SUM/AVG/COUNT** | `CALCULATE(AGG, FILTER(ALLSELECTED(...)))` | ✅ IMPROVED — now uses FILTER(ALLSELECTED) pattern with proper window semantics; supports partition fields via `compute_using` with ALLEXCEPT |
 | **WINDOW_SUM/AVG/MAX/MIN** | `CALCULATE(inner, ALL/ALLEXCEPT('table'))` with OFFSET frame boundaries | ✅ IMPROVED — frame start/end positions generate OFFSET-based patterns; supports ALLEXCEPT with partition fields |

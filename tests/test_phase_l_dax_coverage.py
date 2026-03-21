@@ -15,16 +15,16 @@ class TestIndexInCompound(unittest.TestCase):
 
     def test_index_standalone(self):
         result = convert_tableau_formula_to_dax('INDEX()')
-        self.assertIn('RANKX', result)
+        self.assertIn('ROWNUMBER', result)
 
     def test_index_in_if(self):
         result = convert_tableau_formula_to_dax('IF INDEX() = 1 THEN "First" ELSE "Other" END')
-        self.assertIn('RANKX', result)
+        self.assertIn('ROWNUMBER', result)
         self.assertIn('IF', result)
 
     def test_index_divided_by_size(self):
         result = convert_tableau_formula_to_dax('INDEX() / SIZE()')
-        self.assertIn('RANKX', result)
+        self.assertIn('ROWNUMBER', result)
         self.assertIn('COUNTROWS', result)
 
 

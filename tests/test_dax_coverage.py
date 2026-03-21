@@ -412,7 +412,7 @@ class TestTableCalcAdvanced(unittest.TestCase):
 
     def test_index_to_rankx(self):
         result = convert_tableau_formula_to_dax("INDEX()")
-        self.assertIn("RANKX", result)
+        self.assertIn("ROWNUMBER", result)
 
     def test_first_to_rankx(self):
         result = convert_tableau_formula_to_dax("FIRST()")

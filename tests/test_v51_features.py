@@ -61,13 +61,11 @@ class TestSplitConversion(unittest.TestCase):
 
 
 class TestIndexConversion(unittest.TestCase):
-    """INDEX() → improved RANKX."""
+    """INDEX() → ROWNUMBER() (DAX 2024+)."""
 
     def test_index_basic(self):
         result = convert_tableau_formula_to_dax('INDEX()')
-        self.assertIn('RANKX', result)
-        self.assertIn('ALLSELECTED', result)
-        self.assertIn('DENSE', result)
+        self.assertIn('ROWNUMBER', result)
 
     def test_index_comment_preserved(self):
         result = convert_tableau_formula_to_dax('INDEX()')
