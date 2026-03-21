@@ -3,6 +3,6 @@
   "name": "ReportSection",
   "displayName": "NBA Player Stats",
   "displayOption": "FitToPage",
-  "height": 720,
-  "width": 1280
+  "height": 1200,
+  "width": 1000
 }

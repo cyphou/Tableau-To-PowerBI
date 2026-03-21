@@ -27,5 +27,79 @@
     "defaultDrillFilterOtherVisuals": true,
     "allowChangeFilterTypes": true,
     "useEnhancedTooltips": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "Filter_8bccf14d3d3b",
+        "type": "Advanced",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Extract"
+              }
+            },
+            "Property": "World Indicators new.avg:F: GDP per capita (curr $):qk"
+          }
+        },
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "t",
+              "Entity": "Extract",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "Comparison": {
+                  "ComparisonKind": 2,
+                  "Left": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Source": "t"
+                        }
+                      },
+                      "Property": "World Indicators new.avg:F: GDP per capita (curr $):qk"
+                    }
+                  },
+                  "Right": {
+                    "Literal": {
+                      "Value": "'199.0'"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "Condition": {
+                "Comparison": {
+                  "ComparisonKind": 3,
+                  "Left": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Source": "t"
+                        }
+                      },
+                      "Property": "World Indicators new.avg:F: GDP per capita (curr $):qk"
+                    }
+                  },
+                  "Right": {
+                    "Literal": {
+                      "Value": "'104512.0'"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    ]
   }
 }

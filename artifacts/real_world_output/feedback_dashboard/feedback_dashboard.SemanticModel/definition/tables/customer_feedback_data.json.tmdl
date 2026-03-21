@@ -1,9 +1,9 @@
 table 'customer_feedback_data.json'
-	lineageTag: e7730acc-d486-493d-b98d-d709d299ac74
+	lineageTag: 1befe7a8-b188-4c36-9156-275b7c1a8a23
 
 	column 'Document Index (generated)'
 		dataType: int64
-		lineageTag: 6422656b-2c31-4d98-8bc4-93b0bc10f223
+		lineageTag: 3c26ca53-9196-4acc-83e6-5648d4d243da
 		summarizeBy: sum
 		sourceColumn: 'Document Index (generated)'
 
@@ -11,7 +11,7 @@ table 'customer_feedback_data.json'
 
 	column category
 		dataType: string
-		lineageTag: 5cda4de6-660b-4cc8-ba4a-7cbc18db4fd8
+		lineageTag: aae7328c-cb49-4ebe-b9af-0b39cf08623b
 		summarizeBy: none
 		sourceColumn: category
 
@@ -19,7 +19,7 @@ table 'customer_feedback_data.json'
 
 	column customer_id
 		dataType: string
-		lineageTag: c65df421-9edf-456b-8c58-4e644e6a3884
+		lineageTag: aa1b7cae-7354-4cbb-8b99-97e4f72393b8
 		summarizeBy: none
 		sourceColumn: customer_id
 
@@ -27,7 +27,7 @@ table 'customer_feedback_data.json'
 
 	column date
 		dataType: string
-		lineageTag: eb384d44-bb9b-4ffd-8075-5e7137201738
+		lineageTag: 3f618f59-b288-482c-9b97-d09227ea184c
 		summarizeBy: none
 		sourceColumn: date
 
@@ -35,7 +35,7 @@ table 'customer_feedback_data.json'
 
 	column email
 		dataType: string
-		lineageTag: e76279e3-c890-4986-9da5-8b573bfd4c5a
+		lineageTag: f3c8640c-5ee5-4e93-a405-ade8f3057588
 		summarizeBy: none
 		sourceColumn: email
 
@@ -44,7 +44,7 @@ table 'customer_feedback_data.json'
 	column feedback_score
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 44f9298d-d4de-4afd-a3c0-cf70c7744f91
+		lineageTag: 2ff20830-670e-4e68-a7a4-bf25380a899d
 		summarizeBy: sum
 		sourceColumn: feedback_score
 
@@ -52,7 +52,7 @@ table 'customer_feedback_data.json'
 
 	column feedback_text
 		dataType: string
-		lineageTag: 04ce2ae1-80a5-43f3-a0b0-a67a0c74c83f
+		lineageTag: c74fc64c-c08b-46f0-a23a-5aac7f036f9c
 		summarizeBy: none
 		sourceColumn: feedback_text
 
@@ -60,7 +60,7 @@ table 'customer_feedback_data.json'
 
 	column name
 		dataType: string
-		lineageTag: cfa968f4-f487-40c2-83ad-b1b942b0da07
+		lineageTag: 61d86e5d-ada4-41a6-81ca-01f091b30f58
 		summarizeBy: none
 		sourceColumn: name
 
@@ -68,7 +68,7 @@ table 'customer_feedback_data.json'
 
 	column sentiment
 		dataType: string
-		lineageTag: 682450ae-c516-445d-9e6c-88d67c0e0d3a
+		lineageTag: 34110c48-f63d-403b-b4b6-bd20e6d01c68
 		summarizeBy: none
 		sourceColumn: sentiment
 
@@ -76,7 +76,7 @@ table 'customer_feedback_data.json'
 
 	column Promoter
 		dataType: int64
-		lineageTag: 8a947d52-2577-4b85-9294-9baa4281e902
+		lineageTag: 32014aaa-2c7d-4e22-b58e-2980ab021636
 		summarizeBy: none
 		sourceColumn: Promoter
 
@@ -84,7 +84,7 @@ table 'customer_feedback_data.json'
 
 	column 'Action (Category)'
 		dataType: string
-		lineageTag: 53603d61-e5e3-498f-b577-6f315ae0ee83
+		lineageTag: 74336dd3-dff7-4d5f-a4e1-9bbe43338c0b
 		summarizeBy: none
 		sourceColumn: 'Action (Category)'
 		displayFolder: Groups
@@ -93,14 +93,14 @@ table 'customer_feedback_data.json'
 
 	column 'Action (Sentiment)'
 		dataType: string
-		lineageTag: 94cfb6ee-5e0c-4a6f-8645-150673bc0047
+		lineageTag: 6d50b8c9-760b-498d-a82d-cd1066b6d883
 		summarizeBy: none
 		sourceColumn: 'Action (Sentiment)'
 		displayFolder: Groups
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'customer_feedback_data.json-97366bd4-64f9-4791-87f4-2596d41ff6d8' = m
+	partition 'customer_feedback_data.json-49fa0a46-2c64-4a74-95b7-7ddea25c66fe' = m
 		mode: import
 		source =
 				let

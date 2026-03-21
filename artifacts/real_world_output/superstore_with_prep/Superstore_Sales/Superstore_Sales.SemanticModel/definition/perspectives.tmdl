@@ -1,7 +1,0 @@
-perspective 'Full Model'
-	perspectiveTable Orders
-	perspectiveTable Returns
-	perspectiveTable People
-	perspectiveTable Customers
-	perspectiveTable Regional_Sales_Summary
-	perspectiveTable Calendar

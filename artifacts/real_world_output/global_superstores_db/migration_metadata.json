@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-20T16:48:02.490783",
+  "generated_at": "2026-03-21T06:40:09.132561",
   "source": "Tableau Migration",
   "report_name": "global_superstores_db",
   "objects_converted": {
@@ -20,7 +20,7 @@
   },
   "generated_output": {
     "pages": 6,
-    "visuals": 20,
+    "visuals": 23,
     "theme_applied": false,
     "theme_detail": {
       "status": "skipped",
@@ -308,7 +308,7 @@
     {
       "worksheet": "YOY Profit",
       "tableau_mark": "Automatic",
-      "pbi_visual": "clusteredBarChart",
+      "pbi_visual": "clusteredColumnChart",
       "dimensions": [
         "Order Date"
       ],

@@ -1,0 +1,32 @@
+table 'Rebounds CalcGroup'
+	lineageTag: 8a18fe92-e3ba-4676-ae74-c4f8f8d99350
+
+	calculationGroup
+		precedence: 0
+
+		calculationItem 'Average Deffensive Rebounds per Game'
+			expression = CALCULATE(AVERAGE('Sheet1'[DEF]))
+			ordinal: 0
+
+		calculationItem 'Average Offensive Rebounds per Game'
+			expression = CALCULATE(AVERAGE('Sheet1'[OFF]))
+			ordinal: 1
+
+		calculationItem 'Average Rebound per Game'
+			expression = CALCULATE(AVERAGE('Sheet1'[REB]))
+			ordinal: 2
+
+
+	column Rebounds
+		dataType: string
+		lineageTag: f62f5963-4bca-49ab-8360-9f5c3989a9fd
+		summarizeBy: none
+		sourceColumn: Name
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Rebounds CalcGroup-0625e7be-13d0-4246-aa35-d714ee04ea4a' = calculationGroup
+		mode: import
+
+	annotation PBI_ResultType = Table
+

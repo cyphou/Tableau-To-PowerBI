@@ -1,8 +1,0 @@
-{
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.0.0/schema.json",
-  "name": "ReportSection7b30ee8988c34fe283be",
-  "displayName": "Order Detail",
-  "displayOption": "FitToPage",
-  "height": 720,
-  "width": 1280
-}

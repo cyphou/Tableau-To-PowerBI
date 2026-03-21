@@ -1,7 +1,7 @@
 table sqlproxy
-	lineageTag: 9e0f4a8b-173b-4015-843a-0bef46d851e9
+	lineageTag: b75cd39a-597e-4a74-a308-4cc445c3b03a
 
-	partition 'sqlproxy-a3498fd4-a162-4ee4-8d09-872258ed5d1d' = m
+	partition 'sqlproxy-6ca2246b-7885-410b-ac0d-6d05f5d4a239' = m
 		mode: import
 		source =
 				let

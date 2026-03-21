@@ -3,6 +3,6 @@
   "name": "ReportSection",
   "displayName": "setTest",
   "displayOption": "FitToPage",
-  "height": 720,
-  "width": 1280
+  "height": 800,
+  "width": 1000
 }
