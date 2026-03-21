@@ -326,6 +326,39 @@ def recommend_strategy(
             'directquery', weight=2,
         ))
 
+    # ── 8. Hyper extract data volume ────────────────────────────
+    hyper_total_rows = 0
+    for ds in datasources:
+        # Check hyper enrichment from enrich_datasource_from_hyper()
+        hyper_total_rows += ds.get('hyper_total_rows', 0)
+        # Also check per-table hyper_row_count
+        for tbl in ds.get('tables', []):
+            hyper_total_rows += tbl.get('hyper_row_count', 0)
+    # Also check hyper_files directly in extracted data
+    for hf in extracted.get('hyper_files', []):
+        for ht in hf.get('tables', []):
+            row_est = ht.get('row_count') or ht.get('estimated_row_count', 0)
+            hyper_total_rows += row_est
+
+    if hyper_total_rows > 10_000_000:
+        signals.append(StrategySignal(
+            'hyper_large',
+            f'Hyper extract has {hyper_total_rows:,} rows — too large for Import',
+            'directquery', weight=3,
+        ))
+    elif hyper_total_rows > 1_000_000:
+        signals.append(StrategySignal(
+            'hyper_medium',
+            f'Hyper extract has {hyper_total_rows:,} rows — monitor refresh times',
+            'import', weight=1,
+        ))
+    elif hyper_total_rows > 0:
+        signals.append(StrategySignal(
+            'hyper_small',
+            f'Hyper extract has {hyper_total_rows:,} rows — fits Import mode',
+            'import', weight=1,
+        ))
+
     # ── Scoring ─────────────────────────────────────────────────
     imp_score = sum(s.weight for s in signals if s.favours == 'import')
     dq_score = sum(s.weight for s in signals if s.favours == 'directquery')

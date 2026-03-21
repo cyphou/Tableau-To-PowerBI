@@ -709,6 +709,111 @@ def run_prep_flow(prep_file, datasources_json='tableau_export/datasources.json')
         return False
 
 
+def _run_check_hyper(args):
+    """Analyse .hyper files in a workbook and print diagnostic report."""
+    import sys as _sys
+    sys_path = os.path.dirname(os.path.abspath(__file__))
+    if os.path.join(sys_path, 'tableau_export') not in _sys.path:
+        _sys.path.insert(0, os.path.join(sys_path, 'tableau_export'))
+    from hyper_reader import read_hyper, read_hyper_from_twbx, get_hyper_metadata, infer_hyper_relationships
+
+    tableau_file = getattr(args, 'tableau_file', None)
+    if not tableau_file:
+        print("Error: No workbook file specified. Provide a .twbx path.")
+        return ExitCode.GENERAL_ERROR
+
+    print_header("HYPER FILE DIAGNOSTIC REPORT")
+    ext = os.path.splitext(tableau_file)[1].lower()
+
+    all_tables = []
+    if ext in ('.twbx', '.tdsx'):
+        print(f"  Archive: {os.path.basename(tableau_file)}")
+        max_rows = getattr(args, 'hyper_rows', None) or 20
+        results = read_hyper_from_twbx(tableau_file, max_rows=max_rows)
+        if not results:
+            print("  No .hyper files found in archive.")
+            return ExitCode.SUCCESS
+
+        for r in results:
+            fname = r.get('original_filename', r.get('archive_path', '?'))
+            fmt = r.get('format', 'unknown')
+            tables = r.get('tables', [])
+            meta = r.get('metadata', {})
+            fsize = meta.get('file_size_bytes', 0)
+            print(f"\n  ── {fname} ──")
+            print(f"     Format: {fmt}    Size: {fsize:,} bytes")
+            print(f"     Tables: {len(tables)}")
+
+            for t in tables:
+                tname = t.get('table', '?')
+                rc = t.get('row_count', 0)
+                cc = t.get('column_count', len(t.get('columns', [])))
+                sr = t.get('sample_row_count', len(t.get('sample_rows', [])))
+                print(f"       • {tname}: {rc:,} rows, {cc} columns, {sr} sample rows")
+                cols = t.get('columns', [])
+                for col in cols[:10]:
+                    ht = col.get('hyper_type', 'unknown')
+                    print(f"           {col['name']:30s}  {ht}")
+                if len(cols) > 10:
+                    print(f"           ... and {len(cols) - 10} more columns")
+                # Column stats
+                stats = t.get('column_stats', {})
+                high_card = [(c, s) for c, s in stats.items()
+                             if s.get('distinct_count', 0) and s['distinct_count'] > 100000]
+                if high_card:
+                    print(f"       ⚠ High-cardinality columns:")
+                    for cname, st in high_card[:5]:
+                        print(f"           {cname}: {st['distinct_count']:,} distinct values")
+
+            all_tables.extend(tables)
+
+        # Relationship inference
+        rels = infer_hyper_relationships(all_tables)
+        if rels:
+            print(f"\n  ── Inferred Relationships ({len(rels)}) ──")
+            for rel in rels:
+                print(f"     {rel['from_table']}.{rel['from_column']} → "
+                      f"{rel['to_table']}.{rel['to_column']} ({rel['cardinality']})")
+
+        # Recommendations
+        total_rows = sum(t.get('row_count', 0) for t in all_tables)
+        print(f"\n  ── Summary ──")
+        print(f"     Total tables: {len(all_tables)}")
+        print(f"     Total rows:   {total_rows:,}")
+        if total_rows > 10_000_000:
+            print(f"     ⚠ Over 10M rows — consider DirectQuery instead of Import")
+        elif total_rows > 1_000_000:
+            print(f"     ℹ Over 1M rows — monitor refresh times in Import mode")
+
+        # Check tableauhyperapi availability
+        try:
+            import tableauhyperapi  # noqa: F401
+            print(f"     ✓ tableauhyperapi installed — full Hyper reading available")
+        except ImportError:
+            fmt_found = {r.get('format') for r in results}
+            if 'hyper_api' not in fmt_found and any(r.get('format') == 'unknown' or
+                                                     (r.get('format') == 'hyper' and not r.get('tables'))
+                                                     for r in results):
+                print(f"     ⚠ tableauhyperapi not installed — some .hyper files may have limited data")
+                print(f"       Install: pip install tableauhyperapi")
+    elif ext == '.hyper':
+        result = read_hyper(tableau_file, max_rows=getattr(args, 'hyper_rows', None) or 20)
+        meta_report = get_hyper_metadata(tableau_file, max_rows=getattr(args, 'hyper_rows', None) or 20)
+        print(f"  File: {os.path.basename(tableau_file)}")
+        print(f"  Format: {result.get('format', 'unknown')}")
+        print(f"  Total tables: {meta_report.get('total_tables', 0)}")
+        print(f"  Total rows: {meta_report.get('total_rows', 0):,}")
+        for t in meta_report.get('tables', []):
+            print(f"    • {t['name']}: {t.get('row_count', 0):,} rows, {t.get('column_count', 0)} columns")
+        for rec in meta_report.get('recommendations', []):
+            print(f"  ⚠ {rec}")
+    else:
+        print(f"  Unsupported file type: {ext} (expected .twbx, .tdsx, or .hyper)")
+        return ExitCode.GENERAL_ERROR
+
+    return ExitCode.SUCCESS
+
+
 def _run_batch_config(args):
     """Run migrations using a JSON batch configuration file.
 
@@ -1591,6 +1696,13 @@ def _add_enterprise_args(parser):
         action='store_true',
         default=False,
         help='Check PBIR schema versions for updates and exit'
+    )
+
+    parser.add_argument(
+        '--check-hyper',
+        action='store_true',
+        default=False,
+        help='Analyse .hyper files in the workbook and print diagnostic report, then exit'
     )
 
 
@@ -2541,6 +2653,10 @@ def main():
             latest = details.get('latest', details['current'])
             print(f"  {schema_type:20s}  current={details['current']}  latest={latest}  [{status}]")
         return ExitCode.SUCCESS
+
+    # ── Hyper diagnostic mode ─────────────────────────────────
+    if getattr(args, 'check_hyper', False):
+        return _run_check_hyper(args)
 
     # ── Consolidate existing reports mode ─────────────────────
     if getattr(args, 'consolidate', None):

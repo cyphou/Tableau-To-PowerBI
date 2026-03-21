@@ -39,13 +39,16 @@ deploy = [
     "azure-identity>=1.15.0",
     "requests>=2.31.0",
 ]
+hyper = [
+    "tableauhyperapi>=0.0.19691",
+]
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
     "coverage>=7.0",
 ]
 all = [
-    "tableau-to-powerbi[deploy,dev]",
+    "tableau-to-powerbi[deploy,hyper,dev]",
 ]
 
 [project.urls]

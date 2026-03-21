@@ -22,7 +22,7 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
   - `m_query_builder.py`: Power Query M generator (33 connector types + 43 transformation generators: rename, filter, aggregate, pivot/unpivot, join, union, sort, conditional columns — chainable via `inject_m_steps()`)
   - `prep_flow_parser.py`: Tableau Prep flow parser (.tfl/.tflx → Power Query M) — DAG traversal, Clean/Join/Aggregate/Union/Pivot steps, expression converter, merge with TWB datasources
   - `server_client.py`: Tableau Server/Cloud REST API client — PAT/password auth, workbook download, datasource listing, batch download, regex search, context manager, paginated API fetching (`_paginated_get`), 9 new endpoints: `list_users`, `list_groups`, `list_views`, `get_workbook_connections`, `list_schedules`, `get_site_info`, `list_prep_flows`, `download_prep_flow`, `get_server_summary`, `get_workbook_extract_tasks`, `get_workbook_subscriptions`
-  - `hyper_reader.py`: Hyper file data loader — reads `.hyper` files via SQLite interface (column metadata + row data), schema discovery, type mapping to M/TMDL types
+  - `hyper_reader.py`: Hyper file data loader — 3-tier reader chain (tableauhyperapi → sqlite3 → binary header scan), schema discovery, type mapping (28 types), M expression generation (#table inline / Csv.Document), CSV export (`export_hyper_to_csv`), relationship inference (`infer_hyper_relationships`), metadata enrichment with recommendations
   - `pulse_extractor.py`: Tableau Pulse metric extractor — parses Pulse metric definitions from TWB XML (metric name, measure, time dimension, filters, goals)
 - **powerbi_import/**: Power BI project generation
   - `pbip_generator.py`: .pbip generator (PBIR v4.0, visuals, filters, bookmarks, slicers, textbox, image, pages shelf, number format conversion, drill-through pages)
@@ -66,7 +66,7 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
     - `pbi_deployer.py`: PBI Service deployment orchestrator — package, upload, poll, refresh, validate, `deploy_refresh_schedule()` for PBI REST API refresh config
     - `bundle_deployer.py`: Fabric bundle deployer — deploy shared model + thin reports as atomic bundle, artifact discovery, per-report error isolation, rebind, refresh, `BundleDeploymentResult`
     - `multi_tenant.py`: Multi-tenant deployment — `TenantConfig`/`MultiTenantConfig` (validate/load/save JSON), `_apply_connection_overrides()` (template substitution: `${TENANT_SERVER}`, `${TENANT_DATABASE}`), `deploy_multi_tenant()` orchestrator with per-tenant results
-- **tests/**: Unit and integration tests (5,897+ tests across 121 test files + conftest.py shared fixtures)
+- **tests/**: Unit and integration tests (5,927+ tests across 122 test files + conftest.py shared fixtures)
 - **docs/**: FAQ, PBI project guide, mapping reference, **ROADMAP.md** (v22–v24 development roadmap per agent)
 - **.github/workflows/ci.yml**: CI/CD pipeline (lint → test → validate → deploy)
 - **.github/workflows/publish.yml**: PyPI auto-publish workflow (tag-triggered, OIDC trusted publisher)

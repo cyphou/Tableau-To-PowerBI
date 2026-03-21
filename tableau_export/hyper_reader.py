@@ -670,13 +670,53 @@ def generate_m_csv_reference(table_info, csv_filename=None):
 INLINE_ROW_THRESHOLD = 500  # Below this → #table(), above → Csv.Document()
 
 
-def generate_m_for_hyper_table(table_info, csv_filename=None, row_limit=None):
+def export_hyper_to_csv(table_info, output_dir, csv_filename=None):
+    """Export Hyper table sample data to a CSV file.
+
+    Args:
+        table_info: dict with ``columns`` and ``sample_rows`` keys.
+        output_dir: Directory to write the CSV file into.
+        csv_filename: Optional filename. Defaults to ``{table_name}.csv``.
+
+    Returns:
+        str | None: Path to the written CSV file, or ``None`` if no data.
+    """
+    import csv as csv_mod
+
+    columns = table_info.get('columns', [])
+    rows = table_info.get('sample_rows', [])
+    if not columns or not rows:
+        return None
+
+    table_name = table_info.get('table', 'Extract')
+    fname = csv_filename or f'{table_name}.csv'
+    # Sanitise filename
+    fname = re.sub(r'[<>:"/\\|?*]', '_', fname)
+    out_path = os.path.join(output_dir, fname)
+    os.makedirs(output_dir, exist_ok=True)
+
+    col_names = [c['name'] for c in columns]
+    with open(out_path, 'w', newline='', encoding='utf-8') as f:
+        writer = csv_mod.writer(f)
+        writer.writerow(col_names)
+        for row in rows:
+            writer.writerow([row.get(c, '') for c in col_names])
+
+    return out_path
+
+
+def generate_m_for_hyper_table(table_info, csv_filename=None, row_limit=None,
+                               output_dir=None):
     """Auto-select inline or CSV M expression based on row count.
+
+    When ``output_dir`` is provided and the table exceeds the inline threshold,
+    the sample data is exported to a CSV file automatically.
 
     Args:
         table_info: dict with ``columns``, ``sample_rows``, ``row_count``.
         csv_filename: Optional CSV filename for large tables.
         row_limit: Override for ``INLINE_ROW_THRESHOLD`` (from ``--hyper-rows``).
+        output_dir: If set, export CSV for large tables.
 
     Returns:
         str: M expression text.
@@ -685,7 +725,84 @@ def generate_m_for_hyper_table(table_info, csv_filename=None, row_limit=None):
     row_count = table_info.get('row_count', 0)
     if row_count <= threshold:
         return generate_m_inline_table(table_info)
+
+    # Export CSV when output directory is available
+    if output_dir:
+        csv_path = export_hyper_to_csv(table_info, output_dir, csv_filename)
+        if csv_path:
+            csv_filename = os.path.basename(csv_path)
+
     return generate_m_csv_reference(table_info, csv_filename)
+
+
+def infer_hyper_relationships(tables):
+    """Infer foreign-key relationships between tables in a multi-table Hyper file.
+
+    Heuristic: If table A has a column named exactly like a column in table B,
+    and one side has much higher cardinality (likely a FK → PK), infer a
+    manyToOne relationship.
+
+    Args:
+        tables: list of table dicts from ``read_hyper()``.
+
+    Returns:
+        list[dict]: Each dict has ``from_table``, ``from_column``,
+        ``to_table``, ``to_column``, ``cardinality``.
+    """
+    if not tables or len(tables) < 2:
+        return []
+
+    # Build column index: {col_name_lower: [(table_name, col_dict, row_count)]}
+    col_index = {}
+    for t in tables:
+        tname = t.get('table', '')
+        row_count = t.get('row_count', 0)
+        stats = t.get('column_stats', {})
+        for col in t.get('columns', []):
+            key = col['name'].lower()
+            distinct = None
+            if col['name'] in stats:
+                distinct = stats[col['name']].get('distinct_count')
+            col_index.setdefault(key, []).append(
+                (tname, col, row_count, distinct)
+            )
+
+    relationships = []
+    seen = set()
+    for col_name_lower, entries in col_index.items():
+        if len(entries) < 2:
+            continue
+        # Compare all pairs
+        for i in range(len(entries)):
+            for j in range(i + 1, len(entries)):
+                t1_name, _, t1_rows, t1_distinct = entries[i]
+                t2_name, _, t2_rows, t2_distinct = entries[j]
+                if t1_name == t2_name:
+                    continue
+                pair_key = tuple(sorted([t1_name, t2_name])) + (col_name_lower,)
+                if pair_key in seen:
+                    continue
+                seen.add(pair_key)
+
+                # Determine direction: smaller distinct count side is the "to" (PK/lookup)
+                if t1_distinct is not None and t2_distinct is not None:
+                    if t1_distinct <= t2_distinct:
+                        from_t, to_t = t2_name, t1_name
+                    else:
+                        from_t, to_t = t1_name, t2_name
+                elif t1_rows <= t2_rows:
+                    from_t, to_t = t2_name, t1_name
+                else:
+                    from_t, to_t = t1_name, t2_name
+
+                relationships.append({
+                    'from_table': from_t,
+                    'from_column': entries[0][1]['name'],  # original case
+                    'to_table': to_t,
+                    'to_column': entries[0][1]['name'],
+                    'cardinality': 'manyToOne',
+                })
+    return relationships
 
 
 # ── Metadata enrichment (Option D) ──────────────────────────────────

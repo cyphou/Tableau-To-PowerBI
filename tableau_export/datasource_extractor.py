@@ -109,6 +109,85 @@ def extract_datasource(datasource_elem, twbx_path=None):
     return datasource
 
 
+def enrich_datasource_from_hyper(datasource, hyper_tables):
+    """Enrich datasource metadata using data read from ``.hyper`` files.
+
+    Bridges the gap between ``hyper_reader`` output and the datasource dict
+    consumed by downstream generators.  Adds row counts, refines column types,
+    and attaches hyper-specific metadata.
+
+    Args:
+        datasource: Datasource dict from ``extract_datasource()``.
+        hyper_tables: list of table dicts from ``hyper_reader.read_hyper()``
+            (the ``tables`` field of the reader result).
+
+    Returns:
+        datasource dict (mutated in-place for convenience).
+    """
+    if not hyper_tables:
+        return datasource
+
+    # Build lookup: normalised table name → hyper table info
+    hyper_lookup = {}
+    for ht in hyper_tables:
+        raw_name = ht.get('table', '')
+        # Normalise: strip schema prefix like "Extract.Extract" → "Extract"
+        norm = raw_name.rsplit('.', 1)[-1].lower()
+        hyper_lookup[norm] = ht
+        hyper_lookup[raw_name.lower()] = ht
+
+    for table in datasource.get('tables', []):
+        tbl_name = table.get('name', '')
+        norm_tbl = tbl_name.rsplit('.', 1)[-1].lower()
+        ht = hyper_lookup.get(norm_tbl) or hyper_lookup.get(tbl_name.lower())
+        if not ht:
+            continue
+
+        # Enrich row count
+        if ht.get('row_count'):
+            table['hyper_row_count'] = ht['row_count']
+
+        # Refine column types from Hyper when XML type is missing or generic
+        hyper_col_map = {
+            c['name'].lower(): c for c in ht.get('columns', [])
+        }
+        for col in table.get('columns', []):
+            hc = hyper_col_map.get(col.get('name', '').lower())
+            if hc:
+                existing = (col.get('datatype') or '').lower()
+                hyper_type = (hc.get('hyper_type') or '').lower()
+                if not existing or existing == 'string':
+                    # Map common Hyper types to Tableau-style types
+                    type_map = {
+                        'bigint': 'integer', 'integer': 'integer',
+                        'smallint': 'integer', 'int': 'integer',
+                        'double': 'real', 'real': 'real', 'float': 'real',
+                        'double precision': 'real', 'numeric': 'real',
+                        'boolean': 'boolean', 'bool': 'boolean',
+                        'date': 'date', 'timestamp': 'datetime',
+                        'timestamp without time zone': 'datetime',
+                        'timestamptz': 'datetime',
+                    }
+                    mapped = type_map.get(hyper_type)
+                    if mapped:
+                        col['datatype'] = mapped
+                        col['hyper_type_source'] = hyper_type
+
+        # Attach column statistics
+        col_stats = ht.get('column_stats', {})
+        if col_stats:
+            table['hyper_column_stats'] = col_stats
+
+    # Tag the datasource so downstream knows Hyper enrichment happened
+    datasource['hyper_enriched'] = True
+    datasource['hyper_table_count'] = len(hyper_tables)
+    datasource['hyper_total_rows'] = sum(
+        t.get('row_count', 0) for t in hyper_tables
+    )
+
+    return datasource
+
+
 # ── Type coercion detection ────────────────────────────────────────────────────
 
 # Tableau type patterns that look like auto-coerced values
