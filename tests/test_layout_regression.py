@@ -159,6 +159,7 @@ class TestLayoutRegression_Superstore(unittest.TestCase):
         for page_name, expected in self.golden['pages'].items():
             layout = self.layouts.get(page_name)
             self.assertIsNotNone(layout, f'Dashboard "{page_name}" not found in extraction')
+            assert layout is not None  # for type checker
             self.assertEqual(layout['size']['width'], expected['page_size']['width'])
             self.assertEqual(layout['size']['height'], expected['page_size']['height'])
 
@@ -167,6 +168,7 @@ class TestLayoutRegression_Superstore(unittest.TestCase):
             layout = self.layouts.get(page_name)
             if layout is None:
                 self.fail(f'Dashboard "{page_name}" not found')
+            assert layout is not None  # for type checker
             lm = layout['layout_map']
             for vis_name, expected_pos in expected.get('visuals', {}).items():
                 actual = lm.get(vis_name)
@@ -178,6 +180,7 @@ class TestLayoutRegression_Superstore(unittest.TestCase):
         """Sales by Region and Profit by Category must be side-by-side (same y, different x)."""
         layout = self.layouts.get('Sales Overview')
         self.assertIsNotNone(layout)
+        assert layout is not None  # for type checker
         lm = layout['layout_map']
         left = lm.get('Sales by Region', {})
         right = lm.get('Profit by Category', {})
@@ -193,6 +196,7 @@ class TestLayoutRegression_Superstore(unittest.TestCase):
         """Sales Trend should span full width below the top row."""
         layout = self.layouts.get('Sales Overview')
         self.assertIsNotNone(layout)
+        assert layout is not None  # for type checker
         lm = layout['layout_map']
         trend = lm.get('Sales Trend', {})
         region = lm.get('Sales by Region', {})
@@ -223,6 +227,7 @@ class TestLayoutRegression_ComplexEnterprise(unittest.TestCase):
         """Executive Summary has a 2-column grid: left/right placement."""
         layout = self.layouts.get('Executive Summary')
         self.assertIsNotNone(layout, 'Executive Summary dashboard not found')
+        assert layout is not None  # for type checker
         lm = layout['layout_map']
 
         # Row 2: Revenue by Region (left) + Sales Map (right)

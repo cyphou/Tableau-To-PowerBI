@@ -536,9 +536,10 @@ class TestPaddingPropagation(unittest.TestCase):
         }
         visual_json = {"visual": {"visualType": "clusteredBarChart"}}
         gen._apply_padding_to_visual(visual_json, hierarchy, 'PadVis')
-        props = visual_json['visual']['objects']['general'][0]['properties']
-        self.assertEqual(props['paddingTop'], 8)
-        self.assertEqual(props['paddingRight'], 6)
+        objs = visual_json['visual']['objects']  # type: ignore[index]
+        props = objs['general'][0]['properties']  # type: ignore[index]
+        self.assertEqual(props['paddingTop'], 8)  # type: ignore[index]
+        self.assertEqual(props['paddingRight'], 6)  # type: ignore[index]
 
     def test_apply_padding_no_hierarchy(self):
         gen = _make_generator()
@@ -571,7 +572,7 @@ class TestResponsiveBreakpoints(unittest.TestCase):
         try:
             pages_dir = os.path.join(tmpdir, 'pages')
             os.makedirs(pages_dir, exist_ok=True)
-            gen._find_worksheet = lambda ws_list, name: None
+            gen._find_worksheet = lambda worksheets, name: None  # type: ignore[assignment]
             gen._create_visual_filters = lambda filters: []
             gen._field_map = {}
             gen._create_dashboard_pages(pages_dir, [dashboard], [], {'calculations': []}, {})
@@ -636,7 +637,7 @@ class TestDashboardPagesGridLayout(unittest.TestCase):
         """When zone_hierarchy is present, visuals should use grid-snapped positions."""
         gen = _make_generator()
         gen._field_map = {}
-        gen._find_worksheet = lambda ws_list, name: {
+        gen._find_worksheet = lambda worksheets, name: {  # type: ignore[assignment]
             'name': name, 'fields': [], 'filters': [], 'mark_encoding': {},
         }
 
@@ -703,7 +704,7 @@ class TestDashboardPagesGridLayout(unittest.TestCase):
         """Without zone_hierarchy, old proportional scaling is used."""
         gen = _make_generator()
         gen._field_map = {}
-        gen._find_worksheet = lambda ws_list, name: {
+        gen._find_worksheet = lambda worksheets, name: {  # type: ignore[assignment]
             'name': name, 'fields': [], 'filters': [], 'mark_encoding': {},
         }
 
