@@ -13,7 +13,7 @@
 <p align="center">
   <a href="https://github.com/cyphou/Tableau-To-PowerBI/actions/workflows/ci.yml"><img src="https://github.com/cyphou/Tableau-To-PowerBI/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
   <img src="https://img.shields.io/badge/coverage-96.2%25-brightgreen?style=flat-square" alt="Coverage"/>
-  <img src="https://img.shields.io/badge/tests-5%2C683%20passed-brightgreen?style=flat-square" alt="Tests"/>
+  <img src="https://img.shields.io/badge/tests-5%2C756%20passed-brightgreen?style=flat-square" alt="Tests"/>
   <img src="https://img.shields.io/badge/python-3.9%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python"/>
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License"/>
   <img src="https://img.shields.io/badge/version-22.0.0-blue?style=flat-square" alt="Version"/>
@@ -119,16 +119,16 @@ LOD expressions, table calcs, IF/ELSEIF, ISNULL, CONTAINS, window functions, ite
 <tr>
 <td>
 
-### 📊 118 Visual Types
+### 📊 118+ Visual Types
 Maps every Tableau mark to Power BI:
 bar, line, pie, scatter, map, treemap, waterfall, funnel, gauge, KPI, box plot, word cloud, Sankey, Chord, combo charts, and more
 
 </td>
 <td>
 
-### 🔌 33 Data Connectors
+### 🔌 42 Data Connectors
 Generates Power Query M for:
-SQL Server, PostgreSQL, BigQuery, Snowflake, Oracle, MySQL, Databricks, SAP HANA, Excel, CSV, SharePoint, Salesforce, Web, OData, Azure Blob, Vertica, Impala, Presto, Fabric Lakehouse, and more
+SQL Server, PostgreSQL, BigQuery, Snowflake, Oracle, MySQL, Databricks, SAP HANA, Excel, CSV, SharePoint, Salesforce, Web, OData, Azure Blob, Vertica, Impala, Presto, Fabric Lakehouse, MongoDB, Cosmos DB, Athena, DB2, and more
 
 </td>
 </tr>
@@ -357,7 +357,7 @@ SharedSales/
 
 ---
 
-## 📊 Visual Type Mapping (60+)
+## 📊 Visual Type Mapping (118+)
 
 <details>
 <summary><b>🎨 Full visual mapping table</b> (click to expand)</summary>
@@ -411,8 +411,8 @@ TableauToPowerBI/
 ├── tableau_export/                            # Tableau extraction
 │   ├── extract_tableau_data.py                #   TWB/TWBX parser (16 object types)
 │   ├── datasource_extractor.py                #   Connection/table/calc extractor
-│   ├── dax_converter.py                       #   172+ DAX formula conversions
-│   ├── m_query_builder.py                     #   26 connectors + 40+ transforms
+│   ├── dax_converter.py                       #   180+ DAX formula conversions
+│   ├── m_query_builder.py                     #   42 connectors + 43 transforms
 │   ├── prep_flow_parser.py                    #   Tableau Prep flow parser
 │   ├── hyper_reader.py                        #   .hyper file data loader
 │   ├── pulse_extractor.py                     #   Tableau Pulse metric extractor
@@ -420,7 +420,7 @@ TableauToPowerBI/
 ├── powerbi_import/                            # Power BI generation
 │   ├── import_to_powerbi.py                   #   Orchestrator
 │   ├── pbip_generator.py                      #   .pbip project + visuals + filters
-│   ├── visual_generator.py                    #   60+ visual types, PBIR configs
+│   ├── visual_generator.py                    #   118+ visual types, PBIR configs
 │   ├── tmdl_generator.py                      #   Semantic model → TMDL
 │   ├── assessment.py                          #   Pre-migration assessment
 │   ├── strategy_advisor.py                    #   Import/DQ/Composite advisor
@@ -432,7 +432,7 @@ TableauToPowerBI/
 │   ├── thin_report_generator.py               #   Thin report (byPath) generator
 │   ├── plugins.py                             #   Plugin system
 │   └── deploy/                                #   Deploy to PBI Service / Fabric
-├── tests/                                     # 5,683 tests across 113 files
+├── tests/                                     # 5,756 tests across 115 files
 ├── docs/                                      # 14 documentation files
 └── examples/                                  # Sample Tableau workbooks
 ```
@@ -569,13 +569,13 @@ The validator checks `.pbip` JSON, `report.json`, `model.tmdl`, page/visual stru
 ## 🧪 Testing
 
 <p align="center">
-  <img src="https://img.shields.io/badge/tests-5%2C683%20passed-brightgreen?style=for-the-badge" alt="Tests"/>
+  <img src="https://img.shields.io/badge/tests-5%2C756%20passed-brightgreen?style=for-the-badge" alt="Tests"/>
   <img src="https://img.shields.io/badge/coverage-96.2%25-brightgreen?style=for-the-badge" alt="Coverage"/>
-  <img src="https://img.shields.io/badge/test%20files-113-blue?style=for-the-badge" alt="Test Files"/>
+  <img src="https://img.shields.io/badge/test%20files-115-blue?style=for-the-badge" alt="Test Files"/>
 </p>
 
 ```bash
-python -m pytest tests/ -v                          # Run all 5,683 tests
+python -m pytest tests/ -v                          # Run all 5,756 tests
 python -m pytest tests/test_dax_converter.py -v      # Run specific file
 python -m pytest tests/ --cov --cov-report=html      # Coverage report
 ```
@@ -595,11 +595,11 @@ python -m pytest tests/ --cov --cov-report=html      # Coverage report
 | `test_extract_coverage.py` | 75 | Stories, actions, sets, bins, hierarchies |
 | `test_new_features.py` | 74 | Calc groups, field params, M columns |
 | `test_v5_features.py` | 72 | v5.x features |
-| `test_visual_generator.py` | 65 | 60+ visual types, sync, buttons |
+| `test_visual_generator.py` | 65 | 118+ visual types, sync, buttons |
 | `test_non_regression.py` | 63 | End-to-end sample workbook migrations |
 | `test_prep_flow_parser.py` | 58 | Prep parsing, DAG, step conversion |
 | `test_assessment.py` | 55 | Pre-migration (8 categories) |
-| + 99 more files | — | Sprint, coverage, layout, E2E, wizard, telemetry… |
+| + 101 more files | — | Sprint, coverage, layout, E2E, wizard, telemetry… |
 
 </details>
 
