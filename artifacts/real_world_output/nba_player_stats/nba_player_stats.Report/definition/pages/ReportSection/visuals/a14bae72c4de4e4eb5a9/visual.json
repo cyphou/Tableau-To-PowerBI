@@ -1,0 +1,50 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
+  "name": "a14bae72c4de4e4eb5a9",
+  "position": {
+    "x": 504,
+    "y": 8,
+    "z": 1000,
+    "height": 110,
+    "width": 496,
+    "tabOrder": 1000
+  },
+  "visual": {
+    "visualType": "textbox",
+    "objects": {
+      "general": [
+        {
+          "properties": {
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": "Player ",
+                    "textStyle": {
+                      "color": "#1c5aa2",
+                      "fontSize": "28.0pt"
+                    }
+                  },
+                  {
+                    "value": "Æ"
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Statistics",
+                    "textStyle": {
+                      "color": "#1c5aa2",
+                      "fontSize": "28.0pt"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

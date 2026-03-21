@@ -1,16 +1,16 @@
-relationship 5e5e45bb-8512-4edd-b2fc-2425cc10b34b
+relationship eddbfe73-15ff-4172-b780-53d47352cfa2
 	fromColumn: sessions.user_id
 	toColumn: users.user_id
 	fromCardinality: many
 	toCardinality: many
 	crossFilteringBehavior: bothDirections
 
-relationship 40f651f2-68f2-435a-8b4a-e33588e8fe77
+relationship 7d2ac033-f185-46c2-9b17-454150978a8c
 	fromColumn: sessions.session_date
 	toColumn: Calendar.Date
 	crossFilteringBehavior: oneDirection
 
-relationship f1e07076-7847-4594-bc99-25d1e2db5c38
+relationship 6ca083c3-bd08-40f8-b1d0-78e47ebb2f4c
 	fromColumn: users.signup_date
 	toColumn: Calendar.Date
 	fromCardinality: many

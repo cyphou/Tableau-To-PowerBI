@@ -1,0 +1,183 @@
+{
+  "report_name": "RESTAPISample",
+  "created_at": "2026-03-21T07:31:02.007300",
+  "summary": {
+    "total_items": 17,
+    "exact": 17,
+    "approximate": 0,
+    "placeholder": 0,
+    "unsupported": 0,
+    "skipped": 0,
+    "fidelity_score": 100.0,
+    "by_category": {
+      "datasource": {
+        "total": 1,
+        "exact": 1
+      },
+      "calculation": {
+        "total": 4,
+        "exact": 4
+      },
+      "visual": {
+        "total": 7,
+        "exact": 7
+      },
+      "group": {
+        "total": 5,
+        "exact": 5
+      }
+    }
+  },
+  "completeness": {
+    "categories": {
+      "datasource": {
+        "total": 1,
+        "exact": 1,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "calculation": {
+        "total": 4,
+        "exact": 4,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "visual": {
+        "total": 7,
+        "exact": 7,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "group": {
+        "total": 5,
+        "exact": 5,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      }
+    },
+    "overall_score": 100.0,
+    "grade": "A"
+  },
+  "table_mapping": [
+    {
+      "source_datasource": "World Indicators",
+      "source_table": "Extract",
+      "target_table": "Extract",
+      "connection_type": "DATAENGINE",
+      "columns": 13
+    }
+  ],
+  "items": [
+    {
+      "category": "datasource",
+      "name": "World Indicators new",
+      "status": "exact",
+      "note": "DATAENGINE, 1 table(s)"
+    },
+    {
+      "category": "calculation",
+      "name": "GDP % of Total",
+      "status": "exact",
+      "source_formula": "AVG([F: GDP per capita (curr $)]) / TOTAL(AVG([F: GDP per capita (curr $)]))",
+      "dax": "AVERAGE('Extract'[F: GDP per capita (curr $)]) / CALCULATE(AVERAGE('Extract'[F: GDP per capita (curr $)]), ALL('Extract'))"
+    },
+    {
+      "category": "calculation",
+      "name": "GDP per capita (weighted)",
+      "status": "exact",
+      "source_formula": "SUM([F: GDP (curr $)])\r\n/\r\nSUM([P: Population (count)])",
+      "dax": "SUM('Extract'[F: GDP (curr $)]) / SUM('Extract'[P: Population (count)])"
+    },
+    {
+      "category": "calculation",
+      "name": "Rate spread (difference)",
+      "status": "exact",
+      "source_formula": "AVG([F: Lending interest rate (%)])-AVG([F: Deposit interest rate (%)])",
+      "dax": "AVERAGE('Extract'[F: Lending interest rate (%)])-AVERAGE('Extract'[F: Deposit interest rate (%)])"
+    },
+    {
+      "category": "calculation",
+      "name": "[Number of Records]",
+      "status": "exact",
+      "source_formula": "1",
+      "dax": "1"
+    },
+    {
+      "category": "visual",
+      "name": "Country ranks",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "GDP per capita",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "GDP per capita by region",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "GDP per capita map",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Health spending vs life expectancy",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Interest rates",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Share of World GDP",
+      "status": "exact"
+    },
+    {
+      "category": "group",
+      "name": "Action (Country Name)",
+      "status": "exact",
+      "note": "SWITCH calculated column"
+    },
+    {
+      "category": "group",
+      "name": "Action (Date (year))",
+      "status": "exact",
+      "note": "SWITCH calculated column"
+    },
+    {
+      "category": "group",
+      "name": "Action (Region)",
+      "status": "exact",
+      "note": "SWITCH calculated column"
+    },
+    {
+      "category": "group",
+      "name": "Action (YEAR(Date (year)))",
+      "status": "exact",
+      "note": "SWITCH calculated column"
+    },
+    {
+      "category": "group",
+      "name": "Exclusions (Country Name,YEAR(Date (year)))",
+      "status": "exact",
+      "note": "SWITCH calculated column"
+    }
+  ]
+}

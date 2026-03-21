@@ -1,9 +1,9 @@
 table dim_date
-	lineageTag: f6131baa-bc91-49b5-9bd7-3272ed142d74
+	lineageTag: 0267d661-d06a-4ce7-ae0d-03997878216f
 
 	column date_key
 		dataType: int64
-		lineageTag: 0118debc-820e-4ed6-a89e-3ca98a326f9f
+		lineageTag: 673eb7a6-e4f1-43a0-8637-44c81383d727
 		summarizeBy: sum
 		sourceColumn: date_key
 
@@ -12,7 +12,7 @@ table dim_date
 	column full_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 49193615-48ff-4d4a-8053-429a90c86ce0
+		lineageTag: 1b167f76-57a3-41b3-840a-8742fde02bea
 		summarizeBy: none
 		sourceColumn: full_date
 		dataCategory: DateTime
@@ -21,7 +21,7 @@ table dim_date
 
 	column year
 		dataType: int64
-		lineageTag: f25bcbc5-bb01-4cb1-8190-8db40bf2c42b
+		lineageTag: da11e847-b5f5-4cbc-a9a7-51a3c74b85f8
 		summarizeBy: sum
 		sourceColumn: year
 
@@ -29,7 +29,7 @@ table dim_date
 
 	column quarter
 		dataType: int64
-		lineageTag: e68f7be0-2ee5-4f9d-90cd-e99fccc1b0be
+		lineageTag: 35736db4-8f28-434a-baf8-3c05a71f20d4
 		summarizeBy: sum
 		sourceColumn: quarter
 
@@ -37,7 +37,7 @@ table dim_date
 
 	column month_num
 		dataType: int64
-		lineageTag: efdbd4fb-1830-4d41-93bc-35cc156a313c
+		lineageTag: fd06f794-9ac5-48bd-b44e-ca0e52299513
 		summarizeBy: sum
 		sourceColumn: month_num
 
@@ -45,7 +45,7 @@ table dim_date
 
 	column month_name
 		dataType: string
-		lineageTag: 2322b90e-5420-473d-9a7c-5aeb28b2b723
+		lineageTag: 4a8fdf9e-fac8-4a12-afb7-b49ebfd3fd1f
 		summarizeBy: none
 		sourceColumn: month_name
 
@@ -53,7 +53,7 @@ table dim_date
 
 	column week_num
 		dataType: int64
-		lineageTag: 83ef0029-be7b-4da3-82a6-1233da0978e1
+		lineageTag: b1b51687-f10f-46b3-85cf-1c9e32cbb15b
 		summarizeBy: sum
 		sourceColumn: week_num
 
@@ -61,7 +61,7 @@ table dim_date
 
 	column day_name
 		dataType: string
-		lineageTag: 82282e35-16de-48e5-b1b0-924bd6181b29
+		lineageTag: 39d7822d-6b90-4902-8995-c08ae3a26935
 		summarizeBy: none
 		sourceColumn: day_name
 
@@ -69,7 +69,7 @@ table dim_date
 
 	column is_weekend
 		dataType: boolean
-		lineageTag: 28642e5e-f5ae-45a0-8522-f7a08d270b81
+		lineageTag: 1b031ec6-8a75-4003-b90b-c309c03f1453
 		summarizeBy: none
 		sourceColumn: is_weekend
 
@@ -77,7 +77,7 @@ table dim_date
 
 	column is_holiday
 		dataType: boolean
-		lineageTag: 7421657f-7c7e-4c6a-adad-a5b4dddfc727
+		lineageTag: cac5f521-049f-4880-9363-9eb3cc28e782
 		summarizeBy: none
 		sourceColumn: is_holiday
 
@@ -85,7 +85,7 @@ table dim_date
 
 	column fiscal_quarter
 		dataType: string
-		lineageTag: 88bd968c-5288-429d-aed2-8275900c2a6f
+		lineageTag: 3ad9cdd0-dcae-4d50-9132-8ba1fcc8f051
 		summarizeBy: none
 		sourceColumn: fiscal_quarter
 
@@ -93,13 +93,13 @@ table dim_date
 
 	column fiscal_year
 		dataType: int64
-		lineageTag: d758adc1-1942-4398-9603-7c2ed4045bdf
+		lineageTag: 8a776f0a-e008-495d-b86f-febfb4fcfc82
 		summarizeBy: sum
 		sourceColumn: fiscal_year
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'dim_date-cb5edd00-236f-46bf-a2a8-f098b4ee6da1' = m
+	partition 'dim_date-59cfc199-77da-4fd7-a012-c75f0330b55c' = m
 		mode: import
 		source =
 				let

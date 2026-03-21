@@ -12,8 +12,8 @@ ref table Orders
 ref table Regions
 ref table Calendar
 
-ref relationship 870a9461-6417-4ae0-a6c5-9944dda820a7
-ref relationship 28112cfc-e1f4-40a3-8ffd-5b7b7fb3c891
+ref relationship d7686afd-8a77-454d-bcee-f8e9b801e238
+ref relationship f75b596c-392d-4d41-a0d1-1011ad4f3cb3
 
 ref expression DataFolder
 

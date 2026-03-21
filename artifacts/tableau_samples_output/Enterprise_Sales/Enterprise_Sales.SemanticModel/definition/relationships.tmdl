@@ -1,16 +1,16 @@
-relationship 26a1b985-45a6-4425-b6b2-7220b68ff8b7
+relationship 3e690a9f-9d93-413b-bf12-aef613d5d025
 	fromColumn: Orders.customer_id
 	toColumn: Customers.customer_id
 	fromCardinality: many
 	toCardinality: many
 	crossFilteringBehavior: bothDirections
 
-relationship ae8bc42b-011e-477e-9773-67127ff675ad
+relationship 46234187-c87f-44aa-8489-2e9374b5bc5c
 	fromColumn: Orders.order_date
 	toColumn: Calendar.Date
 	crossFilteringBehavior: oneDirection
 
-relationship f9ca9441-d023-46a1-89f9-6df25764cb63
+relationship a4af01ef-c550-41af-a76e-195a348b07c0
 	fromColumn: Customers.first_purchase_date
 	toColumn: Calendar.Date
 	fromCardinality: many

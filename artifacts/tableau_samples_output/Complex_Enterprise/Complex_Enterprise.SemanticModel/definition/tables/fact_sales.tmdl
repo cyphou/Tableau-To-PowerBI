@@ -1,151 +1,151 @@
 table fact_sales
-	lineageTag: 7479e535-3f75-4520-bd37-1f24924dd2dc
+	lineageTag: a5c595f8-dd26-4e3e-831f-c7f9fce63d86
 
 	measure 'Gross Revenue' = SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 7a1b8fb6-25e0-4c18-8c99-b7fa6c8118e7
+		lineageTag: 0e8bee04-50d6-4244-b7d0-4e62bf7fd591
 
 	measure 'Net Revenue' = SUMX('fact_sales', IF('fact_sales'[order_status] <> "Cancelled" && 'fact_sales'[is_returned] = FALSE, 'fact_sales'[quantity] * 'fact_sales'[unit_price] * (1 - 'fact_sales'[discount_pct]), 0))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: c7aac53c-e7ca-4ec0-bed6-11a3e1d170e1
+		lineageTag: 21943497-bab1-4dd8-8248-beab9a216f82
 
 	measure COGS = SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_cost])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 00318617-0f61-4f18-9930-cdd56b820f9f
+		lineageTag: 9dc92c3a-ca9a-4a43-9e31-22c0a94bc586
 
 	measure 'Gross Profit' = [Net Revenue] - [COGS] - SUM('fact_sales'[shipping_cost])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: f8345cf7-0eaf-446f-8f5b-c250167feb8d
+		lineageTag: f8d696b4-ada3-44d1-9676-cbd41006fa84
 
 	measure 'Gross Margin %' = IF(ISBLANK([Gross Profit] / [Net Revenue]), 0, [Gross Profit] / [Net Revenue])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 3d1df626-90f4-490c-83f0-c0a332ab8839
+		lineageTag: 9ebf786b-2315-40ed-a4d2-45cbfcf1ff0e
 
 	measure 'Tax Amount' = SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price] * (1 - 'fact_sales'[discount_pct]) * 'fact_sales'[tax_rate])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 00cf344f-cdd8-4ca8-90c0-61b4b0591a53
+		lineageTag: 263824b2-b1e4-4524-9b5f-33f49095c38b
 
 	measure 'Total Revenue incl Tax' = [Net Revenue] + [Tax Amount]
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: b80c3f17-a179-4d10-ad43-4a5df197a2bb
+		lineageTag: 7465d9a7-0fc7-49a3-a847-638da9255058
 
 	measure 'Return Rate' = SUMX('fact_sales', IF('fact_sales'[is_returned] = TRUE, 1, 0)) / COUNT('fact_sales'[sale_id])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: f42911f8-fd4b-47b2-8f05-d48be03a54c3
+		lineageTag: 6017624a-f4f2-4b29-8077-df1fd6df1353
 
 	measure 'Revenue per Customer' = CALCULATE(SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]), ALLEXCEPT('dim_customer', 'dim_customer'[customer_id]))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 71b647c4-4c1e-4aea-ac08-d6f585d398b5
+		lineageTag: 200e6027-8660-4959-8bf5-e0dac1f9e889
 
 	measure 'Revenue per Product' = CALCULATE(SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]), ALLEXCEPT('dim_product', 'dim_product'[product_id]))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 422fe335-4fda-46bf-95e6-c8119365deef
+		lineageTag: 9ee6b285-42fc-49f8-8fcf-71b02360859f
 
 	measure 'Revenue by Region-Channel' = CALCULATE(SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]), ALLEXCEPT('fact_sales', 'fact_sales'[region], 'fact_sales'[channel]))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: b99c97d1-f759-4948-8e98-95f3dac9d8ca
+		lineageTag: dce078d6-cbe2-4f7d-84f7-9bc7275dab00
 
 	measure 'Revenue excl Territory' = CALCULATE(SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]), REMOVEFILTERS('fact_sales'[territory]))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 0eebc944-bcf3-4b8e-b8f2-0b7fb01f6af0
+		lineageTag: a737bf7d-e40f-417c-945b-ea600f3fc6a4
 
 	measure 'Revenue incl Subcategory' = CALCULATE(SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: a1845cfc-eff8-49f5-a778-b56bd5125f3c
+		lineageTag: d4875b3f-4e88-48dc-9c72-a59b83cce9be
 
 	measure 'Running Total Revenue' = CALCULATE(SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]), FILTER(ALLSELECTED('fact_sales'), TRUE())) /* RUNNING_SUM: converted to cumulative — verify window scope */
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 557097bb-b8e7-4777-89c8-634692bccb05
+		lineageTag: 5a64a347-f005-414f-ae31-cf4815e8ad0d
 
 	measure 'Running Avg Revenue' = CALCULATE(SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]), FILTER(ALLSELECTED('fact_sales'), TRUE())) /* RUNNING_AVG: converted to cumulative — verify window scope */
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 88e6ff51-24de-4d1b-99de-1dc8075caf5a
+		lineageTag: 2142d535-8dba-4df1-9793-ec300e0f5be5
 
 	measure 'Running Count' = CALCULATE(SUM('fact_sales'[quantity]), FILTER(ALLSELECTED('fact_sales'), TRUE())) /* RUNNING_COUNT: converted to cumulative — verify window scope */
 		displayFolder: Measures
-		lineageTag: c184b1da-b382-4f2b-acc9-3d282a2bfa19
+		lineageTag: c1064216-8237-4ab9-89e2-51d5334bc852
 
 	measure 'Revenue Rank' = RANKX(ALL('fact_sales'), SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]))
 		displayFolder: Measures
-		lineageTag: 5b6683d5-fa41-49cb-8209-93ee3a149ac6
+		lineageTag: 81aac0d2-ff9d-4246-aa4b-fe8172d3509d
 
 	measure 'Revenue Rank Dense' = RANKX(ALL('fact_sales'), SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]),, ASC, DENSE)
 		displayFolder: Measures
-		lineageTag: 0dbdadfe-8086-4c24-ab06-a49f81ff8459
+		lineageTag: 09ebe1f3-123b-4655-a8b6-6cc3b632a418
 
 	measure 'Moving Avg 3-Period' = CALCULATE(SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]), WINDOW(-2, REL, 0, REL, ORDERBY('fact_sales'[sale_id], ASC)), ALL('fact_sales')) /* WINDOW.AVG: frame 'fact_sales'[-2,0] */
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: c56b7901-20b6-4b24-95a6-dc14a761e3fb
+		lineageTag: 55a233f8-53ae-47ed-b0a8-e421a802c040
 
 	measure 'Window Max Revenue' = CALCULATE(SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]), ALL('fact_sales'))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 9e5aaf6c-f156-49ed-bd9f-539e1b167108
+		lineageTag: 1ae0bd1d-9d9b-4b77-8003-3c3ac7adfd3a
 
 	measure 'Revenue StdDev' = STDEVX.S('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: c07d52ab-77c1-48c7-8449-d2399030022e
+		lineageTag: 783b6294-0d0f-440f-9717-31fbce5fa71f
 
 	measure 'Order Count' = DISTINCTCOUNT('fact_sales'[sale_id])
 		displayFolder: Measures
-		lineageTag: ea529d27-d6e2-407b-a3c9-37bca40b7d78
+		lineageTag: ac39a882-921a-4aca-91f1-d9158aee744c
 
 	measure 'Unique Customers' = DISTINCTCOUNT('dim_customer'[customer_id])
 		displayFolder: Measures
-		lineageTag: 12b50132-df3f-4763-b0f2-05a6d0d6a1ac
+		lineageTag: d3e2c421-9b09-491d-9de8-9e5ef3894360
 
 	measure 'Unique Products Sold' = DISTINCTCOUNT('dim_product'[product_id])
 		displayFolder: Measures
-		lineageTag: 953a79f8-9252-4b8b-b3a5-a36f17b6d7e9
+		lineageTag: f550995c-480b-44b9-ac25-ddabaf7f5719
 
 	measure 'Customer Tier' = IF([Revenue per Customer] > 100000, "Enterprise", IF([Revenue per Customer] > 50000, "Mid-Market", IF([Revenue per Customer] > 10000, "SMB", "Startup")))
 		displayFolder: Dimensions
-		lineageTag: 626b434b-fbcd-4cf8-8717-9fc8ffac728d
+		lineageTag: 34c2c9d6-5368-49d6-a7f3-1bda4fbd0f22
 
 	measure 'YTD Revenue' = CALCULATE(SUMX('fact_sales', IF('dim_date'[year] = YEAR(TODAY()) && 'fact_sales'[is_returned] = FALSE, 'fact_sales'[quantity] * 'fact_sales'[unit_price], 0)), ALL('fact_sales'))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 6c5f41d5-7e01-4428-ae26-6772d828c0a9
+		lineageTag: d29fdd45-9523-4043-b56e-d5f141a98b87
 
 	measure 'Is My Account' = 'dim_customer'[email] = USERPRINCIPALNAME()
 		formatString: True/False
 		displayFolder: Dimensions
-		lineageTag: de9bbcff-97e5-4b13-bbcb-a03267a87246
+		lineageTag: 64702727-a31f-45c6-b914-20603dea85b0
 
 	measure 'Manager Access' = TRUE() /* ISMEMBEROF("Regional Managers"): implement via RLS role */
 		formatString: True/False
 		displayFolder: Dimensions
-		lineageTag: 772bd81f-f0fc-4c44-a74f-29dc637a442d
+		lineageTag: bada5a11-c8c8-47f6-8b37-dc42b77b6d5c
 
 	measure 'Analysis Start Date' = DATE(2024, 1, 1)
-		lineageTag: 2ac4a23f-fb3c-4201-95e4-d6c47b26b9d7
+		lineageTag: 37c9e044-f78a-423c-a50a-5de3e55c008b
 
 	measure 'Metric Selector' = "Revenue"
-		lineageTag: b1ade768-0a87-40e4-a53c-17d5e4abc26d
+		lineageTag: 2d78fa3c-0666-45c8-8f46-150bedb8541e
 
 	measure 'Display Currency' = "USD"
-		lineageTag: 5a7293e5-e050-42eb-8868-9e73ac71ef4a
+		lineageTag: 62fa30a9-d2d9-46fe-9f05-3e92a13db218
 
 	column sale_id
 		dataType: int64
-		lineageTag: 6f3f946a-b616-409f-bac6-a640950c7e54
+		lineageTag: 82fd644f-8b46-41ba-ba24-9940ee469b4e
 		summarizeBy: sum
 		sourceColumn: sale_id
 
@@ -153,7 +153,7 @@ table fact_sales
 
 	column date_key
 		dataType: int64
-		lineageTag: 75bb3d1d-75a2-409b-ab35-f3fc55b2936c
+		lineageTag: b8997278-e9d7-4cdc-8d0e-fc7dbb5f5b7e
 		summarizeBy: sum
 		sourceColumn: date_key
 
@@ -161,7 +161,7 @@ table fact_sales
 
 	column customer_key
 		dataType: int64
-		lineageTag: 125c37b5-95ba-413d-aa3d-4879c318ed8f
+		lineageTag: ac511e4f-7016-47b1-a596-5c1dc662e3a8
 		summarizeBy: sum
 		sourceColumn: customer_key
 
@@ -169,7 +169,7 @@ table fact_sales
 
 	column product_key
 		dataType: int64
-		lineageTag: 920ea1aa-915e-4560-bd5a-c3a393b7b032
+		lineageTag: 72ac99e3-db9f-455f-be50-7c0129fa9415
 		summarizeBy: sum
 		sourceColumn: product_key
 
@@ -177,7 +177,7 @@ table fact_sales
 
 	column store_key
 		dataType: int64
-		lineageTag: 6a5c8d1b-23c3-40c3-a7aa-5bf61a365039
+		lineageTag: c65affdf-fc69-4128-be9e-4771921296b5
 		summarizeBy: sum
 		sourceColumn: store_key
 
@@ -185,7 +185,7 @@ table fact_sales
 
 	column channel
 		dataType: string
-		lineageTag: 9123f66e-7fa3-440f-a066-22e9506ea5cc
+		lineageTag: 8b51a1d4-b410-45e5-aa52-08847edc9f11
 		summarizeBy: none
 		sourceColumn: channel
 
@@ -193,7 +193,7 @@ table fact_sales
 
 	column region
 		dataType: string
-		lineageTag: 9f1ae364-512d-42a9-bd3f-84550bf1a781
+		lineageTag: b2748e25-ef22-483c-81ee-c3521e193708
 		summarizeBy: none
 		sourceColumn: region
 		dataCategory: StateOrProvince
@@ -202,7 +202,7 @@ table fact_sales
 
 	column territory
 		dataType: string
-		lineageTag: 73ed1552-2200-4433-b231-956a52a0c37d
+		lineageTag: dd60c855-9d73-47e9-91f8-04517e793697
 		summarizeBy: none
 		sourceColumn: territory
 
@@ -210,7 +210,7 @@ table fact_sales
 
 	column country
 		dataType: string
-		lineageTag: d247400d-918b-4c68-9e0e-51b5a401a6fb
+		lineageTag: 257e9c6f-550c-43b4-abd1-31543372d84e
 		summarizeBy: none
 		sourceColumn: country
 		dataCategory: Country
@@ -219,7 +219,7 @@ table fact_sales
 
 	column state
 		dataType: string
-		lineageTag: 5b3473d0-aaf8-48bd-9c75-ad036b7372d9
+		lineageTag: c8e6182e-82c8-43db-8fb7-ac13eec6e750
 		summarizeBy: none
 		sourceColumn: state
 		dataCategory: StateOrProvince
@@ -228,7 +228,7 @@ table fact_sales
 
 	column city
 		dataType: string
-		lineageTag: 7f6e32b5-abec-4685-8e9e-ed9c653c6303
+		lineageTag: 44ceae15-71a5-4782-9212-c985742293e1
 		summarizeBy: none
 		sourceColumn: city
 		dataCategory: City
@@ -237,7 +237,7 @@ table fact_sales
 
 	column postal_code
 		dataType: string
-		lineageTag: fd602e00-b745-45d6-b1a3-6d9fa066b877
+		lineageTag: fc02e28a-d555-4f5b-89bb-293e0e5d2261
 		summarizeBy: none
 		sourceColumn: postal_code
 		dataCategory: PostalCode
@@ -247,7 +247,7 @@ table fact_sales
 	column latitude
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 10ccba43-91e4-4740-a79c-733462a702ee
+		lineageTag: 9921caba-eaf4-4943-b243-81f93155d11d
 		summarizeBy: sum
 		sourceColumn: latitude
 		dataCategory: Latitude
@@ -257,7 +257,7 @@ table fact_sales
 	column longitude
 		dataType: double
 		formatString: #,0.00
-		lineageTag: eed1822a-80ca-41e7-ad14-183d51bb8a09
+		lineageTag: 9bfd785f-2486-4214-8d59-2b5dba911044
 		summarizeBy: sum
 		sourceColumn: longitude
 		dataCategory: Longitude
@@ -267,7 +267,7 @@ table fact_sales
 	column quantity
 		dataType: double
 		formatString: #,0.00
-		lineageTag: a9a0ec58-779f-4f6d-8e68-d5226264d1ee
+		lineageTag: 0e667f26-2a12-4fba-9307-81db04f77e9b
 		summarizeBy: sum
 		sourceColumn: quantity
 
@@ -276,7 +276,7 @@ table fact_sales
 	column unit_price
 		dataType: double
 		formatString: #,0.00
-		lineageTag: ec541cbc-e79e-4a89-b8ea-0178a157e662
+		lineageTag: e8104a53-28a0-4fca-8d90-f9ef3b29ef08
 		summarizeBy: sum
 		sourceColumn: unit_price
 
@@ -285,7 +285,7 @@ table fact_sales
 	column unit_cost
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 677752d8-f9a0-49ba-8c3f-e6ac3bc72baa
+		lineageTag: cf10ebf3-8f6b-4eea-86d4-bf4905994c6e
 		summarizeBy: sum
 		sourceColumn: unit_cost
 
@@ -294,7 +294,7 @@ table fact_sales
 	column discount_pct
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 474d6450-8208-4a79-94ea-a5effdb934b7
+		lineageTag: 70d1b68c-2700-4c9d-b1af-bba075f10097
 		summarizeBy: sum
 		sourceColumn: discount_pct
 
@@ -303,7 +303,7 @@ table fact_sales
 	column tax_rate
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 95acee4b-02d1-478f-a095-04ff9664a5d9
+		lineageTag: dd0a4136-59b7-4b0c-b8b8-7da0254bd144
 		summarizeBy: sum
 		sourceColumn: tax_rate
 
@@ -312,7 +312,7 @@ table fact_sales
 	column shipping_cost
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 6c5957c4-ab29-48c7-80bb-c73a06f6ea66
+		lineageTag: 6b2bf424-68ad-4047-ab39-668906da369a
 		summarizeBy: sum
 		sourceColumn: shipping_cost
 
@@ -320,7 +320,7 @@ table fact_sales
 
 	column currency_code
 		dataType: string
-		lineageTag: a7b49c58-25db-461b-9a44-44a08915547b
+		lineageTag: ae072139-5bf5-4e8c-949a-342e8f9c800a
 		summarizeBy: none
 		sourceColumn: currency_code
 
@@ -328,7 +328,7 @@ table fact_sales
 
 	column order_status
 		dataType: string
-		lineageTag: 826a3389-1e71-460a-b596-ff9946411df2
+		lineageTag: d2056842-d4e7-4c97-9611-c9f11470974d
 		summarizeBy: none
 		sourceColumn: order_status
 
@@ -336,7 +336,7 @@ table fact_sales
 
 	column payment_method
 		dataType: string
-		lineageTag: 9dcd19e6-8495-4f85-8fc5-9f1f160c6b4f
+		lineageTag: 10c71b0e-b33d-4737-ae5a-366403c87833
 		summarizeBy: none
 		sourceColumn: payment_method
 
@@ -344,7 +344,7 @@ table fact_sales
 
 	column sales_rep
 		dataType: string
-		lineageTag: b36f145e-1e6e-4b15-9503-ee21ec8be4eb
+		lineageTag: b9cf7a75-936b-4c78-a68c-a44f00c504dc
 		summarizeBy: none
 		sourceColumn: sales_rep
 
@@ -352,7 +352,7 @@ table fact_sales
 
 	column promotion_code
 		dataType: string
-		lineageTag: 3f0c70ba-a54c-485d-a0f3-20631f9139b3
+		lineageTag: 2c8bb331-7451-47a1-8e07-f5912e7b2553
 		summarizeBy: none
 		sourceColumn: promotion_code
 
@@ -360,7 +360,7 @@ table fact_sales
 
 	column is_returned
 		dataType: boolean
-		lineageTag: cf9fe811-10ca-4d60-964d-ec1519a68cd7
+		lineageTag: 5c496298-07f4-47d6-a0f1-cdcc80032396
 		summarizeBy: none
 		sourceColumn: is_returned
 
@@ -368,21 +368,21 @@ table fact_sales
 
 	column 'Days Since First Order' = DATEDIFF(LOOKUPVALUE(dim_customer[first_order_date], dim_customer[customer_key], fact_sales[customer_key]), TODAY(), DAY)
 		dataType: int64
-		lineageTag: bba5358a-9cf0-454f-84c3-be8389dbc5b0
+		lineageTag: a1d5d464-7e2f-409a-8fcf-b4cdae019598
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Full Location' = UPPER('fact_sales'[city]) & ", " & 'fact_sales'[state] & " (" & 'fact_sales'[country] & ")"
 		dataType: string
-		lineageTag: 9bf48f0a-f50d-4e99-9983-b519e2616494
+		lineageTag: 94c60163-46ed-4554-ae71-a6409e14785e
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Discount Category' = IF(ISBLANK('fact_sales'[discount_pct]) || 'fact_sales'[discount_pct] = 0, "None", IF('fact_sales'[discount_pct] < 0.1, "Low", IF('fact_sales'[discount_pct] < 0.25, "Medium", IF('fact_sales'[discount_pct] < 0.5, "High", "Extreme"))))
 		dataType: string
-		lineageTag: 11bbded4-547b-43b2-9260-32c379492e17
+		lineageTag: 626815ba-e030-4b02-9299-34370cd0206c
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
@@ -390,13 +390,13 @@ table fact_sales
 	column 'Safe Discount'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 9b2babb8-d957-4c96-ace4-a11e24bd260b
+		lineageTag: 1aaf523c-a2c0-42c4-a4ce-f50b625b209a
 		summarizeBy: none
 		sourceColumn: 'Safe Discount'
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'fact_sales-c3c96c23-a2fe-4854-800b-a88f4afc4433' = m
+	partition 'fact_sales-5fc85fa2-69a1-4db4-851c-331f403d59c5' = m
 		mode: import
 		source =
 				let

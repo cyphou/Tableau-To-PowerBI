@@ -1,18 +1,18 @@
 table 'Objectif Marge'
-	lineageTag: cf19c837-ffec-435e-b5ed-58c634e5ebf0
+	lineageTag: a93d6cd9-8f69-4160-95b8-2774474d6450
 
 	measure 'Objectif Marge' = SELECTEDVALUE('Objectif Marge'[Value], 0.15)
-		lineageTag: aaad1dfd-134d-4298-bb3c-1966884adefe
+		lineageTag: d22605b9-6ca6-4bb0-b985-812ec3895460
 
 	column Value
 		dataType: double
-		lineageTag: 2db53477-6fca-4bd1-983e-927f69504ed4
+		lineageTag: ae72198b-cc25-4b9d-a63f-35c66c692edc
 		summarizeBy: none
 		sourceColumn: Value
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Objectif Marge-3d3b3bd0-4322-449d-a48a-a4248accb001' = calculated
+	partition 'Objectif Marge-3fb32997-8b5b-4e8a-a041-c387fbfbc2c8' = calculated
 		mode: import
 		source = GENERATESERIES(0, 0.5, 0.01)
 

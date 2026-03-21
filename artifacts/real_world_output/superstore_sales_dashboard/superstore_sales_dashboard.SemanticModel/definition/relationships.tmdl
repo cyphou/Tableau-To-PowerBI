@@ -1,17 +1,17 @@
-relationship 4401727c-7b3b-4cb2-8322-e9994a6c8284
+relationship c65ca696-1a62-4ecb-993a-558f32d601e8
 	fromColumn: Orders.'Order Date'
 	toColumn: Calendar.Date
 	crossFilteringBehavior: oneDirection
 
-relationship e79ce0cf-d942-43a2-a1b0-7b54482278a0
+relationship f7fa8ce7-dd0d-4b20-9757-b712a9cedfe1
 	fromColumn: Extract.'Order Date'
 	toColumn: Calendar.Date
 	crossFilteringBehavior: oneDirection
 	isActive: false
 
-relationship 75eafd22-92cc-42fa-8cdf-4d3017f9f841
-	fromColumn: Orders.'Zip Code'
-	toColumn: Extract.'Zip Code'
+relationship d41dabbe-32b6-4412-b0ab-6fa99c5523e2
+	fromColumn: Orders.'Row ID'
+	toColumn: Extract.'Row ID'
 	fromCardinality: many
 	toCardinality: many
 	crossFilteringBehavior: bothDirections

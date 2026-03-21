@@ -14,9 +14,9 @@ ref table Calendar
 ref table 'Target Margin'
 ref table 'Top N'
 
-ref relationship 26a1b985-45a6-4425-b6b2-7220b68ff8b7
-ref relationship ae8bc42b-011e-477e-9773-67127ff675ad
-ref relationship f9ca9441-d023-46a1-89f9-6df25764cb63
+ref relationship 3e690a9f-9d93-413b-bf12-aef613d5d025
+ref relationship 46234187-c87f-44aa-8489-2e9374b5bc5c
+ref relationship a4af01ef-c550-41af-a76e-195a348b07c0
 
 ref expression DataFolder
 

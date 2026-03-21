@@ -1,9 +1,9 @@
 table dim_product
-	lineageTag: a95fee07-78b1-4ca5-a51b-5b91e3779eef
+	lineageTag: 4786e9b4-03ab-4aef-bebc-b2027ae9a16c
 
 	column product_key
 		dataType: int64
-		lineageTag: fd9ee445-115c-4154-a791-6767131f1602
+		lineageTag: 1d992ff7-1412-4695-964e-72f5d3460701
 		summarizeBy: sum
 		sourceColumn: product_key
 
@@ -11,7 +11,7 @@ table dim_product
 
 	column product_id
 		dataType: string
-		lineageTag: 07fd06fa-f6af-4d26-9a1c-23db4a0252a8
+		lineageTag: 9fdc11cb-1809-4c2e-ae1a-d0a60c3ea80b
 		summarizeBy: none
 		sourceColumn: product_id
 
@@ -19,7 +19,7 @@ table dim_product
 
 	column product_name
 		dataType: string
-		lineageTag: c860e543-5d9d-4e53-93b5-66f74163d5b9
+		lineageTag: c400b771-fb8f-4f08-866f-1e5fe04c1d0f
 		summarizeBy: none
 		sourceColumn: product_name
 
@@ -27,7 +27,7 @@ table dim_product
 
 	column category
 		dataType: string
-		lineageTag: ad7600b7-689d-4dcc-9c59-bc8f96b318d2
+		lineageTag: 4ac23346-81a5-4f4f-9d68-be851893489d
 		summarizeBy: none
 		sourceColumn: category
 
@@ -35,7 +35,7 @@ table dim_product
 
 	column subcategory
 		dataType: string
-		lineageTag: 72cc0255-ea21-47eb-972f-ce434ce0910e
+		lineageTag: 3da75759-5b92-45d3-b1d6-ddd4bf897841
 		summarizeBy: none
 		sourceColumn: subcategory
 
@@ -43,7 +43,7 @@ table dim_product
 
 	column brand
 		dataType: string
-		lineageTag: 82f92465-177d-4beb-839f-27c3de4989bc
+		lineageTag: db6fdb37-c87d-4af1-89f4-ac07c14462ba
 		summarizeBy: none
 		sourceColumn: brand
 
@@ -51,7 +51,7 @@ table dim_product
 
 	column supplier
 		dataType: string
-		lineageTag: 90f0d033-ffe0-4019-84d8-5de43f9d439a
+		lineageTag: 8e3875fc-8025-453c-8120-7cc9b1494211
 		summarizeBy: none
 		sourceColumn: supplier
 
@@ -60,7 +60,7 @@ table dim_product
 	column weight_kg
 		dataType: double
 		formatString: #,0.00
-		lineageTag: c1f788ed-b5cb-400f-be3a-16b91ef3929f
+		lineageTag: 6d3362ce-8e45-458b-ba21-02fd2259eabc
 		summarizeBy: sum
 		sourceColumn: weight_kg
 
@@ -68,7 +68,7 @@ table dim_product
 
 	column is_perishable
 		dataType: boolean
-		lineageTag: e4d50e55-be37-40cd-b5fe-fe2b13e5c5c8
+		lineageTag: 473cf03d-fb1a-4141-8d14-7c24edd4090a
 		summarizeBy: none
 		sourceColumn: is_perishable
 
@@ -77,14 +77,14 @@ table dim_product
 	column launch_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 13c4164b-d865-44d6-b834-8151e0f9b856
+		lineageTag: 87b42e68-dc8f-4211-9a0f-887760e03a52
 		summarizeBy: none
 		sourceColumn: launch_date
 		dataCategory: DateTime
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'dim_product-ada177e9-c871-439c-9704-a993ced13a66' = m
+	partition 'dim_product-7ba04fbf-a8d4-461a-9a79-7c0717534149' = m
 		mode: import
 		source =
 				let

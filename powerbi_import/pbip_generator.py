@@ -403,8 +403,11 @@ class PowerBIProjectGenerator:
         """Recursively lay out a zone and its children into PBI pixel space.
 
         For leaf zones the full allocated rectangle is recorded.
-        For container zones the space is subdivided among children based on
-        their Tableau coordinate sizes along the container's orientation axis.
+        For container zones with explicit orientation (horz/vert), children
+        are subdivided along the orientation axis.  For containers without
+        explicit orientation (common for layout-flow with 2-D grids), each
+        child's Tableau coordinates are mapped proportionally into the
+        parent's pixel space so side-by-side layouts are preserved.
         """
         key = zone.get('name') or zone.get('id', '')
         children = zone.get('children', [])
@@ -445,15 +448,22 @@ class PowerBIProjectGenerator:
                                       coord_w, coord_h, layout_map)
                     cursor += alloc_h
             else:
-                # No explicit orientation — stack vertically by default
-                total = sum(c.get('position', {}).get('h', 1) for c in tiled) or 1
-                cursor = px_y
+                # No explicit orientation — use proportional coordinate mapping
+                # to preserve 2-D grid layouts (e.g. side-by-side + stacked).
+                child_max_x = max((c.get('position', {}).get('x', 0)
+                                   + c.get('position', {}).get('w', 1)
+                                   for c in tiled), default=1) or 1
+                child_max_y = max((c.get('position', {}).get('y', 0)
+                                   + c.get('position', {}).get('h', 1)
+                                   for c in tiled), default=1) or 1
                 for child in tiled:
-                    ch = child.get('position', {}).get('h', 1)
-                    alloc_h = px_h * ch / total
-                    self._layout_zone(child, px_x, cursor, px_w, alloc_h,
+                    cpos = child.get('position', {})
+                    cx = px_x + (cpos.get('x', 0) / child_max_x) * px_w
+                    cy = px_y + (cpos.get('y', 0) / child_max_y) * px_h
+                    cw = (cpos.get('w', 1) / child_max_x) * px_w
+                    ch = (cpos.get('h', 1) / child_max_y) * px_h
+                    self._layout_zone(child, cx, cy, cw, ch,
                                       coord_w, coord_h, layout_map)
-                    cursor += alloc_h
 
         # Floating children get absolute-scaled positions
         for child in floating:

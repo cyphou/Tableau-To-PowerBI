@@ -1,69 +1,69 @@
 table Sensors
-	lineageTag: 1878c374-34a1-4cad-9cdb-8a01f6b36add
+	lineageTag: 201032a3-f8f5-47ed-b0a7-26858ed2464e
 
 	measure 'Median Value' = MEDIAN('Sensors'[value])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 02345452-c7a5-4405-9b7c-7400a078720c
+		lineageTag: ff97a5dc-1863-4e3b-a792-dab16152cb58
 
 	measure 'P95 Value' = PERCENTILE.INC('Sensors'[value], 0.95)
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 86ed44ad-a42b-432e-a3c8-49c76c3092b8
+		lineageTag: 2ad1a163-cff7-4710-8d86-41ab56df7c17
 
 	measure 'Value Variance' = VAR.S('Sensors'[value])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: ec47bcaf-abae-40c0-80e8-a9467922a205
+		lineageTag: 6e6369f2-9efd-4d90-b4da-c87821307060
 
 	measure 'Value Variance Pop' = VAR.P('Sensors'[value])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: e6b6b49a-3887-490a-bb6c-9a756fb319da
+		lineageTag: 34d3e059-6cbd-405d-9d0c-669d60f156a4
 
 	measure 'Avg by Sensor Machine' = CALCULATE(AVERAGE('Sensors'[value]))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 9cc634f7-fcdb-49dc-9f8f-4294459e5c98
+		lineageTag: d9cb98f4-0997-45e6-a464-ddb59db426b4
 
 	measure 'Running Avg Value' = CALCULATE(AVERAGE('Sensors'[value]), FILTER(ALLSELECTED('Sensors'), TRUE())) /* RUNNING_AVG: converted to cumulative — verify window scope */
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: bc67f71b-8545-4ecb-885a-39ab7f119d86
+		lineageTag: 9a8c858f-275e-4b79-b10c-530cdabe8402
 
 	measure 'Running Count' = CALCULATE(COUNT('Sensors'[reading_id]), FILTER(ALLSELECTED('Sensors'), TRUE())) /* RUNNING_COUNT: converted to cumulative — verify window scope */
 		displayFolder: Measures
-		lineageTag: 4b4e540c-d078-403f-9029-a39409f351bd
+		lineageTag: e35e9ca4-99b9-4dfd-b483-eca9de03cdeb
 
 	measure 'Running Max Value' = CALCULATE(MAX('Sensors'[value]), FILTER(ALLSELECTED('Sensors'), TRUE())) /* RUNNING_MAX: converted to cumulative — verify window scope */
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: da1ac592-43da-4cde-ad72-22e522ccfb6a
+		lineageTag: db6c0540-0523-4bff-a1c7-2c5c0530ff1a
 
 	measure 'Running Min Value' = CALCULATE(MIN('Sensors'[value]), FILTER(ALLSELECTED('Sensors'), TRUE())) /* RUNNING_MIN: converted to cumulative — verify window scope */
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: a33c57ef-863c-4fac-8df4-14edec7d3095
+		lineageTag: ef51f6f9-c590-4c78-bc62-93c472b5c422
 
 	measure 'Dense Rank' = RANKX(ALL('Sensors'), SUM('Sensors'[value]),, ASC, DENSE)
 		displayFolder: Measures
-		lineageTag: 990ec908-67ce-48fe-90dd-bdd9c35b97f1
+		lineageTag: d104f36e-b060-4c51-b019-8227d2b58c2d
 
 	measure 'Unique Rank' = RANKX(ALL('Sensors'), AVERAGE('Sensors'[value]))
 		displayFolder: Measures
-		lineageTag: aadd3805-1acd-4ce2-bc10-9a71aefe1101
+		lineageTag: 729874b2-3884-4a62-a5f3-6f16a688fcb0
 
 	measure 'Window Total' = CALCULATE(SUM('Sensors'[value]), ALL('Sensors'))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 5c24dfe0-8c0f-4e88-829c-d97a943f37a8
+		lineageTag: 432015fb-b762-46e5-839c-b13ce5dc6164
 
 	measure 'Time Granularity' = "Hour"
-		lineageTag: ee09e4a4-4a7b-47e7-84c7-7df61d2be70b
+		lineageTag: 01b7aae9-c4c8-4d46-bb9b-f4eff29cb037
 
 	column reading_id
 		dataType: int64
-		lineageTag: 7e991615-e109-4843-b93a-1b4ae919a0ed
+		lineageTag: 7e029d19-9a6b-460e-a66a-bbd98cd6c657
 		summarizeBy: sum
 		sourceColumn: reading_id
 
@@ -72,7 +72,7 @@ table Sensors
 	column reading_time
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: fd4f224e-4949-45bc-8303-80e9a8304995
+		lineageTag: 08b4c65f-fb77-48fc-9d58-77b4c04e7729
 		summarizeBy: none
 		sourceColumn: reading_time
 		dataCategory: DateTime
@@ -81,7 +81,7 @@ table Sensors
 
 	column machine_id
 		dataType: int64
-		lineageTag: e5723057-4bc6-4dfa-8caa-20c14033d48d
+		lineageTag: 89f9a861-ed89-4d50-90b0-6d1e642ebab8
 		summarizeBy: sum
 		sourceColumn: machine_id
 
@@ -89,7 +89,7 @@ table Sensors
 
 	column sensor_type
 		dataType: string
-		lineageTag: 89db597c-b71d-4097-85f5-583b4b3d3226
+		lineageTag: 0ee4ba6d-8083-4311-ae1d-99779b7176ec
 		summarizeBy: none
 		sourceColumn: sensor_type
 
@@ -98,7 +98,7 @@ table Sensors
 	column value
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 03748ee6-1939-40d7-9d80-7835d9838639
+		lineageTag: ed5a9bc3-76cc-4f97-b844-5da02f820189
 		summarizeBy: sum
 		sourceColumn: value
 
@@ -107,7 +107,7 @@ table Sensors
 	column threshold_min
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 2d5d30c2-89f4-4fc6-a085-c853ecfdf80f
+		lineageTag: 932ea7ce-db66-4a1e-8deb-f5731e87c518
 		summarizeBy: sum
 		sourceColumn: threshold_min
 
@@ -116,7 +116,7 @@ table Sensors
 	column threshold_max
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 9dd03624-550e-4313-89fe-0b222357049d
+		lineageTag: e9ecdd57-c93d-4587-8302-68ef79625631
 		summarizeBy: sum
 		sourceColumn: threshold_max
 
@@ -124,7 +124,7 @@ table Sensors
 
 	column unit
 		dataType: string
-		lineageTag: b5971cf4-3de4-41ba-96a4-65f8100cb6e6
+		lineageTag: 4fd1e4d8-c9a4-4e02-89b1-d2bf339884ba
 		summarizeBy: none
 		sourceColumn: unit
 
@@ -132,7 +132,7 @@ table Sensors
 
 	column quality_score
 		dataType: int64
-		lineageTag: 9850f823-c026-44f2-9b06-66ce02e65839
+		lineageTag: c512bfc2-c8eb-472b-94db-3ce7994b1b67
 		summarizeBy: sum
 		sourceColumn: quality_score
 
@@ -140,7 +140,7 @@ table Sensors
 
 	column plant_id
 		dataType: string
-		lineageTag: 58b7c227-4fea-4422-adb1-5e735a90780a
+		lineageTag: 839ba3c7-50ea-42d4-a71e-9c335fca3d69
 		summarizeBy: none
 		sourceColumn: plant_id
 
@@ -149,7 +149,7 @@ table Sensors
 	column delta_value
 		dataType: double
 		formatString: #,0.00
-		lineageTag: be8c5e8f-a203-432f-9d25-f3e8d687d222
+		lineageTag: ec572644-85ff-4be2-a14b-1e4d5fd4954a
 		summarizeBy: sum
 		sourceColumn: delta_value
 
@@ -158,7 +158,7 @@ table Sensors
 	column angle_degrees
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 04f0a851-e132-4f06-8161-5b6db430cd3c
+		lineageTag: b605de6a-fcb6-4e5b-aeaa-6319e0f94cf7
 		summarizeBy: sum
 		sourceColumn: angle_degrees
 
@@ -167,7 +167,7 @@ table Sensors
 	column power_watts
 		dataType: double
 		formatString: #,0.00
-		lineageTag: a9329e23-37d6-47f6-9640-1b9f749fdc03
+		lineageTag: 5651e12b-d187-45ed-8172-f4640826f347
 		summarizeBy: sum
 		sourceColumn: power_watts
 
@@ -176,7 +176,7 @@ table Sensors
 	column 'Abs Deviation'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 07509f0f-1f43-459b-b1b6-d911d882ae8e
+		lineageTag: 2d0d1930-3e55-424a-b253-573f0d13e229
 		summarizeBy: none
 		sourceColumn: 'Abs Deviation'
 
@@ -185,7 +185,7 @@ table Sensors
 	column 'Ceiling Value' = CEILING('Sensors'[value], 1)
 		dataType: double
 		formatString: #,0.00
-		lineageTag: dfffc9ef-d91b-4920-a448-5b4246c517ac
+		lineageTag: 20f7a3c5-0f0d-4bc1-9421-5d0e09bc3c4e
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
@@ -193,7 +193,7 @@ table Sensors
 	column 'Floor Value'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: ef8aa6db-0c50-4c66-bad0-b3e19b28dcdb
+		lineageTag: f9ed5c8d-bddb-4dc6-aad9-014bd132433a
 		summarizeBy: none
 		sourceColumn: 'Floor Value'
 
@@ -202,7 +202,7 @@ table Sensors
 	column 'Rounded Value'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: bc1ec051-13f4-4e2e-910e-253e71f753cb
+		lineageTag: 98cfb99c-867d-46ce-bf05-d0cf0a0daba5
 		summarizeBy: none
 		sourceColumn: 'Rounded Value'
 
@@ -211,7 +211,7 @@ table Sensors
 	column 'Energy Index' = SQRT(POWER('Sensors'[power_watts], 2) + POWER('Sensors'[delta_value], 2))
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 21ffd5b0-547e-4601-a355-b84bd060ca72
+		lineageTag: 6f6bc23d-e4bb-4e01-ae44-28b7edc29703
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
@@ -219,7 +219,7 @@ table Sensors
 	column 'Log Scale' = IF('Sensors'[value] > 0, LOG('Sensors'[value]), LN(EXP(1)))
 		dataType: double
 		formatString: #,0.00
-		lineageTag: dfecee25-1cf8-45f0-9aad-016a5db7ab1d
+		lineageTag: be82e953-92c5-4125-9fb2-48ce84a24a63
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
@@ -227,7 +227,7 @@ table Sensors
 	column 'Vibration X' = 'Sensors'[value] * COS((('Sensors'[angle_degrees])*PI()/180))
 		dataType: double
 		formatString: #,0.00
-		lineageTag: ae96b34f-1605-4f20-8476-ec73acc3197c
+		lineageTag: ce9b165a-061d-4beb-a093-0635377cc50b
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
@@ -235,21 +235,21 @@ table Sensors
 	column 'Vibration Y' = 'Sensors'[value] * SIN((('Sensors'[angle_degrees])*PI()/180))
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 9881c3dd-1075-4af9-b7d2-9b4fb7937866
+		lineageTag: 1a14928b-b49e-4b2d-8287-ab001cdd2fc4
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Score Label' = "Score: " & FORMAT(INT('Sensors'[quality_score]), "0") & " / " & FORMAT(CONVERT('Sensors'[value], DOUBLE), "0")
 		dataType: string
-		lineageTag: d7b414ba-6399-4ad0-830e-df8250f9283a
+		lineageTag: ec1ab397-ea78-4f45-a34f-6bc2a6b78540
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Reading Month'
 		dataType: dateTime
-		lineageTag: 82e4bd30-83e5-41f5-a9d2-d817ed8ee3df
+		lineageTag: e10d2ea1-4eaf-4f1a-8a05-c08ef79726cc
 		summarizeBy: none
 		sourceColumn: 'Reading Month'
 
@@ -257,26 +257,26 @@ table Sensors
 
 	column 'Reading Quarter' = DATE(YEAR('Sensors'[reading_time]), 3 * INT((MONTH('Sensors'[reading_time]) - 1) / 3) + 1, 1)
 		dataType: dateTime
-		lineageTag: f982d3d3-a403-41d9-83c3-f97a398461f3
+		lineageTag: 584f6ea9-1b83-44ef-8fcb-42613ce18564
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Reading Hour' = HOUR('Sensors'[reading_time])
 		dataType: int64
-		lineageTag: f191188d-5d2e-49e2-ab59-a8d46be06024
+		lineageTag: 689f5419-305d-4309-ac86-2d0732f41784
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
 
 	column Weekday = WEEKDAY('Sensors'[reading_time])
 		dataType: int64
-		lineageTag: a9099f50-6608-458b-a39e-2132c318223a
+		lineageTag: 2c8e761d-930b-4334-90b1-df3793eeefb9
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Sensors-737d1aa2-3fa4-471f-925a-61434d68309c' = m
+	partition 'Sensors-a6b9b397-239f-401e-8e9e-8f2da694c961' = m
 		mode: import
 		source =
 				let
