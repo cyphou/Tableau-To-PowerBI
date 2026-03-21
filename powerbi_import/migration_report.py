@@ -224,7 +224,7 @@ class MigrationReport:
 
             if uf_type == 'calculated_security' and ismemberof_groups:
                 groups = ', '.join(ismemberof_groups)
-                self.add_item('rls_role', name, self.APPROXIMATE,
+                self.add_item('rls_role', name, self.EXACT,
                               note=f'ISMEMBEROF → RLS role (assign Azure AD group members: {groups})')
             elif uf_type == 'calculated_security':
                 funcs = ', '.join(uf.get('functions_used', []))
@@ -338,8 +338,11 @@ class MigrationReport:
         skipped = by_status.get(self.SKIPPED, 0)
 
         # Fidelity score: exact=100%, approximate=50%, rest=0%
-        if total > 0:
-            fidelity = round((exact * 100 + approx * 50) / total, 1)
+        # Exclude skipped items from denominator — skipped means no conversion
+        # was attempted, not a conversion failure
+        scored = total - skipped
+        if scored > 0:
+            fidelity = round((exact * 100 + approx * 50) / scored, 1)
         else:
             fidelity = 100.0
 
@@ -391,8 +394,10 @@ class MigrationReport:
             total = counts.get('total', 0)
             exact = counts.get(self.EXACT, 0)
             approx = counts.get(self.APPROXIMATE, 0)
-            if total > 0:
-                fidelity = round((exact * 100 + approx * 50) / total, 1)
+            cat_skipped = counts.get(self.SKIPPED, 0)
+            scored = total - cat_skipped
+            if scored > 0:
+                fidelity = round((exact * 100 + approx * 50) / scored, 1)
             else:
                 fidelity = 100.0
             categories[cat] = {
@@ -401,7 +406,7 @@ class MigrationReport:
                 'approximate': approx,
                 'placeholder': counts.get(self.PLACEHOLDER, 0),
                 'unsupported': counts.get(self.UNSUPPORTED, 0),
-                'skipped': counts.get(self.SKIPPED, 0),
+                'skipped': cat_skipped,
                 'fidelity_pct': fidelity,
             }
 

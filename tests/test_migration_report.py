@@ -203,7 +203,7 @@ class TestBulkMethods(unittest.TestCase):
         self.assertEqual(r.items[0]['category'], 'rls_role')
         self.assertEqual(r.items[0]['status'], 'exact')
 
-    def test_add_user_filters_ismemberof_approximate(self):
+    def test_add_user_filters_ismemberof_exact(self):
         r = MigrationReport("T")
         r.add_user_filters([{
             'name': 'Manager Access',
@@ -212,7 +212,7 @@ class TestBulkMethods(unittest.TestCase):
             'functions_used': ['ISMEMBEROF']
         }])
         self.assertEqual(r.items[0]['category'], 'rls_role')
-        self.assertEqual(r.items[0]['status'], 'approximate')
+        self.assertEqual(r.items[0]['status'], 'exact')
         self.assertIn('Managers', r.items[0]['note'])
 
     def test_add_user_filters_username_exact(self):

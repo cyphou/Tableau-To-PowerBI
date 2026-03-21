@@ -389,7 +389,12 @@ def run_migration_report(report_name, output_dir=None):
         # Print summary
         report.print_summary()
 
-        return report.get_summary()
+        summary = report.get_summary()
+        # Include weighted completeness score — more accurate than flat average
+        completeness = report.get_completeness_score()
+        summary['overall_score'] = completeness['overall_score']
+        summary['grade'] = completeness['grade']
+        return summary
 
     except Exception as e:
         logger.warning(f"Migration report generation failed: {e}", exc_info=True)
@@ -805,7 +810,7 @@ def _run_batch_config(args):
         results[basename] = {
             'success': all_ok,
             'stats': _stats.to_dict(),
-            'fidelity': report_summary.get('fidelity_score') if report_summary else None,
+            'fidelity': report_summary.get('overall_score', report_summary.get('fidelity_score')) if report_summary else None,
             'metadata_path': os.path.join(dashboard_dir, basename, 'migration_metadata.json'),
         }
 
@@ -892,7 +897,7 @@ def _migrate_single_workbook(tableau_file, basename, workbook_output_dir, displa
     return {
         'success': all_ok,
         'stats': _stats.to_dict(),
-        'fidelity': report_summary.get('fidelity_score') if report_summary else None,
+        'fidelity': report_summary.get('overall_score', report_summary.get('fidelity_score')) if report_summary else None,
         'report_name': basename,
         'output_dir': workbook_output_dir,
         'metadata_path': os.path.join(workbook_output_dir, basename, 'migration_metadata.json'),
