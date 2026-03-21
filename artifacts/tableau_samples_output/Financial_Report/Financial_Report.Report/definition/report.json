@@ -1,0 +1,123 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/2.0.0/schema.json",
+  "themeCollection": {
+    "baseTheme": {
+      "name": "CY24SU06",
+      "reportVersionAtImport": "5.55",
+      "type": "SharedResources"
+    }
+  },
+  "resourcePackages": [
+    {
+      "name": "SharedResources",
+      "type": "SharedResources",
+      "items": [
+        {
+          "name": "CY24SU06",
+          "path": "BaseThemes/CY24SU06.json",
+          "type": "BaseTheme"
+        }
+      ]
+    }
+  ],
+  "settings": {
+    "hideVisualContainerHeader": true,
+    "useStylableVisualContainerHeader": true,
+    "exportDataMode": "None",
+    "defaultDrillFilterOtherVisuals": true,
+    "allowChangeFilterTypes": true,
+    "useEnhancedTooltips": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "Filter_850aeb80ed0c",
+        "type": "Advanced",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "transactions"
+              }
+            },
+            "Property": "federated.1.sum:amount:qk"
+          }
+        },
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "t",
+              "Entity": "transactions",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "Comparison": {
+                  "ComparisonKind": 2,
+                  "Left": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Source": "t"
+                        }
+                      },
+                      "Property": "federated.1.sum:amount:qk"
+                    }
+                  },
+                  "Right": {
+                    "Literal": {
+                      "Value": "''"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "Condition": {
+                "Comparison": {
+                  "ComparisonKind": 3,
+                  "Left": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Source": "t"
+                        }
+                      },
+                      "Property": "federated.1.sum:amount:qk"
+                    }
+                  },
+                  "Right": {
+                    "Literal": {
+                      "Value": "'10'"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "bookmarks": [
+    {
+      "name": "Bookmark_7111605d138a",
+      "displayName": "",
+      "explorationState": {
+        "version": "1.0",
+        "activeSection": ""
+      }
+    },
+    {
+      "name": "Bookmark_777c325e6bca",
+      "displayName": "",
+      "explorationState": {
+        "version": "1.0",
+        "activeSection": ""
+      }
+    }
+  ]
+}

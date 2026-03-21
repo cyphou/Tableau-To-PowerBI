@@ -1,0 +1,29 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation PBI_QueryOrder = ["fact_sales","dim_date","dim_customer","dim_product","Target Margin %","Top N Items"]
+
+ref table fact_sales
+ref table dim_date
+ref table dim_customer
+ref table dim_product
+ref table 'Target Margin %'
+ref table 'Top N Items'
+
+ref relationship 10eaeb73-e840-4000-bac9-ec16ddbd2605
+ref relationship 2fec54d3-236e-414b-8d37-0509adcc6a14
+ref relationship e6634cad-320d-41e7-a838-1a902776e8f1
+
+ref expression DataFolder
+
+ref role 'Territory Access'
+ref role 'Is My Account'
+ref role 'Regional Managers'
+
+ref perspective 'Full Model'
+

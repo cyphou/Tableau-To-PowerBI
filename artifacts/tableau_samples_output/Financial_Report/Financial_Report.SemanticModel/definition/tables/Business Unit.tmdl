@@ -1,0 +1,20 @@
+table 'Business Unit'
+	lineageTag: 4af5c0e8-b9eb-405a-822e-7dbfed4c88b5
+
+	measure 'Business Unit' = SELECTEDVALUE('Business Unit'[Value], "All")
+		lineageTag: d688a10b-94c9-4d9b-8ee4-cd6eeebb35c8
+
+	column Value
+		dataType: string
+		lineageTag: bf693fbc-aa69-428a-8015-767803be48df
+		summarizeBy: none
+		sourceColumn: Value
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Business Unit-bf4585b4-e3a6-4394-8758-d300e0642963' = calculated
+		mode: import
+		source = DATATABLE("Value", STRING, {{"All"}, {"North America"}, {"Europe"}, {"Asia Pacific"}})
+
+	annotation PBI_ResultType = Table
+

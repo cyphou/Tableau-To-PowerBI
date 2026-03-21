@@ -1,0 +1,36 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
+  "name": "5a6e70c2339640418b8a",
+  "position": {
+    "x": 0,
+    "y": 873,
+    "z": 5000,
+    "height": 40,
+    "width": 1280,
+    "tabOrder": 5000
+  },
+  "visual": {
+    "visualType": "textbox",
+    "objects": {
+      "general": [
+        {
+          "properties": {
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": "Source : Base de données PostgreSQL — Données mises à jour quotidiennement",
+                    "textStyle": {
+                      "color": "#888888",
+                      "fontSize": "9.0pt"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

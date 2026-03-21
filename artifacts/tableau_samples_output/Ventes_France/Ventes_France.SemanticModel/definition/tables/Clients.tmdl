@@ -1,0 +1,86 @@
+table Clients
+	lineageTag: 2370cf1d-b0ba-4168-b55f-3b57906130ac
+
+	column client_id
+		dataType: int64
+		lineageTag: bdb3743a-f50e-4b4b-ae0e-d284644acb26
+		summarizeBy: sum
+		sourceColumn: client_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column nom_client
+		dataType: string
+		lineageTag: e67d1818-4903-4532-9798-1d2070d5217c
+		summarizeBy: none
+		sourceColumn: nom_client
+
+		annotation SummarizationSetBy = Automatic
+
+	column prenom_client
+		dataType: string
+		lineageTag: ca99e0f4-3658-4faf-95c1-09cd260dd8dd
+		summarizeBy: none
+		sourceColumn: prenom_client
+
+		annotation SummarizationSetBy = Automatic
+
+	column email
+		dataType: string
+		lineageTag: e01e6546-3b21-4afb-a7b4-0a81e9358b78
+		summarizeBy: none
+		sourceColumn: email
+
+		annotation SummarizationSetBy = Automatic
+
+	column segment
+		dataType: string
+		lineageTag: 9fc0964b-a52e-421d-8196-7daafdbb5c4f
+		summarizeBy: none
+		sourceColumn: segment
+
+		annotation SummarizationSetBy = Automatic
+
+	column type_client
+		dataType: string
+		lineageTag: 6f556177-ac2d-441c-bbf7-25ce6b5a6262
+		summarizeBy: none
+		sourceColumn: type_client
+
+		annotation SummarizationSetBy = Automatic
+
+	column date_inscription
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: d6cc9786-e269-4201-b3e8-092a6428f7ad
+		summarizeBy: none
+		sourceColumn: date_inscription
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Clients-28e59aa7-e4d0-4a38-9045-c86fa570768d' = m
+		mode: import
+		source =
+				let
+				    // Source PostgreSQL
+				    Source = try
+				
+				        let
+				
+				            _src = PostgreSQL.Database("db.entreprise.fr:5432", "ventes_db"),
+				
+				            _nav = _src{[Schema="public", Item="Clients"]}[Data]
+				
+				        in _nav
+				
+				    otherwise
+				
+				        #table({"client_id", "nom_client", "prenom_client", "email", "segment", "type_client", "date_inscription"}, {}),
+				    #"Renamed Columns" = Table.RenameColumns(Source, {{"client_id", "ID Client"}, {"nom_client", "Nom du Client"}, {"prenom_client", "Prénom du Client"}, {"email", "Email"}, {"segment", "Segment"}, {"type_client", "Type de Client"}, {"date_inscription", "Date d'Inscription"}}),
+				    Result = #"Renamed Columns"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+

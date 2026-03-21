@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Report",
+    "displayName": "Ventes_France"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "2347f5fb-f4d8-4b25-92b9-64977060ddae"
+  }
+}

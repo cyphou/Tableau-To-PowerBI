@@ -1,0 +1,128 @@
+table dim_date
+	lineageTag: f6131baa-bc91-49b5-9bd7-3272ed142d74
+
+	column date_key
+		dataType: int64
+		lineageTag: 0118debc-820e-4ed6-a89e-3ca98a326f9f
+		summarizeBy: sum
+		sourceColumn: date_key
+
+		annotation SummarizationSetBy = Automatic
+
+	column full_date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 49193615-48ff-4d4a-8053-429a90c86ce0
+		summarizeBy: none
+		sourceColumn: full_date
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column year
+		dataType: int64
+		lineageTag: f25bcbc5-bb01-4cb1-8190-8db40bf2c42b
+		summarizeBy: sum
+		sourceColumn: year
+
+		annotation SummarizationSetBy = Automatic
+
+	column quarter
+		dataType: int64
+		lineageTag: e68f7be0-2ee5-4f9d-90cd-e99fccc1b0be
+		summarizeBy: sum
+		sourceColumn: quarter
+
+		annotation SummarizationSetBy = Automatic
+
+	column month_num
+		dataType: int64
+		lineageTag: efdbd4fb-1830-4d41-93bc-35cc156a313c
+		summarizeBy: sum
+		sourceColumn: month_num
+
+		annotation SummarizationSetBy = Automatic
+
+	column month_name
+		dataType: string
+		lineageTag: 2322b90e-5420-473d-9a7c-5aeb28b2b723
+		summarizeBy: none
+		sourceColumn: month_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column week_num
+		dataType: int64
+		lineageTag: 83ef0029-be7b-4da3-82a6-1233da0978e1
+		summarizeBy: sum
+		sourceColumn: week_num
+
+		annotation SummarizationSetBy = Automatic
+
+	column day_name
+		dataType: string
+		lineageTag: 82282e35-16de-48e5-b1b0-924bd6181b29
+		summarizeBy: none
+		sourceColumn: day_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column is_weekend
+		dataType: boolean
+		lineageTag: 28642e5e-f5ae-45a0-8522-f7a08d270b81
+		summarizeBy: none
+		sourceColumn: is_weekend
+
+		annotation SummarizationSetBy = Automatic
+
+	column is_holiday
+		dataType: boolean
+		lineageTag: 7421657f-7c7e-4c6a-adad-a5b4dddfc727
+		summarizeBy: none
+		sourceColumn: is_holiday
+
+		annotation SummarizationSetBy = Automatic
+
+	column fiscal_quarter
+		dataType: string
+		lineageTag: 88bd968c-5288-429d-aed2-8275900c2a6f
+		summarizeBy: none
+		sourceColumn: fiscal_quarter
+
+		annotation SummarizationSetBy = Automatic
+
+	column fiscal_year
+		dataType: int64
+		lineageTag: d758adc1-1942-4398-9603-7c2ed4045bdf
+		summarizeBy: sum
+		sourceColumn: fiscal_year
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'dim_date-cb5edd00-236f-46bf-a2a8-f098b4ee6da1' = m
+		mode: import
+		source =
+				let
+				    // Source Snowflake: analytics.snowflakecomputing.com
+				    Source = try
+				
+				        let
+				
+				            _src = Snowflake.Databases("analytics.snowflakecomputing.com", "ANALYTICS_WH"),
+				
+				            _nav = _src{[Name="ENTERPRISE_DW"]}[Data]
+				
+				        in _nav
+				
+				    otherwise
+				
+				        #table({"date_key", "full_date", "year", "quarter", "month_num", "month_name", "week_num", "day_name", "is_weekend", "is_holiday", "fiscal_quarter", "fiscal_year"}, {}),
+				    #"SALES" = Source{[Name="SALES"]}[Data],
+				    #"dim_date Table" = #"SALES"{[Name="dim_date"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(#"dim_date Table", {{"full_date", "Full Date"}, {"year", "Year"}, {"quarter", "Quarter"}, {"month_num", "Month"}, {"month_name", "Month Name"}, {"week_num", "Week"}, {"day_name", "Day Name"}, {"is_weekend", "Weekend?"}, {"is_holiday", "Holiday?"}, {"fiscal_quarter", "Fiscal Quarter"}, {"fiscal_year", "Fiscal Year"}}),
+				    Result = #"Renamed Columns"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+

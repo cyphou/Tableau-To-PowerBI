@@ -1,18 +1,18 @@
 table 'Orders$'
-	lineageTag: 2bbc2fe8-f6c6-47af-922f-c760aec9237a
+	lineageTag: bdd569a5-705b-41f3-b000-49ff04591c15
 
 	measure 'Profit Ratio' = SUM('Orders$'[Profit])/SUM('Orders$'[Sales])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 11c0545c-6b56-4381-9717-c1164ad10f12
+		lineageTag: b1c80f36-ff43-4e99-9c57-f77e6f2288f8
 
 	measure '[Number of Records]' = 1
 		displayFolder: Measures
-		lineageTag: a7cdd48e-5f07-4ec5-82c9-6179308e4465
+		lineageTag: 5b44d826-628d-4f31-aa6e-d0317a17148b
 
 	column 'Row ID'
 		dataType: int64
-		lineageTag: 9cdf11b0-0263-454e-87ca-d5b33b517335
+		lineageTag: aedaf677-a8ce-445f-b78b-8498403d336b
 		summarizeBy: sum
 		sourceColumn: 'Row ID'
 
@@ -20,7 +20,7 @@ table 'Orders$'
 
 	column 'Order ID'
 		dataType: string
-		lineageTag: 05d07833-9bbd-4e03-bfdb-b631511e7b55
+		lineageTag: 9947acd7-ae39-44a7-b9a8-16320922e06e
 		summarizeBy: none
 		sourceColumn: 'Order ID'
 
@@ -29,7 +29,7 @@ table 'Orders$'
 	column 'Order Date'
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 25f2d8ce-4568-40a2-be99-334aef3526dc
+		lineageTag: 0a3b19f5-1c98-4e3d-8c61-feeea3032e02
 		summarizeBy: none
 		sourceColumn: 'Order Date'
 		dataCategory: DateTime
@@ -39,7 +39,7 @@ table 'Orders$'
 	column 'Ship Date'
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 1fec05fb-42bc-4f69-8ebf-88eb1fef4484
+		lineageTag: a9f21047-5d6d-49f4-af7d-35874ffde68d
 		summarizeBy: none
 		sourceColumn: 'Ship Date'
 		dataCategory: DateTime
@@ -48,7 +48,7 @@ table 'Orders$'
 
 	column 'Ship Mode'
 		dataType: string
-		lineageTag: b37f7cb6-c696-40ec-8feb-fbab84d6ae70
+		lineageTag: dafb33b6-2a61-4310-a9a9-b195a5409745
 		summarizeBy: none
 		sourceColumn: 'Ship Mode'
 
@@ -56,7 +56,7 @@ table 'Orders$'
 
 	column 'Customer ID'
 		dataType: string
-		lineageTag: 3416429f-7a40-4624-89d0-fbe873b46f33
+		lineageTag: 341be13c-73b2-4a3d-a079-fedfe47df384
 		summarizeBy: none
 		sourceColumn: 'Customer ID'
 
@@ -64,7 +64,7 @@ table 'Orders$'
 
 	column 'Customer Name'
 		dataType: string
-		lineageTag: b94743fc-5d88-4703-b537-c296badbee85
+		lineageTag: a070f1b5-5887-4c00-aa01-eee4b0e17a49
 		summarizeBy: none
 		sourceColumn: 'Customer Name'
 
@@ -72,7 +72,7 @@ table 'Orders$'
 
 	column Segment
 		dataType: string
-		lineageTag: 7a8a32ff-47f2-47a0-bfbb-9e0f24ffd525
+		lineageTag: 2aae14b3-db58-49e7-9d7c-a6e48aeea2be
 		summarizeBy: none
 		sourceColumn: Segment
 
@@ -80,7 +80,7 @@ table 'Orders$'
 
 	column 'Country/Region'
 		dataType: string
-		lineageTag: 3f863c70-ecb2-4d5e-9a7c-1396f97c20fb
+		lineageTag: acb25203-1fb2-408b-8a13-4a931239091e
 		summarizeBy: none
 		sourceColumn: 'Country/Region'
 		dataCategory: StateOrProvince
@@ -89,7 +89,7 @@ table 'Orders$'
 
 	column City
 		dataType: string
-		lineageTag: ef802d9a-ff92-45a0-bc5b-8ff610b6d127
+		lineageTag: ec95343c-334c-4cf7-a214-ee031fb41bc0
 		summarizeBy: none
 		sourceColumn: City
 		dataCategory: City
@@ -98,7 +98,7 @@ table 'Orders$'
 
 	column State
 		dataType: string
-		lineageTag: fd9da464-bf5d-4cb0-a8a6-a60f95aaeb86
+		lineageTag: e97aed93-ec14-4be0-9eac-94eca3b4503f
 		summarizeBy: none
 		sourceColumn: State
 		dataCategory: StateOrProvince
@@ -107,7 +107,7 @@ table 'Orders$'
 
 	column 'Postal Code'
 		dataType: int64
-		lineageTag: f0b4cb3c-5146-43c2-acbe-403b162f351a
+		lineageTag: 7f9ac14f-03c3-4df0-ba1d-608b142aa591
 		summarizeBy: sum
 		sourceColumn: 'Postal Code'
 		dataCategory: PostalCode
@@ -116,7 +116,7 @@ table 'Orders$'
 
 	column Region
 		dataType: string
-		lineageTag: 56b0a46c-173a-45b3-9456-64faeb39dfd5
+		lineageTag: 05146b7c-fef9-462d-a43e-ce000bb1abe9
 		summarizeBy: none
 		sourceColumn: Region
 		dataCategory: StateOrProvince
@@ -125,7 +125,7 @@ table 'Orders$'
 
 	column 'Product ID'
 		dataType: string
-		lineageTag: 9464ff44-be14-4148-ab67-7e412747e287
+		lineageTag: 4473c8d9-c160-47c6-aea1-71a903e82305
 		summarizeBy: none
 		sourceColumn: 'Product ID'
 
@@ -133,7 +133,7 @@ table 'Orders$'
 
 	column Category
 		dataType: string
-		lineageTag: b7e600d3-b98a-4d17-82db-7072b28e8aa8
+		lineageTag: bb76e7fa-d5a4-47a5-882c-6e259eb200d2
 		summarizeBy: none
 		sourceColumn: Category
 
@@ -141,7 +141,7 @@ table 'Orders$'
 
 	column 'Sub-Category'
 		dataType: string
-		lineageTag: 2c4264c1-9928-413e-acfd-c956d874fe5b
+		lineageTag: 1c6a39cc-1ed7-4c01-a392-3c3380a15082
 		summarizeBy: none
 		sourceColumn: 'Sub-Category'
 
@@ -149,7 +149,7 @@ table 'Orders$'
 
 	column 'Product Name'
 		dataType: string
-		lineageTag: f184947e-a9e4-45f4-8409-c37ff47aa23b
+		lineageTag: dc3ac546-9d8e-4cc7-9597-cb6ed5937e59
 		summarizeBy: none
 		sourceColumn: 'Product Name'
 
@@ -158,7 +158,7 @@ table 'Orders$'
 	column Sales
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 7cc0f777-790e-41b8-bc64-b72285033da8
+		lineageTag: fe6392a3-030d-45e8-b617-2dd1690743a9
 		summarizeBy: sum
 		sourceColumn: Sales
 
@@ -166,7 +166,7 @@ table 'Orders$'
 
 	column Quantity
 		dataType: int64
-		lineageTag: a53fee82-9c34-4738-8f21-23025044074a
+		lineageTag: 4a14c04c-bab1-4ac1-aa08-f4f290e5e4ea
 		summarizeBy: sum
 		sourceColumn: Quantity
 
@@ -175,7 +175,7 @@ table 'Orders$'
 	column Discount
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 9effb886-bf71-4c48-a6c0-f0be59e55938
+		lineageTag: 5d102081-c7f7-4c23-b2d4-6a2f61cc005e
 		summarizeBy: sum
 		sourceColumn: Discount
 
@@ -184,7 +184,7 @@ table 'Orders$'
 	column Profit
 		dataType: double
 		formatString: #,0.00
-		lineageTag: b91e5e0a-6e62-4a18-898b-a2c70886972d
+		lineageTag: aafd91f5-28fa-45cd-806f-97bde6a827ae
 		summarizeBy: sum
 		sourceColumn: Profit
 
@@ -192,7 +192,7 @@ table 'Orders$'
 
 	column 'Profit (bin)'
 		dataType: int64
-		lineageTag: e7431991-5c8e-438a-a175-bfb4676e5fc9
+		lineageTag: 4a25d8ac-b5c8-4323-97c7-630d172f6b53
 		summarizeBy: none
 		sourceColumn: 'Profit (bin)'
 
@@ -200,7 +200,7 @@ table 'Orders$'
 
 	column 'Sales (bin)'
 		dataType: int64
-		lineageTag: e9bdc69c-8931-400f-9d96-9c22d00fa22b
+		lineageTag: 65629226-4e94-4d94-a830-7ca69fc3b626
 		summarizeBy: none
 		sourceColumn: 'Sales (bin)'
 
@@ -208,7 +208,7 @@ table 'Orders$'
 
 	column 'Top Customers by Profit'
 		dataType: string
-		lineageTag: c2e82c9e-7464-4ad9-8e58-c4d9b2177350
+		lineageTag: 6654a5dd-17b8-41fe-8ee5-45ce952a1fe4
 		summarizeBy: none
 		sourceColumn: 'Top Customers by Profit'
 		displayFolder: Groups
@@ -217,7 +217,7 @@ table 'Orders$'
 
 	column 'Product Name (group)'
 		dataType: string
-		lineageTag: 17eee4e8-dac1-405b-8569-92dab28f3190
+		lineageTag: a688ada9-9005-4c61-a3c4-a463c1c93d66
 		summarizeBy: none
 		sourceColumn: 'Product Name (group)'
 		displayFolder: Groups
@@ -226,27 +226,32 @@ table 'Orders$'
 
 	column Manufacturer
 		dataType: double
-		lineageTag: 2301a008-3d81-413c-99f9-941f6b82b5b1
+		lineageTag: a40700fe-c883-4cc4-8561-7d86c693e101
 		summarizeBy: none
 		sourceColumn: Manufacturer
 		displayFolder: Bins
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Orders$-b8075353-e8f8-4afd-a8a8-b78b92a85f18' = m
+	partition 'Orders$-796374df-e8b0-4572-87ed-0402021e0a48' = m
 		mode: import
 		source =
 				let
 				    // Source Excel: C:/Users/91740/Documents/My Tableau Repository/Datasources/2019.4/en_US-US/Sample - Superstore.xls
 				    Source = try
 				
-				        Excel.Workbook(File.Contents(DataFolder & "\C:\Users\91740\Documents\My Tableau Repository\Datasources\2019.4\en_US-US\Sample - Superstore.xls"), null, true)
+				        let
+				
+				            _src = Excel.Workbook(File.Contents(DataFolder & "\C:\Users\91740\Documents\My Tableau Repository\Datasources\2019.4\en_US-US\Sample - Superstore.xls"), null, true),
+				
+				            _nav = _src{[Item="Orders$",Kind="Sheet"]}[Data]
+				
+				        in _nav
 				
 				    otherwise
 				
 				        #table({"Row ID", "Order ID", "Order Date", "Ship Date", "Ship Mode", "Customer ID", "Customer Name", "Segment", "Country/Region", "City", "State", "Postal Code", "Region", "Product ID", "Category", "Sub-Category", "Product Name", "Sales", "Quantity", "Discount", "Profit"}, {}),
-				    #"Orders$ Sheet" = Source{[Item="Orders$",Kind="Sheet"]}[Data],
-				    #"Promoted Headers" = Table.PromoteHeaders(#"Orders$ Sheet", [PromoteAllScalars=true]),
+				    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
 				    #"Changed Types" = Table.TransformColumnTypes(#"Promoted Headers", {
 				        {"Row ID", Int64.Type},
 				        {"Order ID", type text},

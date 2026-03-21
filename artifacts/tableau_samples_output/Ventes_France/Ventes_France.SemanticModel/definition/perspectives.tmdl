@@ -1,0 +1,7 @@
+perspective 'Full Model'
+	perspectiveTable Commandes
+	perspectiveTable Produits
+	perspectiveTable Clients
+	perspectiveTable Calendar
+	perspectiveTable 'Objectif Marge'
+	perspectiveTable 'Top N Produits'

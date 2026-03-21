@@ -1,0 +1,84 @@
+{
+  "generated_at": "2026-03-21T06:54:27.261334",
+  "source": "Tableau Migration",
+  "report_name": "Superstore_Sales",
+  "objects_converted": {
+    "worksheets": 3,
+    "dashboards": 1,
+    "datasources": 1,
+    "calculations": 4,
+    "parameters": 0,
+    "filters": 0,
+    "stories": 0,
+    "sets": 0,
+    "groups": 0,
+    "bins": 0,
+    "hierarchies": 0,
+    "user_filters": 0,
+    "actions": 0,
+    "custom_sql": 0
+  },
+  "generated_output": {
+    "pages": 1,
+    "visuals": 3,
+    "theme_applied": false,
+    "theme_detail": {
+      "status": "skipped",
+      "reason": "no dashboard colors detected"
+    }
+  },
+  "tmdl_stats": {
+    "tables": 4,
+    "measures": 7,
+    "columns": 33,
+    "relationships": 2
+  },
+  "visual_type_mappings": {
+    "Sales by Region": "Automatic",
+    "Profit by Category": "Automatic",
+    "Sales Trend": "Automatic"
+  },
+  "visual_details": [
+    {
+      "worksheet": "Sales by Region",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "Region",
+        "Region"
+      ],
+      "measures": [
+        "Calculation_1",
+        "Calculation_1"
+      ],
+      "field_count": 4
+    },
+    {
+      "worksheet": "Profit by Category",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "Category",
+        "Category"
+      ],
+      "measures": [
+        "Calculation_2",
+        "Calculation_2"
+      ],
+      "field_count": 4
+    },
+    {
+      "worksheet": "Sales Trend",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "lineChart",
+      "dimensions": [
+        "Order Date"
+      ],
+      "measures": [
+        "Calculation_1"
+      ],
+      "field_count": 2
+    }
+  ],
+  "approximations": []
+}

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/2.0.0/schema.json",
+  "themeCollection": {
+    "baseTheme": {
+      "name": "CY24SU06",
+      "reportVersionAtImport": "5.55",
+      "type": "SharedResources"
+    }
+  },
+  "resourcePackages": [
+    {
+      "name": "SharedResources",
+      "type": "SharedResources",
+      "items": [
+        {
+          "name": "CY24SU06",
+          "path": "BaseThemes/CY24SU06.json",
+          "type": "BaseTheme"
+        }
+      ]
+    }
+  ],
+  "settings": {
+    "hideVisualContainerHeader": true,
+    "useStylableVisualContainerHeader": true,
+    "exportDataMode": "None",
+    "defaultDrillFilterOtherVisuals": true,
+    "allowChangeFilterTypes": true,
+    "useEnhancedTooltips": true
+  },
+  "bookmarks": [
+    {
+      "name": "Bookmark_b4895bac39b7",
+      "displayName": "",
+      "explorationState": {
+        "version": "1.0"
+      }
+    },
+    {
+      "name": "Bookmark_9a76919c3e51",
+      "displayName": "",
+      "explorationState": {
+        "version": "1.0"
+      }
+    },
+    {
+      "name": "Bookmark_493f981301d2",
+      "displayName": "",
+      "explorationState": {
+        "version": "1.0"
+      }
+    }
+  ]
+}

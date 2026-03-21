@@ -1,0 +1,77 @@
+table Produits
+	lineageTag: f60fcc47-a111-4301-a2f3-28809412f43f
+
+	column produit_id
+		dataType: int64
+		lineageTag: 510c76b5-861e-492d-b4b9-577108b0473c
+		summarizeBy: sum
+		sourceColumn: produit_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column nom_produit
+		dataType: string
+		lineageTag: 33be8ee2-45b9-4d4c-a1da-6df1c9a2ae2c
+		summarizeBy: none
+		sourceColumn: nom_produit
+
+		annotation SummarizationSetBy = Automatic
+
+	column categorie
+		dataType: string
+		lineageTag: 9823e861-572a-4eb6-8b2d-de9f7c2655e4
+		summarizeBy: none
+		sourceColumn: categorie
+
+		annotation SummarizationSetBy = Automatic
+
+	column sous_categorie
+		dataType: string
+		lineageTag: e6ac0584-e7f4-4363-9c4b-d565a69e1740
+		summarizeBy: none
+		sourceColumn: sous_categorie
+
+		annotation SummarizationSetBy = Automatic
+
+	column marque
+		dataType: string
+		lineageTag: b6f3be96-594b-4f66-855a-774a8f067a0f
+		summarizeBy: none
+		sourceColumn: marque
+
+		annotation SummarizationSetBy = Automatic
+
+	column cout_achat
+		dataType: double
+		formatString: #,0.00
+		lineageTag: ca42a948-4ddd-4184-8ce4-f0d0e2a1c82e
+		summarizeBy: sum
+		sourceColumn: cout_achat
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Produits-3074eb30-9595-4a8e-af2f-d9d1fb83af6e' = m
+		mode: import
+		source =
+				let
+				    // Source PostgreSQL
+				    Source = try
+				
+				        let
+				
+				            _src = PostgreSQL.Database("db.entreprise.fr:5432", "ventes_db"),
+				
+				            _nav = _src{[Schema="public", Item="Produits"]}[Data]
+				
+				        in _nav
+				
+				    otherwise
+				
+				        #table({"produit_id", "nom_produit", "categorie", "sous_categorie", "marque", "cout_achat"}, {}),
+				    #"Renamed Columns" = Table.RenameColumns(Source, {{"produit_id", "ID Produit"}, {"nom_produit", "Nom du Produit"}, {"categorie", "Catégorie"}, {"sous_categorie", "Sous-Catégorie"}, {"marque", "Marque"}, {"cout_achat", "Coût d'Achat"}}),
+				    Result = #"Renamed Columns"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+

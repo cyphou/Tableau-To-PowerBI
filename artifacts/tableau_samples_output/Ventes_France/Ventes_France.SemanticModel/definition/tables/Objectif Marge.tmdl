@@ -1,0 +1,20 @@
+table 'Objectif Marge'
+	lineageTag: cf19c837-ffec-435e-b5ed-58c634e5ebf0
+
+	measure 'Objectif Marge' = SELECTEDVALUE('Objectif Marge'[Value], 0.15)
+		lineageTag: aaad1dfd-134d-4298-bb3c-1966884adefe
+
+	column Value
+		dataType: double
+		lineageTag: 2db53477-6fca-4bd1-983e-927f69504ed4
+		summarizeBy: none
+		sourceColumn: Value
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Objectif Marge-3d3b3bd0-4322-449d-a48a-a4248accb001' = calculated
+		mode: import
+		source = GENERATESERIES(0, 0.5, 0.01)
+
+	annotation PBI_ResultType = Table
+

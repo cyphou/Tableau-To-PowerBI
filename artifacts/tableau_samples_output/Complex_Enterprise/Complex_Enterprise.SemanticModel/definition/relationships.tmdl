@@ -1,0 +1,21 @@
+relationship 10eaeb73-e840-4000-bac9-ec16ddbd2605
+	fromColumn: fact_sales.product_key
+	toColumn: dim_product.product_key
+	fromCardinality: many
+	toCardinality: many
+	crossFilteringBehavior: bothDirections
+
+relationship 2fec54d3-236e-414b-8d37-0509adcc6a14
+	fromColumn: fact_sales.customer_key
+	toColumn: dim_customer.customer_key
+	fromCardinality: many
+	toCardinality: many
+	crossFilteringBehavior: bothDirections
+
+relationship e6634cad-320d-41e7-a838-1a902776e8f1
+	fromColumn: fact_sales.date_key
+	toColumn: dim_date.date_key
+	fromCardinality: many
+	toCardinality: many
+	crossFilteringBehavior: bothDirections
+

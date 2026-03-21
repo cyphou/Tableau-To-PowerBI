@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "SemanticModel",
+    "displayName": "Ventes_France"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "8d117b7a-5218-48b1-8598-37ca88633a4f"
+  }
+}

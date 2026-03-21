@@ -1,9 +1,9 @@
 table Extract
-	lineageTag: 33609bd8-d264-4b91-8a61-26b5ade67d81
+	lineageTag: d3faa947-ec6a-4910-817d-aa4a2af3f408
 
 	column 'Row ID'
 		dataType: int64
-		lineageTag: 538cacd5-2921-418e-90d7-0644eecd7ba7
+		lineageTag: 8a57b718-c44d-4893-b039-75f5a9413be8
 		summarizeBy: sum
 		sourceColumn: 'Row ID'
 
@@ -11,7 +11,7 @@ table Extract
 
 	column 'Order ID'
 		dataType: int64
-		lineageTag: d1810dbe-9812-4a46-a7b8-826dfefda383
+		lineageTag: beec75af-95ad-444d-a2bd-dd97dc94c6ac
 		summarizeBy: sum
 		sourceColumn: 'Order ID'
 
@@ -20,7 +20,7 @@ table Extract
 	column 'Order Date'
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: ebba53da-5b2c-4653-a4da-8486980a876f
+		lineageTag: 5f81d88a-230d-41b7-9d97-1d12a756226c
 		summarizeBy: none
 		sourceColumn: 'Order Date'
 		dataCategory: DateTime
@@ -29,7 +29,7 @@ table Extract
 
 	column 'Order Priority'
 		dataType: string
-		lineageTag: a8c8928b-2704-40f0-8fea-c50e05cbf25b
+		lineageTag: 2bc6ee21-9b63-4eef-9a8f-8c3919f8442d
 		summarizeBy: none
 		sourceColumn: 'Order Priority'
 
@@ -37,7 +37,7 @@ table Extract
 
 	column 'Order Quantity'
 		dataType: int64
-		lineageTag: d919a5c8-c136-4db4-85c6-9a1576b2abeb
+		lineageTag: ec38e425-cc60-4e4b-8f46-a2899d50c073
 		summarizeBy: sum
 		sourceColumn: 'Order Quantity'
 
@@ -46,7 +46,7 @@ table Extract
 	column Sales
 		dataType: double
 		formatString: #,0.00
-		lineageTag: ad5e4600-c431-4d96-99b4-2d873b1e3d1a
+		lineageTag: 557e524e-efe0-493b-9f38-f97dcf19c58b
 		summarizeBy: sum
 		sourceColumn: Sales
 
@@ -55,7 +55,7 @@ table Extract
 	column Discount
 		dataType: double
 		formatString: #,0.00
-		lineageTag: d0d37bc7-7ef8-4d6e-8a4e-b814363fc0dd
+		lineageTag: 40e0198b-6865-40ed-919c-db90263b0d06
 		summarizeBy: sum
 		sourceColumn: Discount
 
@@ -63,7 +63,7 @@ table Extract
 
 	column 'Ship Mode'
 		dataType: string
-		lineageTag: 60be1634-c469-4789-96c6-2de5e7cbfc3a
+		lineageTag: 45a67ec3-d74a-42ba-a9ed-2b082c60b117
 		summarizeBy: none
 		sourceColumn: 'Ship Mode'
 
@@ -72,7 +72,7 @@ table Extract
 	column Profit
 		dataType: double
 		formatString: #,0.00
-		lineageTag: b66e7cf7-3475-48e3-8c97-4fb7bbc0ab0b
+		lineageTag: c81ff5ef-2c2a-42cd-baa1-17a87544e79c
 		summarizeBy: sum
 		sourceColumn: Profit
 
@@ -81,7 +81,7 @@ table Extract
 	column 'Unit Price'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: fec6ef91-90e3-4d05-82e6-9c60ece965bd
+		lineageTag: 6b9ea370-0465-4420-b99f-625dee2f8f37
 		summarizeBy: sum
 		sourceColumn: 'Unit Price'
 
@@ -90,7 +90,7 @@ table Extract
 	column 'Shipping Cost'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 222e2c01-40eb-4264-bfb7-569ea65d5aed
+		lineageTag: 0a98765c-35d7-45d2-bf93-d8ebb22e8ca7
 		summarizeBy: sum
 		sourceColumn: 'Shipping Cost'
 
@@ -98,7 +98,7 @@ table Extract
 
 	column 'Customer Name'
 		dataType: string
-		lineageTag: 2b8c884f-6f41-46e3-baae-699a71186bb1
+		lineageTag: d72c99ec-0204-413f-b182-59f708dd1ad5
 		summarizeBy: none
 		sourceColumn: 'Customer Name'
 
@@ -106,7 +106,7 @@ table Extract
 
 	column City
 		dataType: string
-		lineageTag: f19b6e99-8243-43fc-8229-487884dcf2ff
+		lineageTag: 8075bb2d-504d-4264-b78e-d69db97f5114
 		summarizeBy: none
 		sourceColumn: City
 		dataCategory: City
@@ -115,7 +115,7 @@ table Extract
 
 	column 'Zip Code'
 		dataType: string
-		lineageTag: 8c77ed01-20e8-4a57-ac08-b0375286d06e
+		lineageTag: 5a356848-e675-40f6-97f1-76eb2c9727ad
 		summarizeBy: none
 		sourceColumn: 'Zip Code'
 		dataCategory: PostalCode
@@ -124,7 +124,7 @@ table Extract
 
 	column State
 		dataType: string
-		lineageTag: b8f28e8c-fd92-41af-865e-473b97debc05
+		lineageTag: 9888b639-8167-40bd-9d24-621d299bb2f2
 		summarizeBy: none
 		sourceColumn: State
 		dataCategory: StateOrProvince
@@ -133,7 +133,7 @@ table Extract
 
 	column Region
 		dataType: string
-		lineageTag: ffa0e298-7130-4130-a448-eae423c12cb2
+		lineageTag: f9a00530-fa3b-4779-8a04-ede643aeed33
 		summarizeBy: none
 		sourceColumn: Region
 		dataCategory: StateOrProvince
@@ -142,7 +142,7 @@ table Extract
 
 	column 'Customer Segment'
 		dataType: string
-		lineageTag: 70987cd7-9d0d-4edd-bc61-58034c409f8c
+		lineageTag: 4d7de2e7-87c5-4539-8bd3-abff77783fad
 		summarizeBy: none
 		sourceColumn: 'Customer Segment'
 
@@ -150,7 +150,7 @@ table Extract
 
 	column 'Product Category'
 		dataType: string
-		lineageTag: 812f048f-5499-46ac-bdd1-e14801525480
+		lineageTag: bad9393d-d982-47a7-8273-2c191ab5b4fe
 		summarizeBy: none
 		sourceColumn: 'Product Category'
 
@@ -158,7 +158,7 @@ table Extract
 
 	column 'Product Sub-Category'
 		dataType: string
-		lineageTag: d8d8a7ae-52c9-4e34-85ef-4bf333dd6d55
+		lineageTag: 546fd11e-a066-4b30-b5a6-d0c156cefc0d
 		summarizeBy: none
 		sourceColumn: 'Product Sub-Category'
 
@@ -166,7 +166,7 @@ table Extract
 
 	column 'Product Name'
 		dataType: string
-		lineageTag: cb3a251e-95a4-4cb7-9bf8-26ced713b059
+		lineageTag: 10d7a3bb-a413-4f49-8b8b-c25dca21e103
 		summarizeBy: none
 		sourceColumn: 'Product Name'
 
@@ -174,7 +174,7 @@ table Extract
 
 	column 'Product Container'
 		dataType: string
-		lineageTag: abb33822-f0b2-44d3-b154-28197041fd5d
+		lineageTag: 65a6bac0-216a-4ea2-b05c-7d83c28003b8
 		summarizeBy: none
 		sourceColumn: 'Product Container'
 
@@ -183,7 +183,7 @@ table Extract
 	column 'Product Base Margin'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 4a0fd4c2-46c8-444b-8701-7a25742b9b5c
+		lineageTag: 3bffc502-f10d-4b92-bb80-ce31f85d7279
 		summarizeBy: sum
 		sourceColumn: 'Product Base Margin'
 
@@ -192,27 +192,32 @@ table Extract
 	column 'Ship Date'
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: b636e428-7d41-44b8-9e16-3dcffd0eceb8
+		lineageTag: 12c91664-b172-4f1a-b26e-210af17fa50d
 		summarizeBy: none
 		sourceColumn: 'Ship Date'
 		dataCategory: DateTime
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Extract-21836425-4286-4103-9e57-955504917ceb' = m
+	partition 'Extract-601bf212-4bb8-465f-9c06-f2b1269d7937' = m
 		mode: import
 		source =
 				let
 				    // Source Excel: Extract.xlsx
 				    Source = try
 				
-				        Excel.Workbook(File.Contents(DataFolder & "\Extract.xlsx"), null, true)
+				        let
+				
+				            _src = Excel.Workbook(File.Contents(DataFolder & "\Extract.xlsx"), null, true),
+				
+				            _nav = _src{[Item="Extract",Kind="Sheet"]}[Data]
+				
+				        in _nav
 				
 				    otherwise
 				
 				        #table({"Row ID", "Order ID", "Order Date", "Order Priority", "Order Quantity", "Sales", "Discount", "Ship Mode", "Profit", "Unit Price", "Shipping Cost", "Customer Name", "City", "Zip Code", "State", "Region", "Customer Segment", "Product Category", "Product Sub-Category", "Product Name", "Product Container", "Product Base Margin", "Ship Date"}, {}),
-				    #"Extract Sheet" = Source{[Item="Extract",Kind="Sheet"]}[Data],
-				    #"Promoted Headers" = Table.PromoteHeaders(#"Extract Sheet", [PromoteAllScalars=true]),
+				    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
 				    #"Changed Types" = Table.TransformColumnTypes(#"Promoted Headers", {
 				        {"Row ID", Int64.Type},
 				        {"Order ID", Int64.Type},

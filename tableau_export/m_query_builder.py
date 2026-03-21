@@ -1493,6 +1493,10 @@ def wrap_source_with_try_otherwise(m_query, empty_table_columns=None):
     If the data source is unavailable, returns an empty table with the expected schema
     instead of failing with an error.
 
+    When the step immediately after Source is a key-based navigation on Source
+    (e.g. ``Source{[Item="Sheet1",Kind="Sheet"]}[Data]``), the navigation step is
+    absorbed into the try block so the fallback replaces the full chain.
+
     Args:
         m_query: str — Complete M query (let ... in ...)
         empty_table_columns: optional list of column name strings for the fallback table
@@ -1536,7 +1540,47 @@ def wrap_source_with_try_otherwise(m_query, empty_table_columns=None):
         source_lines.append(line)
 
     source_expr = '\n'.join(source_lines).rstrip().rstrip(',')
-    remaining_start = len('\n'.join(source_lines))
+    consumed_lines = len(source_lines)
+
+    # Check if the NEXT step is a key-based navigation on Source.
+    # Pattern: <step_name> = Source{[...]}[Data],
+    # If so, absorb it into the try block so the fallback replaces both.
+    nav_step_name = None
+    if remaining_idx < len(lines):
+        next_stripped = lines[remaining_idx].strip()
+        nav_match = _re.match(
+            r'(#"[^"]+"|[\w]+)\s*=\s*Source\s*\{',
+            next_stripped,
+        )
+        if nav_match:
+            nav_step_name = nav_match.group(1)
+            # Find boundaries of the navigation step (it might span multiple lines)
+            nav_lines = []
+            nav_nesting = 0
+            for nav_idx in range(remaining_idx, len(lines)):
+                for ch in lines[nav_idx]:
+                    if ch in ('(', '[', '{'):
+                        nav_nesting += 1
+                    elif ch in (')', ']', '}'):
+                        nav_nesting -= 1
+                nav_lines.append(lines[nav_idx])
+                if nav_nesting <= 0:
+                    break
+
+            nav_expr = '\n'.join(nav_lines).rstrip().rstrip(',')
+            # Combine Source + navigation into a single let...in expression
+            # so the try wraps the full chain
+            source_expr = (
+                f'let\n'
+                f'{indent}        _src = {source_expr.strip()},\n'
+                f'{indent}        _nav = _src' +
+                nav_expr[nav_expr.index('Source') + len('Source'):].strip() +
+                f'\n{indent}    in _nav'
+            )
+            consumed_lines += len(nav_lines)
+            remaining_idx += len(nav_lines)
+
+    remaining_start = len('\n'.join(lines[:consumed_lines]))
 
     # Build fallback table
     if empty_table_columns:
@@ -1549,10 +1593,17 @@ def wrap_source_with_try_otherwise(m_query, empty_table_columns=None):
     has_more_steps = remaining_idx < len(lines) and lines[remaining_idx].strip() != 'in'
     trailing = ',' if has_more_steps else ''
 
+    # When we absorbed a navigation step, downstream steps reference nav_step_name
+    # instead of Source. Replace those references with Source.
+    after_text = after_assign[remaining_start:]
+    if nav_step_name:
+        # Replace step references like #"Sheet1 Sheet" or TableName with Source
+        after_text = after_text.replace(nav_step_name, 'Source')
+
     # Wrap with try...otherwise
     new_source = f'{indent}{source_assign}try\n{indent}    {source_expr.strip()}\n{indent}otherwise\n{indent}    {fallback}{trailing}'
 
-    return m_query[:match.start()] + new_source + after_assign[remaining_start:]
+    return m_query[:match.start()] + new_source + after_text
 
 
 # ── Hyper data integration ────────────────────────────────────────────────────

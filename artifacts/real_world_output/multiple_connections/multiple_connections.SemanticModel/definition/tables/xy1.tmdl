@@ -1,20 +1,25 @@
 table xy1
-	lineageTag: e684b641-e280-409b-b64d-844fbb8d0e88
+	lineageTag: ccd0220e-8458-40fe-a7c9-f254ba7bdb63
 
-	partition 'xy1-92d49048-5406-4b68-bc62-ed991f21ee95' = m
+	partition 'xy1-a359170e-d82f-49e4-bf17-0e57b263ad96' = m
 		mode: import
 		source =
 				let
 				    // Source SQL Server
 				    Source = try
 				
-				        Sql.Database("mssql2012", "TestV1")
+				        let
+				
+				            _src = Sql.Database("mssql2012", "TestV1"),
+				
+				            _nav = _src{[Schema="dbo", Item="xy1"]}[Data]
+				
+				        in _nav
 				
 				    otherwise
 				
 				        #table({}, {}),
-				    #"xy1 Table" = Source{[Schema="dbo", Item="xy1"]}[Data],
-				    Result = #"xy1 Table"
+				    Result = Source
 				in
 				    Result
 

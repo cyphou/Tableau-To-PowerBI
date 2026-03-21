@@ -1,0 +1,292 @@
+table Commandes
+	lineageTag: 3efa7e76-4139-45f6-9d0a-af045b8a9e34
+
+	measure 'Chiffre d''Affaires Brut' = SUMX('Commandes', 'Commandes'[quantite] * 'Commandes'[prix_unitaire])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: b36bc16c-d6df-495d-b3e7-00d7f7f5238f
+
+	measure 'Chiffre d''Affaires Net' = SUMX('Commandes', IF('Commandes'[statut] <> "Annulée", 'Commandes'[quantite] * 'Commandes'[prix_unitaire] * (1 - 'Commandes'[remise]), 0))
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: ca60878c-ba6a-4826-9cb4-f9791336ebf8
+
+	measure 'Marge Brute' = SUMX('Commandes', IF('Commandes'[statut] <> "Annulée", ('Commandes'[quantite] * 'Commandes'[prix_unitaire] * (1 - 'Commandes'[remise])) - ('Commandes'[quantite] * 'Produits'[cout_achat]) - 'Commandes'[frais_port], 0))
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 60d60397-f6c0-47d0-9830-7cc74321949c
+
+	measure 'Taux de Marge (%)' = IF(ISBLANK([Marge Brute] / [Chiffre d"Affaires Net]), 0, [Marge Brute] / [Chiffre d"Affaires Net])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 5fe2fcca-1729-47e3-b313-74552a94e2ba
+
+	measure 'Montant Remises' = SUMX('Commandes', 'Commandes'[quantite] * 'Commandes'[prix_unitaire] * 'Commandes'[remise])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 92f2e744-201e-40da-8a64-3508944aa7d9
+
+	measure 'Nombre de Commandes' = DISTINCTCOUNT('Commandes'[commande_id])
+		displayFolder: Measures
+		lineageTag: 6c806a72-f0b0-444a-a3df-3fc3a2931e7b
+
+	measure 'Clients Uniques' = DISTINCTCOUNT('Commandes'[client_id])
+		displayFolder: Measures
+		lineageTag: c04f0323-145a-4706-9ff0-597f20b4b6aa
+
+	measure 'Panier Moyen' = [Chiffre d'Affaires Net] / [Nombre de Commandes]
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: a61b5fcd-5717-420f-9d29-1db97edb6d50
+
+	measure 'CA par Client' = CALCULATE(SUMX('Commandes', 'Commandes'[quantite] * 'Commandes'[prix_unitaire]), ALLEXCEPT('Commandes', 'Commandes'[client_id]))
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 38571775-9874-4ad4-aa52-0ddeec47859f
+
+	measure 'CA Régional par Catégorie' = CALCULATE(SUMX('Commandes', 'Commandes'[quantite] * 'Commandes'[prix_unitaire]), REMOVEFILTERS('Commandes'[region]), REMOVEFILTERS('Produits'[categorie]))
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: b86a5bc5-9e87-4f54-9348-4f9c3faddb9d
+
+	measure 'CA hors Produit' = CALCULATE(SUMX('Commandes', 'Commandes'[quantite] * 'Commandes'[prix_unitaire]), REMOVEFILTERS('Produits'[nom_produit]))
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: fe5ead34-3ce5-47d7-9955-ca94366955f4
+
+	measure 'Classification Client' = IF([CA par Client] > 50000, "Platine", IF([CA par Client] > 20000, "||", IF([CA par Client] > 5000, "Argent", "Bronze")))
+		displayFolder: Dimensions
+		lineageTag: cea37539-b017-47d8-bced-895ac177f6eb
+
+	measure 'Cumul Mobile CA' = CALCULATE(SUMX('Commandes', 'Commandes'[quantite] * 'Commandes'[prix_unitaire]), FILTER(ALLSELECTED('Commandes'), TRUE())) /* RUNNING_SUM: converted to cumulative — verify window scope */
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 98f6d4f0-6815-46ac-9068-50df098b0e36
+
+	measure 'Moyenne Mobile 3M' = CALCULATE(SUMX('Commandes', 'Commandes'[quantite] * 'Commandes'[prix_unitaire]), WINDOW(-2, REL, 0, REL, ORDERBY('Commandes'[commande_id], ASC)), ALL('Commandes')) /* WINDOW.AVG: frame 'Commandes'[-2,0] */
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 67eb8012-b81f-4592-9fad-bc2691ce93c6
+
+	measure 'Classement CA' = RANKX(ALL('Commandes'), SUMX('Commandes', 'Commandes'[quantite] * 'Commandes'[prix_unitaire]))
+		displayFolder: Measures
+		lineageTag: 42daf730-ca20-4166-b3d6-02c13e5f7859
+
+	measure 'CA Année en Cours' = CALCULATE(SUMX('Commandes', IF(YEAR('Commandes'[date_commande]) = YEAR(TODAY()), 'Commandes'[quantite] * 'Commandes'[prix_unitaire], 0)), ALL('Commandes'))
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: e7ae6006-d106-41f1-b764-98c6d8fd6755
+
+	measure 'Période d''Analyse' = "Année"
+		lineageTag: 433fd45a-6710-419b-afc8-ba9de77c93dc
+
+	column commande_id
+		dataType: int64
+		lineageTag: ac0eeef7-bbb3-4d08-8800-4d784e311afc
+		summarizeBy: sum
+		sourceColumn: commande_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column date_commande
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: c2b5067d-4cbb-4e7d-96d8-77b60cf5f63b
+		summarizeBy: none
+		sourceColumn: date_commande
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column date_livraison
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 39cbb0f4-641f-4ede-a669-cb35bea6f778
+		summarizeBy: none
+		sourceColumn: date_livraison
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column client_id
+		dataType: int64
+		lineageTag: 63edaa64-0073-46f8-9b1a-e3816ccaf361
+		summarizeBy: sum
+		sourceColumn: client_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column produit_id
+		dataType: int64
+		lineageTag: 436a955a-0ab5-45a8-9e65-998da48452f7
+		summarizeBy: sum
+		sourceColumn: produit_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column region
+		dataType: string
+		lineageTag: e6409967-540c-434f-9d2d-bb08853dc5ff
+		summarizeBy: none
+		sourceColumn: region
+		dataCategory: StateOrProvince
+
+		annotation SummarizationSetBy = Automatic
+
+	column departement
+		dataType: string
+		lineageTag: 8aed0527-34ab-46ef-949d-11c6eddeea63
+		summarizeBy: none
+		sourceColumn: departement
+
+		annotation SummarizationSetBy = Automatic
+
+	column ville
+		dataType: string
+		lineageTag: 99dbe8ed-367c-401b-8c13-e0edb3207c6e
+		summarizeBy: none
+		sourceColumn: ville
+		dataCategory: City
+
+		annotation SummarizationSetBy = Automatic
+
+	column code_postal
+		dataType: string
+		lineageTag: 02e82985-b454-4b8d-a962-8999812aff19
+		summarizeBy: none
+		sourceColumn: code_postal
+		dataCategory: PostalCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column quantite
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 7c7d9ef3-8fdf-4c0a-9975-f5c64ebce539
+		summarizeBy: sum
+		sourceColumn: quantite
+
+		annotation SummarizationSetBy = Automatic
+
+	column prix_unitaire
+		dataType: double
+		formatString: #,0.00
+		lineageTag: a648c5e0-9c92-4887-a735-e00a74d96b78
+		summarizeBy: sum
+		sourceColumn: prix_unitaire
+
+		annotation SummarizationSetBy = Automatic
+
+	column remise
+		dataType: double
+		formatString: #,0.00
+		lineageTag: d5e12744-5ead-4408-bc88-fc5dde5a8401
+		summarizeBy: sum
+		sourceColumn: remise
+
+		annotation SummarizationSetBy = Automatic
+
+	column frais_port
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 93c27e05-f763-4fe0-a827-e7760d99d157
+		summarizeBy: sum
+		sourceColumn: frais_port
+
+		annotation SummarizationSetBy = Automatic
+
+	column mode_paiement
+		dataType: string
+		lineageTag: 8b7f6be4-09d5-4df8-8ab0-6e7ab1458644
+		summarizeBy: none
+		sourceColumn: mode_paiement
+
+		annotation SummarizationSetBy = Automatic
+
+	column statut
+		dataType: string
+		lineageTag: d7fb4c55-5c4a-47c6-a462-baab033d9373
+		summarizeBy: none
+		sourceColumn: statut
+
+		annotation SummarizationSetBy = Automatic
+
+	column commercial
+		dataType: string
+		lineageTag: 70ef5cb0-9884-4a32-b039-b18dd547df2e
+		summarizeBy: none
+		sourceColumn: commercial
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Délai de Livraison'
+		dataType: int64
+		lineageTag: 9ca0ffd1-eb56-467c-ac1f-f4d4d95003e3
+		summarizeBy: none
+		sourceColumn: 'Délai de Livraison'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Ancienneté Client' = DATEDIFF(LOOKUPVALUE(Clients[date_inscription], Clients[client_id], Commandes[client_id]), TODAY(), DAY)
+		dataType: int64
+		lineageTag: 59389adf-993c-4379-9158-534af47c3465
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Nom Complet' = LOOKUPVALUE(Clients[prenom_client], Clients[client_id], Commandes[client_id]) & " " & UPPER(LOOKUPVALUE(Clients[nom_client], Clients[client_id], Commandes[client_id]))
+		dataType: string
+		lineageTag: 0adbd3cd-cdc2-49ee-8461-6fe23c4694ff
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column Localisation
+		dataType: string
+		lineageTag: 28b71d90-a977-4442-8e48-fc258786a5b0
+		summarizeBy: none
+		sourceColumn: Localisation
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Catégorie de Remise' = IF(ISBLANK('Commandes'[remise]) || 'Commandes'[remise] = 0, "Aucune Remise", IF('Commandes'[remise] < 0.1, "Faible (<10%)", IF('Commandes'[remise] < 0.25, "Moyenne (10-25%)", "Forte (>25%)")))
+		dataType: string
+		lineageTag: 7da4fd4c-5af1-4c8e-8514-336fac591979
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column Trimestre = "T" & FORMAT(QUARTER('Commandes'[date_commande]), "0") & " " & FORMAT(YEAR('Commandes'[date_commande]), "0")
+		dataType: string
+		lineageTag: 292e2900-7dd3-48a6-afd1-8fc0293d6880
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Commandes-0d7bc033-9b6d-4b58-90fa-33df1f68ed28' = m
+		mode: import
+		source =
+				let
+				    // Source PostgreSQL
+				    Source = try
+				
+				        let
+				
+				            _src = PostgreSQL.Database("db.entreprise.fr:5432", "ventes_db"),
+				
+				            _nav = _src{[Schema="public", Item="Commandes"]}[Data]
+				
+				        in _nav
+				
+				    otherwise
+				
+				        #table({"commande_id", "date_commande", "date_livraison", "client_id", "produit_id", "region", "departement", "ville", "code_postal", "quantite", "prix_unitaire", "remise", "frais_port", "mode_paiement", "statut", "commercial"}, {}),
+				    #"Renamed Columns" = Table.RenameColumns(Source, {{"commande_id", "N° Commande"}, {"date_commande", "Date de Commande"}, {"date_livraison", "Date de Livraison"}, {"client_id", "ID Client"}, {"produit_id", "ID Produit"}, {"region", "Région"}, {"departement", "Département"}, {"ville", "Ville"}, {"code_postal", "Code Postal"}, {"quantite", "Quantité"}, {"prix_unitaire", "Prix Unitaire"}, {"remise", "Remise"}, {"frais_port", "Frais de Port"}, {"mode_paiement", "Mode de Paiement"}, {"statut", "Statut"}, {"commercial", "Commercial"}}),
+				    #"Added Délai de Livraison" = Table.AddColumn(#"Renamed Columns", "Délai de Livraison", each Duration.Days([date_livraison] - [date_commande]), Int64.Type),
+				    #"Added Localisation" = Table.AddColumn(#"Added Délai de Livraison", "Localisation", each [ville] & " (" & [departement] & ") - " & [region], type text),
+				    Result = #"Added Localisation"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+

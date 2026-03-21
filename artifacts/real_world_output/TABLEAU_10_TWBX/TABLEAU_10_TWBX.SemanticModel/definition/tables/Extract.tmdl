@@ -1,13 +1,13 @@
 table Extract
-	lineageTag: ba41dd43-517c-410a-a88f-182fcb3d1729
+	lineageTag: 2f79a09e-1bc7-4063-b020-83abd5f2c8e9
 
 	measure '[Number of Records]' = 1
 		displayFolder: Measures
-		lineageTag: 20538e84-02ae-4263-9cbc-d7a6dd8a9fe4
+		lineageTag: 7cff1690-5a63-4755-b190-498bb333a10e
 
 	column 'Number of Records'
 		dataType: int64
-		lineageTag: 72791471-a0fd-420e-8f74-349b871bcddb
+		lineageTag: d2d1a6e8-f3a3-4442-a9ba-01fe00930bd6
 		summarizeBy: sum
 		sourceColumn: 'Number of Records'
 
@@ -15,7 +15,7 @@ table Extract
 
 	column a
 		dataType: string
-		lineageTag: ac2875f1-a4e9-4042-b282-a93441e894e3
+		lineageTag: 85d410c3-2ffc-4d24-9e27-ddaec83fbdae
 		summarizeBy: none
 		sourceColumn: a
 
@@ -23,7 +23,7 @@ table Extract
 
 	column x
 		dataType: int64
-		lineageTag: b0c86381-f78e-4b5c-bc29-a34fc9085791
+		lineageTag: a40c2677-067e-4f08-8c21-f5dea3cd4a76
 		summarizeBy: sum
 		sourceColumn: x
 
@@ -31,26 +31,31 @@ table Extract
 
 	column y
 		dataType: int64
-		lineageTag: a841d41a-e6af-4459-a738-7bf544633365
+		lineageTag: 23df5196-dcf0-4ec9-bea5-cc166d07e3c7
 		summarizeBy: sum
 		sourceColumn: y
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Extract-9ca9a197-9b7b-4b95-8d93-91e97cfaba6e' = m
+	partition 'Extract-2f9fa249-37f5-4fa0-82fd-4911ec26ea07' = m
 		mode: import
 		source =
 				let
 				    // Source SQL Server
 				    Source = try
 				
-				        Sql.Database("mssql2012.test.tsi.lan", "TestV1")
+				        let
+				
+				            _src = Sql.Database("mssql2012.test.tsi.lan", "TestV1"),
+				
+				            _nav = _src{[Schema="dbo", Item="Extract"]}[Data]
+				
+				        in _nav
 				
 				    otherwise
 				
 				        #table({"Number of Records", "a", "x", "y"}, {}),
-				    #"Extract Table" = Source{[Schema="dbo", Item="Extract"]}[Data],
-				    #"Renamed Columns" = Table.RenameColumns(#"Extract Table", {{"a", "A"}, {"x", "X"}, {"y", "Y"}}),
+				    #"Renamed Columns" = Table.RenameColumns(Source, {{"a", "A"}, {"x", "X"}, {"y", "Y"}}),
 				    Result = #"Renamed Columns"
 				in
 				    Result

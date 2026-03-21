@@ -1,20 +1,25 @@
 table xy
-	lineageTag: df825616-1502-4de6-81f6-cd94aa2fafd9
+	lineageTag: f870fdd0-cd34-4dfa-b412-adbe95382ecd
 
-	partition 'xy-0602ea27-3832-4bdf-bf51-0f9548c8d7aa' = m
+	partition 'xy-e0ab3b61-f4f2-4e8e-8b9c-8ceb06283862' = m
 		mode: import
 		source =
 				let
 				    // Source MySQL: mysql55:
 				    Source = try
 				
-				        MySQL.Database("mysql55:", "testv1")
+				        let
+				
+				            _src = MySQL.Database("mysql55:", "testv1"),
+				
+				            _nav = _src{[Schema="testv1", Item="xy"]}[Data]
+				
+				        in _nav
 				
 				    otherwise
 				
 				        #table({}, {}),
-				    #"xy Table" = Source{[Schema="testv1", Item="xy"]}[Data],
-				    Result = #"xy Table"
+				    Result = Source
 				in
 				    Result
 

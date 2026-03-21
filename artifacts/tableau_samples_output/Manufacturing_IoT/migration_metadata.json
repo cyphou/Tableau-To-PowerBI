@@ -1,0 +1,128 @@
+{
+  "generated_at": "2026-03-21T06:54:26.241133",
+  "source": "Tableau Migration",
+  "report_name": "Manufacturing_IoT",
+  "objects_converted": {
+    "worksheets": 6,
+    "dashboards": 2,
+    "datasources": 1,
+    "calculations": 25,
+    "parameters": 2,
+    "filters": 0,
+    "stories": 1,
+    "sets": 0,
+    "groups": 0,
+    "bins": 0,
+    "hierarchies": 0,
+    "user_filters": 0,
+    "actions": 3,
+    "custom_sql": 0
+  },
+  "generated_output": {
+    "pages": 2,
+    "visuals": 10,
+    "theme_applied": false,
+    "theme_detail": {
+      "status": "skipped",
+      "reason": "no dashboard colors detected"
+    }
+  },
+  "tmdl_stats": {
+    "tables": 5,
+    "measures": 14,
+    "columns": 50,
+    "relationships": 5
+  },
+  "visual_type_mappings": {
+    "Sensor Monitor": "Automatic",
+    "Machine Health": "Automatic",
+    "Maintenance Costs": "Automatic",
+    "Value Distribution": "Automatic",
+    "Vibration Analysis": "Automatic",
+    "Machine Rankings": "Automatic"
+  },
+  "visual_details": [
+    {
+      "worksheet": "Sensor Monitor",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "lineChart",
+      "dimensions": [
+        "reading_time",
+        "sensor_type"
+      ],
+      "measures": [
+        "value"
+      ],
+      "field_count": 3
+    },
+    {
+      "worksheet": "Machine Health",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "treemap",
+      "dimensions": [
+        "machine_name",
+        "sensor_type"
+      ],
+      "measures": [
+        "value",
+        "quality_score"
+      ],
+      "field_count": 4
+    },
+    {
+      "worksheet": "Maintenance Costs",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredColumnChart",
+      "dimensions": [
+        "machine_name",
+        "maint_type"
+      ],
+      "measures": [
+        "maint_cost",
+        "maint_cost"
+      ],
+      "field_count": 4
+    },
+    {
+      "worksheet": "Value Distribution",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "areaChart",
+      "dimensions": [
+        "sensor_type",
+        "sensor_type"
+      ],
+      "measures": [
+        "value"
+      ],
+      "field_count": 3
+    },
+    {
+      "worksheet": "Vibration Analysis",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "scatterChart",
+      "dimensions": [
+        "machine_name"
+      ],
+      "measures": [
+        "Calc_VibX",
+        "Calc_VibY",
+        "Calc_EnergyIdx"
+      ],
+      "field_count": 4
+    },
+    {
+      "worksheet": "Machine Rankings",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredColumnChart",
+      "dimensions": [
+        "machine_name"
+      ],
+      "measures": [
+        "Calc_WinTotal",
+        "Calc_DenseRank"
+      ],
+      "field_count": 3
+    }
+  ],
+  "approximations": []
+}

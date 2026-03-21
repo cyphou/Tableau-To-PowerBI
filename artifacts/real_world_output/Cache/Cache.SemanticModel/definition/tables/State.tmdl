@@ -1,18 +1,18 @@
 table State
-	lineageTag: 8baf2116-c303-4b51-97f5-b1b4009e4fec
+	lineageTag: d807bb3d-ecdd-4366-8132-8ffea82e44aa
 
 	measure State = SELECTEDVALUE('State'[Value], "Alabama")
-		lineageTag: dfb892d8-b2f2-45d1-9ee8-ae8b3da9d4cb
+		lineageTag: 6e99ce3c-7da9-41da-8ec3-d8d991e30827
 
 	column Value
 		dataType: string
-		lineageTag: 625e9d33-f066-4e3f-89ad-83c00b6eece5
+		lineageTag: 50dfd136-fb79-4406-a769-5553a05e0fd8
 		summarizeBy: none
 		sourceColumn: Value
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'State-1a163492-7ca4-4235-a2dd-6167a667d5f4' = calculated
+	partition 'State-a6c5acfe-1e92-4a8d-b2ab-1632ad778cea' = calculated
 		mode: import
 		source = DATATABLE("Value", STRING, {{""Alabama""}, {""Arizona""}, {""Arkansas""}, {""California""}, {""Colorado""}, {""Connecticut""}, {""Delaware""}, {""District of Columbia""}, {""Florida""}, {""Georgia""}, {""Idaho""}, {""Illinois""}, {""Indiana""}, {""Iowa""}, {""Kansas""}, {""Kentucky""}, {""Louisiana""}, {""Maine""}, {""Maryland""}, {""Massachusetts""}, {""Michigan""}, {""Minnesota""}, {""Mississippi""}, {""Missouri""}, {""Montana""}, {""Nebraska""}, {""Nevada""}, {""New Hampshire""}, {""New Jersey""}, {""New Mexico""}, {""New York""}, {""North Carolina""}, {""North Dakota""}, {""Ohio""}, {""Oklahoma""}, {""Oregon""}, {""Pennsylvania""}, {""Rhode Island""}, {""South Carolina""}, {""South Dakota""}, {""Tennessee""}, {""Texas""}, {""Utah""}, {""Vermont""}, {""Virginia""}, {""Washington""}, {""West Virginia""}, {""Wisconsin""}, {""Wyoming""}})
 

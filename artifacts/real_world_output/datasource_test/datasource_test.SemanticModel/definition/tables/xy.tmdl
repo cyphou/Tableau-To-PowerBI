@@ -1,13 +1,13 @@
 table xy
-	lineageTag: 5f423c14-f764-40e0-8dfa-9c6a6e6d1823
+	lineageTag: 4ddf03ba-a939-48b7-96f5-68a2e4764ee5
 
 	measure '[Number of Records]' = 1
 		displayFolder: Measures
-		lineageTag: 475d501c-f9ab-4fb1-ace9-358c9bd8a35f
+		lineageTag: 72fd864b-7164-456a-9b0d-0a6aa3fbfbbb
 
 	column a
 		dataType: string
-		lineageTag: 66c97e80-80f7-4148-8c30-6ee67a929f92
+		lineageTag: c149022d-9272-483d-a8d5-069d65867fcb
 		summarizeBy: none
 		sourceColumn: a
 
@@ -15,7 +15,7 @@ table xy
 
 	column x
 		dataType: int64
-		lineageTag: f204b16f-ba0f-48bb-95b6-c273484142b5
+		lineageTag: f636751b-04a8-49e0-83fa-a78ebe2ce69f
 		summarizeBy: sum
 		sourceColumn: x
 
@@ -23,26 +23,31 @@ table xy
 
 	column y
 		dataType: int64
-		lineageTag: cf7792ba-e924-4c4b-97f4-ac825a721f64
+		lineageTag: fda60645-17b1-47b1-a5e5-64acd7275118
 		summarizeBy: sum
 		sourceColumn: y
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'xy-33cb9b7e-5545-4585-bd83-6d8d0072d121' = m
+	partition 'xy-091b4ddc-0a6a-48bb-96fb-cf1f8346cdb8' = m
 		mode: import
 		source =
 				let
 				    // Source PostgreSQL
 				    Source = try
 				
-				        PostgreSQL.Database("postgres91.test.tsi.lan:5432", "TestV1")
+				        let
+				
+				            _src = PostgreSQL.Database("postgres91.test.tsi.lan:5432", "TestV1"),
+				
+				            _nav = _src{[Schema="public", Item="xy"]}[Data]
+				
+				        in _nav
 				
 				    otherwise
 				
 				        #table({"a", "x", "y"}, {}),
-				    #"xy Table" = Source{[Schema="public", Item="xy"]}[Data],
-				    #"Renamed Columns" = Table.RenameColumns(#"xy Table", {{"a", "A"}, {"x", "X"}, {"y", "Y"}}),
+				    #"Renamed Columns" = Table.RenameColumns(Source, {{"a", "A"}, {"x", "X"}, {"y", "Y"}}),
 				    Result = #"Renamed Columns"
 				in
 				    Result

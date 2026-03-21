@@ -1,0 +1,14 @@
+relationship 870a9461-6417-4ae0-a6c5-9944dda820a7
+	fromColumn: Orders.OrderDate
+	toColumn: Calendar.Date
+	fromCardinality: many
+	toCardinality: many
+	crossFilteringBehavior: bothDirections
+
+relationship 28112cfc-e1f4-40a3-8ffd-5b7b7fb3c891
+	fromColumn: Orders.Region
+	toColumn: Regions.RegionName
+	fromCardinality: many
+	toCardinality: many
+	crossFilteringBehavior: bothDirections
+

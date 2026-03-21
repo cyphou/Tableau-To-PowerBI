@@ -1,0 +1,27 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation PBI_QueryOrder = ["Orders","Regions","Calendar"]
+
+ref table Orders
+ref table Regions
+ref table Calendar
+
+ref relationship 870a9461-6417-4ae0-a6c5-9944dda820a7
+ref relationship 28112cfc-e1f4-40a3-8ffd-5b7b7fb3c891
+
+ref expression DataFolder
+
+ref role 'Region Access'
+ref role 'Is Current User'
+ref role Managers
+ref role Executives
+ref role 'Region Match'
+
+ref perspective 'Full Model'
+

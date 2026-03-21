@@ -1,0 +1,426 @@
+table fact_sales
+	lineageTag: 7479e535-3f75-4520-bd37-1f24924dd2dc
+
+	measure 'Gross Revenue' = SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 7a1b8fb6-25e0-4c18-8c99-b7fa6c8118e7
+
+	measure 'Net Revenue' = SUMX('fact_sales', IF('fact_sales'[order_status] <> "Cancelled" && 'fact_sales'[is_returned] = FALSE, 'fact_sales'[quantity] * 'fact_sales'[unit_price] * (1 - 'fact_sales'[discount_pct]), 0))
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: c7aac53c-e7ca-4ec0-bed6-11a3e1d170e1
+
+	measure COGS = SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_cost])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 00318617-0f61-4f18-9930-cdd56b820f9f
+
+	measure 'Gross Profit' = [Net Revenue] - [COGS] - SUM('fact_sales'[shipping_cost])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: f8345cf7-0eaf-446f-8f5b-c250167feb8d
+
+	measure 'Gross Margin %' = IF(ISBLANK([Gross Profit] / [Net Revenue]), 0, [Gross Profit] / [Net Revenue])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 3d1df626-90f4-490c-83f0-c0a332ab8839
+
+	measure 'Tax Amount' = SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price] * (1 - 'fact_sales'[discount_pct]) * 'fact_sales'[tax_rate])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 00cf344f-cdd8-4ca8-90c0-61b4b0591a53
+
+	measure 'Total Revenue incl Tax' = [Net Revenue] + [Tax Amount]
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: b80c3f17-a179-4d10-ad43-4a5df197a2bb
+
+	measure 'Return Rate' = SUMX('fact_sales', IF('fact_sales'[is_returned] = TRUE, 1, 0)) / COUNT('fact_sales'[sale_id])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: f42911f8-fd4b-47b2-8f05-d48be03a54c3
+
+	measure 'Revenue per Customer' = CALCULATE(SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]), ALLEXCEPT('dim_customer', 'dim_customer'[customer_id]))
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 71b647c4-4c1e-4aea-ac08-d6f585d398b5
+
+	measure 'Revenue per Product' = CALCULATE(SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]), ALLEXCEPT('dim_product', 'dim_product'[product_id]))
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 422fe335-4fda-46bf-95e6-c8119365deef
+
+	measure 'Revenue by Region-Channel' = CALCULATE(SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]), ALLEXCEPT('fact_sales', 'fact_sales'[region], 'fact_sales'[channel]))
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: b99c97d1-f759-4948-8e98-95f3dac9d8ca
+
+	measure 'Revenue excl Territory' = CALCULATE(SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]), REMOVEFILTERS('fact_sales'[territory]))
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 0eebc944-bcf3-4b8e-b8f2-0b7fb01f6af0
+
+	measure 'Revenue incl Subcategory' = CALCULATE(SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]))
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: a1845cfc-eff8-49f5-a778-b56bd5125f3c
+
+	measure 'Running Total Revenue' = CALCULATE(SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]), FILTER(ALLSELECTED('fact_sales'), TRUE())) /* RUNNING_SUM: converted to cumulative — verify window scope */
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 557097bb-b8e7-4777-89c8-634692bccb05
+
+	measure 'Running Avg Revenue' = CALCULATE(SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]), FILTER(ALLSELECTED('fact_sales'), TRUE())) /* RUNNING_AVG: converted to cumulative — verify window scope */
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 88e6ff51-24de-4d1b-99de-1dc8075caf5a
+
+	measure 'Running Count' = CALCULATE(SUM('fact_sales'[quantity]), FILTER(ALLSELECTED('fact_sales'), TRUE())) /* RUNNING_COUNT: converted to cumulative — verify window scope */
+		displayFolder: Measures
+		lineageTag: c184b1da-b382-4f2b-acc9-3d282a2bfa19
+
+	measure 'Revenue Rank' = RANKX(ALL('fact_sales'), SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]))
+		displayFolder: Measures
+		lineageTag: 5b6683d5-fa41-49cb-8209-93ee3a149ac6
+
+	measure 'Revenue Rank Dense' = RANKX(ALL('fact_sales'), SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]),, ASC, DENSE)
+		displayFolder: Measures
+		lineageTag: 0dbdadfe-8086-4c24-ab06-a49f81ff8459
+
+	measure 'Moving Avg 3-Period' = CALCULATE(SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]), WINDOW(-2, REL, 0, REL, ORDERBY('fact_sales'[sale_id], ASC)), ALL('fact_sales')) /* WINDOW.AVG: frame 'fact_sales'[-2,0] */
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: c56b7901-20b6-4b24-95a6-dc14a761e3fb
+
+	measure 'Window Max Revenue' = CALCULATE(SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]), ALL('fact_sales'))
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 9e5aaf6c-f156-49ed-bd9f-539e1b167108
+
+	measure 'Revenue StdDev' = STDEVX.S('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: c07d52ab-77c1-48c7-8449-d2399030022e
+
+	measure 'Order Count' = DISTINCTCOUNT('fact_sales'[sale_id])
+		displayFolder: Measures
+		lineageTag: ea529d27-d6e2-407b-a3c9-37bca40b7d78
+
+	measure 'Unique Customers' = DISTINCTCOUNT('dim_customer'[customer_id])
+		displayFolder: Measures
+		lineageTag: 12b50132-df3f-4763-b0f2-05a6d0d6a1ac
+
+	measure 'Unique Products Sold' = DISTINCTCOUNT('dim_product'[product_id])
+		displayFolder: Measures
+		lineageTag: 953a79f8-9252-4b8b-b3a5-a36f17b6d7e9
+
+	measure 'Customer Tier' = IF([Revenue per Customer] > 100000, "Enterprise", IF([Revenue per Customer] > 50000, "Mid-Market", IF([Revenue per Customer] > 10000, "SMB", "Startup")))
+		displayFolder: Dimensions
+		lineageTag: 626b434b-fbcd-4cf8-8717-9fc8ffac728d
+
+	measure 'YTD Revenue' = CALCULATE(SUMX('fact_sales', IF('dim_date'[year] = YEAR(TODAY()) && 'fact_sales'[is_returned] = FALSE, 'fact_sales'[quantity] * 'fact_sales'[unit_price], 0)), ALL('fact_sales'))
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 6c5f41d5-7e01-4428-ae26-6772d828c0a9
+
+	measure 'Is My Account' = 'dim_customer'[email] = USERPRINCIPALNAME()
+		formatString: True/False
+		displayFolder: Dimensions
+		lineageTag: de9bbcff-97e5-4b13-bbcb-a03267a87246
+
+	measure 'Manager Access' = TRUE() /* ISMEMBEROF("Regional Managers"): implement via RLS role */
+		formatString: True/False
+		displayFolder: Dimensions
+		lineageTag: 772bd81f-f0fc-4c44-a74f-29dc637a442d
+
+	measure 'Analysis Start Date' = DATE(2024, 1, 1)
+		lineageTag: 2ac4a23f-fb3c-4201-95e4-d6c47b26b9d7
+
+	measure 'Metric Selector' = "Revenue"
+		lineageTag: b1ade768-0a87-40e4-a53c-17d5e4abc26d
+
+	measure 'Display Currency' = "USD"
+		lineageTag: 5a7293e5-e050-42eb-8868-9e73ac71ef4a
+
+	column sale_id
+		dataType: int64
+		lineageTag: 6f3f946a-b616-409f-bac6-a640950c7e54
+		summarizeBy: sum
+		sourceColumn: sale_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column date_key
+		dataType: int64
+		lineageTag: 75bb3d1d-75a2-409b-ab35-f3fc55b2936c
+		summarizeBy: sum
+		sourceColumn: date_key
+
+		annotation SummarizationSetBy = Automatic
+
+	column customer_key
+		dataType: int64
+		lineageTag: 125c37b5-95ba-413d-aa3d-4879c318ed8f
+		summarizeBy: sum
+		sourceColumn: customer_key
+
+		annotation SummarizationSetBy = Automatic
+
+	column product_key
+		dataType: int64
+		lineageTag: 920ea1aa-915e-4560-bd5a-c3a393b7b032
+		summarizeBy: sum
+		sourceColumn: product_key
+
+		annotation SummarizationSetBy = Automatic
+
+	column store_key
+		dataType: int64
+		lineageTag: 6a5c8d1b-23c3-40c3-a7aa-5bf61a365039
+		summarizeBy: sum
+		sourceColumn: store_key
+
+		annotation SummarizationSetBy = Automatic
+
+	column channel
+		dataType: string
+		lineageTag: 9123f66e-7fa3-440f-a066-22e9506ea5cc
+		summarizeBy: none
+		sourceColumn: channel
+
+		annotation SummarizationSetBy = Automatic
+
+	column region
+		dataType: string
+		lineageTag: 9f1ae364-512d-42a9-bd3f-84550bf1a781
+		summarizeBy: none
+		sourceColumn: region
+		dataCategory: StateOrProvince
+
+		annotation SummarizationSetBy = Automatic
+
+	column territory
+		dataType: string
+		lineageTag: 73ed1552-2200-4433-b231-956a52a0c37d
+		summarizeBy: none
+		sourceColumn: territory
+
+		annotation SummarizationSetBy = Automatic
+
+	column country
+		dataType: string
+		lineageTag: d247400d-918b-4c68-9e0e-51b5a401a6fb
+		summarizeBy: none
+		sourceColumn: country
+		dataCategory: Country
+
+		annotation SummarizationSetBy = Automatic
+
+	column state
+		dataType: string
+		lineageTag: 5b3473d0-aaf8-48bd-9c75-ad036b7372d9
+		summarizeBy: none
+		sourceColumn: state
+		dataCategory: StateOrProvince
+
+		annotation SummarizationSetBy = Automatic
+
+	column city
+		dataType: string
+		lineageTag: 7f6e32b5-abec-4685-8e9e-ed9c653c6303
+		summarizeBy: none
+		sourceColumn: city
+		dataCategory: City
+
+		annotation SummarizationSetBy = Automatic
+
+	column postal_code
+		dataType: string
+		lineageTag: fd602e00-b745-45d6-b1a3-6d9fa066b877
+		summarizeBy: none
+		sourceColumn: postal_code
+		dataCategory: PostalCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column latitude
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 10ccba43-91e4-4740-a79c-733462a702ee
+		summarizeBy: sum
+		sourceColumn: latitude
+		dataCategory: Latitude
+
+		annotation SummarizationSetBy = Automatic
+
+	column longitude
+		dataType: double
+		formatString: #,0.00
+		lineageTag: eed1822a-80ca-41e7-ad14-183d51bb8a09
+		summarizeBy: sum
+		sourceColumn: longitude
+		dataCategory: Longitude
+
+		annotation SummarizationSetBy = Automatic
+
+	column quantity
+		dataType: double
+		formatString: #,0.00
+		lineageTag: a9a0ec58-779f-4f6d-8e68-d5226264d1ee
+		summarizeBy: sum
+		sourceColumn: quantity
+
+		annotation SummarizationSetBy = Automatic
+
+	column unit_price
+		dataType: double
+		formatString: #,0.00
+		lineageTag: ec541cbc-e79e-4a89-b8ea-0178a157e662
+		summarizeBy: sum
+		sourceColumn: unit_price
+
+		annotation SummarizationSetBy = Automatic
+
+	column unit_cost
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 677752d8-f9a0-49ba-8c3f-e6ac3bc72baa
+		summarizeBy: sum
+		sourceColumn: unit_cost
+
+		annotation SummarizationSetBy = Automatic
+
+	column discount_pct
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 474d6450-8208-4a79-94ea-a5effdb934b7
+		summarizeBy: sum
+		sourceColumn: discount_pct
+
+		annotation SummarizationSetBy = Automatic
+
+	column tax_rate
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 95acee4b-02d1-478f-a095-04ff9664a5d9
+		summarizeBy: sum
+		sourceColumn: tax_rate
+
+		annotation SummarizationSetBy = Automatic
+
+	column shipping_cost
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 6c5957c4-ab29-48c7-80bb-c73a06f6ea66
+		summarizeBy: sum
+		sourceColumn: shipping_cost
+
+		annotation SummarizationSetBy = Automatic
+
+	column currency_code
+		dataType: string
+		lineageTag: a7b49c58-25db-461b-9a44-44a08915547b
+		summarizeBy: none
+		sourceColumn: currency_code
+
+		annotation SummarizationSetBy = Automatic
+
+	column order_status
+		dataType: string
+		lineageTag: 826a3389-1e71-460a-b596-ff9946411df2
+		summarizeBy: none
+		sourceColumn: order_status
+
+		annotation SummarizationSetBy = Automatic
+
+	column payment_method
+		dataType: string
+		lineageTag: 9dcd19e6-8495-4f85-8fc5-9f1f160c6b4f
+		summarizeBy: none
+		sourceColumn: payment_method
+
+		annotation SummarizationSetBy = Automatic
+
+	column sales_rep
+		dataType: string
+		lineageTag: b36f145e-1e6e-4b15-9503-ee21ec8be4eb
+		summarizeBy: none
+		sourceColumn: sales_rep
+
+		annotation SummarizationSetBy = Automatic
+
+	column promotion_code
+		dataType: string
+		lineageTag: 3f0c70ba-a54c-485d-a0f3-20631f9139b3
+		summarizeBy: none
+		sourceColumn: promotion_code
+
+		annotation SummarizationSetBy = Automatic
+
+	column is_returned
+		dataType: boolean
+		lineageTag: cf9fe811-10ca-4d60-964d-ec1519a68cd7
+		summarizeBy: none
+		sourceColumn: is_returned
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Days Since First Order' = DATEDIFF(LOOKUPVALUE(dim_customer[first_order_date], dim_customer[customer_key], fact_sales[customer_key]), TODAY(), DAY)
+		dataType: int64
+		lineageTag: bba5358a-9cf0-454f-84c3-be8389dbc5b0
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Full Location' = UPPER('fact_sales'[city]) & ", " & 'fact_sales'[state] & " (" & 'fact_sales'[country] & ")"
+		dataType: string
+		lineageTag: 9bf48f0a-f50d-4e99-9983-b519e2616494
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Discount Category' = IF(ISBLANK('fact_sales'[discount_pct]) || 'fact_sales'[discount_pct] = 0, "None", IF('fact_sales'[discount_pct] < 0.1, "Low", IF('fact_sales'[discount_pct] < 0.25, "Medium", IF('fact_sales'[discount_pct] < 0.5, "High", "Extreme"))))
+		dataType: string
+		lineageTag: 11bbded4-547b-43b2-9260-32c379492e17
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Safe Discount'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 9b2babb8-d957-4c96-ace4-a11e24bd260b
+		summarizeBy: none
+		sourceColumn: 'Safe Discount'
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'fact_sales-c3c96c23-a2fe-4854-800b-a88f4afc4433' = m
+		mode: import
+		source =
+				let
+				    // Source Snowflake: analytics.snowflakecomputing.com
+				    Source = try
+				
+				        let
+				
+				            _src = Snowflake.Databases("analytics.snowflakecomputing.com", "ANALYTICS_WH"),
+				
+				            _nav = _src{[Name="ENTERPRISE_DW"]}[Data]
+				
+				        in _nav
+				
+				    otherwise
+				
+				        #table({"sale_id", "date_key", "customer_key", "product_key", "store_key", "channel", "region", "territory", "country", "state", "city", "postal_code", "latitude", "longitude", "quantity", "unit_price", "unit_cost", "discount_pct", "tax_rate", "shipping_cost", "currency_code", "order_status", "payment_method", "sales_rep", "promotion_code", "is_returned"}, {}),
+				    #"SALES" = Source{[Name="SALES"]}[Data],
+				    #"fact_sales Table" = #"SALES"{[Name="fact_sales"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(#"fact_sales Table", {{"sale_id", "Sale ID"}, {"channel", "Channel"}, {"region", "Region"}, {"territory", "Territory"}, {"country", "Country"}, {"state", "State"}, {"city", "City"}, {"postal_code", "Postal Code"}, {"latitude", "Latitude"}, {"longitude", "Longitude"}, {"quantity", "Quantity"}, {"unit_price", "Unit Price"}, {"unit_cost", "Unit Cost"}, {"discount_pct", "Discount %"}, {"tax_rate", "Tax Rate"}, {"shipping_cost", "Shipping Cost"}, {"currency_code", "Currency"}, {"order_status", "Order Status"}, {"payment_method", "Payment Method"}, {"sales_rep", "Sales Rep"}, {"promotion_code", "Promotion Code"}, {"is_returned", "Returned?"}}),
+				    #"Added Safe Discount" = Table.AddColumn(#"Renamed Columns", "Safe Discount", each if ([discount_pct] = null) then 0 else [discount_pct], type number),
+				    Result = #"Added Safe Discount"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+

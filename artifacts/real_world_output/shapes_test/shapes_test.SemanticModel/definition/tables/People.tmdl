@@ -1,9 +1,9 @@
 table People
-	lineageTag: 740542d1-d4d5-42ff-8f4a-9218b6ad8c71
+	lineageTag: ff7965fc-6665-4079-b0d0-90282d4aee3f
 
 	column 'Regional Manager'
 		dataType: string
-		lineageTag: ed11c2fb-dd27-4df5-aa5d-e70627e51a81
+		lineageTag: 6c22cdf5-2587-4658-97ed-6793b590fda7
 		summarizeBy: none
 		sourceColumn: 'Regional Manager'
 		dataCategory: StateOrProvince
@@ -12,27 +12,32 @@ table People
 
 	column Region
 		dataType: string
-		lineageTag: 7c7d4033-4385-428b-9261-9252a3d2db2a
+		lineageTag: 02c7bee5-405f-4186-996a-c7461764d298
 		summarizeBy: none
 		sourceColumn: Region
 		dataCategory: StateOrProvince
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'People-f4389eb9-377b-4307-bae2-2cedd19c8f2b' = m
+	partition 'People-acef1df5-b7da-4ee5-837c-c50b810a447c' = m
 		mode: import
 		source =
 				let
 				    // Source Excel: /Users/mkorotchenkov/Documents/My Tableau Repository/Datasources/2021.2/en_US-US/Sample - Superstore.xls
 				    Source = try
 				
-				        Excel.Workbook(File.Contents(DataFolder & "\\Users\mkorotchenkov\Documents\My Tableau Repository\Datasources\2021.2\en_US-US\Sample - Superstore.xls"), null, true)
+				        let
+				
+				            _src = Excel.Workbook(File.Contents(DataFolder & "\\Users\mkorotchenkov\Documents\My Tableau Repository\Datasources\2021.2\en_US-US\Sample - Superstore.xls"), null, true),
+				
+				            _nav = _src{[Item="People",Kind="Sheet"]}[Data]
+				
+				        in _nav
 				
 				    otherwise
 				
 				        #table({"Regional Manager", "Region"}, {}),
-				    #"People Sheet" = Source{[Item="People",Kind="Sheet"]}[Data],
-				    #"Promoted Headers" = Table.PromoteHeaders(#"People Sheet", [PromoteAllScalars=true]),
+				    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
 				    #"Changed Types" = Table.TransformColumnTypes(#"Promoted Headers", {
 				        {"Regional Manager", type text},
 				        {"Region", type text}
