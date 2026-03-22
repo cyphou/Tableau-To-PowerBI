@@ -1,5 +1,22 @@
 # Changelog
 
+## v27.1.0 — Unified HTML Report Template
+
+### Sprint 107 — HTML Report Template Unification ✅
+- **Shared HTML template** (`html_template.py`): New module — centralized CSS/JS template for all 9 HTML report generators. Fluent/PBI design system with CSS custom properties (`:root` vars), gradient headers, stat cards, collapsible sections, sortable/searchable tables, badges, fidelity bars, donut/bar charts, tabs, heatmaps, flow diagrams, command boxes. Print and responsive media queries. Legacy tag class aliases for backward compatibility.
+- **Upgraded all 9 HTML report generators** to use shared template:
+  - `generate_report.py` (batch migration dashboard)
+  - `server_assessment.py` (server portfolio assessment)
+  - `global_assessment.py` (global cross-workbook + governance report)
+  - `merge_report_html.py` (shared model merge report)
+  - `telemetry_dashboard.py` (observability dashboard)
+  - `visual_diff.py` (visual diff report)
+  - `comparison_report.py` (migration comparison report)
+  - `merge_assessment.py` (merge assessment report)
+- **Consistent design language**: gradient header, stat-grid cards, collapsible sections with toggle arrows, sortable/searchable tables, modern badge/tag styling across all reports.
+- **Reusable components**: `html_open()`, `html_close()`, `stat_grid()`, `stat_card()`, `section_open()`, `section_close()`, `badge()`, `fidelity_bar()`, `donut_chart()`, `bar_chart()`, `data_table()`, `tab_bar()`, `tab_content()`, `heatmap_table()`, `flow_diagram()`, `cmd_box()`, `card()`, `esc()`.
+- **Net reduction**: ~1,230 lines of duplicated inline CSS/JS removed, replaced by ~640-line shared module.
+
 ## v27.0.0 — Advanced Intelligence & Marketplace
 
 ### Sprint 106 — Shapefile/GeoJSON Passthrough ✅

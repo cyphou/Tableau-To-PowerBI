@@ -47,6 +47,7 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
   - `global_assessment.py`: Global cross-workbook assessment — pairwise merge scoring, BFS clustering, HTML heatmap report
   - `merge_config.py`: Merge configuration — per-table merge rules, conflict resolution settings
   - `merge_report_html.py`: Merge assessment HTML report generator
+  - `html_template.py`: Shared HTML report template — centralized CSS/JS for all 9 HTML generators. Fluent/PBI design with CSS custom properties, gradient headers, stat cards, collapsible sections, sortable tables, badges, fidelity bars, charts, tabs, flow diagrams. Reusable components: `html_open/close`, `stat_grid/card`, `section_open/close`, `badge`, `fidelity_bar`, `donut_chart`, `bar_chart`, `data_table`, `tab_bar/content`, `heatmap_table`, `flow_diagram`, `cmd_box`, `card`, `esc`
   - `telemetry.py`: Migration telemetry collector (v2) — timing, counts, version, `record_event()` for granular per-workbook/visual/measure event logging, opt-in reporting
   - `telemetry_dashboard.py`: Interactive observability dashboard — 4-tab layout (Overview/Portfolio/Bottlenecks/Telemetry), JS interactivity (sort/search/date filter), JSONL telemetry, portfolio progress tracker, bottleneck analyzer
   - `notebook_api.py`: Interactive Jupyter migration API — `MigrationSession` class with load/assess/preview_dax/preview_m/preview_visuals/edit_dax/override_visual_type/configure/generate/validate/deploy, notebook .ipynb generation
