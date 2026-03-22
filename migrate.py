@@ -143,13 +143,33 @@ def print_step(step_num, total_steps, text):
 
 
 def run_extraction(tableau_file, hyper_max_rows=None):
-    """Run Tableau extraction"""
+    """Run Tableau extraction with path validation."""
     global _stats
     print_step(1, 2, "TABLEAU OBJECTS EXTRACTION")
 
-    if not os.path.exists(tableau_file):
-        logger.error(f"Tableau file not found: {tableau_file}")
-        print(f"Error: Tableau file not found: {tableau_file}")
+    # Security: validate file path
+    if not tableau_file:
+        logger.error("No Tableau file specified")
+        print("Error: No Tableau file specified")
+        return False
+
+    # Null byte check
+    if '\x00' in tableau_file:
+        logger.error("Invalid file path (contains null bytes)")
+        print("Error: Invalid file path")
+        return False
+
+    # Resolve and validate path
+    resolved = os.path.realpath(tableau_file)
+    ext = os.path.splitext(resolved)[1].lower()
+    if ext not in ('.twb', '.twbx', '.tds', '.tdsx'):
+        logger.error(f"Unsupported file extension: {ext}")
+        print(f"Error: Unsupported file type: {ext}. Use .twb, .twbx, .tds, or .tdsx")
+        return False
+
+    if not os.path.exists(resolved):
+        logger.error(f"Tableau file not found: {resolved}")
+        print(f"Error: Tableau file not found: {resolved}")
         return False
 
     print(f"Source file: {tableau_file}")
@@ -1727,7 +1747,8 @@ def _add_server_args(parser):
         '--token-secret',
         metavar='SECRET',
         default=None,
-        help='Personal Access Token secret for Tableau Server auth'
+        help='Personal Access Token secret for Tableau Server auth. '
+             'Prefer TABLEAU_TOKEN_SECRET env var to avoid process list exposure.'
     )
 
     parser.add_argument(
@@ -2005,7 +2026,7 @@ def _download_from_server(args):
         ts_client = TableauServerClient(
             server_url=args.server,
             token_name=getattr(args, 'token_name', None),
-            token_secret=getattr(args, 'token_secret', None),
+            token_secret=getattr(args, 'token_secret', None) or os.environ.get('TABLEAU_TOKEN_SECRET'),
             site_id=getattr(args, 'site', ''),
         )
         ts_client.sign_in()
@@ -3147,7 +3168,7 @@ def _run_schedule_migration(args, source_basename):
                 ts_client = TableauServerClient(
                     server_url=args.server,
                     token_name=getattr(args, 'token_name', None),
-                    token_secret=getattr(args, 'token_secret', None),
+                    token_secret=getattr(args, 'token_secret', None) or os.environ.get('TABLEAU_TOKEN_SECRET'),
                     site_id=getattr(args, 'site', ''),
                 )
                 ts_client.sign_in()

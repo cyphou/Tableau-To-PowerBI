@@ -14,20 +14,52 @@ Usage::
 import os
 import sys
 import glob
+import getpass
 
 
-def _input(prompt, default=None):
-    """Read input with a default value."""
+def _input(prompt, default=None, sensitive=False):
+    """Read input with a default value.
+
+    Args:
+        prompt: The prompt text.
+        default: Default value if user presses Enter.
+        sensitive: If True, mask input (for passwords/secrets).
+    """
     if default:
         prompt = f"{prompt} [{default}]: "
     else:
         prompt = f"{prompt}: "
     try:
-        value = input(prompt).strip()
+        if sensitive:
+            value = getpass.getpass(prompt).strip()
+        else:
+            value = input(prompt).strip()
     except (EOFError, KeyboardInterrupt):
         print()
         sys.exit(0)
     return value or default
+
+
+def _validate_file_path(path, allowed_extensions=None):
+    """Validate a file path for security.
+
+    Args:
+        path: File path to validate.
+        allowed_extensions: Optional set of allowed extensions.
+
+    Returns:
+        tuple: (is_valid: bool, error_message: str or None)
+    """
+    if not path:
+        return False, "Path is empty"
+    if '\x00' in path:
+        return False, "Path contains null bytes"
+    resolved = os.path.realpath(path)
+    if allowed_extensions:
+        ext = os.path.splitext(resolved)[1].lower()
+        if ext not in allowed_extensions:
+            return False, f"Invalid file type: {ext}"
+    return True, None
 
 
 def _yes_no(prompt, default=True):
@@ -96,6 +128,15 @@ def run_wizard():
 
     if not config['tableau_file'] or not os.path.isfile(config['tableau_file']):
         print(f"\n  Error: File not found: {config.get('tableau_file')}")
+        return None
+
+    # Validate file extension
+    valid, err = _validate_file_path(
+        config['tableau_file'],
+        allowed_extensions={'.twb', '.twbx', '.tds', '.tdsx'},
+    )
+    if not valid:
+        print(f"\n  Error: {err}")
         return None
 
     # ── Step 2: Prep flow ──

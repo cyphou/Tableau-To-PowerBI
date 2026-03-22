@@ -2,6 +2,15 @@
 
 ## v26.0.0 — Autonomous Migration & Production Hardening (in progress)
 
+### Sprint 97 — Security Hardening ✅
+- **Security validator module** (`security_validator.py`): New centralized security utilities — path validation (null byte, traversal, extension whitelist), ZIP archive safe extraction (ZIP slip defense), XML parsing with XXE protection (DOCTYPE+ENTITY detection), credential detection and redaction (10 patterns: password, secret, token, access key, bearer, basic auth, client secret, API key), M query credential scrubbing, template substitution sanitization (context-aware escaping for JSON/M/TMDL), migration artifact scanning for embedded credentials.
+- **ZIP slip protection** (`extract_tableau_data.py`): `read_tableau_file()` now validates all ZIP entry names — rejects path traversal (`..` components), absolute paths, and oversized entries. Uses `safe_zip_extract_member()` from security_validator.
+- **XXE defense** (`extract_tableau_data.py`): XML parsing now uses `safe_parse_xml()` which detects and blocks DOCTYPE with ENTITY declarations (XML External Entity attacks, OWASP Top 10). Rejects entity expansion payloads before parsing.
+- **Input validation** (`migrate.py`): `run_extraction()` validates file paths — null byte check, extension whitelist (.twb/.twbx/.tds/.tdsx), resolved path existence. `--token-secret` now supports `TABLEAU_TOKEN_SECRET` env var fallback to avoid process list credential exposure.
+- **Multi-tenant injection defense** (`deploy/multi_tenant.py`): `_apply_connection_overrides()` validates placeholder names (must match `${UPPER_NAME}` pattern), blocks null bytes and control characters in values, applies context-aware escaping (JSON: `\"`, M: `""`, TMDL: `''`). `MultiTenantConfig.load()` adds schema validation (type checks, size limit, required keys) and path resolution.
+- **Wizard input hardening** (`wizard.py`): `_input()` gains `sensitive` parameter using `getpass` for password masking. New `_validate_file_path()` validates null bytes, extensions, and path integrity. File selection validates extension whitelist before proceeding.
+- **64 tests** in `test_security.py` — path validation (11), ZIP slip (7), XML/XXE (6), credential redaction (14), template sanitization (6), multi-tenant (7), wizard (4), artifact scanning (4), integration (5)
+
 ### Sprint 96 — Self-Healing Migration Pipeline ✅
 - **Recovery report** (`recovery_report.py`): New module — records every self-repair action with category, severity, description, action, and follow-up recommendations. JSON export, console summary, and `merge_into()` integration with MigrationReport.
 - **TMDL self-repair** (`tmdl_generator.py`): Post-generation validation phase — auto-fixes duplicate table names (suffix _2, _3), broken column references in measures (hidden + MigrationNote), orphan measures on unnamed tables (reassigned), empty-name tables (removed). Recovery actions tracked in RecoveryReport.

@@ -102,12 +102,32 @@ class MultiTenantConfig:
 
     @staticmethod
     def load(path: str) -> 'MultiTenantConfig':
-        """Load configuration from a JSON file."""
-        with open(path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+        """Load configuration from a JSON file with validation."""
+        resolved = os.path.realpath(path)
+        if not os.path.exists(resolved):
+            raise FileNotFoundError(f"Config file not found: {resolved}")
+
+        with open(resolved, 'r', encoding='utf-8') as f:
+            raw = f.read()
+
+        # Size limit: reject unreasonably large config files (>1 MB)
+        if len(raw) > 1_048_576:
+            raise ValueError("Config file exceeds 1 MB size limit")
+
+        data = json.loads(raw)
+
+        # Validate structure
+        if not isinstance(data, dict):
+            raise ValueError("Config must be a JSON object with a 'tenants' array")
+        if 'tenants' not in data:
+            raise ValueError("Config must contain a 'tenants' key")
+        if not isinstance(data['tenants'], list):
+            raise ValueError("'tenants' must be a JSON array")
 
         tenants = []
-        for t in data.get('tenants', []):
+        for t in data['tenants']:
+            if not isinstance(t, dict):
+                raise ValueError("Each tenant must be a JSON object")
             tenants.append(TenantConfig(
                 name=t.get('name', ''),
                 workspace_id=t.get('workspace_id', ''),
@@ -140,6 +160,9 @@ def _apply_connection_overrides(model_dir: str, overrides: Dict[str, str],
 
     Replaces ``${TENANT_SERVER}``, ``${TENANT_DATABASE}``, etc. in all ``.tmdl``
     and ``.m`` files.
+
+    Security: Only recognized ``${...}`` placeholders are substituted.
+    Replacement values are validated to prevent injection.
     """
     import shutil
 
@@ -150,6 +173,22 @@ def _apply_connection_overrides(model_dir: str, overrides: Dict[str, str],
 
     if not overrides:
         return
+
+    # Security: validate placeholder names follow expected pattern
+    _PLACEHOLDER_RE = re.compile(r'^\$\{[A-Z_][A-Z0-9_]*\}$')
+    for placeholder, value in overrides.items():
+        if not _PLACEHOLDER_RE.match(placeholder):
+            logger.warning(
+                "Skipping invalid placeholder '%s' — must match ${UPPER_NAME}",
+                placeholder,
+            )
+            continue
+        # Block null bytes and control characters in values
+        if '\x00' in value or any(ord(c) < 32 and c not in '\n\r\t' for c in value):
+            raise ValueError(
+                f"Override value for '{placeholder}' contains "
+                "null bytes or control characters"
+            )
 
     # Walk all text files and apply substitution
     for root, _dirs, files in os.walk(output_dir):
@@ -165,7 +204,18 @@ def _apply_connection_overrides(model_dir: str, overrides: Dict[str, str],
 
             original = content
             for placeholder, value in overrides.items():
-                content = content.replace(placeholder, value)
+                if not _PLACEHOLDER_RE.match(placeholder):
+                    continue
+                # Context-aware escaping based on file type
+                if fname.endswith('.json'):
+                    safe_value = value.replace('\\', '\\\\').replace('"', '\\"')
+                elif fname.endswith('.m'):
+                    safe_value = value.replace('"', '""')
+                elif fname.endswith('.tmdl'):
+                    safe_value = value.replace("'", "''")
+                else:
+                    safe_value = value
+                content = content.replace(placeholder, safe_value)
 
             if content != original:
                 with open(fpath, 'w', encoding='utf-8') as f:

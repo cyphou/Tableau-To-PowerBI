@@ -33,6 +33,13 @@ from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
+# Import security utilities for credential redaction
+try:
+    from security_validator import redact_credentials, scan_for_credentials
+    _HAS_SECURITY = True
+except ImportError:
+    _HAS_SECURITY = False
+
 # ── Severity levels ─────────────────────────────────────────────────
 
 PASS = "pass"

@@ -16,6 +16,19 @@ import re
 from datasource_extractor import extract_datasource
 from hyper_reader import read_hyper_from_twbx
 
+# Import security utilities — resolve path to powerbi_import
+_PI_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'powerbi_import')
+if _PI_DIR not in sys.path:
+    sys.path.insert(0, _PI_DIR)
+try:
+    from security_validator import (
+        safe_zip_extract_member, safe_parse_xml, SecurityError,
+        validate_path, ALLOWED_EXTENSIONS,
+    )
+    _HAS_SECURITY = True
+except ImportError:
+    _HAS_SECURITY = False
+
 logger = logging.getLogger(__name__)
 
 
@@ -150,8 +163,11 @@ class TableauExtractor:
             print("❌ Unable to read the Tableau file")
             return False
         
-        # Parse the XML
-        root = ET.fromstring(xml_content)
+        # Parse the XML with XXE protection
+        if _HAS_SECURITY:
+            root = safe_parse_xml(xml_content)
+        else:
+            root = ET.fromstring(xml_content)
         
         # Extract the different objects
         self.extract_worksheets(root)
@@ -185,7 +201,13 @@ class TableauExtractor:
         return True
     
     def read_tableau_file(self):
-        """Reads the XML content of the Tableau file"""
+        """Reads the XML content of the Tableau file with security protections.
+
+        Security:
+        - ZIP slip protection for .twbx/.tdsx archives
+        - Path traversal validation on archive entry names
+        - Size limit enforcement on extracted entries
+        """
         
         file_ext = os.path.splitext(self.tableau_file)[1].lower()
         
@@ -195,13 +217,25 @@ class TableauExtractor:
                 return f.read()
         
         elif file_ext in ['.twbx', '.tdsx']:
-            # Packaged file (ZIP)
+            # Packaged file (ZIP) — with ZIP slip protection
             with zipfile.ZipFile(self.tableau_file, 'r') as z:
-                # Find the .twb or .tds file
                 for name in z.namelist():
+                    # ZIP slip defense: reject path traversal entries
+                    normalized = name.replace('\\', '/')
+                    if '..' in normalized.split('/'):
+                        logger.warning("Skipping ZIP entry with path traversal: %s", name)
+                        continue
+                    if os.path.isabs(name):
+                        logger.warning("Skipping ZIP entry with absolute path: %s", name)
+                        continue
+
                     if name.endswith('.twb') or name.endswith('.tds'):
-                        with z.open(name) as f:
-                            return f.read().decode('utf-8')
+                        if _HAS_SECURITY:
+                            content = safe_zip_extract_member(z, name)
+                            return content.decode('utf-8')
+                        else:
+                            with z.open(name) as f:
+                                return f.read().decode('utf-8')
         
         return None
     
