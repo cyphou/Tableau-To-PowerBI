@@ -609,10 +609,10 @@ def _convert_previous_value(dax, table_name, compute_using=None, column_table_ma
     """Convert PREVIOUS_VALUE(seed) → OFFSET-based DAX.
 
     Output:
-        VAR __prev = CALCULATE([inner], OFFSET(-1, ALLSELECTED('Table'), ORDERBY([dim])))
+        VAR __prev = CALCULATE([inner], OFFSET(-1, ALLSELECTED('Table'), ORDERBY([dim]), PARTITIONBY([dim2])))
         RETURN IF(ISBLANK(__prev), <seed>, __prev)
 
-    When compute_using is present, uses those dimensions for ORDERBY.
+    When compute_using is present, first dimension → ORDERBY, remaining → PARTITIONBY.
     """
     column_table_map = column_table_map or {}
     pattern = _RE_PREVIOUS_VALUE
@@ -634,11 +634,20 @@ def _convert_previous_value(dax, table_name, compute_using=None, column_table_ma
                 order_col = compute_using[0]
                 order_table = column_table_map.get(order_col, table_name)
                 orderby = f"ORDERBY('{order_table}'[{order_col}])"
+                # Additional dims → PARTITIONBY
+                partition_clause = ""
+                if len(compute_using) > 1:
+                    parts = []
+                    for dim in compute_using[1:]:
+                        t = column_table_map.get(dim, table_name)
+                        parts.append(f"'{t}'[{dim}]")
+                    partition_clause = f", PARTITIONBY({', '.join(parts)})"
             else:
                 orderby = "ORDERBY([Value])"
+                partition_clause = ""
             replacement = (
                 f"VAR __prev = CALCULATE({seed}, "
-                f"OFFSET(-1, ALLSELECTED('{table_name}'), {orderby})) "
+                f"OFFSET(-1, ALLSELECTED('{table_name}'), {orderby}{partition_clause})) "
                 f"RETURN IF(ISBLANK(__prev), {seed}, __prev)"
             )
             dax = dax[:match.start()] + replacement + dax[i:]
@@ -650,7 +659,9 @@ def _convert_lookup(dax, table_name, compute_using=None, column_table_map=None):
     """Convert LOOKUP(expr, offset) → OFFSET-based DAX.
 
     Output:
-        CALCULATE(<expr>, OFFSET(<offset>, ALLSELECTED('Table'), ORDERBY([dim])))
+        CALCULATE(<expr>, OFFSET(<offset>, ALLSELECTED('Table'), ORDERBY([dim]), PARTITIONBY([dim2])))
+
+    When compute_using has 2+ dims, first → ORDERBY, rest → PARTITIONBY.
     """
     column_table_map = column_table_map or {}
     pattern = _RE_LOOKUP
@@ -674,11 +685,19 @@ def _convert_lookup(dax, table_name, compute_using=None, column_table_map=None):
                 order_col = compute_using[0]
                 order_table = column_table_map.get(order_col, table_name)
                 orderby = f"ORDERBY('{order_table}'[{order_col}])"
+                partition_clause = ""
+                if len(compute_using) > 1:
+                    parts = []
+                    for dim in compute_using[1:]:
+                        t = column_table_map.get(dim, table_name)
+                        parts.append(f"'{t}'[{dim}]")
+                    partition_clause = f", PARTITIONBY({', '.join(parts)})"
             else:
                 orderby = "ORDERBY([Value])"
+                partition_clause = ""
             replacement = (
                 f"CALCULATE({expr}, "
-                f"OFFSET({offset}, ALLSELECTED('{table_name}'), {orderby}))"
+                f"OFFSET({offset}, ALLSELECTED('{table_name}'), {orderby}{partition_clause}))"
             )
             dax = dax[:match.start()] + replacement + dax[i:]
         match = pattern.search(dax, match.start() + 1 if depth != 0 else 0)
@@ -1875,10 +1894,17 @@ def _convert_window_functions(dax, table_name, compute_using=None, column_table_
                         t = ctm.get(dim, table_name)
                         dim_refs.append(f"'{t}'[{dim}]")
                     order_col = dim_refs[0]
+                    # First dim → ORDERBY, rest → PARTITIONBY
+                    if len(compute_using) > 1:
+                        pb_refs = [f"'{ctm.get(d, table_name)}'[{d}]" for d in compute_using[1:]]
+                        partition_clause = f", PARTITIONBY({', '.join(pb_refs)})"
+                    else:
+                        partition_clause = ""
                     partition = f"ALLEXCEPT('{table_name}', {', '.join(dim_refs)})"
                 else:
                     order_col = f"'{table_name}'[{(ctm and list(ctm.keys())[0]) or 'RowNumber'}]" if ctm else f"'{table_name}'[RowNumber]"
                     partition = f"ALL('{table_name}')"
+                    partition_clause = ""
 
                 # Generate WINDOW-based DAX for precise frame boundaries
                 # DAX WINDOW(from, fromType, to, toType, ORDERBY, blanks, partitionBy)
@@ -1886,7 +1912,7 @@ def _convert_window_functions(dax, table_name, compute_using=None, column_table_
                 replacement = (
                     f"CALCULATE({inner_expr}, "
                     f"WINDOW({frame_start}, REL, {frame_end}, REL, "
-                    f"ORDERBY({order_col}, ASC)), {partition}) "
+                    f"ORDERBY({order_col}, ASC){partition_clause}), {partition}) "
                     f"/* {tag}: frame [{frame_start},{frame_end}] */"
                 )
             elif compute_using:

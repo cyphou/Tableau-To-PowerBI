@@ -1815,6 +1815,22 @@ def _add_enterprise_args(parser):
         help='Analyse .hyper files in the workbook and print diagnostic report, then exit'
     )
 
+    parser.add_argument(
+        '--governance',
+        choices=['warn', 'enforce'],
+        default=None,
+        help='Run governance checks after generation: naming conventions, PII detection, audit trail. '
+             '"warn" reports issues; "enforce" auto-renames and blocks on violations.'
+    )
+
+    parser.add_argument(
+        '--governance-config',
+        metavar='JSON_FILE',
+        default=None,
+        help='Path to governance configuration JSON file (naming rules, PII patterns, sensitivity mapping). '
+             'Default rules apply when not specified.'
+    )
+
 
 def _add_shared_model_args(parser):
     """Add shared semantic model arguments."""
@@ -3007,6 +3023,105 @@ def _run_goals_generation(args, source_basename):
         print(f"  ⚠ Goals generation failed: {exc}")
 
 
+def _run_governance_checks(args, source_basename):
+    """Run governance checks on the generated TMDL artifacts.
+
+    Reads extracted data and runs naming convention enforcement,
+    PII detection, and audit trail recording.
+    """
+    try:
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'powerbi_import'))
+        from governance import GovernanceEngine, AuditTrail, run_governance
+
+        # Load governance config
+        gov_config = {"mode": args.governance}
+        if getattr(args, 'governance_config', None):
+            config_path = args.governance_config
+            if os.path.isfile(config_path):
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    user_cfg = json.load(f)
+                if isinstance(user_cfg, dict):
+                    gov_config.update(user_cfg)
+
+        # Load extracted data to build table list for checks
+        source_dir = os.path.join(os.path.dirname(__file__), 'tableau_export')
+        tmdl_tables = []
+        ds_path = os.path.join(source_dir, 'datasources.json')
+        if os.path.isfile(ds_path):
+            with open(ds_path, 'r', encoding='utf-8') as f:
+                datasources = json.load(f)
+            for ds in datasources:
+                for table in ds.get('tables', []):
+                    tmdl_tables.append({
+                        'name': table.get('name', ''),
+                        'columns': table.get('columns', []),
+                        'measures': [],
+                    })
+        calc_path = os.path.join(source_dir, 'calculations.json')
+        if os.path.isfile(calc_path):
+            with open(calc_path, 'r', encoding='utf-8') as f:
+                calcs = json.load(f)
+            # Add measures to the first table (main table)
+            if tmdl_tables:
+                tmdl_tables[0]['measures'] = [
+                    {'name': c.get('caption', c.get('name', '')).replace('[', '').replace(']', '')}
+                    for c in calcs if c.get('role', 'measure') == 'measure'
+                ]
+
+        # Run checks
+        report = run_governance(tmdl_tables, config=gov_config)
+
+        # Print results
+        print(f"\n  Governance ({args.governance} mode): "
+              f"{report.issue_count} issues ({report.warn_count} warn, {report.fail_count} fail)")
+        if report.classifications:
+            print(f"  PII classifications: {len(report.classifications)} columns flagged")
+        for issue in report.issues[:10]:
+            severity_icon = "⚠" if issue.severity == "warn" else "✗" if issue.severity == "fail" else "ℹ"
+            print(f"    {severity_icon} [{issue.category}] {issue.message}")
+        if len(report.issues) > 10:
+            print(f"    ... and {len(report.issues) - 10} more issues")
+
+        # Save governance report JSON alongside the project
+        out_dir = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
+        project_dir = os.path.join(out_dir, source_basename)
+        if os.path.isdir(project_dir):
+            gov_path = os.path.join(project_dir, 'governance_report.json')
+            with open(gov_path, 'w', encoding='utf-8') as f:
+                json.dump(report.to_dict(), f, indent=2, ensure_ascii=False)
+            print(f"  ✓ Governance report: {gov_path}")
+
+        # Audit trail
+        if gov_config.get('audit_trail', True):
+            audit_log_path = gov_config.get('audit_log_path', 'migration_audit.jsonl')
+            # If relative, place alongside the project
+            if not os.path.isabs(audit_log_path) and os.path.isdir(project_dir):
+                audit_log_path = os.path.join(project_dir, audit_log_path)
+            audit = AuditTrail(log_path=audit_log_path)
+            source_hash = AuditTrail.compute_file_hash(getattr(args, 'tableau_file', ''))
+            output_hash = AuditTrail.compute_dir_hash(project_dir) if os.path.isdir(project_dir) else ""
+            audit.record(
+                source_file=getattr(args, 'tableau_file', ''),
+                output_dir=project_dir,
+                workbook_name=source_basename,
+                source_hash=source_hash,
+                output_hash=output_hash,
+                governance_summary={
+                    'mode': args.governance,
+                    'issues': report.issue_count,
+                    'warns': report.warn_count,
+                    'fails': report.fail_count,
+                    'pii_columns': len(report.classifications),
+                },
+            )
+            saved = audit.save()
+            if saved:
+                print(f"  ✓ Audit trail: {audit_log_path} ({saved} entries)")
+
+    except (ImportError, OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"  ⚠ Governance checks failed: {exc}")
+
+
 def _extract_twbx_data_files(args, source_basename):
     """Extract embedded data files from TWBX into the PBI output directory.
 
@@ -3311,6 +3426,10 @@ def _run_single_migration(args):
     # Step 3b: Goals/Scorecard generation (optional, --goals flag)
     if getattr(args, 'goals', False) and results.get('generation'):
         _run_goals_generation(args, source_basename)
+
+    # Step 3c: Governance checks (optional, --governance flag)
+    if getattr(args, 'governance', None) and results.get('generation'):
+        _run_governance_checks(args, source_basename)
 
     # Step 4: Migration report
     progress.start("Generating migration report")

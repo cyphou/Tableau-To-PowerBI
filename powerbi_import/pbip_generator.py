@@ -606,6 +606,22 @@ class PowerBIProjectGenerator:
             if not has_measure:
                 visual_type = 'table'
 
+        # Spatial detection: map visuals with lat/lon fields → azureMap
+        if visual_type in ('map', 'scatterChart') and ws_data:
+            fields = ws_data.get('fields', [])
+            has_lat = any(
+                f.get('semantic_role', '').lower() in ('latitude', 'lat')
+                or 'latitude' in f.get('name', '').lower()
+                for f in fields
+            )
+            has_lon = any(
+                f.get('semantic_role', '').lower() in ('longitude', 'lon', 'lng')
+                or 'longitude' in f.get('name', '').lower()
+                for f in fields
+            )
+            if has_lat and has_lon:
+                visual_type = 'azureMap'
+
         visual_json = {
             "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
             "name": visual_id,

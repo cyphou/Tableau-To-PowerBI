@@ -1095,6 +1095,17 @@ def _collect_semantic_context(datasources, extra_objects):
         'datasource_table_map': datasource_table_map,
     }
 
+    # Build compute_using_map from worksheet table_calcs for PARTITIONBY/ORDERBY
+    # Maps calc field name → list of compute-using dimension names
+    compute_using_map = {}
+    for ws in extra_objects.get('worksheets', []):
+        for tc in ws.get('table_calcs', []):
+            tc_field = tc.get('field', '')
+            cu = tc.get('compute_using', [])
+            if tc_field and cu:
+                compute_using_map[tc_field] = cu
+    dax_context['compute_using_map'] = compute_using_map
+
     # Build ds_main_table: datasource_name → table_name (table with most columns in that DS)
     ds_main_table = {}
     for tname, ds_names in table_datasource_set.items():
@@ -1619,6 +1630,8 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
             param_values=param_values,
             calc_datatype=datatype,
             partition_fields=calc.get('table_calc_partitioning'),
+            compute_using=dax_context.get('compute_using_map', {}).get(calc_name)
+                          or dax_context.get('compute_using_map', {}).get(caption),
             table_columns=_this_table_columns
         )
 

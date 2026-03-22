@@ -123,6 +123,8 @@ VISUAL_TYPE_MAP = {
     "polygon": "map",
     "multipolygon": "map",
     "shapemap": "shapeMap",
+    "makepoint": "azureMap",
+    "spatial": "azureMap",
 
     # ── Table / Matrix ────────────────────────────────────────
     "table": "tableEx",
@@ -395,6 +397,7 @@ VISUAL_DATA_ROLES = {
     "lineStackedColumnComboChart":       (["Category"], ["ColumnY", "LineY"]),
     "lineClusteredColumnComboChart":     (["Category"], ["ColumnY", "LineY"]),
     "map":                               (["Category", "Location"], ["Size", "Color"]),
+    "azureMap":                           (["Latitude", "Longitude"], ["Size", "Color"]),
     "filledMap":                         (["Location"], ["Color"]),
     "shapeMap":                          (["Location"], ["Color"]),
     "ribbonChart":                       (["Category", "Series"], ["Y"]),
@@ -634,6 +637,11 @@ def _get_config_template(visual_type):
                 "dataPoint": [{"properties": {"showAllDataPoints": _L("true")}}],
             },
         },
+        "azureMap": {
+            "objects": {
+                "legend": [{"properties": {"show": _L("true")}}],
+            },
+        },
     }
 
     return templates.get(visual_type, {})
@@ -744,6 +752,7 @@ VISUAL_FALLBACK_CASCADE = {
     'map':                               'tableEx',
     'filledMap':                         'tableEx',
     'shapeMap':                          'tableEx',
+    'azureMap':                          'map',
     'gauge':                             'card',
     'kpi':                               'card',
     # Simple visuals → table as last resort
