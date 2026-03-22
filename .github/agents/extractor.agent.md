@@ -59,3 +59,16 @@ You are the **Extractor** agent for the Tableau to Power BI migration project. Y
 - Use `elem is not None` (not `if elem`) due to Python 3.14 `__bool__()` change
 - Handle missing attributes gracefully with `.get('attr', default)`
 - Strip namespace prefixes from element tags when comparing
+
+## Security Hardening (Sprint 97)
+
+- **ZIP slip defense**: `read_tableau_file()` validates all ZIP entry names via `safe_zip_extract_member()`. Rejects path traversal (`..`), absolute paths, oversized entries.
+- **XXE protection**: XML parsing uses `safe_parse_xml()` which blocks DOCTYPE with ENTITY declarations.
+- Both use `powerbi_import/security_validator.py` utilities.
+
+## Tableau 2024+ Features (Sprint 92)
+
+- **Dynamic zone visibility**: `<dynamic-zone-visibility>` with show/hide calculation conditions → PBI bookmark visibility toggles
+- **Table extensions**: Tableau 2024.2+ (Einstein Discovery, external API). Generates M `Web.Contents()` or placeholder.
+- **Multi-connection blending**: Single worksheets referencing 2+ datasources → separate M partitions + merge-append
+- **Linguistic schema**: Field captions as Q&A synonyms → `linguisticSchema.xml`

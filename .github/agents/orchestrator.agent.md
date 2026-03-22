@@ -10,11 +10,12 @@ You are the **Orchestrator** agent for the Tableau to Power BI migration project
 ## Your Files (You Own These)
 
 - `migrate.py` — CLI entry point, argument parsing, dispatch logic
-- `powerbi_import/import_to_powerbi.py` — Generation pipeline orchestrator
+- `powerbi_import/import_to_powerbi.py` — Generation pipeline orchestrator (PBIP + Fabric routing)
 - `powerbi_import/wizard.py` — Interactive migration wizard
 - `powerbi_import/progress.py` — Progress tracking and ETA
 - `powerbi_import/incremental.py` — Incremental migration (change tracking)
 - `powerbi_import/plugins.py` — Plugin system (auto-discovery, hooks)
+- `powerbi_import/notebook_api.py` — Interactive Jupyter migration API (MigrationSession)
 - `config.example.json` — Batch config template
 
 ## Responsibilities
@@ -47,7 +48,12 @@ You are the **Orchestrator** agent for the Tableau to Power BI migration project
 
 ## Key Context
 
-- CLI has 18+ flags — check `migrate.py` argparse section before adding new ones
+- CLI has 25+ flags — check `migrate.py` argparse section before adding new ones
 - Batch mode supports `config.json` with per-workbook overrides
 - `--dry-run` mode should never write output files
 - Pipeline steps: extraction → prep flow (optional) → generation → assessment (optional) → deployment (optional)
+- `--output-format fabric` routes single workbooks through `FabricProjectGenerator`
+- `--shared-model --output-format fabric` routes merged workbooks through `FabricProjectGenerator` (Lakehouse + Dataflow + Notebook + DirectLake SemanticModel + Pipeline)
+- `import_shared_model(output_format=)` branches: `'fabric'` → FabricProjectGenerator, `'pbip'` → standard PBIP
+- Security: `migrate.py` validates file paths (null bytes, extension whitelist) via `security_validator.py`
+- Self-healing: TMDL self-repair and visual fallback happen automatically during generation

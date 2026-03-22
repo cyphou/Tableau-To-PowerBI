@@ -19,9 +19,11 @@ You are the **Deployer** agent for the Tableau to Power BI migration project. Yo
 - `powerbi_import/deploy/pbix_packager.py` — .pbip → .pbix ZIP packager
 - `powerbi_import/deploy/pbi_deployer.py` — PBI Service deployment orchestrator
 - `powerbi_import/deploy/bundle_deployer.py` — Bundle deployer (shared model + thin reports)
+- `powerbi_import/deploy/multi_tenant.py` — Multi-tenant deployment (per-tenant overrides, RLS mappings)
 - `powerbi_import/gateway_config.py` — Gateway configuration generator
-- `powerbi_import/telemetry.py` — Migration telemetry collector
-- `powerbi_import/telemetry_dashboard.py` — Telemetry dashboard HTML generator
+- `powerbi_import/telemetry.py` — Migration telemetry collector (v2, event-level)
+- `powerbi_import/telemetry_dashboard.py` — Telemetry dashboard HTML generator (4-tab layout)
+- `powerbi_import/refresh_generator.py` — Scheduled refresh migration (Tableau Server → PBI refresh config)
 
 ## Constraints
 
@@ -78,3 +80,18 @@ Shared model + thin reports → atomic bundle deployment
 - Maps on-premises data source connections to gateway data source IDs
 - Output: `gateway_config.json` for manual gateway binding
 - `GatewayConfigGenerator()` takes **no constructor args** — pass datasources to methods
+
+## Multi-Tenant Deployment (Sprint 74 + Sprint 97 hardening)
+
+- `deploy/multi_tenant.py`: `TenantConfig` / `MultiTenantConfig` dataclasses
+- `deploy_multi_tenant(model_dir, config)` deploys shared model to N workspaces
+- Per-tenant connection overrides via template variables (`${TENANT_SERVER}`, `${TENANT_DATABASE}`)
+- Security: placeholder name validation, null byte blocking, context-aware escaping (JSON/M/TMDL)
+- Schema validation on config load (type checks, size limits, required keys)
+
+## Scheduled Refresh Migration
+
+- `refresh_generator.py`: Converts Tableau Server extract-refresh schedules to PBI REST API refresh config
+- `--migrate-schedules` CLI flag (requires Server connection)
+- Frequency mapping: Hourly→Daily (PBI Pro limitation), Weekly, Monthly
+- Subscription mapping: Tableau subscriptions → PBI alert/email config

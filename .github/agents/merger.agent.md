@@ -16,6 +16,11 @@ You are the **Merger** agent for the Tableau to Power BI migration project. You 
 
 - `powerbi_import/thin_report_generator.py` — Thin report generator (byPath wiring to shared model)
 
+## Shared Files (Co-owned with Assessor)
+
+- `powerbi_import/merge_assessment.py` — Merge assessment reporter
+- `powerbi_import/merge_report_html.py` — Merge assessment HTML report
+
 ## Constraints
 
 - Do NOT modify TMDL generation internals — delegate to **Generator**
@@ -34,9 +39,19 @@ You are the **Merger** agent for the Tableau to Power BI migration project. You 
 2. Build table fingerprints per workbook
 3. Score pairwise table similarity
 4. Resolve conflicts (measures, columns, relationships, parameters)
-5. Generate merged TMDL semantic model
-6. Generate thin reports (one per workbook, wired to shared model)
+5. Generate merged semantic model:
+   - **PBIP mode** (default): `PowerBIProjectGenerator.create_semantic_model_structure()` → shared `.SemanticModel` + thin reports
+   - **Fabric mode** (`--output-format fabric`): `FabricProjectGenerator.generate_project()` → Lakehouse + Dataflow + Notebook + DirectLake SemanticModel + Pipeline + thin reports
+6. Generate thin reports (one per workbook, wired to shared model via `byPath`)
 7. Save MergeManifest (JSON tracking file)
+
+### Fabric Merge Output (Sprint 98)
+
+When `import_shared_model(output_format='fabric')` is called:
+- The merged `converted_objects` dict (same 16-key structure) is passed directly to `FabricProjectGenerator.generate_project()`
+- Thin reports are placed inside the Fabric project directory
+- No model-explorer `.pbip` is created
+- The thin reports use `byPath` references to `../{model_name}.SemanticModel`
 
 ### MergeManifest
 - Tracks: workbook sources, table origins, measure origins, merge scores

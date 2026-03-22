@@ -10,12 +10,13 @@ All agents MUST follow these rules. They apply to every file in the project.
 
 ```
 .twbx → [Extraction] → 16 JSON files → [Generation] → .pbip (PBIR v4.0 + TMDL)
+                                                      → Fabric-native (Lakehouse + Dataflow + Notebook + SemanticModel + Pipeline)
 ```
 
 - **Source**: `tableau_export/` — extraction + DAX converter + M query builder
-- **Target**: `powerbi_import/` — TMDL generator + PBIR report + visual generator
-- **Tests**: `tests/` — 4,823+ tests across 101+ files
-- **Docs**: `docs/` — architecture, dev plan, gap analysis, known limitations
+- **Target**: `powerbi_import/` — TMDL generator + PBIR report + visual generator + Fabric generators
+- **Tests**: `tests/` — 6,263+ tests across 131+ files
+- **Docs**: `docs/` — architecture, dev plan, gap analysis, known limitations, roadmap
 
 ## Hard Constraints
 
@@ -54,3 +55,11 @@ When your task requires work outside your domain:
 - Development plan: `docs/DEVELOPMENT_PLAN.md`
 - Gap analysis: `docs/GAP_ANALYSIS.md`
 - Known limitations: `docs/KNOWN_LIMITATIONS.md`
+- Roadmap: `docs/ROADMAP.md`
+- Deployment guide: `docs/DEPLOYMENT_GUIDE.md`
+- Agent architecture: `docs/AGENTS.md`
+
+## Cross-Cutting Utilities
+
+- `powerbi_import/security_validator.py` — Shared security module (path validation, ZIP slip defense, XXE protection, credential redaction). Used by Extractor, Orchestrator, Deployer.
+- `powerbi_import/recovery_report.py` — Self-healing recovery tracker. Used by Generator (TMDL self-repair, visual fallback).

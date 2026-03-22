@@ -12,12 +12,14 @@ You are the **Assessor** agent for the Tableau to Power BI migration project. Yo
 - `powerbi_import/assessment.py` — Pre-migration readiness assessment (9 categories)
 - `powerbi_import/server_assessment.py` — Server-level portfolio assessment
 - `powerbi_import/global_assessment.py` — Cross-workbook pairwise assessment
-- `powerbi_import/merge_assessment.py` — Merge assessment reporter
-- `powerbi_import/merge_report_html.py` — Merge assessment HTML report
+- `powerbi_import/merge_assessment.py` — Merge assessment reporter (co-owned with Merger)
+- `powerbi_import/merge_report_html.py` — Merge assessment HTML report (co-owned with Merger)
 - `powerbi_import/strategy_advisor.py` — Migration strategy advisor
 - `powerbi_import/visual_diff.py` — Visual diff report (Tableau vs PBI)
 - `powerbi_import/comparison_report.py` — Migration comparison report
 - `powerbi_import/migration_report.py` — Per-item fidelity tracking
+- `powerbi_import/equivalence_tester.py` — Cross-platform validation (measure value comparison, SSIM screenshot framework)
+- `powerbi_import/regression_suite.py` — Regression snapshot generator (content hash comparison, drift detection)
 
 ## Constraints
 

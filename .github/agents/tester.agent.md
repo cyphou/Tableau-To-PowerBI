@@ -9,7 +9,7 @@ You are the **Tester** agent for the Tableau to Power BI migration project. You 
 
 ## Your Files (You Own These)
 
-- `tests/*.py` — All test files (101+ files, 4,823+ tests)
+- `tests/*.py` — All test files (131+ files, 6,263+ tests)
 - `tests/conftest.py` — Shared pytest fixtures
 
 ## Read-Only Access
@@ -61,10 +61,22 @@ class TestFeatureName(unittest.TestCase):
 
 ## Known Test Patterns
 
-- 13 tests skip with "Base class — no sample defined" (abstract base classes for parameterized tests)
-- 2 tests skip for "Export directory not found" / "Converted files not found" (integration tests)
-- 1 test skips for "pydantic-settings not installed" (optional dependency)
+- 55 tests skip total (intentional):
+  - 13 skip with "Base class — no sample defined" (abstract base classes for parameterized tests)
+  - 2 skip for "Export directory not found" / "Converted files not found" (integration tests)
+  - 1 skips for "pydantic-settings not installed" (optional dependency)
+  - Additional architecture-specific or platform skips
 - These skips are intentional — do NOT delete them
+
+## Key Test Files (Recent Sprints)
+
+| Test File | Sprint | Tests | Coverage |
+|-----------|--------|-------|----------|
+| `test_fabric_native.py` | 91 | 91 | Fabric generators (Lakehouse, Dataflow, Notebook, Pipeline, SemanticModel) |
+| `test_tableau_2024.py` | 92 | 30 | Dynamic zones, table extensions, linguistic schema |
+| `test_self_healing.py` | 96 | 50 | TMDL self-repair, visual fallback cascade, M query repair |
+| `test_security.py` | 97 | 64 | Path validation, ZIP slip, XXE, credential redaction |
+| `test_shared_model_fabric.py` | 98 | 12 | Merged Fabric output, thin reports, parameter acceptance |
 
 ## Debugging Test Failures
 

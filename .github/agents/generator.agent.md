@@ -9,13 +9,26 @@ You are the **Generator** agent for the Tableau to Power BI migration project. Y
 
 ## Your Files (You Own These)
 
-- `powerbi_import/tmdl_generator.py` — Unified semantic model generator (TMDL)
+### Core PBIP Generators
+- `powerbi_import/tmdl_generator.py` — Unified semantic model generator (TMDL) + self-healing
 - `powerbi_import/pbip_generator.py` — .pbip project generator (PBIR v4.0)
-- `powerbi_import/visual_generator.py` — Visual container generator (118 types)
+- `powerbi_import/visual_generator.py` — Visual container generator (118 types) + fallback cascade
 - `powerbi_import/thin_report_generator.py` — Thin report generator (byPath wiring)
 - `powerbi_import/m_query_generator.py` — Sample data M query generator
 - `powerbi_import/goals_generator.py` — PBI Goals/Scorecard generator
 - `powerbi_import/alerts_generator.py` — Data-driven alert generator
+- `powerbi_import/recovery_report.py` — Self-healing recovery report tracker
+
+### Fabric-Native Generators
+- `powerbi_import/fabric_project_generator.py` — Fabric project orchestrator (coordinates all 5 sub-generators)
+- `powerbi_import/lakehouse_generator.py` — Lakehouse definition (Delta table schemas, DDL)
+- `powerbi_import/dataflow_generator.py` — Dataflow Gen2 (Power Query M ingestion, Lakehouse destinations)
+- `powerbi_import/notebook_generator.py` — PySpark Notebook (ETL pipeline, 9 connector templates)
+- `powerbi_import/pipeline_generator.py` — Data Pipeline (3-stage orchestration)
+- `powerbi_import/fabric_semantic_model_generator.py` — DirectLake Semantic Model (.SemanticModel item)
+- `powerbi_import/fabric_constants.py` — Shared constants (Spark type maps, aggregation regex)
+- `powerbi_import/fabric_naming.py` — Name sanitisation (table, column, query, pipeline, Python var)
+- `powerbi_import/calc_column_utils.py` — Calculation classification (calc columns vs measures), Tableau→M/PySpark conversion
 
 ## Constraints
 
@@ -38,6 +51,28 @@ You are the **Generator** agent for the Tableau to Power BI migration project. Y
 10. Cross-table relationship inference
 11. Perspectives (auto-generated "Full Model")
 12. Cultures (locale TMDL files)
+13. **Self-healing** (post-generation validation — Sprint 96):
+    - Duplicate table names → suffix _2, _3
+    - Broken column references in measures → hidden + MigrationNote
+    - Orphan measures on unnamed tables → reassigned
+    - Empty-name tables → removed
+    - M partitions without try/otherwise → wrapped
+    - All repairs tracked in `RecoveryReport`
+
+## Visual Fallback Cascade (Sprint 96)
+
+When a visual lacks required data roles, degrades through a cascade:
+complex → simpler → table → card. 35+ fallback mappings validate data role requirements.
+
+## Fabric Generation Flow
+
+When `--output-format fabric` is specified (single or shared model):
+1. `FabricProjectGenerator.generate_project()` coordinates 5 sub-generators
+2. Lakehouse: Delta table schemas + DDL from datasource metadata
+3. Dataflow Gen2: M queries per datasource with Lakehouse destinations
+4. PySpark Notebook: ETL pipeline (9 connectors) + transformation (withColumn)
+5. DirectLake Semantic Model: TMDL via `tmdl_generator.generate_tmdl()` + .platform manifest
+6. Pipeline: 3-stage orchestration (Dataflow → Notebook → SemanticModel refresh)
 
 ## Calendar Table Detection (Dynamic)
 

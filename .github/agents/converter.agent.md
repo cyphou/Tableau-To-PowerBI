@@ -11,6 +11,7 @@ You are the **Converter** agent for the Tableau to Power BI migration project. Y
 
 - `tableau_export/dax_converter.py` — 180+ Tableau → DAX formula conversions
 - `tableau_export/m_query_builder.py` — Power Query M generator (33 connector types + 43 transforms)
+- `powerbi_import/dax_optimizer.py` — DAX optimizer engine (AST-based rewriter: nested IF→SWITCH, ISBLANK→COALESCE, constant folding, SUMX simplification, measure dependency DAG)
 
 ## Constraints
 
