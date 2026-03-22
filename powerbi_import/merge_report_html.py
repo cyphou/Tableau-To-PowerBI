@@ -36,27 +36,20 @@ try:
 except ImportError:
     from shared_model import MergeAssessment
 
-
-# ═══════════════════════════════════════════════════════════════════
-#  Color palette (matches generate_report.py)
-# ═══════════════════════════════════════════════════════════════════
-PBI_BLUE = "#0078d4"
-PBI_DARK = "#323130"
-PBI_GRAY = "#605e5c"
-PBI_LIGHT_GRAY = "#a19f9d"
-PBI_BG = "#f5f5f5"
-SUCCESS = "#28a745"
-WARN = "#ffc107"
-FAIL = "#dc3545"
-
-
-def _esc(text: str) -> str:
-    """HTML-escape a string."""
-    return (str(text)
-            .replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-            .replace('"', "&quot;"))
+try:
+    from powerbi_import.html_template import (
+        get_report_css, get_report_js, esc as _esc,
+        PBI_BLUE, PBI_DARK, PBI_GRAY, PBI_LIGHT_GRAY, PBI_BG,
+        SUCCESS, FAIL, badge as _shared_badge, fidelity_bar,
+    )
+    WARN = "#797600"
+except ImportError:
+    from html_template import (
+        get_report_css, get_report_js, esc as _esc,
+        PBI_BLUE, PBI_DARK, PBI_GRAY, PBI_LIGHT_GRAY, PBI_BG,
+        SUCCESS, FAIL, badge as _shared_badge, fidelity_bar,
+    )
+    WARN = "#797600"
 
 
 def _safe_id(text: str) -> str:
@@ -74,30 +67,26 @@ def _score_color(score: int) -> str:
 
 
 def _overlap_bar(pct: float) -> str:
-    """Render a % bar for column overlap."""
+    """Render a % bar for column overlap using shared template classes."""
     width = max(int(pct * 100), 0)
-    color = SUCCESS if pct >= 0.7 else WARN if pct >= 0.4 else FAIL
+    color = "var(--success)" if pct >= 0.7 else "#c19c00" if pct >= 0.4 else "var(--fail)"
     return (
-        f'<div style="background:#e9ecef;border-radius:4px;width:120px;'
-        f'display:inline-block;vertical-align:middle">'
-        f'<div style="background:{color};width:{width}%;height:16px;'
-        f'border-radius:4px;text-align:center;font-size:11px;color:#fff;'
-        f'line-height:16px">{width}%</div></div>'
+        f'<span class="fidelity-bar">'
+        f'<span class="fidelity-track"><span class="fidelity-fill" '
+        f'style="width:{width}%;background:{color}"></span></span>'
+        f'<span class="fidelity-label">{width}%</span></span>'
     )
 
 
 def _rec_badge(rec: str) -> str:
-    """Render recommendation as styled badge."""
+    """Render recommendation as styled badge using shared template."""
     labels = {
-        "merge": ("MERGE", SUCCESS),
-        "partial": ("PARTIAL", WARN),
-        "separate": ("SEPARATE", FAIL),
+        "merge": ("MERGE", "green"),
+        "partial": ("PARTIAL", "yellow"),
+        "separate": ("SEPARATE", "red"),
     }
-    text, color = labels.get(rec, (rec.upper(), PBI_GRAY))
-    return (
-        f'<span style="background:{color};color:#fff;padding:4px 12px;'
-        f'border-radius:4px;font-weight:bold;font-size:0.9em">{text}</span>'
-    )
+    text, level = labels.get(rec, (rec.upper(), "gray"))
+    return _shared_badge(text, level)
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -279,9 +268,9 @@ def _build_lineage_section(merged: dict, workbook_names: List[str]) -> str:
     if not records:
         return ''
 
-    html = '<h2 onclick="toggleSection(\'lineage\')"><span class="section-icon">&#128279;</span>'
-    html += 'Lineage<span class="toggle-icon" id="lineage-icon">&#9660;</span></h2>'
-    html += '<div class="collapsible" id="lineage">'
+    html = '<div class="section-header" onclick="toggleSection(this)"><span class="section-icon">&#128279;</span>'
+    html += 'Lineage<span class="toggle-arrow">&#9660;</span></div>'
+    html += '<div class="section-body">'
 
     # --- Sankey-style flow diagram ---
     # Group by type and action
@@ -439,76 +428,39 @@ def generate_merge_html_report(
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Shared Semantic Model — Merge Report</title>
-<style>
-    * {{ box-sizing: border-box; }}
-    body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background: {PBI_BG}; color: {PBI_DARK}; }}
-    .container {{ max-width: 1400px; margin: 0 auto; }}
-    h1 {{ color: {PBI_BLUE}; border-bottom: 3px solid {PBI_BLUE}; padding-bottom: 10px; font-size: 1.6em; }}
-    h2 {{ color: {PBI_DARK}; margin-top: 30px; font-size: 1.25em; cursor: pointer; }}
-    h2:hover {{ color: {PBI_BLUE}; }}
-    h3 {{ color: {PBI_GRAY}; margin-top: 20px; }}
-    .card {{ background: #fff; border-radius: 8px; padding: 20px; margin: 15px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
-    .stats {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }}
-    .stat {{ background: #fff; border-radius: 8px; padding: 16px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.15s; }}
-    .stat:hover {{ transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }}
-    .stat .number {{ font-size: 2em; font-weight: bold; color: {PBI_BLUE}; }}
-    .stat .label {{ font-size: 0.85em; color: {PBI_GRAY}; margin-top: 4px; }}
-    table {{ border-collapse: collapse; width: 100%; margin: 10px 0; }}
-    th {{ background: {PBI_BLUE}; color: #fff; padding: 10px 12px; text-align: left; font-size: 0.85em; position: sticky; top: 0; }}
-    td {{ padding: 8px 12px; border-bottom: 1px solid #e1dfdd; font-size: 0.85em; }}
-    tr:hover {{ background: #f3f2f1; }}
-    .detail-table th {{ background: {PBI_GRAY}; }}
-    .footer {{ text-align: center; color: {PBI_LIGHT_GRAY}; font-size: 0.85em; margin-top: 40px; padding: 20px; }}
-    .connector-tag {{ background: #e8f0fe; color: #1a73e8; padding: 2px 6px; border-radius: 3px; font-size: 0.82em; white-space: nowrap; }}
-    .warn-tag {{ background: #fff3cd; color: #856404; padding: 2px 6px; border-radius: 3px; font-size: 0.82em; }}
-    .success-tag {{ background: #d4edda; color: #155724; padding: 2px 6px; border-radius: 3px; font-size: 0.82em; }}
-    .danger-tag {{ background: #f8d7da; color: #721c24; padding: 2px 6px; border-radius: 3px; font-size: 0.82em; }}
-    .merge-arrow {{ color: {PBI_BLUE}; font-weight: bold; font-size: 1.2em; padding: 0 8px; }}
-    .mono {{ font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 0.82em; }}
-    .section-icon {{ font-size: 1.2em; margin-right: 4px; }}
-    .collapsible {{ overflow: hidden; transition: max-height 0.3s ease-out; max-height: 5000px; }}
-    .collapsed {{ max-height: 0 !important; }}
-    .toggle-icon {{ float: right; font-size: 0.8em; color: {PBI_LIGHT_GRAY}; }}
-    .tab-bar {{ display: flex; gap: 2px; border-bottom: 2px solid #e1dfdd; margin-bottom: 15px; }}
-    .tab {{ padding: 8px 16px; cursor: pointer; font-size: 0.9em; border-radius: 4px 4px 0 0; transition: background 0.2s; color: {PBI_GRAY}; }}
-    .tab:hover {{ background: #e8f0fe; }}
-    .tab.active {{ background: {PBI_BLUE}; color: #fff; font-weight: bold; }}
-    .tab-content {{ display: none; }}
-    .tab-content.active {{ display: block; }}
-    .flow-box {{ display: inline-block; padding: 12px 20px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 0.95em; }}
-    .flow-arrow {{ display: inline-block; font-size: 1.8em; color: {PBI_BLUE}; vertical-align: middle; padding: 0 10px; }}
-    @media print {{
-        .collapsible {{ max-height: none !important; }}
-        h2 {{ cursor: default; }}
-        .toggle-icon {{ display: none; }}
-    }}
+<style>{get_report_css()}
+/* merge-report extras */
+.merge-arrow {{ color: var(--pbi-blue); font-weight: bold; font-size: 1.2em; padding: 0 8px; }}
+.mono {{ font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 0.82em; }}
+.section-icon {{ font-size: 1.2em; margin-right: 4px; }}
+.flow-box {{ display: inline-block; padding: 12px 20px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 0.95em; }}
+.flow-arrow {{ display: inline-block; font-size: 1.8em; color: var(--pbi-blue); vertical-align: middle; padding: 0 10px; }}
+.detail-table th {{ background: var(--pbi-gray); }}
 </style>
 </head>
 <body>
-<div class="container">
+<div class="report-header">
 <h1>&#128279; Shared Semantic Model — Merge Report</h1>
-<p style="color:{PBI_GRAY};font-size:0.9em">
-    Generated: {now} &nbsp;|&nbsp; Tool: v{tool_version} &nbsp;|&nbsp;
-    Model: <strong>{_esc(model_name)}</strong> &nbsp;|&nbsp;
-    Workbooks: {len(workbook_names)}
-</p>
+<p>Model: <strong>{_esc(model_name)}</strong> &nbsp;|&nbsp; Workbooks: {len(workbook_names)} &nbsp;|&nbsp; Generated: {now} &nbsp;|&nbsp; Tool: v{tool_version}</p>
+</div>
+<div class="container">
 """
 
     # ══════════════════════════════════════════════════════════════
     # 1. EXECUTIVE SUMMARY
     # ══════════════════════════════════════════════════════════════
     html += f"""
-<h2 onclick="toggleSection('exec')"><span class="section-icon">&#128200;</span>
-Executive Summary <span class="toggle-icon" id="exec-icon">&#9660;</span></h2>
-<div id="exec" class="collapsible">
-<div class="stats">
-    <div class="stat"><div class="number">{len(workbook_names)}</div><div class="label">Workbooks</div></div>
-    <div class="stat"><div class="number" style="color:{score_color}">{score}/100</div><div class="label">Merge Score</div></div>
-    <div class="stat"><div class="number">{total_src_tables}</div><div class="label">Source Tables</div></div>
-    <div class="stat"><div class="number" style="color:{SUCCESS}">{merged_stats['tables']}</div><div class="label">Merged Tables</div></div>
-    <div class="stat"><div class="number" style="color:{SUCCESS}">{tables_saved}</div><div class="label">Tables Saved</div></div>
-    <div class="stat"><div class="number">{assessment.measure_duplicates_removed}</div><div class="label">Measures Deduped</div></div>
-    <div class="stat"><div class="number">{assessment.relationship_duplicates_removed}</div><div class="label">Rels Deduped</div></div>
+<div class="section-header" onclick="toggleSection(this)">
+<span class="section-icon">&#128200;</span> Executive Summary <span class="toggle-arrow">&#9660;</span></div>
+<div class="section-body">
+<div class="stat-grid">
+    <div class="stat-card"><div class="stat-value">{len(workbook_names)}</div><div class="stat-label">Workbooks</div></div>
+    <div class="stat-card accent-teal"><div class="stat-value" style="color:{score_color}">{score}/100</div><div class="stat-label">Merge Score</div></div>
+    <div class="stat-card"><div class="stat-value">{total_src_tables}</div><div class="stat-label">Source Tables</div></div>
+    <div class="stat-card accent-green"><div class="stat-value">{merged_stats['tables']}</div><div class="stat-label">Merged Tables</div></div>
+    <div class="stat-card accent-green"><div class="stat-value">{tables_saved}</div><div class="stat-label">Tables Saved</div></div>
+    <div class="stat-card"><div class="stat-value">{assessment.measure_duplicates_removed}</div><div class="stat-label">Measures Deduped</div></div>
+    <div class="stat-card"><div class="stat-value">{assessment.relationship_duplicates_removed}</div><div class="stat-label">Rels Deduped</div></div>
     <div class="stat"><div class="number" style="color:{WARN if assessment.measure_conflicts else SUCCESS}">{len(assessment.measure_conflicts)}</div><div class="label">Conflicts</div></div>
 </div>
 
@@ -540,9 +492,9 @@ Executive Summary <span class="toggle-icon" id="exec-icon">&#9660;</span></h2>
     # 2. TABLEAU SOURCE INVENTORY
     # ══════════════════════════════════════════════════════════════
     html += f"""
-<h2 onclick="toggleSection('source')"><span class="section-icon">&#128214;</span>
-Tableau Source Inventory <span class="toggle-icon" id="source-icon">&#9660;</span></h2>
-<div id="source" class="collapsible">
+<div class="section-header" onclick="toggleSection(this)">
+<span class="section-icon">&#128214;</span> Tableau Source Inventory <span class="toggle-arrow">&#9660;</span></div>
+<div class="section-body">
 <div class="card">
 <table>
 <tr>
@@ -579,9 +531,9 @@ Tableau Source Inventory <span class="toggle-icon" id="source-icon">&#9660;</spa
     # 3. POWER BI MERGED OUTPUT
     # ══════════════════════════════════════════════════════════════
     html += f"""
-<h2 onclick="toggleSection('output')"><span class="section-icon">&#9889;</span>
-Power BI Merged Output <span class="toggle-icon" id="output-icon">&#9660;</span></h2>
-<div id="output" class="collapsible">
+<div class="section-header" onclick="toggleSection(this)">
+<span class="section-icon">&#9889;</span> Power BI Merged Output <span class="toggle-arrow">&#9660;</span></div>
+<div class="section-body">
 <div class="stats">
     <div class="stat"><div class="number" style="color:{PBI_BLUE}">{merged_stats['tables']}</div><div class="label">Tables</div></div>
     <div class="stat"><div class="number">{merged_stats['columns']}</div><div class="label">Columns</div></div>
@@ -628,9 +580,9 @@ Power BI Merged Output <span class="toggle-icon" id="output-icon">&#9660;</span>
     # 4. MERGE DETAILS — TABLE MATCHING
     # ══════════════════════════════════════════════════════════════
     html += f"""
-<h2 onclick="toggleSection('details')"><span class="section-icon">&#128269;</span>
-Merge Details — Table Matching <span class="toggle-icon" id="details-icon">&#9660;</span></h2>
-<div id="details" class="collapsible">
+<div class="section-header" onclick="toggleSection(this)">
+<span class="section-icon">&#128269;</span> Merge Details — Table Matching <span class="toggle-arrow">&#9660;</span></div>
+<div class="section-body">
 """
 
     if assessment.merge_candidates:
@@ -682,9 +634,9 @@ Merge Details — Table Matching <span class="toggle-icon" id="details-icon">&#9
     # 5. MEASURE MAPPING
     # ══════════════════════════════════════════════════════════════
     html += f"""
-<h2 onclick="toggleSection('measures')"><span class="section-icon">&#128202;</span>
-Measure Mapping — Tableau to Power BI <span class="toggle-icon" id="measures-icon">&#9660;</span></h2>
-<div id="measures" class="collapsible">
+<div class="section-header" onclick="toggleSection(this)">
+<span class="section-icon">&#128202;</span> Measure Mapping — Tableau to Power BI <span class="toggle-arrow">&#9660;</span></div>
+<div class="section-body">
 """
 
     # Build source measures per workbook
@@ -775,9 +727,9 @@ Measure Mapping — Tableau to Power BI <span class="toggle-icon" id="measures-i
     # 6. RELATIONSHIP MAPPING
     # ══════════════════════════════════════════════════════════════
     html += f"""
-<h2 onclick="toggleSection('rels')"><span class="section-icon">&#128279;</span>
-Relationship Mapping <span class="toggle-icon" id="rels-icon">&#9660;</span></h2>
-<div id="rels" class="collapsible">
+<div class="section-header" onclick="toggleSection(this)">
+<span class="section-icon">&#128279;</span> Relationship Mapping <span class="toggle-arrow">&#9660;</span></div>
+<div class="section-body">
 <div class="card">
 """
 
@@ -826,9 +778,9 @@ Merged (deduplicated): <strong>{len(merged_rels)}</strong> &nbsp;
     # ══════════════════════════════════════════════════════════════
     if assessment.parameter_conflicts or assessment.parameter_duplicates_removed > 0:
         html += f"""
-<h2 onclick="toggleSection('params')"><span class="section-icon">&#9881;</span>
-Parameters <span class="toggle-icon" id="params-icon">&#9660;</span></h2>
-<div id="params" class="collapsible">
+<div class="section-header" onclick="toggleSection(this)">
+<span class="section-icon">&#9881;</span> Parameters <span class="toggle-arrow">&#9660;</span></div>
+<div class="section-body">
 <div class="card">
 <p>Duplicates removed: <strong>{assessment.parameter_duplicates_removed}</strong> &nbsp;|&nbsp;
 Conflicts: <strong>{len(assessment.parameter_conflicts)}</strong></p>
@@ -868,9 +820,9 @@ Conflicts: <strong>{len(assessment.parameter_conflicts)}</strong></p>
             principals = {}
 
         html += f"""
-<h2 onclick="toggleSection('security')"><span class="section-icon">&#128274;</span>
-Security &mdash; RLS Roles ({len(rls_roles)}) <span class="toggle-icon" id="security-icon">&#9660;</span></h2>
-<div id="security" class="collapsible">
+<div class="section-header" onclick="toggleSection(this)">
+<span class="section-icon">&#128274;</span> Security &mdash; RLS Roles ({len(rls_roles)}) <span class="toggle-arrow">&#9660;</span></div>
+<div class="section-body">
 <div class="card">
 <table class="detail-table">
 <tr><th>Role</th><th>Table</th><th>Expression</th><th>Propagation</th><th>Principal Format</th><th>Source</th></tr>"""
@@ -912,7 +864,7 @@ Security &mdash; RLS Roles ({len(rls_roles)}) <span class="toggle-icon" id="secu
     # FOOTER
     # ══════════════════════════════════════════════════════════════
     html += f"""
-<div class="footer">
+<div class="report-footer">
     Tableau &#8594; Power BI Migration Tool v{tool_version} &nbsp;|&nbsp;
     Report generated: {now} &nbsp;|&nbsp;
     Model: {_esc(model_name)}
@@ -920,36 +872,7 @@ Security &mdash; RLS Roles ({len(rls_roles)}) <span class="toggle-icon" id="secu
 
 </div><!-- /.container -->
 
-<script>
-function toggleSection(id) {{
-    var el = document.getElementById(id);
-    el.classList.toggle('collapsed');
-    var icon = document.getElementById(id + '-icon');
-    if (icon) icon.innerHTML = el.classList.contains('collapsed') ? '&#9654;' : '&#9660;';
-}}
-function switchTab(group, tabId) {{
-    var contents = document.querySelectorAll('[id^="' + group + '-"]');
-    contents.forEach(function(c) {{ c.classList.remove('active'); }});
-    var target = document.getElementById(group + '-' + tabId);
-    if (target) target.classList.add('active');
-    var bar = target ? target.parentElement.querySelector('.tab-bar') : null;
-    if (!bar) {{
-        // Find tab bar by walking siblings
-        var sibling = target;
-        while (sibling && !sibling.classList.contains('tab-bar')) sibling = sibling.previousElementSibling;
-        bar = sibling;
-    }}
-    if (bar) {{
-        bar.querySelectorAll('.tab').forEach(function(t) {{ t.classList.remove('active'); }});
-        // Find matching tab
-        bar.querySelectorAll('.tab').forEach(function(t) {{
-            if (t.getAttribute('onclick') && t.getAttribute('onclick').indexOf("'" + tabId + "'") !== -1) {{
-                t.classList.add('active');
-            }}
-        }});
-    }}
-}}
-</script>
+<script>{get_report_js()}</script>
 </body>
 </html>"""
 

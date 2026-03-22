@@ -21,44 +21,36 @@ import html as html_mod
 import argparse
 import glob
 
+try:
+    from powerbi_import.html_template import get_report_css, get_report_js
+except ImportError:
+    from html_template import get_report_css, get_report_js
+
 
 # ────────────────────────────────────────────────────────
-# CSS Theme
+# CSS Theme extras (comparison-specific)
 # ────────────────────────────────────────────────────────
 
-_CSS = """
-* { box-sizing: border-box; }
-body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-       margin: 0; padding: 0; background: #f0f2f5; color: #333; }
-header { background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
-         color: #fff; padding: 1.5rem 2rem; }
-header h1 { margin: 0; font-size: 1.5rem; }
-header p { margin: 0.3rem 0 0; opacity: 0.85; font-size: 0.9rem; }
-.container { max-width: 1400px; margin: 1rem auto; padding: 0 1rem; }
-.summary { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
-.card { background: #fff; border-radius: 8px; padding: 1rem 1.5rem;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.12); flex: 1; min-width: 200px; }
-.card h3 { margin-top: 0; font-size: 0.85rem; color: #666; text-transform: uppercase; }
-.card .val { font-size: 2rem; font-weight: 700; }
-.comparison { background: #fff; border-radius: 8px; margin-bottom: 1rem;
+_CSS_EXTRA = """
+/* comparison-report extras */
+.comparison { background: var(--surface); border-radius: 8px; margin-bottom: 1rem;
               box-shadow: 0 1px 3px rgba(0,0,0,0.12); overflow: hidden; }
-.comparison .row-header { background: #e8eaf6; padding: 0.75rem 1rem;
+.comparison .row-header { background: var(--pbi-light-blue); padding: 0.75rem 1rem;
                           font-weight: 600; display: flex; justify-content: space-between; }
-.comparison .row-header .badge { background: #4caf50; color: #fff; padding: 2px 8px;
+.comparison .row-header .badge { background: var(--success); color: #fff; padding: 2px 8px;
                                   border-radius: 4px; font-size: 0.75rem; }
-.comparison .row-header .badge.warn { background: #ff9800; }
-.comparison .row-header .badge.fail { background: #f44336; }
+.comparison .row-header .badge.warn { background: #ca5010; }
+.comparison .row-header .badge.fail { background: var(--fail); }
 .cols { display: grid; grid-template-columns: 1fr 1fr; }
 .col { padding: 1rem; border-top: 1px solid #e0e0e0; }
 .col:first-child { border-right: 1px solid #e0e0e0; }
-.col h4 { margin: 0 0 0.5rem; color: #1a237e; font-size: 0.8rem; text-transform: uppercase; }
-pre { background: #f5f5f5; padding: 0.5rem; border-radius: 4px; overflow-x: auto;
+.col h4 { margin: 0 0 0.5rem; color: var(--pbi-blue); font-size: 0.8rem; text-transform: uppercase; }
+pre { background: var(--pbi-bg); padding: 0.5rem; border-radius: 4px; overflow-x: auto;
       font-size: 0.82rem; margin: 0.3rem 0; white-space: pre-wrap; }
 .label { font-weight: 600; color: #555; font-size: 0.8rem; }
-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-th, td { border: 1px solid #e0e0e0; padding: 4px 8px; text-align: left; }
-th { background: #fafafa; }
-.pass { color: #4caf50; } .warn { color: #ff9800; } .fail { color: #f44336; }
+.pass { color: var(--success); } .warn { color: #ca5010; } .fail { color: var(--fail); }
+.summary { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.summary .card { flex: 1; min-width: 200px; }
 """
 
 
@@ -355,13 +347,13 @@ def generate_comparison_report(extract_dir, pbip_dir, output_path=None):
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Migration Comparison Report</title>
-<style>{_CSS}</style>
+<style>{get_report_css()}{_CSS_EXTRA}</style>
 </head>
 <body>
-<header>
-<h1>Tableau → Power BI — Side-by-Side Comparison</h1>
+<div class="report-header">
+<h1>Tableau &rarr; Power BI &mdash; Side-by-Side Comparison</h1>
 <p>Extract: {_esc(extract_dir)} | Project: {_esc(pbip_dir)}</p>
-</header>
+</div>
 <div class="container">
 """]
 
@@ -470,7 +462,7 @@ def generate_comparison_report(extract_dir, pbip_dir, output_path=None):
             )
         parts.append('</table>')
 
-    parts.append('</div></body></html>')
+    parts.append(f'</div><script>{get_report_js()}</script></body></html>')
 
     os.makedirs(os.path.dirname(output_path) or '.', exist_ok=True)
     with open(output_path, 'w', encoding='utf-8') as f:

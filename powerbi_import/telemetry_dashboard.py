@@ -20,21 +20,30 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
+try:
+    from powerbi_import.html_template import get_report_css, get_report_js
+except ImportError:
+    from html_template import get_report_css, get_report_js
+
 # Default JSONL telemetry log location (same as telemetry.py)
 _DEFAULT_TELEMETRY_LOG = os.path.join(
     os.path.expanduser('~'), '.ttpbi_telemetry.json'
 )
 
 
-_CSS = """
-* { box-sizing: border-box; }
-body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 0;
-       background: #f0f2f5; color: #333; }
-header { background: linear-gradient(135deg, #0d47a1, #1565c0);
-         color: #fff; padding: 1.5rem 2rem; }
-header h1 { margin: 0; font-size: 1.4rem; }
-header .subtitle { font-size: 0.85rem; opacity: 0.8; }
-.container { max-width: 1200px; margin: 1rem auto; padding: 0 1rem; }
+_CSS_EXTRA = """
+/* telemetry-dashboard extras */
+.progress-track { background: #e0e0e0; border-radius: 10px; height: 20px;
+                  overflow: hidden; margin: 4px 0; }
+.progress-fill { height: 100%; border-radius: 10px; transition: width 0.3s; }
+.chart-bar { height: 24px; background: var(--pbi-blue); border-radius: 3px;
+             display: inline-block; min-width: 2px; }
+.collapsible { cursor: pointer; user-select: none; }
+.collapsible::before { content: '\\25B6 '; font-size: 0.7rem; }
+.collapsible.open::before { content: '\\25BC '; }
+.detail-panel { display: none; padding: 0.5rem 1rem; background: var(--pbi-bg);
+                border-radius: 4px; margin-bottom: 1rem; }
+.detail-panel.open { display: block; }
 .toolbar { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap;
            align-items: center; }
 .toolbar input, .toolbar select { padding: 6px 10px; border: 1px solid #ccc;
@@ -42,76 +51,16 @@ header .subtitle { font-size: 0.85rem; opacity: 0.8; }
 .toolbar input[type=text] { width: 240px; }
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
         gap: 1rem; margin-bottom: 1.5rem; }
-.card { background: #fff; border-radius: 8px; padding: 1rem 1.5rem;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
 .card h3 { margin-top: 0; font-size: 0.8rem; color: #888; text-transform: uppercase; }
 .card .val { font-size: 2rem; font-weight: 700; }
 .card .sub { font-size: 0.85rem; color: #666; }
-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 1rem; }
-th, td { border: 1px solid #e0e0e0; padding: 6px 10px; text-align: left; }
-th { background: #fafafa; cursor: pointer; user-select: none; }
-th:hover { background: #eee; }
-.pass { color: #4caf50; font-weight: 600; }
-.warn { color: #ff9800; font-weight: 600; }
-.fail { color: #f44336; font-weight: 600; }
-.chart-bar { height: 24px; background: #42a5f5; border-radius: 3px;
-             display: inline-block; min-width: 2px; }
-.collapsible { cursor: pointer; user-select: none; }
-.collapsible::before { content: '\\25B6 '; font-size: 0.7rem; }
-.collapsible.open::before { content: '\\25BC '; }
-.detail-panel { display: none; padding: 0.5rem 1rem; background: #fafafa;
-                border-radius: 4px; margin-bottom: 1rem; }
-.detail-panel.open { display: block; }
-.progress-track { background: #e0e0e0; border-radius: 10px; height: 20px;
-                  overflow: hidden; margin: 4px 0; }
-.progress-fill { height: 100%; border-radius: 10px; transition: width 0.3s; }
-.tab-bar { display: flex; gap: 0; margin-bottom: 1rem; border-bottom: 2px solid #0d47a1; }
-.tab { padding: 8px 16px; cursor: pointer; background: #eef; border-radius: 4px 4px 0 0;
-       font-size: 0.85rem; }
-.tab.active { background: #0d47a1; color: #fff; }
-.tab-content { display: none; }
-.tab-content.active { display: block; }
-.footer { text-align: center; padding: 2rem; font-size: 0.8rem; color: #999; }
+.pass { color: var(--success); font-weight: 600; }
+.warn { color: #ca5010; font-weight: 600; }
+.fail { color: var(--fail); font-weight: 600; }
 """
 
-_JS = """
-function filterTable(inputId, tableId) {
-  var q = document.getElementById(inputId).value.toLowerCase();
-  var rows = document.getElementById(tableId).querySelectorAll('tbody tr');
-  rows.forEach(function(row) {
-    var text = row.textContent.toLowerCase();
-    row.style.display = text.indexOf(q) > -1 ? '' : 'none';
-  });
-}
-function sortTable(tableId, colIdx) {
-  var table = document.getElementById(tableId);
-  var tbody = table.querySelector('tbody');
-  var rows = Array.from(tbody.rows);
-  var asc = table.getAttribute('data-sort-asc') !== String(colIdx);
-  table.setAttribute('data-sort-asc', asc ? colIdx : -1);
-  rows.sort(function(a, b) {
-    var va = a.cells[colIdx].textContent.trim();
-    var vb = b.cells[colIdx].textContent.trim();
-    var na = parseFloat(va), nb = parseFloat(vb);
-    if (!isNaN(na) && !isNaN(nb)) return asc ? na - nb : nb - na;
-    return asc ? va.localeCompare(vb) : vb.localeCompare(va);
-  });
-  rows.forEach(function(r) { tbody.appendChild(r); });
-}
-function toggleDetail(id) {
-  var el = document.getElementById(id);
-  el.classList.toggle('open');
-  var btn = el.previousElementSibling;
-  if (btn) btn.classList.toggle('open');
-}
-function switchTab(tabGroup, tabName) {
-  document.querySelectorAll('[data-tabgroup="'+tabGroup+'"]').forEach(function(el) {
-    el.classList.toggle('active', el.getAttribute('data-tab') === tabName);
-  });
-  document.querySelectorAll('[data-tabcontent="'+tabGroup+'"]').forEach(function(el) {
-    el.classList.toggle('active', el.getAttribute('data-tab') === tabName);
-  });
-}
+
+_JS_EXTRA = """
 function filterByDate(inputId, tableId) {
   var val = document.getElementById(inputId).value;
   if (!val) { filterTable('search-runs', tableId); return; }
@@ -120,6 +69,12 @@ function filterByDate(inputId, tableId) {
     var ts = row.cells[3] ? row.cells[3].textContent : '';
     row.style.display = ts.indexOf(val) > -1 ? '' : 'none';
   });
+}
+function toggleDetail(id) {
+  var el = document.getElementById(id);
+  el.classList.toggle('open');
+  var btn = el.previousElementSibling;
+  if (btn) btn.classList.toggle('open');
 }
 """
 
@@ -308,13 +263,13 @@ def generate_dashboard(artifacts_dir, output_path=None, telemetry_log=None):
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Migration Observability Dashboard</title>
-<style>{_CSS}</style>
+<style>{get_report_css()}{_CSS_EXTRA}</style>
 </head>
 <body>
-<header>
+<div class="report-header">
 <h1>Migration Observability Dashboard</h1>
-<div class="subtitle">Tableau &rarr; Power BI &mdash; {tel_sessions} telemetry sessions, {total_runs} migration reports</div>
-</header>
+<p>Tableau &rarr; Power BI &mdash; {tel_sessions} telemetry sessions, {total_runs} migration reports</p>
+</div>
 <div class="container">
 """]
 
@@ -478,9 +433,9 @@ def generate_dashboard(artifacts_dir, output_path=None, telemetry_log=None):
     parts.append('</div>')  # end telemetry tab
 
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    parts.append(f'<div class="footer">Generated: {now} | '
+    parts.append(f'<div class="report-footer">Generated: {now} | '
                  f'Tableau &rarr; Power BI Migration Tool</div>')
-    parts.append(f'</div><script>{_JS}</script></body></html>')
+    parts.append(f'</div><script>{get_report_js()}{_JS_EXTRA}</script></body></html>')
 
     os.makedirs(os.path.dirname(output_path) or '.', exist_ok=True)
     with open(output_path, 'w', encoding='utf-8') as f:

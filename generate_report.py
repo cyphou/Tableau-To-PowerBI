@@ -6,6 +6,14 @@ import os
 import glob
 import datetime
 
+from powerbi_import.html_template import (
+    html_open, html_close, stat_card, stat_grid, section_open, section_close,
+    badge, fidelity_bar, donut_chart, bar_chart, data_table, tab_bar,
+    tab_content, card, heatmap_table, esc,
+    PBI_BLUE, PBI_DARK, PBI_GRAY, PBI_LIGHT_GRAY, PBI_BG,
+    SUCCESS, WARN, FAIL, PURPLE, TEAL, ORANGE,
+)
+
 BASE = "artifacts/powerbi_projects"
 ASSESSMENTS_DIR = os.path.join(BASE, "assessments")
 REPORTS_DIR = os.path.join(BASE, "reports")
@@ -51,20 +59,14 @@ def load_metadata():
     return metadata
 
 
-def badge(score):
-    """Return colored badge HTML for assessment score."""
-    colors = {"GREEN": "#28a745", "YELLOW": "#ffc107", "RED": "#dc3545"}
-    color = colors.get(score, "#6c757d")
-    text_color = "#000" if score == "YELLOW" else "#fff"
-    return f'<span style="background:{color};color:{text_color};padding:2px 8px;border-radius:4px;font-weight:bold;font-size:0.85em">{score}</span>'
+def _badge(score):
+    """Return colored badge HTML for assessment score (uses shared template)."""
+    return badge(score)
 
 
-def fidelity_bar(pct):
-    """Return a visual progress bar for fidelity percentage."""
-    color = "#28a745" if pct >= 95 else "#ffc107" if pct >= 80 else "#dc3545"
-    return f'''<div style="background:#e9ecef;border-radius:4px;width:120px;display:inline-block;vertical-align:middle">
-        <div style="background:{color};width:{pct:.0f}%;height:16px;border-radius:4px;text-align:center;font-size:11px;color:#fff;line-height:16px">{pct:.1f}%</div>
-    </div>'''
+def _fidelity_bar(pct):
+    """Return a visual progress bar for fidelity percentage (uses shared template)."""
+    return fidelity_bar(pct)
 
 
 def generate_html(assessments, reports, metadata):
@@ -138,236 +140,105 @@ def generate_html(assessments, reports, metadata):
             "dashboards": obj.get("dashboards", 0),
         }
 
-    # CSS color palette
-    pbi_blue = "#0078d4"
-    pbi_dark = "#323130"
-    pbi_gray = "#605e5c"
-    pbi_light_gray = "#a19f9d"
-    pbi_bg = "#f5f5f5"
-    success_green = "#28a745"
-    warn_yellow = "#ffc107"
-    fail_red = "#dc3545"
-
-    html = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tableau to Power BI — Migration Dashboard</title>
-<style>
-    * {{ box-sizing: border-box; }}
-    body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background: {pbi_bg}; color: {pbi_dark}; }}
-    .container {{ max-width: 1400px; margin: 0 auto; }}
-    h1 {{ color: {pbi_blue}; border-bottom: 3px solid {pbi_blue}; padding-bottom: 10px; font-size: 1.6em; }}
-    h2 {{ color: {pbi_dark}; margin-top: 30px; font-size: 1.25em; cursor: pointer; }}
-    h2:hover {{ color: {pbi_blue}; }}
-    h3 {{ color: {pbi_gray}; }}
-    .card {{ background: #fff; border-radius: 8px; padding: 20px; margin: 15px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
-    .stats {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }}
-    .stat {{ background: #fff; border-radius: 8px; padding: 16px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.15s; }}
-    .stat:hover {{ transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }}
-    .stat .number {{ font-size: 2em; font-weight: bold; color: {pbi_blue}; }}
-    .stat .label {{ font-size: 0.85em; color: {pbi_gray}; margin-top: 4px; }}
-    table {{ border-collapse: collapse; width: 100%; margin: 10px 0; }}
-    th {{ background: {pbi_blue}; color: #fff; padding: 10px 12px; text-align: left; font-size: 0.85em; position: sticky; top: 0; }}
-    td {{ padding: 8px 12px; border-bottom: 1px solid #e1dfdd; font-size: 0.85em; }}
-    tr:hover {{ background: #f3f2f1; }}
-    .detail-table th {{ background: {pbi_gray}; }}
-    .footer {{ text-align: center; color: {pbi_light_gray}; font-size: 0.85em; margin-top: 40px; padding: 20px; }}
-    .connector-tag {{ background: #e8f0fe; color: #1a73e8; padding: 2px 6px; border-radius: 3px; font-size: 0.82em; white-space: nowrap; }}
-    .warn-tag {{ background: #fff3cd; color: #856404; padding: 2px 6px; border-radius: 3px; font-size: 0.82em; }}
-    .section-icon {{ font-size: 1.2em; margin-right: 4px; }}
-
-    /* Charts */
-    .chart-row {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 15px; margin: 15px 0; }}
-    .chart-card {{ background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
-    .chart-card h4 {{ margin: 0 0 12px 0; color: {pbi_dark}; font-size: 0.95em; }}
-
-    /* Donut chart */
-    .donut-container {{ display: flex; align-items: center; justify-content: center; gap: 24px; }}
-    .donut {{ width: 140px; height: 140px; }}
-    .donut-legend {{ font-size: 0.85em; line-height: 1.8; }}
-    .legend-dot {{ display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }}
-
-    /* Bar chart */
-    .bar-chart {{ display: flex; flex-direction: column; gap: 6px; }}
-    .bar-row {{ display: flex; align-items: center; gap: 8px; }}
-    .bar-label {{ width: 100px; text-align: right; font-size: 0.82em; color: {pbi_gray}; flex-shrink: 0; }}
-    .bar-track {{ flex: 1; height: 22px; background: #e9ecef; border-radius: 4px; position: relative; overflow: hidden; }}
-    .bar-fill {{ height: 100%; border-radius: 4px; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; color: #fff; font-size: 0.75em; font-weight: bold; transition: width 0.4s; }}
-    .bar-value {{ font-size: 0.82em; color: {pbi_gray}; width: 30px; text-align: right; }}
-
-    /* Collapsible */
-    .collapsible {{ overflow: hidden; transition: max-height 0.3s ease-out; max-height: 2000px; }}
-    .collapsed {{ max-height: 0 !important; }}
-    .toggle-icon {{ float: right; font-size: 0.8em; color: {pbi_light_gray}; }}
-
-    /* Heatmap table */
-    .heatmap td {{ text-align: center; font-weight: bold; }}
-
-    /* Tabs */
-    .tab-bar {{ display: flex; gap: 2px; border-bottom: 2px solid #e1dfdd; margin-bottom: 15px; }}
-    .tab {{ padding: 8px 16px; cursor: pointer; font-size: 0.9em; border-radius: 4px 4px 0 0; transition: background 0.2s; color: {pbi_gray}; }}
-    .tab:hover {{ background: #e8f0fe; }}
-    .tab.active {{ background: {pbi_blue}; color: #fff; font-weight: bold; }}
-    .tab-content {{ display: none; }}
-    .tab-content.active {{ display: block; }}
-
-    @media print {{
-        .collapsible {{ max-height: none !important; }}
-        h2 {{ cursor: default; }}
-        .toggle-icon {{ display: none; }}
-    }}
-</style>
-</head>
-<body>
-<div class="container">
-<h1>&#128202; Tableau &#8594; Power BI — Migration Dashboard</h1>
-<p style="color:{pbi_gray};font-size:0.9em">Generated: {now} &nbsp;|&nbsp; Tool: v{tool_version} &nbsp;|&nbsp; Workbooks: {total_workbooks}</p>
-
-<!-- ═══════════════════════════════════════════════════════════════ -->
-<!-- EXECUTIVE SUMMARY                                              -->
-<!-- ═══════════════════════════════════════════════════════════════ -->
-<h2 onclick="toggleSection('exec')"><span class="section-icon">&#128200;</span>Executive Summary <span class="toggle-icon" id="exec-icon">&#9660;</span></h2>
-<div id="exec" class="collapsible">
-<div class="stats">
-    <div class="stat"><div class="number">{total_workbooks}</div><div class="label">Workbooks</div></div>
-    <div class="stat"><div class="number" style="color:{success_green}">{avg_fidelity:.1f}%</div><div class="label">Avg. Fidelity</div></div>
-    <div class="stat"><div class="number">{total_items}</div><div class="label">Items Converted</div></div>
-    <div class="stat"><div class="number" style="color:{success_green}">{total_exact}</div><div class="label">Exact</div></div>
-    <div class="stat"><div class="number" style="color:{warn_yellow}">{total_approx}</div><div class="label">Approximate</div></div>
-    <div class="stat"><div class="number" style="color:{fail_red}">{total_unsupported}</div><div class="label">Unsupported</div></div>
-</div>
-
-<!-- Charts row: Donut + Category Breakdown + Connectors -->
-<div class="chart-row">"""
-
-    # ── Donut chart: Conversion Status ─────────────────────────────────
-    safe_total = max(total_items, 1)
-    exact_pct = total_exact / safe_total * 100
-    approx_pct = total_approx / safe_total * 100
-    unsup_pct = total_unsupported / safe_total * 100
-    # SVG donut
-    exact_deg = exact_pct * 3.6
-    approx_deg = approx_pct * 3.6
-    unsup_deg = unsup_pct * 3.6
-    html += f"""
-    <div class="chart-card">
-        <h4>&#127919; Conversion Status</h4>
-        <div class="donut-container">
-            <svg class="donut" viewBox="0 0 42 42">
-                <circle cx="21" cy="21" r="15.91549431" fill="transparent" stroke="#e9ecef" stroke-width="6"></circle>
-                <circle cx="21" cy="21" r="15.91549431" fill="transparent" stroke="{success_green}" stroke-width="6"
-                    stroke-dasharray="{exact_pct} {100-exact_pct}" stroke-dashoffset="25"></circle>
-                <circle cx="21" cy="21" r="15.91549431" fill="transparent" stroke="{warn_yellow}" stroke-width="6"
-                    stroke-dasharray="{approx_pct} {100-approx_pct}" stroke-dashoffset="{25-exact_pct}"></circle>
-                <circle cx="21" cy="21" r="15.91549431" fill="transparent" stroke="{fail_red}" stroke-width="6"
-                    stroke-dasharray="{unsup_pct} {100-unsup_pct}" stroke-dashoffset="{25-exact_pct-approx_pct}"></circle>
-                <text x="21" y="22" text-anchor="middle" font-size="6" font-weight="bold" fill="{pbi_dark}">{avg_fidelity:.0f}%</text>
-            </svg>
-            <div class="donut-legend">
-                <div><span class="legend-dot" style="background:{success_green}"></span>Exact: {total_exact}</div>
-                <div><span class="legend-dot" style="background:{warn_yellow}"></span>Approximate: {total_approx}</div>
-                <div><span class="legend-dot" style="background:{fail_red}"></span>Unsupported: {total_unsupported}</div>
-            </div>
-        </div>
-    </div>"""
-
-    # ── Bar chart: By Category ─────────────────────────────────────────
-    html += """
-    <div class="chart-card">
-        <h4>&#128202; Items by Category</h4>
-        <div class="bar-chart">"""
-    max_cat = max((v["total"] for v in cat_totals.values()), default=1)
-    cat_colors = {"datasource": "#0078d4", "calculation": "#8764b8", "visual": "#00b294",
-                  "parameter": "#ffb900", "filter": "#e74856", "relationship": "#107c10",
-                  "set": "#767676", "group": "#ca5010", "hierarchy": "#4f6bed"}
-    for cat, vals in sorted(cat_totals.items(), key=lambda x: -x[1]["total"]):
-        pct = vals["total"] / max(max_cat, 1) * 100
-        color = cat_colors.get(cat, pbi_blue)
-        html += f"""
-            <div class="bar-row">
-                <div class="bar-label">{cat.title()}</div>
-                <div class="bar-track"><div class="bar-fill" style="width:{pct}%;background:{color}">{vals['total']}</div></div>
-            </div>"""
-    html += """
-        </div>
-    </div>"""
-
-    # ── Connector Distribution ─────────────────────────────────────────
-    html += """
-    <div class="chart-card">
-        <h4>&#128268; Data Connectors</h4>
-        <div class="bar-chart">"""
-    max_conn = max(connector_counts.values(), default=1)
+    # Category colors
+    cat_colors = {"datasource": PBI_BLUE, "calculation": PURPLE, "visual": TEAL,
+                  "parameter": "#c19c00", "filter": FAIL, "relationship": SUCCESS,
+                  "set": PBI_GRAY, "group": ORANGE, "hierarchy": "#4f6bed"}
     conn_colors = {"Excel": "#217346", "SQL Server": "#cc2927", "PostgreSQL": "#336791",
                    "Oracle": "#f80000", "MySQL": "#4479a1", "CSV": "#ff6d00",
                    "Snowflake": "#29b5e8", "BigQuery": "#4285f4", "Tableau Server": "#e97627",
-                   "Unknown": "#767676"}
-    for conn, count in sorted(connector_counts.items(), key=lambda x: -x[1]):
-        pct = count / max(max_conn, 1) * 100
-        color = conn_colors.get(conn, pbi_blue)
-        html += f"""
-            <div class="bar-row">
-                <div class="bar-label">{conn}</div>
-                <div class="bar-track"><div class="bar-fill" style="width:{pct}%;background:{color}">{count}</div></div>
-            </div>"""
-    html += """
-        </div>
-    </div>
-</div>
-</div>
+                   "Unknown": PBI_GRAY}
 
-<!-- ═══════════════════════════════════════════════════════════════ -->
-<!-- GENERATED ARTIFACTS                                            -->
-<!-- ═══════════════════════════════════════════════════════════════ -->"""
+    # ═══════════════════════════════════════════════════════════════
+    #  Build HTML using shared template
+    # ═══════════════════════════════════════════════════════════════
+    html = html_open(
+        title="Tableau \u2192 Power BI \u2014 Migration Dashboard",
+        subtitle=f"{total_workbooks} workbook{'s' if total_workbooks != 1 else ''} migrated",
+        timestamp=now,
+        version=tool_version,
+    )
 
-    html += f"""
-<h2 onclick="toggleSection('artifacts')"><span class="section-icon">&#128736;</span>Generated Artifacts <span class="toggle-icon" id="artifacts-icon">&#9660;</span></h2>
-<div id="artifacts" class="collapsible">
-<div class="stats">
-    <div class="stat"><div class="number">{total_tables}</div><div class="label">TMDL Tables</div></div>
-    <div class="stat"><div class="number">{total_columns}</div><div class="label">Columns</div></div>
-    <div class="stat"><div class="number">{total_measures}</div><div class="label">DAX Measures</div></div>
-    <div class="stat"><div class="number">{total_relationships}</div><div class="label">Relationships</div></div>
-    <div class="stat"><div class="number">{total_pages}</div><div class="label">Report Pages</div></div>
-    <div class="stat"><div class="number">{total_visuals}</div><div class="label">Visuals</div></div>
-</div>"""
+    # ── Executive Summary ───────────────────────────────────────
+    html += section_open("exec", "Executive Summary", "&#128200;")
+    html += stat_grid([
+        stat_card(total_workbooks, "Workbooks", accent="blue"),
+        stat_card(f"{avg_fidelity:.1f}%", "Avg. Fidelity", accent="success"),
+        stat_card(total_items, "Items Converted"),
+        stat_card(total_exact, "Exact", accent="success"),
+        stat_card(total_approx, "Approximate", accent="warn"),
+        stat_card(total_unsupported, "Unsupported", accent="fail"),
+    ])
 
-    # ── Workbook Complexity Heatmap ────────────────────────────────────
+    # Charts row
+    html += '<div class="chart-row">'
+
+    # Donut chart: Conversion Status
+    html += '<div class="chart-card"><h4>&#127919; Conversion Status</h4>'
+    html += donut_chart([
+        ("Exact", total_exact, SUCCESS),
+        ("Approximate", total_approx, "#c19c00"),
+        ("Unsupported", total_unsupported, FAIL),
+    ], center_text=f"{avg_fidelity:.0f}%")
+    html += '</div>'
+
+    # Bar chart: By Category
+    cat_items = [(cat.title(), vals["total"], cat_colors.get(cat, PBI_BLUE))
+                 for cat, vals in sorted(cat_totals.items(), key=lambda x: -x[1]["total"])]
+    html += '<div class="chart-card"><h4>&#128202; Items by Category</h4>'
+    html += bar_chart(cat_items)
+    html += '</div>'
+
+    # Bar chart: Connectors
+    conn_items = [(conn, count, conn_colors.get(conn, PBI_BLUE))
+                  for conn, count in sorted(connector_counts.items(), key=lambda x: -x[1])]
+    html += '<div class="chart-card"><h4>&#128268; Data Connectors</h4>'
+    html += bar_chart(conn_items)
+    html += '</div>'
+
+    html += '</div>'  # chart-row
+    html += section_close()
+
+    # ── Generated Artifacts ─────────────────────────────────────
+    html += section_open("artifacts", "Generated Artifacts", "&#128736;")
+    html += stat_grid([
+        stat_card(total_tables, "TMDL Tables", accent="blue"),
+        stat_card(total_columns, "Columns", accent="blue"),
+        stat_card(total_measures, "DAX Measures", accent="purple"),
+        stat_card(total_relationships, "Relationships", accent="teal"),
+        stat_card(total_pages, "Report Pages"),
+        stat_card(total_visuals, "Visuals"),
+    ])
+
+    # Workbook Complexity Heatmap
     if wb_complexity:
-        html += """
-<div class="card" style="margin-top:15px;overflow-x:auto">
-<h4 style="margin:0 0 10px 0">&#127919; Workbook Complexity Heatmap</h4>
-<table class="heatmap">
-<tr><th>Workbook</th><th>Tables</th><th>Columns</th><th>Measures</th><th>Relationships</th><th>Worksheets</th><th>Dashboards</th><th>Calculations</th><th>Filters</th><th>Pages</th><th>Visuals</th></tr>"""
-        # Compute maxima for color scaling
+        dims = ("tables", "columns", "measures", "relationships", "worksheets",
+                "dashboards", "calculations", "filters", "pages", "visuals")
         maxima = {}
-        for dim in ("tables", "columns", "measures", "relationships", "worksheets", "dashboards", "calculations", "filters", "pages", "visuals"):
+        for dim in dims:
             maxima[dim] = max((v.get(dim, 0) for v in wb_complexity.values()), default=1) or 1
 
+        heat_headers = ["Workbook"] + [d.title() for d in dims]
+        heat_rows = []
         for wb_name, vals in wb_complexity.items():
-            html += f"<tr><td style='text-align:left;font-weight:bold'>{wb_name}</td>"
-            for dim in ("tables", "columns", "measures", "relationships", "worksheets", "dashboards", "calculations", "filters", "pages", "visuals"):
+            row = [f'<strong>{esc(wb_name)}</strong>']
+            for dim in dims:
                 v = vals.get(dim, 0)
                 intensity = v / maxima[dim] if maxima[dim] else 0
-                bg = f"rgba(0,120,212,{0.1 + intensity * 0.6:.2f})"
-                fg = "#fff" if intensity > 0.5 else pbi_dark
-                html += f'<td style="background:{bg};color:{fg}">{v}</td>'
-            html += "</tr>"
-        html += "</table></div>"
-    html += "</div>"
+                bg = f"rgba(0,120,212,{0.08 + intensity * 0.65:.2f})"
+                fg = "#fff" if intensity > 0.5 else PBI_DARK
+                row.append(f'<span style="display:block;padding:4px;border-radius:3px;background:{bg};color:{fg};text-align:center;font-weight:600">{v}</span>')
+            heat_rows.append(row)
+        html += '<div class="card"><h4>&#127919; Workbook Complexity Heatmap</h4>'
+        html += data_table(heat_headers, heat_rows, "heatmap-tbl", sortable=True)
+        html += '</div>'
 
-    # ── Assessment Results ─────────────────────────────────────────────
+    html += section_close()
+
+    # ── Assessment Results ─────────────────────────────────────────
     if assessments:
-        html += """
-<h2 onclick="toggleSection('assess')"><span class="section-icon">&#9989;</span>Assessment Results <span class="toggle-icon" id="assess-icon">&#9660;</span></h2>
-<div id="assess" class="collapsible">
-<div class="card">
-<table>
-<tr>
-    <th>Workbook</th><th>Readiness</th><th>Checks</th><th>Passed</th><th>Warnings</th><th>Failures</th><th>Complexity</th><th>Connectors</th>
-</tr>"""
+        html += section_open("assess", "Assessment Results", "&#9989;")
+        assess_rows = []
         for name in all_names:
             a = assessments.get(name, {})
             if not a:
@@ -376,36 +247,36 @@ def generate_html(assessments, reports, metadata):
             totals = a.get("totals", {})
             connectors = []
             complexity = ""
-            for cat in a.get("categories", []):
-                for check in cat.get("checks", []):
+            for cat_data in a.get("categories", []):
+                for check in cat_data.get("checks", []):
                     if check.get("name", "").startswith("Connector:"):
                         connectors.append(check["name"].replace("Connector: ", ""))
                     if "Complexity score" in check.get("detail", ""):
                         complexity = check["detail"].replace("Complexity score: ", "")
-            conn_html = " ".join(f'<span class="connector-tag">{c}</span>' for c in connectors) if connectors else "—"
-            html += f"""
-<tr>
-    <td><strong>{name}</strong></td>
-    <td>{badge(score)}</td>
-    <td>{totals.get('checks', '—')}</td>
-    <td>{totals.get('pass', '—')}</td>
-    <td>{'<span class="warn-tag">' + str(totals.get('warn', 0)) + '</span>' if totals.get('warn', 0) > 0 else str(totals.get('warn', '—'))}</td>
-    <td>{totals.get('fail', '—')}</td>
-    <td>{complexity or '—'}</td>
-    <td>{conn_html}</td>
-</tr>"""
-        html += "</table></div></div>"
+            conn_html = " ".join(f'<span class="tag tag-connector">{esc(c)}</span>' for c in connectors) if connectors else "\u2014"
+            warn_val = totals.get('warn', 0)
+            warn_html = f'<span class="tag tag-warn">{warn_val}</span>' if warn_val > 0 else str(warn_val or '\u2014')
+            assess_rows.append([
+                f'<strong>{esc(name)}</strong>',
+                badge(score),
+                str(totals.get('checks', '\u2014')),
+                str(totals.get('pass', '\u2014')),
+                warn_html,
+                str(totals.get('fail', '\u2014')),
+                complexity or "\u2014",
+                conn_html,
+            ])
+        html += '<div class="card">'
+        html += data_table(
+            ["Workbook", "Readiness", "Checks", "Passed", "Warnings", "Failures", "Complexity", "Connectors"],
+            assess_rows, "assess-tbl", sortable=True, searchable=True,
+        )
+        html += '</div>'
+        html += section_close()
 
-    # ── Migration Results Table ────────────────────────────────────────
-    html += """
-<h2 onclick="toggleSection('migration')"><span class="section-icon">&#128640;</span>Migration Results <span class="toggle-icon" id="migration-icon">&#9660;</span></h2>
-<div id="migration" class="collapsible">
-<div class="card">
-<table>
-<tr>
-    <th>Workbook</th><th>Fidelity</th><th>Total</th><th>Exact</th><th>Approx.</th><th>Unsupported</th><th>Tables</th><th>Measures</th><th>Pages</th><th>Visuals</th>
-</tr>"""
-
+    # ── Migration Results Table ────────────────────────────────────
+    html += section_open("migration", "Migration Results", "&#128640;")
+    mig_rows = []
     for name in all_names:
         r = reports.get(name, {})
         m = metadata.get(name, {})
@@ -414,26 +285,30 @@ def generate_html(assessments, reports, metadata):
         tmdl = m.get("tmdl_stats", {})
         gen = m.get("generated_output", {})
 
-        html += f"""
-<tr>
-    <td><strong>{name}</strong></td>
-    <td>{fidelity_bar(fid)}</td>
-    <td>{s.get('total_items', '—')}</td>
-    <td style="color:{success_green};font-weight:bold">{s.get('exact', '—')}</td>
-    <td>{s.get('approximate', 0) if s.get('approximate', 0) > 0 else '—'}</td>
-    <td>{s.get('unsupported', 0) if s.get('unsupported', 0) > 0 else '—'}</td>
-    <td>{tmdl.get('tables', '—')}</td>
-    <td>{tmdl.get('measures', '—')}</td>
-    <td>{gen.get('pages', '—')}</td>
-    <td>{gen.get('visuals', '—')}</td>
-</tr>"""
+        approx_val = s.get('approximate', 0)
+        unsup_val = s.get('unsupported', 0)
+        mig_rows.append([
+            f'<strong>{esc(name)}</strong>',
+            fidelity_bar(fid),
+            str(s.get('total_items', '\u2014')),
+            f'<span class="text-success fw-bold">{s.get("exact", "\u2014")}</span>',
+            str(approx_val) if approx_val > 0 else '\u2014',
+            str(unsup_val) if unsup_val > 0 else '\u2014',
+            str(tmdl.get('tables', '\u2014')),
+            str(tmdl.get('measures', '\u2014')),
+            str(gen.get('pages', '\u2014')),
+            str(gen.get('visuals', '\u2014')),
+        ])
+    html += '<div class="card">'
+    html += data_table(
+        ["Workbook", "Fidelity", "Total", "Exact", "Approx.", "Unsupported",
+         "Tables", "Measures", "Pages", "Visuals"],
+        mig_rows, "mig-tbl", sortable=True, searchable=True,
+    )
+    html += '</div>'
+    html += section_close()
 
-    html += """
-</table>
-</div>
-</div>"""
-
-    # ── Converted Items — Split by Report ──────────────────────────────
+    # ── Converted Items — Split by Report ──────────────────────────
     all_items_by_report = []
     for name in all_names:
         r = reports.get(name, {})
@@ -441,9 +316,28 @@ def generate_html(assessments, reports, metadata):
             all_items_by_report.append((name, item))
 
     if all_items_by_report:
-        html += f"""
-<h2 onclick="toggleSection('converted')"><span class="section-icon">&#128221;</span>Converted Items by Report <span class="toggle-icon" id="converted-icon">&#9660;</span></h2>
-<div id="converted" class="collapsible">"""
+        html += section_open("converted", "Converted Items by Report", "&#128221;")
+
+        # Helper to render a table of converted items
+        def _conv_rows(item_tuples, show_report=True):
+            rows = []
+            for rpt_name, item in item_tuples:
+                status = item.get("status", "")
+                src = esc(item.get("source_formula") or item.get("note") or "")
+                dax = esc(item.get("dax") or "")
+                short_rpt = rpt_name.split("\\")[-1] if "\\" in rpt_name else rpt_name
+                row = []
+                if show_report:
+                    row.append(f'<strong class="nowrap">{esc(short_rpt)}</strong>')
+                row += [
+                    f'<span class="tag tag-connector">{esc(item.get("category", ""))}</span>',
+                    f'<strong>{esc(item.get("name", ""))}</strong>',
+                    badge(status),
+                    f'<span class="mono fs-sm" style="max-width:350px;word-break:break-all;display:inline-block">{src}</span>',
+                    f'<span class="mono fs-sm" style="max-width:350px;word-break:break-all;display:inline-block">{dax}</span>',
+                ]
+                rows.append(row)
+            return rows
 
         # Build tabs per report
         report_tabs = {}
@@ -453,57 +347,34 @@ def generate_html(assessments, reports, metadata):
             if ritems:
                 report_tabs[name] = ritems
 
-        conv_tab_id = "conv-report"
-        # Tab bar
-        html += f'<div class="tab-bar">'
-        html += f'<div class="tab active" onclick="switchTab(\'{conv_tab_id}\', \'all\')">All ({len(all_items_by_report)})</div>'
+        conv_group = "conv-report"
+        tabs = [("all", f"All ({len(all_items_by_report)})", True)]
         for rname, ritems in report_tabs.items():
             safe_rname = rname.replace(" ", "_").replace("'", "").replace("\\", "_")
-            exact_count = sum(1 for i in ritems if i.get("status") == "exact")
-            html += f'<div class="tab" onclick="switchTab(\'{conv_tab_id}\', \'{safe_rname}\')">{rname.split(chr(92))[-1]} ({len(ritems)})</div>'
-        html += '</div>'
+            short = rname.split("\\")[-1] if "\\" in rname else rname
+            tabs.append((safe_rname, f"{short} ({len(ritems)})", False))
+        html += tab_bar(conv_group, tabs)
 
-        def _render_conv_table(item_tuples, tid, show_report_col=True):
-            """Render items table with optional report column."""
-            out = f'<div class="tab-content{" active" if tid == "all" else ""}" id="{conv_tab_id}-{tid}">'
-            if not item_tuples:
-                out += '<p style="color:#a19f9d;font-style:italic">No items.</p></div>'
-                return out
-            out += '<table class="detail-table"><tr>'
-            if show_report_col:
-                out += '<th>Report</th>'
-            out += '<th>Category</th><th>Name</th><th>Status</th><th>Source Formula / Note</th><th>DAX / Target</th></tr>'
-            for rpt_name, item in item_tuples:
-                status = item.get("status", "")
-                st_color = success_green if status == "exact" else warn_yellow if status == "approximate" else fail_red
-                src = (item.get("source_formula") or item.get("note") or "").replace("<", "&lt;").replace(">", "&gt;")
-                dax = (item.get("dax") or "").replace("<", "&lt;").replace(">", "&gt;")
-                short_rpt = rpt_name.split("\\")[-1] if "\\" in rpt_name else rpt_name
-                out += '<tr>'
-                if show_report_col:
-                    out += f'<td style="white-space:nowrap"><strong>{short_rpt}</strong></td>'
-                out += f"""<td><span class="connector-tag">{item.get('category','')}</span></td>
-    <td><strong>{item.get('name','')}</strong></td>
-    <td style="color:{st_color};font-weight:bold">{status}</td>
-    <td style="font-family:'Cascadia Code','Consolas',monospace;font-size:0.8em;max-width:350px;word-break:break-all">{src}</td>
-    <td style="font-family:'Cascadia Code','Consolas',monospace;font-size:0.8em;max-width:350px;word-break:break-all">{dax}</td>
-</tr>"""
-            out += '</table></div>'
-            return out
+        # All tab
+        all_headers = ["Report", "Category", "Name", "Status", "Source Formula / Note", "DAX / Target"]
+        html += tab_content(conv_group, "all",
+            data_table(all_headers, _conv_rows(all_items_by_report, True),
+                       f"conv-all-tbl", searchable=True, detail=True),
+            active=True)
 
-        # "All" tab with report column
-        html += _render_conv_table(all_items_by_report, "all", show_report_col=True)
-        # Per-report tabs without report column
+        # Per-report tabs
+        per_headers = ["Category", "Name", "Status", "Source Formula / Note", "DAX / Target"]
         for rname, ritems in report_tabs.items():
             safe_rname = rname.replace(" ", "_").replace("'", "").replace("\\", "_")
-            html += _render_conv_table([(rname, i) for i in ritems], safe_rname, show_report_col=False)
+            html += tab_content(conv_group, safe_rname,
+                data_table(per_headers,
+                           _conv_rows([(rname, i) for i in ritems], False),
+                           f"conv-{safe_rname}-tbl", searchable=True, detail=True))
 
-        html += "</div>"  # close converted section
+        html += section_close()
 
-    # ── Per-Workbook Detail Sections ───────────────────────────────────
-    html += """
-<h2 onclick="toggleSection('details')"><span class="section-icon">&#128221;</span>Per-Workbook Details <span class="toggle-icon" id="details-icon">&#9660;</span></h2>
-<div id="details" class="collapsible">"""
+    # ── Per-Workbook Detail Sections ─────────────────────────────
+    html += section_open("details", "Per-Workbook Details", "&#128221;")
 
     for name in all_names:
         r = reports.get(name, {})
@@ -520,75 +391,60 @@ def generate_html(assessments, reports, metadata):
         by_cat = s.get("by_category", {})
 
         safe_name = name.replace(" ", "_").replace("'", "")
+
+        # Workbook card with collapsible detail
+        badge_html = badge(score) if score != "N/A" else ""
+        fid_html = fidelity_bar(fid) if fid else ""
         html += f"""
 <div class="card">
-<h3 onclick="toggleSection('wb-{safe_name}')" style="cursor:pointer">
-    {name} &nbsp; {badge(score) if score != "N/A" else ""} &nbsp; {fidelity_bar(fid) if fid else ""}
-    <span class="toggle-icon" id="wb-{safe_name}-icon">&#9660;</span>
-</h3>
-<div id="wb-{safe_name}" class="collapsible">"""
+<div class="section-header" onclick="toggleSection('wb-{safe_name}')" style="margin-top:0;border-bottom:none">
+    <h2 style="font-size:1em">{esc(name)} &nbsp; {badge_html} &nbsp; {fid_html}</h2>
+    <span class="toggle-arrow" id="wb-{safe_name}-arrow">&#9660;</span>
+</div>
+<div class="section-body" id="wb-{safe_name}">"""
 
-        # ── Objects converted summary ──────────────────────────────────
+        # Objects converted summary
         obj = m.get("objects_converted", {})
         if obj:
             non_zero = {k: v for k, v in obj.items() if v > 0}
             if non_zero:
-                tags = " &nbsp;|&nbsp; ".join(f"<strong>{k}</strong>:&nbsp;{v}" for k, v in non_zero.items())
-                html += f'<p style="color:{pbi_gray};font-size:0.88em">&#128230; {tags}</p>'
+                tags = " &nbsp;|&nbsp; ".join(f"<strong>{esc(k)}</strong>:&nbsp;{v}" for k, v in non_zero.items())
+                html += f'<p class="text-gray fs-sm">&#128230; {tags}</p>'
 
-        # ── By-category mini bar chart ─────────────────────────────────
+        # By-category mini bar chart
         if by_cat:
-            html += '<div style="margin:10px 0">'
-            bc_max = max((v.get("total", 0) for v in by_cat.values()), default=1) or 1
-            for cat, vals in sorted(by_cat.items(), key=lambda x: -x[1].get("total", 0)):
+            cat_bar_items = []
+            for cat_name, vals in sorted(by_cat.items(), key=lambda x: -x[1].get("total", 0)):
                 total = vals.get("total", 0)
-                exact = vals.get("exact", 0)
-                pct = total / bc_max * 100
-                color = cat_colors.get(cat, pbi_blue)
-                html += f"""<div class="bar-row">
-                    <div class="bar-label">{cat.title()}</div>
-                    <div class="bar-track"><div class="bar-fill" style="width:{pct}%;background:{color}">{exact}/{total}</div></div>
-                </div>"""
-            html += '</div>'
+                exact_cnt = vals.get("exact", 0)
+                color = cat_colors.get(cat_name, PBI_BLUE)
+                cat_bar_items.append((cat_name.title(), total, color))
+            html += bar_chart(cat_bar_items)
 
-        # ── Visual type mappings (Tableau visual → Power BI visual) ────
+        # Visual type mappings
         visual_details = m.get("visual_details", [])
         vtm = m.get("visual_type_mappings", {})
         if visual_details:
-            # Rich per-worksheet comparison table with fields
-            html += '<h4 style="margin-top:15px;color:{0}">&#127912; Tableau Visual &#8594; Power BI Visual</h4>'.format(pbi_dark)
-            html += """<table class="detail-table">
-<tr>
-  <th>Worksheet</th>
-  <th>Tableau Mark</th>
-  <th style="text-align:center">&#8594;</th>
-  <th>Power BI Visual</th>
-  <th>Dimensions</th>
-  <th>Measures</th>
-  <th style="text-align:center">Fields</th>
-</tr>"""
+            vis_rows = []
             for vd in visual_details:
-                ws_name = vd.get('worksheet', '')
-                tab_mark = vd.get('tableau_mark', '?')
-                pbi_vis = vd.get('pbi_visual', '?')
                 dims = vd.get('dimensions', [])
                 meas = vd.get('measures', [])
-                fc = vd.get('field_count', 0)
-                dims_html = ', '.join(f'<span style="background:#e8eaf6;color:#283593;padding:1px 5px;border-radius:3px;font-size:0.8em;margin:1px">{d}</span>' for d in dims) if dims else '<span style="color:#a19f9d;font-style:italic">—</span>'
-                meas_html = ', '.join(f'<span style="background:#fce4ec;color:#b71c1c;padding:1px 5px;border-radius:3px;font-size:0.8em;margin:1px">{me}</span>' for me in meas) if meas else '<span style="color:#a19f9d;font-style:italic">—</span>'
-                # Color the PBI visual badge
-                html += f"""<tr>
-  <td><strong>{ws_name}</strong></td>
-  <td><span class="connector-tag">{tab_mark}</span></td>
-  <td style="text-align:center;color:{pbi_light_gray}">&#8594;</td>
-  <td><span class="connector-tag" style="background:#e6f4ea;color:#137333">{pbi_vis}</span></td>
-  <td style="max-width:250px">{dims_html}</td>
-  <td style="max-width:250px">{meas_html}</td>
-  <td style="text-align:center">{fc}</td>
-</tr>"""
-            html += '</table>'
+                dims_html = ', '.join(f'<span class="tag tag-dim">{esc(d)}</span>' for d in dims) if dims else '<span class="text-muted">—</span>'
+                meas_html = ', '.join(f'<span class="tag tag-measure">{esc(me)}</span>' for me in meas) if meas else '<span class="text-muted">—</span>'
+                vis_rows.append([
+                    f'<strong>{esc(vd.get("worksheet", ""))}</strong>',
+                    f'<span class="tag tag-connector">{esc(vd.get("tableau_mark", "?"))}</span>',
+                    '&#8594;',
+                    f'<span class="tag tag-success">{esc(vd.get("pbi_visual", "?"))}</span>',
+                    dims_html,
+                    meas_html,
+                    str(vd.get('field_count', 0)),
+                ])
+            html += '<h4>&#127912; Tableau Visual &#8594; Power BI Visual</h4>'
+            html += data_table(
+                ["Worksheet", "Tableau Mark", "", "Power BI Visual", "Dimensions", "Measures", "Fields"],
+                vis_rows, detail=True)
         elif vtm:
-            # Fallback: simple mark → PBI visual mapping (legacy data)
             _mark_to_pbi = {
                 "Automatic": "table", "Bar": "clusteredBarChart",
                 "Stacked Bar": "stackedBarChart", "Line": "lineChart",
@@ -602,146 +458,115 @@ def generate_html(assessments, reports, metadata):
                 "Dual Axis": "lineClusteredColumnComboChart",
                 "Density": "map", "Treemap": "treemap",
             }
-            html += '<p style="font-size:0.85em;color:{0}"><strong>&#127912; Visual mappings:</strong></p>'.format(pbi_gray)
-            html += '<table class="detail-table"><tr><th>Worksheet</th><th>Tableau Mark</th><th style="text-align:center">&#8594;</th><th>Power BI Visual</th></tr>'
+            vtm_rows = []
             for ws, mark in vtm.items():
                 pbi_vis = _mark_to_pbi.get(mark, mark.lower().replace(" ", ""))
-                html += f'<tr><td>{ws}</td><td><span class="connector-tag">{mark}</span></td><td style="text-align:center;color:{pbi_light_gray}">&#8594;</td><td><span class="connector-tag" style="background:#e6f4ea;color:#137333">{pbi_vis}</span></td></tr>'
-            html += '</table>'
+                vtm_rows.append([
+                    esc(ws),
+                    f'<span class="tag tag-connector">{esc(mark)}</span>',
+                    '&#8594;',
+                    f'<span class="tag tag-success">{esc(pbi_vis)}</span>',
+                ])
+            html += '<h4>&#127912; Visual Mappings</h4>'
+            html += data_table(["Worksheet", "Tableau Mark", "", "Power BI Visual"], vtm_rows, detail=True)
 
-        # ── Table mapping ──────────────────────────────────────────────
+        # Table mapping
         table_mapping = r.get("table_mapping", [])
         if table_mapping:
-            html += """<h4 style="margin-top:15px;color:{0}">&#128203; Table Mapping</h4>
-<table class="detail-table">
-<tr><th>Source Datasource</th><th>Source Table</th><th>Target Table (PBI)</th><th>Connection</th><th>Columns</th></tr>""".format(pbi_dark)
-            for tm in table_mapping:
-                tgt = tm.get('target_table', '')
-                tgt_style = f'color:{fail_red};font-style:italic' if tgt.startswith('(') else ''
-                html += f"""<tr>
-    <td>{tm.get('source_datasource', '')}</td>
-    <td><strong>{tm.get('source_table', '')}</strong></td>
-    <td style="{tgt_style}"><strong>{tgt}</strong></td>
-    <td><span class="connector-tag">{tm.get('connection_type', '?')}</span></td>
-    <td style="text-align:right">{tm.get('columns', 0)}</td>
-</tr>"""
-            html += "</table>"
+            tm_rows = []
+            for tm_item in table_mapping:
+                tgt = tm_item.get('target_table', '')
+                tgt_cls = ' class="text-fail"' if tgt.startswith('(') else ''
+                tm_rows.append([
+                    esc(tm_item.get('source_datasource', '')),
+                    f'<strong>{esc(tm_item.get("source_table", ""))}</strong>',
+                    f'<strong{tgt_cls}>{esc(tgt)}</strong>',
+                    f'<span class="tag tag-connector">{esc(tm_item.get("connection_type", "?"))}</span>',
+                    str(tm_item.get('columns', 0)),
+                ])
+            html += '<h4>&#128203; Table Mapping</h4>'
+            html += data_table(
+                ["Source Datasource", "Source Table", "Target Table (PBI)", "Connection", "Columns"],
+                tm_rows, detail=True)
 
-        # ── Approximations ─────────────────────────────────────────────
-        approx = m.get("approximations", [])
-        if approx:
-            html += f'<p style="font-size:0.85em;color:#856404"><strong>&#9888; Approximations:</strong></p><ul style="font-size:0.85em;color:#856404">'
-            for ap in approx:
-                html += f'<li>{ap.get("worksheet","")}: {ap.get("source_type","")} — {ap.get("note","")}</li>'
+        # Approximations
+        approx_list = m.get("approximations", [])
+        if approx_list:
+            html += '<h4 class="text-warn">&#9888; Approximations</h4><ul class="fs-sm text-warn">'
+            for ap in approx_list:
+                html += f'<li>{esc(ap.get("worksheet", ""))}: {esc(ap.get("source_type", ""))} — {esc(ap.get("note", ""))}</li>'
             html += '</ul>'
 
-        # ── Assessment warnings ────────────────────────────────────────
+        # Assessment warnings
         warnings = []
-        for cat in a.get("categories", []):
-            for check in cat.get("checks", []):
+        for cat_data in a.get("categories", []):
+            for check in cat_data.get("checks", []):
                 if check.get("severity") in ("warn", "fail"):
                     warnings.append(check)
         if warnings:
-            html += f'<p style="font-size:0.85em;color:#856404"><strong>&#9888; Assessment warnings:</strong></p><ul style="font-size:0.85em">'
+            html += '<h4 class="text-warn">&#9888; Assessment Warnings</h4><ul class="fs-sm">'
             for w in warnings:
-                sev_color = "#856404" if w["severity"] == "warn" else fail_red
-                html += f'<li style="color:{sev_color}">[{w["severity"].upper()}] {w["name"]}: {w["detail"]}'
+                cls = "text-warn" if w["severity"] == "warn" else "text-fail"
+                html += f'<li class="{cls}">[{w["severity"].upper()}] {esc(w["name"])}: {esc(w["detail"])}'
                 if w.get("recommendation"):
-                    html += f' &rarr; <em>{w["recommendation"]}</em>'
+                    html += f' &rarr; <em>{esc(w["recommendation"])}</em>'
                 html += '</li>'
             html += '</ul>'
 
-        # ── DAX Conversion Details (Tabbed: Calculations / Datasources / Visuals) ──
+        # DAX Conversion Details (Tabbed)
         if items:
             calc_items = [i for i in items if i.get("category") == "calculation"]
             ds_items = [i for i in items if i.get("category") == "datasource"]
             vis_items = [i for i in items if i.get("category") == "visual"]
             other_items = [i for i in items if i.get("category") not in ("calculation", "datasource", "visual")]
 
-            tab_id = f"tab-{safe_name}"
-            html += f"""
-<h4 style="margin-top:15px;color:{pbi_dark}">&#128221; Converted Items</h4>
-<div class="tab-bar">
-    <div class="tab active" onclick="switchTab('{tab_id}', 'all')">All ({len(items)})</div>
-    <div class="tab" onclick="switchTab('{tab_id}', 'calc')">Calculations ({len(calc_items)})</div>
-    <div class="tab" onclick="switchTab('{tab_id}', 'ds')">Datasources ({len(ds_items)})</div>
-    <div class="tab" onclick="switchTab('{tab_id}', 'vis')">Visuals ({len(vis_items)})</div>"""
+            wb_tab_group = f"wb-tab-{safe_name}"
+            wb_tabs = [
+                ("all", f"All ({len(items)})", True),
+                ("calc", f"Calculations ({len(calc_items)})", False),
+                ("ds", f"Datasources ({len(ds_items)})", False),
+                ("vis", f"Visuals ({len(vis_items)})", False),
+            ]
             if other_items:
-                html += f"""
-    <div class="tab" onclick="switchTab('{tab_id}', 'other')">Other ({len(other_items)})</div>"""
-            html += "</div>"
+                wb_tabs.append(("other", f"Other ({len(other_items)})", False))
 
-            def _render_items_table(item_list, tid):
-                """Render a table of converted items."""
-                out = f'<div class="tab-content{" active" if tid == "all" else ""}" id="{tab_id}-{tid}">'
+            html += '<h4>&#128221; Converted Items</h4>'
+            html += tab_bar(wb_tab_group, wb_tabs)
+
+            def _render_wb_items(item_list, tid, active=False):
                 if not item_list:
-                    out += '<p style="color:#a19f9d;font-style:italic">No items in this category.</p>'
-                    out += '</div>'
-                    return out
-                out += '<table class="detail-table"><tr><th>Category</th><th>Name</th><th>Status</th><th>Source Formula / Note</th><th>DAX / Target</th></tr>'
+                    return tab_content(wb_tab_group, tid,
+                                       '<p class="text-muted" style="font-style:italic">No items in this category.</p>',
+                                       active)
+                rows = []
                 for item in item_list:
                     status = item.get("status", "")
-                    st_color = success_green if status == "exact" else warn_yellow if status == "approximate" else fail_red
-                    src = (item.get("source_formula") or item.get("note") or "").replace("<", "&lt;").replace(">", "&gt;")
-                    dax = (item.get("dax") or "").replace("<", "&lt;").replace(">", "&gt;")
-                    out += f"""<tr>
-    <td><span class="connector-tag">{item.get('category','')}</span></td>
-    <td><strong>{item.get('name','')}</strong></td>
-    <td style="color:{st_color};font-weight:bold">{status}</td>
-    <td style="font-family:'Cascadia Code','Consolas',monospace;font-size:0.8em;max-width:350px;word-break:break-all">{src}</td>
-    <td style="font-family:'Cascadia Code','Consolas',monospace;font-size:0.8em;max-width:350px;word-break:break-all">{dax}</td>
-</tr>"""
-                out += '</table></div>'
-                return out
+                    src = esc(item.get("source_formula") or item.get("note") or "")
+                    dax = esc(item.get("dax") or "")
+                    rows.append([
+                        f'<span class="tag tag-connector">{esc(item.get("category", ""))}</span>',
+                        f'<strong>{esc(item.get("name", ""))}</strong>',
+                        badge(status),
+                        f'<span class="mono fs-sm" style="max-width:350px;word-break:break-all;display:inline-block">{src}</span>',
+                        f'<span class="mono fs-sm" style="max-width:350px;word-break:break-all;display:inline-block">{dax}</span>',
+                    ])
+                return tab_content(wb_tab_group, tid,
+                    data_table(["Category", "Name", "Status", "Source Formula / Note", "DAX / Target"],
+                               rows, detail=True), active)
 
-            html += _render_items_table(items, "all")
-            html += _render_items_table(calc_items, "calc")
-            html += _render_items_table(ds_items, "ds")
-            html += _render_items_table(vis_items, "vis")
+            html += _render_wb_items(items, "all", active=True)
+            html += _render_wb_items(calc_items, "calc")
+            html += _render_wb_items(ds_items, "ds")
+            html += _render_wb_items(vis_items, "vis")
             if other_items:
-                html += _render_items_table(other_items, "other")
+                html += _render_wb_items(other_items, "other")
 
-        html += "</div></div>"  # close collapse + card
+        html += "</div></div>"  # close section-body + card
 
-    html += "</div>"  # close details section
+    html += section_close()
 
-    # ── JavaScript ─────────────────────────────────────────────────────
-    html += """
-<script>
-function toggleSection(id) {
-    var el = document.getElementById(id);
-    var icon = document.getElementById(id + '-icon');
-    if (el) {
-        el.classList.toggle('collapsed');
-        if (icon) icon.innerHTML = el.classList.contains('collapsed') ? '&#9654;' : '&#9660;';
-    }
-}
-function switchTab(groupId, tabName) {
-    // Deactivate all tabs and contents in this group
-    var bar = document.querySelector('[onclick*=\"' + groupId + '\"]').parentElement;
-    bar.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
-    // Find all tab-contents for this group
-    var contents = document.querySelectorAll('[id^=\"' + groupId + '-\"]');
-    contents.forEach(function(c) { c.classList.remove('active'); });
-    // Activate clicked tab
-    bar.querySelectorAll('.tab').forEach(function(t) {
-        if (t.textContent.toLowerCase().startsWith(tabName === 'all' ? 'all' : tabName === 'calc' ? 'calc' : tabName === 'ds' ? 'data' : tabName === 'vis' ? 'vis' : 'other')) {
-            t.classList.add('active');
-        }
-    });
-    var target = document.getElementById(groupId + '-' + tabName);
-    if (target) target.classList.add('active');
-}
-</script>"""
-
-    html += f"""
-<div class="footer">
-    <p>Tableau &#8594; Power BI Migration Tool v{tool_version} — Dashboard generated {now}</p>
-    <p>Open .pbip files in Power BI Desktop (Developer Mode) to validate</p>
-</div>
-</div>
-</body>
-</html>"""
+    # ── Close HTML ─────────────────────────────────────────────────
+    html += html_close(version=tool_version, timestamp=now)
 
     return html
 

@@ -425,26 +425,22 @@ def _score_color(score: int) -> str:
 
 def _rec_badge(rec: str) -> str:
     labels = {
-        "merge": ("MERGE", SUCCESS),
-        "partial": ("PARTIAL", WARN),
-        "separate": ("SEPARATE", FAIL),
+        "merge": ("MERGE", "badge-green"),
+        "partial": ("PARTIAL", "badge-yellow"),
+        "separate": ("SEPARATE", "badge-red"),
     }
-    text, color = labels.get(rec, (rec.upper(), PBI_GRAY))
-    return (
-        f'<span style="background:{color};color:#fff;padding:4px 12px;'
-        f'border-radius:4px;font-weight:bold;font-size:0.9em">{text}</span>'
-    )
+    text, cls = labels.get(rec, (rec.upper(), "badge-gray"))
+    return f'<span class="badge {cls}">{text}</span>'
 
 
 def _overlap_bar(pct: float) -> str:
     width = max(int(pct * 100), 0)
     color = SUCCESS if pct >= 0.7 else WARN if pct >= 0.4 else FAIL
     return (
-        f'<div style="background:#e9ecef;border-radius:4px;width:120px;'
-        f'display:inline-block;vertical-align:middle">'
-        f'<div style="background:{color};width:{width}%;height:16px;'
-        f'border-radius:4px;text-align:center;font-size:11px;color:#fff;'
-        f'line-height:16px">{width}%</div></div>'
+        f'<span class="fidelity-bar">'
+        f'<span class="fidelity-track" style="width:120px">'
+        f'<span class="fidelity-fill" style="width:{width}%;background:{color}"></span></span>'
+        f'<span class="fidelity-label" style="color:{color}">{width}%</span></span>'
     )
 
 
@@ -470,6 +466,15 @@ def generate_global_html_report(
     except Exception:
         tool_version = "14.0.0"
 
+    try:
+        from powerbi_import.html_template import (
+            get_report_css, get_report_js, esc as _template_esc,
+        )
+    except ImportError:
+        from html_template import (
+            get_report_css, get_report_js, esc as _template_esc,
+        )
+
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
     n = result.total_workbooks
     profiles = result.workbook_profiles
@@ -482,7 +487,7 @@ def generate_global_html_report(
         pair_lookup[(ps.wb_b, ps.wb_a)] = ps
 
     # ══════════════════════════════════════════════════════════
-    #  HTML head
+    #  HTML head — uses shared template CSS
     # ══════════════════════════════════════════════════════════
     html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -490,81 +495,18 @@ def generate_global_html_report(
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Global Assessment — Merge Analysis</title>
-<style>
-    * {{ box-sizing: border-box; }}
-    body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-           margin: 0; padding: 20px; background: {PBI_BG}; color: {PBI_DARK}; }}
-    .container {{ max-width: 1500px; margin: 0 auto; }}
-    h1 {{ color: {PBI_BLUE}; border-bottom: 3px solid {PBI_BLUE};
-         padding-bottom: 10px; font-size: 1.6em; }}
-    h2 {{ color: {PBI_DARK}; margin-top: 30px; font-size: 1.25em;
-         cursor: pointer; }}
-    h2:hover {{ color: {PBI_BLUE}; }}
-    h3 {{ color: {PBI_GRAY}; margin-top: 20px; }}
-    .card {{ background: #fff; border-radius: 8px; padding: 20px;
-            margin: 15px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
-    .stats {{ display: grid;
-             grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-             gap: 12px; }}
-    .stat {{ background: #fff; border-radius: 8px; padding: 16px;
-            text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            transition: transform 0.15s; }}
-    .stat:hover {{ transform: translateY(-2px);
-                  box-shadow: 0 4px 8px rgba(0,0,0,0.15); }}
-    .stat .number {{ font-size: 2em; font-weight: bold; color: {PBI_BLUE}; }}
-    .stat .label {{ font-size: 0.85em; color: {PBI_GRAY}; margin-top: 4px; }}
-    table {{ border-collapse: collapse; width: 100%; margin: 10px 0; }}
-    th {{ background: {PBI_BLUE}; color: #fff; padding: 10px 12px;
-         text-align: left; font-size: 0.85em; position: sticky; top: 0; }}
-    td {{ padding: 8px 12px; border-bottom: 1px solid #e1dfdd;
-         font-size: 0.85em; }}
-    tr:hover {{ background: #f3f2f1; }}
-    .detail-table th {{ background: {PBI_GRAY}; }}
-    .connector-tag {{ background: #e8f0fe; color: #1a73e8;
-                     padding: 2px 6px; border-radius: 3px;
-                     font-size: 0.82em; white-space: nowrap; }}
-    .success-tag {{ background: #d4edda; color: #155724;
-                   padding: 2px 6px; border-radius: 3px; font-size: 0.82em; }}
-    .warn-tag {{ background: #fff3cd; color: #856404;
-                padding: 2px 6px; border-radius: 3px; font-size: 0.82em; }}
-    .danger-tag {{ background: #f8d7da; color: #721c24;
-                  padding: 2px 6px; border-radius: 3px; font-size: 0.82em; }}
-    .isolated-tag {{ background: #e2e3e5; color: #383d41;
-                    padding: 2px 6px; border-radius: 3px; font-size: 0.82em; }}
-    .cluster-card {{ background: #fff; border-radius: 8px; padding: 20px;
-                    margin: 12px 0; box-shadow: 0 2px 6px rgba(0,0,0,0.12);
-                    border-left: 5px solid {PBI_BLUE}; }}
-    .cluster-card.merge {{ border-left-color: {SUCCESS}; }}
-    .cluster-card.partial {{ border-left-color: {WARN}; }}
-    .cluster-card.separate {{ border-left-color: {FAIL}; }}
-    .matrix-cell {{ text-align: center; font-weight: bold; font-size: 0.85em;
-                   min-width: 80px; }}
-    .mono {{ font-family: 'Cascadia Code', 'Consolas', monospace;
-            font-size: 0.82em; }}
-    .section-icon {{ font-size: 1.2em; margin-right: 4px; }}
-    .collapsible {{ overflow: hidden; transition: max-height 0.3s ease-out;
-                   max-height: 5000px; }}
-    .collapsed {{ max-height: 0 !important; }}
-    .toggle-icon {{ float: right; font-size: 0.8em; color: {PBI_LIGHT_GRAY}; }}
-    .footer {{ text-align: center; color: {PBI_LIGHT_GRAY};
-              font-size: 0.85em; margin-top: 40px; padding: 20px; }}
-    .cmd-box {{ background: #1e1e1e; color: #d4d4d4; padding: 14px 18px;
-               border-radius: 6px; font-family: 'Cascadia Code', Consolas, monospace;
-               font-size: 0.85em; overflow-x: auto; white-space: pre; }}
-    @media print {{
-        .collapsible {{ max-height: none !important; }}
-        h2 {{ cursor: default; }}
-        .toggle-icon {{ display: none; }}
-    }}
-</style>
+<style>{get_report_css()}</style>
 </head>
 <body>
+<div class="report-header">
+    <h1>Global Assessment — Cross-Workbook Merge Analysis</h1>
+    <div class="subtitle">{n} workbooks analyzed</div>
+    <div class="meta">
+        <span>&#128197; {now}</span>
+        <span>&#9881; v{_esc(tool_version)}</span>
+    </div>
+</div>
 <div class="container">
-<h1>&#128202; Global Assessment — Cross-Workbook Merge Analysis</h1>
-<p style="color:{PBI_GRAY};font-size:0.9em">
-    Generated: {now} &nbsp;|&nbsp; Tool: v{_esc(tool_version)} &nbsp;|&nbsp;
-    Workbooks: {n}
-</p>
 """
 
     # ══════════════════════════════════════════════════════════
@@ -574,25 +516,22 @@ def generate_global_html_report(
     iso_count = len(result.isolated_workbooks)
     clustered_count = sum(len(c.workbooks) for c in result.merge_clusters)
 
-    html += f"""
-<h2 onclick="toggleSection('exec')"><span class="section-icon">&#128200;</span>
-Executive Summary <span class="toggle-icon" id="exec-icon">&#9660;</span></h2>
-<div id="exec" class="collapsible">
-<div class="stats">
-    <div class="stat"><div class="number">{n}</div>
-        <div class="label">Workbooks</div></div>
-    <div class="stat"><div class="number">{result.total_tables}</div>
-        <div class="label">Total Tables</div></div>
-    <div class="stat"><div class="number">{result.total_measures}</div>
-        <div class="label">Total Measures</div></div>
-    <div class="stat"><div class="number" style="color:{SUCCESS if merge_count else PBI_GRAY}">{merge_count}</div>
-        <div class="label">Merge Clusters</div></div>
-    <div class="stat"><div class="number" style="color:{SUCCESS}">{clustered_count}</div>
-        <div class="label">Workbooks in Clusters</div></div>
-    <div class="stat"><div class="number" style="color:{PBI_GRAY}">{iso_count}</div>
-        <div class="label">Isolated Workbooks</div></div>
+    html += """
+<div class="section-header" onclick="toggleSection('exec')">
+    <span class="section-icon">&#128200;</span>
+    <h2>Executive Summary</h2>
+    <span class="toggle-arrow" id="exec-arrow">&#9660;</span>
 </div>
+<div class="section-body" id="exec">
 """
+    html += '<div class="stat-grid">'
+    html += f'<div class="stat-card accent-blue"><div class="stat-value">{n}</div><div class="stat-label">Workbooks</div></div>'
+    html += f'<div class="stat-card accent-blue"><div class="stat-value">{result.total_tables}</div><div class="stat-label">Total Tables</div></div>'
+    html += f'<div class="stat-card accent-purple"><div class="stat-value">{result.total_measures}</div><div class="stat-label">Total Measures</div></div>'
+    html += f'<div class="stat-card accent-success"><div class="stat-value">{merge_count}</div><div class="stat-label">Merge Clusters</div></div>'
+    html += f'<div class="stat-card accent-success"><div class="stat-value">{clustered_count}</div><div class="stat-label">Workbooks in Clusters</div></div>'
+    html += f'<div class="stat-card"><div class="stat-value">{iso_count}</div><div class="stat-label">Isolated Workbooks</div></div>'
+    html += '</div>'
     # Recommendation summary
     if merge_count:
         html += '<div class="card" style="margin-top:15px">'
@@ -620,9 +559,12 @@ Executive Summary <span class="toggle-icon" id="exec-icon">&#9660;</span></h2>
     # 2. WORKBOOK INVENTORY
     # ══════════════════════════════════════════════════════════
     html += f"""
-<h2 onclick="toggleSection('inv')"><span class="section-icon">&#128214;</span>
-Workbook Inventory <span class="toggle-icon" id="inv-icon">&#9660;</span></h2>
-<div id="inv" class="collapsible">
+<div class="section-header" onclick="toggleSection('inv')">
+    <span class="section-icon">&#128214;</span>
+    <h2>Workbook Inventory</h2>
+    <span class="toggle-arrow" id="inv-arrow">&#9660;</span>
+</div>
+<div class="section-body" id="inv">
 <div class="card">
 <table>
 <tr>
@@ -678,9 +620,12 @@ Workbook Inventory <span class="toggle-icon" id="inv-icon">&#9660;</span></h2>
     # ══════════════════════════════════════════════════════════
     if n >= 2:
         html += f"""
-<h2 onclick="toggleSection('matrix')"><span class="section-icon">&#127922;</span>
-Pairwise Merge Score Matrix <span class="toggle-icon" id="matrix-icon">&#9660;</span></h2>
-<div id="matrix" class="collapsible">
+<div class="section-header" onclick="toggleSection('matrix')">
+    <span class="section-icon">&#127922;</span>
+    <h2>Pairwise Merge Score Matrix</h2>
+    <span class="toggle-arrow" id="matrix-arrow">&#9660;</span>
+</div>
+<div class="section-body" id="matrix">
 <div class="card" style="overflow-x:auto">
 <table>
 <tr><th style="min-width:150px"></th>"""
@@ -723,9 +668,12 @@ Pairwise Merge Score Matrix <span class="toggle-icon" id="matrix-icon">&#9660;</
     # ══════════════════════════════════════════════════════════
     if result.merge_clusters:
         html += f"""
-<h2 onclick="toggleSection('clusters')"><span class="section-icon">&#128279;</span>
-Merge Clusters <span class="toggle-icon" id="clusters-icon">&#9660;</span></h2>
-<div id="clusters" class="collapsible">
+<div class="section-header" onclick="toggleSection('clusters')">
+    <span class="section-icon">&#128279;</span>
+    <h2>Merge Clusters</h2>
+    <span class="toggle-arrow" id="clusters-arrow">&#9660;</span>
+</div>
+<div class="section-body" id="clusters">
 """
         for cluster in result.merge_clusters:
             border_class = cluster.recommendation
@@ -838,9 +786,12 @@ Merge Clusters <span class="toggle-icon" id="clusters-icon">&#9660;</span></h2>
     # ══════════════════════════════════════════════════════════
     if result.isolated_workbooks:
         html += f"""
-<h2 onclick="toggleSection('isolated')"><span class="section-icon">&#128683;</span>
-Isolated Workbooks <span class="toggle-icon" id="isolated-icon">&#9660;</span></h2>
-<div id="isolated" class="collapsible">
+<div class="section-header" onclick="toggleSection('isolated')">
+    <span class="section-icon">&#128683;</span>
+    <h2>Isolated Workbooks</h2>
+    <span class="toggle-arrow" id="isolated-arrow">&#9660;</span>
+</div>
+<div class="section-body" id="isolated">
 <div class="card">
 <p>These workbooks share no tables with others and should be migrated
 individually.</p>
@@ -872,9 +823,12 @@ individually.</p>
     # ══════════════════════════════════════════════════════════
     if result.pairwise_scores:
         html += f"""
-<h2 onclick="toggleSection('pairs')"><span class="section-icon">&#128295;</span>
-Pairwise Detail <span class="toggle-icon" id="pairs-icon">&#9660;</span></h2>
-<div id="pairs" class="collapsible">
+<div class="section-header" onclick="toggleSection('pairs')">
+    <span class="section-icon">&#128295;</span>
+    <h2>Pairwise Detail</h2>
+    <span class="toggle-arrow" id="pairs-arrow">&#9660;</span>
+</div>
+<div class="section-body" id="pairs">
 <div class="card">
 <table>
 <tr><th>Workbook A</th><th>Workbook B</th><th>Score</th>
@@ -896,7 +850,7 @@ Pairwise Detail <span class="toggle-icon" id="pairs-icon">&#9660;</span></h2>
     # FOOTER
     # ══════════════════════════════════════════════════════════
     html += f"""
-<div class="footer">
+<div class="report-footer">
     Tableau &#8594; Power BI Migration Tool v{_esc(tool_version)} &nbsp;|&nbsp;
     Global Assessment generated: {now} &nbsp;|&nbsp;
     {n} workbooks analyzed
@@ -905,15 +859,7 @@ Pairwise Detail <span class="toggle-icon" id="pairs-icon">&#9660;</span></h2>
 </div><!-- /.container -->
 
 <script>
-function toggleSection(id) {{
-    var el = document.getElementById(id);
-    el.classList.toggle('collapsed');
-    var icon = document.getElementById(id + '-icon');
-    if (icon) {{
-        icon.innerHTML = el.classList.contains('collapsed')
-            ? '&#9654;' : '&#9660;';
-    }}
-}}
+{get_report_js()}
 </script>
 </body>
 </html>"""
@@ -1148,94 +1094,96 @@ def generate_governance_report(
     Returns:
         Path to the generated HTML file.
     """
+    try:
+        from powerbi_import.html_template import (
+            html_open, html_close, stat_grid, stat_card, section_open,
+            section_close, data_table, badge, esc,
+        )
+    except ImportError:
+        from html_template import (
+            html_open, html_close, stat_grid, stat_card, section_open,
+            section_close, data_table, badge, esc,
+        )
+
     total = global_result.total_workbooks
     clusters = global_result.merge_clusters
     isolated = global_result.isolated_workbooks
 
     # Build wave summary from server assessment
-    wave_rows = ''
     total_effort = 0
+    wave_data = []
     if server_assessment:
         for wave in getattr(server_assessment, 'waves', []):
             label = getattr(wave, 'label', '')
             count = len(getattr(wave, 'workbooks', []))
             effort = getattr(wave, 'total_effort', 0)
             total_effort += effort
-            wave_rows += (
-                f'<tr><td>Wave {getattr(wave, "wave_number", "?")}</td>'
-                f'<td>{label}</td><td>{count}</td>'
-                f'<td>{effort:.1f}h</td></tr>\n'
-            )
+            wave_data.append([
+                f'Wave {getattr(wave, "wave_number", "?")}',
+                esc(label), str(count), f'{effort:.1f}h',
+            ])
 
     # Risk matrix
     green = getattr(server_assessment, 'green_count', 0) if server_assessment else 0
     yellow = getattr(server_assessment, 'yellow_count', 0) if server_assessment else 0
     red = getattr(server_assessment, 'red_count', 0) if server_assessment else 0
 
-    html = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<title>Migration Governance Report</title>
-<style>
-body {{ font-family: Segoe UI, sans-serif; margin: 2em; color: #333; }}
-h1 {{ color: #0078d4; }}
-h2 {{ border-bottom: 2px solid #0078d4; padding-bottom: 4px; }}
-table {{ border-collapse: collapse; margin: 1em 0; }}
-th, td {{ border: 1px solid #ddd; padding: 8px 12px; text-align: left; }}
-th {{ background: #0078d4; color: white; }}
-.green {{ color: #107c10; font-weight: bold; }}
-.yellow {{ color: #ca5010; font-weight: bold; }}
-.red {{ color: #d13438; font-weight: bold; }}
-.metric {{ display: inline-block; margin: 1em 2em 1em 0; text-align: center; }}
-.metric-value {{ font-size: 2em; font-weight: bold; color: #0078d4; }}
-.metric-label {{ font-size: 0.9em; color: #666; }}
-</style>
-</head>
-<body>
-<h1>Migration Governance Report</h1>
-<p>Generated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}</p>
+    now_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
+    html = html_open('Migration Governance Report',
+                     f'{total} workbooks analyzed', now_str)
 
-<h2>Executive Summary</h2>
-<div>
-<div class="metric"><div class="metric-value">{total}</div><div class="metric-label">Total Workbooks</div></div>
-<div class="metric"><div class="metric-value">{len(clusters)}</div><div class="metric-label">Merge Clusters</div></div>
-<div class="metric"><div class="metric-value">{len(isolated)}</div><div class="metric-label">Standalone</div></div>
-<div class="metric"><div class="metric-value">{total_effort:.0f}h</div><div class="metric-label">Estimated Effort</div></div>
-</div>
+    # Executive Summary
+    html += section_open('exec-summary', 'Executive Summary')
+    html += stat_grid([
+        stat_card('Total Workbooks', str(total)),
+        stat_card('Merge Clusters', str(len(clusters)), accent='teal'),
+        stat_card('Standalone', str(len(isolated)), accent='purple'),
+        stat_card('Estimated Effort', f'{total_effort:.0f}h', accent='orange'),
+    ])
+    html += section_close()
 
-<h2>Risk Matrix</h2>
-<table>
-<tr><th>Status</th><th>Count</th><th>Percentage</th></tr>
-<tr><td class="green">GREEN (ready)</td><td>{green}</td><td>{green/max(total,1)*100:.0f}%</td></tr>
-<tr><td class="yellow">YELLOW (review)</td><td>{yellow}</td><td>{yellow/max(total,1)*100:.0f}%</td></tr>
-<tr><td class="red">RED (complex)</td><td>{red}</td><td>{red/max(total,1)*100:.0f}%</td></tr>
-</table>
+    # Risk Matrix
+    html += section_open('risk-matrix', 'Risk Matrix')
+    risk_rows = [
+        [badge('GREEN (ready)', 'green'), str(green),
+         f'{green / max(total, 1) * 100:.0f}%'],
+        [badge('YELLOW (review)', 'yellow'), str(yellow),
+         f'{yellow / max(total, 1) * 100:.0f}%'],
+        [badge('RED (complex)', 'red'), str(red),
+         f'{red / max(total, 1) * 100:.0f}%'],
+    ]
+    html += data_table(['Status', 'Count', 'Percentage'], risk_rows)
+    html += section_close()
 
-<h2>Migration Waves</h2>
-<table>
-<tr><th>Wave</th><th>Label</th><th>Workbooks</th><th>Effort</th></tr>
-{wave_rows if wave_rows else '<tr><td colspan="4">No wave data available</td></tr>'}
-</table>
+    # Migration Waves
+    html += section_open('migration-waves', 'Migration Waves')
+    if wave_data:
+        html += data_table(['Wave', 'Label', 'Workbooks', 'Effort'], wave_data,
+                           sortable=True)
+    else:
+        html += '<p>No wave data available</p>\n'
+    html += section_close()
 
-<h2>Model Consolidation</h2>
-<table>
-<tr><th>Cluster</th><th>Workbooks</th><th>Shared Tables</th><th>Avg Score</th><th>Recommendation</th></tr>
-"""
+    # Model Consolidation
+    html += section_open('consolidation', 'Model Consolidation')
+    cluster_rows = []
     for c in clusters:
-        html += (
-            f'<tr><td>Cluster {c.cluster_id}</td>'
-            f'<td>{", ".join(c.workbooks)}</td>'
-            f'<td>{len(c.shared_tables)}</td>'
-            f'<td>{c.avg_score:.0f}</td>'
-            f'<td>{c.recommendation}</td></tr>\n'
-        )
-    if not clusters:
-        html += '<tr><td colspan="5">No merge clusters detected</td></tr>\n'
+        cluster_rows.append([
+            f'Cluster {c.cluster_id}',
+            esc(', '.join(c.workbooks)),
+            str(len(c.shared_tables)),
+            f'{c.avg_score:.0f}',
+            esc(c.recommendation),
+        ])
+    if cluster_rows:
+        html += data_table(
+            ['Cluster', 'Workbooks', 'Shared Tables', 'Avg Score', 'Recommendation'],
+            cluster_rows, sortable=True)
+    else:
+        html += '<p>No merge clusters detected</p>\n'
+    html += section_close()
 
-    html += """</table>
-</body>
-</html>"""
+    html += html_close()
 
     os.makedirs(os.path.dirname(os.path.abspath(output_path)) or '.', exist_ok=True)
     with open(output_path, 'w', encoding='utf-8') as f:

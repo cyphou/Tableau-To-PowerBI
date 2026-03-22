@@ -26,6 +26,11 @@ from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
+try:
+    from powerbi_import.html_template import get_report_css, get_report_js
+except ImportError:
+    from html_template import get_report_css, get_report_js
+
 
 # ── Visual type mapping (subset for display — full map in visual_generator) ──
 
@@ -50,52 +55,39 @@ _MARK_TO_PBI = {
 
 # ── CSS Theme (matches comparison_report.py style) ──────────────
 
-_CSS = """
-* { box-sizing: border-box; }
-body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-       margin: 0; padding: 0; background: #f0f2f5; color: #333; }
-header { background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
-         color: #fff; padding: 1.5rem 2rem; }
-header h1 { margin: 0; font-size: 1.5rem; }
-header p { margin: 0.3rem 0 0; opacity: 0.85; font-size: 0.9rem; }
-.container { max-width: 1400px; margin: 1rem auto; padding: 0 1rem; }
-.summary { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
-.card { background: #fff; border-radius: 8px; padding: 1rem 1.5rem;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.12); flex: 1; min-width: 180px; }
-.card h3 { margin-top: 0; font-size: 0.85rem; color: #666; text-transform: uppercase; }
-.card .val { font-size: 2rem; font-weight: 700; }
-.card .val.pass { color: #4caf50; }
-.card .val.warn { color: #ff9800; }
-.card .val.fail { color: #f44336; }
-.diff { background: #fff; border-radius: 8px; margin-bottom: 1rem;
+_CSS_EXTRA = """
+/* visual-diff extras */
+.diff { background: var(--surface); border-radius: 8px; margin-bottom: 1rem;
         box-shadow: 0 1px 3px rgba(0,0,0,0.12); overflow: hidden; }
-.diff .row-header { background: #e8eaf6; padding: 0.75rem 1rem;
+.diff .row-header { background: var(--pbi-light-blue); padding: 0.75rem 1rem;
                     font-weight: 600; display: flex; justify-content: space-between;
                     align-items: center; }
 .diff .row-header .badge { padding: 2px 8px; border-radius: 4px;
                            font-size: 0.75rem; color: #fff; }
-.badge.exact { background: #4caf50; }
-.badge.approx { background: #ff9800; }
-.badge.unmapped { background: #f44336; }
+.badge.exact { background: var(--success); }
+.badge.approx { background: #ca5010; }
+.badge.unmapped { background: var(--fail); }
 .cols { display: grid; grid-template-columns: 1fr 1fr; }
 .col { padding: 1rem; border-top: 1px solid #e0e0e0; }
 .col:first-child { border-right: 1px solid #e0e0e0; }
-.col h4 { margin: 0 0 0.5rem; color: #1a237e; font-size: 0.8rem; text-transform: uppercase; }
+.col h4 { margin: 0 0 0.5rem; color: var(--pbi-blue); font-size: 0.8rem; text-transform: uppercase; }
 .field-list { list-style: none; padding: 0; margin: 0.3rem 0; }
 .field-list li { padding: 2px 0; font-size: 0.85rem; }
-.field-list li.mapped { color: #4caf50; }
-.field-list li.unmapped { color: #f44336; }
-.field-list li.approx { color: #ff9800; }
+.field-list li.mapped { color: var(--success); }
+.field-list li.unmapped { color: var(--fail); }
+.field-list li.approx { color: #ca5010; }
 .label { font-weight: 600; color: #555; font-size: 0.8rem; }
 .encoding-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
                  gap: 0.3rem; margin: 0.3rem 0; }
-.enc-item { background: #f5f5f5; border-radius: 4px; padding: 4px 8px;
+.enc-item { background: var(--pbi-bg); border-radius: 4px; padding: 4px 8px;
             font-size: 0.8rem; text-align: center; }
-.enc-item.present { background: #e8f5e9; color: #2e7d32; }
-.enc-item.missing { background: #ffebee; color: #c62828; }
-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 1rem; }
-th, td { border: 1px solid #e0e0e0; padding: 4px 8px; text-align: left; }
-th { background: #fafafa; }
+.enc-item.present { background: #dff6dd; color: var(--success); }
+.enc-item.missing { background: #fde7e9; color: var(--fail); }
+.summary { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.summary .card { flex: 1; min-width: 180px; }
+.card .val.pass { color: var(--success); }
+.card .val.warn { color: #ca5010; }
+.card .val.fail { color: var(--fail); }
 """
 
 
@@ -313,13 +305,13 @@ def generate_visual_diff(
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Visual Diff Report</title>
-<style>{_CSS}</style>
+<style>{get_report_css()}{_CSS_EXTRA}</style>
 </head>
 <body>
-<header>
-<h1>Tableau → Power BI — Visual Diff Report</h1>
+<div class="report-header">
+<h1>Tableau &rarr; Power BI &mdash; Visual Diff Report</h1>
 <p>Project: {_esc(pbip_dir)}</p>
-</header>
+</div>
 <div class="container">
 """]
 
@@ -404,7 +396,7 @@ def generate_visual_diff(
         )
     parts.append('</table>')
 
-    parts.append('</div></body></html>')
+    parts.append(f'</div><script>{get_report_js()}</script></body></html>')
 
     os.makedirs(os.path.dirname(output_path) or '.', exist_ok=True)
     with open(output_path, 'w', encoding='utf-8') as f:

@@ -437,130 +437,101 @@ def generate_server_html_report(
     output_path: str = "server_assessment.html",
 ) -> str:
     """Generate an executive HTML dashboard report for the server assessment."""
+    try:
+        from powerbi_import.html_template import (
+            html_open, html_close, stat_card, stat_grid, section_open,
+            section_close, badge, fidelity_bar, donut_chart, bar_chart,
+            data_table, esc, SUCCESS, FAIL,
+        )
+    except ImportError:
+        from html_template import (
+            html_open, html_close, stat_card, stat_grid, section_open,
+            section_close, badge, fidelity_bar, donut_chart, bar_chart,
+            data_table, esc, SUCCESS, FAIL,
+        )
 
-    # Readiness pie data
-    pie_data = {
-        'GREEN': assessment.green_count,
-        'YELLOW': assessment.yellow_count,
-        'RED': assessment.red_count,
-    }
+    html = html_open(
+        title="Tableau Server \u2014 Portfolio Assessment",
+        subtitle=f"{assessment.total_workbooks} workbooks analyzed",
+        timestamp=assessment.timestamp,
+    )
 
-    # Top connectors
-    connector_rows = ""
-    for conn, count in assessment.connector_census.items():
-        pct = int(count / max(assessment.total_workbooks, 1) * 100)
-        connector_rows += f"""
-            <tr>
-                <td>{conn}</td>
-                <td>{count}</td>
-                <td>
-                    <div style="background:{PBI_BLUE};width:{pct}%;height:16px;border-radius:3px"></div>
-                </td>
-            </tr>"""
+    # ── Executive Summary ──────────────────────────────────────
+    html += section_open("summary", "Executive Summary", "&#128200;")
+    html += stat_grid([
+        stat_card(assessment.total_workbooks, "Total Workbooks", accent="blue"),
+        stat_card(assessment.green_count, "GREEN (Ready)", accent="success"),
+        stat_card(assessment.yellow_count, "YELLOW (Review)", accent="warn"),
+        stat_card(assessment.red_count, "RED (Complex)", accent="fail"),
+        stat_card(f"{assessment.readiness_pct}%", "Readiness", accent="blue"),
+        stat_card(f"{assessment.total_effort_hours:.1f}h", "Est. Total Effort", accent="purple"),
+    ])
 
-    # Workbook detail rows
-    wb_rows = ""
+    # Readiness donut
+    html += '<div class="chart-row">'
+    html += '<div class="chart-card"><h4>&#127919; Readiness Distribution</h4>'
+    html += donut_chart([
+        ("GREEN", assessment.green_count, SUCCESS),
+        ("YELLOW", assessment.yellow_count, "#c19c00"),
+        ("RED", assessment.red_count, FAIL),
+    ], center_text=f"{assessment.readiness_pct}%")
+    html += '</div>'
+
+    # Connector distribution
+    if assessment.connector_census:
+        conn_items = [(conn, count, "#0078d4")
+                      for conn, count in assessment.connector_census.items()]
+        html += '<div class="chart-card"><h4>&#128268; Connector Census</h4>'
+        html += bar_chart(conn_items)
+        html += '</div>'
+
+    html += '</div>'  # chart-row
+    html += section_close()
+
+    # ── Migration Waves ──────────────────────────────────────────
+    if assessment.waves:
+        html += section_open("waves", "Migration Waves", "&#128640;")
+        wave_rows = []
+        for wave in assessment.waves:
+            members = ', '.join(wave.workbooks[:5])
+            if len(wave.workbooks) > 5:
+                members += '...'
+            wave_rows.append([
+                f'<strong>Wave {wave.wave_number}</strong>',
+                esc(wave.label),
+                str(len(wave.workbooks)),
+                f'{wave.total_effort:.1f}h',
+                esc(members),
+            ])
+        html += '<div class="card">'
+        html += data_table(
+            ["Wave", "Classification", "Workbooks", "Effort", "Members"],
+            wave_rows, "wave-tbl", sortable=True)
+        html += '</div>'
+        html += section_close()
+
+    # ── Workbook Detail ──────────────────────────────────────────
+    html += section_open("detail", "Workbook Detail", "&#128221;")
+    wb_rows = []
     for r in sorted(assessment.workbook_results, key=lambda x: x.effort_hours, reverse=True):
-        color = GREEN if r.status == "GREEN" else (YELLOW if r.status == "YELLOW" else RED)
-        wb_rows += f"""
-            <tr>
-                <td><span style="color:{color};font-weight:bold">{r.status}</span></td>
-                <td>{r.name}</td>
-                <td>{r.visual_count}</td>
-                <td>{r.calc_count}</td>
-                <td>{r.table_count}</td>
-                <td>{r.complexity.get('lod_expressions', 0)}</td>
-                <td>{r.effort_hours:.1f}h</td>
-                <td>{', '.join(r.connector_types) or 'N/A'}</td>
-            </tr>"""
+        wb_rows.append([
+            badge(r.status),
+            f'<strong>{esc(r.name)}</strong>',
+            str(r.visual_count),
+            str(r.calc_count),
+            str(r.table_count),
+            str(r.complexity.get('lod_expressions', 0)),
+            f'{r.effort_hours:.1f}h',
+            ', '.join(esc(c) for c in r.connector_types) or 'N/A',
+        ])
+    html += '<div class="card">'
+    html += data_table(
+        ["Status", "Workbook", "Visuals", "Calcs", "Tables", "LOD", "Effort", "Connectors"],
+        wb_rows, "wb-detail-tbl", sortable=True, searchable=True)
+    html += '</div>'
+    html += section_close()
 
-    # Wave rows
-    wave_rows = ""
-    for wave in assessment.waves:
-        wave_rows += f"""
-            <tr>
-                <td><strong>Wave {wave.wave_number}</strong></td>
-                <td>{wave.label}</td>
-                <td>{len(wave.workbooks)}</td>
-                <td>{wave.total_effort:.1f}h</td>
-                <td>{', '.join(wave.workbooks[:5])}{'...' if len(wave.workbooks) > 5 else ''}</td>
-            </tr>"""
-
-    html = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Tableau Server Assessment</title>
-<style>
-    body {{ font-family: 'Segoe UI', sans-serif; margin: 20px; background: {PBI_BG}; color: {PBI_DARK}; }}
-    h1 {{ color: {PBI_BLUE}; }}
-    h2 {{ color: {PBI_DARK}; border-bottom: 2px solid {PBI_BLUE}; padding-bottom: 6px; }}
-    table {{ border-collapse: collapse; width: 100%; margin-bottom: 20px; background: white; }}
-    th, td {{ padding: 8px 12px; border: 1px solid #e0e0e0; text-align: left; }}
-    th {{ background: {PBI_BLUE}; color: white; }}
-    .summary-box {{ display: inline-block; padding: 16px 24px; margin: 8px; background: white;
-                   border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); text-align: center; }}
-    .summary-box .number {{ font-size: 2em; font-weight: bold; }}
-    .green {{ color: {GREEN}; }}
-    .yellow {{ color: {YELLOW}; }}
-    .red {{ color: {RED}; }}
-    .blue {{ color: {PBI_BLUE}; }}
-</style>
-</head>
-<body>
-<h1>Tableau Server — Portfolio Assessment</h1>
-<p>Generated: {assessment.timestamp}</p>
-
-<div>
-    <div class="summary-box">
-        <div class="number blue">{assessment.total_workbooks}</div>
-        <div>Total Workbooks</div>
-    </div>
-    <div class="summary-box">
-        <div class="number green">{assessment.green_count}</div>
-        <div>GREEN (Ready)</div>
-    </div>
-    <div class="summary-box">
-        <div class="number yellow">{assessment.yellow_count}</div>
-        <div>YELLOW (Review)</div>
-    </div>
-    <div class="summary-box">
-        <div class="number red">{assessment.red_count}</div>
-        <div>RED (Complex)</div>
-    </div>
-    <div class="summary-box">
-        <div class="number blue">{assessment.readiness_pct}%</div>
-        <div>Readiness</div>
-    </div>
-    <div class="summary-box">
-        <div class="number blue">{assessment.total_effort_hours:.1f}h</div>
-        <div>Est. Total Effort</div>
-    </div>
-</div>
-
-<h2>Connector Census</h2>
-<table>
-    <tr><th>Connector</th><th>Count</th><th>Distribution</th></tr>
-    {connector_rows}
-</table>
-
-<h2>Migration Waves</h2>
-<table>
-    <tr><th>Wave</th><th>Classification</th><th>Workbooks</th><th>Effort</th><th>Members</th></tr>
-    {wave_rows}
-</table>
-
-<h2>Workbook Detail</h2>
-<table>
-    <tr>
-        <th>Status</th><th>Workbook</th><th>Visuals</th><th>Calcs</th>
-        <th>Tables</th><th>LOD</th><th>Effort</th><th>Connectors</th>
-    </tr>
-    {wb_rows}
-</table>
-
-</body>
-</html>"""
+    html += html_close()
 
     os.makedirs(os.path.dirname(os.path.abspath(output_path)) or '.', exist_ok=True)
     with open(output_path, 'w', encoding='utf-8') as f:
