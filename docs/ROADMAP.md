@@ -1,8 +1,8 @@
-# Development Roadmap — v22.0.0 → v26.0.0
+# Development Roadmap — v22.0.0 → v28.0.0
 
-**Date:** 2026-03-21
-**Baseline:** v25.0.0 — 6,192+ tests across 128 test files, 0 failures
-**Current state:** v25.0.0 shipped. Fabric-native output, DAX optimizer, Tableau 2024+ extraction, cross-platform validation, and semantic intelligence complete.
+**Date:** 2026-03-22
+**Baseline:** v27.1.0 — 6,454 tests across 137 test files, 0 failures
+**Current state:** v27.1.0 shipped. Recursive LOD, window function depth, marketplace, industry recipes/templates, geo passthrough, unified HTML report template.
 
 ---
 
@@ -16,7 +16,10 @@ The migration engine is **feature-complete for core single-workbook scenarios**.
 | **v23.0.0** | Conversion Accuracy & Fidelity Perfection | Sprints 81–85 | ✅ Shipped |
 | **v24.0.0** | Composite Models, Live Sync & Enterprise Scale | Sprints 86–90 | ✅ Shipped |
 | **v25.0.0** | Semantic Intelligence & Cross-Platform Parity | Sprints 91–95 | ✅ Shipped |
-| **v26.0.0** | Autonomous Migration & Production Hardening | Sprints 96–100 | Planned |
+| **v26.0.0** | Autonomous Migration & Production Hardening | Sprints 96–100 | ✅ Shipped |
+| **v27.0.0** | Advanced Intelligence & Marketplace | Sprints 101–106 | ✅ Shipped |
+| **v27.1.0** | Unified HTML Report Template | Sprint 107 | ✅ Shipped |
+| **v28.0.0** | Web UI & AI-Assisted Migration | Sprints 108–112 | Planned |
 
 ---
 
@@ -812,9 +815,42 @@ v26.0.0 targets **zero-touch autonomous migration** for standard workbooks: uplo
 | Geo passthrough | .geojson + .shp extraction | ✅ 8 file types, shape map config |
 | Tests | 6,400+ | ✅ 6,454 passed |
 
+### Sprint 107: Unified HTML Report Template ✅ SHIPPED
+
+**Owner:** @generator  
+**Goal:** Centralize CSS/JS across all 9 HTML report generators into a shared template module with Fluent/PBI design.
+
+| # | Item | Owner | Status |
+|---|------|-------|--------|
+| 107.1 | `html_template.py` — shared CSS/JS template module with design tokens, components | @generator | ✅ |
+| 107.2 | Upgrade `generate_report.py` (batch migration dashboard) | @generator | ✅ |
+| 107.3 | Upgrade `server_assessment.py` (server portfolio assessment) | @assessor | ✅ |
+| 107.4 | Upgrade `global_assessment.py` (global + governance reports) | @assessor | ✅ |
+| 107.5 | Upgrade `merge_report_html.py` (shared model merge report) | @merger | ✅ |
+| 107.6 | Upgrade `telemetry_dashboard.py` (observability dashboard) | @deployer | ✅ |
+| 107.7 | Upgrade `visual_diff.py`, `comparison_report.py`, `merge_assessment.py` | @assessor | ✅ |
+| 107.8 | Dark mode support (`prefers-color-scheme: dark`) | @generator | ✅ |
+| 107.9 | Unit tests for html_template.py | @tester | ✅ |
+
+### v27.1.0 Success Criteria
+
+| Metric | Target | v27.1.0 Actual |
+|--------|--------|----------------|
+| HTML reports unified | 9/9 generators | ✅ All 9 upgraded |
+| Shared CSS/JS module | 1 template file | ✅ `html_template.py` (640+ lines) |
+| Duplicate CSS removed | >1,000 lines | ✅ ~1,230 lines removed |
+| Dark mode | CSS `prefers-color-scheme` | ✅ Full dark theme |
+| Tests | 6,454+ | ✅ 6,454+ passed |
+
+---
+
+## v28.0.0 — Web UI & AI-Assisted Migration (Sprints 108–112)
+
 ### v28.0.0 Backlog
 
-| Item | Priority | Notes |
-|------|----------|-------|
-| Streamlit Web UI | P1 | Browser-based wizard (deferred since v23) |
-| LLM-assisted DAX correction | P2 | AI-powered formula refinement (deferred since v23) |
+| Item | Priority | Sprint | Notes |
+|------|----------|--------|-------|
+| Streamlit Web UI | P1 | 108–109 | Browser-based wizard with drag-and-drop (deferred since v23) |
+| LLM-assisted DAX correction | P2 | 110 | AI-powered formula refinement for approximated functions |
+| REST API endpoint | P2 | 111 | HTTP API for CI/CD pipeline integration |
+| PDF export for reports | P3 | 112 | Generate PDF from HTML reports |

@@ -13,10 +13,10 @@
 <p align="center">
   <a href="https://github.com/cyphou/Tableau-To-PowerBI/actions/workflows/ci.yml"><img src="https://github.com/cyphou/Tableau-To-PowerBI/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
   <img src="https://img.shields.io/badge/coverage-96.2%25-brightgreen?style=flat-square" alt="Coverage"/>
-  <img src="https://img.shields.io/badge/tests-6%2C192%20passed-brightgreen?style=flat-square" alt="Tests"/>
+  <img src="https://img.shields.io/badge/tests-6%2C454%20passed-brightgreen?style=flat-square" alt="Tests"/>
   <img src="https://img.shields.io/badge/python-3.9%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python"/>
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License"/>
-  <img src="https://img.shields.io/badge/version-25.0.0-blue?style=flat-square" alt="Version"/>
+  <img src="https://img.shields.io/badge/version-27.1.0-blue?style=flat-square" alt="Version"/>
   <img src="https://img.shields.io/badge/deps-zero-orange?style=flat-square" alt="Zero Dependencies"/>
 </p>
 
@@ -495,6 +495,7 @@ TableauToPowerBI/
 │   ├── validator.py                           #   Artifact validation
 │   ├── equivalence_tester.py                  #   Cross-platform validation (v25)
 │   ├── regression_suite.py                    #   Regression snapshot testing (v25)
+│   ├── html_template.py                       #   Shared HTML report template (CSS/JS)
 │   ├── migration_report.py                    #   Per-item fidelity tracking
 │   ├── goals_generator.py                     #   Tableau Pulse → PBI Goals
 │   ├── shared_model.py                        #   Multi-workbook merge engine
@@ -503,7 +504,7 @@ TableauToPowerBI/
 │   ├── plugins.py                             #   Plugin system
 │   ├── fabric_project_generator.py            #   Fabric-native output (v25)
 │   └── deploy/                                #   Deploy to PBI Service / Fabric
-├── tests/                                     # 6,192 tests across 128 files
+├── tests/                                     # 6,454 tests across 137 files
 ├── docs/                                      # 18 documentation files
 └── examples/                                  # Sample Tableau workbooks
 ```
@@ -648,13 +649,13 @@ The validator checks `.pbip` JSON, `report.json`, `model.tmdl`, page/visual stru
 ## 🧪 Testing
 
 <p align="center">
-  <img src="https://img.shields.io/badge/tests-6%2C192%20passed-brightgreen?style=for-the-badge" alt="Tests"/>
+  <img src="https://img.shields.io/badge/tests-6%2C454%20passed-brightgreen?style=for-the-badge" alt="Tests"/>
   <img src="https://img.shields.io/badge/coverage-96.2%25-brightgreen?style=for-the-badge" alt="Coverage"/>
-  <img src="https://img.shields.io/badge/test%20files-128-blue?style=for-the-badge" alt="Test Files"/>
+  <img src="https://img.shields.io/badge/test%20files-137-blue?style=for-the-badge" alt="Test Files"/>
 </p>
 
 ```bash
-python -m pytest tests/ -v                          # Run all 6,192 tests
+python -m pytest tests/ -v                          # Run all 6,454 tests
 python -m pytest tests/test_dax_converter.py -v      # Run specific file
 python -m pytest tests/ --cov --cov-report=html      # Coverage report
 ```
@@ -731,7 +732,7 @@ The report shows for each migrated workbook:
 | 📝 [Changelog](CHANGELOG.md) | Release history |
 | 🔗 [Shared Model Plan](docs/SHARED_SEMANTIC_MODEL_PLAN.md) | Multi-workbook merge architecture |
 | � [Enterprise Guide](docs/ENTERPRISE_GUIDE.md) | 8-phase enterprise migration guide |
-| 🗓️ [Roadmap](docs/ROADMAP.md) | v22→v26 development roadmap |
+| 🗓️ [Roadmap](docs/ROADMAP.md) | v22→v28 development roadmap |
 | 🤖 [Agents](docs/AGENTS.md) | 8-agent specialization model |
 | �🌐 Global Assessment | Cross-workbook merge analysis with HTML heatmap (`--global-assess`) |
 | 🚀 Bundle Deployment | Deploy shared model + reports to Fabric (`--deploy-bundle`) |

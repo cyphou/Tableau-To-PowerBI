@@ -653,6 +653,62 @@ def get_report_css() -> str:
         .bar-label { width: 80px; }
         .donut-container { flex-direction: column; }
     }
+
+    /* ── Dark mode ────────────────────────────────────────────── */
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --pbi-bg: #1b1a19;
+            --pbi-surface: #252423;
+            --pbi-dark: #f3f2f1;
+            --pbi-gray: #b3b0ad;
+            --pbi-light-gray: #8a8886;
+        }
+        body { background: var(--pbi-bg); color: var(--pbi-dark); }
+        .report-header { background: linear-gradient(135deg, #004578 0%, #001d33 100%); }
+        .stat-card { background: var(--pbi-surface); box-shadow: 0 1.6px 3.6px rgba(0,0,0,0.4); }
+        .card { background: var(--pbi-surface); box-shadow: 0 1.6px 3.6px rgba(0,0,0,0.4); }
+        table { background: var(--pbi-surface); }
+        thead th { background: #004578; }
+        thead th.sortable:hover { background: #005a9e; }
+        .detail-table thead th { background: #3b3a39; }
+        tbody td { border-bottom-color: #3b3a39; }
+        tbody tr:hover { background: #323130; }
+        .section-header:hover { border-bottom-color: #2b88d8; }
+        .section-header { border-bottom-color: #3b3a39; }
+        .tab-bar { border-bottom-color: #3b3a39; }
+        .tab:hover { background: rgba(0,120,212,0.15); }
+        .fidelity-track { background: #3b3a39; }
+        .bar-track { background: #3b3a39; }
+        .badge-gray { background: #3b3a39; color: #b3b0ad; }
+        .connector-tag { background: #1a3a5c; color: #6cb8f6; }
+        .success-tag { background: #1a3a1a; color: #6ccb5f; }
+        .warn-tag { background: #3a3500; color: #d4c75f; }
+        .danger-tag { background: #4a1a1d; color: #f5707a; }
+        .isolated-tag { background: #3b3a39; color: #b3b0ad; }
+        .tag-connector { background: #1a3a5c; color: #6cb8f6; }
+        .tag-success { background: #1a3a1a; color: #6ccb5f; }
+        .tag-warn { background: #3a3500; color: #d4c75f; }
+        .tag-danger { background: #4a1a1d; color: #f5707a; }
+        code { background: #3b3a39; }
+        .cmd-box { background: #0d0d0d; }
+        .report-footer { border-top-color: #3b3a39; }
+        .table-search input { background: #323130; border-color: #3b3a39; color: var(--pbi-dark); }
+        .table-search input:focus { border-color: #2b88d8; }
+        .cluster-card { background: var(--pbi-surface); box-shadow: 0 1.6px 3.6px rgba(0,0,0,0.4); }
+        .flow-box { background: var(--pbi-surface); border-color: #2b88d8; box-shadow: 0 1.6px 3.6px rgba(0,0,0,0.4); }
+    }
+
+    @media print and (prefers-color-scheme: dark) {
+        :root {
+            --pbi-bg: #fff;
+            --pbi-surface: #fff;
+            --pbi-dark: #323130;
+            --pbi-gray: #605e5c;
+            --pbi-light-gray: #a19f9d;
+        }
+        body { background: #fff; color: #323130; }
+        .report-header { background: #0078d4 !important; }
+    }
 """
 
 
@@ -861,9 +917,9 @@ def badge(score: str, level: str = "") -> str:
     """
     mapping = {
         "GREEN": "green", "YELLOW": "yellow", "RED": "red",
-        "pass": "green", "warn": "yellow", "fail": "red",
-        "info": "blue", "exact": "green", "approximate": "yellow",
-        "unsupported": "red",
+        "PASS": "green", "WARN": "yellow", "FAIL": "red",
+        "INFO": "blue", "EXACT": "green", "APPROXIMATE": "yellow",
+        "UNSUPPORTED": "red",
     }
     if level:
         cls = level
