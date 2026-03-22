@@ -2,7 +2,9 @@
 
 This document lists known limitations and approximations in the Tableau to Power BI migration tool.
 
-> **Last updated:** v25.0.0 — many previous limitations have been addressed in Sprints 27-95. See below for current status.
+> **Last updated:** v26.0.0 (Sprint 98) — many previous limitations have been addressed in Sprints 27-98. See below for current status.
+>
+> **v26.0.0 notes (Sprints 96–98):** Self-healing migration pipeline: TMDL self-repair (broken refs, circular relationships, orphan measures), visual fallback cascade (degrade to simpler type on error), M query self-repair, recovery report documenting every auto-repair action (S96, 76 tests). Security hardening: `security_validator.py` with path validation (null byte, traversal, extension whitelist), ZIP slip defense, XXE protection (`safe_parse_xml`), credential detection/redaction (10 patterns), M query credential scrubbing, multi-tenant template substitution hardening, wizard input sanitization (S97, 64 tests). Merged Lakehouse/Fabric output: `--shared-model --output-format fabric` generates Lakehouse + Dataflow Gen2 + PySpark Notebook + DirectLake Semantic Model + Pipeline for merged multi-workbook models, thin report Fabric branch (S98, 12 tests). 6,263 tests across 131 files.
 >
 > **v25.0.0 notes:** Fabric-native artifact generation — `--output-format fabric` generates Lakehouse, Dataflow Gen2, PySpark Notebook, DirectLake Semantic Model, and Data Pipeline (S91). Deep extraction of Tableau 2024+ features: dynamic zone visibility, table extensions, multi-connection blending, linguistic schema for Q&A (S92). DAX optimizer engine: IF→SWITCH, COALESCE, constant folding, Time Intelligence auto-injection (S93). Cross-platform validation: query equivalence framework, SSIM visual comparison, regression suite generator (S94). 6,192 tests across 128 files.
 >

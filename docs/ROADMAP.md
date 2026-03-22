@@ -24,13 +24,13 @@ The migration engine is **feature-complete for core single-workbook scenarios**.
 
 | Agent | v22.0.0 Sprints | v23.0.0 Sprints | v24.0.0 Sprints | v25.0.0 Sprints | v26.0.0 Sprints |
 |-------|----------------|----------------|----------------|----------------|----------------|
-| **@orchestrator** | 76, 80 | 81, 83 | 86, 90 | 91, 95 | 96, 100 |
+| **@orchestrator** | 76, 80 | 81, 83 | 86, 90 | 91, 95 | 96, 97, 98, 100 |
 | **@extractor** | 76, 77 | — | 87 | 92 | 97 |
-| **@converter** | 78 | 82 | 87 | 92, 93 | 97 |
-| **@generator** | 76, 77, 78, 79 | 82 | 86, 87 | 91, 93 | 96, 97 |
-| **@assessor** | 79 | — | 88 | 94 | 98 |
-| **@merger** | — | — | 88, 89 | — | 99 |
-| **@deployer** | — | 83 | 89, 90 | 94 | 98, 99, 100 |
+| **@converter** | 78 | 82 | 87 | 92, 93 | 99 |
+| **@generator** | 76, 77, 78, 79 | 82 | 86, 87 | 91, 93 | 96, 99 |
+| **@assessor** | 79 | — | 88 | 94 | 99 |
+| **@merger** | — | — | 88, 89 | — | 98 |
+| **@deployer** | — | 83 | 89, 90 | 94 | 97, 99, 100 |
 | **@tester** | 76–80 (cross-cutting) | 81–85 (cross-cutting) | 86–90 (cross-cutting) | 91–95 (cross-cutting) | 96–100 (cross-cutting) |
 
 ---
@@ -386,9 +386,9 @@ Real-world migrations (NBA, Superstore, Feedback Dashboard) exposed gaps that sy
 | 91 | **Direct Lake semantic model** (`mode: directLake` partitions) | P0 |
 | 91 | **Dataflow Gen2 generation** (M→Dataflow JSON mashup) | P1 |
 | 93 | **Time Intelligence auto-injection** (YTD, QTD, PY, YoY%, MoM%) | P0 |
-| 96 | **TMDL self-repair** (broken refs, circular rels, orphan measures) | P0 |
-| 96 | **Visual fallback cascade** (degrade to simpler type on error) | P1 |
-| 97 | **Spatial → Azure Maps visual** (lat/lon data roles) | P1 |
+| 96 | **TMDL self-repair** (broken refs, circular rels, orphan measures) ✅ | P0 |
+| 96 | **Visual fallback cascade** (degrade to simpler type on error) ✅ | P1 |
+| 99 | **Spatial → Azure Maps visual** (lat/lon data roles) | P1 |
 
 **Key files:** `pbip_generator.py`, `visual_generator.py`, `tmdl_generator.py`, `dataflow_generator.py` (new)
 
@@ -404,8 +404,8 @@ Real-world migrations (NBA, Superstore, Feedback Dashboard) exposed gaps that sy
 | 88 | **Governance report** (executive summary, risk matrix, HTML+PDF) | P0 |
 | 94 | **Query equivalence framework** (Tableau vs PBI value comparison) | P0 |
 | 94 | **Visual screenshot comparison** (SSIM-based pixel diff) | P1 |
-| 98 | **Naming convention enforcement** (configurable rules, warn/enforce) | P1 |
-| 98 | **Data classification annotations** (PII detection → dataClassification) | P1 |
+| 99 | **Naming convention enforcement** (configurable rules, warn/enforce) | P1 |
+| 99 | **Data classification annotations** (PII detection → dataClassification) | P1 |
 
 **Key files:** `assessment.py`, `server_assessment.py`, `global_assessment.py`, `equivalence_tester.py` (new), `governance.py` (new)
 
@@ -418,8 +418,9 @@ Real-world migrations (NBA, Superstore, Feedback Dashboard) exposed gaps that sy
 | 88 | **Consolidation recommender** (standalone vs shared decision) | P1 |
 | 89 | **Source change detection** (Server API hash comparison) | P0 |
 | 89 | **Incremental diff generation** (changed artifacts only) | P0 |
-| 99 | **Pattern registry** (migration marketplace with versioned patterns) | P0 |
-| 99 | **DAX recipe overrides** (industry-specific measure templates) | P1 |
+| 98 | **Shared model Fabric branch** (`--shared-model --output-format fabric`) ✅ | P0 |
+| v27 | **Pattern registry** (migration marketplace with versioned patterns) | P0 |
+| v27 | **DAX recipe overrides** (industry-specific measure templates) | P1 |
 
 **Key files:** `shared_model.py`, `incremental.py`, `merge_config.py`, `marketplace.py` (new)
 
@@ -435,10 +436,11 @@ Real-world migrations (NBA, Superstore, Feedback Dashboard) exposed gaps that sy
 | 89 | **Change notification** (webhook: Teams/Slack) | P2 |
 | 90 | **Enterprise deployment guide** | P1 |
 | 94 | **Regression test suite generator** (auto-capture visual values for drift detection) | P1 |
-| 98 | **Sensitivity label assignment** (Tableau permissions → PBI labels) | P1 |
-| 98 | **Endorsement & certification** (`--endorse promoted|certified`) | P2 |
-| 98 | **Audit trail** (immutable JSONL migration log) | P1 |
-| 99 | **Industry model templates** (Healthcare/Finance/Retail skeletons) | P1 |
+| 97 | **Multi-tenant path traversal defense** (template substitution hardening) ✅ | P0 |
+| 99 | **Sensitivity label assignment** (Tableau permissions → PBI labels) | P1 |
+| 99 | **Audit trail** (immutable JSONL migration log) | P1 |
+| 100 | **Endorsement & certification** (`--endorse promoted|certified`) | P2 |
+| v27 | **Industry model templates** (Healthcare/Finance/Retail skeletons) | P1 |
 | 100 | **Rolling deployment** (blue/green with auto-rollback) | P0 |
 | 100 | **Monitoring integration** (Azure Monitor/App Insights/Prometheus) | P1 |
 
@@ -454,7 +456,7 @@ Real-world migrations (NBA, Superstore, Feedback Dashboard) exposed gaps that sy
 | 81–85 | **v23 test files**: web_app, llm_client, ci_workflows, conversion_accuracy, web_e2e | P0 |
 | 86–90 | **v24 test files**: composite_model, edge_cases, portfolio_intelligence, live_sync, enterprise_scale | P0 |
 | 91–95 | **v25 test files**: fabric_native, tableau_2024, dax_optimizer, equivalence, fabric_e2e, optimization_e2e | P0 |
-| 96–100 | **v26 test files**: self_healing, advanced_formulas, governance, marketplace, production_scale | P0 |
+| 96–100 | **v26 test files**: self_healing ✅, security_hardening ✅, merged_fabric ✅, governance, production_scale | P0 |
 | 83 | **Coverage gate** (95% threshold in CI) | P1 |
 | 83 | **Test annotations** (JUnit XML → inline PR comments) | P2 |
 
@@ -494,9 +496,9 @@ v25.0.0 — Semantic Intelligence
                              Sprint 95 (Integration + Release)
 
 v26.0.0 — Autonomous Migration
-  Sprint 96 (Self-Healing)   ──→  Sprint 97 (Formula Intelligence)
+  Sprint 96 (Self-Healing) ✅ ──→  Sprint 97 (Security) ✅
            ↓                           ↓
-  Sprint 98 (Governance)     ──→  Sprint 99 (Marketplace)
+  Sprint 98 (Merged Fabric) ✅ ──→  Sprint 99 (Governance + Formulas)
                                        ↓
                              Sprint 100 (Production + Release)
 ```
@@ -622,12 +624,12 @@ v26.0.0 targets **zero-touch autonomous migration** for standard workbooks: uplo
 
 ---
 
-### Sprint 96 — Self-Healing Migration Pipeline (@generator, @orchestrator)
+### Sprint 96 — Self-Healing Migration Pipeline (@generator, @orchestrator) ✅ SHIPPED
 
 **Goal:** When the migration engine encounters an error (TMDL validation failure, missing column reference, unsupported visual), it automatically applies corrective strategies instead of producing a broken artifact.
 
-| # | Item | Owner | File(s) | Est. | Details |
-|---|------|-------|---------|------|---------|
+| # | Item | Owner | File(s) | Status | Details |
+|---|------|-------|---------|--------|---------|
 | 96.1 | **TMDL self-repair** | @generator | `tmdl_generator.py` | High | After generation, run semantic validation. For each failure: broken column ref → remove from measure/hide with MigrationNote; circular relationship → deactivate weakest link; duplicate table name → auto-suffix; orphan measure → reassign to main table. |
 | 96.2 | **Visual fallback cascade** | @generator | `visual_generator.py` | Medium | If a visual config is invalid (missing required data role), apply fallback: remove optional roles first, then degrade to simpler visual type (scatter→table, combo→bar), then emit placeholder card. Log each degradation in migration report. |
 | 96.3 | **M query self-repair** | @orchestrator | `m_query_builder.py` | Medium | Wrap each generated M partition in `try/otherwise #table({}, {})` at the outermost expression. If M evaluation fails in PBI Desktop, the table loads empty instead of blocking the entire model. |
@@ -638,72 +640,96 @@ v26.0.0 targets **zero-touch autonomous migration** for standard workbooks: uplo
 
 ---
 
-### Sprint 97 — Advanced Formula Intelligence (@extractor, @converter, @generator)
+### Sprint 97 — Security Hardening (@extractor, @orchestrator, @deployer) ✅ SHIPPED
 
-**Goal:** Handle the last 5% of formula edge cases: deeply nested LODs, window function partitioning, table calc addressing with LOOKUP/PREVIOUS_VALUE, and spatial-to-map formula conversion.
+**Goal:** OWASP Top 10 defense across the pipeline: path traversal, ZIP slip, XXE, credential exposure, injection via template substitution. Replaces originally-planned "Advanced Formula Intelligence" (deferred to v27.0.0).
 
-| # | Item | Owner | File(s) | Est. | Details |
-|---|------|-------|---------|------|---------|
-| 97.1 | **Nested LOD depth 3+** | @converter | `dax_converter.py` | High | Recursive LOD parser with depth tracking: `{FIXED X : SUM({FIXED Y : COUNT({FIXED Z : MIN([A])})})}` → nested CALCULATE with layered ALLEXCEPT. Limit to depth 5 with MigrationNote for deeper. |
-| 97.2 | **LOOKUP / PREVIOUS_VALUE** | @converter | `dax_converter.py` | High | `LOOKUP([Measure], -1)` → `CALCULATE([Measure], OFFSET(-1, ...))`. `PREVIOUS_VALUE(start)` → `VAR _prev = CALCULATE([Measure], OFFSET(-1, ...)) RETURN IF(ISBLANK(_prev), start, _prev)`. Requires partition-by context from table calc addressing. |
-| 97.3 | **Window function partitioning** | @converter | `dax_converter.py` | Medium | Extract `compute-using`/`addressing` fields from table calc XML → translate to WINDOW/OFFSET `PARTITIONBY` and `ORDERBY` clauses. Currently uses `ALL/ALLSELECTED` approximation. |
-| 97.4 | **Spatial → Azure Maps visual** | @generator | `visual_generator.py` | Medium | Tableau MAKEPOINT/MAKELINE/DISTANCE coordinates → PBI `azureMap` visual type with latitude/longitude data roles. Replace `0+comment` DAX with proper lat/lon column references. |
-| 97.5 | **Shapefile/GeoJSON passthrough** | @extractor | `extract_tableau_data.py` | Low | Detect `.shp`/`.geojson` files in `.twbx` archive → extract to output directory → reference in PBI shape map visual `shapeMapGeoData`. |
-| 97.6 | **Tests** | @tester | `tests/test_advanced_formulas.py` (new) | Medium | 35+ tests: nested LOD (depth 2,3,4,5), LOOKUP offsets, PREVIOUS_VALUE, PARTITIONBY translation, Azure Maps visual, shapefile extraction. |
+| # | Item | Owner | File(s) | Status | Details |
+|---|------|-------|---------|--------|---------|
+| 97.1 | **Security validator module** | @generator | `security_validator.py` | ✅ | Centralized utilities: path validation (null byte, traversal, extension whitelist), ZIP slip defense (`safe_zip_extract_member`), XXE protection (`safe_parse_xml`), credential redaction (10 patterns), M query scrubbing, template sanitization |
+| 97.2 | **ZIP slip + XXE defense** | @extractor | `extract_tableau_data.py` | ✅ | `read_tableau_file()` validates ZIP entries, `safe_parse_xml()` blocks DOCTYPE+ENTITY |
+| 97.3 | **Input validation** | @orchestrator | `migrate.py` | ✅ | File path validation (null bytes, extension whitelist), `TABLEAU_TOKEN_SECRET` env var |
+| 97.4 | **Multi-tenant injection defense** | @deployer | `deploy/multi_tenant.py` | ✅ | Placeholder validation, null byte blocking, context-aware escaping (JSON/M/TMDL) |
+| 97.5 | **Wizard input hardening** | @orchestrator | `wizard.py` | ✅ | `getpass` for sensitive input, `_validate_file_path()`, extension whitelist |
+| 97.6 | **Tests** | @tester | `tests/test_security.py` | ✅ | 64 tests: path (11), ZIP (7), XXE (6), credentials (14), sanitization (6), multi-tenant (7), wizard (4), scanning (4), integration (5) |
 
----
-
-### Sprint 98 — Governance & Compliance Framework (@assessor, @deployer)
-
-**Goal:** Enterprise governance: enforce naming conventions, data classification labels, sensitivity labels, endorsement status, and audit trails for regulated industries.
-
-| # | Item | Owner | File(s) | Est. | Details |
-|---|------|-------|---------|------|---------|
-| 98.1 | **Naming convention enforcement** | @assessor | `powerbi_import/governance.py` (new) | Medium | Configurable rules: measure prefix (`m_`), column naming (snake_case/camelCase), table naming (PascalCase). Auto-rename on generation or warn-only mode. Rules defined in `config.json` governance section. |
-| 98.2 | **Sensitivity label assignment** | @deployer | `deploy/deployer.py` | Medium | Map Tableau project permissions → PBI sensitivity labels (Public/General/Confidential/Highly Confidential). Apply via PBI REST API `PATCH /datasets/{id}` with label GUID. Configurable in `config.json`. |
-| 98.3 | **Data classification annotations** | @assessor | `powerbi_import/governance.py` | Medium | Scan TMDL columns for PII patterns (email, SSN, phone, name) → add `dataClassification` annotation. Generate classification report. |
-| 98.4 | **Endorsement & certification** | @deployer | `deploy/deployer.py` | Low | `--endorse promoted|certified`: Set endorsement status on deployed datasets/reports. Certified requires admin approval flag. |
-| 98.5 | **Audit trail** | @deployer | `powerbi_import/governance.py` | Medium | Immutable JSON audit log: who migrated what, when, source hash, output hash, approvals, deployment target. Append-only log in `migration_audit.jsonl`. |
-| 98.6 | **Tests** | @tester | `tests/test_governance.py` (new) | Medium | 30+ tests: naming rules, sensitivity mapping, PII detection, endorsement API, audit log structure, config validation. |
+**Success:** All inputs validated, no credential leaks in output, ZIP/XXE attacks blocked.
 
 ---
 
-### Sprint 99 — Migration Marketplace & Community Patterns (@merger, @deployer)
+### Sprint 98 — Merged Lakehouse / Fabric Output (@merger, @orchestrator) ✅ SHIPPED
 
-**Goal:** A pattern library where teams can share and reuse migration solutions: custom visual mappings, DAX recipe overrides, connector templates, and industry-specific model patterns.
+**Goal:** Enable `--shared-model` multi-workbook merge to produce Fabric-native output (Lakehouse + Dataflow Gen2 + Notebook + DirectLake SemanticModel + Pipeline) instead of only PBIP format. Replaces originally-planned "Governance & Compliance" (deferred to Sprint 99).
+
+| # | Item | Owner | File(s) | Status | Details |
+|---|------|-------|---------|--------|---------|
+| 98.1 | **Fabric branch in import_shared_model** | @orchestrator | `import_to_powerbi.py` | ✅ | `output_format='fabric'` routes merged data to `FabricProjectGenerator.generate_project()` |
+| 98.2 | **CLI wiring** | @orchestrator | `migrate.py` | ✅ | `run_shared_model_migration()` forwards `output_format` from CLI args |
+| 98.3 | **Thin reports in Fabric mode** | @merger | `import_to_powerbi.py` | ✅ | Thin reports placed inside Fabric project dir with `byPath` to DirectLake SemanticModel |
+| 98.4 | **No model-explorer for Fabric** | @orchestrator | `import_to_powerbi.py` | ✅ | Fabric output skips `.pbip` model-explorer wrapper |
+| 98.5 | **Tests** | @tester | `tests/test_shared_model_fabric.py` | ✅ | 12 tests: Fabric artifacts (5), thin reports (3), merged content (2), parameters (2) |
+
+**Success:** `--shared-model wb1.twbx wb2.twbx --output-format fabric` produces complete merged Fabric project.
+
+---
+
+### Sprint 99 — Governance & Advanced Formulas (@assessor, @deployer, @converter)
+
+**Goal:** Enterprise governance framework (naming conventions, data classification, audit trail) combined with the highest-priority formula intelligence items deferred from Sprint 97.
 
 | # | Item | Owner | File(s) | Est. | Details |
 |---|------|-------|---------|------|---------|
-| 99.1 | **Pattern registry** | @merger | `powerbi_import/marketplace.py` (new) | High | JSON-based pattern catalog: each pattern has metadata (name, author, Tableau source type, PBI target, rating, download count), a set of override files (DAX overrides, visual-type map, M templates), and versioning. Local file-system registry with import/export. |
-| 99.2 | **DAX recipe overrides** | @merger | `powerbi_import/marketplace.py` | Medium | Named recipes: "Healthcare KPIs", "Financial Variance Analysis", "Retail RFM Model". Each recipe provides measure templates that override default DAX conversion for specific Tableau calculation patterns. Applied via `--recipe healthcare` CLI flag. |
-| 99.3 | **Industry model templates** | @deployer | `powerbi_import/marketplace.py` | Medium | Pre-built semantic model skeletons for common domains: Healthcare (Patient, Encounter, Diagnosis), Finance (GL, AP, AR), Retail (Customer, Product, Transaction). When detected, auto-map Tableau tables to template tables with pre-configured relationships, hierarchies, and display folders. |
-| 99.4 | **Pattern import/export** | @deployer | `powerbi_import/marketplace.py` | Low | `--export-pattern NAME` exports the current migration's overrides as a reusable pattern JSON. `--import-pattern FILE` applies a pattern before generation. |
-| 99.5 | **Tests** | @tester | `tests/test_marketplace.py` (new) | Medium | 25+ tests: registry CRUD, recipe application, template matching, import/export round-trip, version conflicts. |
+| 99.1 | **Naming convention enforcement** | @assessor | `powerbi_import/governance.py` (new) | Medium | Configurable rules: measure prefix (`m_`), column naming (snake_case/camelCase), table naming (PascalCase). Auto-rename on generation or warn-only mode. Rules defined in `config.json` governance section. |
+| 99.2 | **Data classification annotations** | @assessor | `powerbi_import/governance.py` | Medium | Scan TMDL columns for PII patterns (email, SSN, phone, name) → add `dataClassification` annotation. Generate classification report. |
+| 99.3 | **Audit trail** | @deployer | `powerbi_import/governance.py` | Medium | Immutable JSON audit log: who migrated what, when, source hash, output hash, deployment target. Append-only `migration_audit.jsonl`. |
+| 99.4 | **Sensitivity label assignment** | @deployer | `deploy/deployer.py` | Medium | Map Tableau project permissions → PBI sensitivity labels (Public/General/Confidential/Highly Confidential). Apply via PBI REST API. |
+| 99.5 | **LOOKUP / PREVIOUS_VALUE** | @converter | `dax_converter.py` | High | `LOOKUP([Measure], -1)` → `CALCULATE([Measure], OFFSET(-1, ...))`. `PREVIOUS_VALUE(start)` → VAR/RETURN with OFFSET fallback. |
+| 99.6 | **Window function PARTITIONBY** | @converter | `dax_converter.py` | Medium | Extract `compute-using`/`addressing` from table calc XML → WINDOW/OFFSET `PARTITIONBY` and `ORDERBY` clauses. Currently uses `ALL/ALLSELECTED` approximation. |
+| 99.7 | **Spatial → Azure Maps visual** | @generator | `visual_generator.py` | Medium | Tableau MAKEPOINT coordinates → PBI `azureMap` visual with lat/lon data roles. Replace `0+comment` DAX. |
+| 99.8 | **Tests** | @tester | `tests/test_governance.py` (new), `tests/test_advanced_formulas.py` (new) | Medium | 50+ tests: naming rules (10), PII detection (8), audit log (6), sensitivity mapping (4), LOOKUP/PREVIOUS_VALUE (10), PARTITIONBY (8), Azure Maps (4) |
+
+**Success:** Enterprise customers can enforce naming standards and PII classification. LOOKUP/PREVIOUS_VALUE formulas convert to OFFSET-based DAX.
 
 ---
 
 ### Sprint 100 — Production Hardening & v26.0.0 Release (@orchestrator, @deployer, @tester)
 
-**Goal:** Harden for production enterprise use: comprehensive error handling, monitoring integration, rolling deployments, migration SLA tracking, and v26.0.0 release.
+**Goal:** Harden for production enterprise use: rolling deployments, monitoring integration, migration SLA tracking, 1000-workbook stress test, and v26.0.0 release.
 
 | # | Item | Owner | File(s) | Est. | Details |
 |---|------|-------|---------|------|---------|
-| 100.1 | **Rolling deployment** | @deployer | `deploy/pbi_deployer.py` | High | `--rolling`: Deploy updated dataset first, validate refresh success, then swap reports. Automatic rollback if validation fails. Blue/green deployment with canary phase. |
-| 100.2 | **Migration SLA tracking** | @orchestrator | `powerbi_import/sla_tracker.py` (new) | Medium | Define per-workbook SLAs: max migration time, min fidelity score, required data validation pass. Track SLA compliance across batch migrations. Alert on SLA breach. |
-| 100.3 | **Monitoring integration** | @deployer | `powerbi_import/monitoring.py` (new) | Medium | Export migration metrics to Azure Monitor (custom metrics), Application Insights (traces/events), or Prometheus (push gateway). Configurable via `--monitor azure|prometheus|none`. |
-| 100.4 | **1000-workbook stress test** | @tester | `tests/test_production_scale.py` (new) | High | Synthetic: 1000 workbooks × 3 tables × 5 measures. Assert: total < 120s, peak memory < 2GB, 0 broken artifacts, SLA compliance ≥ 99%. |
-| 100.5 | **v26.0.0 release** | @orchestrator | `pyproject.toml`, docs | Low | Version bump, CHANGELOG, README, GAP_ANALYSIS, KNOWN_LIMITATIONS, copilot-instructions. |
+| 100.1 | **Rolling deployment** | @deployer | `deploy/pbi_deployer.py` | High | `--rolling`: Deploy updated dataset first, validate refresh success, then swap reports. Automatic rollback on validation failure. Blue/green deployment with canary phase. |
+| 100.2 | **Migration SLA tracking** | @orchestrator | `powerbi_import/sla_tracker.py` (new) | Medium | Per-workbook SLAs: max migration time, min fidelity score, required data validation pass. Track compliance across batch migrations. Alert on SLA breach. |
+| 100.3 | **Monitoring integration** | @deployer | `powerbi_import/monitoring.py` (new) | Medium | Export migration metrics to Azure Monitor (custom metrics), Application Insights (traces/events), or Prometheus (push gateway). `--monitor azure|prometheus|none`. |
+| 100.4 | **Endorsement & certification** | @deployer | `deploy/deployer.py` | Low | `--endorse promoted|certified`: Set endorsement status on deployed datasets/reports via PBI REST API. |
+| 100.5 | **1000-workbook stress test** | @tester | `tests/test_production_scale.py` (new) | High | Synthetic: 1000 workbooks × 3 tables × 5 measures. Assert: total < 120s, peak memory < 2GB, 0 broken artifacts, SLA compliance ≥ 99%. |
+| 100.6 | **v26.0.0 release** | @orchestrator | `pyproject.toml`, docs | Low | Version bump, CHANGELOG, README, GAP_ANALYSIS, KNOWN_LIMITATIONS, copilot-instructions. |
 
 ### v26.0.0 Success Criteria
 
-| Metric | v25.0.0 | Target v26.0.0 |
-|--------|---------|----------------|
-| Tests | ~6,600 | **7,000+** |
-| Self-healing pipeline | ❌ | **Auto-repair TMDL, visuals, M queries** |
-| Nested LOD depth | 1 level | **5 levels** |
-| LOOKUP/PREVIOUS_VALUE | ❌ | **OFFSET-based conversion** |
-| Governance framework | ❌ | **Naming, sensitivity, PII, audit** |
-| Migration marketplace | ❌ | **Pattern registry + recipes** |
-| Rolling deployment | ❌ | **Blue/green with auto-rollback** |
-| Scale tested | 500 workbooks | **1000 workbooks** (<120s) |
-| SLA tracking | ❌ | **Per-workbook SLA compliance** |
+| Metric | v25.0.0 | Target v26.0.0 | Sprint 96-98 Actual |
+|--------|---------|----------------|---------------------|
+| Tests | ~6,192 | **7,000+** | **6,263** (on track) |
+| Self-healing pipeline | ❌ | **Auto-repair TMDL, visuals, M queries** | ✅ Sprint 96 |
+| Security hardening | ❌ | **ZIP slip, XXE, credential redaction** | ✅ Sprint 97 |
+| Merged Fabric output | ❌ | **--shared-model + --output-format fabric** | ✅ Sprint 98 |
+| Governance framework | ❌ | **Naming, PII classification, audit** | Planned Sprint 99 |
+| LOOKUP/PREVIOUS_VALUE | ❌ | **OFFSET-based conversion** | Planned Sprint 99 |
+| Rolling deployment | ❌ | **Blue/green with auto-rollback** | Planned Sprint 100 |
+| Scale tested | 500 workbooks | **1000 workbooks** (<120s) | Planned Sprint 100 |
+| SLA tracking | ❌ | **Per-workbook SLA compliance** | Planned Sprint 100 |
+
+### v27.0.0 Backlog (Deferred from v26)
+
+Items deferred from original v26 plan to keep sprints focused:
+
+| Item | Original Sprint | Priority | Notes |
+|------|----------------|----------|-------|
+| Nested LOD depth 3+ (recursive parser) | 97 | P1 | Already works via iterative 50-iteration (S87), but recursive parser would be cleaner |
+| Shapefile/GeoJSON passthrough | 97 | P2 | Extract .shp/.geojson from .twbx → PBI shape map |
+| Migration Marketplace (pattern registry) | 99 | P1 | Community pattern library with DAX recipes |
+| DAX recipe overrides (industry KPIs) | 99 | P1 | Healthcare, Finance, Retail templates |
+| Industry model templates | 99 | P2 | Pre-built semantic model skeletons |
+| Window function depth (PARTITIONBY nesting) | 97 | P2 | Multi-level PARTITIONBY + ORDERBY + MATCHBY |
+| Streamlit Web UI | 81 | P1 | Browser-based wizard (deferred since v23) |
+| LLM-assisted DAX correction | 82 | P2 | AI-powered formula refinement (deferred since v23) |

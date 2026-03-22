@@ -2,8 +2,8 @@
 
 **Version:** v26.0.0  
 **Date:** 2025-07-16  
-**Current state:** v26.0.0 in progress — **6,251 tests** across 130 test files (+conftest.py), 0 failures  
-**Previous baseline:** v3.5.0 — 887 → v4.0.0 — 1,387 → v5.0.0 — 1,543 → v5.1.0 — 1,595 → v5.5.0 — 1,777 → v6.0.0 — 1,889 → v6.1.0 — 1,997 → v7.0.0 — 2,057 → Sprint 21 — 2,066 → v8.0.0 — 2,275 → Sprint 27 — 2,542 → Sprint 28 — 2,616 → Sprint 29 — 2,666 → v9.0.0 — 3,196 → v10.0.0 — 3,342 → v11.0.0 — 3,459 → v12.0.0 — 3,729 → v13.0.0 — 3,847 → v14.0.0 — 3,925 → v15.0.0 — 3,988 → v15.0.1 — 3,996 → v16.0.0 — 4,131 → v17.0.0 — 4,219 → Sprint 63 — 4,762 → Sprint 64 — 4,813 → v19.0.0 — 4,923 → v21.0.0 — 5,170 → v22.0.0 — 5,683 → v23.0.0 — 5,782 → v24.0.0 — 5,927 → v25.0.0 — 6,192 → **Sprint 97 — 6,251**
+**Current state:** v26.0.0 in progress — **6,263 tests** across 131 test files (+conftest.py), 0 failures  
+**Previous baseline:** v3.5.0 — 887 → v4.0.0 — 1,387 → v5.0.0 — 1,543 → v5.1.0 — 1,595 → v5.5.0 — 1,777 → v6.0.0 — 1,889 → v6.1.0 — 1,997 → v7.0.0 — 2,057 → Sprint 21 — 2,066 → v8.0.0 — 2,275 → Sprint 27 — 2,542 → Sprint 28 — 2,616 → Sprint 29 — 2,666 → v9.0.0 — 3,196 → v10.0.0 — 3,342 → v11.0.0 — 3,459 → v12.0.0 — 3,729 → v13.0.0 — 3,847 → v14.0.0 — 3,925 → v15.0.0 — 3,988 → v15.0.1 — 3,996 → v16.0.0 — 4,131 → v17.0.0 — 4,219 → Sprint 63 — 4,762 → Sprint 64 — 4,813 → v19.0.0 — 4,923 → v21.0.0 — 5,170 → v22.0.0 — 5,683 → v23.0.0 — 5,782 → v24.0.0 — 5,927 → v25.0.0 — 6,192 → Sprint 97 — 6,251 → **Sprint 98 — 6,263**
 
 **Next roadmap:** See [ROADMAP.md](ROADMAP.md) for v26.0.0 (Sprints 96–100) — Autonomous Migration & Production Hardening
 
@@ -22,7 +22,7 @@ This project uses an **8-agent specialization model** with scoped domain knowled
 | **@assessor** | Readiness scoring, strategy, diff reports | `assessment.py`, `server_assessment.py`, `strategy_advisor.py` |
 | **@merger** | Shared semantic model, fingerprint matching | `shared_model.py`, `merge_config.py` |
 | **@deployer** | Fabric/PBI deployment, auth, gateway | `deploy/*.py`, `gateway_config.py`, `telemetry.py` |
-| **@tester** | Tests (6,192+), coverage, regression | `tests/*.py` |
+| **@tester** | Tests (6,263+), coverage, regression | `tests/*.py` |
 
 **Rules:** One owner per file. Read access is universal. @tester is cross-cutting (reads all source, writes only `tests/`).
 
@@ -30,13 +30,13 @@ This project uses an **8-agent specialization model** with scoped domain knowled
 
 | Agent | v18 (54–58) | v19 (59–65) | v20 (66–70) | v21 (71–75) | v22 (76–80) | v23 (81–85) | v24 (86–90) | v25 (91–95) | v26 (96–100) |
 |-------|------------|------------|------------|------------|------------|------------|------------|------------|-------------|
-| @orchestrator | — | 65 | 66, 70 | 74, 75 | 76, 80 | 81, 83 | 86, 90 | 91, 95 | 96, 100 |
+| @orchestrator | — | 65 | 66, 70 | 74, 75 | 76, 80 | 81, 83 | 86, 90 | 91, 95 | 96, 97, 98, 100 |
 | @extractor | — | — | 69 | — | 76, 77 | — | 87 | 92 | 97 |
-| @converter | 58 | 58, 61 | 67, 69 | — | 78 | 82, 84 | 87 | 92, 93 | 97 |
-| @generator | — | 59 | 70 | 72 | 76–79 | 82 | 86, 87 | 91, 93 | 96, 97 |
-| @assessor | — | 60 | — | — | 79 | — | 88 | 94 | 98 |
-| @merger | 54, 55, 57 | 62, 64 | — | — | — | — | 88, 89 | — | 99 |
-| @deployer | — | 63 | 68 | 73, 74 | — | 83 | 89, 90 | 94 | 98, 99, 100 |
+| @converter | 58 | 58, 61 | 67, 69 | — | 78 | 82, 84 | 87 | 92, 93 | 99 |
+| @generator | — | 59 | 70 | 72 | 76–79 | 82 | 86, 87 | 91, 93 | 96, 99 |
+| @assessor | — | 60 | — | — | 79 | — | 88 | 94 | 99 |
+| @merger | 54, 55, 57 | 62, 64 | — | — | — | — | 88, 89 | — | 98 |
+| @deployer | — | 63 | 68 | 73, 74 | — | 83 | 89, 90 | 94 | 97, 99, 100 |
 | @tester | 54–58 | 59–65 | 66–70 | 71–75 | 76–80 | 81–85 | 86–90 | 91–95 | 96–100 |
 
 ---
@@ -168,7 +168,7 @@ See [ROADMAP.md](ROADMAP.md) for full sprint details (Sprints 76–80).
 
 ---
 
-## v26.0.0 — Autonomous Migration & Production Hardening (PLANNED)
+## v26.0.0 — Autonomous Migration & Production Hardening (IN PROGRESS)
 
 See [ROADMAP.md](ROADMAP.md) for full sprint details (Sprints 96–100).
 
@@ -178,25 +178,24 @@ v26.0.0 targets **zero-touch autonomous migration** for standard workbooks: uplo
 
 | Sprint | Title | Owner(s) | Status | Key Deliverables |
 |--------|-------|----------|--------|------------------|
-| **96** | Self-Healing Migration Pipeline | @generator, @orchestrator | Planned | TMDL self-repair, visual fallback cascade, M query self-repair, recovery report |
-| **97** | Advanced Formula Intelligence | @extractor, @converter, @generator | Planned | Nested LOD depth 3+, LOOKUP/PREVIOUS_VALUE, window PARTITIONBY, spatial→Azure Maps |
-| **98** | Governance & Compliance | @assessor, @deployer | Planned | Naming conventions, sensitivity labels, PII detection, endorsement, audit trail |
-| **99** | Migration Marketplace | @merger, @deployer | Planned | Pattern registry, DAX recipes, industry model templates, import/export |
-| **100** | Production Hardening & Release | @orchestrator, @deployer, @tester | Planned | Rolling deployment, SLA tracking, monitoring integration, 1000-workbook stress test |
+| **96** | Self-Healing Migration Pipeline | @generator, @orchestrator | ✅ SHIPPED | TMDL self-repair, visual fallback cascade, M query self-repair, recovery report (76 tests) |
+| **97** | Security Hardening | @orchestrator, @deployer, @extractor | ✅ SHIPPED | security_validator.py, ZIP slip defense, XXE protection, credential redaction, multi-tenant defense, wizard hardening (64 tests) |
+| **98** | Merged Lakehouse / Fabric Output | @merger, @orchestrator | ✅ SHIPPED | `--shared-model --output-format fabric`, thin report Fabric branch, CLI wiring (12 tests) |
+| **99** | Governance & Advanced Formulas | @assessor, @converter, @deployer, @generator | Planned | Naming conventions, PII detection, audit trail, sensitivity labels, LOOKUP/PREVIOUS_VALUE, Window PARTITIONBY, Azure Maps |
+| **100** | Production Hardening & Release | @orchestrator, @deployer, @tester | Planned | Rolling deployment, SLA tracking, monitoring, endorsement, 1000-workbook stress test, v26.0.0 release |
 
 ### v26.0.0 Target Criteria
 
-| Metric | v25.0.0 | Target v26.0.0 |
-|--------|---------|----------------|
-| Tests | 6,192 | **7,000+** |
-| Self-healing pipeline | ❌ | Auto-repair TMDL, visuals, M queries |
-| Nested LOD depth | 1 level | 5 levels |
-| LOOKUP/PREVIOUS_VALUE | ❌ | OFFSET-based conversion |
-| Governance framework | ❌ | Naming, sensitivity, PII, audit |
-| Migration marketplace | ❌ | Pattern registry + recipes |
-| Rolling deployment | ❌ | Blue/green with auto-rollback |
-| Scale tested | 500 workbooks | 1000 workbooks (<120s) |
-| SLA tracking | ❌ | Per-workbook SLA compliance |
+| Metric | v25.0.0 | Target v26.0.0 | Actual (Sprint 98) |
+|--------|---------|----------------|---------------------|
+| Tests | 6,192 | **7,000+** | 6,263 (131 files) |
+| Self-healing pipeline | ❌ | Auto-repair TMDL, visuals, M queries | ✅ Sprint 96 |
+| Security hardening | ❌ | Path validation, XXE, credential redaction | ✅ Sprint 97 |
+| Merged Fabric output | ❌ | `--shared-model --output-format fabric` | ✅ Sprint 98 |
+| Governance framework | ❌ | Naming, sensitivity, PII, audit | Sprint 99 |
+| LOOKUP/PREVIOUS_VALUE | ❌ | OFFSET-based conversion | Sprint 99 |
+| Rolling deployment | ❌ | Blue/green with auto-rollback | Sprint 100 |
+| Scale tested | 500 workbooks | 1000 workbooks (<120s) | Sprint 100 |
 
 ---
 

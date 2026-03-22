@@ -1,8 +1,8 @@
 # Comprehensive Gap Analysis — Tableau to Power BI Migration Tool
 
-**Date:** 2026-03-21 — updated through v25.0.0  
+**Date:** 2026-07-22 — updated through v26.0.0 (Sprint 98)  
 **Scope:** Every source file, test file, CI/CD, docs, config, and cross-project comparison with TableauToFabric  
-**Status:** 6,192 tests passing across 128 test files · 44,715 source lines (tableau_export + powerbi_import)
+**Status:** 6,263 tests passing across 131 test files · 44,715+ source lines (tableau_export + powerbi_import)
 
 ### Implementation Coverage
 
@@ -547,12 +547,12 @@
 | Metric | Fabric | PBI |
 |--------|--------|-----|
 | Test files | 40 | 37 (+conftest.py) |
-| Total tests | ~1,205 | **6,192** |
+| Total tests | ~1,205 | **6,263** |
 | Coverage test files (Fabric-style) | 9 files, ~750 tests (e.g., `test_*_coverage.py`) | None |
 | PBI-only broad-scope tests | None | 5 files (feature_gaps, gap_implementations, new_features, non_regression, migration_validation) |
 | Real-world E2E | None | **26 workbooks, 369 tests** (v22/S80) |
 | Performance regression | None | **benchmark + regression suite** (v22/S80) |
-| **Coverage ratio** | ~0.21× PBI test count | Baseline (PBI has ~4.75× more tests than Fabric) |
+| **Coverage ratio** | ~0.21× PBI test count | Baseline (PBI has ~5.2× more tests than Fabric) |
 
 ### Portability Assessment — Remaining Items
 
