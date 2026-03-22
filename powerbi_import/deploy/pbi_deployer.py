@@ -388,3 +388,161 @@ class PBIWorkspaceDeployer:
         result['status'] = deploy_result.status
         result['deployment'] = deploy_result
         return result
+
+    # ── Sprint 100: Rolling deployment ──────────────────────────────────────
+
+    def deploy_rolling(self, project_dir, dataset_name=None,
+                       max_wait_seconds=300, poll_interval=5):
+        """Blue/green rolling deployment with automatic rollback.
+
+        Strategy:
+          1. Deploy the new dataset (canary) alongside the existing one.
+          2. Trigger a refresh on the new dataset.
+          3. Validate the refresh succeeded.
+          4. If validation passes → overwrite the production dataset.
+          5. If validation fails → roll back (remove canary, keep existing).
+
+        Args:
+            project_dir: Path to .pbip project directory.
+            dataset_name: Target dataset name (defaults to project folder name).
+            max_wait_seconds: Max time to wait for import + refresh.
+            poll_interval: Seconds between status polls.
+
+        Returns:
+            dict: {status, phase, canary_id, production_id, error, validation}.
+        """
+        project_dir = os.path.abspath(project_dir)
+        name = dataset_name or os.path.basename(project_dir)
+        canary_name = f"{name}__canary"
+
+        result = {
+            'status': 'pending',
+            'phase': 'init',
+            'canary_id': None,
+            'production_id': None,
+            'error': None,
+            'validation': None,
+            'rolled_back': False,
+        }
+
+        # Phase 1: Deploy canary (new version) without overwriting production
+        result['phase'] = 'canary_deploy'
+        logger.info("Rolling deploy phase 1: deploying canary '%s'", canary_name)
+        canary_result = self.deploy_project(
+            project_dir,
+            dataset_name=canary_name,
+            overwrite=True,
+            refresh=False,
+            max_wait_seconds=max_wait_seconds,
+            poll_interval=poll_interval,
+        )
+
+        if canary_result.status != 'succeeded':
+            result['status'] = 'failed'
+            result['error'] = f"Canary deploy failed: {canary_result.error}"
+            logger.error(result['error'])
+            return result
+
+        result['canary_id'] = canary_result.dataset_id
+
+        # Phase 2: Trigger refresh on canary
+        result['phase'] = 'canary_refresh'
+        logger.info("Rolling deploy phase 2: refreshing canary dataset %s",
+                     canary_result.dataset_id)
+        try:
+            self.client.refresh_dataset(
+                self.workspace_id, canary_result.dataset_id
+            )
+            # Wait for refresh to complete
+            refresh_ok = self._wait_for_refresh(
+                canary_result.dataset_id,
+                max_wait_seconds=max_wait_seconds,
+                poll_interval=poll_interval,
+            )
+        except Exception as e:
+            refresh_ok = False
+            logger.warning("Canary refresh error: %s", e)
+
+        # Phase 3: Validate
+        result['phase'] = 'validation'
+        validation = self.validate_deployment(canary_result.dataset_id)
+        result['validation'] = validation
+
+        if not refresh_ok or validation.get('overall') != 'passed':
+            # Rollback: remove canary
+            result['phase'] = 'rollback'
+            result['status'] = 'rolled_back'
+            result['rolled_back'] = True
+            result['error'] = "Canary validation failed — rolling back"
+            logger.warning(result['error'])
+            self._cleanup_dataset(canary_result.dataset_id, canary_name)
+            return result
+
+        # Phase 4: Promote canary → production (overwrite the real name)
+        result['phase'] = 'promote'
+        logger.info("Rolling deploy phase 4: promoting canary to '%s'", name)
+        prod_result = self.deploy_project(
+            project_dir,
+            dataset_name=name,
+            overwrite=True,
+            refresh=True,
+            max_wait_seconds=max_wait_seconds,
+            poll_interval=poll_interval,
+        )
+
+        if prod_result.status == 'succeeded':
+            result['status'] = 'succeeded'
+            result['production_id'] = prod_result.dataset_id
+            result['phase'] = 'complete'
+            # Remove canary
+            self._cleanup_dataset(canary_result.dataset_id, canary_name)
+            logger.info("Rolling deploy succeeded: production=%s",
+                        prod_result.dataset_id)
+        else:
+            result['status'] = 'failed'
+            result['error'] = f"Production deploy failed: {prod_result.error}"
+            result['phase'] = 'promote_failed'
+            logger.error(result['error'])
+
+        return result
+
+    def _wait_for_refresh(self, dataset_id, max_wait_seconds=300,
+                          poll_interval=10):
+        """Wait for the latest dataset refresh to complete.
+
+        Returns:
+            True if refresh completed successfully, False otherwise.
+        """
+        elapsed = 0
+        while elapsed < max_wait_seconds:
+            try:
+                history = self.client.get_refresh_history(
+                    self.workspace_id, dataset_id
+                )
+                if history:
+                    latest = history[0]
+                    status = latest.get('status', '')
+                    if status == 'Completed':
+                        return True
+                    elif status == 'Failed':
+                        logger.warning("Refresh failed for dataset %s",
+                                       dataset_id)
+                        return False
+            except Exception as e:
+                logger.debug("Refresh status check error: %s", e)
+            time.sleep(poll_interval)
+            elapsed += poll_interval
+
+        logger.warning("Refresh timed out after %ds for dataset %s",
+                       max_wait_seconds, dataset_id)
+        return False
+
+    def _cleanup_dataset(self, dataset_id, dataset_name):
+        """Best-effort removal of a dataset (canary cleanup)."""
+        try:
+            self.client.delete_dataset(self.workspace_id, dataset_id)
+            logger.info("Cleaned up dataset '%s' (%s)", dataset_name,
+                        dataset_id)
+        except Exception as e:
+            logger.debug("Could not remove dataset '%s': %s",
+                         dataset_name, e)

@@ -1712,6 +1712,41 @@ def _add_deploy_args(parser):
         )
     )
 
+    # Sprint 100: Rolling deployment, endorsement, monitoring, SLA
+    parser.add_argument(
+        '--rolling',
+        action='store_true',
+        default=False,
+        help=(
+            'Rolling deployment: blue/green with canary validation and '
+            'automatic rollback on failure. Use with --deploy.'
+        )
+    )
+
+    parser.add_argument(
+        '--endorse',
+        choices=['none', 'promoted', 'certified'],
+        default=None,
+        help=(
+            'Set endorsement status on deployed datasets/reports. '
+            'Use with --deploy or --deploy-bundle.'
+        )
+    )
+
+    parser.add_argument(
+        '--monitor',
+        choices=['azure', 'prometheus', 'json', 'none'],
+        default=None,
+        help='Export migration metrics to a monitoring backend.'
+    )
+
+    parser.add_argument(
+        '--sla-config',
+        metavar='JSON_FILE',
+        default=None,
+        help='Path to SLA configuration JSON (max_migration_seconds, min_fidelity_score, etc.).'
+    )
+
 
 def _add_server_args(parser):
     """Add Tableau Server extraction arguments."""
@@ -3251,17 +3286,55 @@ def _run_deploy_to_pbi_service(args, source_basename):
         project_dir = os.path.join(out_dir, source_basename)
         print(f"  Workspace: {args.deploy}")
         print(f"  Project:   {project_dir}")
-        deploy_result = deployer.deploy_project(
-            project_dir,
-            dataset_name=source_basename,
-            refresh=getattr(args, 'deploy_refresh', False),
-        )
-        if deploy_result.status == 'succeeded':
-            print(f"  ✓ Deployed — dataset={deploy_result.dataset_id}")
-            if deploy_result.report_id:
-                print(f"  ✓ Report  — id={deploy_result.report_id}")
+
+        # Rolling deployment (--rolling flag)
+        if getattr(args, 'rolling', False):
+            print("  Mode:      Rolling (blue/green)")
+            roll_result = deployer.deploy_rolling(
+                project_dir, dataset_name=source_basename,
+            )
+            if roll_result['status'] == 'succeeded':
+                print(f"  ✓ Rolling deploy succeeded — production={roll_result['production_id']}")
+                dataset_id = roll_result['production_id']
+                report_id = None
+            elif roll_result['status'] == 'rolled_back':
+                print(f"  ⚠ Rolled back: {roll_result['error']}")
+                dataset_id = None
+                report_id = None
+            else:
+                print(f"  ✗ Rolling deploy failed: {roll_result['error']}")
+                dataset_id = None
+                report_id = None
         else:
-            print(f"  ✗ Deploy failed: {deploy_result.error}")
+            deploy_result = deployer.deploy_project(
+                project_dir,
+                dataset_name=source_basename,
+                refresh=getattr(args, 'deploy_refresh', False),
+            )
+            if deploy_result.status == 'succeeded':
+                print(f"  ✓ Deployed — dataset={deploy_result.dataset_id}")
+                if deploy_result.report_id:
+                    print(f"  ✓ Report  — id={deploy_result.report_id}")
+                dataset_id = deploy_result.dataset_id
+                report_id = deploy_result.report_id
+            else:
+                print(f"  ✗ Deploy failed: {deploy_result.error}")
+                dataset_id = None
+                report_id = None
+
+        # Endorsement (--endorse flag)
+        if getattr(args, 'endorse', None) and dataset_id:
+            try:
+                from powerbi_import.deploy.deployer import FabricDeployer
+                fab = FabricDeployer()
+                e_result = fab.endorse_item(args.deploy, dataset_id, args.endorse)
+                if e_result.get('status') == 'succeeded':
+                    print(f"  ✓ Endorsed as '{args.endorse}'")
+                else:
+                    print(f"  ⚠ Endorsement failed: {e_result.get('error')}")
+            except Exception as e:
+                print(f"  ⚠ Endorsement error: {e}")
+
     except Exception as exc:
         print(f"  ✗ Deployment error: {exc}")
         logger.error("Deployment failed: %s", exc, exc_info=True)
@@ -3457,6 +3530,54 @@ def _run_single_migration(args):
     # Step 5b: Migrate refresh schedules (optional, requires --server + --migrate-schedules)
     if getattr(args, 'migrate_schedules', False) and results.get('generation'):
         _run_schedule_migration(args, source_basename)
+
+    # Step 5c: SLA tracking (optional, --sla-config flag)
+    sla_result = None
+    if getattr(args, 'sla_config', None) and results.get('generation'):
+        try:
+            from powerbi_import.sla_tracker import SLATracker
+            sla_cfg_path = args.sla_config
+            with open(sla_cfg_path, 'r', encoding='utf-8') as f:
+                sla_cfg = json.load(f)
+            tracker = SLATracker(config=sla_cfg)
+            elapsed = (datetime.now() - start_time).total_seconds()
+            fid_val = float(report_summary.get('fidelity_score', 0)) if report_summary else 0.0
+            val_pass = results.get('generation', False)
+            tracker.start(source_basename)
+            # Backdate the timer so record_result computes the right duration
+            import time as _time
+            tracker._timers[source_basename] = _time.monotonic() - elapsed
+            sla_result = tracker.record_result(source_basename, fidelity=fid_val, validation_passed=val_pass)
+            if sla_result.compliant:
+                print(f"\n  ✓ SLA compliant ({elapsed:.1f}s, {fid_val:.1f}%)")
+            else:
+                for breach in sla_result.breaches:
+                    print(f"\n  ⚠ SLA BREACH: {breach}")
+            # Save SLA report
+            sla_report = tracker.get_report()
+            out_base = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
+            sla_path = os.path.join(out_base, source_basename, 'sla_report.json')
+            sla_report.save(sla_path)
+        except Exception as exc:
+            logger.warning("SLA tracking error: %s", exc)
+
+    # Step 5d: Monitoring (optional, --monitor flag)
+    if getattr(args, 'monitor', None) and results.get('generation'):
+        try:
+            from powerbi_import.monitoring import MigrationMonitor
+            monitor = MigrationMonitor(backend=args.monitor)
+            elapsed = (datetime.now() - start_time).total_seconds()
+            fid_val = float(report_summary.get('fidelity_score', 0)) if report_summary else 0.0
+            tables_count = results.get('stats', {}).get('tables', 0) if isinstance(results.get('stats'), dict) else 0
+            monitor.record_migration(
+                workbook=source_basename,
+                duration_seconds=round(elapsed, 2),
+                fidelity=fid_val,
+                tables=tables_count,
+            )
+            monitor.flush()
+        except Exception as exc:
+            logger.warning("Monitoring error: %s", exc)
 
     # Final report
     all_success = _print_migration_summary(results, report_summary, start_time)

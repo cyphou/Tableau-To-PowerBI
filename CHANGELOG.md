@@ -1,6 +1,22 @@
 # Changelog
 
-## v26.0.0 — Autonomous Migration & Production Hardening (in progress)
+## v26.0.0 — Autonomous Migration & Production Hardening
+
+### Sprint 100 — Production Hardening & v26.0.0 Release ✅
+- **Rolling deployment** (`deploy/pbi_deployer.py`): New `deploy_rolling()` method — blue/green deployment with canary validation and automatic rollback. Phases: canary deploy → refresh → validate → promote (or rollback). Uses `_wait_for_refresh()` and `_cleanup_dataset()` helpers.
+- **SLA tracker** (`sla_tracker.py`): New module — per-workbook SLA compliance: max migration time, min fidelity score, required validation pass. `SLATracker` class with `start()`/`record_result()`/`get_report()`. `SLAReport` with compliance rate, breach details, JSON export.
+- **Monitoring integration** (`monitoring.py`): New module — export migration metrics to Azure Monitor, Prometheus push gateway, or structured JSON. Backend system: `_JsonBackend`, `_AzureMonitorBackend`, `_PrometheusBackend`, `_NoneBackend`. `MigrationMonitor` unified API with `record_metric()`/`record_event()`/`record_migration()`/`flush()`.
+- **Endorsement & certification** (`deploy/deployer.py`): New `endorse_item()` method on `FabricDeployer` — set 'none'/'promoted'/'certified' endorsement on deployed Fabric items via PATCH API.
+- **CLI flags**: `--rolling` (blue/green deployment), `--endorse none|promoted|certified`, `--monitor azure|prometheus|json|none`, `--sla-config FILE`.
+- **1000-workbook stress test** (`test_production_scale.py`): 1000 synthetic workbooks × 3 tables × 5 measures. Validates: 5000 DAX conversions <30s, 1000 TMDL generations <120s, SLA tracking at scale, monitoring at scale.
+
+### Sprint 99 — Governance & Advanced Formulas ✅
+- **Governance framework** (`governance.py`): New module — `GovernanceEngine` with naming convention enforcement (snake_case/camelCase/PascalCase for tables/columns, measure prefix rules), PII detection (10 patterns: email, SSN, phone, name, address, DOB, credit card, IP, passport, national ID), sensitivity label mapping (Tableau permissions → PBI labels), auto-rename in enforce mode. `AuditTrail` class for append-only JSONL audit log with SHA-256 hashing.
+- **LOOKUP/PREVIOUS_VALUE with PARTITIONBY** (`dax_converter.py`): Enhanced `_convert_previous_value()` and `_convert_lookup()` — when `compute_using` has 2+ dimensions, first dim → ORDERBY, remaining → PARTITIONBY clause.
+- **Window function PARTITIONBY** (`dax_converter.py`, `tmdl_generator.py`): WINDOW functions now emit PARTITIONBY clause for multi-dim `compute_using`. `compute_using_map` built from worksheet table_calcs and wired through TMDL generator to DAX converter.
+- **Azure Maps visual** (`visual_generator.py`, `pbip_generator.py`): `makepoint`/`spatial` → `azureMap` visual with Latitude/Longitude data roles, config template, fallback cascade. Spatial detection: lat/lon fields trigger azureMap override.
+- **CLI flags**: `--governance warn|enforce`, `--governance-config FILE`.
+- **85 tests** across `test_governance.py` (55) and `test_advanced_formulas.py` (30).
 
 ### Sprint 98 — Merged Lakehouse / Fabric Output ✅
 - **Shared model → Fabric-native output** (`import_to_powerbi.py`): `import_shared_model()` now accepts `output_format='fabric'` parameter. When set, the merged semantic model is routed through `FabricProjectGenerator` instead of the standard PBIP generator — producing a complete Fabric project (Lakehouse + Dataflow Gen2 + Notebook + DirectLake SemanticModel + Pipeline) from the merged workbook data.

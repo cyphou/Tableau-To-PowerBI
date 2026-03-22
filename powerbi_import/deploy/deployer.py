@@ -359,3 +359,47 @@ class FabricDeployer:
             config['definition'] = parts
 
         return config
+
+    # ── Sprint 100: Endorsement & Certification ────────────────────────────
+
+    def endorse_item(self, workspace_id, item_id, endorsement='promoted'):
+        """Set endorsement status on a Fabric item (dataset/report).
+
+        Endorsement values:
+          - 'none': Remove endorsement
+          - 'promoted': Mark as Promoted
+          - 'certified': Mark as Certified (requires admin permission)
+
+        Args:
+            workspace_id: Workspace containing the item.
+            item_id: Item ID to endorse.
+            endorsement: 'none', 'promoted', or 'certified'.
+
+        Returns:
+            dict: API response or error info.
+        """
+        valid = ('none', 'promoted', 'certified')
+        if endorsement not in valid:
+            raise ValueError(
+                f"endorsement must be one of {valid}, got '{endorsement}'"
+            )
+
+        payload = {
+            'endorsementDetails': {
+                'endorsement': endorsement,
+            },
+        }
+
+        try:
+            endpoint = f'/workspaces/{workspace_id}/items/{item_id}'
+            result = self.client.patch(endpoint, data=payload)
+            logger.info(
+                "Endorsement '%s' applied to item %s in workspace %s",
+                endorsement, item_id, workspace_id,
+            )
+            return {'status': 'succeeded', 'endorsement': endorsement,
+                    'item_id': item_id}
+        except Exception as e:
+            logger.error("Failed to endorse item %s: %s", item_id, e)
+            return {'status': 'failed', 'error': str(e),
+                    'item_id': item_id}

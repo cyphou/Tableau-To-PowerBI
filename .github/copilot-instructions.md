@@ -69,19 +69,22 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
   - `regression_suite.py`: Regression suite — snapshot generation (tables, measures, filters, formula hashes), snapshot comparison with drift detection
   - `recovery_report.py`: Self-healing recovery report — records every auto-repair action (category, severity, description, action, follow-up), JSON export, MigrationReport integration via `merge_into()`
   - `security_validator.py`: Centralized security utilities — path validation (null byte, traversal, extension whitelist), ZIP slip defense (`safe_zip_extract_member`), XML XXE protection (`safe_parse_xml`), credential detection/redaction (10 patterns), M query credential scrubbing, template substitution sanitization, migration artifact scanning
+  - `governance.py`: Enterprise governance framework — `GovernanceEngine` (naming conventions, PII detection, sensitivity labels), `AuditTrail` (append-only JSONL with SHA-256 hashing), `run_governance()` convenience function, configurable warn/enforce modes
+  - `sla_tracker.py`: Migration SLA tracker — per-workbook time/fidelity/validation compliance, `SLATracker` with `start()`/`record_result()`/`get_report()`, `SLAReport` with compliance rate and JSON export
+  - `monitoring.py`: Monitoring integration — export metrics to Azure Monitor, Prometheus, or structured JSON. `MigrationMonitor` with `record_metric()`/`record_event()`/`record_migration()`/`flush()`. Backend system (json/azure/prometheus/none)
   - `deploy/`: Fabric deployment subpackage
     - `auth.py`: Azure AD authentication — Service Principal + Managed Identity (optional `azure-identity`)
     - `client.py`: Fabric REST API client — auto-detects `requests` with retry, falls back to `urllib`
-    - `deployer.py`: Fabric deployment orchestrator — deploy datasets, reports, batch directories
+    - `deployer.py`: Fabric deployment orchestrator — deploy datasets, reports, batch directories, `endorse_item()` for promoted/certified endorsement
     - `utils.py`: `DeploymentReport` (pass/fail tracking), `ArtifactCache` (incremental deployment metadata)
     - `config/settings.py`: Centralized config via env vars (FABRIC_WORKSPACE_ID, FABRIC_TENANT_ID, etc.)
     - `config/environments.py`: Per-environment configs (development/staging/production)
     - `pbi_client.py`: Power BI Service REST API client — Azure AD auth (SP/MI/token), import .pbix, refresh, list/delete datasets/reports
     - `pbix_packager.py`: .pbip → .pbix ZIP packager with OPC content types
-    - `pbi_deployer.py`: PBI Service deployment orchestrator — package, upload, poll, refresh, validate, `deploy_refresh_schedule()` for PBI REST API refresh config
+    - `pbi_deployer.py`: PBI Service deployment orchestrator — package, upload, poll, refresh, validate, `deploy_refresh_schedule()` for PBI REST API refresh config, `deploy_rolling()` for blue/green deployment with canary validation and auto-rollback
     - `bundle_deployer.py`: Fabric bundle deployer — deploy shared model + thin reports as atomic bundle, artifact discovery, per-report error isolation, rebind, refresh, `BundleDeploymentResult`
     - `multi_tenant.py`: Multi-tenant deployment — `TenantConfig`/`MultiTenantConfig` (validate/load/save JSON), `_apply_connection_overrides()` (template substitution: `${TENANT_SERVER}`, `${TENANT_DATABASE}`, context-aware escaping, null byte blocking, placeholder validation), `deploy_multi_tenant()` orchestrator with per-tenant results
-- **tests/**: Unit and integration tests (6,263+ tests across 131 test files + conftest.py shared fixtures)
+- **tests/**: Unit and integration tests (6,400+ tests across 134 test files + conftest.py shared fixtures)
 - **docs/**: FAQ, PBI project guide, mapping reference, **ROADMAP.md** (v22–v24 development roadmap per agent)
 - **.github/workflows/ci.yml**: CI/CD pipeline (lint → test → validate → deploy)
 - **.github/workflows/publish.yml**: PyPI auto-publish workflow (tag-triggered, OIDC trusted publisher)

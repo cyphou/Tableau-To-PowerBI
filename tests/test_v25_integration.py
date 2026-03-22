@@ -207,7 +207,7 @@ class TestVersionBump(unittest.TestCase):
 
     def test_version(self):
         from powerbi_import import __version__
-        self.assertEqual(__version__, '25.0.0')
+        self.assertEqual(__version__, '26.0.0')
 
 
 class TestNewModulesImport(unittest.TestCase):
