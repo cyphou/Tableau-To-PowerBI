@@ -2363,7 +2363,8 @@ def run_shared_model_migration(workbook_paths, model_name=None, output_dir=None,
                                calendar_start=None, calendar_end=None,
                                culture=None, model_mode='import',
                                languages=None, merge_config_path=None,
-                               save_config=False, strict_merge=False):
+                               save_config=False, strict_merge=False,
+                               output_format='pbip'):
     """Orchestrate shared semantic model migration for multiple workbooks.
 
     Steps:
@@ -2465,6 +2466,7 @@ def run_shared_model_migration(workbook_paths, model_name=None, output_dir=None,
                 save_config=save_config,
                 strict_merge=strict_merge,
                 workbook_paths=workbook_paths,
+                output_format=output_format,
             )
 
             if result.get('model_path'):
@@ -2812,6 +2814,7 @@ def main():
             merge_config_path=getattr(args, 'merge_config', None),
             save_config=getattr(args, 'save_merge_config', False),
             strict_merge=getattr(args, 'strict_merge', False),
+            output_format=getattr(args, 'output_format', 'pbip'),
         )
 
         # Auto-deploy bundle if --deploy-bundle is given alongside --shared-model

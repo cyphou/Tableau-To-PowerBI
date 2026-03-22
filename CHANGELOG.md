@@ -2,6 +2,12 @@
 
 ## v26.0.0 — Autonomous Migration & Production Hardening (in progress)
 
+### Sprint 98 — Merged Lakehouse / Fabric Output ✅
+- **Shared model → Fabric-native output** (`import_to_powerbi.py`): `import_shared_model()` now accepts `output_format='fabric'` parameter. When set, the merged semantic model is routed through `FabricProjectGenerator` instead of the standard PBIP generator — producing a complete Fabric project (Lakehouse + Dataflow Gen2 + Notebook + DirectLake SemanticModel + Pipeline) from the merged workbook data.
+- **CLI wiring** (`migrate.py`): `run_shared_model_migration()` forwards `output_format` from CLI args. Use `--shared-model wb1.twbx wb2.twbx --output-format fabric` to produce merged Fabric artifacts.
+- **Thin reports in Fabric mode**: Thin reports are placed inside the Fabric project directory with `byPath` references to the DirectLake SemanticModel. No model-explorer `.pbip` is created for Fabric output.
+- **12 tests** in `test_shared_model_fabric.py` — Fabric artifact creation (5), thin reports (3), merged content validation (2), parameter acceptance (2)
+
 ### Sprint 97 — Security Hardening ✅
 - **Security validator module** (`security_validator.py`): New centralized security utilities — path validation (null byte, traversal, extension whitelist), ZIP archive safe extraction (ZIP slip defense), XML parsing with XXE protection (DOCTYPE+ENTITY detection), credential detection and redaction (10 patterns: password, secret, token, access key, bearer, basic auth, client secret, API key), M query credential scrubbing, template substitution sanitization (context-aware escaping for JSON/M/TMDL), migration artifact scanning for embedded credentials.
 - **ZIP slip protection** (`extract_tableau_data.py`): `read_tableau_file()` now validates all ZIP entry names — rejects path traversal (`..` components), absolute paths, and oversized entries. Uses `safe_zip_extract_member()` from security_validator.

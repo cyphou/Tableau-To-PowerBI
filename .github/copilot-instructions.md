@@ -28,7 +28,7 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
   - `pbip_generator.py`: .pbip generator (PBIR v4.0, visuals, filters, bookmarks, slicers, textbox, image, pages shelf, number format conversion, drill-through pages)
   - `tmdl_generator.py`: Unified semantic model generator — direct Tableau → TMDL (tables, columns, measures, relationships, hierarchies, sets/groups/bins, parameters, RLS, dataCategory, isHidden, calculation groups, field parameters, M-based calculated columns)
   - `visual_generator.py`: Visual container generator — 118 visual type mappings, PBIR-native config templates, data role definitions, query state builder, slicer sync groups, cross-filtering disable, action button navigation, TopN filters, sort state, reference lines, conditional formatting
-  - `import_to_powerbi.py`: Generation pipeline orchestrator (supports `--output-dir`)
+  - `import_to_powerbi.py`: Generation pipeline orchestrator (supports `--output-dir`, `--output-format fabric` for shared models)
   - `m_query_generator.py`: Sample data M query generator
   - `assessment.py`: Pre-migration readiness assessment — 9 categories (datasource, calculation, visual, filter, data model, interactivity, extract, scope, connection string audit), pass/warn/fail scoring
   - `server_assessment.py`: Server-level portfolio assessment — per-workbook GREEN/YELLOW/RED classification, 8-axis complexity computation, effort estimation, migration wave planning, connector census, HTML executive dashboard
@@ -81,7 +81,7 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
     - `pbi_deployer.py`: PBI Service deployment orchestrator — package, upload, poll, refresh, validate, `deploy_refresh_schedule()` for PBI REST API refresh config
     - `bundle_deployer.py`: Fabric bundle deployer — deploy shared model + thin reports as atomic bundle, artifact discovery, per-report error isolation, rebind, refresh, `BundleDeploymentResult`
     - `multi_tenant.py`: Multi-tenant deployment — `TenantConfig`/`MultiTenantConfig` (validate/load/save JSON), `_apply_connection_overrides()` (template substitution: `${TENANT_SERVER}`, `${TENANT_DATABASE}`, context-aware escaping, null byte blocking, placeholder validation), `deploy_multi_tenant()` orchestrator with per-tenant results
-- **tests/**: Unit and integration tests (6,251+ tests across 130 test files + conftest.py shared fixtures)
+- **tests/**: Unit and integration tests (6,263+ tests across 131 test files + conftest.py shared fixtures)
 - **docs/**: FAQ, PBI project guide, mapping reference, **ROADMAP.md** (v22–v24 development roadmap per agent)
 - **.github/workflows/ci.yml**: CI/CD pipeline (lint → test → validate → deploy)
 - **.github/workflows/publish.yml**: PyPI auto-publish workflow (tag-triggered, OIDC trusted publisher)
@@ -123,6 +123,8 @@ python migrate.py --deploy-bundle WORKSPACE_ID --output-dir artifacts/shared/MyM
 python migrate.py --shared-model wb1.twbx wb2.twbx --multi-tenant tenants.json
 python migrate.py --shared-model wb1.twbx wb2.twbx --live-connection WORKSPACE_ID/ModelName
 python migrate.py --server https://tableau.company.com --workbook "Sales" --token-name pat --token-secret secret --migrate-schedules
+python migrate.py --shared-model wb1.twbx wb2.twbx --output-format fabric
+python migrate.py --shared-model wb1.twbx wb2.twbx --output-format fabric --output-dir /tmp/fabric_shared
 python migrate.py path/to/workbook.twbx --output-format fabric
 python migrate.py path/to/workbook.twbx --output-format fabric --output-dir /tmp/fabric_output
 ```

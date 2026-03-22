@@ -170,7 +170,8 @@ class PowerBIImporter:
                             culture=None, model_mode='import',
                             languages=None, force_merge=False,
                             merge_config_path=None, save_config=False,
-                            strict_merge=False, workbook_paths=None):
+                            strict_merge=False, workbook_paths=None,
+                            output_format='pbip'):
         """Generate a shared semantic model + thin reports.
 
         Args:
@@ -186,6 +187,8 @@ class PowerBIImporter:
             force_merge: Force merge even with low score.
             merge_config_path: Path to merge config JSON (load saved decisions).
             save_config: Save merge decisions to config file.
+            output_format: Output format — 'pbip' (default) or 'fabric'
+                (Lakehouse + Dataflow Gen2 + Notebook + DirectLake SemanticModel + Pipeline).
 
         Returns:
             dict with 'assessment', 'model_path', 'report_paths', plus new fields.
@@ -301,41 +304,82 @@ class PowerBIImporter:
         if output_dir:
             projects_dir = os.path.abspath(output_dir)
         else:
+            default_subdir = 'fabric_projects' if output_format == 'fabric' else 'powerbi_projects'
             projects_dir = os.path.abspath(
-                os.path.join('artifacts', 'powerbi_projects', 'shared')
+                os.path.join('artifacts', default_subdir, 'shared')
             )
         os.makedirs(projects_dir, exist_ok=True)
-
-        # 4. Generate the shared semantic model
-        print(f"\n  Step 3: Generating shared semantic model '{model_name}'...")
-        generator = PowerBIProjectGenerator(output_dir=projects_dir)
-
-        # Store generation options
-        generator._calendar_start = calendar_start
-        generator._calendar_end = calendar_end
-        generator._culture = culture
-        generator._model_mode = model_mode or 'import'
-        generator._languages = languages
 
         # Create the project directory
         project_dir = os.path.join(projects_dir, model_name)
         os.makedirs(project_dir, exist_ok=True)
 
-        # Generate SemanticModel
-        sm_dir = generator.create_semantic_model_structure(
-            project_dir, model_name, merged
-        )
+        # 4. Generate the shared semantic model (or full Fabric project)
+        if output_format == 'fabric':
+            print(f"\n  Step 3: Generating Fabric project '{model_name}' "
+                  f"(Lakehouse + Dataflow + Notebook + SemanticModel + Pipeline)...")
+            try:
+                from powerbi_import.fabric_project_generator import FabricProjectGenerator
+            except ImportError:
+                from fabric_project_generator import FabricProjectGenerator
+
+            fabric_gen = FabricProjectGenerator(output_dir=projects_dir)
+            fabric_results = fabric_gen.generate_project(
+                project_name=model_name,
+                extracted_data=merged,
+                calendar_start=calendar_start,
+                calendar_end=calendar_end,
+                culture=culture,
+                languages=languages,
+            )
+            sm_dir = os.path.join(
+                project_dir,
+                f"{model_name}.SemanticModel",
+            )
+            # The Fabric generator places all artifacts inside project_dir
+            fabric_project_path = fabric_results.get('project_path', project_dir)
+            # Also set sm_dir to wherever the SemanticModel was generated
+            for dirpath, dirnames, _files in os.walk(fabric_project_path):
+                for d in dirnames:
+                    if d.endswith('.SemanticModel'):
+                        sm_dir = os.path.join(dirpath, d)
+                        break
+            print(f"  [OK] Fabric project created: {fabric_project_path}")
+        else:
+            print(f"\n  Step 3: Generating shared semantic model '{model_name}'...")
+            generator = PowerBIProjectGenerator(output_dir=projects_dir)
+
+            # Store generation options
+            generator._calendar_start = calendar_start
+            generator._calendar_end = calendar_end
+            generator._culture = culture
+            generator._model_mode = model_mode or 'import'
+            generator._languages = languages
+
+            # Generate SemanticModel
+            sm_dir = generator.create_semantic_model_structure(
+                project_dir, model_name, merged
+            )
         print(f"  [OK] Shared SemanticModel created: {sm_dir}")
 
         # Create a model-explorer report so the model can be opened in PBI Desktop
-        self._create_model_explorer_report(project_dir, model_name)
+        # (only for PBIP format — Fabric projects don't need .pbip wrapper)
+        if output_format != 'fabric':
+            self._create_model_explorer_report(project_dir, model_name)
 
         # 5. Generate thin reports for each workbook
+        # For Fabric: thin reports are generated inside the Fabric project dir
+        # and reference the DirectLake SemanticModel via byPath
+        thin_report_dir = project_dir
+        if output_format == 'fabric':
+            # Place thin reports inside the Fabric project dir from fabric_gen
+            thin_report_dir = fabric_results.get('project_path', project_dir)
+
         print(f"\n  Step 4: Generating {len(workbook_names)} thin reports...")
         report_paths = []
         validation_issues = []
 
-        thin_gen = ThinReportGenerator(model_name, project_dir)
+        thin_gen = ThinReportGenerator(model_name, thin_report_dir)
 
         # Build cross-report navigation
         nav_configs = build_cross_report_navigation(workbook_names, model_name)
