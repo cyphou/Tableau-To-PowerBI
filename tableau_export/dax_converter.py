@@ -351,7 +351,8 @@ def convert_tableau_formula_to_dax(formula, column_name='Measure', table_name='T
     
     # 3e. WINDOW_xxx table calculations
     dax = _convert_window_functions(dax, table_name, compute_using=compute_using,
-                                     column_table_map=column_table_map)
+                                     column_table_map=column_table_map,
+                                     partition_fields=partition_fields)
     
     # 3f. RANK / RANK_UNIQUE / RANK_DENSE → RANKX
     dax = _convert_rank_functions(dax, table_name, compute_using=compute_using,
@@ -1654,8 +1655,13 @@ def _infer_iteration_table(inner_expr, default_table):
 
 
 def _convert_lod_expressions(dax, table_name, column_table_map):
-    """Convert LOD expressions: {FIXED/INCLUDE/EXCLUDE dims : AGG} → CALCULATE."""
-    
+    """Convert LOD expressions: {FIXED/INCLUDE/EXCLUDE dims : AGG} → CALCULATE.
+
+    Uses a recursive descent parser to handle arbitrary nesting depth.
+    Nested LODs like ``{FIXED [A] : {INCLUDE [B] : {EXCLUDE [C] : SUM([X])}}}``
+    are resolved inside-out naturally via recursion.
+    """
+
     def _resolve_dims(dims_str, default_table):
         dims = [d.strip().strip('[]') for d in dims_str.split(',') if d.strip()]
         refs = []
@@ -1663,97 +1669,98 @@ def _convert_lod_expressions(dax, table_name, column_table_map):
             t = column_table_map.get(d, default_table)
             refs.append(f"'{t}'[{d}]")
         return dims, refs
-    
-    # Use a balanced-brace parser so nested LODs like
-    # {FIXED [Region] : {INCLUDE [State] : SUM([Sales])}} work correctly.
-    # Process from innermost to outermost.
-    def _find_lod_braces(text):
-        """Find the innermost {FIXED/INCLUDE/EXCLUDE ...} LOD expression.
 
-        Returns (start, end, keyword, dims_str, agg_str) or None.
-        *start* is the index of '{', *end* is one past the matching '}'.
-        """
-        best = None
-        i = 0
-        while i < len(text):
-            if text[i] == '{':
-                # Check if this is a LOD keyword
-                after = text[i + 1:].lstrip()
-                kw_match = re.match(r'(FIXED|INCLUDE|EXCLUDE)\b', after, re.IGNORECASE)
-                if kw_match:
-                    # Walk forward with depth counting to find the matching '}'
-                    depth = 1
-                    j = i + 1
-                    while j < len(text) and depth > 0:
-                        if text[j] == '{':
-                            depth += 1
-                        elif text[j] == '}':
-                            depth -= 1
-                        j += 1
-                    if depth == 0:
-                        # Inner content between { and }
-                        inner = text[i + 1:j - 1]
-                        # Check this expression contains no nested LOD braces
-                        # (if it does, it's not the innermost — skip it)
-                        nested_lod = re.search(r'\{\s*(?:FIXED|INCLUDE|EXCLUDE)\b', inner, re.IGNORECASE)
-                        if not nested_lod:
-                            kw = kw_match.group(1).upper()
-                            rest = inner.lstrip()[len(kw):]
-                            # Split on the first ':' that is not inside nested braces or parens
-                            colon_depth = 0
-                            paren_depth = 0
-                            colon_pos = None
-                            for ci, cc in enumerate(rest):
-                                if cc == '{':
-                                    colon_depth += 1
-                                elif cc == '}':
-                                    colon_depth -= 1
-                                elif cc == '(':
-                                    paren_depth += 1
-                                elif cc == ')':
-                                    paren_depth -= 1
-                                elif cc == ':' and colon_depth == 0 and paren_depth == 0:
-                                    colon_pos = ci
-                                    break
-                            if colon_pos is not None:
-                                dims_str = rest[:colon_pos].strip()
-                                agg_str = rest[colon_pos + 1:].strip()
-                                best = (i, j, kw, dims_str, agg_str)
-                                # Return the first innermost match
-                                return best
-            i += 1
-        return best
-
-    max_iterations = 50  # safety limit
-    for _ in range(max_iterations):
-        found = _find_lod_braces(dax)
-        if not found:
-            break
-        start, end, keyword, dims_str, agg_str = found
+    def _convert_single_lod(keyword, dims_str, agg_str):
+        """Convert one LOD node into its DAX CALCULATE equivalent."""
         dims, dim_refs = _resolve_dims(dims_str, table_name)
         if keyword == 'FIXED':
             if dim_refs:
                 allexcept_table = column_table_map.get(dims[0], table_name)
-                # Check if all dims belong to the same table for valid ALLEXCEPT
                 dim_tables = set(column_table_map.get(d, table_name) for d in dims)
                 if len(dim_tables) == 1:
-                    replacement = f"CALCULATE({agg_str}, ALLEXCEPT('{allexcept_table}', {', '.join(dim_refs)}))"
+                    return f"CALCULATE({agg_str}, ALLEXCEPT('{allexcept_table}', {', '.join(dim_refs)}))"
                 else:
-                    # Multi-table dims: use individual REMOVEFILTERS per column
                     filters = ', '.join(f"REMOVEFILTERS({ref})" for ref in dim_refs)
-                    replacement = f"CALCULATE({agg_str}, {filters})"
+                    return f"CALCULATE({agg_str}, {filters})"
             else:
-                replacement = f"CALCULATE({agg_str}, ALL('{table_name}'))"
+                return f"CALCULATE({agg_str}, ALL('{table_name}'))"
         elif keyword == 'INCLUDE':
-            replacement = f"CALCULATE({agg_str})"
+            return f"CALCULATE({agg_str})"
         elif keyword == 'EXCLUDE':
             if dim_refs:
-                replacement = f"CALCULATE({agg_str}, REMOVEFILTERS({', '.join(dim_refs)}))"
+                return f"CALCULATE({agg_str}, REMOVEFILTERS({', '.join(dim_refs)}))"
             else:
-                replacement = f"CALCULATE({agg_str})"
-        else:
-            break  # should not happen
-        dax = dax[:start] + replacement + dax[end:]
+                return f"CALCULATE({agg_str})"
+        return agg_str  # fallback
+
+    def _find_colon(text):
+        """Find the first top-level ':' not inside braces or parens."""
+        brace_depth = 0
+        paren_depth = 0
+        for i, ch in enumerate(text):
+            if ch == '{':
+                brace_depth += 1
+            elif ch == '}':
+                brace_depth -= 1
+            elif ch == '(':
+                paren_depth += 1
+            elif ch == ')':
+                paren_depth -= 1
+            elif ch == ':' and brace_depth == 0 and paren_depth == 0:
+                return i
+        return None
+
+    def _parse_lod_recursive(text, depth=0):
+        """Recursively parse and convert LOD expressions in *text*.
+
+        Scans left-to-right; when a ``{FIXED|INCLUDE|EXCLUDE`` token is found
+        it recursively converts the aggregate body first (which may itself
+        contain nested LODs) then converts the current LOD node.
+
+        Returns the converted string with all LODs resolved.
+        """
+        if depth > 200:  # safety limit for pathological input
+            return text
+
+        result_parts = []
+        i = 0
+        while i < len(text):
+            if text[i] == '{':
+                after = text[i + 1:].lstrip()
+                kw_match = re.match(r'(FIXED|INCLUDE|EXCLUDE)\b', after, re.IGNORECASE)
+                if kw_match:
+                    # Find the matching closing brace
+                    brace_depth = 1
+                    j = i + 1
+                    while j < len(text) and brace_depth > 0:
+                        if text[j] == '{':
+                            brace_depth += 1
+                        elif text[j] == '}':
+                            brace_depth -= 1
+                        j += 1
+                    if brace_depth == 0:
+                        inner = text[i + 1:j - 1]
+                        kw = kw_match.group(1).upper()
+                        rest = inner.lstrip()[len(kw):]
+                        colon_pos = _find_colon(rest)
+                        if colon_pos is not None:
+                            dims_str = rest[:colon_pos].strip()
+                            agg_str = rest[colon_pos + 1:].strip()
+                            # Recurse into the aggregate body to resolve nested LODs
+                            resolved_agg = _parse_lod_recursive(agg_str, depth + 1)
+                            replacement = _convert_single_lod(kw, dims_str, resolved_agg)
+                            result_parts.append(replacement)
+                            i = j
+                            continue
+                # Not an LOD brace — emit it literally
+                result_parts.append(text[i])
+                i += 1
+            else:
+                result_parts.append(text[i])
+                i += 1
+        return ''.join(result_parts)
+
+    dax = _parse_lod_recursive(dax)
     
     # LOD without dimension — use balanced brace matching (not global replace)
     match = _RE_LOD_NO_DIM.search(dax)
@@ -1822,7 +1829,76 @@ def _convert_lod_expressions(dax, table_name, column_table_map):
     return dax
 
 
-def _convert_window_functions(dax, table_name, compute_using=None, column_table_map=None):
+def _build_window_clauses(compute_using, table_name, ctm, partition_fields=None):
+    """Build ORDERBY, PARTITIONBY, MATCHBY, and filter clauses for DAX window functions.
+
+    Supports multi-level partitioning:
+    - ``compute_using`` list: first element → ORDERBY, rest → PARTITIONBY
+    - ``partition_fields`` dict with optional keys:
+        - ``order_by``: list of ``(col, direction)`` tuples for multi-column ordering
+        - ``partition_by``: list of column names for explicit PARTITIONBY
+        - ``match_by``: list of column names for MATCHBY (grain disambiguation)
+
+    Returns ``(order_clause, partition_clause, matchby_clause, filter_clause)``
+    where each is a ready-to-insert DAX fragment (or empty string).
+    """
+    pf = partition_fields or {}
+    order_by = pf.get('order_by', [])
+    explicit_pb = pf.get('partition_by', [])
+    match_by = pf.get('match_by', [])
+
+    def _col_ref(col):
+        t = ctm.get(col, table_name)
+        return f"'{t}'[{col}]"
+
+    # --- ORDERBY ---
+    if order_by:
+        parts = []
+        all_refs = []
+        for col, direction in order_by:
+            ref = _col_ref(col)
+            parts.append(f"{ref}, {direction.upper()}")
+            all_refs.append(ref)
+        order_clause = f"ORDERBY({', '.join(parts)})"
+    elif compute_using:
+        ref = _col_ref(compute_using[0])
+        order_clause = f"ORDERBY({ref}, ASC)"
+        all_refs = [ref]
+    else:
+        first_col = (list(ctm.keys())[0]) if ctm else 'RowNumber'
+        ref = f"'{table_name}'[{first_col}]"
+        order_clause = f"ORDERBY({ref}, ASC)"
+        all_refs = [ref]
+
+    # --- PARTITIONBY ---
+    if explicit_pb:
+        pb_refs = [_col_ref(c) for c in explicit_pb]
+        partition_clause = f", PARTITIONBY({', '.join(pb_refs)})"
+    elif compute_using and len(compute_using) > 1:
+        pb_refs = [_col_ref(d) for d in compute_using[1:]]
+        partition_clause = f", PARTITIONBY({', '.join(pb_refs)})"
+    else:
+        partition_clause = ""
+
+    # --- MATCHBY ---
+    if match_by:
+        mb_refs = [_col_ref(c) for c in match_by]
+        matchby_clause = f", MATCHBY({', '.join(mb_refs)})"
+    else:
+        matchby_clause = ""
+
+    # --- Filter (ALLEXCEPT vs ALL) ---
+    if compute_using:
+        dim_refs = [_col_ref(d) for d in compute_using]
+        filter_clause = f"ALLEXCEPT('{table_name}', {', '.join(dim_refs)})"
+    else:
+        filter_clause = f"ALL('{table_name}')"
+
+    return order_clause, partition_clause, matchby_clause, filter_clause
+
+
+def _convert_window_functions(dax, table_name, compute_using=None, column_table_map=None,
+                              partition_fields=None):
     """Convert WINDOW_SUM/AVG/MAX/MIN/COUNT → CALCULATE(..., ALL/ALLEXCEPT).
     
     When compute_using dimensions are provided (from table calc addressing),
@@ -1834,6 +1910,11 @@ def _convert_window_functions(dax, table_name, compute_using=None, column_table_
     (negative = preceding, positive = following, 0 = current).
     When frame boundaries are provided, the converter generates OFFSET-based
     DAX patterns to approximate the sliding window.
+
+    ``partition_fields`` dict enables multi-level windowing:
+        - ``order_by``: list of ``(col, direction)`` for multi-column ORDERBY
+        - ``partition_by``: list of column names for explicit PARTITIONBY
+        - ``match_by``: list of column names for MATCHBY grain disambiguation
     """
     ctm = column_table_map or {}
     # Mapping of WINDOW functions that need an extra wrapping DAX aggregate function
@@ -1884,35 +1965,14 @@ def _convert_window_functions(dax, table_name, compute_using=None, column_table_
             # Build the DAX replacement
             if frame_start is not None and frame_end is not None:
                 # Frame boundaries specified — use DAX WINDOW function for precise range
-                agg_func = window_func.upper().replace('WINDOW_', '')
-                if agg_func == 'COUNT':
-                    agg_func = 'COUNTROWS'
+                order_clause, partition_clause, matchby_clause, filter_clause = \
+                    _build_window_clauses(compute_using, table_name, ctm, partition_fields)
 
-                if compute_using:
-                    dim_refs = []
-                    for dim in compute_using:
-                        t = ctm.get(dim, table_name)
-                        dim_refs.append(f"'{t}'[{dim}]")
-                    order_col = dim_refs[0]
-                    # First dim → ORDERBY, rest → PARTITIONBY
-                    if len(compute_using) > 1:
-                        pb_refs = [f"'{ctm.get(d, table_name)}'[{d}]" for d in compute_using[1:]]
-                        partition_clause = f", PARTITIONBY({', '.join(pb_refs)})"
-                    else:
-                        partition_clause = ""
-                    partition = f"ALLEXCEPT('{table_name}', {', '.join(dim_refs)})"
-                else:
-                    order_col = f"'{table_name}'[{(ctm and list(ctm.keys())[0]) or 'RowNumber'}]" if ctm else f"'{table_name}'[RowNumber]"
-                    partition = f"ALL('{table_name}')"
-                    partition_clause = ""
-
-                # Generate WINDOW-based DAX for precise frame boundaries
-                # DAX WINDOW(from, fromType, to, toType, ORDERBY, blanks, partitionBy)
                 tag = window_func.replace('_', '.')
                 replacement = (
                     f"CALCULATE({inner_expr}, "
                     f"WINDOW({frame_start}, REL, {frame_end}, REL, "
-                    f"ORDERBY({order_col}, ASC){partition_clause}), {partition}) "
+                    f"{order_clause}{partition_clause}{matchby_clause}), {filter_clause}) "
                     f"/* {tag}: frame [{frame_start},{frame_end}] */"
                 )
             elif compute_using:

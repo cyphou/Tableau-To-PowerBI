@@ -1,5 +1,32 @@
 # Changelog
 
+## v27.0.0 — Advanced Intelligence & Marketplace
+
+### Sprint 106 — Shapefile/GeoJSON Passthrough ✅
+- **Geo passthrough** (`geo_passthrough.py`): New module — `GeoExtractor` extracts .geojson/.topojson/.shp/.shx/.dbf/.prj files from .twbx archives with ZIP slip protection. Format classification for 8 file types. `build_shape_map_config()` generates PBI shapeMap visual configuration with key property binding from GeoJSON feature properties. `copy_to_registered_resources()` deploys geo files into .pbip project. `geojson_to_shape_map_resource()` for standalone GeoJSON files.
+- **13 tests**: format classification, ZIP extraction, shape map config, registered resources, property extraction.
+
+### Sprint 105 — Industry Model Templates ✅
+- **Model templates** (`model_templates.py`): New module — pre-built semantic model skeletons for Healthcare (Encounters/Patients/Providers/Facilities star schema), Finance (Financials/Accounts/CostCenters/AR), and Retail (Sales/Products/Stores/Customers). Each template includes tables, columns (with dataCategory), relationships, measures, and hierarchies. `apply_template()` merges template into migrated tables — enriches existing tables with missing columns, adds skeleton tables, suggests relationships where both endpoints exist.
+- **13 tests**: list/get templates, apply with enrichment, relationships, deep copy safety.
+
+### Sprint 104 — DAX Recipe Overrides ✅
+- **DAX recipes** (`dax_recipes.py`): New module — industry-specific KPI measure templates: Healthcare (6 KPIs: ALOS, readmission rate, bed occupancy, satisfaction, mortality, ED wait time), Finance (8 KPIs: net revenue, gross margin, OpEx ratio, YTD, prior year, budget variance, DSO), Retail (7 KPIs: revenue/transaction, items/basket, conversion rate, inventory turnover, sell-through, comp sales growth, CLV). `apply_recipes()` supports inject, replace, and overwrite modes. `recipes_to_marketplace_format()` bridges to PatternRegistry.
+- **12 tests**: industry listing, recipe retrieval, apply modes, marketplace format conversion.
+
+### Sprint 103 — Migration Marketplace ✅
+- **Marketplace** (`marketplace.py`): New module — versioned pattern registry (`PatternRegistry`) for community DAX recipes, visual mappings, and M query templates. JSON-file catalogue with `PatternMetadata` (name, version, author, tags, category). Semver version pinning with `_parse_version()`. Search by tags, category, name regex. `apply_dax_recipes()` inject/replace. `apply_visual_overrides()` for visual type mapping. `export()` to single catalogue JSON.
+- **3 built-in patterns** in `examples/marketplace/`: revenue_ytd, yoy_growth_percent, custom_map_override.
+- **12 tests**: metadata matching, registry CRUD, version pinning, search, apply recipes/visuals, export.
+
+### Sprint 102 — Window Function Depth ✅
+- **Window clause builder** (`dax_converter.py`): New `_build_window_clauses()` helper — unified ORDERBY/PARTITIONBY/MATCHBY clause generation for DAX window functions. `partition_fields` dict supports `order_by` (list of (col, direction) tuples for multi-column ordering), `partition_by` (explicit column list), `match_by` (grain disambiguation). All WINDOW_* functions now use the centralized clause builder.
+- **10 tests**: basic, frame boundaries, explicit partition_by, multi-column orderby, matchby, combined.
+
+### Sprint 101 — Recursive LOD Parser ✅
+- **Recursive descent LOD parser** (`dax_converter.py`): Replaced iterative 50-iteration loop with true recursive `_parse_lod_recursive()`. Handles arbitrary nesting depth (tested to 5+). Left-to-right scan finds `{FIXED|INCLUDE|EXCLUDE` tokens, recursively resolves nested LODs in the aggregate body before converting the current node. 200-depth safety limit. Sibling LODs at the same level are handled naturally.
+- **12 tests**: basic FIXED/INCLUDE/EXCLUDE, nested depth 2-5, siblings, complex aggregates, multi-table dims.
+
 ## v26.0.0 — Autonomous Migration & Production Hardening
 
 ### Sprint 100 — Production Hardening & v26.0.0 Release ✅

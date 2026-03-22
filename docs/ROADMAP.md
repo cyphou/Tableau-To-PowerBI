@@ -719,17 +719,102 @@ v26.0.0 targets **zero-touch autonomous migration** for standard workbooks: uplo
 | Scale tested | 500 workbooks | **1000 workbooks** (<120s) | ✅ Sprint 100 |
 | SLA tracking | ❌ | **Per-workbook SLA compliance** | ✅ Sprint 100 |
 
-### v27.0.0 Backlog (Deferred from v26)
+---
 
-Items deferred from original v26 plan to keep sprints focused:
+## v27.0.0 — Advanced Intelligence & Marketplace (Sprints 101–106)
 
-| Item | Original Sprint | Priority | Notes |
-|------|----------------|----------|-------|
-| Nested LOD depth 3+ (recursive parser) | 97 | P1 | Already works via iterative 50-iteration (S87), but recursive parser would be cleaner |
-| Shapefile/GeoJSON passthrough | 97 | P2 | Extract .shp/.geojson from .twbx → PBI shape map |
-| Migration Marketplace (pattern registry) | 99 | P1 | Community pattern library with DAX recipes |
-| DAX recipe overrides (industry KPIs) | 99 | P1 | Healthcare, Finance, Retail templates |
-| Industry model templates | 99 | P2 | Pre-built semantic model skeletons |
-| Window function depth (PARTITIONBY nesting) | 97 | P2 | Multi-level PARTITIONBY + ORDERBY + MATCHBY |
-| Streamlit Web UI | 81 | P1 | Browser-based wizard (deferred since v23) |
-| LLM-assisted DAX correction | 82 | P2 | AI-powered formula refinement (deferred since v23) |
+### Sprint 101: Recursive LOD Parser ✅ SHIPPED
+
+**Owner:** @converter  
+**Goal:** Replace the iterative 50-iteration LOD parser with a true recursive descent parser for arbitrary nesting depth.
+
+| # | Item | Owner | Status |
+|---|------|-------|--------|
+| 101.1 | Recursive descent `_parse_lod_recursive()` in `dax_converter.py` | @converter | ✅ |
+| 101.2 | Nested LOD depth 3+ support (FIXED→INCLUDE→EXCLUDE chains) | @converter | ✅ |
+| 101.3 | Sibling LOD support at same level | @converter | ✅ |
+| 101.4 | Tests: 12 tests (basic, nested, depth-5, siblings, multi-table) | @tester | ✅ |
+
+### Sprint 102: Window Function Depth ✅ SHIPPED
+
+**Owner:** @converter  
+**Goal:** Multi-level PARTITIONBY + multi-column ORDERBY + MATCHBY for DAX window functions.
+
+| # | Item | Owner | Status |
+|---|------|-------|--------|
+| 102.1 | `_build_window_clauses()` helper — unified ORDERBY/PARTITIONBY/MATCHBY builder | @converter | ✅ |
+| 102.2 | `partition_fields` dict: `order_by`, `partition_by`, `match_by` | @converter | ✅ |
+| 102.3 | Multi-column ORDERBY with sort direction (ASC/DESC) | @converter | ✅ |
+| 102.4 | Tests: 10 tests (basic, frame, partition_by, orderby, matchby, combined) | @tester | ✅ |
+
+### Sprint 103: Migration Marketplace ✅ SHIPPED
+
+**Owner:** @orchestrator  
+**Goal:** Versioned pattern registry for community DAX recipes, visual mappings, and M query templates.
+
+| # | Item | Owner | Status |
+|---|------|-------|--------|
+| 103.1 | `marketplace.py` — PatternRegistry, Pattern, PatternMetadata classes | @orchestrator | ✅ |
+| 103.2 | JSON-file catalogue loader with versioned search/filter | @orchestrator | ✅ |
+| 103.3 | `apply_dax_recipes()` — inject/replace DAX measures from patterns | @orchestrator | ✅ |
+| 103.4 | `apply_visual_overrides()` — override visual type mappings | @orchestrator | ✅ |
+| 103.5 | `examples/marketplace/` — 3 built-in patterns (revenue_ytd, yoy_growth, map_override) | @orchestrator | ✅ |
+| 103.6 | Tests: 12 tests (metadata, registry, search, versioning, apply, export) | @tester | ✅ |
+
+### Sprint 104: DAX Recipe Overrides ✅ SHIPPED
+
+**Owner:** @converter  
+**Goal:** Industry-specific KPI measure templates for Healthcare, Finance, and Retail.
+
+| # | Item | Owner | Status |
+|---|------|-------|--------|
+| 104.1 | `dax_recipes.py` — HEALTHCARE_RECIPES (6 KPIs), FINANCE_RECIPES (8 KPIs), RETAIL_RECIPES (7 KPIs) | @converter | ✅ |
+| 104.2 | `apply_recipes()` — inject/replace/overwrite modes | @converter | ✅ |
+| 104.3 | `recipes_to_marketplace_format()` — bridge to PatternRegistry | @converter | ✅ |
+| 104.4 | Tests: 12 tests (industries, apply, overwrite, replace, marketplace format) | @tester | ✅ |
+
+### Sprint 105: Industry Model Templates ✅ SHIPPED
+
+**Owner:** @generator  
+**Goal:** Pre-built semantic model skeletons for Healthcare, Finance, and Retail.
+
+| # | Item | Owner | Status |
+|---|------|-------|--------|
+| 105.1 | `model_templates.py` — Healthcare star schema (Encounters, Patients, Providers, Facilities) | @generator | ✅ |
+| 105.2 | Finance star schema (Financials, Accounts, CostCenters, AR) | @generator | ✅ |
+| 105.3 | Retail star schema (Sales, Products, Stores, Customers) | @generator | ✅ |
+| 105.4 | `apply_template()` — merge template into migrated tables (enrich columns, add relationships) | @generator | ✅ |
+| 105.5 | Tests: 13 tests (list, get, apply, enrich, relationships, deep copy) | @tester | ✅ |
+
+### Sprint 106: Shapefile/GeoJSON Passthrough ✅ SHIPPED
+
+**Owner:** @extractor  
+**Goal:** Extract .shp/.geojson/.topojson from .twbx → PBI shape map configuration.
+
+| # | Item | Owner | Status |
+|---|------|-------|--------|
+| 106.1 | `geo_passthrough.py` — GeoExtractor (ZIP extraction with path traversal defense) | @extractor | ✅ |
+| 106.2 | Format classification (.geojson, .topojson, .shp components) | @extractor | ✅ |
+| 106.3 | `build_shape_map_config()` — PBI shapeMap visual configuration | @generator | ✅ |
+| 106.4 | `copy_to_registered_resources()` — deploy geo files into .pbip project | @generator | ✅ |
+| 106.5 | GeoJSON property extraction for key binding | @extractor | ✅ |
+| 106.6 | Tests: 13 tests (classify, extract, build config, copy, integration) | @tester | ✅ |
+
+### v27.0.0 Success Criteria
+
+| Metric | Target | v27.0.0 Actual |
+|--------|--------|----------------|
+| LOD nesting depth | Unlimited (recursive) | ✅ Recursive descent, tested to depth 5+ |
+| Window function clauses | ORDERBY + PARTITIONBY + MATCHBY | ✅ All three supported |
+| Marketplace patterns | Versioned registry with search | ✅ PatternRegistry with semver |
+| Industry DAX recipes | 3 verticals, 20+ KPIs | ✅ 21 KPIs across 3 industries |
+| Model templates | 3 star schemas | ✅ Healthcare, Finance, Retail |
+| Geo passthrough | .geojson + .shp extraction | ✅ 8 file types, shape map config |
+| Tests | 6,400+ | ✅ 6,454 passed |
+
+### v28.0.0 Backlog
+
+| Item | Priority | Notes |
+|------|----------|-------|
+| Streamlit Web UI | P1 | Browser-based wizard (deferred since v23) |
+| LLM-assisted DAX correction | P2 | AI-powered formula refinement (deferred since v23) |

@@ -72,6 +72,10 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
   - `governance.py`: Enterprise governance framework — `GovernanceEngine` (naming conventions, PII detection, sensitivity labels), `AuditTrail` (append-only JSONL with SHA-256 hashing), `run_governance()` convenience function, configurable warn/enforce modes
   - `sla_tracker.py`: Migration SLA tracker — per-workbook time/fidelity/validation compliance, `SLATracker` with `start()`/`record_result()`/`get_report()`, `SLAReport` with compliance rate and JSON export
   - `monitoring.py`: Monitoring integration — export metrics to Azure Monitor, Prometheus, or structured JSON. `MigrationMonitor` with `record_metric()`/`record_event()`/`record_migration()`/`flush()`. Backend system (json/azure/prometheus/none)
+  - `marketplace.py`: Migration Marketplace — versioned pattern registry (`PatternRegistry`) for community DAX recipes, visual mappings, M templates. JSON-file catalogue, semver versioning, search by tags/category, `apply_dax_recipes()`, `apply_visual_overrides()`, export
+  - `dax_recipes.py`: DAX recipe overrides — industry-specific KPI measure templates: Healthcare (6), Finance (8), Retail (7). `apply_recipes()` inject/replace/overwrite, `recipes_to_marketplace_format()` bridge
+  - `model_templates.py`: Industry model templates — pre-built semantic model skeletons: Healthcare (Encounters/Patients/Providers/Facilities), Finance (Financials/Accounts/CostCenters/AR), Retail (Sales/Products/Stores/Customers). `apply_template()` merges into migrated tables
+  - `geo_passthrough.py`: Shapefile/GeoJSON passthrough — `GeoExtractor` extracts .geojson/.topojson/.shp from .twbx, `build_shape_map_config()` for PBI shapeMap, `copy_to_registered_resources()`, ZIP slip protection
   - `deploy/`: Fabric deployment subpackage
     - `auth.py`: Azure AD authentication — Service Principal + Managed Identity (optional `azure-identity`)
     - `client.py`: Fabric REST API client — auto-detects `requests` with retry, falls back to `urllib`
@@ -84,7 +88,7 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
     - `pbi_deployer.py`: PBI Service deployment orchestrator — package, upload, poll, refresh, validate, `deploy_refresh_schedule()` for PBI REST API refresh config, `deploy_rolling()` for blue/green deployment with canary validation and auto-rollback
     - `bundle_deployer.py`: Fabric bundle deployer — deploy shared model + thin reports as atomic bundle, artifact discovery, per-report error isolation, rebind, refresh, `BundleDeploymentResult`
     - `multi_tenant.py`: Multi-tenant deployment — `TenantConfig`/`MultiTenantConfig` (validate/load/save JSON), `_apply_connection_overrides()` (template substitution: `${TENANT_SERVER}`, `${TENANT_DATABASE}`, context-aware escaping, null byte blocking, placeholder validation), `deploy_multi_tenant()` orchestrator with per-tenant results
-- **tests/**: Unit and integration tests (6,400+ tests across 134 test files + conftest.py shared fixtures)
+- **tests/**: Unit and integration tests (6,450+ tests across 137 test files + conftest.py shared fixtures)
 - **docs/**: FAQ, PBI project guide, mapping reference, **ROADMAP.md** (v22–v24 development roadmap per agent)
 - **.github/workflows/ci.yml**: CI/CD pipeline (lint → test → validate → deploy)
 - **.github/workflows/publish.yml**: PyPI auto-publish workflow (tag-triggered, OIDC trusted publisher)
