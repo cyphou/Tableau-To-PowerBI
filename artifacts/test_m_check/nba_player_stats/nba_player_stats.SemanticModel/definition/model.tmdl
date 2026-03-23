@@ -1,0 +1,19 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	discourageImplicitMeasures
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation PBI_QueryOrder = ["Sheet1","Rebounds","Rebounds CalcGroup"]
+
+ref table Sheet1
+ref table Rebounds
+ref table 'Rebounds CalcGroup'
+
+ref expression DataFolder
+
+ref perspective 'Full Model'
+

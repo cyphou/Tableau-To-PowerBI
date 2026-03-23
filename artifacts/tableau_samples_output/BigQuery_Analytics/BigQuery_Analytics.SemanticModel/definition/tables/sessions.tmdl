@@ -1,148 +1,171 @@
 table sessions
-	lineageTag: deb0d3ff-98fc-4ecc-aa66-c41df0e387ec
+	lineageTag: 57782317-677f-411f-a4a4-1a5c2f128110
+	description: Contains 13 columns and 7 measures: session_id, session_date, user_id, channel, device_type, country, page_views, session_duration, ... (13 columns total).
 
 	measure 'Total Sessions' = COUNT('sessions'[session_id])
 		displayFolder: Measures
-		lineageTag: a43a92e1-c620-4780-9d72-ea09d09e86d0
+		description: Migrated from Tableau: COUNT([session_id]) | DAX: COUNT('sessions'[session_id])
+		lineageTag: 292b2bee-4c39-4ce8-bd28-70ad5de57ff5
 
 	measure 'Unique Visitors' = DISTINCTCOUNT('sessions'[user_id])
 		displayFolder: Measures
-		lineageTag: a96d9dcc-3700-4bf9-82b6-064a0fa5e968
+		description: Migrated from Tableau: COUNTD([user_id]) | DAX: DISTINCTCOUNT('sessions'[user_id])
+		lineageTag: 068b7b08-c388-4c8b-9649-544819c4a7e9
 
 	measure 'Conversion Rate' = SUMX('sessions', IF('sessions'[converted], 1, 0)) / COUNT('sessions'[session_id])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 396a236d-9c04-45b9-9ae6-228909ad1e0e
+		description: Migrated from Tableau: SUM(IF [converted] THEN 1 ELSE 0 END) / COUNT([session_id]) | DAX: SUMX('sessions', IF('sessions'[converted], 1, 0)) / COUNT('sessions'[session_id])
+		lineageTag: 6f2295e2-6432-47c2-86d0-0b79f489e9c0
 
 	measure 'Avg Session Duration' = AVERAGE('sessions'[session_duration])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 8068988a-fb72-418c-969a-3630dcfafe66
+		description: Migrated from Tableau: AVG([session_duration]) | DAX: AVERAGE('sessions'[session_duration])
+		lineageTag: 95b08eae-460b-4ef9-aec2-f7c752f610df
 
 	measure 'Total Revenue' = SUM('sessions'[revenue])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: afda1271-35b3-4375-a6e2-d2fcb9ef2008
+		description: Migrated from Tableau: SUM([revenue]) | DAX: SUM('sessions'[revenue])
+		lineageTag: 7f8c2dbb-28d0-4f4b-8ce0-cdcaefa0d53e
 
 	measure 'Revenue per Session' = SUM('sessions'[revenue]) / COUNT('sessions'[session_id])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 3791da81-e612-42f6-9841-dcb532a3ecb2
+		description: Migrated from Tableau: SUM([revenue]) / COUNT([session_id]) | DAX: SUM('sessions'[revenue]) / COUNT('sessions'[session_id])
+		lineageTag: 0b36439c-08ed-4ce6-b50e-1d8518fa7a1a
 
 	measure 'Revenue by Channel' = CALCULATE(SUM('sessions'[revenue]), ALLEXCEPT('sessions', 'sessions'[channel]))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 37ef3838-06e3-431d-9ca6-ef9e88926a7b
+		description: Migrated from Tableau: {FIXED [channel] : SUM([revenue])} | DAX: CALCULATE(SUM('sessions'[revenue]), ALLEXCEPT('sessions', 'sessions'[channel]))
+		lineageTag: f982c3a6-076f-4832-9e37-fb11f7fe805b
 
 	column session_id
 		dataType: string
-		lineageTag: b2e240ec-bea5-43fb-b07c-ad63cc2ccc9c
+		lineageTag: 2753793e-4e52-4a4f-b81c-402697379f98
 		summarizeBy: none
 		sourceColumn: session_id
+		description: String column.
+		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column session_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 19fac9ff-4672-4091-ba7e-fa6f9a57b51d
+		lineageTag: b0034cb6-a161-4c6d-a796-f6edcc98f824
 		summarizeBy: none
 		sourceColumn: session_date
 		dataCategory: DateTime
+		description: Datetime column. categorized as DateTime.
 
 		annotation SummarizationSetBy = Automatic
 
 	column user_id
 		dataType: string
-		lineageTag: 424dcb8d-6fba-4908-95e6-db439bbb0bd5
+		lineageTag: eea8a180-7f1d-417c-be3f-9243cafadeaf
 		summarizeBy: none
 		sourceColumn: user_id
+		description: String column.
+		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column channel
 		dataType: string
-		lineageTag: 9ded7b7f-e393-42b8-9f5d-67ce4faa351e
+		lineageTag: e14e5ee9-b9cd-421a-9d86-b7d972dc445f
 		summarizeBy: none
 		sourceColumn: channel
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column device_type
 		dataType: string
-		lineageTag: 570a7b6e-adc9-49ca-ab08-1fd67576757a
+		lineageTag: c2367d2d-7eee-4594-8a23-cf3c4436d9ee
 		summarizeBy: none
 		sourceColumn: device_type
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column country
 		dataType: string
-		lineageTag: f4a91c31-485a-4266-a6dd-d7f51978b856
+		lineageTag: 53677b05-a804-42e7-bf70-0f8d79bbdc1f
 		summarizeBy: none
 		sourceColumn: country
 		dataCategory: Country
+		description: String column. categorized as Country.
 
 		annotation SummarizationSetBy = Automatic
 
 	column page_views
 		dataType: int64
-		lineageTag: cf592ee5-c951-4fc0-a8b2-833865ae6918
+		lineageTag: 73fda488-90a8-4ad8-985d-31206c45a648
 		summarizeBy: sum
 		sourceColumn: page_views
+		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column session_duration
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 342b1758-350d-40fa-a84b-886080646077
+		lineageTag: c505def1-e831-4eab-82cd-271aa872774c
 		summarizeBy: sum
 		sourceColumn: session_duration
+		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column converted
 		dataType: boolean
-		lineageTag: 590c5061-d3a4-4250-a8e7-e945a4564874
+		lineageTag: 562624e3-4f79-40b2-bbd6-e4f3d2f134aa
 		summarizeBy: none
 		sourceColumn: converted
+		description: Boolean column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column revenue
 		dataType: double
 		formatString: #,0.00
-		lineageTag: b9c5d808-ccee-4e69-83f8-530801eef711
+		lineageTag: 3f2b08a1-5e04-429b-b53f-051f5563e2d7
 		summarizeBy: sum
 		sourceColumn: revenue
+		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Channel Category'
 		dataType: string
-		lineageTag: 83221363-1732-4c1d-b609-0b54a5c4db97
+		lineageTag: f47f61be-1e60-4d6f-bfdf-34ec30a2eaa2
 		summarizeBy: none
 		sourceColumn: 'Channel Category'
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Engagement Level'
 		dataType: string
-		lineageTag: 7b47c063-ceee-467b-9839-e881267880a9
+		lineageTag: 8b8f4b9d-872c-47d8-9293-9c85178a0931
 		summarizeBy: none
 		sourceColumn: 'Engagement Level'
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Days Since Signup' = DATEDIFF(LOOKUPVALUE(users[signup_date], users[user_id], sessions[user_id]), TODAY(), DAY)
 		dataType: int64
-		lineageTag: e07c603d-bc08-4c52-9a06-0ba91b49a722
+		lineageTag: a00459f7-c788-4ec2-a4a0-451add7e80ce
 		summarizeBy: none
+		description: Calculated column (Int64).
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'sessions-81fecc1f-446f-4635-83ae-1ba18345a6db' = m
+	partition 'sessions-0346ce30-41e7-46c6-a01c-ef8fc46fdd5b' = m
 		mode: import
 		source =
 				let
@@ -168,4 +191,5 @@ table sessions
 				    Result
 
 	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 13 columns and 7 measures: session_id, session_date, user_id, channel, device_type, country, page_views, session_duration, ... (13 columns total).
 

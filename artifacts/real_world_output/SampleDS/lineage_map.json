@@ -1,0 +1,12 @@
+{
+  "tables": [
+    {
+      "tableau_datasource": "Unknown",
+      "tableau_table": "xy",
+      "pbi_table": "xy"
+    }
+  ],
+  "calculations": [],
+  "relationships": [],
+  "worksheets": []
+}

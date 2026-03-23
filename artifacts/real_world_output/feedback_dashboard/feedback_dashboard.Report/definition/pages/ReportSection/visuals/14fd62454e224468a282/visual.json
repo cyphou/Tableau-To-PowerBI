@@ -1,0 +1,37 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
+  "name": "14fd62454e224468a282",
+  "position": {
+    "x": 8,
+    "y": 8,
+    "z": 7000,
+    "height": 71,
+    "width": 1272,
+    "tabOrder": 7000
+  },
+  "visual": {
+    "visualType": "textbox",
+    "objects": {
+      "general": [
+        {
+          "properties": {
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": "Customers Feedback analysis Dashboard",
+                    "textStyle": {
+                      "fontWeight": "bold",
+                      "color": "#4e79a7",
+                      "fontSize": "20.0pt"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

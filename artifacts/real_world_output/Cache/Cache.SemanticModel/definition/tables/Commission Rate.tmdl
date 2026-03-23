@@ -1,20 +1,25 @@
 table 'Commission Rate'
-	lineageTag: d5680a41-9646-4a6a-b0f4-dc4b341c7fd9
+	lineageTag: 5cd0cd95-9edf-49f7-933d-3ecef15e59a0
+	description: Contains 1 columns and 1 measures: Value.
 
 	measure 'Commission Rate' = SELECTEDVALUE('Commission Rate'[Value], 18.400000000000002)
-		lineageTag: b60ddbdc-f127-4ca4-9a00-aed61d575b46
+		description: DAX: SELECTEDVALUE('Commission Rate'[Value], 18.400000000000002)
+		lineageTag: d9d7ba81-03d5-4efe-b350-ea2ba715540d
 
 	column Value
 		dataType: double
-		lineageTag: a0215ce2-edb3-4755-9b0d-e2d274c17079
+		lineageTag: 97e7896e-4e53-4fe9-b49b-ce59c6775820
 		summarizeBy: none
 		sourceColumn: Value
+		description: Double column.
+		annotation displayFolder = Parameters
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Commission Rate-3291b27b-783b-4886-85a4-4eff87f12a87' = calculated
+	partition 'Commission Rate-f8d0e8f5-09e2-4191-86fa-a61e753f0d6d' = calculated
 		mode: import
 		source = GENERATESERIES(1.0, 100.0, 0.10000000000000001)
 
 	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 1 columns and 1 measures: Value.
 

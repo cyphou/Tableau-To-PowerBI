@@ -1,0 +1,43 @@
+{
+  "tables": [
+    {
+      "tableau_datasource": "federated.1",
+      "tableau_table": "Orders",
+      "pbi_table": "Orders"
+    },
+    {
+      "tableau_datasource": "federated.1",
+      "tableau_table": "Returns",
+      "pbi_table": "Returns"
+    },
+    {
+      "tableau_datasource": "federated.1",
+      "tableau_table": "People",
+      "pbi_table": "People"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Calendar",
+      "pbi_table": "Calendar"
+    }
+  ],
+  "calculations": [],
+  "relationships": [
+    {
+      "from": "Orders[Region]",
+      "to": "People[Region]",
+      "cardinality": "bothDirections"
+    },
+    {
+      "from": "Orders[Order ID]",
+      "to": "Returns[Order ID]",
+      "cardinality": "bothDirections"
+    },
+    {
+      "from": "Orders[Order Date]",
+      "to": "Calendar[Date]",
+      "cardinality": "oneDirection"
+    }
+  ],
+  "worksheets": []
+}

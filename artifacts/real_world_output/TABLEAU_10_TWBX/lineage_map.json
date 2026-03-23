@@ -1,0 +1,17 @@
+{
+  "tables": [
+    {
+      "tableau_datasource": "federated.0bbjp8g02k4ss51anjdyj1s0vmrj",
+      "tableau_table": "xy",
+      "pbi_table": "xy"
+    },
+    {
+      "tableau_datasource": "federated.0bbjp8g02k4ss51anjdyj1s0vmrj",
+      "tableau_table": "Extract",
+      "pbi_table": "Extract"
+    }
+  ],
+  "calculations": [],
+  "relationships": [],
+  "worksheets": []
+}

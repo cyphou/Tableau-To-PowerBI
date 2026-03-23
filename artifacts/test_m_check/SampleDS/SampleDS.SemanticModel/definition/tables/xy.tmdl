@@ -1,0 +1,64 @@
+table xy
+	lineageTag: e03d635a-247d-40cd-8cd3-9ef3de715bf8
+
+	measure '[Number of Records]' = 1
+		displayFolder: Measures
+		lineageTag: a32f62e8-fb57-4477-8414-56da280c76ba
+
+	column a
+		dataType: string
+		lineageTag: 0fb6127c-720c-47b5-b6c6-388de947af72
+		summarizeBy: none
+		sourceColumn: a
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Today''s Date'
+		dataType: string
+		lineageTag: fdfa624b-23fc-43a9-8505-ea7f0ce4b801
+		summarizeBy: none
+		sourceColumn: 'Today''s Date'
+
+		annotation SummarizationSetBy = Automatic
+
+	column x
+		dataType: int64
+		lineageTag: 07dee468-138f-4fcd-b30a-eeb838925db0
+		summarizeBy: sum
+		sourceColumn: x
+
+		annotation SummarizationSetBy = Automatic
+
+	column y
+		dataType: int64
+		lineageTag: e0fb57c0-bf7d-4023-b70d-7b9def9b3044
+		summarizeBy: sum
+		sourceColumn: y
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'xy-470bb227-7cd3-44db-94a8-521f1672bbd5' = m
+		mode: import
+		source =
+				let
+				    // Source PostgreSQL
+				    Source = try
+				
+				        let
+				
+				            _src = PostgreSQL.Database("postgres91.test.tsi.lan:5432", "TestV1"),
+				
+				            _nav = _src{[Schema="public", Item="xy"]}[Data]
+				
+				        in _nav
+				
+				    otherwise
+				
+				        #table({"a", "Today's Date", "x", "y"}, {}),
+				    #"Renamed Columns" = Table.RenameColumns(Source, {{"a", "A"}, {"x", "X"}, {"y", "Y"}}),
+				    Result = #"Renamed Columns"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+

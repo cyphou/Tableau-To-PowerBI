@@ -1,5 +1,31 @@
 # Changelog
 
+## v28.1.0 — Post-Migration Automation & Lineage Visualization
+
+### Lineage Map HTML Dashboard ✅
+- **Lineage visualization** in `generate_report.py`: New "Lineage Map" section in the HTML migration dashboard with flow diagram (Tableau Sources → Calculations → PBI Model → Report Pages), stat cards, and 4 tabbed detail views (Tables, Calculations, Relationships, Worksheets) — all searchable and sortable.
+- **`load_lineage()`** function reads `lineage_map.json` from project directories.
+- Lineage data auto-loaded in `generate_dashboard()` (single), `generate_batch_dashboard()` (batch), and `main()`.
+- **12 tests** for lineage HTML rendering.
+
+### Sprint 119 — Post-Migration Automation ✅
+- **Validator auto-fix** (`validator.py`): `auto_fix_dax_leaks()` with 17 Tableau→DAX patterns (ISNULL→ISBLANK, ZN→IF(ISBLANK), ELSEIF→nested IF, `==`→`=`, `or`→`||`, `and`→`&&`, etc.). `auto_fix_tmdl_file()` and `auto_fix_project()` class methods.
+- **Lineage map** (`tmdl_generator.py`): `_build_lineage_map()` tracks Tableau source → PBI target for every table, calculation, relationship, and worksheet. Written as `lineage_map.json` by `pbip_generator.py`.
+- **Unified `--qa` flag** (`migrate.py`): `_run_qa_suite()` runs validation → auto-fix → governance → comparison → `qa_report.json` in one command.
+- **Default-ON flags**: `--optimize-dax` and `--compare` now default to True with `--no-optimize-dax` / `--no-compare` overrides.
+- **RLS PowerShell script** (`permission_mapper.py`): `generate_rls_powershell()` generates `.ps1` scripts for Azure AD RLS role assignment via Power BI REST API.
+- **Credential template** (`permission_mapper.py`): `generate_credential_template()` creates JSON credential placeholders per datasource connection.
+- **Governance column renames** (`governance.py`): `apply_renames()` enhanced for column-level renaming.
+- **52 tests** in `test_automation.py`.
+
+### Sprint 118 — Semantic Descriptions & Linguistic Schema ✅
+- **Auto-generated descriptions** for every table, column, and measure in the TMDL semantic model (Copilot/Q&A readiness).
+- **Copilot annotations**: `Copilot_DateTable`, `Copilot_Hidden`, `Copilot_TableDescription`.
+- **Linguistic schema depth**: CamelCase splitting, underscore humanization, Tableau captions/aliases/descriptions as Q&A synonyms.
+- **6 tests** in `test_semantic_descriptions.py`.
+
+---
+
 ## v28.0.0 Phase 1 — Core Extensibility (Sprints 108–111)
 
 ### Sprint 111 — Incremental Schema Drift Detection ✅

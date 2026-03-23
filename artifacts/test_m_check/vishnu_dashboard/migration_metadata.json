@@ -1,0 +1,102 @@
+{
+  "generated_at": "2026-03-23T14:58:17.926158",
+  "source": "Tableau Migration",
+  "report_name": "vishnu_dashboard",
+  "objects_converted": {
+    "worksheets": 5,
+    "dashboards": 0,
+    "datasources": 2,
+    "calculations": 6,
+    "parameters": 2,
+    "filters": 2,
+    "stories": 0,
+    "sets": 0,
+    "groups": 2,
+    "bins": 1,
+    "hierarchies": 0,
+    "user_filters": 0,
+    "actions": 0,
+    "custom_sql": 0
+  },
+  "generated_output": {
+    "pages": 5,
+    "visuals": 5,
+    "theme_applied": false,
+    "theme_detail": {
+      "status": "skipped",
+      "reason": "no dashboard colors detected"
+    }
+  },
+  "tmdl_stats": {
+    "tables": 4,
+    "measures": 7,
+    "columns": 36,
+    "relationships": 0
+  },
+  "visual_type_mappings": {
+    "Sheet 1": "Automatic",
+    "Sheet 2": "Automatic",
+    "Sheet 3": "Automatic",
+    "Sheet 4": "Automatic",
+    "Sheet 5": "Automatic"
+  },
+  "visual_details": [
+    {
+      "worksheet": "Sheet 1",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "lineChart",
+      "dimensions": [
+        "Order Date"
+      ],
+      "measures": [
+        "Sales"
+      ],
+      "field_count": 2
+    },
+    {
+      "worksheet": "Sheet 2",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "scatterChart",
+      "dimensions": [
+        "Sales (bin)"
+      ],
+      "measures": [
+        "Sales"
+      ],
+      "field_count": 2
+    },
+    {
+      "worksheet": "Sheet 3",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "table",
+      "dimensions": [],
+      "measures": [],
+      "field_count": 0
+    },
+    {
+      "worksheet": "Sheet 4",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "Sub-Category"
+      ],
+      "measures": [
+        "Profit"
+      ],
+      "field_count": 2
+    },
+    {
+      "worksheet": "Sheet 5",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "Product Name (group)"
+      ],
+      "measures": [
+        "Sales"
+      ],
+      "field_count": 2
+    }
+  ],
+  "approximations": []
+}

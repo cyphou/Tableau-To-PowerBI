@@ -1,80 +1,91 @@
 table Extract
-	lineageTag: b81937f1-0197-4af9-a386-163a5e1095a6
+	lineageTag: 6d0614e0-16de-4424-b709-81dbde9d5ec3
+	description: Contains 9 columns: Document Index (generated), category, customer_id, date, email, feedback_score, feedback_text, name, ... (9 columns total).
 
 	column 'Document Index (generated)'
 		dataType: int64
-		lineageTag: 99dcc137-5e25-43f3-ad77-6d05ca695f52
+		lineageTag: 2c309d26-4b56-4695-8e0a-686c7e0a9b34
 		summarizeBy: sum
 		sourceColumn: 'Document Index (generated)'
+		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column category
 		dataType: string
-		lineageTag: 99d442b9-413e-4617-a52a-3f5e2294da47
+		lineageTag: 4466ef12-22d2-4f6e-aba1-af226277bfe2
 		summarizeBy: none
 		sourceColumn: category
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column customer_id
 		dataType: string
-		lineageTag: c5adb2f8-24c5-4c53-80cc-b970dbaf88ec
+		lineageTag: f294f63f-0bb6-40ab-a85f-3fc49d2ddae1
 		summarizeBy: none
 		sourceColumn: customer_id
+		description: String column.
+		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column date
 		dataType: string
-		lineageTag: bf15b6b4-fbac-4059-8d20-2a4c9f00f1b1
+		lineageTag: d3515028-bd86-4498-9c8a-424b32be7340
 		summarizeBy: none
 		sourceColumn: date
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column email
 		dataType: string
-		lineageTag: 0c4c91fe-6d4f-4428-89ce-3edc68430129
+		lineageTag: 20e96dbb-fcfa-4e84-80e8-cf4db6faae60
 		summarizeBy: none
 		sourceColumn: email
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column feedback_score
 		dataType: double
 		formatString: #,0.00
-		lineageTag: efaf7daf-0b85-48f7-9e97-e99b67e73775
+		lineageTag: c523b4db-3b0d-490f-8089-e05f773ec0ef
 		summarizeBy: sum
 		sourceColumn: feedback_score
+		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column feedback_text
 		dataType: string
-		lineageTag: c3c7b404-66fb-4ee2-9256-ef30db801e07
+		lineageTag: ec5af575-478d-4e74-8326-af764d634b7c
 		summarizeBy: none
 		sourceColumn: feedback_text
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column name
 		dataType: string
-		lineageTag: a60366a5-2fa2-4fee-bb7e-469e0e50c74d
+		lineageTag: a112bdad-6da9-4a67-82f2-468618948143
 		summarizeBy: none
 		sourceColumn: name
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column sentiment
 		dataType: string
-		lineageTag: de06b214-ddfb-4809-8c77-8b0f146d8585
+		lineageTag: e00b2032-5c30-4e7f-a290-a829c2ffb018
 		summarizeBy: none
 		sourceColumn: sentiment
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Extract-315d7631-902f-4504-b359-37650344da51' = m
+	partition 'Extract-6784ce8f-c41a-4b6b-a53b-d6634af963d0' = m
 		mode: import
 		source =
 				let
@@ -96,4 +107,5 @@ table Extract
 				    Result
 
 	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 9 columns: Document Index (generated), category, customer_id, date, email, feedback_score, feedback_text, name, ... (9 columns total).
 

@@ -1,11 +1,11 @@
-relationship d7686afd-8a77-454d-bcee-f8e9b801e238
+relationship 6de1d744-b79c-4121-977c-fad3f75637c4
 	fromColumn: Orders.OrderDate
 	toColumn: Calendar.Date
 	fromCardinality: many
 	toCardinality: many
 	crossFilteringBehavior: bothDirections
 
-relationship f75b596c-392d-4d41-a0d1-1011ad4f3cb3
+relationship 633484c4-3caf-4144-b7a3-56a0085d4fe4
 	fromColumn: Orders.Region
 	toColumn: Regions.RegionName
 	fromCardinality: many

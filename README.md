@@ -13,7 +13,7 @@
 <p align="center">
   <a href="https://github.com/cyphou/Tableau-To-PowerBI/actions/workflows/ci.yml"><img src="https://github.com/cyphou/Tableau-To-PowerBI/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
   <img src="https://img.shields.io/badge/coverage-96.2%25-brightgreen?style=flat-square" alt="Coverage"/>
-  <img src="https://img.shields.io/badge/tests-6%2C593%20passed-brightgreen?style=flat-square" alt="Tests"/>
+  <img src="https://img.shields.io/badge/tests-6%2C831%20passed-brightgreen?style=flat-square" alt="Tests"/>
   <img src="https://img.shields.io/badge/python-3.9%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python"/>
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License"/>
   <img src="https://img.shields.io/badge/version-27.1.0-blue?style=flat-square" alt="Version"/>
@@ -166,6 +166,20 @@ Generate **Lakehouse + Dataflow Gen2 + PySpark Notebook + DirectLake Semantic Mo
 </td>
 </tr>
 <tr>
+<td>
+
+### 🔍 QA Suite & Auto-Fix
+`--qa` runs the full quality assurance pipeline in one shot: validation → auto-fix (17 Tableau→DAX leak patterns) → governance → comparison report → `qa_report.json`. Validator auto-fixes `ISNULL→ISBLANK`, `ZN→IF(ISBLANK)`, `ELSEIF→nested IF`, and more.
+
+</td>
+<td>
+
+### 🔗 Lineage Map
+Every migration produces a `lineage_map.json` tracking the provenance of every object: Tableau datasource.table → PBI table, Tableau calculation → PBI measure/column, relationships, and worksheet → page mappings. Visualized in the HTML dashboard with flow diagrams, stat cards, and searchable tabbed tables.
+
+</td>
+</tr>
+<tr>
 <td colspan="2">
 
 ### 🔗 Shared Semantic Model
@@ -306,6 +320,8 @@ The `--global-assess` flag generates an interactive HTML report with pairwise me
 YourReport/
 ├── YourReport.pbip                     ← Double-click to open in PBI Desktop
 ├── migration_metadata.json             ← Stats, fidelity scores, warnings
+├── lineage_map.json                    ← Source→target traceability
+├── credentials_template.json           ← Datasource credential placeholders
 ├── YourReport.SemanticModel/
 │   └── definition/
 │       ├── model.tmdl                  ← Tables, measures, relationships
@@ -507,7 +523,7 @@ TableauToPowerBI/
 │   ├── schema_drift.py                        #   Schema drift detection (v28)
 │   └── deploy/                                #   Deploy to PBI Service / Fabric
 ├── Dockerfile                                 # Docker image for API server
-├── tests/                                     # 6,593 tests across 140 files
+├── tests/                                     # 6,831 tests across 141 files
 ├── docs/                                      # 18 documentation files
 └── examples/                                  # Sample Tableau workbooks
 ```
@@ -575,6 +591,9 @@ TableauToPowerBI/
 | `--workers N` | Parallel batch processing with N workers |
 | `--sync` | Auto-deploy after incremental change detection |
 | `--check-drift DIR` | Compare current extraction against saved snapshot for schema drift |
+| `--qa` | Run full QA suite: validate → auto-fix → governance → compare → qa_report.json |
+| `--no-optimize-dax` | Disable DAX optimizer (on by default) |
+| `--no-compare` | Disable comparison report generation (on by default) |
 
 </details>
 
@@ -653,13 +672,13 @@ The validator checks `.pbip` JSON, `report.json`, `model.tmdl`, page/visual stru
 ## 🧪 Testing
 
 <p align="center">
-  <img src="https://img.shields.io/badge/tests-6%2C593%20passed-brightgreen?style=for-the-badge" alt="Tests"/>
+  <img src="https://img.shields.io/badge/tests-6%2C831%20passed-brightgreen?style=for-the-badge" alt="Tests"/>
   <img src="https://img.shields.io/badge/coverage-96.2%25-brightgreen?style=for-the-badge" alt="Coverage"/>
-  <img src="https://img.shields.io/badge/test%20files-140-blue?style=for-the-badge" alt="Test Files"/>
+  <img src="https://img.shields.io/badge/test%20files-141-blue?style=for-the-badge" alt="Test Files"/>
 </p>
 
 ```bash
-python -m pytest tests/ -v                          # Run all 6,593 tests
+python -m pytest tests/ -v                          # Run all 6,831 tests
 python -m pytest tests/test_dax_converter.py -v      # Run specific file
 python -m pytest tests/ --cov --cov-report=html      # Coverage report
 ```
@@ -683,7 +702,7 @@ python -m pytest tests/ --cov --cov-report=html      # Coverage report
 | `test_non_regression.py` | 63 | End-to-end sample workbook migrations |
 | `test_prep_flow_parser.py` | 58 | Prep parsing, DAG, step conversion |
 | `test_assessment.py` | 55 | Pre-migration (8 categories) |
-| + 113 more files | — | Sprint, coverage, layout, E2E, wizard, telemetry… |
+| + 114 more files | — | Sprint, coverage, layout, E2E, wizard, telemetry… |
 
 </details>
 
@@ -691,7 +710,7 @@ python -m pytest tests/ --cov --cov-report=html      # Coverage report
 
 ```mermaid
 flowchart LR
-    L["🔍 Lint\nflake8 + ruff"] --> T["🧪 Test\n6,593 tests\nPy 3.9–3.14"]
+    L["🔍 Lint\nflake8 + ruff"] --> T["🧪 Test\n6,831 tests\nPy 3.9–3.14"]
     T --> V["✅ Validate\nStrict .twbx\nmigrations"]
     V --> S["📦 Staging\nFabric deploy"]
     S --> P["🚀 Production\nManual approval"]

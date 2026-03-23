@@ -256,3 +256,95 @@ class DataflowGenerator:
             f.write('section Section1;\n\n')
             for q in queries:
                 f.write(f'shared {q["name"]} = {q["m_query"]};\n\n')
+
+    # ════════════════════════════════════════════════════════════════
+    #  PREP FLOW → DATAFLOW GEN2 DIRECT CONVERSION
+    # ════════════════════════════════════════════════════════════════
+
+    def generate_from_prep_flow(self, prep_flow_data, extracted_data=None):
+        """Generate Dataflow Gen2 directly from a parsed Tableau Prep flow.
+
+        This bypasses the standard datasource→M→Dataflow pipeline and
+        instead converts the Prep flow DAG steps directly into Dataflow
+        Gen2 Power Query M queries, preserving the Prep transformation
+        order and logic.
+
+        Args:
+            prep_flow_data: Parsed Prep flow dict from prep_flow_parser.
+                Keys: 'datasources' (list with m_query entries),
+                      'nodes' (optional), 'flow_name' (optional)
+            extracted_data: Optional extracted workbook data for enrichment
+
+        Returns:
+            dict: {queries: int, prep_steps: int}
+        """
+        prep_datasources = prep_flow_data.get('datasources', [])
+        flow_name = prep_flow_data.get('flow_name', self.project_name)
+
+        queries = []
+        seen = set()
+
+        for ds in prep_datasources:
+            # Prep datasources already have m_query from parse_prep_flow()
+            m_query = ds.get('m_query', '')
+            if not m_query:
+                continue
+
+            table_name = ds.get('name', ds.get('caption', ''))
+            query_name = _sanitize_query_name(table_name) if table_name else f'PrepQuery_{len(queries) + 1}'
+
+            if query_name in seen:
+                query_name = f'{query_name}_{len(queries) + 1}'
+            seen.add(query_name)
+
+            # Detect if this is a prep-sourced query
+            is_prep = ds.get('is_prep_source', False)
+            conn_type = ds.get('connection', {}).get('type', 'Unknown')
+
+            lh_table = re.sub(r'[^a-zA-Z0-9_]', '_', query_name).lower()
+
+            queries.append({
+                'name': query_name,
+                'description': f'Prep flow step: {table_name}' + (' (prep source)' if is_prep else ''),
+                'm_query': m_query,
+                'lakehouse_table': lh_table,
+                'source_type': conn_type,
+                'result_type': 'Table',
+                'load_enabled': True,
+                'prep_source': is_prep,
+            })
+
+        # If extracted_data also has datasources not in prep, add them
+        if extracted_data:
+            generate_m = _get_m_query_builder()
+            for ds in extracted_data.get('datasources', []):
+                conn = ds.get('connection', {})
+                for t in ds.get('tables', []):
+                    tname = t.get('name', '')
+                    qname = _sanitize_query_name(tname)
+                    if qname not in seen:
+                        seen.add(qname)
+                        m_query = generate_m(conn, t)
+                        lh_table = re.sub(r'[^a-zA-Z0-9_]', '_', tname).lower()
+                        queries.append({
+                            'name': qname,
+                            'description': f'Workbook datasource: {tname}',
+                            'm_query': m_query,
+                            'lakehouse_table': lh_table,
+                            'source_type': conn.get('type', 'Unknown'),
+                            'result_type': 'Table',
+                            'load_enabled': True,
+                            'prep_source': False,
+                        })
+
+        # Build and write Dataflow definition
+        dataflow_def = self._build_dataflow_definition(queries)
+        def_path = os.path.join(self.dataflow_dir, 'dataflow_definition.json')
+        with open(def_path, 'w', encoding='utf-8') as f:
+            json.dump(dataflow_def, f, indent=2, ensure_ascii=False)
+
+        self._write_m_query_files(queries)
+        self._write_mashup_document(queries)
+
+        prep_count = sum(1 for q in queries if q.get('prep_source'))
+        return {'queries': len(queries), 'prep_steps': prep_count}

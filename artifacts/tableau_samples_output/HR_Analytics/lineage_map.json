@@ -1,0 +1,23 @@
+{
+  "tables": [
+    {
+      "tableau_datasource": "federated.1",
+      "tableau_table": "Employees",
+      "pbi_table": "Employees"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Calendar",
+      "pbi_table": "Calendar"
+    }
+  ],
+  "calculations": [],
+  "relationships": [
+    {
+      "from": "Employees[HireDate]",
+      "to": "Calendar[Date]",
+      "cardinality": "oneDirection"
+    }
+  ],
+  "worksheets": []
+}

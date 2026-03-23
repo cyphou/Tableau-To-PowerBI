@@ -1,0 +1,344 @@
+{
+  "report_name": "Ventes_France",
+  "created_at": "2026-03-23T21:41:55.884008",
+  "summary": {
+    "total_items": 34,
+    "exact": 34,
+    "approximate": 0,
+    "placeholder": 0,
+    "unsupported": 0,
+    "skipped": 0,
+    "fidelity_score": 100.0,
+    "by_category": {
+      "datasource": {
+        "total": 1,
+        "exact": 1
+      },
+      "calculation": {
+        "total": 22,
+        "exact": 22
+      },
+      "visual": {
+        "total": 6,
+        "exact": 6
+      },
+      "parameter": {
+        "total": 3,
+        "exact": 3
+      },
+      "bookmark": {
+        "total": 1,
+        "exact": 1
+      },
+      "rls_role": {
+        "total": 1,
+        "exact": 1
+      }
+    }
+  },
+  "completeness": {
+    "categories": {
+      "datasource": {
+        "total": 1,
+        "exact": 1,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "calculation": {
+        "total": 22,
+        "exact": 22,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "visual": {
+        "total": 6,
+        "exact": 6,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "parameter": {
+        "total": 3,
+        "exact": 3,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "bookmark": {
+        "total": 1,
+        "exact": 1,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "rls_role": {
+        "total": 1,
+        "exact": 1,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      }
+    },
+    "overall_score": 100.0,
+    "grade": "A"
+  },
+  "table_mapping": [
+    {
+      "source_datasource": "Ventes Entreprise",
+      "source_table": "Commandes",
+      "target_table": "Commandes",
+      "connection_type": "PostgreSQL",
+      "columns": 16
+    },
+    {
+      "source_datasource": "Ventes Entreprise",
+      "source_table": "Produits",
+      "target_table": "Produits",
+      "connection_type": "PostgreSQL",
+      "columns": 6
+    },
+    {
+      "source_datasource": "Ventes Entreprise",
+      "source_table": "Clients",
+      "target_table": "Clients",
+      "connection_type": "PostgreSQL",
+      "columns": 7
+    }
+  ],
+  "items": [
+    {
+      "category": "datasource",
+      "name": "federated.ventes",
+      "status": "exact",
+      "note": "PostgreSQL, 3 table(s)"
+    },
+    {
+      "category": "calculation",
+      "name": "Chiffre d'Affaires Brut",
+      "status": "exact",
+      "source_formula": "SUM([quantite] * [prix_unitaire])",
+      "dax": "SUMX('Commandes', 'Commandes'[quantite] * 'Commandes'[prix_unitaire])"
+    },
+    {
+      "category": "calculation",
+      "name": "Chiffre d'Affaires Net",
+      "status": "exact",
+      "source_formula": "SUM(IF [statut] != \"Annulée\" THEN [quantite] * [prix_unitaire] * (1 - [remise]) ELSE 0 END)",
+      "dax": "SUMX('Commandes', IF('Commandes'[statut] <> \"Annulée\", 'Commandes'[quantite] * 'Commandes'[prix_unitaire] * (1 - 'Commandes'[remise]), 0))"
+    },
+    {
+      "category": "calculation",
+      "name": "Marge Brute",
+      "status": "exact",
+      "source_formula": "SUM(IF [statut] != \"Annulée\" THEN ([quantite] * [prix_unitaire] * (1 - [remise])) - ([quantite] * [cout_achat]) - [frais_port] ELSE 0 END)",
+      "dax": "SUMX('Commandes', IF('Commandes'[statut] <> \"Annulée\", ('Commandes'[quantite] * 'Commandes'[prix_unitaire] * (1 - 'Commandes'[remise])) - ('Commandes'[quantite] * 'Produits'[cout_achat]) - 'Commandes'[frais_port], 0))"
+    },
+    {
+      "category": "calculation",
+      "name": "Taux de Marge (%)",
+      "status": "exact",
+      "source_formula": "ZN([Calc_Marge] / [Calc_CA_Net])",
+      "dax": "IF(ISBLANK([Marge Brute] / [Chiffre d\"Affaires Net]), 0, [Marge Brute] / [Chiffre d\"Affaires Net])"
+    },
+    {
+      "category": "calculation",
+      "name": "Montant Remises",
+      "status": "exact",
+      "source_formula": "SUM([quantite] * [prix_unitaire] * [remise])",
+      "dax": "SUMX('Commandes', 'Commandes'[quantite] * 'Commandes'[prix_unitaire] * 'Commandes'[remise])"
+    },
+    {
+      "category": "calculation",
+      "name": "Nombre de Commandes",
+      "status": "exact",
+      "source_formula": "COUNTD([commande_id])",
+      "dax": "DISTINCTCOUNT('Commandes'[commande_id])"
+    },
+    {
+      "category": "calculation",
+      "name": "Clients Uniques",
+      "status": "exact",
+      "source_formula": "COUNTD([client_id])",
+      "dax": "DISTINCTCOUNT('Commandes'[client_id])"
+    },
+    {
+      "category": "calculation",
+      "name": "Panier Moyen",
+      "status": "exact",
+      "source_formula": "[Calc_CA_Net] / [Calc_NbCommandes]",
+      "dax": "[Chiffre d'Affaires Net] / [Nombre de Commandes]"
+    },
+    {
+      "category": "calculation",
+      "name": "CA par Client",
+      "status": "exact",
+      "source_formula": "{FIXED [client_id] : SUM([quantite] * [prix_unitaire])}",
+      "dax": "CALCULATE(SUMX('Commandes', 'Commandes'[quantite] * 'Commandes'[prix_unitaire]), ALLEXCEPT('Commandes', 'Commandes'[client_id]))"
+    },
+    {
+      "category": "calculation",
+      "name": "CA Régional par Catégorie",
+      "status": "exact",
+      "source_formula": "{FIXED [region], [categorie] : SUM([quantite] * [prix_unitaire])}",
+      "dax": "CALCULATE(SUMX('Commandes', 'Commandes'[quantite] * 'Commandes'[prix_unitaire]), REMOVEFILTERS('Commandes'[region]), REMOVEFILTERS('Produits'[categorie]))"
+    },
+    {
+      "category": "calculation",
+      "name": "CA hors Produit",
+      "status": "exact",
+      "source_formula": "{EXCLUDE [nom_produit] : SUM([quantite] * [prix_unitaire])}",
+      "dax": "CALCULATE(SUMX('Commandes', 'Commandes'[quantite] * 'Commandes'[prix_unitaire]), REMOVEFILTERS('Produits'[nom_produit]))"
+    },
+    {
+      "category": "calculation",
+      "name": "Délai de Livraison",
+      "status": "exact",
+      "source_formula": "DATEDIFF(\"day\", [date_commande], [date_livraison])",
+      "dax": "[M-based column]"
+    },
+    {
+      "category": "calculation",
+      "name": "Ancienneté Client",
+      "status": "exact",
+      "source_formula": "DATEDIFF(\"day\", [date_inscription], TODAY())",
+      "dax": "DATEDIFF(LOOKUPVALUE(Clients[date_inscription], Clients[client_id], Commandes[client_id]), TODAY(), DAY)"
+    },
+    {
+      "category": "calculation",
+      "name": "Classification Client",
+      "status": "exact",
+      "source_formula": "IF [Calc_CAParClient] > 50000 THEN \"Platine\" ELSEIF [Calc_CAParClient] > 20000 THEN \"Or\" ELSEIF [Calc_CAParClient] > 5000 THEN \"Argent\" ELSE \"Bronze\" END",
+      "dax": "IF([CA par Client] > 50000, \"Platine\", IF([CA par Client] > 20000, \"||\", IF([CA par Client] > 5000, \"Argent\", \"Bronze\")))"
+    },
+    {
+      "category": "calculation",
+      "name": "Nom Complet",
+      "status": "exact",
+      "source_formula": "[prenom_client] + \" \" + UPPER([nom_client])",
+      "dax": "LOOKUPVALUE(Clients[prenom_client], Clients[client_id], Commandes[client_id]) & \" \" & UPPER(LOOKUPVALUE(Clients[nom_client], Clients[client_id], Commandes[client_id]))"
+    },
+    {
+      "category": "calculation",
+      "name": "Localisation",
+      "status": "exact",
+      "source_formula": "[ville] + \" (\" + [departement] + \") - \" + [region]",
+      "dax": "[M-based column]"
+    },
+    {
+      "category": "calculation",
+      "name": "Cumul Mobile CA",
+      "status": "exact",
+      "source_formula": "RUNNING_SUM(SUM([quantite] * [prix_unitaire]))",
+      "dax": "CALCULATE(SUMX('Commandes', 'Commandes'[quantite] * 'Commandes'[prix_unitaire]), FILTER(ALLSELECTED('Commandes'), TRUE())) /* RUNNING_SUM: converted to cumulative — verify window scope */"
+    },
+    {
+      "category": "calculation",
+      "name": "Moyenne Mobile 3M",
+      "status": "exact",
+      "source_formula": "WINDOW_AVG(SUM([quantite] * [prix_unitaire]), -2, 0)",
+      "dax": "CALCULATE(SUMX('Commandes', 'Commandes'[quantite] * 'Commandes'[prix_unitaire]), WINDOW(-2, REL, 0, REL, ORDERBY('Commandes'[commande_id], ASC)), ALL('Commandes')) /* WINDOW.AVG: frame 'Commandes'[-2,0] */"
+    },
+    {
+      "category": "calculation",
+      "name": "Classement CA",
+      "status": "exact",
+      "source_formula": "RANK(SUM([quantite] * [prix_unitaire]))",
+      "dax": "RANKX(ALL('Commandes'), SUMX('Commandes', 'Commandes'[quantite] * 'Commandes'[prix_unitaire]))"
+    },
+    {
+      "category": "calculation",
+      "name": "Catégorie de Remise",
+      "status": "exact",
+      "source_formula": "IF ISNULL([remise]) OR [remise] = 0 THEN \"Aucune Remise\" ELSEIF [remise] < 0.1 THEN \"Faible (<10%)\" ELSEIF [remise] < 0.25 THEN \"Moyenne (10-25%)\" ELSE \"Forte (>25%)\" END",
+      "dax": "IF(ISBLANK('Commandes'[remise]) || 'Commandes'[remise] = 0, \"Aucune Remise\", IF('Commandes'[remise] < 0.1, \"Faible (<10%)\", IF('Commandes'[remise] < 0.25, \"Moyenne (10-25%)\", \"Forte (>25%)\")))"
+    },
+    {
+      "category": "calculation",
+      "name": "CA Année en Cours",
+      "status": "exact",
+      "source_formula": "{FIXED : SUM(IF YEAR([date_commande]) = YEAR(TODAY()) THEN [quantite] * [prix_unitaire] ELSE 0 END)}",
+      "dax": "CALCULATE(SUMX('Commandes', IF(YEAR('Commandes'[date_commande]) = YEAR(TODAY()), 'Commandes'[quantite] * 'Commandes'[prix_unitaire], 0)), ALL('Commandes'))"
+    },
+    {
+      "category": "calculation",
+      "name": "Trimestre",
+      "status": "exact",
+      "source_formula": "\"T\" + STR(DATEPART(\"quarter\", [date_commande])) + \" \" + STR(YEAR([date_commande]))",
+      "dax": "\"T\" & FORMAT(QUARTER('Commandes'[date_commande]), \"0\") & \" \" & FORMAT(YEAR('Commandes'[date_commande]), \"0\")"
+    },
+    {
+      "category": "visual",
+      "name": "Indicateurs Clés",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "CA par Région",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Évolution du CA",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Carte des Ventes",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Top Produits",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Modes de Paiement",
+      "status": "exact"
+    },
+    {
+      "category": "parameter",
+      "name": "[Parameters].[Objectif Marge]",
+      "status": "exact",
+      "note": "domain=range"
+    },
+    {
+      "category": "parameter",
+      "name": "[Parameters].[Top N Produits]",
+      "status": "exact",
+      "note": "domain=range"
+    },
+    {
+      "category": "parameter",
+      "name": "[Parameters].[Période]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "bookmark",
+      "name": "Présentation Mensuelle",
+      "status": "exact",
+      "note": "Converted to 2 bookmark(s)"
+    },
+    {
+      "category": "rls_role",
+      "name": "Accès Commercial",
+      "status": "exact",
+      "note": "User filter with explicit mappings → RLS role"
+    }
+  ]
+}

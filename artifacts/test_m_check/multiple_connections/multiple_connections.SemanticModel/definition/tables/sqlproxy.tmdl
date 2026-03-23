@@ -1,0 +1,44 @@
+table sqlproxy
+	lineageTag: 0cb67d23-eb45-4d62-aac9-2edc1d0cea2d
+
+	partition 'sqlproxy-0ee8a564-0f01-49f3-b9b9-c4c9218f7f6d' = m
+		mode: import
+		source =
+				let
+				    // ================================================================
+				    // Tableau Server Published Datasource: xyTestV1
+				    // Server: http://awesomeserver:80
+				    // ================================================================
+				    // This table was sourced from a Tableau Server published datasource.
+				    // Replace the sample data below with your actual database connection.
+				    //
+				    // Option A — SQL Server:
+				    //   Source = Sql.Database("your-server", "your-database"){[Schema="dbo", Item="sqlproxy"]}[Data]
+				    //
+				    // Option B — Oracle:
+				    //   Source = Oracle.Database("your-server:1521/service"){[Schema="SCHEMA", Name="SQLPROXY"]}[Data]
+				    //
+				    // Option C — PostgreSQL:
+				    //   Source = PostgreSQL.Database("your-server:5432", "your-database"){[Schema="public", Name="sqlproxy"]}[Data]
+				    //
+				    // Option D — Snowflake:
+				    //   Source = Snowflake.Databases("account.snowflakecomputing.com", "WAREHOUSE"){[Name="DB"]}[Data]{[Schema="PUBLIC", Name="SQLPROXY"]}[Data]
+				    // ================================================================
+				    Source = try
+				
+				        #table(
+				        {},
+				        {
+				            {},
+				            {}
+				        }
+				    )
+				
+				    otherwise
+				
+				        #table({}, {})
+				in
+				    Source
+
+	annotation PBI_ResultType = Table
+

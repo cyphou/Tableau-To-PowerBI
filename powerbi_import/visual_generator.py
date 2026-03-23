@@ -293,7 +293,97 @@ CUSTOM_VISUAL_GUIDS = {
         "class": "parallelCoordinates",
         "roles": {"Category": "dimension", "Value": "measure"},
     },
+    # ── Tableau Extension → PBI Custom Visual mapping ──
+    "writeback": {
+        "guid": "DataWriteback1.0.0",
+        "name": "Data Writeback",
+        "class": "writeback",
+        "roles": {"Value": "measure", "Category": "dimension"},
+    },
+    "showme_more": {
+        "guid": "ShowMeMore1.0.0",
+        "name": "Show Me More",
+        "class": "showMeMore",
+        "roles": {"Category": "dimension", "Value": "measure"},
+    },
+    "calendar": {
+        "guid": "Calendar1.0.0",
+        "name": "Calendar Visual",
+        "class": "calendar",
+        "roles": {"Date": "dimension", "Value": "measure"},
+    },
+    "orgchart": {
+        "guid": "OrgChart1.0.0",
+        "name": "Organization Chart",
+        "class": "orgChart",
+        "roles": {"Parent": "dimension", "Child": "dimension", "Value": "measure"},
+    },
+    "timeline": {
+        "guid": "Timeline1.0.0",
+        "name": "Timeline Visual",
+        "class": "timeline",
+        "roles": {"Date": "dimension", "Event": "dimension"},
+    },
+    "radarChart": {
+        "guid": "RadarChart1.0.0",
+        "name": "Radar Chart",
+        "class": "radarChart",
+        "roles": {"Category": "dimension", "Value": "measure"},
+    },
+    "dendogram": {
+        "guid": "Dendrogram1.0.0",
+        "name": "Dendrogram",
+        "class": "dendrogram",
+        "roles": {"Category": "dimension", "Value": "measure"},
+    },
+    "sunburst": {
+        "guid": "Sunburst1.0.0",
+        "name": "Sunburst Chart",
+        "class": "sunburstChart",
+        "roles": {"Category": "dimension", "Value": "measure"},
+    },
 }
+
+# ── Tableau Extension ID → PBI custom visual GUID mapping ──
+TABLEAU_EXTENSION_MAP = {
+    # Known Tableau Dashboard Extensions → closest PBI custom visuals
+    'com.tableau.extensions.writeback': 'writeback',
+    'com.tableau.extensions.showmemore': 'showme_more',
+    'com.tableau.extensions.sandance': 'scatterChart',
+    'com.tableau.extensions.imagerole': 'Image',
+    'org.caleydo.lineup': 'tableEx',
+    'com.mapbox.extensions.mapboxgl': 'azureMap',
+    'com.datablick.calendar': 'calendar',
+    'com.datablick.orgchart': 'orgchart',
+    'com.datablick.timeline': 'timeline',
+    'com.infotopics.wordcloud': 'wordcloud',
+    'com.salesforce.einstein': 'card',
+}
+
+
+def resolve_extension_visual(extension_id):
+    """Map a Tableau Dashboard Extension ID to a PBI visual type.
+
+    Args:
+        extension_id: Tableau extension identifier (e.g. 'com.tableau.extensions.writeback')
+
+    Returns:
+        tuple: (pbi_visual_type, guid_info_or_None, migration_note)
+    """
+    if not extension_id:
+        return 'actionButton', None, 'Tableau extension object — no PBI equivalent. Replaced with placeholder.'
+
+    ext_key = extension_id.lower().strip()
+    mapped = TABLEAU_EXTENSION_MAP.get(ext_key)
+
+    if mapped and mapped in CUSTOM_VISUAL_GUIDS:
+        guid_info = CUSTOM_VISUAL_GUIDS[mapped]
+        return guid_info['class'], guid_info, f'Tableau extension "{extension_id}" mapped to PBI custom visual "{guid_info["name"]}".'
+
+    if mapped:
+        return mapped, None, f'Tableau extension "{extension_id}" mapped to PBI visual "{mapped}".'
+
+    return 'actionButton', None, f'Tableau extension "{extension_id}" has no PBI equivalent. Replaced with placeholder button.'
 
 
 def resolve_custom_visual_type(tableau_mark, use_custom_visuals=True):

@@ -1,222 +1,250 @@
 table Orders
-	lineageTag: 0c9205a7-b8a4-40c1-a1b5-3a7caca4b49d
+	lineageTag: 24220684-21f3-44dc-8bb7-e1bc728b6f69
+	description: Contains 25 columns: Row ID, Order ID, Order Date, Order Priority, Order Quantity, Sales, Discount, Ship Mode, ... (25 columns total).
 
 	column 'Row ID'
 		dataType: int64
-		lineageTag: 66f955ad-857c-459c-a6de-85d04a58d22b
+		lineageTag: 1cdedf28-38a4-44dc-9af7-c517bf7affbf
 		summarizeBy: sum
 		sourceColumn: 'Row ID'
+		description: Int64 column.
+		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Order ID'
 		dataType: int64
-		lineageTag: 82e97846-e68f-4d1f-8275-9dc40417327c
+		lineageTag: 534ee6d5-818f-45cd-882f-a7817bb3a282
 		summarizeBy: sum
 		sourceColumn: 'Order ID'
+		description: Int64 column.
+		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Order Date'
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 468d7842-86bd-43c3-af92-ac54d95d9853
+		lineageTag: 64bbb229-5135-4965-8c3a-005bacb203ad
 		summarizeBy: none
 		sourceColumn: 'Order Date'
 		dataCategory: DateTime
+		description: Datetime column. categorized as DateTime.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Order Priority'
 		dataType: string
-		lineageTag: c619472e-9c9e-4696-bd4a-461a935270c6
+		lineageTag: 29898cad-0dfb-4bbd-9816-3c6804245274
 		summarizeBy: none
 		sourceColumn: 'Order Priority'
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Order Quantity'
 		dataType: int64
-		lineageTag: 2d4409b4-dda1-4736-8788-0383004866e5
+		lineageTag: a4938612-ef03-4493-b580-4a65f7b1aa39
 		summarizeBy: sum
 		sourceColumn: 'Order Quantity'
+		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Sales
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 2b815ce0-20a1-4e0f-a135-2a11a83a4a9c
+		lineageTag: 13500ad6-9bd7-4523-a283-2084c0a959cb
 		summarizeBy: sum
 		sourceColumn: Sales
+		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Discount
 		dataType: double
 		formatString: #,0.00
-		lineageTag: de4fbcf5-b969-4d48-8fc4-0997bba753d8
+		lineageTag: 912c1bbb-f648-4adc-9134-cde488d53df8
 		summarizeBy: sum
 		sourceColumn: Discount
+		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Ship Mode'
 		dataType: string
-		lineageTag: ff906535-618f-4adc-9461-a481a51b1beb
+		lineageTag: d16081f3-3d5d-43f6-94eb-1bb02dc2c762
 		summarizeBy: none
 		sourceColumn: 'Ship Mode'
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Profit
 		dataType: double
 		formatString: #,0.00
-		lineageTag: d9328861-5b34-4bc3-bafa-62f743bcfd5b
+		lineageTag: 4f4c7273-01ed-469c-9194-a2cb3c44fd17
 		summarizeBy: sum
 		sourceColumn: Profit
+		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Unit Price'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 26d926fa-8030-4517-93be-fbecbfef8a8d
+		lineageTag: 7b7ff8e2-92f1-4a00-9c3e-454b1f38aff1
 		summarizeBy: sum
 		sourceColumn: 'Unit Price'
+		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Shipping Cost'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 82d11da9-3ffa-4806-a8d2-027da492f4fe
+		lineageTag: da3b16fb-0750-4b24-9bd7-7b795ec5a186
 		summarizeBy: sum
 		sourceColumn: 'Shipping Cost'
+		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Customer Name'
 		dataType: string
-		lineageTag: 306057c9-ecb0-4724-b417-788e12f137a7
+		lineageTag: 1130811e-4090-49db-8ac6-502fff83b25a
 		summarizeBy: none
 		sourceColumn: 'Customer Name'
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column City
 		dataType: string
-		lineageTag: 91796a5c-1c4d-4d9c-bf61-e66a3c106f5b
+		lineageTag: dbc1c1b8-9b83-4788-9fcd-d362ad3ff477
 		summarizeBy: none
 		sourceColumn: City
 		dataCategory: City
+		description: String column. categorized as City.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Zip Code'
 		dataType: string
-		lineageTag: 55c48edb-dbdd-4105-8969-6d0f39e75111
+		lineageTag: 6123e4b5-0eb0-4158-a716-b457c41f459b
 		summarizeBy: none
 		sourceColumn: 'Zip Code'
 		dataCategory: PostalCode
+		description: String column. categorized as PostalCode.
 
 		annotation SummarizationSetBy = Automatic
 
 	column State
 		dataType: string
-		lineageTag: 524348b4-4566-4d8b-b8ea-977d3f358db1
+		lineageTag: 50ca5e60-7bd7-453a-a4d8-25f2e36f57cd
 		summarizeBy: none
 		sourceColumn: State
 		dataCategory: StateOrProvince
+		description: String column. categorized as StateOrProvince.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Region
 		dataType: string
-		lineageTag: ca4522bc-b34f-4ff3-9a82-a87c76d1b002
+		lineageTag: 58872a6b-62bf-486d-a4d5-79de6f39244b
 		summarizeBy: none
 		sourceColumn: Region
 		dataCategory: StateOrProvince
+		description: String column. categorized as StateOrProvince.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Customer Segment'
 		dataType: string
-		lineageTag: a091b3a9-c805-40d0-8eb1-9573d255e2ed
+		lineageTag: 63ac1628-89e0-45a8-8f14-6728c3fd3f64
 		summarizeBy: none
 		sourceColumn: 'Customer Segment'
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Product Category'
 		dataType: string
-		lineageTag: d0c2a9a7-0e70-4d0e-9813-14487d957158
+		lineageTag: 522a6eb1-bae6-4058-ae98-64cdcffdbe9a
 		summarizeBy: none
 		sourceColumn: 'Product Category'
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Product Sub-Category'
 		dataType: string
-		lineageTag: 530ccabf-c4f4-4cf8-802c-e0aabc9a9e97
+		lineageTag: 813d046a-4730-4c70-b792-ba16bbbf3ff6
 		summarizeBy: none
 		sourceColumn: 'Product Sub-Category'
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Product Name'
 		dataType: string
-		lineageTag: 0eb9acc6-6fda-4728-9087-9c3d42d61859
+		lineageTag: ec82c93a-0ae2-4fec-93d3-741423be1929
 		summarizeBy: none
 		sourceColumn: 'Product Name'
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Product Container'
 		dataType: string
-		lineageTag: f63e005f-4d99-46ab-97cf-79d16246c28d
+		lineageTag: 9dfcc8ca-d2e9-4a7b-9041-dc1ae23f3f6b
 		summarizeBy: none
 		sourceColumn: 'Product Container'
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Product Base Margin'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 6997f42c-acc3-4cae-a754-70ab0ab225be
+		lineageTag: 66f534a7-bb57-4a9c-ab51-5ff18db85433
 		summarizeBy: sum
 		sourceColumn: 'Product Base Margin'
+		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Ship Date'
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 92ff909a-1431-4135-b5e3-af4a7b7d9e86
+		lineageTag: c334d087-953a-4d57-ba7d-f89589ef048f
 		summarizeBy: none
 		sourceColumn: 'Ship Date'
 		dataCategory: DateTime
+		description: Datetime column. categorized as DateTime.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Grouping Based on Unit Price'
 		dataType: string
-		lineageTag: 356a9f02-5392-44da-b462-6be25e2f1889
+		lineageTag: 8571ed6a-b476-412d-88a6-c2b32d1835fe
 		summarizeBy: none
 		sourceColumn: 'Grouping Based on Unit Price'
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Action (Region)'
 		dataType: string
-		lineageTag: 481f3a92-2d7d-429e-a20b-6e8e0a144296
+		lineageTag: af7a103b-2ffc-4c2f-9d0f-bde46b701214
 		summarizeBy: none
 		sourceColumn: 'Action (Region)'
+		description: String column.
 		displayFolder: Groups
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Orders-8e62c800-5ab4-4af8-8dc1-89e0623d3b33' = m
+	partition 'Orders-573f4307-fabb-4c22-923d-3f32fb6f9cb8' = m
 		mode: import
 		source =
 				let
@@ -267,4 +295,5 @@ table Orders
 				    Result
 
 	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 25 columns: Row ID, Order ID, Order Date, Order Priority, Order Quantity, Sales, Discount, Ship Mode, ... (25 columns total).
 

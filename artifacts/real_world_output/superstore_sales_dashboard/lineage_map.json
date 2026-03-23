@@ -1,0 +1,38 @@
+{
+  "tables": [
+    {
+      "tableau_datasource": "federated.1oojzyi1k8irfh101qtoq07jz0mm",
+      "tableau_table": "Orders",
+      "pbi_table": "Orders"
+    },
+    {
+      "tableau_datasource": "federated.1oojzyi1k8irfh101qtoq07jz0mm",
+      "tableau_table": "Extract",
+      "pbi_table": "Extract"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Calendar",
+      "pbi_table": "Calendar"
+    }
+  ],
+  "calculations": [],
+  "relationships": [
+    {
+      "from": "Orders[Order Date]",
+      "to": "Calendar[Date]",
+      "cardinality": "oneDirection"
+    },
+    {
+      "from": "Extract[Order Date]",
+      "to": "Calendar[Date]",
+      "cardinality": "oneDirection"
+    },
+    {
+      "from": "Orders[Row ID]",
+      "to": "Extract[Row ID]",
+      "cardinality": "bothDirections"
+    }
+  ],
+  "worksheets": []
+}

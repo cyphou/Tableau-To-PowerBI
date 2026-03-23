@@ -1,56 +1,64 @@
 table Produits
-	lineageTag: a76094a4-c2be-4535-acce-e1c1280684b9
+	lineageTag: 97cd91ad-0b38-4728-a330-6f9db2c696e0
+	description: Contains 6 columns: produit_id, nom_produit, categorie, sous_categorie, marque, cout_achat.
 
 	column produit_id
 		dataType: int64
-		lineageTag: 324d45aa-5d8f-4c22-8f94-ad1ecb062160
+		lineageTag: c29a0684-3e6e-4b3a-8956-90eaf4e3b317
 		summarizeBy: sum
 		sourceColumn: produit_id
+		description: Int64 column.
+		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column nom_produit
 		dataType: string
-		lineageTag: fdfc3baa-b18a-424c-8041-0bf1e7e31fb0
+		lineageTag: 86787bae-b241-4932-8d6d-a9172bf78de1
 		summarizeBy: none
 		sourceColumn: nom_produit
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column categorie
 		dataType: string
-		lineageTag: faac0763-affa-4639-921d-f2a7f61c892e
+		lineageTag: d9082248-a79a-431f-bbb1-57741343ce47
 		summarizeBy: none
 		sourceColumn: categorie
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column sous_categorie
 		dataType: string
-		lineageTag: 96841969-09b0-453b-93fd-81755f720310
+		lineageTag: 5f6b8551-708c-4677-9e52-5c427482063c
 		summarizeBy: none
 		sourceColumn: sous_categorie
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column marque
 		dataType: string
-		lineageTag: 52b7445f-d725-4efc-a40a-3f0ea1e3fbbb
+		lineageTag: 3afd559f-d546-4a38-8b7c-98ca232d13a6
 		summarizeBy: none
 		sourceColumn: marque
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column cout_achat
 		dataType: double
 		formatString: #,0.00
-		lineageTag: a45ca606-1aff-4217-b620-959475d035b2
+		lineageTag: 1a7209a9-c36a-45af-8071-cbf6225b900b
 		summarizeBy: sum
 		sourceColumn: cout_achat
+		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Produits-41e09dd9-4794-42e1-9508-e88bb76a02a7' = m
+	partition 'Produits-d7bc43c1-3e44-41f1-a51c-92cdc890d9e2' = m
 		mode: import
 		source =
 				let
@@ -74,4 +82,5 @@ table Produits
 				    Result
 
 	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 6 columns: produit_id, nom_produit, categorie, sous_categorie, marque, cout_achat.
 

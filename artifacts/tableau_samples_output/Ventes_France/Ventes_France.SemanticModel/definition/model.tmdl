@@ -15,10 +15,10 @@ ref table Calendar
 ref table 'Objectif Marge'
 ref table 'Top N Produits'
 
-ref relationship c29411dd-3c7f-45f9-9454-4b5c593d4b38
-ref relationship fa42ddf0-9611-4c14-bc13-0b5f10639d7d
-ref relationship 9d492a24-129d-42a0-9ed5-0a953b3df372
-ref relationship 87b40033-08e1-46de-ab88-51191dfea099
+ref relationship 541b6646-9c1d-4147-a3ce-6346976cccce
+ref relationship a8b611ef-f9fd-46a5-8c44-b8de004d18d0
+ref relationship f7a5537b-6a42-4c91-83bf-bab014d0ada5
+ref relationship 3d33366b-3ccc-49d4-a01d-34c29f3b6fd2
 
 ref expression DataFolder
 

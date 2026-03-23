@@ -1,0 +1,23 @@
+{
+  "tables": [
+    {
+      "tableau_datasource": "World Indicators new",
+      "tableau_table": "Extract",
+      "pbi_table": "Extract"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Calendar",
+      "pbi_table": "Calendar"
+    }
+  ],
+  "calculations": [],
+  "relationships": [
+    {
+      "from": "Extract[Date]",
+      "to": "Calendar[Date]",
+      "cardinality": "oneDirection"
+    }
+  ],
+  "worksheets": []
+}

@@ -1,58 +1,66 @@
 table users
-	lineageTag: 8da0e86f-bc9d-418b-b1c4-c168b060a293
+	lineageTag: b6bfe988-4357-4de1-b153-d1c75c3338bd
+	description: Contains 6 columns: user_id, user_name, email, signup_date, plan, region.
 
 	column user_id
 		dataType: string
-		lineageTag: 65c5c1fb-2e5e-462e-900e-a102240ece44
+		lineageTag: 851565cf-1994-487e-bb36-91601cecf104
 		summarizeBy: none
 		sourceColumn: user_id
+		description: String column.
+		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column user_name
 		dataType: string
-		lineageTag: de30d41e-6314-4b18-bba7-cb26c1cedf33
+		lineageTag: 909df982-e1c3-49ed-ae5e-2470a325d007
 		summarizeBy: none
 		sourceColumn: user_name
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column email
 		dataType: string
-		lineageTag: 00fe036d-8f1c-4ba2-a871-af0030a5a232
+		lineageTag: a11ba104-c50e-4cf2-aad4-f2b859dcdb0c
 		summarizeBy: none
 		sourceColumn: email
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column signup_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: d883266b-c2e9-4168-9d87-29e01756b1e2
+		lineageTag: da0fd8f3-6255-4c8c-be9a-b85aa17950f3
 		summarizeBy: none
 		sourceColumn: signup_date
 		dataCategory: DateTime
+		description: Datetime column. categorized as DateTime.
 
 		annotation SummarizationSetBy = Automatic
 
 	column plan
 		dataType: string
-		lineageTag: 3927ed90-eafd-4261-818b-c8126d4a5f18
+		lineageTag: 37488fac-7779-4911-bc0e-541789cd80ba
 		summarizeBy: none
 		sourceColumn: plan
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column region
 		dataType: string
-		lineageTag: 35cd32a0-ece4-45c9-8f19-7270ddbe4681
+		lineageTag: 69ad0689-7bc0-41ca-b336-0924033aeef5
 		summarizeBy: none
 		sourceColumn: region
 		dataCategory: StateOrProvince
+		description: String column. categorized as StateOrProvince.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'users-c4b431c4-edca-4586-97e0-7112724d04d7' = m
+	partition 'users-10955af5-e4bb-4c32-823c-388ae972e0c9' = m
 		mode: import
 		source =
 				let
@@ -76,4 +84,5 @@ table users
 				    Result
 
 	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 6 columns: user_id, user_name, email, signup_date, plan, region.
 

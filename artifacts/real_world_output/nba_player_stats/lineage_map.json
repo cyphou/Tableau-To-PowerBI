@@ -1,0 +1,22 @@
+{
+  "tables": [
+    {
+      "tableau_datasource": "federated.10vks1203pgcxf1bkw5yk1bwzy2f",
+      "tableau_table": "Sheet1",
+      "pbi_table": "Sheet1"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Rebounds",
+      "pbi_table": "Rebounds"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Rebounds CalcGroup",
+      "pbi_table": "Rebounds CalcGroup"
+    }
+  ],
+  "calculations": [],
+  "relationships": [],
+  "worksheets": []
+}

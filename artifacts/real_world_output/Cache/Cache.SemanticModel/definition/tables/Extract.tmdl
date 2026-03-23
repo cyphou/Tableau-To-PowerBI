@@ -1,54 +1,61 @@
 table Extract
-	lineageTag: a48d8e45-ad50-40c8-9451-73db4652438f
+	lineageTag: d2a096dc-a426-4472-9ff1-336bbc2f0dc4
+	description: Contains 5 columns and 1 measures: Category, Number of Records, Order Date, Sales Target, Segment.
 
 	measure 'Number of Records' = COUNTROWS('Extract')
 		displayFolder: Measures
-		lineageTag: 56d9470b-5157-446c-af3d-37000fad7283
+		description: DAX: COUNTROWS('Extract')
+		lineageTag: 821a3a03-ca7d-4b2f-a94d-13428a41209f
 
 	column Category
 		dataType: string
-		lineageTag: baff9924-fa55-45a4-bc15-aa6429dcee1e
+		lineageTag: 12612651-beb9-418a-93bd-48e22c8d4792
 		summarizeBy: none
 		sourceColumn: Category
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Number of Records'
 		dataType: int64
-		lineageTag: ff9c50ee-2aa0-4e6e-9cae-48395401f6d2
+		lineageTag: f867a326-a611-489f-af5d-a192fb4c2b60
 		summarizeBy: sum
 		sourceColumn: 'Number of Records'
+		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Order Date'
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 2385decc-4ba0-49ea-b127-9947331a9490
+		lineageTag: ce7f371b-6165-4ad2-9618-38da27866303
 		summarizeBy: none
 		sourceColumn: 'Order Date'
 		dataCategory: DateTime
+		description: Datetime column. categorized as DateTime.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Sales Target'
 		dataType: int64
 		formatString: c"$"#,#0;("$"#,#0)
-		lineageTag: 278b8edc-8a20-4633-ba3c-b8518e7e5974
+		lineageTag: 23cb939f-6fc0-4462-87c4-9f815a635b75
 		summarizeBy: sum
 		sourceColumn: 'Sales Target'
+		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Segment
 		dataType: string
-		lineageTag: 0fe59cf1-665b-432b-b3dc-844f40510905
+		lineageTag: c5aa0335-b73c-43ec-924b-785ade96aea7
 		summarizeBy: none
 		sourceColumn: Segment
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Extract-5daf3c14-b8d3-4ddf-a0f3-8cf83adbc143' = m
+	partition 'Extract-b8f81445-525c-4190-9925-86f0b68ec305' = m
 		mode: import
 		source =
 				let
@@ -68,4 +75,5 @@ table Extract
 				    Source
 
 	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 5 columns and 1 measures: Category, Number of Records, Order Date, Sales Target, Segment.
 

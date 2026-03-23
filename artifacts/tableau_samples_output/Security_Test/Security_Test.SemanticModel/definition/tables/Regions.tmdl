@@ -1,25 +1,28 @@
 table Regions
-	lineageTag: 60a187b6-144b-47ef-add0-3e19cbc9cbe9
+	lineageTag: 87796e49-f0a8-41bb-adea-9c8ea3bcdfb0
+	description: Contains 2 columns: RegionName, RegionManager.
 
 	column RegionName
 		dataType: string
-		lineageTag: 7055f5f4-8441-4e06-993e-8f56a68b2aa5
+		lineageTag: e15d0fa8-cc61-4a02-b3f0-c5ef85ede1fe
 		summarizeBy: none
 		sourceColumn: RegionName
 		dataCategory: StateOrProvince
+		description: String column. categorized as StateOrProvince.
 
 		annotation SummarizationSetBy = Automatic
 
 	column RegionManager
 		dataType: string
-		lineageTag: 90fb5207-fe18-4225-b973-65f74e996320
+		lineageTag: 33638930-8bba-47ae-b82c-8f0dbd3a970b
 		summarizeBy: none
 		sourceColumn: RegionManager
 		dataCategory: StateOrProvince
+		description: String column. categorized as StateOrProvince.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Regions-137edada-426b-434c-a1a4-86c8f8a28ee4' = m
+	partition 'Regions-493e6b81-5c10-4d8f-945d-b2c1d33d05c0' = m
 		mode: import
 		source =
 				let
@@ -43,4 +46,5 @@ table Regions
 				    Result
 
 	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 2 columns: RegionName, RegionManager.
 

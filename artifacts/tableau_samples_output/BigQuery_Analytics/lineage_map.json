@@ -1,0 +1,38 @@
+{
+  "tables": [
+    {
+      "tableau_datasource": "federated.1",
+      "tableau_table": "sessions",
+      "pbi_table": "sessions"
+    },
+    {
+      "tableau_datasource": "federated.1",
+      "tableau_table": "users",
+      "pbi_table": "users"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Calendar",
+      "pbi_table": "Calendar"
+    }
+  ],
+  "calculations": [],
+  "relationships": [
+    {
+      "from": "sessions[user_id]",
+      "to": "users[user_id]",
+      "cardinality": "bothDirections"
+    },
+    {
+      "from": "sessions[session_date]",
+      "to": "Calendar[Date]",
+      "cardinality": "oneDirection"
+    },
+    {
+      "from": "users[signup_date]",
+      "to": "Calendar[Date]",
+      "cardinality": "bothDirections"
+    }
+  ],
+  "worksheets": []
+}

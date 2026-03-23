@@ -1,0 +1,23 @@
+{
+  "tables": [
+    {
+      "tableau_datasource": "federated.1hzlzhe1y3esow1d9tg131a7pbp2",
+      "tableau_table": "customer_feedback_data.json",
+      "pbi_table": "customer_feedback_data.json"
+    },
+    {
+      "tableau_datasource": "federated.1hzlzhe1y3esow1d9tg131a7pbp2",
+      "tableau_table": "Extract",
+      "pbi_table": "Extract"
+    }
+  ],
+  "calculations": [],
+  "relationships": [
+    {
+      "from": "customer_feedback_data.json[customer_id]",
+      "to": "Extract[customer_id]",
+      "cardinality": "bothDirections"
+    }
+  ],
+  "worksheets": []
+}

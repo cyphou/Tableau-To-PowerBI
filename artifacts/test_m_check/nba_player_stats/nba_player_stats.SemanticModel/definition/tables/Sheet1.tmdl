@@ -1,0 +1,235 @@
+table Sheet1
+	lineageTag: ca86bdfa-6cdc-48e4-b629-2a3c9a34e451
+
+	measure 'p. Rebounds' = SWITCH([Rebounds], 1, AVERAGE('Sheet1'[DEF]), 2, AVERAGE('Sheet1'[OFF]), 3, AVERAGE('Sheet1'[REB]))
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 3c807e1b-2400-4fbb-a516-b126633bb20c
+
+	measure 'min(1)' = MINX('Sheet1', 1)
+		displayFolder: Measures
+		lineageTag: 456f4d01-70c1-4324-90a0-19b8a41e2245
+
+	column Player
+		dataType: string
+		lineageTag: 193c3716-578f-4eed-8393-4e64a3d939a9
+		summarizeBy: none
+		sourceColumn: Player
+
+		annotation SummarizationSetBy = Automatic
+
+	column YR
+		dataType: int64
+		lineageTag: 8d02684d-20a8-4548-a731-073c02396278
+		summarizeBy: sum
+		sourceColumn: YR
+
+		annotation SummarizationSetBy = Automatic
+
+	column TM
+		dataType: string
+		lineageTag: 114b8481-3b74-46ac-8d98-789c41ffc692
+		summarizeBy: none
+		sourceColumn: TM
+
+		annotation SummarizationSetBy = Automatic
+
+	column GP
+		dataType: int64
+		lineageTag: 55f6d7a9-8960-48e4-b463-509cb95a5dd4
+		summarizeBy: sum
+		sourceColumn: GP
+
+		annotation SummarizationSetBy = Automatic
+
+	column MIN
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 15fbd0e9-76e6-4043-91d6-e1e92067303b
+		summarizeBy: sum
+		sourceColumn: MIN
+
+		annotation SummarizationSetBy = Automatic
+
+	column FGM
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 1c58c30e-1478-4631-8d69-dc74736e57e9
+		summarizeBy: sum
+		sourceColumn: FGM
+
+		annotation SummarizationSetBy = Automatic
+
+	column FGA
+		dataType: double
+		formatString: #,0.00
+		lineageTag: c02d0189-14a1-4c24-99b7-83641a27e83c
+		summarizeBy: sum
+		sourceColumn: FGA
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'FG%'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 45d77c4d-2c2a-4b2a-96e6-4d4acae599f7
+		summarizeBy: sum
+		sourceColumn: 'FG%'
+
+		annotation SummarizationSetBy = Automatic
+
+	column '3PT%'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 0861b961-077b-4233-a1e3-743499117235
+		summarizeBy: sum
+		sourceColumn: '3PT%'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'FT%'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 4780c1a3-4802-4ecb-a3e9-3f31bd08a531
+		summarizeBy: sum
+		sourceColumn: 'FT%'
+
+		annotation SummarizationSetBy = Automatic
+
+	column OFF
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 34c928e3-0274-489a-bcc2-cbbe44559b83
+		summarizeBy: sum
+		sourceColumn: OFF
+
+		annotation SummarizationSetBy = Automatic
+
+	column DEF
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 215a14b0-9038-4990-90b6-77beda46da85
+		summarizeBy: sum
+		sourceColumn: DEF
+
+		annotation SummarizationSetBy = Automatic
+
+	column REB
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 364c5d20-409c-4e83-b385-25f5b354b2df
+		summarizeBy: sum
+		sourceColumn: REB
+
+		annotation SummarizationSetBy = Automatic
+
+	column ASST
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 6509e457-2231-4c48-9655-11e7440ca05f
+		summarizeBy: sum
+		sourceColumn: ASST
+
+		annotation SummarizationSetBy = Automatic
+
+	column STL
+		dataType: double
+		formatString: #,0.00
+		lineageTag: daf98c4e-c4f0-4047-8e54-de4863585eff
+		summarizeBy: sum
+		sourceColumn: STL
+
+		annotation SummarizationSetBy = Automatic
+
+	column BLK
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 24a703e1-5bbc-422a-9359-8717eb5de0b1
+		summarizeBy: sum
+		sourceColumn: BLK
+
+		annotation SummarizationSetBy = Automatic
+
+	column TO
+		dataType: double
+		formatString: #,0.00
+		lineageTag: cf43645a-df02-4f54-9ac4-f467cffd4665
+		summarizeBy: sum
+		sourceColumn: TO
+
+		annotation SummarizationSetBy = Automatic
+
+	column PF
+		dataType: double
+		formatString: #,0.00
+		lineageTag: a46ddd7b-91ed-46f5-b5cb-f49715cdddf6
+		summarizeBy: sum
+		sourceColumn: PF
+
+		annotation SummarizationSetBy = Automatic
+
+	column PTS
+		dataType: double
+		formatString: #,0.00
+		lineageTag: f9c0d26a-6612-47cb-aa77-e2acc9a50caa
+		summarizeBy: sum
+		sourceColumn: PTS
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Action (Player)'
+		dataType: string
+		lineageTag: 2d2c5a49-6e00-4a0f-9797-9756c61c933b
+		summarizeBy: none
+		sourceColumn: 'Action (Player)'
+		displayFolder: Groups
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Sheet1-cbf23661-c554-479c-b54e-c804e97864b0' = m
+		mode: import
+		source =
+				let
+				    // Source Excel: Data/Datasets/nba_players.xlsx
+				    Source = try
+				
+				        let
+				
+				            _src = Excel.Workbook(File.Contents(DataFolder & "\Data\Datasets\nba_players.xlsx"), null, true),
+				
+				            _nav = _src{[Item="Sheet1",Kind="Sheet"]}[Data]
+				
+				        in _nav
+				
+				    otherwise
+				
+				        #table({"Player", "YR", "TM", "GP", "MIN", "FGM", "FGA", "FG%", "3PT%", "FT%", "OFF", "DEF", "REB", "ASST", "STL", "BLK", "TO", "PF", "PTS"}, {}),
+				    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+				    #"Changed Types" = Table.TransformColumnTypes(#"Promoted Headers", {
+				        {"Player", type text},
+				        {"YR", Int64.Type},
+				        {"TM", type text},
+				        {"GP", Int64.Type},
+				        {"MIN", type number},
+				        {"FGM", type number},
+				        {"FGA", type number},
+				        {"FG%", type number},
+				        {"3PT%", type number},
+				        {"FT%", type number},
+				        {"OFF", type number},
+				        {"DEF", type number},
+				        {"REB", type number},
+				        {"ASST", type number},
+				        {"STL", type number},
+				        {"BLK", type number},
+				        {"TO", type number},
+				        {"PF", type number},
+				        {"PTS", type number}
+				    }),
+				    #"Added Action (Player)" = Table.AddColumn(#"Changed Types", "Action (Player)", each Text.From([#"Player"]), type text),
+				    Result = #"Added Action (Player)"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+

@@ -1,104 +1,120 @@
 table transactions
-	lineageTag: f852830a-084c-4330-885a-999050a4231d
+	lineageTag: 028ac073-90df-496f-bb45-ff2907e6bc94
+	description: Contains 8 columns and 6 measures: transaction_id, transaction_date, account, category, amount, type, business_unit, cost_center.
 
 	measure Revenue = SUMX('transactions', IF('transactions'[type] = "Revenue", 'transactions'[amount], 0))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: ebb225a9-dafc-4feb-977d-dd0f96c1d2bd
+		description: Migrated from Tableau: SUM(IF [type] = "Revenue" THEN [amount] ELSE 0 END) | DAX: SUMX('transactions', IF('transactions'[type] = "Revenue", 'transactions'[amount], 0))
+		lineageTag: 0d1154f1-c8a6-4cb7-bd93-7c29581fe501
 
 	measure Expenses = SUMX('transactions', IF('transactions'[type] = "Expense", 'transactions'[amount], 0))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 6cbda446-647d-475a-b8af-8df9ae35caa2
+		description: Migrated from Tableau: SUM(IF [type] = "Expense" THEN [amount] ELSE 0 END) | DAX: SUMX('transactions', IF('transactions'[type] = "Expense", 'transactions'[amount], 0))
+		lineageTag: b8908366-f8ee-4107-bf14-05a786fe5959
 
 	measure 'Net Income' = SUMX('transactions', IF('transactions'[type] = "Revenue", 'transactions'[amount], -'transactions'[amount]))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 54dc1635-4b4f-479e-92e1-a3c030e7fac8
+		description: Migrated from Tableau: SUM(IF [type] = "Revenue" THEN [amount] ELSE -[amount] END) | DAX: SUMX('transactions', IF('transactions'[type] = "Revenue", 'transactions'[amount], -'transactions'[amount]))
+		lineageTag: 4abb6d3f-8a74-475d-b2ff-4022b46723ff
 
 	measure 'Profit Margin %' = ([Revenue] - [Expenses]) / [Revenue]
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: fd5cba93-fb38-4c54-bb34-794ea11edbc9
+		description: Migrated from Tableau: ([Revenue] - [Expenses]) / [Revenue] | DAX: ([Revenue] - [Expenses]) / [Revenue]
+		lineageTag: 0ba12e54-d818-4de9-8de5-d5518ebe5ba0
 
 	measure 'YTD Revenue' = CALCULATE(SUMX('transactions', IF(YEAR('transactions'[transaction_date]) = YEAR(TODAY()), 'transactions'[amount], 0)), ALL('transactions'))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: eb3ef9b2-97ed-44f8-93c0-ea3a0584b180
+		description: Migrated from Tableau: {FIXED : SUM(IF YEAR([transaction_date]) = YEAR(TODAY()) THEN [amount] ELSE 0 END)} | DAX: CALCULATE(SUMX('transactions', IF(YEAR('transactions'[transaction_date]) = YEAR(TODAY()), 'transactions'[amount], 0)), A...
+		lineageTag: 060e5790-28de-4051-9fa4-9ef014ce27f3
 
 	measure 'Budget Variance' = SUM('transactions'[amount]) - CALCULATE(SUM('transactions'[amount]), ALL('transactions'))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: da28c42e-3d4a-4a74-8ccb-b8cce8ad6db7
+		description: Migrated from Tableau: SUM([amount]) - WINDOW_AVG(SUM([amount])) | DAX: SUM('transactions'[amount]) - CALCULATE(SUM('transactions'[amount]), ALL('transactions'))
+		lineageTag: e911ac3f-9c73-4bc9-a11c-81a948b6b452
 
 	column transaction_id
 		dataType: int64
-		lineageTag: 9ca70650-a1d0-4844-85a4-02e5811c42ae
+		lineageTag: ef025b21-6246-4996-a920-16318a3c4fda
 		summarizeBy: sum
 		sourceColumn: transaction_id
+		description: Int64 column.
+		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column transaction_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 01a813bb-7b59-4e14-a221-fe7e8d341f51
+		lineageTag: 4d30e59b-6390-4237-bdbb-d3e9d40141da
 		summarizeBy: none
 		sourceColumn: transaction_date
 		dataCategory: DateTime
+		description: Datetime column. categorized as DateTime.
 
 		annotation SummarizationSetBy = Automatic
 
 	column account
 		dataType: string
-		lineageTag: df5fcb4a-97a8-467d-88d3-b9d052fc2821
+		lineageTag: e62276f7-c9f8-4102-ab7f-9676bb73569d
 		summarizeBy: none
 		sourceColumn: account
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column category
 		dataType: string
-		lineageTag: 574e125b-508f-4a8c-ac14-53f00778d431
+		lineageTag: 670d079a-c2e6-49ba-b671-3af9ce6ce4ae
 		summarizeBy: none
 		sourceColumn: category
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column amount
 		dataType: double
 		formatString: #,0.00
-		lineageTag: a552b752-f931-4c90-9d91-b47f56fa3901
+		lineageTag: 9693e7cb-d181-4573-a508-2e1aa70c71cf
 		summarizeBy: sum
 		sourceColumn: amount
+		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column type
 		dataType: string
-		lineageTag: c28adfdd-5e47-4f3c-bab8-878c50a685c3
+		lineageTag: 601d6ce6-7ecf-482c-9fae-a23c7a2e571a
 		summarizeBy: none
 		sourceColumn: type
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column business_unit
 		dataType: string
-		lineageTag: 7b35eca5-af3c-4a9a-aacd-bea18e6fc173
+		lineageTag: f4ffadf4-15ed-4458-b608-54267720a9e1
 		summarizeBy: none
 		sourceColumn: business_unit
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column cost_center
 		dataType: string
-		lineageTag: 0e8e35a0-0e1d-4dfa-933f-334544716d8c
+		lineageTag: 135c7439-df71-464c-a75f-378265c64da2
 		summarizeBy: none
 		sourceColumn: cost_center
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'transactions-c8dc5c55-583c-42b6-953f-9c8ab53bfbf6' = m
+	partition 'transactions-eb2d5f76-7e64-485e-a91d-d9bed6a15654' = m
 		mode: import
 		source =
 				let
@@ -121,4 +137,5 @@ table transactions
 				    Result
 
 	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 8 columns and 6 measures: transaction_id, transaction_date, account, category, amount, type, business_unit, cost_center.
 

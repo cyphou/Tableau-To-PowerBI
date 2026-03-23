@@ -1,20 +1,25 @@
 table 'Base Salary'
-	lineageTag: 23737aa7-671c-481b-a07b-a8c04a467e35
+	lineageTag: 4d790e91-cff6-4e54-af2c-eb619d85b466
+	description: Contains 1 columns and 1 measures: Value.
 
 	measure 'Base Salary' = SELECTEDVALUE('Base Salary'[Value], 50000)
-		lineageTag: 55b43427-b378-411b-aab3-4fab01ae2450
+		description: DAX: SELECTEDVALUE('Base Salary'[Value], 50000)
+		lineageTag: d42ed0d8-546d-48d0-9d0e-88445803d12f
 
 	column Value
 		dataType: int64
-		lineageTag: e47a6bed-ffea-4e92-9dde-54e6ed192570
+		lineageTag: e045d0cf-6219-416f-8120-f7a0799e134b
 		summarizeBy: none
 		sourceColumn: Value
+		description: Int64 column.
+		annotation displayFolder = Parameters
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Base Salary-16463bdb-c6f7-4f28-929a-3141967cd507' = calculated
+	partition 'Base Salary-fe6979ad-304f-4a79-a7b6-7633df598c1c' = calculated
 		mode: import
 		source = GENERATESERIES(0, , 1000)
 
 	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 1 columns and 1 measures: Value.
 

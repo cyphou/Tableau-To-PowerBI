@@ -1,0 +1,8 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.0.0/schema.json",
+  "name": "ReportSection65f5c221f97c444ca07d",
+  "displayName": "Customer & Product Analysis",
+  "displayOption": "FitToPage",
+  "height": 1080,
+  "width": 1920
+}

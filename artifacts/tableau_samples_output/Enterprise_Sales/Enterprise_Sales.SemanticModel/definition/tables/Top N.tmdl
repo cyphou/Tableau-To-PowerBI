@@ -1,20 +1,25 @@
 table 'Top N'
-	lineageTag: a5725e3b-b639-4482-988c-18a03abd17d0
+	lineageTag: 1cbc01f1-b75b-4e98-a488-35efcee439e9
+	description: Contains 1 columns and 1 measures: Value.
 
 	measure 'Top N' = SELECTEDVALUE('Top N'[Value], 10)
-		lineageTag: a0f0b982-362a-4224-afcf-ff6c71f626ba
+		description: DAX: SELECTEDVALUE('Top N'[Value], 10)
+		lineageTag: e58f0fa7-db60-4f28-8a3d-c31ca09eb43a
 
 	column Value
 		dataType: int64
-		lineageTag: ad31f2a3-ccdc-4708-b8ff-119c1516908d
+		lineageTag: aab8f205-3e05-485b-b11e-a84f449920a0
 		summarizeBy: none
 		sourceColumn: Value
+		description: Int64 column.
+		annotation displayFolder = Parameters
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Top N-5aed4d80-6f99-4959-b77f-49ea744bde6f' = calculated
+	partition 'Top N-2ebfb9b5-4fcb-4071-a011-459610d87d26' = calculated
 		mode: import
 		source = GENERATESERIES(1, 50, 1)
 
 	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 1 columns and 1 measures: Value.
 

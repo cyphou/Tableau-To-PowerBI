@@ -1,7 +1,8 @@
 table sqlproxy
-	lineageTag: e782fa94-b61d-4cdb-a588-30e0cc245b37
+	lineageTag: 9d7db8e1-99d2-46f7-8471-244eb5934ebf
+	description: Contains 0 columns.
 
-	partition 'sqlproxy-34416ec3-bb9d-484a-b5cd-1d01935de5a6' = m
+	partition 'sqlproxy-d2f1e43c-d7d7-4f18-9bd4-3b16eb19d05e' = m
 		mode: import
 		source =
 				let
@@ -41,4 +42,5 @@ table sqlproxy
 				    Source
 
 	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 0 columns.
 

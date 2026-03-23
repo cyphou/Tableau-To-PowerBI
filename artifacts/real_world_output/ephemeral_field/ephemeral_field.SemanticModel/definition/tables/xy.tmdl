@@ -1,39 +1,45 @@
 table xy
-	lineageTag: eb670e25-311d-4557-9e66-ba1d313b454a
+	lineageTag: a7645bcb-0135-480b-bf66-2230afd91942
+	description: Contains 3 columns and 2 measures: a, x, y.
 
 	measure '[Number of Records]' = 1
 		displayFolder: Measures
-		lineageTag: 875950a9-b8e1-422f-a37e-2d1654926da2
+		description: Migrated from Tableau: 1 | DAX: 1
+		lineageTag: 0525a41b-1580-4ad9-b085-6ed2c10ad23b
 
 	measure 'SUM(X) + SUM(Y)' = SUM('xy'[x]) + SUM('xy'[y])
 		displayFolder: Measures
-		lineageTag: c6c22cb0-392a-4735-bc9a-75ddfa07bc2a
+		description: Migrated from Tableau: SUM([x]) + SUM([y]) | DAX: SUM('xy'[x]) + SUM('xy'[y])
+		lineageTag: c55897d4-3239-4bd3-b2aa-fce88928a8a4
 
 	column a
 		dataType: string
-		lineageTag: 34c5bd6e-f8d3-448f-a9bc-e086373ce48d
+		lineageTag: 0bc58e3f-e08f-4f61-b217-c3e262eeb323
 		summarizeBy: none
 		sourceColumn: a
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column x
 		dataType: int64
-		lineageTag: 6d7296aa-5ee5-40cf-b66f-8d6ffffb1520
+		lineageTag: 52fc07ad-e763-4e3b-84dc-04aeeb5d36b5
 		summarizeBy: sum
 		sourceColumn: x
+		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column y
 		dataType: int64
-		lineageTag: 8306d8cc-9227-4c93-8695-63e84be9ee79
+		lineageTag: b6d51262-74e5-49fa-abcd-509358aff06f
 		summarizeBy: sum
 		sourceColumn: y
+		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'xy-87f3a84e-11ac-406c-a693-eeba33dcc3d8' = m
+	partition 'xy-4b7db2a8-8bf6-42db-b615-f60594d73130' = m
 		mode: import
 		source =
 				let
@@ -57,4 +63,5 @@ table xy
 				    Result
 
 	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 3 columns and 2 measures: a, x, y.
 

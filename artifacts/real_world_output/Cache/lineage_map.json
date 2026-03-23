@@ -1,0 +1,58 @@
+{
+  "tables": [
+    {
+      "tableau_datasource": "dataengine.42019.622799629629",
+      "tableau_table": "Extract",
+      "pbi_table": "Extract"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Calendar",
+      "pbi_table": "Calendar"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Base Salary",
+      "pbi_table": "Base Salary"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Commission Rate",
+      "pbi_table": "Commission Rate"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "New Quota",
+      "pbi_table": "New Quota"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Sort by",
+      "pbi_table": "Sort by"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "New Business Growth",
+      "pbi_table": "New Business Growth"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Churn Rate",
+      "pbi_table": "Churn Rate"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "State",
+      "pbi_table": "State"
+    }
+  ],
+  "calculations": [],
+  "relationships": [
+    {
+      "from": "Extract[Order Date]",
+      "to": "Calendar[Date]",
+      "cardinality": "bothDirections"
+    }
+  ],
+  "worksheets": []
+}

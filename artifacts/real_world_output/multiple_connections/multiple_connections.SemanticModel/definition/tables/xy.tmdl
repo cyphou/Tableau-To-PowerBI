@@ -1,7 +1,8 @@
 table xy
-	lineageTag: 50abfd7d-a71a-4986-a14c-aa2cd3aa9151
+	lineageTag: 35782aca-d957-4dd5-962a-14c2e728d0dd
+	description: Contains 0 columns.
 
-	partition 'xy-777b59d7-e491-4293-96e7-b9084de5bc80' = m
+	partition 'xy-d9b881c5-a055-4f94-bb0d-a1f581766aa7' = m
 		mode: import
 		source =
 				let
@@ -24,4 +25,5 @@ table xy
 				    Result
 
 	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 0 columns.
 

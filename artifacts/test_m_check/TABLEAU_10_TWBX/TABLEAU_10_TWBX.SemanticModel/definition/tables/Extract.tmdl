@@ -1,0 +1,64 @@
+table Extract
+	lineageTag: c5d6268c-8ea1-4558-8224-c911b173c914
+
+	measure '[Number of Records]' = 1
+		displayFolder: Measures
+		lineageTag: 805d32ce-be46-4993-8aa2-d01b4b229a1e
+
+	column 'Number of Records'
+		dataType: int64
+		lineageTag: 8ad89c98-46c5-4430-ab50-e51ae72e5787
+		summarizeBy: sum
+		sourceColumn: 'Number of Records'
+
+		annotation SummarizationSetBy = Automatic
+
+	column a
+		dataType: string
+		lineageTag: d78ff530-a1b1-4825-ab84-fcca58b05160
+		summarizeBy: none
+		sourceColumn: a
+
+		annotation SummarizationSetBy = Automatic
+
+	column x
+		dataType: int64
+		lineageTag: 18ff0f09-b2d9-43b7-8395-0812d4522ef5
+		summarizeBy: sum
+		sourceColumn: x
+
+		annotation SummarizationSetBy = Automatic
+
+	column y
+		dataType: int64
+		lineageTag: 34da4c14-a3a3-4f15-9a36-e9ac3ab6685f
+		summarizeBy: sum
+		sourceColumn: y
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Extract-82c921af-098b-44da-bc0f-e435f7eb6b0a' = m
+		mode: import
+		source =
+				let
+				    // Source SQL Server
+				    Source = try
+				
+				        let
+				
+				            _src = Sql.Database("mssql2012.test.tsi.lan", "TestV1"),
+				
+				            _nav = _src{[Schema="dbo", Item="Extract"]}[Data]
+				
+				        in _nav
+				
+				    otherwise
+				
+				        #table({"Number of Records", "a", "x", "y"}, {}),
+				    #"Renamed Columns" = Table.RenameColumns(Source, {{"a", "A"}, {"x", "X"}, {"y", "Y"}}),
+				    Result = #"Renamed Columns"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+

@@ -1,25 +1,28 @@
 table People
-	lineageTag: 414001c6-6882-4f28-b08c-237b5e6ed2c3
+	lineageTag: fbcd3b85-692e-403d-8210-9dfae11f495e
+	description: Contains 2 columns: Regional Manager, Region.
 
 	column 'Regional Manager'
 		dataType: string
-		lineageTag: b6d9e406-0d92-4f02-aa3d-6479b445fe37
+		lineageTag: 7b90410e-a6ff-47d3-b9e3-50dd91b3618a
 		summarizeBy: none
 		sourceColumn: 'Regional Manager'
 		dataCategory: StateOrProvince
+		description: String column. categorized as StateOrProvince.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Region
 		dataType: string
-		lineageTag: b0284245-7adc-43fd-b87c-cb655031eaac
+		lineageTag: a71838ee-0a6c-40ad-b7d9-f2039b442786
 		summarizeBy: none
 		sourceColumn: Region
 		dataCategory: StateOrProvince
+		description: String column. categorized as StateOrProvince.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'People-3e8520e5-ebdd-42a8-9775-47dd4930f858' = m
+	partition 'People-ea7a9a88-cac5-4306-8841-f1a1aba493e5' = m
 		mode: import
 		source =
 				let
@@ -47,4 +50,5 @@ table People
 				    Result
 
 	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 2 columns: Regional Manager, Region.
 

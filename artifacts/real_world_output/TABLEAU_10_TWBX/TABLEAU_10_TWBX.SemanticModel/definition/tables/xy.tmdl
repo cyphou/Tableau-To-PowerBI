@@ -1,31 +1,35 @@
 table xy
-	lineageTag: 98b09d3c-88fb-4e27-bb3b-8c3f902bcfb8
+	lineageTag: 84b8bc02-9db0-4ecf-bd2e-12c83c3d6e7a
+	description: Contains 3 columns: a, x, y.
 
 	column a
 		dataType: string
-		lineageTag: 371f8dde-0ad2-4747-b511-110c80348920
+		lineageTag: b49c4779-e8ec-4ccd-aa71-a95e6bcdbe6f
 		summarizeBy: none
 		sourceColumn: a
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column x
 		dataType: int64
-		lineageTag: 905eb072-4d8b-4f5d-9808-f9222a418b2d
+		lineageTag: f6b32daa-3cfe-49da-a86b-023e7da652b4
 		summarizeBy: sum
 		sourceColumn: x
+		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column y
 		dataType: int64
-		lineageTag: ecb516fc-043d-44c0-a535-b93e24ef688e
+		lineageTag: 3e6a2955-c7c0-417a-94b6-fec10e855517
 		summarizeBy: sum
 		sourceColumn: y
+		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'xy-500e0509-2520-4e95-a971-66666f2e7014' = m
+	partition 'xy-b45f758c-c652-41b5-887a-af5a84f3cc05' = m
 		mode: import
 		source =
 				let
@@ -49,4 +53,5 @@ table xy
 				    Result
 
 	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 3 columns: a, x, y.
 

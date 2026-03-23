@@ -1,105 +1,119 @@
 table dim_date
-	lineageTag: 0267d661-d06a-4ce7-ae0d-03997878216f
+	lineageTag: a0db92ca-80dd-4add-9046-2dda232a4e3d
+	description: Contains 12 columns: date_key, full_date, year, quarter, month_num, month_name, week_num, day_name, ... (12 columns total).
 
 	column date_key
 		dataType: int64
-		lineageTag: 673eb7a6-e4f1-43a0-8637-44c81383d727
+		lineageTag: fdac95ab-fed7-4246-ad03-148d64e92bbd
 		summarizeBy: sum
 		sourceColumn: date_key
+		description: Int64 column.
+		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column full_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 1b167f76-57a3-41b3-840a-8742fde02bea
+		lineageTag: 37dcb841-7099-4234-a44b-9f28a4298823
 		summarizeBy: none
 		sourceColumn: full_date
 		dataCategory: DateTime
+		description: Datetime column. categorized as DateTime.
 
 		annotation SummarizationSetBy = Automatic
 
 	column year
 		dataType: int64
-		lineageTag: da11e847-b5f5-4cbc-a9a7-51a3c74b85f8
+		lineageTag: 2ab0e86e-ea77-492f-bf91-85de557f991b
 		summarizeBy: sum
 		sourceColumn: year
+		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column quarter
 		dataType: int64
-		lineageTag: 35736db4-8f28-434a-baf8-3c05a71f20d4
+		lineageTag: e3632333-57db-4208-bd8c-bc6ebcaebd4b
 		summarizeBy: sum
 		sourceColumn: quarter
+		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column month_num
 		dataType: int64
-		lineageTag: fd06f794-9ac5-48bd-b44e-ca0e52299513
+		lineageTag: bad5fbec-cca7-40a8-868d-2c2c1914c833
 		summarizeBy: sum
 		sourceColumn: month_num
+		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column month_name
 		dataType: string
-		lineageTag: 4a8fdf9e-fac8-4a12-afb7-b49ebfd3fd1f
+		lineageTag: d84a2b4a-2213-46f4-a8b1-63321eecec8e
 		summarizeBy: none
 		sourceColumn: month_name
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column week_num
 		dataType: int64
-		lineageTag: b1b51687-f10f-46b3-85cf-1c9e32cbb15b
+		lineageTag: 4ff998fc-3690-4d93-97e2-4e36fe2e1270
 		summarizeBy: sum
 		sourceColumn: week_num
+		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column day_name
 		dataType: string
-		lineageTag: 39d7822d-6b90-4902-8995-c08ae3a26935
+		lineageTag: da7ee6dd-a967-49a9-9032-75a810c0c170
 		summarizeBy: none
 		sourceColumn: day_name
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column is_weekend
 		dataType: boolean
-		lineageTag: 1b031ec6-8a75-4003-b90b-c309c03f1453
+		lineageTag: b423a822-743a-4f80-828c-934d8b8ceace
 		summarizeBy: none
 		sourceColumn: is_weekend
+		description: Boolean column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column is_holiday
 		dataType: boolean
-		lineageTag: cac5f521-049f-4880-9363-9eb3cc28e782
+		lineageTag: a02ea15e-b85b-4a8c-bc16-b5b713b6337e
 		summarizeBy: none
 		sourceColumn: is_holiday
+		description: Boolean column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column fiscal_quarter
 		dataType: string
-		lineageTag: 3ad9cdd0-dcae-4d50-9132-8ba1fcc8f051
+		lineageTag: affd7531-5970-4684-9c62-7e48404f8992
 		summarizeBy: none
 		sourceColumn: fiscal_quarter
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column fiscal_year
 		dataType: int64
-		lineageTag: 8a776f0a-e008-495d-b86f-febfb4fcfc82
+		lineageTag: 15bf43da-2941-4fec-9c6d-b20d24cdda6c
 		summarizeBy: sum
 		sourceColumn: fiscal_year
+		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'dim_date-59cfc199-77da-4fd7-a012-c75f0330b55c' = m
+	partition 'dim_date-16cd825b-42c9-4f6f-af7b-6e5b49e33bb0' = m
 		mode: import
 		source =
 				let
@@ -125,4 +139,5 @@ table dim_date
 				    Result
 
 	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 12 columns: date_key, full_date, year, quarter, month_num, month_name, week_num, day_name, ... (12 columns total).
 

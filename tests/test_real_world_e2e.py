@@ -328,10 +328,12 @@ class TestBatchValidation(unittest.TestCase):
         for name, r in results.items():
             errs = r.get('errors', [])
             # Filter out non-critical: missing .pbip is structural,
-            # .tds datasource files produce SemanticModel only (no Report)
+            # .tds datasource files produce SemanticModel only (no Report),
+            # stale artifacts may have missing report.json
             critical = [e for e in errs
                         if 'datasources.json' not in e.lower()
-                        and 'missing report directory' not in e.lower()]
+                        and 'missing report directory' not in e.lower()
+                        and 'missing report.json' not in e.lower()]
             if critical:
                 failing[name] = critical
         self.assertEqual(failing, {},

@@ -1,188 +1,211 @@
 table Extract
-	lineageTag: 60e2a125-5a41-4744-a93e-072c79459437
+	lineageTag: 1fa38958-048b-4320-b219-123609d6635e
+	description: Contains 18 columns and 4 measures: Country / Region, Date, F: Deposit interest rate (%), F: GDP (curr $), F: GDP per capita (curr $), F: Lending interest rate (%), H: Health exp (% GDP), H: Health exp/cap (curr $), ... (18 columns total).
 
 	measure 'GDP % of Total' = AVERAGE('Extract'[F: GDP per capita (curr $)]) / CALCULATE(AVERAGE('Extract'[F: GDP per capita (curr $)]), ALL('Extract'))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 8985f6c3-6401-4cbf-9143-8af48c953a0f
+		description: Migrated from Tableau: AVG([F: GDP per capita (curr $)]) / TOTAL(AVG([F: GDP per capita (curr $)])) | DAX: AVERAGE('Extract'[F: GDP per capita (curr $)]) / CALCULATE(AVERAGE('Extract'[F: GDP per capita (curr $)]), ALL('Extract'...
+		lineageTag: ea447ec3-90ad-4b41-9328-a343f935d640
 
 	measure 'GDP per capita (weighted)' = SUM('Extract'[F: GDP (curr $)]) / SUM('Extract'[P: Population (count)])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: c0d55b3e-07d9-4212-abab-c88e60556a4d
+		description: Migrated from Tableau: SUM([F: GDP (curr $)]) / SUM([P: Population (count)]) | DAX: SUM('Extract'[F: GDP (curr $)]) / SUM('Extract'[P: Population (count)])
+		lineageTag: f16e63e2-04c1-4268-9e9a-e40032414700
 
 	measure 'Rate spread (difference)' = AVERAGE('Extract'[F: Lending interest rate (%)])-AVERAGE('Extract'[F: Deposit interest rate (%)])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: c2c493bd-c817-4cc3-9bd3-7d7cfda5a3f6
+		description: Migrated from Tableau: AVG([F: Lending interest rate (%)])-AVG([F: Deposit interest rate (%)]) | DAX: AVERAGE('Extract'[F: Lending interest rate (%)])-AVERAGE('Extract'[F: Deposit interest rate (%)])
+		lineageTag: 46833277-fe35-46d4-9ce9-41f97e3512c4
 
 	measure '[Number of Records]' = 1
 		displayFolder: Measures
-		lineageTag: 7bcda7a5-20ce-4a3c-8d4a-2b7cb64a093d
+		description: Migrated from Tableau: 1 | DAX: 1
+		lineageTag: dde1b11f-f2b5-4bff-85d9-6775012cda81
 
 	column 'Country / Region'
 		dataType: string
-		lineageTag: 8779f57f-56b7-44fe-9d83-6ffb5dda11a4
+		lineageTag: 66479c82-7d08-4c2f-8c1b-7401e4f4ab43
 		summarizeBy: none
 		sourceColumn: 'Country / Region'
 		dataCategory: Country
+		description: String column. categorized as Country.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: d5f823e1-4585-4b16-90e0-57156928cebe
+		lineageTag: 3af5d6e1-2ad0-40d8-b251-db15dbc6b026
 		summarizeBy: none
 		sourceColumn: Date
 		dataCategory: DateTime
+		description: Datetime column. categorized as DateTime.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'F: Deposit interest rate (%)'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: d8ae6cb2-a614-427d-9c3b-1a7804484907
+		lineageTag: 75e5e33f-8b3c-4ea6-a5c5-b49f712bee1c
 		summarizeBy: sum
 		sourceColumn: 'F: Deposit interest rate (%)'
+		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'F: GDP (curr $)'
 		dataType: double
 		formatString: c"$"#,#0,,.00B;("$"#,#0,,.00B)
-		lineageTag: 4e0c43e1-d8d3-42c4-be79-6f5a84479d15
+		lineageTag: 615a844a-7d08-4ad9-979a-14f7915467d9
 		summarizeBy: sum
 		sourceColumn: 'F: GDP (curr $)'
+		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'F: GDP per capita (curr $)'
 		dataType: double
 		formatString: c"$"#,#0,.0K;("$"#,#0,.0K)
-		lineageTag: 80302ef3-2e36-4df4-8479-1d73d507d05c
+		lineageTag: 2918ca71-4aa9-4612-97d3-a363713bb16f
 		summarizeBy: sum
 		sourceColumn: 'F: GDP per capita (curr $)'
+		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'F: Lending interest rate (%)'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 0fe1ff5c-6f10-43b3-a647-18369edfa699
+		lineageTag: 78e587d6-3fe7-44d2-a297-cb616f06c7a9
 		summarizeBy: sum
 		sourceColumn: 'F: Lending interest rate (%)'
+		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'H: Health exp (% GDP)'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 2497cd73-3aba-43b3-9e3c-78c0bf464f87
+		lineageTag: 86cd7866-0d79-4210-8742-7b5a8a570cdf
 		summarizeBy: sum
 		sourceColumn: 'H: Health exp (% GDP)'
+		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'H: Health exp/cap (curr $)'
 		dataType: double
 		formatString: c"$"#,#0,,.0B;("$"#,#0,,.0B)
-		lineageTag: f2f0d90c-014b-4bf2-b832-905d11e8e34b
+		lineageTag: e61ab137-87de-4755-8e7d-017ec2fb9fb0
 		summarizeBy: sum
 		sourceColumn: 'H: Health exp/cap (curr $)'
+		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'H: Life exp (years)'
 		dataType: double
 		formatString: n#,0;-#,0
-		lineageTag: ae1b073f-be62-40eb-b1ce-265df6df409b
+		lineageTag: b846215f-79c2-48ba-a1e5-857bab3cd2c0
 		summarizeBy: sum
 		sourceColumn: 'H: Life exp (years)'
+		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Number of Records'
 		dataType: int64
-		lineageTag: 287aafc3-52ad-4872-9c77-81c638096dc7
+		lineageTag: d2828cb6-6baf-41a5-b604-27f18708a6f9
 		summarizeBy: sum
 		sourceColumn: 'Number of Records'
+		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'P: Population (count)'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 746e178e-63d4-4d69-afce-2525b4d53d82
+		lineageTag: 9c714a98-178a-4cae-a637-9ee2ba9a4c44
 		summarizeBy: sum
 		sourceColumn: 'P: Population (count)'
+		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Region
 		dataType: string
-		lineageTag: 87bea829-e9b4-421e-b03d-cc3df1f888f9
+		lineageTag: dafbf953-b7e2-449f-a890-ba4342203f61
 		summarizeBy: none
 		sourceColumn: Region
 		dataCategory: StateOrProvince
+		description: String column. categorized as StateOrProvince.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Subregion
 		dataType: string
-		lineageTag: 956045f0-1e5e-483f-895f-a853e49b8aa8
+		lineageTag: 1c9d527e-9bb9-4f81-b0a3-e164087489b5
 		summarizeBy: none
 		sourceColumn: Subregion
 		dataCategory: StateOrProvince
+		description: String column. categorized as StateOrProvince.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Action (Country Name)'
 		dataType: string
-		lineageTag: 43df61ec-0a29-4d0e-b7cb-2b756321a353
+		lineageTag: a714f7c1-abc6-4981-b06e-f481a8842d19
 		summarizeBy: none
 		sourceColumn: 'Action (Country Name)'
+		description: String column.
 		displayFolder: Groups
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Action (Date (year))'
 		dataType: string
-		lineageTag: 9f239a75-49d3-462d-b253-04504de68e0c
+		lineageTag: 7b1cebe2-d526-4d83-9d61-1bc1ee62c5a7
 		summarizeBy: none
 		sourceColumn: 'Action (Date (year))'
+		description: String column.
 		displayFolder: Groups
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Action (Region)'
 		dataType: string
-		lineageTag: e28b3582-e706-4fac-ba1f-6f2fb9e48904
+		lineageTag: 288b035d-38a6-48ee-b742-5ac3f49ec2a0
 		summarizeBy: none
 		sourceColumn: 'Action (Region)'
+		description: String column.
 		displayFolder: Groups
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Action (YEAR(Date (year)))'
 		dataType: string
-		lineageTag: c20e4a94-8853-40fe-819a-4ac4e6e047f1
+		lineageTag: 6bfcce4e-3cf4-4cc2-80d7-088c165efda2
 		summarizeBy: none
 		sourceColumn: 'Action (YEAR(Date (year)))'
+		description: String column.
 		displayFolder: Groups
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Exclusions (Country Name,YEAR(Date (year)))'
 		dataType: string
-		lineageTag: 51efea62-be44-43cf-8493-608af07e0235
+		lineageTag: 4ef37a61-981e-4070-9950-67fcc4d4f2f5
 		summarizeBy: none
 		sourceColumn: 'Exclusions (Country Name,YEAR(Date (year)))'
+		description: String column.
 		displayFolder: Groups
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Extract-5baaaf20-f381-4b67-a4b9-faaa7207c0fc' = m
+	partition 'Extract-5e53340a-218d-4043-a5a1-371a9d8553a5' = m
 		mode: import
 		source =
 				let
@@ -209,4 +232,5 @@ table Extract
 				    Result
 
 	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 18 columns and 4 measures: Country / Region, Date, F: Deposit interest rate (%), F: GDP (curr $), F: GDP per capita (curr $), F: Lending interest rate (%), H: Health exp (% GDP), H: Health exp/cap (curr $), ... (18 columns total).
 

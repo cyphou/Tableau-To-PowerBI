@@ -1,0 +1,60 @@
+table xy
+	lineageTag: efccb000-4837-43cb-ba7c-fbd628510519
+
+	measure '[Number of Records]' = 1
+		displayFolder: Measures
+		lineageTag: 2990e725-0dec-4240-91df-5b71b2bf1556
+
+	measure 'SUM(X) + SUM(Y)' = SUM('xy'[x]) + SUM('xy'[y])
+		displayFolder: Measures
+		lineageTag: 843d47f1-4462-492f-b5bf-165873cfdc1a
+
+	column a
+		dataType: string
+		lineageTag: 6e1fefd4-def5-44db-9924-bd1aed288de4
+		summarizeBy: none
+		sourceColumn: a
+
+		annotation SummarizationSetBy = Automatic
+
+	column x
+		dataType: int64
+		lineageTag: 97ce2f27-4a42-4c67-a6d8-223c893aee45
+		summarizeBy: sum
+		sourceColumn: x
+
+		annotation SummarizationSetBy = Automatic
+
+	column y
+		dataType: int64
+		lineageTag: a938b2f1-7991-40cd-8e61-c23646ce47fe
+		summarizeBy: sum
+		sourceColumn: y
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'xy-7423073c-bf6f-418d-97ec-2448905123fa' = m
+		mode: import
+		source =
+				let
+				    // Source PostgreSQL
+				    Source = try
+				
+				        let
+				
+				            _src = PostgreSQL.Database("postgres91.test.tsi.lan:5432", "TestV1"),
+				
+				            _nav = _src{[Schema="public", Item="xy"]}[Data]
+				
+				        in _nav
+				
+				    otherwise
+				
+				        #table({"a", "x", "y"}, {}),
+				    #"Renamed Columns" = Table.RenameColumns(Source, {{"a", "A"}, {"x", "X"}, {"y", "Y"}}),
+				    Result = #"Renamed Columns"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+

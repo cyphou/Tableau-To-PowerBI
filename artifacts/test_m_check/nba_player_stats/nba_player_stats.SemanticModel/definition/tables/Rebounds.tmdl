@@ -1,0 +1,30 @@
+table Rebounds
+	lineageTag: 60dc45a3-bb1b-4474-981f-76df9326e1e1
+
+	measure Rebounds = SELECTEDVALUE('Rebounds'[Value], 1.0)
+		lineageTag: 43658375-bbac-483b-bb2a-02100c50c25d
+
+	column Value
+		dataType: double
+		lineageTag: c71e164b-a146-4555-bf2c-be158f98e625
+		summarizeBy: none
+		sourceColumn: Value
+		annotation displayFolder = Parameters
+
+		annotation SummarizationSetBy = Automatic
+
+	column Name
+		dataType: string
+		lineageTag: 932fbeb0-fde2-4f0d-8b42-4b5cb8dc4783
+		summarizeBy: none
+		sourceColumn: Name
+		annotation displayFolder = Parameters
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Rebounds-d8d54efb-11a0-4268-8c84-f22af83f7d17' = calculated
+		mode: import
+		source = DATATABLE("Value", DOUBLE, "Name", STRING, {{1.0, "Average Deffensive Rebounds per Game"}, {2.0, "Average Offensive Rebounds per Game"}, {3.0, "Average Rebound per Game"}})
+
+	annotation PBI_ResultType = Table
+

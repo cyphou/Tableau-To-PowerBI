@@ -1,0 +1,33 @@
+{
+  "tables": [
+    {
+      "tableau_datasource": "federated.1",
+      "tableau_table": "transactions",
+      "pbi_table": "transactions"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Calendar",
+      "pbi_table": "Calendar"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Fiscal Year",
+      "pbi_table": "Fiscal Year"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Business Unit",
+      "pbi_table": "Business Unit"
+    }
+  ],
+  "calculations": [],
+  "relationships": [
+    {
+      "from": "transactions[transaction_date]",
+      "to": "Calendar[Date]",
+      "cardinality": "bothDirections"
+    }
+  ],
+  "worksheets": []
+}

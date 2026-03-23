@@ -1,0 +1,71 @@
+table Extract
+	lineageTag: 5b7a6050-10fd-4624-8ce2-261b6fd54ded
+
+	measure 'Number of Records' = COUNTROWS('Extract')
+		displayFolder: Measures
+		lineageTag: 03741aed-a199-4d9b-904a-038ee31435c3
+
+	column Category
+		dataType: string
+		lineageTag: 61815191-ee4b-41de-b95a-b09afef3f266
+		summarizeBy: none
+		sourceColumn: Category
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Number of Records'
+		dataType: int64
+		lineageTag: ef3c2ffd-c1a7-46b7-b036-bf3ae6d0b181
+		summarizeBy: sum
+		sourceColumn: 'Number of Records'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Order Date'
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 8cfce04c-a45e-47b9-b59e-a0629469e613
+		summarizeBy: none
+		sourceColumn: 'Order Date'
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Sales Target'
+		dataType: int64
+		formatString: c"$"#,#0;("$"#,#0)
+		lineageTag: a10a4c5a-f76f-410f-ad4e-4917d562e852
+		summarizeBy: sum
+		sourceColumn: 'Sales Target'
+
+		annotation SummarizationSetBy = Automatic
+
+	column Segment
+		dataType: string
+		lineageTag: 2895de57-3915-459b-80b8-268ef9f9a302
+		summarizeBy: none
+		sourceColumn: Segment
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Extract-1ba878f5-c3f1-46ad-8fee-ed0421c4a866' = m
+		mode: import
+		source =
+				let
+				    // TODO: Configure the data source for connector type: DATAENGINE
+				    // Replace the sample table below with the actual source expression.
+				    Source = try
+				        #table(
+				            {"Category", "Number of Records", "Order Date", "Sales Target", "Segment"},
+				            {
+				                {"Sample 1", 2, 3, 4, "Sample 5"},
+				                {"Sample 2", 3, 4, 5, "Sample 6"}
+				            }
+				        )
+				    otherwise
+				        #table({"Category", "Number of Records", "Order Date", "Sales Target", "Segment"}, {})  // Empty table on error
+				in
+				    Source
+
+	annotation PBI_ResultType = Table
+

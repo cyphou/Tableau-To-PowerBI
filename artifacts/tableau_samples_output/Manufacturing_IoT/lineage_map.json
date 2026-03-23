@@ -1,0 +1,63 @@
+{
+  "tables": [
+    {
+      "tableau_datasource": "federated.iot",
+      "tableau_table": "Sensors",
+      "pbi_table": "Sensors"
+    },
+    {
+      "tableau_datasource": "federated.iot",
+      "tableau_table": "Machines",
+      "pbi_table": "Machines"
+    },
+    {
+      "tableau_datasource": "federated.iot",
+      "tableau_table": "Maintenance",
+      "pbi_table": "Maintenance"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Calendar",
+      "pbi_table": "Calendar"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Alert Threshold",
+      "pbi_table": "Alert Threshold"
+    }
+  ],
+  "calculations": [],
+  "relationships": [
+    {
+      "from": "Sensors[machine_id]",
+      "to": "Maintenance[machine_id]",
+      "cardinality": "bothDirections"
+    },
+    {
+      "from": "Sensors[machine_id]",
+      "to": "Machines[machine_id]",
+      "cardinality": "bothDirections"
+    },
+    {
+      "from": "Sensors[reading_time]",
+      "to": "Calendar[Date]",
+      "cardinality": "oneDirection"
+    },
+    {
+      "from": "Machines[install_date]",
+      "to": "Calendar[Date]",
+      "cardinality": "bothDirections"
+    },
+    {
+      "from": "Maintenance[maint_date]",
+      "to": "Calendar[Date]",
+      "cardinality": "bothDirections"
+    },
+    {
+      "from": "Maintenance[machine_id]",
+      "to": "Machines[machine_id]",
+      "cardinality": "bothDirections"
+    }
+  ],
+  "worksheets": []
+}

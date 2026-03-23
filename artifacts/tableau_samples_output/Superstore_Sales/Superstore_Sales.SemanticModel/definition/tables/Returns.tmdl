@@ -1,23 +1,27 @@
 table Returns
-	lineageTag: 26c49400-a710-426c-9908-dc439552f20f
+	lineageTag: eed6702d-7a05-441f-ada1-3b9fd0530177
+	description: Contains 2 columns: Returned, Order ID.
 
 	column Returned
 		dataType: string
-		lineageTag: 8f9abfea-efde-46e0-8961-21b5840542bb
+		lineageTag: 37f116d1-cdfb-49a3-bcd4-096f9949769e
 		summarizeBy: none
 		sourceColumn: Returned
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Order ID'
 		dataType: string
-		lineageTag: 5a0c76c9-9e78-4f25-bcbc-c3629a9ce9ab
+		lineageTag: 02f30ff8-231e-41e2-8d77-940ab500901d
 		summarizeBy: none
 		sourceColumn: 'Order ID'
+		description: String column.
+		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Returns-630d325a-2f4f-4358-a3c3-1ecdb77db82c' = m
+	partition 'Returns-833659a8-926a-4fd9-bbf5-48ba1611c53c' = m
 		mode: import
 		source =
 				let
@@ -45,4 +49,5 @@ table Returns
 				    Result
 
 	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 2 columns: Returned, Order ID.
 

@@ -1,107 +1,122 @@
 table Leads
-	lineageTag: 108608c2-d8cb-43ab-8869-72341ddb9364
+	lineageTag: dc566606-3890-409b-8afb-97d6fff7e007
+	description: Contains 12 columns: lead_id, campaign_id, lead_name, email, phone, company, job_title, created_date, ... (12 columns total).
 
 	column lead_id
 		dataType: int64
-		lineageTag: 67f7df44-ae3f-410d-ab29-6f450e692403
+		lineageTag: be04d6b9-e701-4c91-a50a-8d6a9b9c66ac
 		summarizeBy: sum
 		sourceColumn: lead_id
+		description: Int64 column.
+		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column campaign_id
 		dataType: int64
-		lineageTag: c247eb2b-be71-44ce-a415-429b97805844
+		lineageTag: 8ab6ef48-fce9-4ccc-bd50-52ccba05ae0d
 		summarizeBy: sum
 		sourceColumn: campaign_id
+		description: Int64 column.
+		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column lead_name
 		dataType: string
-		lineageTag: 2aef01d6-d157-4a71-916d-7a3174df2eb1
+		lineageTag: 42708f3e-a7fe-4b14-b0e9-c1d1619252fb
 		summarizeBy: none
 		sourceColumn: lead_name
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column email
 		dataType: string
-		lineageTag: 4787219d-81da-4ecb-9aed-6e1d30c7f08c
+		lineageTag: 0fe20a2c-ddef-458c-a2ef-0839bdce30f4
 		summarizeBy: none
 		sourceColumn: email
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column phone
 		dataType: string
-		lineageTag: ad04e6ce-02d3-4911-b6f7-c518dbc51489
+		lineageTag: 6300e3d8-3a8f-4206-8f42-76e804584093
 		summarizeBy: none
 		sourceColumn: phone
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column company
 		dataType: string
-		lineageTag: 555eae7a-21a9-42cc-b325-f98d364d20e7
+		lineageTag: 40c08158-75c6-4e90-a911-0124f2c62863
 		summarizeBy: none
 		sourceColumn: company
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column job_title
 		dataType: string
-		lineageTag: b826262d-d1df-44cd-a7b6-0315f9cb49ef
+		lineageTag: 6c442120-3b94-4234-9575-c58166c3375b
 		summarizeBy: none
 		sourceColumn: job_title
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column created_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 256b8fad-6fc8-45ec-8ce2-9eb785812da7
+		lineageTag: d6aa67d4-76aa-4e64-b72c-dd6117e75001
 		summarizeBy: none
 		sourceColumn: created_date
 		dataCategory: DateTime
+		description: Datetime column. categorized as DateTime.
 
 		annotation SummarizationSetBy = Automatic
 
 	column deal_value
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 1abaebf1-1dba-48e4-9837-69f514504cf2
+		lineageTag: 496eb276-cc2a-4ffa-abad-9aa3ed714268
 		summarizeBy: sum
 		sourceColumn: deal_value
+		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column lead_source
 		dataType: string
-		lineageTag: e9d15838-b7c6-4614-aa47-ab0ad98f0cb0
+		lineageTag: 41f57894-d5d9-42bd-8500-291990003d43
 		summarizeBy: none
 		sourceColumn: lead_source
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column lead_status
 		dataType: string
-		lineageTag: 039e1ef8-0fe4-4996-aa71-05a79ce17b50
+		lineageTag: 89567b0e-e991-4660-bbd2-65782e187aaa
 		summarizeBy: none
 		sourceColumn: lead_status
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column engagement_score
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 0a8c7cbb-a687-4e2c-9743-148c2589a5bc
+		lineageTag: ebfe6870-64e3-4b4b-97b7-3df9e1afb0ac
 		summarizeBy: sum
 		sourceColumn: engagement_score
+		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Leads-df81e1f8-243e-46b7-b3fe-65da1f156d36' = m
+	partition 'Leads-ffda7111-4cfb-494a-861b-a7f5bca407a1' = m
 		mode: import
 		source =
 				let
@@ -125,4 +140,5 @@ table Leads
 				    Result
 
 	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 12 columns: lead_id, campaign_id, lead_name, email, phone, company, job_title, created_date, ... (12 columns total).
 

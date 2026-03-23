@@ -1,105 +1,118 @@
 table Customers
-	lineageTag: 11bc048e-87bb-43df-8d81-86aaccf9e445
+	lineageTag: ab6f99f5-5885-406b-96ee-d2c5ab6a3a0a
+	description: Contains 11 columns: customer_id, customer_name, segment, city, state, country, postal_code, latitude, ... (11 columns total).
 
 	column customer_id
 		dataType: int64
-		lineageTag: 0b3198fc-47fa-406c-be2c-0d16306555a5
+		lineageTag: 9c16c4e4-504b-41b7-967f-afe79db8776b
 		summarizeBy: sum
 		sourceColumn: customer_id
+		description: Int64 column.
+		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column customer_name
 		dataType: string
-		lineageTag: c966596b-ad6f-4829-a046-b825276accac
+		lineageTag: bc620795-509a-406f-9e7b-276f62545054
 		summarizeBy: none
 		sourceColumn: customer_name
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column segment
 		dataType: string
-		lineageTag: 86e3c782-a9c8-4cde-afb7-7ca7b9c6cf7e
+		lineageTag: f811ca79-288c-446a-9878-7cd0ecc81ffd
 		summarizeBy: none
 		sourceColumn: segment
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column city
 		dataType: string
-		lineageTag: 52adeaf0-ffbc-40da-9f3d-dc85b757324a
+		lineageTag: 0b6f9ca6-1710-4ba0-ab8c-b1edaf0d7f6b
 		summarizeBy: none
 		sourceColumn: city
 		dataCategory: City
+		description: String column. categorized as City.
 
 		annotation SummarizationSetBy = Automatic
 
 	column state
 		dataType: string
-		lineageTag: 4c6f8502-747a-4e97-a52e-4150a1e2f0c6
+		lineageTag: fe888a56-fd5b-4a90-813c-f3091efb8bca
 		summarizeBy: none
 		sourceColumn: state
 		dataCategory: StateOrProvince
+		description: String column. categorized as StateOrProvince.
 
 		annotation SummarizationSetBy = Automatic
 
 	column country
 		dataType: string
-		lineageTag: c1c72b16-9011-4727-9994-d9d3eed1100f
+		lineageTag: 3a971c2f-754f-43c9-8f03-47733dd14e4d
 		summarizeBy: none
 		sourceColumn: country
 		dataCategory: Country
+		description: String column. categorized as Country.
 
 		annotation SummarizationSetBy = Automatic
 
 	column postal_code
 		dataType: string
-		lineageTag: fe2b2c2b-4df9-47b2-9366-b9a2e91157e7
+		lineageTag: ec5c3f68-ebb5-4337-a29f-5f353743cbf0
 		summarizeBy: none
 		sourceColumn: postal_code
 		dataCategory: PostalCode
+		description: String column. categorized as PostalCode.
 
 		annotation SummarizationSetBy = Automatic
 
 	column latitude
 		dataType: double
 		formatString: #,0.00
-		lineageTag: bebc63d8-3594-49ab-8371-6acb6ffdecf5
+		lineageTag: b3c44804-1d98-4ad1-8a8e-38e1c876e7a6
 		summarizeBy: sum
 		sourceColumn: latitude
 		dataCategory: Latitude
+		description: Double column. categorized as Latitude.
 
 		annotation SummarizationSetBy = Automatic
 
 	column longitude
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 5ad61071-3928-4260-9041-27752d5bd1d8
+		lineageTag: b6f84d88-8455-4a26-8453-2dae1446eab7
 		summarizeBy: sum
 		sourceColumn: longitude
 		dataCategory: Longitude
+		description: Double column. categorized as Longitude.
 
 		annotation SummarizationSetBy = Automatic
 
 	column customer_email
 		dataType: string
-		lineageTag: 8431a246-8794-4eff-b21e-bd65df1d0468
+		lineageTag: efce69a2-e1fe-4a35-a0a3-ff89056785db
 		summarizeBy: none
 		sourceColumn: customer_email
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column first_purchase_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: df93a004-8b75-4b9a-8c33-460eb9022f0c
+		lineageTag: 9a789015-77b9-42c9-aa56-c93215119417
 		summarizeBy: none
 		sourceColumn: first_purchase_date
 		dataCategory: DateTime
+		description: Datetime column. categorized as DateTime.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Customers-3590f8d6-c396-4da9-a5a0-cfca3130b0eb' = m
+	partition 'Customers-12cb6e92-c75d-4dd8-90fb-f9aeec509a7e' = m
 		mode: import
 		source =
 				let
@@ -125,4 +138,5 @@ table Customers
 				    Result
 
 	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 11 columns: customer_id, customer_name, segment, city, state, country, postal_code, latitude, ... (11 columns total).
 

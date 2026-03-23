@@ -1,0 +1,71 @@
+table xy
+	lineageTag: f821103c-1ef2-4d3c-9bcd-8462f4a0e920
+	description: Contains 4 columns and 1 measures: a, Today's Date, x, y.
+
+	measure '[Number of Records]' = 1
+		displayFolder: Measures
+		description: Migrated from Tableau: 1 | DAX: 1
+		lineageTag: cce3bff9-0eff-4a6a-be0b-822db0253232
+
+	column a
+		dataType: string
+		lineageTag: f56f0ce8-ae96-47e2-ace5-caa64d17d309
+		summarizeBy: none
+		sourceColumn: a
+		description: String column.
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Today''s Date'
+		dataType: string
+		lineageTag: ffa864f5-7957-44ed-992e-731e1a1e594d
+		summarizeBy: none
+		sourceColumn: 'Today''s Date'
+		description: String column.
+
+		annotation SummarizationSetBy = Automatic
+
+	column x
+		dataType: int64
+		lineageTag: 64f233d7-0bd0-42f4-bf75-4b7a03d67577
+		summarizeBy: sum
+		sourceColumn: x
+		description: Int64 column.
+
+		annotation SummarizationSetBy = Automatic
+
+	column y
+		dataType: int64
+		lineageTag: c29ea24a-fc57-4edc-b85e-648b34f0c8dd
+		summarizeBy: sum
+		sourceColumn: y
+		description: Int64 column.
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'xy-8d45f4b0-b99c-4df6-b100-a4264863d77e' = m
+		mode: import
+		source =
+				let
+				    // Source PostgreSQL
+				    Source = try
+				
+				        let
+				
+				            _src = PostgreSQL.Database("postgres91.test.tsi.lan:5432", "TestV1"),
+				
+				            _nav = _src{[Schema="public", Item="xy"]}[Data]
+				
+				        in _nav
+				
+				    otherwise
+				
+				        #table({"a", "Today's Date", "x", "y"}, {}),
+				    #"Renamed Columns" = Table.RenameColumns(Source, {{"a", "A"}, {"x", "X"}, {"y", "Y"}}),
+				    Result = #"Renamed Columns"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 4 columns and 1 measures: a, Today's Date, x, y.
+

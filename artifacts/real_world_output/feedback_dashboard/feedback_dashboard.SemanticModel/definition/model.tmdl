@@ -11,7 +11,7 @@ annotation PBI_QueryOrder = ["customer_feedback_data.json","Extract"]
 ref table 'customer_feedback_data.json'
 ref table Extract
 
-ref relationship b2dc0d61-379b-464e-9f8a-65a45206de23
+ref relationship 8fc82f3e-2d90-4424-81eb-eddca6eba1ba
 
 ref expression DataFolder
 

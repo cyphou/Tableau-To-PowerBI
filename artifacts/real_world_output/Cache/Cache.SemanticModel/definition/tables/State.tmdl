@@ -1,20 +1,25 @@
 table State
-	lineageTag: 68a87711-a3eb-4602-995b-33d7d5258dd0
+	lineageTag: 75f6c264-52c5-4839-afa0-446d9b0702c7
+	description: Contains 1 columns and 1 measures: Value.
 
 	measure State = SELECTEDVALUE('State'[Value], "Alabama")
-		lineageTag: 02e48e85-f6bd-46cd-9795-770d0872913a
+		description: DAX: SELECTEDVALUE('State'[Value], "Alabama")
+		lineageTag: 0c55069e-ff7b-4097-bbf9-3a4583723f95
 
 	column Value
 		dataType: string
-		lineageTag: e3570843-421e-4041-a1e2-894be00db8bf
+		lineageTag: d47f7e1f-b3cc-4073-ae0d-d27693d4816f
 		summarizeBy: none
 		sourceColumn: Value
+		description: String column.
+		annotation displayFolder = Parameters
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'State-d74d3050-6b5d-4fe6-9936-3bba88baa96b' = calculated
+	partition 'State-9daca360-ac8c-4824-896d-71baf3122a49' = calculated
 		mode: import
 		source = DATATABLE("Value", STRING, {{""Alabama""}, {""Arizona""}, {""Arkansas""}, {""California""}, {""Colorado""}, {""Connecticut""}, {""Delaware""}, {""District of Columbia""}, {""Florida""}, {""Georgia""}, {""Idaho""}, {""Illinois""}, {""Indiana""}, {""Iowa""}, {""Kansas""}, {""Kentucky""}, {""Louisiana""}, {""Maine""}, {""Maryland""}, {""Massachusetts""}, {""Michigan""}, {""Minnesota""}, {""Mississippi""}, {""Missouri""}, {""Montana""}, {""Nebraska""}, {""Nevada""}, {""New Hampshire""}, {""New Jersey""}, {""New Mexico""}, {""New York""}, {""North Carolina""}, {""North Dakota""}, {""Ohio""}, {""Oklahoma""}, {""Oregon""}, {""Pennsylvania""}, {""Rhode Island""}, {""South Carolina""}, {""South Dakota""}, {""Tennessee""}, {""Texas""}, {""Utah""}, {""Vermont""}, {""Virginia""}, {""Washington""}, {""West Virginia""}, {""Wisconsin""}, {""Wyoming""}})
 
 	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 1 columns and 1 measures: Value.
 

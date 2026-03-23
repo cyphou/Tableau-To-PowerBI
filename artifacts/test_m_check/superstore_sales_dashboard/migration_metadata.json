@@ -1,0 +1,98 @@
+{
+  "generated_at": "2026-03-23T14:58:17.115160",
+  "source": "Tableau Migration",
+  "report_name": "superstore_sales_dashboard",
+  "objects_converted": {
+    "worksheets": 4,
+    "dashboards": 1,
+    "datasources": 1,
+    "calculations": 1,
+    "parameters": 0,
+    "filters": 4,
+    "stories": 0,
+    "sets": 0,
+    "groups": 1,
+    "bins": 0,
+    "hierarchies": 0,
+    "user_filters": 0,
+    "actions": 4,
+    "custom_sql": 0
+  },
+  "generated_output": {
+    "pages": 1,
+    "visuals": 5,
+    "theme_applied": false,
+    "theme_detail": {
+      "status": "skipped",
+      "reason": "no dashboard colors detected"
+    }
+  },
+  "tmdl_stats": {
+    "tables": 3,
+    "measures": 0,
+    "columns": 56,
+    "relationships": 2
+  },
+  "visual_type_mappings": {
+    "Bar Chart": "Automatic",
+    "Line chart": "Automatic",
+    "Pie chart": "Automatic",
+    "Scatter Plot": "Automatic"
+  },
+  "visual_details": [
+    {
+      "worksheet": "Bar Chart",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "Region",
+        "Customer Segment",
+        "Customer Segment"
+      ],
+      "measures": [
+        "Sales",
+        "Sales"
+      ],
+      "field_count": 5
+    },
+    {
+      "worksheet": "Line chart",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "lineChart",
+      "dimensions": [
+        "Order Date"
+      ],
+      "measures": [
+        "Order Quantity",
+        "Sales"
+      ],
+      "field_count": 3
+    },
+    {
+      "worksheet": "Pie chart",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "pieChart",
+      "dimensions": [
+        "Region",
+        "Region",
+        "pcto:sum:Sales"
+      ],
+      "measures": [
+        "Sales"
+      ],
+      "field_count": 4
+    },
+    {
+      "worksheet": "Scatter Plot",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "scatterChart",
+      "dimensions": [],
+      "measures": [
+        "Sales",
+        "Profit"
+      ],
+      "field_count": 2
+    }
+  ],
+  "approximations": []
+}

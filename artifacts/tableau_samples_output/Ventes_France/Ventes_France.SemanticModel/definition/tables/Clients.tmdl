@@ -1,65 +1,74 @@
 table Clients
-	lineageTag: 0ef7b709-3428-4999-85c6-92af234a8ea8
+	lineageTag: 6f8883d8-7313-4a68-a084-3ba14cafa2ef
+	description: Contains 7 columns: client_id, nom_client, prenom_client, email, segment, type_client, date_inscription.
 
 	column client_id
 		dataType: int64
-		lineageTag: e58ebb87-3915-47e0-8a16-24a5917c9916
+		lineageTag: 50429d56-bb42-40be-ab38-a237d57e73d5
 		summarizeBy: sum
 		sourceColumn: client_id
+		description: Int64 column.
+		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column nom_client
 		dataType: string
-		lineageTag: 52c20d4c-08b4-41b4-aa17-bdef265354e9
+		lineageTag: fe43c2ec-28e6-4287-a7ed-980024f1c09d
 		summarizeBy: none
 		sourceColumn: nom_client
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column prenom_client
 		dataType: string
-		lineageTag: 5de5b4c2-dff3-4813-834d-aa88ba7f0553
+		lineageTag: 7bf9c351-8b97-4967-a3fc-d498b6e50754
 		summarizeBy: none
 		sourceColumn: prenom_client
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column email
 		dataType: string
-		lineageTag: 65adc40f-ab5e-4479-bfaf-252b8811d9a4
+		lineageTag: 24f9a062-7c0d-4fbd-b904-ae06e9a64c71
 		summarizeBy: none
 		sourceColumn: email
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column segment
 		dataType: string
-		lineageTag: 84aa187b-d9e7-449b-8b4e-c95a61fe0da5
+		lineageTag: 0b3677e3-70fb-4bbc-a33d-af43d368be46
 		summarizeBy: none
 		sourceColumn: segment
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column type_client
 		dataType: string
-		lineageTag: 2367123f-00ab-427a-8087-0436533bf9c1
+		lineageTag: 12c1ee3c-e8cd-42f2-bff2-3aa7f6959c47
 		summarizeBy: none
 		sourceColumn: type_client
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column date_inscription
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 7dc4a3da-01c9-44d2-95bb-5f584aca200c
+		lineageTag: 538961a8-51ca-43c6-95ac-9a8b044138e3
 		summarizeBy: none
 		sourceColumn: date_inscription
 		dataCategory: DateTime
+		description: Datetime column. categorized as DateTime.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Clients-01fa9048-c819-46e9-a20c-b2b7c190fd2e' = m
+	partition 'Clients-a543bcf6-657a-4722-9a18-fb3dfd4f4b64' = m
 		mode: import
 		source =
 				let
@@ -83,4 +92,5 @@ table Clients
 				    Result
 
 	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 7 columns: client_id, nom_client, prenom_client, email, segment, type_client, date_inscription.
 

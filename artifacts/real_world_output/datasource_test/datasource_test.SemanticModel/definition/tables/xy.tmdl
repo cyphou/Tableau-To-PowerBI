@@ -1,35 +1,40 @@
 table xy
-	lineageTag: 4adbb506-a025-490b-90bc-f253bf61c2a6
+	lineageTag: 10147937-9dae-4c81-abb3-fde9f856c30b
+	description: Contains 3 columns and 1 measures: a, x, y.
 
 	measure '[Number of Records]' = 1
 		displayFolder: Measures
-		lineageTag: 5e82a767-5312-4640-900b-c6be5c3bffa5
+		description: Migrated from Tableau: 1 | DAX: 1
+		lineageTag: 24961876-7943-4ad1-ac40-2a6758cd7890
 
 	column a
 		dataType: string
-		lineageTag: 8e41998b-484f-4e08-bfa6-a57f87ffa9df
+		lineageTag: 805ec2a5-eeaa-4c5e-ab68-ec7c4800199a
 		summarizeBy: none
 		sourceColumn: a
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column x
 		dataType: int64
-		lineageTag: 844185ae-aa87-491b-9c17-76ce617ef7a3
+		lineageTag: 27a599b1-f265-47c7-9cec-423df0d9173b
 		summarizeBy: sum
 		sourceColumn: x
+		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column y
 		dataType: int64
-		lineageTag: 8defd6f6-9b65-4a83-801c-579032c2177c
+		lineageTag: 9002b5c3-3f6e-4bd7-b3ed-fd79dc9a099c
 		summarizeBy: sum
 		sourceColumn: y
+		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'xy-a280b44c-05bd-4809-bb40-391bac2fad31' = m
+	partition 'xy-2e6ffc50-464f-4dfd-82e7-d8b5c2eca2f7' = m
 		mode: import
 		source =
 				let
@@ -53,4 +58,5 @@ table xy
 				    Result
 
 	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 3 columns and 1 measures: a, x, y.
 

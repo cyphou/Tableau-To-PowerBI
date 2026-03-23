@@ -1,106 +1,120 @@
 table 'customer_feedback_data.json'
-	lineageTag: 5bc6ffe2-8950-4e67-9f23-7f23faf9b30a
+	lineageTag: 553bdd70-8334-4647-8bf2-fba700d84a2a
+	description: Contains 12 columns: Document Index (generated), category, customer_id, date, email, feedback_score, feedback_text, name, ... (12 columns total).
 
 	column 'Document Index (generated)'
 		dataType: int64
-		lineageTag: bb33d09e-81a8-4ab2-a3ed-30c5428cbce3
+		lineageTag: 8024184c-42cc-4903-9b02-a1c7eb00defa
 		summarizeBy: sum
 		sourceColumn: 'Document Index (generated)'
+		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column category
 		dataType: string
-		lineageTag: 3a152ced-42ad-4d1a-89fa-45f0dea75d13
+		lineageTag: 3f1f4f3a-c4a5-4b61-a807-bf4e37272eb4
 		summarizeBy: none
 		sourceColumn: category
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column customer_id
 		dataType: string
-		lineageTag: c69556b6-16ff-4947-9a75-53295c31eff5
+		lineageTag: f419f89b-617e-4ea9-a311-2d6b7ec9e869
 		summarizeBy: none
 		sourceColumn: customer_id
+		description: String column.
+		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column date
 		dataType: string
-		lineageTag: 103a53d7-96ee-48dd-ac5d-37b793c8945c
+		lineageTag: 17c336c5-3125-49bd-9032-adf2e63492e7
 		summarizeBy: none
 		sourceColumn: date
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column email
 		dataType: string
-		lineageTag: b4605177-e39b-40d8-8c62-27180d2a2697
+		lineageTag: e68fcf7c-ca64-4c20-8034-0663e0cd69f8
 		summarizeBy: none
 		sourceColumn: email
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column feedback_score
 		dataType: double
 		formatString: #,0.00
-		lineageTag: e76d3a0e-a800-4251-835a-6937b8fc4603
+		lineageTag: 7696e5c8-1b05-42e3-9c79-ad8b238ad2e7
 		summarizeBy: sum
 		sourceColumn: feedback_score
+		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column feedback_text
 		dataType: string
-		lineageTag: 2ebff76f-acea-4304-892a-d59fe7b63f7b
+		lineageTag: 7cab42ab-382b-4a4d-9c1e-6183cc332533
 		summarizeBy: none
 		sourceColumn: feedback_text
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column name
 		dataType: string
-		lineageTag: 5240cb23-1ec4-470a-9031-84753f6eb935
+		lineageTag: 8cd1844e-95f2-4aef-be08-c5e8660e603a
 		summarizeBy: none
 		sourceColumn: name
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column sentiment
 		dataType: string
-		lineageTag: 962a64aa-335f-4405-a2e0-5362eb6c7ffe
+		lineageTag: f9c10385-dc37-4714-b386-e1c5dd788f37
 		summarizeBy: none
 		sourceColumn: sentiment
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Promoter
 		dataType: int64
-		lineageTag: 9c610618-2959-4b6e-92db-3b5f3f922b9b
+		lineageTag: 3730990f-27db-46c5-a169-6ce83646b0fc
 		summarizeBy: none
 		sourceColumn: Promoter
+		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Action (Category)'
 		dataType: string
-		lineageTag: 9f8ca54f-6e45-4808-8538-6fb12f6267c9
+		lineageTag: cf6403fb-5b84-479b-82d0-bd4f22cb6f5b
 		summarizeBy: none
 		sourceColumn: 'Action (Category)'
+		description: String column.
 		displayFolder: Groups
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Action (Sentiment)'
 		dataType: string
-		lineageTag: 36071bbb-b51c-4391-b158-b09df1f478ed
+		lineageTag: 8d90a88b-048b-4362-b0a1-40d714d5f473
 		summarizeBy: none
 		sourceColumn: 'Action (Sentiment)'
+		description: String column.
 		displayFolder: Groups
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'customer_feedback_data.json-338595a1-8ce2-4e70-9769-194c9ef0d419' = m
+	partition 'customer_feedback_data.json-57fa4c48-66e5-45b8-be88-31b7c536a16c' = m
 		mode: import
 		source =
 				let
@@ -125,4 +139,5 @@ table 'customer_feedback_data.json'
 				    Result
 
 	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 12 columns: Document Index (generated), category, customer_id, date, email, feedback_score, feedback_text, name, ... (12 columns total).
 

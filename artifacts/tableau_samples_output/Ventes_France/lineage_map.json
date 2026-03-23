@@ -1,0 +1,58 @@
+{
+  "tables": [
+    {
+      "tableau_datasource": "federated.ventes",
+      "tableau_table": "Commandes",
+      "pbi_table": "Commandes"
+    },
+    {
+      "tableau_datasource": "federated.ventes",
+      "tableau_table": "Produits",
+      "pbi_table": "Produits"
+    },
+    {
+      "tableau_datasource": "federated.ventes",
+      "tableau_table": "Clients",
+      "pbi_table": "Clients"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Calendar",
+      "pbi_table": "Calendar"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Objectif Marge",
+      "pbi_table": "Objectif Marge"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Top N Produits",
+      "pbi_table": "Top N Produits"
+    }
+  ],
+  "calculations": [],
+  "relationships": [
+    {
+      "from": "Commandes[client_id]",
+      "to": "Clients[client_id]",
+      "cardinality": "bothDirections"
+    },
+    {
+      "from": "Commandes[produit_id]",
+      "to": "Produits[produit_id]",
+      "cardinality": "bothDirections"
+    },
+    {
+      "from": "Commandes[date_commande]",
+      "to": "Calendar[Date]",
+      "cardinality": "oneDirection"
+    },
+    {
+      "from": "Clients[date_inscription]",
+      "to": "Calendar[Date]",
+      "cardinality": "bothDirections"
+    }
+  ],
+  "worksheets": []
+}

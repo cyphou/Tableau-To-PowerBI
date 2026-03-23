@@ -1,0 +1,22 @@
+{
+  "tables": [
+    {
+      "tableau_datasource": "sqlproxy.0uczajf02b02kv16u6atd08pslj5",
+      "tableau_table": "sqlproxy",
+      "pbi_table": "sqlproxy"
+    },
+    {
+      "tableau_datasource": "federated.1bw8gel1hkm5ms1c8jgrm0zixmde",
+      "tableau_table": "xy",
+      "pbi_table": "xy"
+    },
+    {
+      "tableau_datasource": "federated.1bw8gel1hkm5ms1c8jgrm0zixmde",
+      "tableau_table": "xy1",
+      "pbi_table": "xy1"
+    }
+  ],
+  "calculations": [],
+  "relationships": [],
+  "worksheets": []
+}

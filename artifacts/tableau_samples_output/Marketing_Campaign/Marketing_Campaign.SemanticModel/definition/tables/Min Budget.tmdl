@@ -1,20 +1,25 @@
 table 'Min Budget'
-	lineageTag: 314f1819-0626-410f-9983-64cbbad70d16
+	lineageTag: 40b62e21-2cfe-4469-8174-689e3b22762b
+	description: Contains 1 columns and 1 measures: Value.
 
 	measure 'Min Budget' = SELECTEDVALUE('Min Budget'[Value], 5000)
-		lineageTag: 3a1c6153-cf9a-4675-9656-31d852f17468
+		description: DAX: SELECTEDVALUE('Min Budget'[Value], 5000)
+		lineageTag: 1b55f88c-5436-4255-b6b0-31dd6b526bc2
 
 	column Value
 		dataType: double
-		lineageTag: 360a8767-a4d2-47a8-b676-63b55e315cd4
+		lineageTag: 182ba120-6052-4453-8959-13f9e5314525
 		summarizeBy: none
 		sourceColumn: Value
+		description: Double column.
+		annotation displayFolder = Parameters
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Min Budget-595f0e60-923f-48c9-b570-efbc8d1b2076' = calculated
+	partition 'Min Budget-5343cb3c-89c0-429f-abca-fd60e4e68305' = calculated
 		mode: import
 		source = GENERATESERIES(0, 100000, 1000)
 
 	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 1 columns and 1 measures: Value.
 

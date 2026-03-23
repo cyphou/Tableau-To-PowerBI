@@ -1,75 +1,86 @@
 table Maintenance
-	lineageTag: 07b8bf25-679c-4cfc-bbda-4b1e2684cc29
+	lineageTag: 39132bfa-256a-4a5d-93c6-c98ab1e639b1
+	description: Contains 8 columns: maint_id, machine_id, maint_date, maint_type, maint_cost, downtime_hours, technician, description.
 
 	column maint_id
 		dataType: int64
-		lineageTag: 9bd250b0-c6f3-48fd-8466-2ed52760f3bd
+		lineageTag: 29498897-0a80-454b-8f9d-438db9ff008c
 		summarizeBy: sum
 		sourceColumn: maint_id
+		description: Int64 column.
+		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column machine_id
 		dataType: int64
-		lineageTag: 02f01b37-9bf9-421f-ab37-c0d3da4e1b45
+		lineageTag: 75153f90-f09e-4879-bf53-6d9276571df5
 		summarizeBy: sum
 		sourceColumn: machine_id
+		description: Int64 column.
+		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column maint_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 8412e64d-8e15-4e59-baee-b42bdbe9b395
+		lineageTag: b24483f8-960b-434a-9dbf-2d13700bd47b
 		summarizeBy: none
 		sourceColumn: maint_date
 		dataCategory: DateTime
+		description: Datetime column. categorized as DateTime.
 
 		annotation SummarizationSetBy = Automatic
 
 	column maint_type
 		dataType: string
-		lineageTag: 7a17d52b-4a6c-485a-82a4-7046fe1cfe78
+		lineageTag: 9f20d8ab-1317-44f2-bf36-74d662845331
 		summarizeBy: none
 		sourceColumn: maint_type
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column maint_cost
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 516185cf-a64b-4efb-8a36-b8e9aa4bec4e
+		lineageTag: 42ece377-9d10-4ef2-a4ac-ac631dde801c
 		summarizeBy: sum
 		sourceColumn: maint_cost
+		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column downtime_hours
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 64c5953a-2b8b-4f89-a68c-54271b70616a
+		lineageTag: a7403a15-eed9-435e-81da-fb75cf61ef41
 		summarizeBy: sum
 		sourceColumn: downtime_hours
+		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column technician
 		dataType: string
-		lineageTag: 81c72e9b-984f-4f91-9d64-c6f37bbdc974
+		lineageTag: f8dd3d20-8898-4f8b-9911-b14d5cd4ab75
 		summarizeBy: none
 		sourceColumn: technician
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column description
 		dataType: string
-		lineageTag: 02843926-5cc9-491f-b386-e261a08f3227
+		lineageTag: 2d73d4da-a3e1-4052-a9cd-a2daff95d8be
 		summarizeBy: none
 		sourceColumn: description
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Maintenance-f5ae749b-ad20-415c-a381-f0c8cdb6e56c' = m
+	partition 'Maintenance-953067a8-bb67-44cc-9e5d-e10f2fa1e3cf' = m
 		mode: import
 		source =
 				let
@@ -93,4 +104,5 @@ table Maintenance
 				    Result
 
 	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 8 columns: maint_id, machine_id, maint_date, maint_type, maint_cost, downtime_hours, technician, description.
 

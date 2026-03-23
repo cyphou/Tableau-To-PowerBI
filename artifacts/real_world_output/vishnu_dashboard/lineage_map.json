@@ -1,0 +1,33 @@
+{
+  "tables": [
+    {
+      "tableau_datasource": "Sample - Superstore",
+      "tableau_table": "Orders$",
+      "pbi_table": "Orders$"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Calendar",
+      "pbi_table": "Calendar"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Top Customers",
+      "pbi_table": "Top Customers"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Profit Bin Size",
+      "pbi_table": "Profit Bin Size"
+    }
+  ],
+  "calculations": [],
+  "relationships": [
+    {
+      "from": "Orders$[Order Date]",
+      "to": "Calendar[Date]",
+      "cardinality": "oneDirection"
+    }
+  ],
+  "worksheets": []
+}

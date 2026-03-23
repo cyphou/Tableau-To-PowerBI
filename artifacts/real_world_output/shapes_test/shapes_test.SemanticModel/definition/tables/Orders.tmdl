@@ -1,227 +1,258 @@
 table Orders
-	lineageTag: 60e0c47e-d96d-40d4-aa1a-0cfb48e9535a
+	lineageTag: 9aac40d3-000b-4971-9fe7-d0c78bda5bcf
+	description: Contains 25 columns and 1 measures: Row ID, Order ID, Order Date, Ship Date, Ship Mode, Customer ID, Customer Name, Segment, ... (25 columns total).
 
 	measure 'Profit Ratio' = SUM('Orders'[Profit])/SUM('Orders'[Sales])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 48adfdda-ea7c-41e0-9eb5-0ca5051cdb6d
+		description: Migrated from Tableau: SUM([Profit])/SUM([Sales]) | DAX: SUM('Orders'[Profit])/SUM('Orders'[Sales])
+		lineageTag: 15b5124a-2959-4824-aebf-51170e353e76
 
 	column 'Row ID'
 		dataType: int64
-		lineageTag: 0472045d-70dd-4f4a-9136-b186b27f367e
+		lineageTag: 6cd97cbb-e797-49fa-a3a2-86f263dcd871
 		summarizeBy: sum
 		sourceColumn: 'Row ID'
+		description: Int64 column.
+		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Order ID'
 		dataType: string
-		lineageTag: 408bd101-4565-4373-8f52-66b76be9a49c
+		lineageTag: d121316e-6848-4152-a883-c7f07db11212
 		summarizeBy: none
 		sourceColumn: 'Order ID'
+		description: String column.
+		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Order Date'
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 3fb2dcf4-34de-4d2f-8a17-b514d3fc02fe
+		lineageTag: 23175202-9785-45b6-9973-a09304468b27
 		summarizeBy: none
 		sourceColumn: 'Order Date'
 		dataCategory: DateTime
+		description: Datetime column. categorized as DateTime.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Ship Date'
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: b6aff115-a59f-4d6e-826c-24384ddcd5c3
+		lineageTag: 4de191e6-11c7-4bfc-94e1-ea685e2d91c3
 		summarizeBy: none
 		sourceColumn: 'Ship Date'
 		dataCategory: DateTime
+		description: Datetime column. categorized as DateTime.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Ship Mode'
 		dataType: string
-		lineageTag: 33758f64-f28a-4d6d-bb18-8c171b0e268f
+		lineageTag: a1ff70df-eb57-45f8-b416-0717b87726ca
 		summarizeBy: none
 		sourceColumn: 'Ship Mode'
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Customer ID'
 		dataType: string
-		lineageTag: e0d0643c-7232-4e48-a3fc-ad5695d892a2
+		lineageTag: b11bdbc3-e681-4d36-99d7-149cb7a2a7a6
 		summarizeBy: none
 		sourceColumn: 'Customer ID'
+		description: String column.
+		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Customer Name'
 		dataType: string
-		lineageTag: 2fe4f227-b3e9-4f9e-a681-8fe212b9f85c
+		lineageTag: 46d10f9a-a4cf-400a-b82f-3a0a2e694868
 		summarizeBy: none
 		sourceColumn: 'Customer Name'
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Segment
 		dataType: string
-		lineageTag: 1599f8d0-5a5c-4444-bca3-87b4cf89f46e
+		lineageTag: 4b6cefbe-04cc-4165-9b9c-e1ca26e3de3a
 		summarizeBy: none
 		sourceColumn: Segment
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Country/Region'
 		dataType: string
-		lineageTag: ee9cb2a9-3692-4f6a-add0-0e25b42128de
+		lineageTag: ad700253-6918-4132-9f28-025c20f65141
 		summarizeBy: none
 		sourceColumn: 'Country/Region'
 		dataCategory: StateOrProvince
+		description: String column. categorized as StateOrProvince.
 
 		annotation SummarizationSetBy = Automatic
 
 	column City
 		dataType: string
-		lineageTag: e328d746-fe89-4944-b6a3-3ff6fc0cda19
+		lineageTag: b31005ac-2e74-4e79-8528-773b5fc0e965
 		summarizeBy: none
 		sourceColumn: City
 		dataCategory: City
+		description: String column. categorized as City.
 
 		annotation SummarizationSetBy = Automatic
 
 	column State
 		dataType: string
-		lineageTag: 02384058-183e-4842-8ec7-47216047fe7f
+		lineageTag: 5cf2e330-94d0-4f70-9409-5653610b960b
 		summarizeBy: none
 		sourceColumn: State
 		dataCategory: StateOrProvince
+		description: String column. categorized as StateOrProvince.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Postal Code'
 		dataType: int64
-		lineageTag: d0af5ca0-4519-4c18-8663-aa3010601cf1
+		lineageTag: bf3970e6-723d-4e82-974e-c22108d9c767
 		summarizeBy: sum
 		sourceColumn: 'Postal Code'
 		dataCategory: PostalCode
+		description: Int64 column. categorized as PostalCode.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Region
 		dataType: string
-		lineageTag: b994988c-a461-47cb-a7aa-a88034ebad80
+		lineageTag: e6b73fb8-f00b-4d58-9e9d-78bc84f7476c
 		summarizeBy: none
 		sourceColumn: Region
 		dataCategory: StateOrProvince
+		description: String column. categorized as StateOrProvince.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Product ID'
 		dataType: string
-		lineageTag: 0d7ed8a7-2481-4b80-9af1-224a4a485802
+		lineageTag: 21dcc4af-0e6f-463f-a111-f0ed64f5fa1c
 		summarizeBy: none
 		sourceColumn: 'Product ID'
+		description: String column.
+		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column Category
 		dataType: string
-		lineageTag: cffda49a-744e-4a04-ad79-9b6c60ddb746
+		lineageTag: 1848ccd5-3f91-4c6d-b962-7e7bb0c55c10
 		summarizeBy: none
 		sourceColumn: Category
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Sub-Category'
 		dataType: string
-		lineageTag: 65d885ab-0335-45fe-931f-ab16ac0ea864
+		lineageTag: b82df47f-2f54-4bc6-b920-3d6860dc3717
 		summarizeBy: none
 		sourceColumn: 'Sub-Category'
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Product Name'
 		dataType: string
-		lineageTag: 567577ad-8629-4e27-93c6-e31af5e51741
+		lineageTag: 582db4e1-cd54-485a-882b-80c7cc44a088
 		summarizeBy: none
 		sourceColumn: 'Product Name'
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Sales
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 1f1d2431-998f-4f0e-a767-dea23861ec0d
+		lineageTag: e4397495-378e-4200-94c4-8b8012418965
 		summarizeBy: sum
 		sourceColumn: Sales
+		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Quantity
 		dataType: int64
-		lineageTag: 5c959ba2-f777-425f-9e0f-f72ad8259038
+		lineageTag: f6118fc3-a3f0-4711-8ac5-642e74700cd6
 		summarizeBy: sum
 		sourceColumn: Quantity
+		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Discount
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 5b4301c4-455f-416a-816c-bf409966ad12
+		lineageTag: cda6c794-6984-41eb-93f9-dd2e3e6ee507
 		summarizeBy: sum
 		sourceColumn: Discount
+		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Profit
 		dataType: double
 		formatString: #,0.00
-		lineageTag: cd7fde23-1b2f-4bf7-bf0e-c5818f68206d
+		lineageTag: 83acedb1-a3b1-4043-97dc-1736e85f42f5
 		summarizeBy: sum
 		sourceColumn: Profit
+		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Profit (bin)'
 		dataType: int64
-		lineageTag: 593b0ca9-a4bc-4622-adb2-5a56f5442472
+		lineageTag: 9f3f1c53-c584-4620-88b6-2ab7b5668cb6
 		summarizeBy: none
 		sourceColumn: 'Profit (bin)'
+		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Top Customers by Profit'
 		dataType: string
-		lineageTag: c8795d9d-3ee3-4b90-a36f-defb6e5ee006
+		lineageTag: 8556bacf-c7bf-44cd-a3e7-29091e8d68a6
 		summarizeBy: none
 		sourceColumn: 'Top Customers by Profit'
+		description: String column.
 		displayFolder: Groups
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Product Name (group)'
 		dataType: string
-		lineageTag: 8cac36aa-1770-40b1-903e-ba01a844d6b9
+		lineageTag: 31d65cbc-76ea-4056-8b33-297517f98696
 		summarizeBy: none
 		sourceColumn: 'Product Name (group)'
+		description: String column.
 		displayFolder: Groups
 
 		annotation SummarizationSetBy = Automatic
 
 	column Manufacturer
 		dataType: double
-		lineageTag: 754a7418-0e2a-4c07-8c8d-72bcb4f1b81b
+		lineageTag: bb9d543b-10df-49ff-b5bb-ef574539f88d
 		summarizeBy: none
 		sourceColumn: Manufacturer
+		description: Double column.
 		displayFolder: Bins
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Orders-93a1c6d9-80d5-483c-9420-ed40f5d8f303' = m
+	partition 'Orders-0692273d-ed24-4f89-afaa-f9c58efd90cc' = m
 		mode: import
 		source =
 				let
@@ -274,4 +305,5 @@ table Orders
 				    Result
 
 	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 25 columns and 1 measures: Row ID, Order ID, Order Date, Ship Date, Ship Mode, Customer ID, Customer Name, Segment, ... (25 columns total).
 

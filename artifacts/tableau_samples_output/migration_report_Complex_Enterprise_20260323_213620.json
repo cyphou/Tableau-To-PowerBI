@@ -1,0 +1,495 @@
+{
+  "report_name": "Complex_Enterprise",
+  "created_at": "2026-03-23T21:36:20.801429",
+  "summary": {
+    "total_items": 57,
+    "exact": 56,
+    "approximate": 0,
+    "placeholder": 0,
+    "unsupported": 0,
+    "skipped": 1,
+    "fidelity_score": 100.0,
+    "by_category": {
+      "datasource": {
+        "total": 2,
+        "exact": 2
+      },
+      "calculation": {
+        "total": 33,
+        "exact": 32,
+        "skipped": 1
+      },
+      "visual": {
+        "total": 12,
+        "exact": 12
+      },
+      "parameter": {
+        "total": 5,
+        "exact": 5
+      },
+      "bookmark": {
+        "total": 2,
+        "exact": 2
+      },
+      "rls_role": {
+        "total": 3,
+        "exact": 3
+      }
+    }
+  },
+  "completeness": {
+    "categories": {
+      "datasource": {
+        "total": 2,
+        "exact": 2,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "calculation": {
+        "total": 33,
+        "exact": 32,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 1,
+        "fidelity_pct": 100.0
+      },
+      "visual": {
+        "total": 12,
+        "exact": 12,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "parameter": {
+        "total": 5,
+        "exact": 5,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "bookmark": {
+        "total": 2,
+        "exact": 2,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "rls_role": {
+        "total": 3,
+        "exact": 3,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      }
+    },
+    "overall_score": 100.0,
+    "grade": "A"
+  },
+  "table_mapping": [
+    {
+      "source_datasource": "Global Sales Model",
+      "source_table": "fact_sales",
+      "target_table": "fact_sales",
+      "connection_type": "Snowflake",
+      "columns": 26
+    },
+    {
+      "source_datasource": "Global Sales Model",
+      "source_table": "dim_date",
+      "target_table": "dim_date",
+      "connection_type": "Snowflake",
+      "columns": 12
+    },
+    {
+      "source_datasource": "Global Sales Model",
+      "source_table": "dim_customer",
+      "target_table": "dim_customer",
+      "connection_type": "Snowflake",
+      "columns": 12
+    },
+    {
+      "source_datasource": "Global Sales Model",
+      "source_table": "dim_product",
+      "target_table": "dim_product",
+      "connection_type": "Snowflake",
+      "columns": 10
+    }
+  ],
+  "items": [
+    {
+      "category": "datasource",
+      "name": "federated.global",
+      "status": "exact",
+      "note": "Snowflake, 4 table(s)"
+    },
+    {
+      "category": "datasource",
+      "name": "federated.budget",
+      "status": "exact",
+      "note": "PostgreSQL, 0 table(s)"
+    },
+    {
+      "category": "calculation",
+      "name": "Gross Revenue",
+      "status": "exact",
+      "source_formula": "SUM([quantity] * [unit_price])",
+      "dax": "SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price])"
+    },
+    {
+      "category": "calculation",
+      "name": "Net Revenue",
+      "status": "exact",
+      "source_formula": "SUM(IF [order_status] != \"Cancelled\" AND [is_returned] = FALSE THEN [quantity] * [unit_price] * (1 - [discount_pct]) ELSE 0 END)",
+      "dax": "SUMX('fact_sales', IF('fact_sales'[order_status] <> \"Cancelled\" && 'fact_sales'[is_returned] = FALSE, 'fact_sales'[quantity] * 'fact_sales'[unit_price] * (1 - 'fact_sales'[discount_pct]), 0))"
+    },
+    {
+      "category": "calculation",
+      "name": "COGS",
+      "status": "exact",
+      "source_formula": "SUM([quantity] * [unit_cost])",
+      "dax": "SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_cost])"
+    },
+    {
+      "category": "calculation",
+      "name": "Gross Profit",
+      "status": "exact",
+      "source_formula": "[C_NetRev] - [C_COGS] - SUM([shipping_cost])",
+      "dax": "[Net Revenue] - [COGS] - SUM('fact_sales'[shipping_cost])"
+    },
+    {
+      "category": "calculation",
+      "name": "Gross Margin %",
+      "status": "exact",
+      "source_formula": "ZN([C_GrossProfit] / [C_NetRev])",
+      "dax": "IF(ISBLANK([Gross Profit] / [Net Revenue]), 0, [Gross Profit] / [Net Revenue])"
+    },
+    {
+      "category": "calculation",
+      "name": "Tax Amount",
+      "status": "exact",
+      "source_formula": "SUM([quantity] * [unit_price] * (1 - [discount_pct]) * [tax_rate])",
+      "dax": "SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price] * (1 - 'fact_sales'[discount_pct]) * 'fact_sales'[tax_rate])"
+    },
+    {
+      "category": "calculation",
+      "name": "Total Revenue incl Tax",
+      "status": "exact",
+      "source_formula": "[C_NetRev] + [C_TaxAmt]",
+      "dax": "[Net Revenue] + [Tax Amount]"
+    },
+    {
+      "category": "calculation",
+      "name": "Return Rate",
+      "status": "exact",
+      "source_formula": "SUM(IF [is_returned] = TRUE THEN 1 ELSE 0 END) / COUNT([sale_id])",
+      "dax": "SUMX('fact_sales', IF('fact_sales'[is_returned] = TRUE, 1, 0)) / COUNT('fact_sales'[sale_id])"
+    },
+    {
+      "category": "calculation",
+      "name": "Revenue per Customer",
+      "status": "exact",
+      "source_formula": "{FIXED [customer_id] : SUM([quantity] * [unit_price])}",
+      "dax": "CALCULATE(SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]), ALLEXCEPT('dim_customer', 'dim_customer'[customer_id]))"
+    },
+    {
+      "category": "calculation",
+      "name": "Revenue per Product",
+      "status": "exact",
+      "source_formula": "{FIXED [product_id] : SUM([quantity] * [unit_price])}",
+      "dax": "CALCULATE(SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]), ALLEXCEPT('dim_product', 'dim_product'[product_id]))"
+    },
+    {
+      "category": "calculation",
+      "name": "Revenue by Region-Channel",
+      "status": "exact",
+      "source_formula": "{FIXED [region], [channel] : SUM([quantity] * [unit_price])}",
+      "dax": "CALCULATE(SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]), ALLEXCEPT('fact_sales', 'fact_sales'[region], 'fact_sales'[channel]))"
+    },
+    {
+      "category": "calculation",
+      "name": "Revenue excl Territory",
+      "status": "exact",
+      "source_formula": "{EXCLUDE [territory] : SUM([quantity] * [unit_price])}",
+      "dax": "CALCULATE(SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]), REMOVEFILTERS('fact_sales'[territory]))"
+    },
+    {
+      "category": "calculation",
+      "name": "Revenue incl Subcategory",
+      "status": "exact",
+      "source_formula": "{INCLUDE [subcategory] : SUM([quantity] * [unit_price])}",
+      "dax": "CALCULATE(SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]))"
+    },
+    {
+      "category": "calculation",
+      "name": "Running Total Revenue",
+      "status": "exact",
+      "source_formula": "RUNNING_SUM(SUM([quantity] * [unit_price]))",
+      "dax": "CALCULATE(SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]), FILTER(ALLSELECTED('fact_sales'), TRUE())) /* RUNNING_SUM: converted to cumulative — verify window scope */"
+    },
+    {
+      "category": "calculation",
+      "name": "Running Avg Revenue",
+      "status": "exact",
+      "source_formula": "RUNNING_AVG(SUM([quantity] * [unit_price]))",
+      "dax": "CALCULATE(SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]), FILTER(ALLSELECTED('fact_sales'), TRUE())) /* RUNNING_AVG: converted to cumulative — verify window scope */"
+    },
+    {
+      "category": "calculation",
+      "name": "Running Count",
+      "status": "exact",
+      "source_formula": "RUNNING_COUNT(SUM([quantity]))",
+      "dax": "CALCULATE(SUM('fact_sales'[quantity]), FILTER(ALLSELECTED('fact_sales'), TRUE())) /* RUNNING_COUNT: converted to cumulative — verify window scope */"
+    },
+    {
+      "category": "calculation",
+      "name": "Revenue Rank",
+      "status": "exact",
+      "source_formula": "RANK(SUM([quantity] * [unit_price]))",
+      "dax": "RANKX(ALL('fact_sales'), SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]))"
+    },
+    {
+      "category": "calculation",
+      "name": "Revenue Rank Dense",
+      "status": "exact",
+      "source_formula": "RANK_DENSE(SUM([quantity] * [unit_price]))",
+      "dax": "RANKX(ALL('fact_sales'), SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]),, ASC, DENSE)"
+    },
+    {
+      "category": "calculation",
+      "name": "Moving Avg 3-Period",
+      "status": "exact",
+      "source_formula": "WINDOW_AVG(SUM([quantity] * [unit_price]), -2, 0)",
+      "dax": "CALCULATE(SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]), WINDOW(-2, REL, 0, REL, ORDERBY('fact_sales'[sale_id], ASC)), ALL('fact_sales')) /* WINDOW.AVG: frame 'fact_sales'[-2,0] */"
+    },
+    {
+      "category": "calculation",
+      "name": "Window Max Revenue",
+      "status": "exact",
+      "source_formula": "WINDOW_MAX(SUM([quantity] * [unit_price]))",
+      "dax": "CALCULATE(SUMX('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price]), ALL('fact_sales'))"
+    },
+    {
+      "category": "calculation",
+      "name": "Revenue StdDev",
+      "status": "exact",
+      "source_formula": "STDEV(SUM([quantity] * [unit_price]))",
+      "dax": "STDEVX.S('fact_sales', 'fact_sales'[quantity] * 'fact_sales'[unit_price])"
+    },
+    {
+      "category": "calculation",
+      "name": "Order Count",
+      "status": "exact",
+      "source_formula": "COUNTD([sale_id])",
+      "dax": "DISTINCTCOUNT('fact_sales'[sale_id])"
+    },
+    {
+      "category": "calculation",
+      "name": "Unique Customers",
+      "status": "exact",
+      "source_formula": "COUNTD([customer_id])",
+      "dax": "DISTINCTCOUNT('dim_customer'[customer_id])"
+    },
+    {
+      "category": "calculation",
+      "name": "Unique Products Sold",
+      "status": "exact",
+      "source_formula": "COUNTD([product_id])",
+      "dax": "DISTINCTCOUNT('dim_product'[product_id])"
+    },
+    {
+      "category": "calculation",
+      "name": "Days Since First Order",
+      "status": "exact",
+      "source_formula": "DATEDIFF(\"day\", [first_order_date], TODAY())",
+      "dax": "DATEDIFF(LOOKUPVALUE(dim_customer[first_order_date], dim_customer[customer_key], fact_sales[customer_key]), TODAY(), DAY)"
+    },
+    {
+      "category": "calculation",
+      "name": "Full Location",
+      "status": "exact",
+      "source_formula": "UPPER([city]) + \", \" + [state] + \" (\" + [country] + \")\"",
+      "dax": "UPPER('fact_sales'[city]) & \", \" & 'fact_sales'[state] & \" (\" & 'fact_sales'[country] & \")\""
+    },
+    {
+      "category": "calculation",
+      "name": "Customer Tier",
+      "status": "exact",
+      "source_formula": "IF [C_RevPerCust] > 100000 THEN \"Enterprise\" ELSEIF [C_RevPerCust] > 50000 THEN \"Mid-Market\" ELSEIF [C_RevPerCust] > 10000 THEN \"SMB\" ELSE \"Startup\" END",
+      "dax": "IF([Revenue per Customer] > 100000, \"Enterprise\", IF([Revenue per Customer] > 50000, \"Mid-Market\", IF([Revenue per Customer] > 10000, \"SMB\", \"Startup\")))"
+    },
+    {
+      "category": "calculation",
+      "name": "Discount Category",
+      "status": "exact",
+      "source_formula": "IF ISNULL([discount_pct]) OR [discount_pct] = 0 THEN \"None\" ELSEIF [discount_pct] < 0.1 THEN \"Low\" ELSEIF [discount_pct] < 0.25 THEN \"Medium\" ELSEIF [discount_pct] < 0.5 THEN \"High\" ELSE \"Extreme\" END",
+      "dax": "IF(ISBLANK('fact_sales'[discount_pct]) || 'fact_sales'[discount_pct] = 0, \"None\", IF('fact_sales'[discount_pct] < 0.1, \"Low\", IF('fact_sales'[discount_pct] < 0.25, \"Medium\", IF('fact_sales'[discount_pct] < 0.5, \"High\", \"Extreme\"))))"
+    },
+    {
+      "category": "calculation",
+      "name": "Safe Discount",
+      "status": "exact",
+      "source_formula": "ZN([discount_pct])",
+      "dax": "[M-based column]"
+    },
+    {
+      "category": "calculation",
+      "name": "YTD Revenue",
+      "status": "exact",
+      "source_formula": "{FIXED : SUM(IF [year] = YEAR(TODAY()) AND [is_returned] = FALSE THEN [quantity] * [unit_price] ELSE 0 END)}",
+      "dax": "CALCULATE(SUMX('fact_sales', IF('dim_date'[year] = YEAR(TODAY()) && 'fact_sales'[is_returned] = FALSE, 'fact_sales'[quantity] * 'fact_sales'[unit_price], 0)), ALL('fact_sales'))"
+    },
+    {
+      "category": "calculation",
+      "name": "Is My Account",
+      "status": "exact",
+      "source_formula": "[email] = USERNAME()",
+      "dax": "'dim_customer'[email] = USERPRINCIPALNAME()"
+    },
+    {
+      "category": "calculation",
+      "name": "Manager Access",
+      "status": "exact",
+      "source_formula": "ISMEMBEROF(\"Regional Managers\")",
+      "dax": "TRUE() /* ISMEMBEROF(\"Regional Managers\"): implement via RLS role */"
+    },
+    {
+      "category": "calculation",
+      "name": "Target Achievement",
+      "status": "skipped",
+      "source_formula": "ZN(SUM([actual_revenue]) / SUM([revenue_target]))",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "visual",
+      "name": "Executive KPIs",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Revenue by Region",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Revenue Trend",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Sales Map",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Category Mix",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Customer Analysis",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Profit Waterfall",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Monthly Heatmap",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Payment Distribution",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Order Funnel",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Discount Distribution",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Customer Detail Tooltip",
+      "status": "exact"
+    },
+    {
+      "category": "parameter",
+      "name": "[Parameters].[Target Margin]",
+      "status": "exact",
+      "note": "domain=range"
+    },
+    {
+      "category": "parameter",
+      "name": "[Parameters].[Top N]",
+      "status": "exact",
+      "note": "domain=range"
+    },
+    {
+      "category": "parameter",
+      "name": "[Parameters].[Analysis Start]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[Parameters].[Metric Selector]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[Parameters].[Currency]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "bookmark",
+      "name": "Quarterly Business Review",
+      "status": "exact",
+      "note": "Converted to 3 bookmark(s)"
+    },
+    {
+      "category": "bookmark",
+      "name": "Sales Performance Deep Dive",
+      "status": "exact",
+      "note": "Converted to 2 bookmark(s)"
+    },
+    {
+      "category": "rls_role",
+      "name": "Territory Access",
+      "status": "exact",
+      "note": "User filter with explicit mappings → RLS role"
+    },
+    {
+      "category": "rls_role",
+      "name": "Is My Account",
+      "status": "exact",
+      "note": "Calculated security (USERNAME) → USERPRINCIPALNAME()"
+    },
+    {
+      "category": "rls_role",
+      "name": "Manager Access",
+      "status": "exact",
+      "note": "ISMEMBEROF → RLS role (assign Azure AD group members: Regional Managers)"
+    }
+  ]
+}

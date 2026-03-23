@@ -1,0 +1,174 @@
+{
+  "report_name": "Enterprise_Sales",
+  "created_at": "2026-03-23T17:33:32.846132",
+  "summary": {
+    "total_items": 15,
+    "exact": 5,
+    "approximate": 0,
+    "placeholder": 0,
+    "unsupported": 0,
+    "skipped": 10,
+    "fidelity_score": 100.0,
+    "by_category": {
+      "datasource": {
+        "total": 1,
+        "exact": 1
+      },
+      "calculation": {
+        "total": 10,
+        "skipped": 10
+      },
+      "visual": {
+        "total": 4,
+        "exact": 4
+      }
+    }
+  },
+  "completeness": {
+    "categories": {
+      "datasource": {
+        "total": 1,
+        "exact": 1,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "calculation": {
+        "total": 10,
+        "exact": 0,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 10,
+        "fidelity_pct": 100.0
+      },
+      "visual": {
+        "total": 4,
+        "exact": 4,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      }
+    },
+    "overall_score": 100.0,
+    "grade": "A"
+  },
+  "table_mapping": [
+    {
+      "source_datasource": "Web Analytics",
+      "source_table": "sessions",
+      "target_table": "(deduplicated / merged)",
+      "connection_type": "BigQuery",
+      "columns": 10
+    },
+    {
+      "source_datasource": "Web Analytics",
+      "source_table": "users",
+      "target_table": "(deduplicated / merged)",
+      "connection_type": "BigQuery",
+      "columns": 6
+    }
+  ],
+  "items": [
+    {
+      "category": "datasource",
+      "name": "federated.1",
+      "status": "exact",
+      "note": "BigQuery, 2 table(s)"
+    },
+    {
+      "category": "calculation",
+      "name": "Total Sessions",
+      "status": "skipped",
+      "source_formula": "COUNT([session_id])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Unique Visitors",
+      "status": "skipped",
+      "source_formula": "COUNTD([user_id])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Conversion Rate",
+      "status": "skipped",
+      "source_formula": "SUM(IF [converted] THEN 1 ELSE 0 END) / COUNT([session_id])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Avg Session Duration",
+      "status": "skipped",
+      "source_formula": "AVG([session_duration])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Total Revenue",
+      "status": "skipped",
+      "source_formula": "SUM([revenue])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Revenue per Session",
+      "status": "skipped",
+      "source_formula": "SUM([revenue]) / COUNT([session_id])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Channel Category",
+      "status": "skipped",
+      "source_formula": "IF [channel] = \"Organic Search\" OR [channel] = \"Paid Search\" THEN \"Search\"\nELSEIF [channel] = \"Social\" OR [channel] = \"Referral\" THEN \"Social/Referral\"\nELSEIF [channel] = \"Direct\" THEN \"Direct\"\nELSE \"Other\"\nEND",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Engagement Level",
+      "status": "skipped",
+      "source_formula": "IF [page_views] >= 10 THEN \"High\"\nELSEIF [page_views] >= 5 THEN \"Medium\"\nELSE \"Low\"\nEND",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Revenue by Channel",
+      "status": "skipped",
+      "source_formula": "{FIXED [channel] : SUM([revenue])}",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Days Since Signup",
+      "status": "skipped",
+      "source_formula": "DATEDIFF(\"day\", [signup_date], TODAY())",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "visual",
+      "name": "Sessions by Channel",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Revenue Trend",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Conversion by Device",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "User Engagement",
+      "status": "exact"
+    }
+  ]
+}

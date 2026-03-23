@@ -1,106 +1,121 @@
 table dim_customer
-	lineageTag: 36c712e9-c311-4890-9012-3a9a58e3dad8
+	lineageTag: b5401b9f-375e-44f7-96be-0b0eaa8dd8cd
+	description: Contains 12 columns: customer_key, customer_id, customer_name, email, phone, segment, industry, company_size, ... (12 columns total).
 
 	column customer_key
 		dataType: int64
-		lineageTag: c7551dee-0156-4500-a0e5-cc3ae62da453
+		lineageTag: 467f6db1-208a-4e40-b68d-54dc65ec313f
 		summarizeBy: sum
 		sourceColumn: customer_key
+		description: Int64 column.
+		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column customer_id
 		dataType: string
-		lineageTag: 56f80015-cab2-403f-b945-c90233fcc03f
+		lineageTag: 8eebf0a1-bcda-4aeb-8d4d-7bebee9a7cc4
 		summarizeBy: none
 		sourceColumn: customer_id
+		description: String column.
+		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column customer_name
 		dataType: string
-		lineageTag: d93ce8ce-d19c-4d5f-8b68-97a9d872d1ab
+		lineageTag: a56ba574-35ba-4b66-bda8-640b70a671f9
 		summarizeBy: none
 		sourceColumn: customer_name
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column email
 		dataType: string
-		lineageTag: 403ee563-bd02-40a8-8510-87a4d1550b66
+		lineageTag: dad8aabf-1920-4286-9cf0-4cd165a43a62
 		summarizeBy: none
 		sourceColumn: email
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column phone
 		dataType: string
-		lineageTag: dec20918-3796-449c-a657-81ea224b2ba8
+		lineageTag: 6896c089-c5b1-4fc1-9e97-047b2adde8c5
 		summarizeBy: none
 		sourceColumn: phone
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column segment
 		dataType: string
-		lineageTag: 3c66e0e8-05fe-4267-929a-9c8a2014d235
+		lineageTag: 10113f01-84d2-4e2e-ac87-8c2b72d421b2
 		summarizeBy: none
 		sourceColumn: segment
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column industry
 		dataType: string
-		lineageTag: 970adb35-6349-43b7-94bd-5eedbaff4097
+		lineageTag: c8e61e4a-6344-466a-b71f-2fe99e1958d6
 		summarizeBy: none
 		sourceColumn: industry
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column company_size
 		dataType: string
-		lineageTag: 7959dc6d-1b32-425d-a354-1be09336fdf3
+		lineageTag: 9eb8b8e5-183a-4dcf-9cb2-b6943f6162a1
 		summarizeBy: none
 		sourceColumn: company_size
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column first_order_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: d6619c1f-d3af-4c13-977d-7b4749db8b21
+		lineageTag: 52b0c43d-c46c-436d-87a1-0212b582b876
 		summarizeBy: none
 		sourceColumn: first_order_date
 		dataCategory: DateTime
+		description: Datetime column. categorized as DateTime.
 
 		annotation SummarizationSetBy = Automatic
 
 	column credit_limit
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 96b72c7f-d3c3-4297-a3d5-60543a45d687
+		lineageTag: f90c4ce0-7984-4ab8-9e83-31edfb5cfb5d
 		summarizeBy: sum
 		sourceColumn: credit_limit
+		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column account_manager
 		dataType: string
-		lineageTag: 95b3e826-c9b3-49f0-a24e-6724d6e0acf7
+		lineageTag: 059c80d2-79ce-4f6f-a462-3d092a2effb3
 		summarizeBy: none
 		sourceColumn: account_manager
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column is_active
 		dataType: boolean
-		lineageTag: 95956f50-4347-44cd-a9de-c9699d5084c4
+		lineageTag: 20420c67-5ead-4fb1-8336-12dcc9e0f122
 		summarizeBy: none
 		sourceColumn: is_active
+		description: Boolean column.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'dim_customer-562406d9-fe54-4fdf-8cf9-94bfc96186af' = m
+	partition 'dim_customer-edd72960-2174-4d94-9304-27c317f83dbd' = m
 		mode: import
 		source =
 				let
@@ -126,4 +141,5 @@ table dim_customer
 				    Result
 
 	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 12 columns: customer_key, customer_id, customer_name, email, phone, segment, industry, company_size, ... (12 columns total).
 

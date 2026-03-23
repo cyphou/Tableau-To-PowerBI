@@ -1,0 +1,12 @@
+{
+  "tables": [
+    {
+      "tableau_datasource": "federated.1df63xu0j2dvhd1e3sooz18pbrcc",
+      "tableau_table": "TestData",
+      "pbi_table": "TestData"
+    }
+  ],
+  "calculations": [],
+  "relationships": [],
+  "worksheets": []
+}

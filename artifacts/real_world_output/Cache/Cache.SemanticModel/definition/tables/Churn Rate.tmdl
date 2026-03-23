@@ -1,20 +1,25 @@
 table 'Churn Rate'
-	lineageTag: 1c4ff6ef-3f8b-43cd-8c15-da9376b28e09
+	lineageTag: d2e14459-62c1-49c2-a99d-96c81f50fa5d
+	description: Contains 1 columns and 1 measures: Value.
 
 	measure 'Churn Rate' = SELECTEDVALUE('Churn Rate'[Value], 0.064000000000000001)
-		lineageTag: 7c942f27-2d8f-4a36-b582-498a080998ec
+		description: DAX: SELECTEDVALUE('Churn Rate'[Value], 0.064000000000000001)
+		lineageTag: ee337440-5371-4fb5-a257-8d9886f514fd
 
 	column Value
 		dataType: double
-		lineageTag: 44efbc81-40ee-4f7f-ac0a-fc08b35ec8dc
+		lineageTag: 34777a81-7e0e-4033-9371-5b57ab3bd4b9
 		summarizeBy: none
 		sourceColumn: Value
+		description: Double column.
+		annotation displayFolder = Parameters
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Churn Rate-6006312c-420c-49e6-9e14-ffad6c0022ec' = calculated
+	partition 'Churn Rate-b2ac7871-f587-4c5a-8a14-8968744ea3b3' = calculated
 		mode: import
 		source = GENERATESERIES(0.0, 0.25, 0.001)
 
 	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 1 columns and 1 measures: Value.
 

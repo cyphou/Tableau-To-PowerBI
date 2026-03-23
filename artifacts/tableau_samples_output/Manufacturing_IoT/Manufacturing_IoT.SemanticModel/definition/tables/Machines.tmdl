@@ -1,66 +1,76 @@
 table Machines
-	lineageTag: 666eaf29-c4fd-4719-b510-a3667df2a451
+	lineageTag: b2c6a034-2e75-404f-86dc-fc85bf9b5c08
+	description: Contains 7 columns: machine_id, machine_name, machine_type, install_date, location, line_id, rated_capacity.
 
 	column machine_id
 		dataType: int64
-		lineageTag: 37f0652d-2930-4a0d-a298-ebf1ee7ebcff
+		lineageTag: c631c1cf-c13d-41bf-9d7b-49176c45c1c6
 		summarizeBy: sum
 		sourceColumn: machine_id
+		description: Int64 column.
+		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column machine_name
 		dataType: string
-		lineageTag: 6eaf18f0-f805-4edf-9497-b295ba6c21fb
+		lineageTag: b456afea-e0e5-4b5d-a63a-48791b042858
 		summarizeBy: none
 		sourceColumn: machine_name
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column machine_type
 		dataType: string
-		lineageTag: e3bd39e1-2a75-4a47-8b15-92fa12f0c603
+		lineageTag: 4221fc43-9e16-43e9-a821-c40835eb8bf0
 		summarizeBy: none
 		sourceColumn: machine_type
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column install_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 254997e0-1472-42ce-a314-51d29d1c949a
+		lineageTag: cc560c32-4403-48e0-8368-50e95118e502
 		summarizeBy: none
 		sourceColumn: install_date
 		dataCategory: DateTime
+		description: Datetime column. categorized as DateTime.
 
 		annotation SummarizationSetBy = Automatic
 
 	column location
 		dataType: string
-		lineageTag: 4d62804b-bb75-4c3e-8dba-ae1dbdf27b53
+		lineageTag: c495f55a-29c2-4f60-9e60-2bd39cbd2316
 		summarizeBy: none
 		sourceColumn: location
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column line_id
 		dataType: string
-		lineageTag: e0418ff1-b620-4e82-8864-fc2468bb0b24
+		lineageTag: 6c4a797f-590e-4177-9c94-8f9af8ce05d6
 		summarizeBy: none
 		sourceColumn: line_id
+		description: String column.
+		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column rated_capacity
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 0a4b9c48-dabe-4c31-b94e-c633a6ae5f26
+		lineageTag: 2c59903a-3b75-4953-ac0c-b349ae71b8ca
 		summarizeBy: sum
 		sourceColumn: rated_capacity
+		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Machines-6eca43c2-0720-4b6e-bd9f-30fecc1c4e93' = m
+	partition 'Machines-305c3a6e-c31b-41a6-88c4-3cf9c982748e' = m
 		mode: import
 		source =
 				let
@@ -84,4 +94,5 @@ table Machines
 				    Result
 
 	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 7 columns: machine_id, machine_name, machine_type, install_date, location, line_id, rated_capacity.
 

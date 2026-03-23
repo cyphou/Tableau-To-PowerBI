@@ -1,0 +1,149 @@
+{
+  "generated_at": "2026-03-23T14:58:11.795660",
+  "source": "Tableau Migration",
+  "report_name": "SampleWB",
+  "objects_converted": {
+    "worksheets": 7,
+    "dashboards": 1,
+    "datasources": 1,
+    "calculations": 4,
+    "parameters": 0,
+    "filters": 16,
+    "stories": 0,
+    "sets": 0,
+    "groups": 5,
+    "bins": 0,
+    "hierarchies": 0,
+    "user_filters": 0,
+    "actions": 6,
+    "custom_sql": 0
+  },
+  "generated_output": {
+    "pages": 1,
+    "visuals": 3,
+    "theme_applied": false,
+    "theme_detail": {
+      "status": "skipped",
+      "reason": "no dashboard colors detected"
+    }
+  },
+  "tmdl_stats": {
+    "tables": 2,
+    "measures": 7,
+    "columns": 26,
+    "relationships": 0
+  },
+  "visual_type_mappings": {
+    "Country ranks": "Automatic",
+    "GDP per capita": "Automatic",
+    "GDP per capita by region": "Automatic",
+    "GDP per capita map": "Automatic",
+    "Health spending vs life expectancy": "Automatic",
+    "Interest rates": "Automatic",
+    "Share of World GDP": "Automatic"
+  },
+  "visual_details": [
+    {
+      "worksheet": "Country ranks",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "Country / Region"
+      ],
+      "measures": [
+        "H: Life exp (years)",
+        "F: GDP (curr $)",
+        "F: GDP per capita (curr $)",
+        "P: Population (count)"
+      ],
+      "field_count": 5
+    },
+    {
+      "worksheet": "GDP per capita",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "Country / Region",
+        "Region"
+      ],
+      "measures": [
+        "F: GDP per capita (curr $)",
+        "Calculation1",
+        "F: GDP per capita (curr $)"
+      ],
+      "field_count": 5
+    },
+    {
+      "worksheet": "GDP per capita by region",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "lineChart",
+      "dimensions": [
+        "Date",
+        "Region"
+      ],
+      "measures": [
+        "Calculation_1590906174513693"
+      ],
+      "field_count": 3
+    },
+    {
+      "worksheet": "GDP per capita map",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "map",
+      "dimensions": [
+        "Region"
+      ],
+      "measures": [
+        "F: GDP per capita (curr $)"
+      ],
+      "field_count": 2
+    },
+    {
+      "worksheet": "Health spending vs life expectancy",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "Region",
+        "Country / Region"
+      ],
+      "measures": [
+        "H: Health exp/cap (curr $)",
+        "H: Life exp (years)"
+      ],
+      "field_count": 4
+    },
+    {
+      "worksheet": "Interest rates",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "Region",
+        "Subregion"
+      ],
+      "measures": [
+        "F: Deposit interest rate (%)",
+        "F: Lending interest rate (%)",
+        "F: GDP (curr $)",
+        "Calculation_1590906174513693",
+        "Calculation_8570907072742130"
+      ],
+      "field_count": 7
+    },
+    {
+      "worksheet": "Share of World GDP",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "table",
+      "dimensions": [
+        "Region",
+        "Country / Region",
+        "pcto:sum:F: GDP (curr $):qk:1"
+      ],
+      "measures": [
+        "F: GDP (curr $)",
+        "F: GDP (curr $)"
+      ],
+      "field_count": 5
+    }
+  ],
+  "approximations": []
+}

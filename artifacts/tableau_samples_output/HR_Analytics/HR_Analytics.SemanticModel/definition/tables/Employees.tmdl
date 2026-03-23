@@ -1,120 +1,137 @@
 table Employees
-	lineageTag: 8a49a423-d513-44e4-9126-c8048c1f9ed8
+	lineageTag: 79d04e2e-eb78-4aab-8433-a5b19528cacc
+	description: Contains 12 columns and 3 measures: EmployeeID, FirstName, LastName, HireDate, Department, JobTitle, Salary, Location, ... (12 columns total).
 
 	measure 'Average Salary' = AVERAGE('Employees'[Salary])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: e561a0a5-11a9-4400-8c0c-bf04374afbe2
+		description: Migrated from Tableau: AVG([Salary]) | DAX: AVERAGE('Employees'[Salary])
+		lineageTag: e52bfa0a-ad62-4413-b758-e1db41f8cb67
 
 	measure 'Employee Count' = COUNT('Employees'[EmployeeID])
 		displayFolder: Measures
-		lineageTag: b08abe1e-761c-4081-a9c7-cdcbe9989680
+		description: Migrated from Tableau: COUNT([EmployeeID]) | DAX: COUNT('Employees'[EmployeeID])
+		lineageTag: 8bb84bb0-3e32-47a7-b5b9-a2fb1c75a609
 
 	measure 'Total Compensation' = SUM('Employees'[Salary]) * 1.25
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 9e483d4e-2e90-4407-bd60-b528b212826d
+		description: Migrated from Tableau: SUM([Salary]) * 1.25 | DAX: SUM('Employees'[Salary]) * 1.25
+		lineageTag: 5e32636b-7275-42a7-b2dc-8fa5da97c80d
 
 	column EmployeeID
 		dataType: int64
-		lineageTag: c710af32-4691-4480-a523-452a91985fe3
+		lineageTag: 15fd8a15-4ec2-4c02-9aef-8927bef56d34
 		summarizeBy: sum
 		sourceColumn: EmployeeID
+		description: Int64 column.
+		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column FirstName
 		dataType: string
-		lineageTag: b710743d-0e46-44ae-a092-5271d2444de7
+		lineageTag: 9215be5e-6aec-491e-a42b-95b8ac528a15
 		summarizeBy: none
 		sourceColumn: FirstName
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column LastName
 		dataType: string
-		lineageTag: cb112c87-c473-432d-a171-ac60081bd619
+		lineageTag: a9ed4214-5754-43d8-86c2-de912f6fabe3
 		summarizeBy: none
 		sourceColumn: LastName
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column HireDate
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: c631612d-13fa-4923-94c5-339813cfae0f
+		lineageTag: c3159aab-00d4-4957-a2db-9c0d3b89ed2f
 		summarizeBy: none
 		sourceColumn: HireDate
 		dataCategory: DateTime
+		description: Datetime column. categorized as DateTime.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Department
 		dataType: string
-		lineageTag: ff69ba61-5cac-4fe9-ad49-e2d233b233c2
+		lineageTag: e18e5bb7-7f96-4dca-8ba3-dd0bbb0409aa
 		summarizeBy: none
 		sourceColumn: Department
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column JobTitle
 		dataType: string
-		lineageTag: d9d009d9-a9b5-4edf-8ef2-d23d2b73a873
+		lineageTag: 1737dfbb-6b6e-4d41-a58e-7c6a6c5bfb40
 		summarizeBy: none
 		sourceColumn: JobTitle
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Salary
 		dataType: double
 		formatString: #,0.00
-		lineageTag: a9d078c4-9c17-44dd-b8ee-b808149e10b5
+		lineageTag: 9b1b5141-10c4-48e2-ac53-fe8ff7c6982e
 		summarizeBy: sum
 		sourceColumn: Salary
+		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Location
 		dataType: string
-		lineageTag: d76a69c3-42f7-4d33-9840-3ae46b2e8e05
+		lineageTag: 1e4fd36d-0214-4cfc-9c9f-63eb2d492ced
 		summarizeBy: none
 		sourceColumn: Location
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Age
 		dataType: int64
-		lineageTag: 3bd180eb-30f2-4323-a3c9-1f3817a2c21c
+		lineageTag: 3fa2c25c-935a-44bf-a274-b17bcb540604
 		summarizeBy: sum
 		sourceColumn: Age
+		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column YearsOfService
 		dataType: int64
-		lineageTag: 71252c27-5930-4ecd-997c-789888beab95
+		lineageTag: ec1b4090-ce89-4fba-b6ce-bbcc7c0a964b
 		summarizeBy: sum
 		sourceColumn: YearsOfService
+		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column PerformanceRating
 		dataType: string
-		lineageTag: 3df4fe3c-18bb-49a5-9081-83bf7ced4367
+		lineageTag: b99e4be8-7026-4b88-981d-2fd609e10875
 		summarizeBy: none
 		sourceColumn: PerformanceRating
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Tenure Category'
 		dataType: string
-		lineageTag: 33d2ea8e-396b-4ce4-9336-f06e95d4059b
+		lineageTag: 7a0b3a40-1271-4803-b534-f3b513aac75d
 		summarizeBy: none
 		sourceColumn: 'Tenure Category'
+		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Employees-8f80425e-358c-4814-869a-351e0a519acd' = m
+	partition 'Employees-5700b192-7a13-4b60-961f-2970b5a7db91' = m
 		mode: import
 		source =
 				let
@@ -138,4 +155,5 @@ table Employees
 				    Result
 
 	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 12 columns and 3 measures: EmployeeID, FirstName, LastName, HireDate, Department, JobTitle, Salary, Location, ... (12 columns total).
 
