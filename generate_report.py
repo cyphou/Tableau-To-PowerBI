@@ -9,7 +9,7 @@ import datetime
 from powerbi_import.html_template import (
     html_open, html_close, stat_card, stat_grid, section_open, section_close,
     badge, fidelity_bar, donut_chart, bar_chart, data_table, tab_bar,
-    tab_content, card, heatmap_table, esc,
+    tab_content, card, heatmap_table, flow_diagram, esc,
     PBI_BLUE, PBI_DARK, PBI_GRAY, PBI_LIGHT_GRAY, PBI_BG,
     SUCCESS, WARN, FAIL, PURPLE, TEAL, ORANGE,
 )
@@ -59,6 +59,22 @@ def load_metadata():
     return metadata
 
 
+def load_lineage(base_dir=None):
+    """Load lineage_map.json from each project directory."""
+    lineage = {}
+    search_dir = base_dir or MIGRATED_DIR
+    for d in sorted(glob.glob(os.path.join(search_dir, "*"))):
+        if os.path.isdir(d):
+            lin_file = os.path.join(d, "lineage_map.json")
+            if os.path.isfile(lin_file):
+                try:
+                    with open(lin_file, encoding="utf-8") as fh:
+                        lineage[os.path.basename(d)] = json.load(fh)
+                except (json.JSONDecodeError, OSError):
+                    pass
+    return lineage
+
+
 def _badge(score):
     """Return colored badge HTML for assessment score (uses shared template)."""
     return badge(score)
@@ -69,8 +85,9 @@ def _fidelity_bar(pct):
     return fidelity_bar(pct)
 
 
-def generate_html(assessments, reports, metadata):
+def generate_html(assessments, reports, metadata, lineage=None):
     """Generate consolidated HTML report."""
+    lineage = lineage or {}
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 
     # Import version
@@ -307,6 +324,116 @@ def generate_html(assessments, reports, metadata):
     )
     html += '</div>'
     html += section_close()
+
+    # ── Lineage Map ──────────────────────────────────────────────
+    # Merge all per-workbook lineage maps into aggregate lists
+    all_lin_tables = []
+    all_lin_calcs = []
+    all_lin_rels = []
+    all_lin_ws = []
+    for wb_name, lin in lineage.items():
+        for t in lin.get('tables', []):
+            all_lin_tables.append((wb_name, t))
+        for c in lin.get('calculations', []):
+            all_lin_calcs.append((wb_name, c))
+        for r in lin.get('relationships', []):
+            all_lin_rels.append((wb_name, r))
+        for w in lin.get('worksheets', []):
+            all_lin_ws.append((wb_name, w))
+
+    total_lineage = len(all_lin_tables) + len(all_lin_calcs) + len(all_lin_rels) + len(all_lin_ws)
+    if total_lineage > 0:
+        html += section_open("lineage", "Lineage Map", "&#128279;")
+
+        # Summary flow diagram
+        html += '<div class="card">'
+        html += '<h4>&#128260; Migration Flow</h4>'
+        html += flow_diagram([
+            (f"Tableau Sources ({len(all_lin_tables)} tables)", False),
+            (f"Calculations ({len(all_lin_calcs)})", True),
+            (f"Power BI Model ({len(all_lin_rels)} relationships)", False),
+            (f"Report Pages ({len(all_lin_ws)} pages)", True),
+        ])
+        html += '</div>'
+
+        # Stat cards
+        html += stat_grid([
+            stat_card(len(all_lin_tables), "Tables Mapped", accent="blue"),
+            stat_card(len(all_lin_calcs), "Calculations Traced", accent="purple"),
+            stat_card(len(all_lin_rels), "Relationships", accent="teal"),
+            stat_card(len(all_lin_ws), "Worksheets \u2192 Pages"),
+        ])
+
+        # Tabbed detail views
+        lin_group = "lineage-tabs"
+        lin_tabs = [
+            ("tables", f"Tables ({len(all_lin_tables)})", True),
+            ("calcs", f"Calculations ({len(all_lin_calcs)})", False),
+            ("rels", f"Relationships ({len(all_lin_rels)})", False),
+            ("ws", f"Worksheets ({len(all_lin_ws)})", False),
+        ]
+        html += tab_bar(lin_group, lin_tabs)
+
+        # Tables tab
+        tbl_rows = []
+        for wb, t in all_lin_tables:
+            tbl_rows.append([
+                f'<strong>{esc(wb)}</strong>',
+                esc(t.get('tableau_datasource', '') or '\u2014'),
+                esc(t.get('tableau_table', '')),
+                '\u27a1',
+                f'<span class="tag tag-success">{esc(t.get("pbi_table", ""))}</span>',
+            ])
+        html += tab_content(lin_group, "tables",
+            data_table(["Workbook", "Tableau Datasource", "Tableau Table", "", "PBI Table"],
+                       tbl_rows, "lin-tbl", sortable=True, searchable=True),
+            active=True)
+
+        # Calculations tab
+        calc_rows = []
+        for wb, c in all_lin_calcs:
+            pbi_type = c.get('pbi_type', '')
+            type_cls = "tag-connector" if pbi_type == "measure" else "tag-dim"
+            calc_rows.append([
+                f'<strong>{esc(wb)}</strong>',
+                f'<span class="mono fs-sm" style="max-width:350px;word-break:break-all;display:inline-block">{esc(c.get("tableau_calculation", ""))}</span>',
+                '\u27a1',
+                f'<strong>{esc(c.get("pbi_object", ""))}</strong>',
+                f'<span class="tag {type_cls}">{esc(c.get("pbi_table", ""))}</span>',
+                f'<span class="tag tag-success">{esc(pbi_type)}</span>',
+            ])
+        html += tab_content(lin_group, "calcs",
+            data_table(["Workbook", "Tableau Calculation", "", "PBI Object", "PBI Table", "Type"],
+                       calc_rows, "lin-calc", sortable=True, searchable=True))
+
+        # Relationships tab
+        rel_rows = []
+        for wb, r in all_lin_rels:
+            rel_rows.append([
+                f'<strong>{esc(wb)}</strong>',
+                f'<span class="mono">{esc(r.get("from", ""))}</span>',
+                '\u27a1',
+                f'<span class="mono">{esc(r.get("to", ""))}</span>',
+                esc(r.get('cardinality', '')),
+            ])
+        html += tab_content(lin_group, "rels",
+            data_table(["Workbook", "From", "", "To", "Cardinality"],
+                       rel_rows, "lin-rel", sortable=True, searchable=True))
+
+        # Worksheets tab
+        ws_rows = []
+        for wb, w in all_lin_ws:
+            ws_rows.append([
+                f'<strong>{esc(wb)}</strong>',
+                esc(w.get('tableau_worksheet', '')),
+                '\u27a1',
+                f'<span class="tag tag-success">{esc(w.get("pbi_page", ""))}</span>',
+            ])
+        html += tab_content(lin_group, "ws",
+            data_table(["Workbook", "Tableau Worksheet", "", "PBI Page"],
+                       ws_rows, "lin-ws", sortable=True, searchable=True))
+
+        html += section_close()
 
     # ── Converted Items — Split by Report ──────────────────────────
     all_items_by_report = []
@@ -629,10 +756,20 @@ def generate_dashboard(report_name, output_dir, migration_report_path=None, meta
             except (json.JSONDecodeError, OSError):
                 pass
 
+    # ── Locate lineage map JSON ────────────────────────────────────
+    lineage = {}
+    lin_candidate = os.path.join(output_dir, report_name, "lineage_map.json")
+    if os.path.isfile(lin_candidate):
+        try:
+            with open(lin_candidate, encoding="utf-8") as fh:
+                lineage[report_name] = json.load(fh)
+        except (json.JSONDecodeError, OSError):
+            pass
+
     if not reports and not metadata:
         return None
 
-    html = generate_html({}, reports, metadata)
+    html = generate_html({}, reports, metadata, lineage)
 
     html_path = os.path.join(output_dir, f"MIGRATION_DASHBOARD_{report_name}.html")
     with open(html_path, "w", encoding="utf-8") as f:
@@ -671,10 +808,23 @@ def generate_batch_dashboard(output_dir, workbook_results):
             except (json.JSONDecodeError, OSError):
                 pass
 
+    # Load lineage maps from output directories
+    lineage = {}
+    for name, paths in workbook_results.items():
+        lp = paths.get("lineage_path")
+        if not lp:
+            lp = os.path.join(output_dir, name, "lineage_map.json")
+        if os.path.isfile(lp):
+            try:
+                with open(lp, encoding="utf-8") as fh:
+                    lineage[name] = json.load(fh)
+            except (json.JSONDecodeError, OSError):
+                pass
+
     if not reports and not metadata:
         return None
 
-    html = generate_html({}, reports, metadata)
+    html = generate_html({}, reports, metadata, lineage)
 
     html_path = os.path.join(output_dir, "MIGRATION_DASHBOARD.html")
     with open(html_path, "w", encoding="utf-8") as f:
@@ -687,10 +837,11 @@ def main():
     assessments = load_assessments()
     reports = load_migration_reports()
     metadata = load_metadata()
+    lineage = load_lineage()
 
-    print(f"Loaded: {len(assessments)} assessments, {len(reports)} migration reports, {len(metadata)} metadata files")
+    print(f"Loaded: {len(assessments)} assessments, {len(reports)} migration reports, {len(metadata)} metadata files, {len(lineage)} lineage maps")
 
-    html = generate_html(assessments, reports, metadata)
+    html = generate_html(assessments, reports, metadata, lineage)
 
     with open(OUTPUT, "w", encoding="utf-8") as f:
         f.write(html)

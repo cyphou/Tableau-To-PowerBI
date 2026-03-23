@@ -578,3 +578,145 @@ class TestPermissionMapperModule:
         assert hasattr(ArtifactValidator, 'auto_fix_dax_leaks')
         assert hasattr(ArtifactValidator, 'auto_fix_tmdl_file')
         assert hasattr(ArtifactValidator, 'auto_fix_project')
+
+
+# ════════════════════════════════════════════════════════════════════
+#  Lineage Map — HTML Report Visualization
+# ════════════════════════════════════════════════════════════════════
+
+class TestLineageHTMLReport:
+    """Tests for lineage map visualization in the HTML migration dashboard."""
+
+    SAMPLE_LINEAGE = {
+        'tables': [
+            {'tableau_datasource': 'Sample - Superstore', 'tableau_table': 'Orders', 'pbi_table': 'Orders'},
+            {'tableau_datasource': 'Sample - Superstore', 'tableau_table': 'People', 'pbi_table': 'People'},
+        ],
+        'calculations': [
+            {'tableau_calculation': 'SUM([Sales])', 'pbi_table': 'Orders', 'pbi_object': 'Total Sales', 'pbi_type': 'measure'},
+            {'tableau_calculation': 'Profit Ratio', 'pbi_table': 'Orders', 'pbi_object': 'Profit Ratio', 'pbi_type': 'calculatedColumn'},
+        ],
+        'relationships': [
+            {'from': 'Orders[Region]', 'to': 'People[Region]', 'cardinality': 'manyToOne'},
+        ],
+        'worksheets': [
+            {'tableau_worksheet': 'Sales Overview', 'pbi_page': 'Sales Overview'},
+            {'tableau_worksheet': 'Profit Map', 'pbi_page': 'Profit Map'},
+        ],
+    }
+
+    def test_generate_html_with_lineage(self):
+        """generate_html() renders the Lineage Map section when lineage data is present."""
+        from generate_report import generate_html
+        html = generate_html({}, {}, {}, lineage={'Superstore': self.SAMPLE_LINEAGE})
+        assert 'Lineage Map' in html
+        assert 'lineage-tabs' in html
+        assert 'Migration Flow' in html
+
+    def test_flow_diagram_rendered(self):
+        """Flow diagram shows table/calc/relationship/page counts."""
+        from generate_report import generate_html
+        html = generate_html({}, {}, {}, lineage={'WB1': self.SAMPLE_LINEAGE})
+        assert 'flow-container' in html
+        assert '2 tables' in html
+        assert '2 pages' in html
+
+    def test_table_lineage_tab(self):
+        """Tables tab shows Tableau datasource to PBI table mapping."""
+        from generate_report import generate_html
+        html = generate_html({}, {}, {}, lineage={'WB1': self.SAMPLE_LINEAGE})
+        assert 'lin-tbl' in html
+        assert 'Orders' in html
+        assert 'People' in html
+        assert 'Sample - Superstore' in html
+
+    def test_calculation_lineage_tab(self):
+        """Calculations tab shows Tableau calc to PBI measure/column mapping."""
+        from generate_report import generate_html
+        html = generate_html({}, {}, {}, lineage={'WB1': self.SAMPLE_LINEAGE})
+        assert 'lin-calc' in html
+        assert 'Total Sales' in html
+        assert 'measure' in html
+        assert 'calculatedColumn' in html
+
+    def test_relationship_lineage_tab(self):
+        """Relationships tab shows from to to with cardinality."""
+        from generate_report import generate_html
+        html = generate_html({}, {}, {}, lineage={'WB1': self.SAMPLE_LINEAGE})
+        assert 'lin-rel' in html
+        assert 'Orders[Region]' in html
+        assert 'People[Region]' in html
+        assert 'manyToOne' in html
+
+    def test_worksheet_lineage_tab(self):
+        """Worksheets tab shows Tableau worksheet to PBI page mapping."""
+        from generate_report import generate_html
+        html = generate_html({}, {}, {}, lineage={'WB1': self.SAMPLE_LINEAGE})
+        assert 'lin-ws' in html
+        assert 'Sales Overview' in html
+        assert 'Profit Map' in html
+
+    def test_stat_cards_rendered(self):
+        """Stat cards show counts for tables, calculations, relationships, worksheets."""
+        from generate_report import generate_html
+        html = generate_html({}, {}, {}, lineage={'WB1': self.SAMPLE_LINEAGE})
+        assert 'Tables Mapped' in html
+        assert 'Calculations Traced' in html
+        assert 'Relationships' in html
+
+    def test_no_lineage_section_when_empty(self):
+        """Lineage Map section is omitted when no lineage data is provided."""
+        from generate_report import generate_html
+        html = generate_html({}, {}, {}, lineage={})
+        assert 'Lineage Map' not in html
+
+    def test_no_lineage_section_when_none(self):
+        """Lineage Map section is omitted when lineage is None."""
+        from generate_report import generate_html
+        html = generate_html({}, {}, {}, lineage=None)
+        assert 'Lineage Map' not in html
+
+    def test_multi_workbook_lineage(self):
+        """Lineage data from multiple workbooks is aggregated."""
+        from generate_report import generate_html
+        lin2 = {
+            'tables': [{'tableau_datasource': 'DS2', 'tableau_table': 'Products', 'pbi_table': 'Products'}],
+            'calculations': [],
+            'relationships': [],
+            'worksheets': [{'tableau_worksheet': 'Product View', 'pbi_page': 'Product View'}],
+        }
+        html = generate_html({}, {}, {}, lineage={'WB1': self.SAMPLE_LINEAGE, 'WB2': lin2})
+        assert '3 tables' in html  # 2 from WB1 + 1 from WB2
+        assert '3 pages' in html   # 2 from WB1 + 1 from WB2
+        assert 'Products' in html
+        assert 'Product View' in html
+
+    def test_load_lineage_function(self):
+        """load_lineage() reads lineage_map.json from project directories."""
+        from generate_report import load_lineage
+        with tempfile.TemporaryDirectory() as tmpdir:
+            proj = os.path.join(tmpdir, 'TestProject')
+            os.makedirs(proj)
+            lin_path = os.path.join(proj, 'lineage_map.json')
+            with open(lin_path, 'w', encoding='utf-8') as f:
+                json.dump(self.SAMPLE_LINEAGE, f)
+            result = load_lineage(tmpdir)
+            assert 'TestProject' in result
+            assert len(result['TestProject']['tables']) == 2
+
+    def test_generate_dashboard_loads_lineage(self):
+        """generate_dashboard() reads lineage_map.json and includes lineage in HTML."""
+        from generate_report import generate_dashboard
+        with tempfile.TemporaryDirectory() as tmpdir:
+            proj = os.path.join(tmpdir, 'TestWB')
+            os.makedirs(proj)
+            with open(os.path.join(proj, 'lineage_map.json'), 'w', encoding='utf-8') as f:
+                json.dump(self.SAMPLE_LINEAGE, f)
+            with open(os.path.join(proj, 'migration_metadata.json'), 'w', encoding='utf-8') as f:
+                json.dump({'tmdl_stats': {'tables': 2}, 'generated_output': {'pages': 2}}, f)
+            result = generate_dashboard('TestWB', tmpdir)
+            assert result is not None
+            with open(result, encoding='utf-8') as f:
+                html = f.read()
+            assert 'Lineage Map' in html
+            assert 'Orders' in html
