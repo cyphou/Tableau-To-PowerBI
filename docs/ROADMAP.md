@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-23
 **Baseline:** v27.1.0 — 6,532 tests across 138 test files, 0 failures
-**Current state:** v27.1.0 + Phase 1 shipped (Sprints 109–111). 6,593 tests.
+**Current state:** v28.0.0 Phase 1 shipped (Sprints 108–111). 6,714 tests.
 
 ---
 
@@ -871,30 +871,160 @@ v26.0.0 targets **zero-touch autonomous migration** for standard workbooks: uplo
 
 ### Phase 2 — Intelligence & UX (Sprints 112–114)
 
-| Sprint | Theme | Owner(s) | Priority | Deliverables |
-|--------|-------|----------|----------|--------------|
-| **112** | **LLM-assisted DAX correction** | @converter | P2 | Optional `--llm-refine` flag. Send approximated DAX (REGEXP, spatial fallbacks) to LLM for refinement. Accept/reject loop. Pluggable backend (OpenAI, Azure OpenAI, local). Preserve original as annotation. |
-| **113** | **Streamlit Web UI (Phase 1)** | @orchestrator | P1 | Browser-based migration wizard: drag-and-drop upload, live progress bar, assessment preview, download .pbip ZIP. Wraps existing CLI pipeline. No backend changes needed. |
-| **114** | **Streamlit Web UI (Phase 2)** | @orchestrator, @assessor | P1 | Add: batch mode, shared-model merge UI, side-by-side visual diff viewer, DAX formula editor with live preview, Fabric deployment button. |
+---
+
+#### Sprint 112 — LLM-Assisted DAX Correction (@converter, @orchestrator)
+
+**Goal:** Optional AI-powered refinement for approximated DAX formulas — send measures tagged with `MigrationNote` containing "approximated" to an LLM for semantic correction. Pluggable backend (Azure OpenAI, OpenAI, local/Ollama). Original DAX preserved as annotation.
+
+| # | Item | Owner | File(s) | Est. | Details |
+|---|------|-------|---------|------|---------|
+| 112.1 | **LLM client module** | @converter | `powerbi_import/llm_client.py` (new) | High | Pluggable backend: Azure OpenAI (`urllib`+managed identity), OpenAI (`urllib`+API key), local/Ollama (`localhost:11434`). Token counting (tiktoken-compatible estimation), cost tracking, exponential retry with backoff, `--llm-max-calls N` budget cap. No external deps (stdlib `urllib.request` + `json`). |
+| 112.2 | **DAX refinement prompt engine** | @converter | `powerbi_import/llm_client.py` | High | Structured prompt: Tableau formula + current approximated DAX + table schema (columns, types) + relationship context → refined DAX + confidence score (0–1) + explanation. System prompt enforces DAX syntax rules and Power BI compatibility. |
+| 112.3 | **Selective targeting** | @generator | `tmdl_generator.py` | Medium | Post-generation pass: scan all measures for `MigrationNote` containing "approximated", "fallback", or "no equivalent". Queue for LLM refinement. Skip exact conversions. Cap at `--llm-max-calls` (default 50). |
+| 112.4 | **Accept/reject validation** | @converter | `powerbi_import/llm_client.py` | Medium | Parse LLM response → validate DAX syntax (balanced parens, known function names, valid column refs) → accept if valid, reject and keep original if malformed. Log accepted/rejected ratio. |
+| 112.5 | **CLI integration** | @orchestrator | `migrate.py` | Low | `--llm-refine`, `--llm-provider azure-openai|openai|local`, `--llm-model gpt-4o`, `--llm-endpoint URL`, `--llm-max-calls N`. Env vars: `LLM_API_KEY`, `AZURE_OPENAI_ENDPOINT`. |
+| 112.6 | **Cost & refinement report** | @converter | `powerbi_import/llm_client.py` | Low | JSON report: per-measure original → approximated → refined, confidence, tokens used, estimated cost. Summary: total measures refined, acceptance rate, total tokens. |
+| 112.7 | **Tests** | @tester | `tests/test_llm_client.py` (new) | Medium | 30+ tests: client init (3 backends), prompt construction, response parsing, DAX validation, cost tracking, rate limiting, mock API responses, budget cap, selective targeting, accept/reject logic. |
+
+**Agent work:**
+- **@converter** — owns `llm_client.py`: prompt engine, response parsing, DAX validation, cost tracking
+- **@generator** — selective targeting in `tmdl_generator.py`: scan MigrationNotes, queue approximated measures
+- **@orchestrator** — CLI flags in `migrate.py`, env var wiring
+- **@tester** — 30+ tests with mock LLM responses
+
+---
+
+#### Sprint 113 — Streamlit Web UI Phase 1 (@orchestrator, @generator)
+
+**Goal:** Browser-based migration wizard for users who prefer GUI over CLI. 6-step wizard wrapping the existing pipeline. Streamlit is an **optional dependency** — core migration remains stdlib-only.
+
+| # | Item | Owner | File(s) | Est. | Details |
+|---|------|-------|---------|------|---------|
+| 113.1 | **App scaffold & routing** | @orchestrator | `web/app.py` (new) | High | 6-step wizard: Upload (.twb/.twbx/.tds) → Configure (output format, culture, calendar range) → Assess (readiness radar chart) → Migrate (real-time progress) → Validate (artifact summary) → Download (.pbip ZIP). Streamlit session state for temp dirs, cleanup on session end. |
+| 113.2 | **File upload & extraction** | @orchestrator | `web/app.py` | Medium | Drag-and-drop with `st.file_uploader`. Save to temp dir. Call `read_tableau_file()` + `extract_tableau_data()`. Display extraction summary (tables, measures, visuals count). Security: validate file extension + size limit (500MB). |
+| 113.3 | **Assessment preview** | @orchestrator | `web/app.py` | Medium | Call `assess_migration_readiness()`. Render 9-category pass/warn/fail table. Strategy recommendation (Import/DirectQuery/Composite). Show connection string audit warnings. |
+| 113.4 | **Migration execution with progress** | @orchestrator | `web/app.py` | Medium | Call `import_to_powerbi()` in background thread. `st.progress()` bar linked to `ProgressTracker`. Real-time log streaming to `st.expander`. Fidelity score display on completion. |
+| 113.5 | **Download & artifact preview** | @generator | `web/app.py` | Medium | ZIP the output directory. `st.download_button` for `.pbip` project. Preview: list generated pages, visuals per page, measure count, relationship diagram (Mermaid in `st.markdown`). |
+| 113.6 | **Docker packaging** | @orchestrator | `web/Dockerfile` (new) | Low | `python:3.12-slim` + `pip install streamlit`. `docker-compose.yml` for one-command startup. Health check endpoint. Volume mount for input/output. |
+| 113.7 | **Tests** | @tester | `tests/test_web_app.py` (new) | Medium | 25+ tests: upload validation, config→args mapping, pipeline integration (mock Streamlit), ZIP generation, session cleanup. |
+
+**Agent work:**
+- **@orchestrator** — owns `web/app.py`: scaffold, upload, config, pipeline execution, Docker
+- **@generator** — artifact preview, relationship diagram rendering
+- **@tester** — 25+ tests with mock Streamlit session
+
+---
+
+#### Sprint 114 — Streamlit Web UI Phase 2 (@orchestrator, @assessor, @merger)
+
+**Goal:** Extend Web UI with batch mode, shared-model merge UI, side-by-side visual diff, DAX formula editor, and Fabric deployment button.
+
+| # | Item | Owner | File(s) | Est. | Details |
+|---|------|-------|---------|------|---------|
+| 114.1 | **Batch mode page** | @orchestrator | `web/pages/batch.py` (new) | Medium | Multi-file upload or folder path. Progress table (workbook name, status, fidelity). Batch summary dashboard reusing `generate_report.py` HTML. Download all as ZIP. |
+| 114.2 | **Shared model merge page** | @merger | `web/pages/merge.py` (new) | High | Multi-workbook upload → merge heatmap (table overlap scores), conflict list, force-merge toggle, model name input. Preview merged table list. Download shared model + thin reports. |
+| 114.3 | **Visual diff viewer** | @assessor | `web/pages/diff.py` (new) | Medium | Side-by-side: Tableau worksheet list (from extraction JSON) vs PBI page/visual list. Per-visual field coverage, encoding gaps. Reuses `visual_diff.py` output. |
+| 114.4 | **DAX formula editor** | @orchestrator | `web/pages/editor.py` (new) | Medium | Select a measure → view Tableau formula + converted DAX side-by-side. In-place edit DAX. Re-validate with `dax_optimizer.py`. Save overrides to `config.json`. |
+| 114.5 | **Fabric deployment button** | @deployer | `web/pages/deploy.py` (new) | Medium | Workspace ID input + auth (token or SP). One-click deploy via `deploy/deployer.py`. Status polling. Deployment report display. |
+| 114.6 | **Tests** | @tester | `tests/test_web_app_v2.py` (new) | Medium | 25+ tests: batch upload, merge UI flows, diff rendering, DAX edit round-trip, deploy mock. |
+
+**Agent work:**
+- **@orchestrator** — batch page, DAX editor, page routing
+- **@merger** — merge page with heatmap and conflict resolution
+- **@assessor** — visual diff viewer page
+- **@deployer** — Fabric deployment page with auth flow
+- **@tester** — 25+ tests
+
+---
 
 ### Phase 3 — Production & Enterprise (Sprints 115–117)
 
-| Sprint | Theme | Owner(s) | Priority | Deliverables |
-|--------|-------|----------|----------|--------------|
-| **115** | **PDF export for reports** | @generator | P3 | Generate PDF from HTML migration/assessment reports. Use `weasyprint` or `pdfkit` (optional dependency). `--pdf` flag on all report-generating commands. |
-| **116** | **Workspace-level migration planner** | @assessor, @deployer | P2 | Given a Tableau Server site, generate a complete migration plan: dependency graph, migration wave assignments, effort estimates, Fabric workspace mapping, RLS group mapping, refresh schedule mapping. |
-| **117** | **v28.0.0 Release & hardening** | All agents | — | Version bump, CHANGELOG, test baseline (target: 6,700+), KNOWN_LIMITATIONS update, README refresh, PyPI publish. |
+---
+
+#### Sprint 115 — PDF Export & Report Packaging (@generator, @assessor)
+
+**Goal:** Generate PDF versions of all HTML migration/assessment reports for offline distribution and executive review. Optional dependency (`weasyprint` or stdlib HTML-to-PDF via `html2pdf`).
+
+| # | Item | Owner | File(s) | Est. | Details |
+|---|------|-------|---------|------|---------|
+| 115.1 | **PDF renderer module** | @generator | `powerbi_import/pdf_renderer.py` (new) | High | Pluggable backend: (1) `weasyprint` (optional), (2) stdlib fallback generating a simplified paginated HTML with `@media print` CSS. `render_html_to_pdf(html_content, output_path)` API. |
+| 115.2 | **Print-optimized CSS** | @generator | `powerbi_import/html_template.py` | Medium | Add `@media print` styles to shared template: page breaks, margin control, hide interactive elements (sort buttons, search), expand collapsed sections. A4/Letter page size support. |
+| 115.3 | **CLI integration** | @orchestrator | `migrate.py` | Low | `--pdf` flag on `--assess`, `--global-assess`, `--assess-merge`, server assessment. `--pdf-only` to skip HTML. |
+| 115.4 | **Report packaging** | @assessor | `powerbi_import/assessment.py` | Medium | `--report-package` generates a ZIP containing: HTML report + PDF + extraction JSON + fidelity summary CSV. Single deliverable for stakeholders. |
+| 115.5 | **Tests** | @tester | `tests/test_pdf_export.py` (new) | Medium | 20+ tests: PDF render (mock weasyprint), print CSS validation, CLI flag wiring, package ZIP structure. |
+
+**Agent work:**
+- **@generator** — PDF renderer module + print CSS in html_template.py
+- **@assessor** — report packaging (HTML + PDF + data ZIP)
+- **@orchestrator** — CLI flags
+- **@tester** — 20+ tests
+
+---
+
+#### Sprint 116 — Workspace-Level Migration Planner (@assessor, @deployer, @extractor)
+
+**Goal:** Given a Tableau Server site (via `--server` + REST API), generate a complete enterprise migration plan: dependency graph, wave assignments, effort estimates, Fabric workspace mapping, RLS group mapping, refresh schedule migration plan.
+
+| # | Item | Owner | File(s) | Est. | Details |
+|---|------|-------|---------|------|---------|
+| 116.1 | **Server site discovery** | @extractor | `tableau_export/server_client.py` | Medium | New endpoint: `get_site_topology()` → all workbooks + datasources + published datasources + users + groups + schedules + subscriptions. Build adjacency map (workbook↔datasource dependencies). |
+| 116.2 | **Migration plan generator** | @assessor | `powerbi_import/migration_planner.py` (new) | High | Input: site topology + per-workbook assessment. Output: dependency-ordered migration waves, per-wave effort estimate (hours), team assignment suggestions, critical-path identification. Respects datasource dependencies (shared datasources migrate first). |
+| 116.3 | **Fabric workspace mapper** | @deployer | `powerbi_import/migration_planner.py` | Medium | Map Tableau Projects → Fabric Workspaces. Tableau Sites → Fabric Capacities. Suggest workspace partitioning based on content groups and RLS boundaries. Output: workspace mapping JSON. |
+| 116.4 | **RLS group mapping** | @deployer | `powerbi_import/migration_planner.py` | Medium | Map Tableau user-filters + groups → Azure AD group assignments for PBI RLS roles. Output: mapping CSV (Tableau group → Azure AD group → RLS role). |
+| 116.5 | **Refresh schedule mapping** | @deployer | `powerbi_import/refresh_generator.py` | Low | Extend existing refresh migration: map entire site's extract-refresh schedules to PBI refresh configs. Detect conflicts (>8 daily refreshes on Pro). Output: schedule migration report. |
+| 116.6 | **Migration plan HTML report** | @assessor | `powerbi_import/migration_planner.py` | Medium | Interactive HTML: wave timeline (Gantt-style), dependency graph, workspace map, effort heatmap, RLS mapping table. Uses shared `html_template.py`. |
+| 116.7 | **CLI integration** | @orchestrator | `migrate.py` | Low | `--plan-migration` flag (requires `--server`). Output: migration plan JSON + HTML report. |
+| 116.8 | **Tests** | @tester | `tests/test_migration_planner.py` (new) | Medium | 30+ tests: topology parsing, wave ordering, effort calculation, workspace mapping, RLS mapping, schedule conflicts, HTML report structure. |
+
+**Agent work:**
+- **@extractor** — site topology discovery in server_client.py
+- **@assessor** — migration plan generator + HTML report
+- **@deployer** — workspace mapper, RLS mapper, refresh schedule extension
+- **@orchestrator** — CLI flag
+- **@tester** — 30+ tests
+
+---
+
+#### Sprint 117 — v28.0.0 Release & Hardening (All Agents)
+
+**Goal:** Version bump, comprehensive integration testing, documentation update, PyPI publish, and codebase hardening.
+
+| # | Item | Owner | File(s) | Est. | Details |
+|---|------|-------|---------|------|---------|
+| 117.1 | **Version bump** | @orchestrator | `pyproject.toml` | Low | `27.1.0` → `28.0.0`. Update all version references. |
+| 117.2 | **CHANGELOG update** | @orchestrator | `CHANGELOG.md` | Medium | Document all Phase 1–3 sprints (108–117) with per-sprint summaries. |
+| 117.3 | **Cross-phase E2E tests** | @tester | `tests/test_v28_e2e.py` (new) | High | End-to-end: extract → LLM refine (mock) → generate → validate → deploy (mock) → plan (mock). 15+ integration tests spanning all new v28 features. |
+| 117.4 | **Documentation refresh** | @orchestrator | `README.md`, `docs/*.md` | Medium | Update GAP_ANALYSIS, KNOWN_LIMITATIONS, MAPPING_REFERENCE, FAQ with v28 features. Update copilot-instructions.md agent table. |
+| 117.5 | **Real-world validation** | @tester | `tests/test_real_world_e2e.py` | Medium | Re-run all 27 real-world + sample workbooks. Assert 100% fidelity, 0 regressions vs v27.1.0 baseline. |
+| 117.6 | **PyPI publish** | @deployer | `.github/workflows/publish.yml` | Low | Tag `v28.0.0` → auto-publish wheel to PyPI via OIDC trusted publisher. |
+| 117.7 | **Test baseline** | @tester | — | — | Target: **6,900+** total tests. |
+
+---
 
 ### v28.0.0 Success Criteria
 
-| Metric | Target |
-|--------|--------|
-| TDS standalone migration | ✅ Shipped (Sprint 108) |
-| TDSX with embedded Hyper data | ✅ Shipped (Sprint 109) |
-| REST API with Docker | ✅ Shipped (Sprint 110) |
-| Schema drift detection | ✅ Shipped (Sprint 111) |
-| LLM-assisted DAX | Sprint 112 |
-| Web UI (Streamlit) | Sprints 113–114 |
-| PDF report export | Sprint 115 |
-| Migration planner | Sprint 116 |
-| Tests | 6,700+ |
+| Metric | Target | Phase 1 Actual |
+|--------|--------|----------------|
+| TDS standalone migration | ✅ | ✅ Shipped (Sprint 108) |
+| TDSX with embedded Hyper data | ✅ | ✅ Shipped (Sprint 109) |
+| REST API with Docker | ✅ | ✅ Shipped (Sprint 110) |
+| Schema drift detection | ✅ | ✅ Shipped (Sprint 111) |
+| LLM-assisted DAX | Sprint 112 | — |
+| Web UI (Streamlit) | Sprints 113–114 | — |
+| PDF report export | Sprint 115 | — |
+| Migration planner | Sprint 116 | — |
+| Tests | **6,900+** | 6,714 |
+
+### v28.0.0 Agent Ownership Matrix
+
+| Agent | Phase 1 (108–111) | Phase 2 (112–114) | Phase 3 (115–117) |
+|-------|-------------------|-------------------|-------------------|
+| **@orchestrator** | 108, 110 | 112, 113, 114 | 115, 116, 117 |
+| **@extractor** | 108, 109, 111 | — | 116 |
+| **@converter** | — | 112 | — |
+| **@generator** | 108, 109 | 113 | 115 |
+| **@assessor** | 111 | 114 | 115, 116 |
+| **@merger** | — | 114 | — |
+| **@deployer** | 110 | 114 | 116, 117 |
+| **@tester** | 108–111 (cross-cutting) | 112–114 (cross-cutting) | 115–117 (cross-cutting) |
