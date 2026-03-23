@@ -1,8 +1,8 @@
 # Development Roadmap — v22.0.0 → v28.0.0
 
-**Date:** 2026-03-22
-**Baseline:** v27.1.0 — 6,454 tests across 137 test files, 0 failures
-**Current state:** v27.1.0 shipped. Recursive LOD, window function depth, marketplace, industry recipes/templates, geo passthrough, unified HTML report template.
+**Date:** 2026-03-23
+**Baseline:** v27.1.0 — 6,532 tests across 138 test files, 0 failures
+**Current state:** v27.1.0 + Sprint 108 (TDS migration). 3-phase v28 plan defined.
 
 ---
 
@@ -19,7 +19,7 @@ The migration engine is **feature-complete for core single-workbook scenarios**.
 | **v26.0.0** | Autonomous Migration & Production Hardening | Sprints 96–100 | ✅ Shipped |
 | **v27.0.0** | Advanced Intelligence & Marketplace | Sprints 101–106 | ✅ Shipped |
 | **v27.1.0** | Unified HTML Report Template | Sprint 107 | ✅ Shipped |
-| **v28.0.0** | Web UI & AI-Assisted Migration | Sprints 108–112 | Planned |
+| **v28.0.0** | Extensibility, Web UI & AI-Assisted Migration | Sprints 108–117 | In Progress |
 
 ---
 
@@ -844,13 +844,56 @@ v26.0.0 targets **zero-touch autonomous migration** for standard workbooks: uplo
 
 ---
 
-## v28.0.0 — Web UI & AI-Assisted Migration (Sprints 108–112)
+## v28.0.0 — Extensibility, Web UI & AI-Assisted Migration (Sprints 108–117)
 
-### v28.0.0 Backlog
+### Sprint 108: TDS/TDSX Standalone Datasource Migration ✅ SHIPPED
 
-| Item | Priority | Sprint | Notes |
-|------|----------|--------|-------|
-| Streamlit Web UI | P1 | 108–109 | Browser-based wizard with drag-and-drop (deferred since v23) |
-| LLM-assisted DAX correction | P2 | 110 | AI-powered formula refinement for approximated functions |
-| REST API endpoint | P2 | 111 | HTTP API for CI/CD pipeline integration |
-| PDF export for reports | P3 | 112 | Generate PDF from HTML reports |
+**Owner:** @extractor, @generator  
+**Goal:** Migrate Tableau `.tds`/`.tdsx` data source files to Power BI SemanticModel-only projects.
+
+| # | Item | Owner | Status |
+|---|------|-------|--------|
+| 108.1 | Extract `<datasource>` root → synthetic `<workbook>` wrapper | @extractor | ✅ |
+| 108.2 | Datasource-only detection in PBIPGenerator (skip Report folder) | @generator | ✅ |
+| 108.3 | `.pbip` artifacts reference SemanticModel for datasource-only | @generator | ✅ |
+| 108.4 | Batch scanner includes `.tds`/`.tdsx` extensions | @orchestrator | ✅ |
+| 108.5 | E2E test updates for `DATASOURCE_ONLY_WORKBOOKS` | @tester | ✅ |
+
+---
+
+### Phase 1 — Core Extensibility (Sprints 109–111)
+
+| Sprint | Theme | Owner(s) | Priority | Deliverables |
+|--------|-------|----------|----------|--------------|
+| **109** | **TDSX with Hyper data inlining** | @extractor, @generator | P1 | Extract `.hyper` from `.tdsx` archives, inline row data into M `#table()` expressions (like `.twbx`). End-to-end test with packaged data source. |
+| **110** | **REST API endpoint** | @orchestrator, @deployer | P1 | FastAPI/Flask HTTP wrapper around `migrate.py`: `POST /migrate` (upload .twb/.twbx/.tds), `GET /status/{id}`, `GET /download/{id}`. OpenAPI spec. Docker container. CI smoke test. |
+| **111** | **Incremental schema drift detection** | @extractor, @assessor | P2 | Compare previously migrated `.pbip` against current Tableau source. Detect added/removed/renamed columns, changed calculation formulas, new worksheets. Generate diff report. Enables `--incremental` re-migration without full re-extract. |
+
+### Phase 2 — Intelligence & UX (Sprints 112–114)
+
+| Sprint | Theme | Owner(s) | Priority | Deliverables |
+|--------|-------|----------|----------|--------------|
+| **112** | **LLM-assisted DAX correction** | @converter | P2 | Optional `--llm-refine` flag. Send approximated DAX (REGEXP, spatial fallbacks) to LLM for refinement. Accept/reject loop. Pluggable backend (OpenAI, Azure OpenAI, local). Preserve original as annotation. |
+| **113** | **Streamlit Web UI (Phase 1)** | @orchestrator | P1 | Browser-based migration wizard: drag-and-drop upload, live progress bar, assessment preview, download .pbip ZIP. Wraps existing CLI pipeline. No backend changes needed. |
+| **114** | **Streamlit Web UI (Phase 2)** | @orchestrator, @assessor | P1 | Add: batch mode, shared-model merge UI, side-by-side visual diff viewer, DAX formula editor with live preview, Fabric deployment button. |
+
+### Phase 3 — Production & Enterprise (Sprints 115–117)
+
+| Sprint | Theme | Owner(s) | Priority | Deliverables |
+|--------|-------|----------|----------|--------------|
+| **115** | **PDF export for reports** | @generator | P3 | Generate PDF from HTML migration/assessment reports. Use `weasyprint` or `pdfkit` (optional dependency). `--pdf` flag on all report-generating commands. |
+| **116** | **Workspace-level migration planner** | @assessor, @deployer | P2 | Given a Tableau Server site, generate a complete migration plan: dependency graph, migration wave assignments, effort estimates, Fabric workspace mapping, RLS group mapping, refresh schedule mapping. |
+| **117** | **v28.0.0 Release & hardening** | All agents | — | Version bump, CHANGELOG, test baseline (target: 6,700+), KNOWN_LIMITATIONS update, README refresh, PyPI publish. |
+
+### v28.0.0 Success Criteria
+
+| Metric | Target |
+|--------|--------|
+| TDS standalone migration | ✅ Shipped (Sprint 108) |
+| TDSX with embedded Hyper data | Sprint 109 |
+| REST API with Docker | Sprint 110 |
+| LLM-assisted DAX | Sprint 112 |
+| Web UI (Streamlit) | Sprints 113–114 |
+| PDF report export | Sprint 115 |
+| Migration planner | Sprint 116 |
+| Tests | 6,700+ |
