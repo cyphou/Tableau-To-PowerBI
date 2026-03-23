@@ -569,7 +569,8 @@ def extract_tables_with_columns(datasource_elem, connection_map=None):
                 'type': 'table',
                 'columns': columns,
                 'connection': conn_ref,
-                'connection_details': table_connection
+                'connection_details': table_connection,
+                'caption': relation.get('caption', ''),
             }
     
     # Phase 2: For tables with no nested columns (SQL Server, etc.),
@@ -839,7 +840,8 @@ def extract_calculations(datasource_elem):
                 'class': calc_class,
                 'datatype': col_elem.get('datatype', 'real'),
                 'role': col_elem.get('role', 'measure'),
-                'type': col_elem.get('type', 'quantitative')
+                'type': col_elem.get('type', 'quantitative'),
+                'description': col_elem.get('desc', '')
             }
             
             # Extract table-calc addressing (COMPUTE USING dimensions)

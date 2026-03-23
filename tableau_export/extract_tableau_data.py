@@ -3314,7 +3314,8 @@ class TableauExtractor:
         """Extracts field captions and aliases as Q&A linguistic synonyms.
 
         Builds a synonym map from Tableau field captions, column aliases,
-        and calculation captions for Power BI Q&A linguistic schema generation.
+        calculation captions, and humanized name variants for Power BI
+        Q&A linguistic schema generation.
         """
         synonyms = {}  # internal_name -> list of synonyms
         for ds in root.findall('.//datasource'):
@@ -3340,11 +3341,38 @@ class TableauExtractor:
                     alias_val = alias_elem.get('value', alias_elem.text or '')
                     if alias_val and alias_val != name:
                         syns.add(alias_val)
+                # Generate humanized variants from internal names
+                # e.g. "Order_Date" → "Order Date", "orderDate" → "order Date"
+                humanized = name.replace('_', ' ').replace('-', ' ')
+                if humanized != name and len(humanized) > 2:
+                    syns.add(humanized)
+                # CamelCase splitting: "OrderDate" → "Order Date"
+                camel_split = re.sub(r'([a-z])([A-Z])', r'\1 \2', name)
+                if camel_split != name and len(camel_split) > 2:
+                    syns.add(camel_split)
                 if syns:
                     key = name
                     existing = set(synonyms.get(key, []))
                     existing.update(syns)
                     synonyms[key] = sorted(existing)
+
+        # Add relationship descriptions as synonyms
+        # e.g. for join Orders.CustomerID → Customers.CustomerID,
+        # add "Customer" as synonym for CustomerID
+        for ds in root.findall('.//datasource'):
+            for join in ds.findall('.//relation[@type="join"]'):
+                for clause in join.findall('.//clause'):
+                    for expr in clause.findall('.//expression'):
+                        col_ref = expr.get('op', '')
+                        if col_ref and col_ref.startswith('['):
+                            col_name = col_ref.strip('[]')
+                            # Extract table hint from parent relation
+                            table_ref = expr.get('table', '')
+                            if table_ref and table_ref not in synonyms.get(col_name, []):
+                                existing = set(synonyms.get(col_name, []))
+                                existing.add(table_ref)
+                                synonyms[col_name] = sorted(existing)
+
         self.workbook_data['linguistic_schema'] = synonyms
         print(f"  ✓ {len(synonyms)} linguistic synonyms extracted")
 

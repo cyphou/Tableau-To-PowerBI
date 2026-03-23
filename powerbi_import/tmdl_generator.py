@@ -1741,6 +1741,14 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
                 "formatString": _get_format_string(datatype),
                 "displayFolder": _get_display_folder(datatype, role)
             }
+            # Propagate description from Tableau (if extracted)
+            calc_desc = calc.get('description', '')
+            if calc_desc:
+                bim_measure['description'] = calc_desc
+            # Store original Tableau formula for auto-description generation
+            original_formula = calc.get('formula', '')
+            if original_formula:
+                bim_measure['_original_formula'] = original_formula
             # Propagate lineage metadata from calculation
             if calc.get('_source_workbooks'):
                 bim_measure['_source_workbooks'] = calc['_source_workbooks']
@@ -4907,6 +4915,96 @@ def _write_relationships_tmdl(def_dir, relationships):
         f.write(content)
 
 
+# --- Description auto-generation for Copilot/Q&A readiness ---
+
+def _generate_table_description(table):
+    """Auto-generate a human-readable description for a table.
+
+    Priority: (1) explicit description, (2) caption-based, (3) synthesized
+    from table name and column summary.
+    """
+    existing = table.get('description', '')
+    if existing:
+        return existing
+
+    table_name = table.get('name', 'Table')
+    columns = table.get('columns', [])
+    measures = table.get('measures', [])
+
+    col_names = [c.get('name', '') for c in columns[:8] if c.get('name')]
+    col_summary = ', '.join(col_names)
+    if len(columns) > 8:
+        col_summary += f', ... ({len(columns)} columns total)'
+
+    parts = [f"Contains {len(columns)} columns"]
+    if measures:
+        parts.append(f"{len(measures)} measures")
+    parts_str = ' and '.join(parts)
+
+    if col_summary:
+        return f"{parts_str}: {col_summary}."
+    return f"{parts_str}."
+
+
+def _generate_column_description(column):
+    """Auto-generate a description for a column when none exists.
+
+    Uses data type, semantic role, and data category to create a readable
+    description for PBI Copilot/Q&A.
+    """
+    existing = column.get('description', '')
+    if existing:
+        return existing
+
+    col_name = column.get('name', 'Column')
+    data_type = column.get('dataType', 'string')
+    data_category = column.get('dataCategory', '')
+    is_calculated = column.get('isCalculated', False)
+    expression = column.get('expression', '')
+
+    parts = []
+    if is_calculated and expression:
+        parts.append(f"Calculated column ({data_type})")
+    else:
+        parts.append(f"{data_type.capitalize()} column")
+
+    if data_category:
+        parts.append(f"categorized as {data_category}")
+
+    if column.get('isKey', False):
+        parts.append("(table key)")
+
+    return '. '.join(parts) + '.'
+
+
+def _generate_measure_description(measure):
+    """Auto-generate a description for a measure when none exists.
+
+    Includes the original Tableau formula as documentation when available.
+    """
+    existing = measure.get('description', '')
+    if existing:
+        return existing
+
+    measure_name = measure.get('name', 'Measure')
+    expression = measure.get('expression', '')
+    original_formula = measure.get('_original_formula', '')
+
+    parts = []
+    if original_formula:
+        parts.append(f"Migrated from Tableau: {original_formula}")
+    if expression and expression != '0':
+        dax_preview = expression[:120]
+        if len(expression) > 120:
+            dax_preview += '...'
+        parts.append(f"DAX: {dax_preview}")
+
+    if not parts:
+        parts.append(f"Measure: {measure_name}")
+
+    return ' | '.join(parts)
+
+
 def _write_table_tmdl(tables_dir, table):
     """Generate a {table_name}.tmdl file."""
     table_name = table.get('name', 'Table')
@@ -4915,6 +5013,14 @@ def _write_table_tmdl(tables_dir, table):
     lines = []
     lines.append(f"table {tname_quoted}")
     lines.append(f"\tlineageTag: {uuid.uuid4()}")
+
+    # Table description (auto-generated for Copilot/Q&A)
+    table_desc = _generate_table_description(table)
+    if table_desc:
+        # TMDL description value: escape newlines
+        safe_desc = table_desc.replace('\n', ' ').replace('\r', '')
+        lines.append(f"\tdescription: {safe_desc}")
+
     lines.append("")
 
     # Calculation group block (must come before columns/measures)
@@ -4977,6 +5083,11 @@ def _write_table_tmdl(tables_dir, table):
     # Annotations
     lines.append("\tannotation PBI_ResultType = Table")
 
+    # Copilot optimization hints
+    if table_name == 'Calendar':
+        lines.append("\tannotation Copilot_DateTable = true")
+    lines.append(f"\tannotation Copilot_TableDescription = {_generate_table_description(table)}")
+
     # Lineage annotations (from merge)
     source_wbs = table.get('_source_workbooks', [])
     if source_wbs:
@@ -5015,9 +5126,10 @@ def _write_measure(lines, measure):
     if folder:
         lines.append(f"\t\tdisplayFolder: {folder}")
 
-    desc = measure.get('description', '')
+    desc = measure.get('description', '') or _generate_measure_description(measure)
     if desc:
-        lines.append(f"\t\tdescription: {desc}")
+        safe_desc = desc.replace('\n', ' ').replace('\r', '')
+        lines.append(f"\t\tdescription: {safe_desc}")
 
     if measure.get('isHidden', False):
         lines.append("\t\tisHidden")
@@ -5056,9 +5168,10 @@ def _write_column_flags(lines, column):
     data_category = column.get('dataCategory', '')
     if data_category:
         lines.append(f"\t\tdataCategory: {data_category}")
-    description = column.get('description', '')
+    description = column.get('description', '') or _generate_column_description(column)
     if description:
-        lines.append(f"\t\tdescription: {description}")
+        safe_desc = description.replace('\n', ' ').replace('\r', '')
+        lines.append(f"\t\tdescription: {safe_desc}")
     display_folder = column.get('displayFolder', '')
     if display_folder:
         lines.append(f"\t\tdisplayFolder: {display_folder}")
@@ -5072,6 +5185,17 @@ def _write_column_flags(lines, column):
         ann_value = ann.get('value', '')
         if ann_name and ann_value:
             lines.append(f"\t\tannotation {ann_name} = {ann_value}")
+
+    # Copilot optimization: mark technical columns as hidden from Copilot
+    # Match patterns like OrderID, Customer_ID, product_key, etc.
+    # but not words like "Valid", "Fluid", "Avid"
+    col_name = column.get('name', '')
+    _is_technical = bool(re.search(
+        r'(?:_id|_key|_sk|_fk|_pk|ID|Key|SK|FK|PK)$',
+        col_name
+    ))
+    if _is_technical:
+        lines.append("\t\tannotation Copilot_Hidden = true")
 
     lines.append("")
     lines.append("\t\tannotation SummarizationSetBy = Automatic")

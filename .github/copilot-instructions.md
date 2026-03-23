@@ -271,6 +271,9 @@ TWB-embedded transforms (column renames from captions) are auto-detected and inj
 
 ## Semantic Model Features
 
+- **description (auto-generated)**: Every table, column, and measure gets an auto-generated `description` for Copilot/Q&A readiness. Tables: "{N} columns: {col1}, {col2}...". Columns: "{dataType} column [categorized as {category}] [(table key)]". Measures: "Migrated from Tableau: {original_formula} | DAX: {expression}". Explicit Tableau descriptions (`desc` attribute) take priority when present.
+- **Copilot annotations**: `Copilot_DateTable = true` on Calendar table. `Copilot_Hidden = true` on technical columns (ending in ID, _id, _key, _sk, _fk, _pk). `Copilot_TableDescription` annotation on every table.
+- **Linguistic schema depth**: CamelCase splitting ("OrderDate" → "Order Date"), underscore humanization ("customer_name" → "customer name"), plus Tableau captions, aliases, and descriptions as Q&A synonyms.
 - **dataCategory**: Tableau semantic-role mapping → City, Latitude, Longitude, StateOrProvince, PostalCode, Country, County
 - **isHidden**: columns hidden in Tableau → hidden in PBI
 - **displayFolder**: Dimensions, Measures, Time Intelligence, Flags, Calculations, Groups, Sets, Bins
