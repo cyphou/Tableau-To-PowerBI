@@ -15,6 +15,7 @@ from m_query_builder import (
     map_tableau_to_m_type,
     generate_power_query_m,
     inject_m_steps,
+    _m_escape_string,
     # Column operations
     m_transform_rename,
     m_transform_remove_columns,
@@ -1254,6 +1255,85 @@ class TestGeoJSONConnector(unittest.TestCase):
         table = {"name": "Features", "columns": [{"name": "Name", "datatype": "string"}]}
         result = generate_power_query_m(conn, table)
         self.assertIn("let", result)
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# M String Escaping
+# ═══════════════════════════════════════════════════════════════════════
+
+class TestMEscapeString(unittest.TestCase):
+    """Test _m_escape_string for special character handling."""
+
+    def test_plain_string_unchanged(self):
+        self.assertEqual(_m_escape_string("localhost"), "localhost")
+
+    def test_double_quote_escaped(self):
+        self.assertEqual(_m_escape_string('server"name'), 'server""name')
+
+    def test_none_returns_empty(self):
+        self.assertEqual(_m_escape_string(None), "")
+
+    def test_empty_string(self):
+        self.assertEqual(_m_escape_string(""), "")
+
+    def test_multiple_quotes(self):
+        self.assertEqual(_m_escape_string('a"b"c'), 'a""b""c')
+
+
+class TestMConnectorEscaping(unittest.TestCase):
+    """Test that connectors escape server/database names properly."""
+
+    def test_sql_server_escapes_quotes(self):
+        conn = {"type": "SQL Server", "details": {"server": 'srv"test', "database": 'db"name'}}
+        table = {"name": "T", "columns": []}
+        result = generate_power_query_m(conn, table)
+        self.assertIn('srv""test', result)
+        self.assertIn('db""name', result)
+
+    def test_oracle_escapes_quotes(self):
+        conn = {"type": "Oracle", "details": {"server": 'host"x', "service": 'svc"y', "port": "1521"}}
+        table = {"name": "T", "columns": []}
+        result = generate_power_query_m(conn, table)
+        self.assertIn('host""x', result)
+        self.assertIn('svc""y', result)
+
+    def test_snowflake_escapes_quotes(self):
+        conn = {"type": "Snowflake", "details": {"server": 'acc"z', "database": 'DB', "warehouse": 'WH'}}
+        table = {"name": "T", "columns": []}
+        result = generate_power_query_m(conn, table)
+        self.assertIn('acc""z', result)
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# inject_m_steps Step Name Deduplication
+# ═══════════════════════════════════════════════════════════════════════
+
+class TestInjectMStepsDedup(unittest.TestCase):
+    """Test inject_m_steps deduplicates colliding step names."""
+
+    _BASE = (
+        "let\n"
+        '    Source = Sql.Database("host", "db"),\n'
+        '    #"Renamed Columns" = Table.RenameColumns(Source, {{"A", "B"}}),\n'
+        '    Result = #"Renamed Columns"\n'
+        "in\n"
+        "    Result"
+    )
+
+    def test_duplicate_step_name_gets_suffix(self):
+        steps = [('#"Renamed Columns"', 'Table.RenameColumns({prev}, {{"C", "D"}})')]
+        result = inject_m_steps(self._BASE, steps)
+        # Original step must remain
+        self.assertIn('#"Renamed Columns" = Table.RenameColumns(Source', result)
+        # New step should be renamed to avoid collision
+        self.assertIn('#"Renamed Columns 2"', result)
+
+    def test_no_collision_no_suffix(self):
+        steps = [('#"Added Col"', 'Table.AddColumn({prev}, "X", each 1)')]
+        result = inject_m_steps(self._BASE, steps)
+        self.assertIn('#"Added Col"', result)
+        # Should NOT have a suffix
+        self.assertNotIn('#"Added Col 2"', result)
 
 
 if __name__ == '__main__':

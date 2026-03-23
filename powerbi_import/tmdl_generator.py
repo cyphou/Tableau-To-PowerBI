@@ -356,7 +356,10 @@ def _dax_to_m_expression(dax_expr, table_name=''):
     if in_match:
         col_m = _dax_to_m_expression(in_match.group(1), table_name)
         if col_m is not None:
-            return f'List.Contains({in_match.group(2)}, {col_m})'
+            # M uses double-quoted strings only — convert any DAX/Tableau
+            # single-quoted literals like {'High', 'Low'} to {"High", "Low"}
+            set_expr = re.sub(r"'([^']*)'", r'"\1"', in_match.group(2))
+            return f'List.Contains({set_expr}, {col_m})'
         return None
 
     # ── Leaf expression (literals, column refs, operators) ──────────
@@ -3785,6 +3788,7 @@ def _add_date_table(model):
         return
     cal_start = model.get('_calendar_start') or 2020
     cal_end = model.get('_calendar_end') or 2030
+    cal_culture = model.get('model', {}).get('culture', 'en-US')
 
     calendar_m = (
         'let\n'
@@ -3797,10 +3801,10 @@ def _add_date_table(model):
         '    #"Added Year" = Table.AddColumn(#"Changed Type", "Year", each Date.Year([Date]), Int64.Type),\n'
         '    #"Added Quarter" = Table.AddColumn(#"Added Year", "Quarter", each "Q" & Text.From(Date.QuarterOfYear([Date]))),\n'
         '    #"Added Month" = Table.AddColumn(#"Added Quarter", "Month", each Date.Month([Date]), Int64.Type),\n'
-        '    #"Added MonthName" = Table.AddColumn(#"Added Month", "MonthName", each Date.MonthName([Date])),\n'
+        f'    #"Added MonthName" = Table.AddColumn(#"Added Month", "MonthName", each Date.MonthName([Date], "{cal_culture}")),\n'
         '    #"Added Day" = Table.AddColumn(#"Added MonthName", "Day", each Date.Day([Date]), Int64.Type),\n'
         '    #"Added DayOfWeek" = Table.AddColumn(#"Added Day", "DayOfWeek", each Date.DayOfWeek([Date], Day.Monday) + 1, Int64.Type),\n'
-        '    #"Added DayName" = Table.AddColumn(#"Added DayOfWeek", "DayName", each Date.DayOfWeekName([Date]))\n'
+        f'    #"Added DayName" = Table.AddColumn(#"Added DayOfWeek", "DayName", each Date.DayOfWeekName([Date], "{cal_culture}"))\n'
         'in\n'
         '    #"Added DayName"'
     )

@@ -40,6 +40,15 @@ def _m_escape_col_name(name):
     return name.replace('"', '""')
 
 
+def _m_escape_string(value):
+    """Escape a value for embedding inside an M double-quoted string literal.
+
+    Doubles any internal double-quote characters so that ``"server""name"``
+    is produced for a value containing a literal quote.
+    """
+    return (value or '').replace('"', '""')
+
+
 # ── Column type change step (shared helper) ──────────────────────────────────
 
 def _build_type_changes(columns):
@@ -85,10 +94,14 @@ def _gen_m_schema_item(details, table_name, columns,
                       comment, pq_func, server_arg, db_arg, schema='dbo'):
     """Generic M generator for connectors using Schema+Item navigation."""
     safe = '#"' + table_name + ' Table"'
+    srv = _m_escape_string(server_arg)
+    db = _m_escape_string(db_arg)
+    sch = _m_escape_string(schema)
+    tbl = _m_escape_string(table_name)
     m_query = 'let\n'
     m_query += f'    // Source {comment}\n'
-    m_query += f'    Source = {pq_func}("{server_arg}", "{db_arg}"),\n'
-    m_query += f'    {safe} = Source{{[Schema="{schema}", Item="{table_name}"]}}[Data],\n'
+    m_query += f'    Source = {pq_func}("{srv}", "{db}"),\n'
+    m_query += f'    {safe} = Source{{[Schema="{sch}", Item="{tbl}"]}}[Data],\n'
     m_query += f'    Result = {safe}\nin\n    Result'
     return m_query
 
@@ -159,24 +172,26 @@ def _gen_m_mysql(details, table_name, columns):
 
 
 def _gen_m_oracle(details, table_name, columns):
-    server = details.get('server', 'localhost')
-    service = details.get('service', 'ORCL')
+    server = _m_escape_string(details.get('server', 'localhost'))
+    service = _m_escape_string(details.get('service', 'ORCL'))
     port = details.get('port', '1521')
+    tbl = _m_escape_string(table_name)
     safe = '#"' + table_name + ' Table"'
 
     m_query = 'let\n'
     m_query += f'    // Source Oracle: {server}:{port}/{service}\n'
     m_query += f'    Source = Oracle.Database("{server}:{port}/{service}"),\n'
-    m_query += f'    {safe} = Source{{[Schema="DBO", Item="{table_name}"]}}[Data],\n'
+    m_query += f'    {safe} = Source{{[Schema="DBO", Item="{tbl}"]}}[Data],\n'
     m_query += f'    Result = {safe}\nin\n    Result'
     return m_query
 
 
 def _gen_m_snowflake(details, table_name, columns):
-    server = details.get('server', 'account.snowflakecomputing.com')
-    database = details.get('database', 'MY_DB')
-    warehouse = details.get('warehouse', 'MY_WH')
-    schema = details.get('schema', 'PUBLIC')
+    server = _m_escape_string(details.get('server', 'account.snowflakecomputing.com'))
+    database = _m_escape_string(details.get('database', 'MY_DB'))
+    warehouse = _m_escape_string(details.get('warehouse', 'MY_WH'))
+    schema = _m_escape_string(details.get('schema', 'PUBLIC'))
+    tbl = _m_escape_string(table_name)
     safe = '#"' + table_name + ' Table"'
 
     m_query = 'let\n'
@@ -184,7 +199,7 @@ def _gen_m_snowflake(details, table_name, columns):
     m_query += f'    Source = Snowflake.Databases("{server}", "{warehouse}"),\n'
     m_query += f'    #"{database}" = Source{{[Name="{database}"]}}[Data],\n'
     m_query += f'    #"{schema}" = #"{database}"{{[Name="{schema}"]}}[Data],\n'
-    m_query += f'    {safe} = #"{schema}"{{[Name="{table_name}"]}}[Data],\n'
+    m_query += f'    {safe} = #"{schema}"{{[Name="{tbl}"]}}[Data],\n'
     m_query += f'    Result = {safe}\nin\n    Result'
     return m_query
 
@@ -509,8 +524,8 @@ def _gen_m_custom_sql(details, table_name, columns):
     Supports parameter binding via Value.NativeQuery's optional record argument.
     Parameters are extracted from the ``params`` key in *details*.
     """
-    server = details.get('server', 'localhost')
-    database = details.get('database', 'MyDatabase')
+    server = _m_escape_string(details.get('server', 'localhost'))
+    database = _m_escape_string(details.get('database', 'MyDatabase'))
     sql_query = details.get('sql_query', f'SELECT * FROM {table_name}')
     params = details.get('params', {})  # {name: default_value}
     # Escape quotes in SQL for M string
@@ -1074,13 +1089,30 @@ def inject_m_steps(m_query, steps):
     if not last_step:
         last_step = 'Source'
 
+    # Collect existing step names to avoid duplicates
+    existing_steps = set()
+    for line in lines:
+        stripped = line.strip()
+        if '=' in stripped and not stripped.startswith('//'):
+            name = stripped.split('=')[0].strip().rstrip(',')
+            existing_steps.add(name)
+
     # Build the chain — replace {prev} with actual previous step name
     prev_step = last_step
     new_lines = []
     for step_name, step_expr_template in steps:
+        # Deduplicate step name — append numeric suffix if collision
+        unique_name = step_name
+        counter = 2
+        while unique_name in existing_steps:
+            unique_name = f'{step_name} {counter}'
+            if step_name.startswith('#"') and step_name.endswith('"'):
+                unique_name = f'{step_name[:-1]} {counter}"'
+            counter += 1
+        existing_steps.add(unique_name)
         step_expr = step_expr_template.replace('{prev}', prev_step)
-        new_lines.append(f'    {step_name} = {step_expr},')
-        prev_step = step_name
+        new_lines.append(f'    {unique_name} = {step_expr},')
+        prev_step = unique_name
 
     injected = '\n'.join(new_lines)
     return before_in + '\n' + injected + '\n    Result = ' + prev_step + '\nin\n    Result'

@@ -41,6 +41,7 @@ from powerbi_import.tmdl_generator import (
     _split_dax_args,
     _extract_function_body,
     _fix_m_if_else_balance,
+    _add_date_table,
     generate_tmdl,
     _build_semantic_model,
 )
@@ -1189,6 +1190,79 @@ class TestButterflyApproximation(unittest.TestCase):
         note = APPROXIMATION_MAP.get("butterfly")
         self.assertIsNotNone(note)
         self.assertIn("negate", note[1].lower())
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# IN Operator Single-Quote → Double-Quote Conversion
+# ═══════════════════════════════════════════════════════════════════════
+
+class TestInOperatorQuoteConversion(unittest.TestCase):
+    """Test that IN {…} converts single-quoted strings to double-quoted for M."""
+
+    def test_in_double_quotes_unchanged(self):
+        result = _dax_to_m_expression('[Col] IN {"High", "Low"}')
+        self.assertIsNotNone(result)
+        self.assertIn('"High"', result)
+        self.assertIn('"Low"', result)
+
+    def test_in_single_quotes_converted(self):
+        result = _dax_to_m_expression("[Col] IN {'High', 'Low'}")
+        self.assertIsNotNone(result)
+        self.assertIn('"High"', result)
+        self.assertIn('"Low"', result)
+        self.assertNotIn("'High'", result)
+        self.assertNotIn("'Low'", result)
+
+    def test_in_list_contains_syntax(self):
+        result = _dax_to_m_expression("[Status] IN {'A', 'B', 'C'}")
+        self.assertIsNotNone(result)
+        self.assertTrue(result.startswith("List.Contains("))
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# Calendar Locale
+# ═══════════════════════════════════════════════════════════════════════
+
+class TestCalendarLocale(unittest.TestCase):
+    """Test Calendar table M expression uses explicit culture parameter."""
+
+    def test_calendar_uses_culture(self):
+        model = {
+            "model": {
+                "culture": "fr-FR",
+                "tables": [{
+                    "name": "Sales",
+                    "columns": [{"name": "OrderDate", "dataType": "dateTime", "sourceColumn": "OrderDate"}],
+                    "partitions": [{"source": {"type": "m", "expression": "let Source = 1 in Source"}}]
+                }],
+                "relationships": []
+            }
+        }
+        _add_date_table(model)
+        # Find Calendar table
+        cal = next((t for t in model["model"]["tables"] if t["name"] == "Calendar"), None)
+        self.assertIsNotNone(cal, "Calendar table should be created")
+        m_expr = cal["partitions"][0]["source"]["expression"]
+        self.assertIn('Date.MonthName([Date], "fr-FR")', m_expr)
+        self.assertIn('Date.DayOfWeekName([Date], "fr-FR")', m_expr)
+
+    def test_calendar_default_culture_en_us(self):
+        model = {
+            "model": {
+                "culture": "en-US",
+                "tables": [{
+                    "name": "Sales",
+                    "columns": [{"name": "Date", "dataType": "dateTime", "sourceColumn": "Date"}],
+                    "partitions": [{"source": {"type": "m", "expression": "let Source = 1 in Source"}}]
+                }],
+                "relationships": []
+            }
+        }
+        _add_date_table(model)
+        cal = next((t for t in model["model"]["tables"] if t["name"] == "Calendar"), None)
+        self.assertIsNotNone(cal)
+        m_expr = cal["partitions"][0]["source"]["expression"]
+        self.assertIn('Date.MonthName([Date], "en-US")', m_expr)
 
 
 if __name__ == '__main__':
