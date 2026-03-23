@@ -60,14 +60,14 @@ class TestLoadConvertedObjects(unittest.TestCase):
         data = imp._load_converted_objects()
         self.assertEqual(data['datasources'], [])
 
-    def test_loads_all_16_keys(self):
+    def test_loads_all_17_keys(self):
         imp = PowerBIImporter(self.tmpdir)
         data = imp._load_converted_objects()
         expected_keys = {
             'datasources', 'worksheets', 'dashboards', 'calculations',
             'parameters', 'filters', 'stories', 'actions', 'sets',
             'groups', 'bins', 'hierarchies', 'sort_orders', 'aliases',
-            'custom_sql', 'user_filters',
+            'custom_sql', 'user_filters', 'hyper_files',
         }
         self.assertEqual(set(data.keys()), expected_keys)
 

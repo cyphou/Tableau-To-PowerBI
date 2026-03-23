@@ -902,6 +902,54 @@ def _run_check_hyper(args):
     return ExitCode.SUCCESS
 
 
+def _run_check_drift(args):
+    """Compare a Tableau source against a previous extraction snapshot."""
+    from powerbi_import.schema_drift import detect_schema_drift, load_snapshot, save_snapshot
+
+    tableau_file = getattr(args, 'tableau_file', None)
+    snapshot_dir = args.check_drift
+
+    if not tableau_file:
+        print("Error: No workbook file specified. Provide a .twb/.twbx/.tds/.tdsx path.")
+        return ExitCode.GENERAL_ERROR
+
+    # Run extraction on the current source
+    success = run_extraction(tableau_file, hyper_max_rows=getattr(args, 'hyper_rows', None))
+    if not success:
+        print("Error: Extraction failed — cannot detect drift.")
+        return ExitCode.EXTRACTION_FAILED
+
+    # Load current extracted data from tableau_export/
+    json_dir = os.path.join(os.path.dirname(__file__), 'tableau_export')
+    current = load_snapshot(json_dir)
+
+    # Load previous snapshot
+    if os.path.isdir(snapshot_dir):
+        previous = load_snapshot(snapshot_dir)
+    else:
+        previous = {}
+        print(f"  No previous snapshot found at {snapshot_dir} — creating baseline.")
+
+    # Detect drift
+    source_name = os.path.splitext(os.path.basename(tableau_file))[0]
+    report = detect_schema_drift(current, previous, source_name=source_name)
+
+    # Print results
+    print_header("SCHEMA DRIFT REPORT")
+    print(report.summary())
+
+    # Save current as new baseline
+    save_snapshot(current, snapshot_dir)
+    print(f"\n  Snapshot saved to {snapshot_dir}")
+
+    # Save JSON report alongside the snapshot
+    report_path = os.path.join(snapshot_dir, 'drift_report.json')
+    report.save(report_path)
+    print(f"  Report saved to {report_path}")
+
+    return ExitCode.SUCCESS
+
+
 def _run_batch_config(args):
     """Run migrations using a JSON batch configuration file.
 
@@ -1866,6 +1914,14 @@ def _add_enterprise_args(parser):
              'Default rules apply when not specified.'
     )
 
+    parser.add_argument(
+        '--check-drift',
+        metavar='SNAPSHOT_DIR',
+        default=None,
+        help='Compare current Tableau source against a previous extraction snapshot to detect schema drift '
+             '(added/removed columns, changed formulas, new worksheets). Outputs diff report and exits.'
+    )
+
 
 def _add_shared_model_args(parser):
     """Add shared semantic model arguments."""
@@ -2820,6 +2876,10 @@ def main():
     # ── Hyper diagnostic mode ─────────────────────────────────
     if getattr(args, 'check_hyper', False):
         return _run_check_hyper(args)
+
+    # ── Schema drift detection mode ────────────────────────────
+    if getattr(args, 'check_drift', None):
+        return _run_check_drift(args)
 
     # ── Consolidate existing reports mode ─────────────────────
     if getattr(args, 'consolidate', None):

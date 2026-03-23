@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-23
 **Baseline:** v27.1.0 — 6,532 tests across 138 test files, 0 failures
-**Current state:** v27.1.0 + Sprint 108 (TDS migration). 3-phase v28 plan defined.
+**Current state:** v27.1.0 + Phase 1 shipped (Sprints 109–111). 6,593 tests.
 
 ---
 
@@ -861,13 +861,13 @@ v26.0.0 targets **zero-touch autonomous migration** for standard workbooks: uplo
 
 ---
 
-### Phase 1 — Core Extensibility (Sprints 109–111)
+### Phase 1 — Core Extensibility (Sprints 109–111) ✅ SHIPPED
 
-| Sprint | Theme | Owner(s) | Priority | Deliverables |
-|--------|-------|----------|----------|--------------|
-| **109** | **TDSX with Hyper data inlining** | @extractor, @generator | P1 | Extract `.hyper` from `.tdsx` archives, inline row data into M `#table()` expressions (like `.twbx`). End-to-end test with packaged data source. |
-| **110** | **REST API endpoint** | @orchestrator, @deployer | P1 | FastAPI/Flask HTTP wrapper around `migrate.py`: `POST /migrate` (upload .twb/.twbx/.tds), `GET /status/{id}`, `GET /download/{id}`. OpenAPI spec. Docker container. CI smoke test. |
-| **111** | **Incremental schema drift detection** | @extractor, @assessor | P2 | Compare previously migrated `.pbip` against current Tableau source. Detect added/removed/renamed columns, changed calculation formulas, new worksheets. Generate diff report. Enables `--incremental` re-migration without full re-extract. |
+| Sprint | Theme | Owner(s) | Priority | Status | Deliverables |
+|--------|-------|----------|----------|--------|--------------|
+| **109** | **TDSX with Hyper data inlining** | @extractor, @generator | P1 | ✅ | `hyper_files.json` loaded as 17th artifact. `tmdl_generator` inlines Hyper row data into M `#table()`/`Csv.Document()` partitions via `generate_m_from_hyper()`. 15 tests. |
+| **110** | **REST API endpoint** | @orchestrator, @deployer | P1 | ✅ | stdlib `http.server` API: `POST /migrate`, `GET /status/{id}`, `GET /download/{id}`, `GET /health`, `GET /jobs`. Thread-safe job store, multipart upload, Dockerfile. 21 tests. |
+| **111** | **Incremental schema drift detection** | @extractor, @assessor | P2 | ✅ | `schema_drift.py`: compare extraction snapshots (tables, columns, calculations, worksheets, relationships, parameters, filters). `--check-drift SNAPSHOT_DIR` CLI. JSON + summary output. 25 tests. |
 
 ### Phase 2 — Intelligence & UX (Sprints 112–114)
 
@@ -890,8 +890,9 @@ v26.0.0 targets **zero-touch autonomous migration** for standard workbooks: uplo
 | Metric | Target |
 |--------|--------|
 | TDS standalone migration | ✅ Shipped (Sprint 108) |
-| TDSX with embedded Hyper data | Sprint 109 |
-| REST API with Docker | Sprint 110 |
+| TDSX with embedded Hyper data | ✅ Shipped (Sprint 109) |
+| REST API with Docker | ✅ Shipped (Sprint 110) |
+| Schema drift detection | ✅ Shipped (Sprint 111) |
 | LLM-assisted DAX | Sprint 112 |
 | Web UI (Streamlit) | Sprints 113–114 |
 | PDF report export | Sprint 115 |

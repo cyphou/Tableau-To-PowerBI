@@ -105,6 +105,7 @@ class PowerBIImporter:
             'aliases': os.path.join(src, 'aliases.json'),
             'custom_sql': os.path.join(src, 'custom_sql.json'),
             'user_filters': os.path.join(src, 'user_filters.json'),
+            'hyper_files': os.path.join(src, 'hyper_files.json'),
         }
         
         for key, filepath in files_map.items():

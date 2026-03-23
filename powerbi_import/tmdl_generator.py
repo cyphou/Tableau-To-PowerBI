@@ -51,6 +51,7 @@ from m_query_builder import (
     m_transform_filter_nulls,
     m_transform_add_column,
     wrap_source_with_try_otherwise,
+    generate_m_from_hyper,
 )
 
 
@@ -790,7 +791,7 @@ def _build_semantic_model(datasources, report_name="Report", extra_objects=None,
     ctx = _collect_semantic_context(datasources, extra_objects)
 
     # Phase 3: Create tables
-    _create_semantic_tables(model, ctx, datasources)
+    _create_semantic_tables(model, ctx, datasources, extra_objects)
 
     # Phase 4: Create and validate relationships
     _create_and_validate_relationships(model, datasources)
@@ -1136,7 +1137,7 @@ def _collect_semantic_context(datasources, extra_objects):
     }
 
 
-def _create_semantic_tables(model, ctx, datasources):
+def _create_semantic_tables(model, ctx, datasources, extra_objects=None):
     """Phase 3: Create model tables with calculation routing."""
     best_tables = ctx['best_tables']
     all_calculations = ctx['all_calculations']
@@ -1147,6 +1148,17 @@ def _create_semantic_tables(model, ctx, datasources):
     col_metadata_map = ctx['col_metadata_map']
     m_query_overrides = ctx['m_query_overrides']
     datasource_table_map = ctx['datasource_table_map']
+
+    # Build hyper table lookup from extracted hyper_files metadata
+    hyper_table_data = {}  # table_name_lower -> hyper_reader_tables list
+    if extra_objects:
+        for hf in extra_objects.get('hyper_files', []):
+            hrt = hf.get('hyper_reader_tables', [])
+            if hrt:
+                for ht in hrt:
+                    tname = ht.get('table', '')
+                    if tname:
+                        hyper_table_data[tname.lower()] = hrt
 
     for table_name, (table, table_conn) in best_tables.items():
         # Route calculations to their source datasource's main table
@@ -1194,6 +1206,22 @@ def _create_semantic_tables(model, ctx, datasources):
             model_mode=model.get('_model_mode', 'import'),
             composite_threshold=model.get('_composite_threshold'),
         )
+
+        # Sprint 109: If this is a hyper/extract table with no Prep override,
+        # try to inject inline data from extracted .hyper files
+        conn_type = table_conn.get('type', '')
+        if conn_type.lower() in ('hyper', 'extract', 'dataengine') \
+                and not m_query_overrides.get(table_name):
+            hrt = hyper_table_data.get(table_name.lower())
+            if hrt:
+                hyper_m = generate_m_from_hyper(hrt, table_name=table_name)
+                if hyper_m:
+                    # Replace the partition's M expression with hyper-inlined data
+                    partitions = tbl.get('partitions', [])
+                    if partitions:
+                        partitions[0]['source']['expression'] = hyper_m
+                        logger.debug("Hyper data inlined for table '%s'", table_name)
+
         model["model"]["tables"].append(tbl)
 
 

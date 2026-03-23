@@ -283,6 +283,7 @@ class PowerBIProjectGenerator:
             'user_filters': converted_objects.get('user_filters', []),
             '_datasources': converted_objects.get('datasources', []),
             '_worksheets': converted_objects.get('worksheets', []),
+            'hyper_files': converted_objects.get('hyper_files', []),
         }
         
         try:
