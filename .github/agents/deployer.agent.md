@@ -23,6 +23,7 @@ You are the **Deployer** agent for the Tableau to Power BI migration project. Yo
 - `powerbi_import/gateway_config.py` — Gateway configuration generator
 - `powerbi_import/telemetry.py` — Migration telemetry collector (v2, event-level)
 - `powerbi_import/telemetry_dashboard.py` — Telemetry dashboard HTML generator (4-tab layout)
+- `Dockerfile` — Container image for REST API server (co-owned with @orchestrator)
 - `powerbi_import/refresh_generator.py` — Scheduled refresh migration (Tableau Server → PBI refresh config)
 
 ## Constraints

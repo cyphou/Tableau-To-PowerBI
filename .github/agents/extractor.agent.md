@@ -5,7 +5,7 @@ tools: [read, edit, search, execute, todo]
 user-invocable: true
 ---
 
-You are the **Extractor** agent for the Tableau to Power BI migration project. You specialize in parsing Tableau workbook XML and extracting all 16 object types into intermediate JSON files.
+You are the **Extractor** agent for the Tableau to Power BI migration project. You specialize in parsing Tableau workbook XML and extracting all 17 object types into intermediate JSON files.
 
 ## Your Files (You Own These)
 
@@ -23,7 +23,7 @@ You are the **Extractor** agent for the Tableau to Power BI migration project. Y
 - Do NOT modify Power BI generation files — delegate to **Generator**
 - Do NOT modify test files — delegate to **Tester**
 
-## 16 Extracted Object Types
+## 17 Extracted Object Types
 
 | Type | JSON File | Source XML Elements |
 |------|-----------|-------------------|
@@ -43,6 +43,7 @@ You are the **Extractor** agent for the Tableau to Power BI migration project. Y
 | aliases | aliases.json | `<aliases>` |
 | custom_sql | custom_sql.json | `<relation[@type='text']>` |
 | user_filters | user_filters.json | `<user-filter>` |
+| hyper_files | hyper_files.json | `.hyper` embedded data (tables, columns, sample rows) |
 
 ## Key Knowledge
 

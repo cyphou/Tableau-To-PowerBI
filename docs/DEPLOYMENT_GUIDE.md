@@ -115,6 +115,48 @@ The `FabricClient` includes built-in retry logic:
 - **HTTP 5xx** (Server Error): Retries up to `RETRY_ATTEMPTS` times with `RETRY_DELAY` between attempts
 - **Timeout**: Operations time out after `DEPLOYMENT_TIMEOUT` seconds
 
+## REST API Server (Docker)
+
+The migration tool can run as a REST API server for programmatic/headless migration.
+
+### Docker
+
+```bash
+docker build -t tableau-to-pbi .
+docker run -p 8000:8000 tableau-to-pbi
+```
+
+Or run directly:
+
+```bash
+python -m powerbi_import.api_server --port 8000
+```
+
+### Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/migrate` | POST | Submit a workbook (multipart upload) for migration |
+| `/status/{id}` | GET | Check migration job status |
+| `/download/{id}` | GET | Download completed .pbip project as ZIP |
+| `/health` | GET | Health check |
+| `/jobs` | GET | List all migration jobs |
+
+### Usage Example
+
+```bash
+# Upload a workbook for migration
+curl -X POST -F "file=@workbook.twbx" http://localhost:8000/migrate
+# Returns: {"job_id": "abc123", "status": "queued"}
+
+# Check status
+curl http://localhost:8000/status/abc123
+# Returns: {"job_id": "abc123", "status": "completed"}
+
+# Download result
+curl -o output.zip http://localhost:8000/download/abc123
+```
+
 ## Validation Before Deployment
 
 Always validate generated artifacts before deploying:

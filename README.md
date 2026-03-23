@@ -13,7 +13,7 @@
 <p align="center">
   <a href="https://github.com/cyphou/Tableau-To-PowerBI/actions/workflows/ci.yml"><img src="https://github.com/cyphou/Tableau-To-PowerBI/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
   <img src="https://img.shields.io/badge/coverage-96.2%25-brightgreen?style=flat-square" alt="Coverage"/>
-  <img src="https://img.shields.io/badge/tests-6%2C454%20passed-brightgreen?style=flat-square" alt="Tests"/>
+  <img src="https://img.shields.io/badge/tests-6%2C593%20passed-brightgreen?style=flat-square" alt="Tests"/>
   <img src="https://img.shields.io/badge/python-3.9%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python"/>
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License"/>
   <img src="https://img.shields.io/badge/version-27.1.0-blue?style=flat-square" alt="Version"/>
@@ -184,7 +184,7 @@ Merge multiple Tableau workbooks into **one shared semantic model** with thin re
 
 ```mermaid
 flowchart LR
-    A["📄 .twbx/.twb\nTableau Workbook"] --> B["🔍 EXTRACT\n16 JSON files"]
+    A["📄 .twbx/.twb\nTableau Workbook"] --> B["🔍 EXTRACT\n17 JSON files"]
     P["📋 .tfl/.tflx\nPrep Flow"] -.-> B
     S["☁️ Tableau Server\n(optional)"] -.-> B
     B --> C["⚙️ GENERATE\n.pbip project"]
@@ -203,7 +203,7 @@ flowchart LR
     style F fill:#0078D4,color:#fff,stroke:#0078D4
 ```
 
-**Step 1 — Extract:** Parses Tableau XML into 16 structured JSON files (worksheets, datasources, calculations, etc.)
+**Step 1 — Extract:** Parses Tableau XML into 17 structured JSON files (worksheets, datasources, calculations, etc.)
 
 **Step 2 — Generate:** Converts JSON into a complete `.pbip` project with PBIR v4.0 report and TMDL semantic model
 
@@ -215,7 +215,7 @@ Use `--output-format fabric` to generate a **full Microsoft Fabric project** ins
 
 ```mermaid
 flowchart LR
-    A["📄 .twbx/.twb\nTableau Workbook"] --> B["🔍 EXTRACT\n16 JSON files"]
+    A["📄 .twbx/.twb\nTableau Workbook"] --> B["🔍 EXTRACT\n17 JSON files"]
     B --> C["⚙️ GENERATE\nFabric artifacts"]
     C --> LH["🗄️ Lakehouse\nDelta tables + DDL"]
     C --> DF["🔄 Dataflow Gen2\nPower Query M"]
@@ -476,7 +476,7 @@ SharedSales/
 TableauToPowerBI/
 ├── migrate.py                                 # CLI entry point (30+ flags)
 ├── tableau_export/                            # Tableau extraction
-│   ├── extract_tableau_data.py                #   TWB/TWBX parser (16 object types)
+│   ├── extract_tableau_data.py                #   TWB/TWBX parser (17 object types)
 │   ├── datasource_extractor.py                #   Connection/table/calc extractor
 │   ├── dax_converter.py                       #   180+ DAX formula conversions
 │   ├── m_query_builder.py                     #   42 connectors + 43 transforms
@@ -503,8 +503,11 @@ TableauToPowerBI/
 │   ├── thin_report_generator.py               #   Thin report (byPath) generator
 │   ├── plugins.py                             #   Plugin system
 │   ├── fabric_project_generator.py            #   Fabric-native output (v25)
+│   ├── api_server.py                          #   REST API server (v28)
+│   ├── schema_drift.py                        #   Schema drift detection (v28)
 │   └── deploy/                                #   Deploy to PBI Service / Fabric
-├── tests/                                     # 6,454 tests across 137 files
+├── Dockerfile                                 # Docker image for API server
+├── tests/                                     # 6,593 tests across 140 files
 ├── docs/                                      # 18 documentation files
 └── examples/                                  # Sample Tableau workbooks
 ```
@@ -571,6 +574,7 @@ TableauToPowerBI/
 | `--agg-tables MODE` | Auto-generate aggregation tables: `auto` or `none` |
 | `--workers N` | Parallel batch processing with N workers |
 | `--sync` | Auto-deploy after incremental change detection |
+| `--check-drift DIR` | Compare current extraction against saved snapshot for schema drift |
 
 </details>
 
@@ -649,13 +653,13 @@ The validator checks `.pbip` JSON, `report.json`, `model.tmdl`, page/visual stru
 ## 🧪 Testing
 
 <p align="center">
-  <img src="https://img.shields.io/badge/tests-6%2C454%20passed-brightgreen?style=for-the-badge" alt="Tests"/>
+  <img src="https://img.shields.io/badge/tests-6%2C593%20passed-brightgreen?style=for-the-badge" alt="Tests"/>
   <img src="https://img.shields.io/badge/coverage-96.2%25-brightgreen?style=for-the-badge" alt="Coverage"/>
-  <img src="https://img.shields.io/badge/test%20files-137-blue?style=for-the-badge" alt="Test Files"/>
+  <img src="https://img.shields.io/badge/test%20files-140-blue?style=for-the-badge" alt="Test Files"/>
 </p>
 
 ```bash
-python -m pytest tests/ -v                          # Run all 6,454 tests
+python -m pytest tests/ -v                          # Run all 6,593 tests
 python -m pytest tests/test_dax_converter.py -v      # Run specific file
 python -m pytest tests/ --cov --cov-report=html      # Coverage report
 ```
@@ -687,7 +691,7 @@ python -m pytest tests/ --cov --cov-report=html      # Coverage report
 
 ```mermaid
 flowchart LR
-    L["🔍 Lint\nflake8 + ruff"] --> T["🧪 Test\n6,192 tests\nPy 3.9–3.14"]
+    L["🔍 Lint\nflake8 + ruff"] --> T["🧪 Test\n6,593 tests\nPy 3.9–3.14"]
     T --> V["✅ Validate\nStrict .twbx\nmigrations"]
     V --> S["📦 Staging\nFabric deploy"]
     S --> P["🚀 Production\nManual approval"]

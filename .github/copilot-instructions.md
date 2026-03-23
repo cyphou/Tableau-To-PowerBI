@@ -7,7 +7,7 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
 ## Architecture — 2-Step Pipeline
 
 ```
-.twbx --> [Extraction] --> 16 JSON files --> [Generation] --> .pbip (PBIR + TMDL)
+.twbx --> [Extraction] --> 17 JSON files --> [Generation] --> .pbip (PBIR + TMDL)
 ```
 
 1. **Extraction** (`tableau_export/`): Parses Tableau XML, extracts worksheets/dashboards/datasources/calculations/parameters/filters/stories/actions/sets/groups/bins/hierarchies/sort_orders/aliases/custom_sql
@@ -16,7 +16,7 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
 ## Project Structure
 
 - **tableau_export/**: Tableau XML extraction and parsing + DAX formula conversion
-  - `extract_tableau_data.py`: Main orchestrator, parses TWB/TWBX, extracts 16 object types
+  - `extract_tableau_data.py`: Main orchestrator, parses TWB/TWBX, extracts 17 object types
   - `datasource_extractor.py`: Datasource extraction (connections, tables, columns, calculations, relationships)
   - `dax_converter.py`: 180+ Tableau → DAX formula conversions (LOD, table calcs, security, etc.)
   - `m_query_builder.py`: Power Query M generator (33 connector types + 43 transformation generators: rename, filter, aggregate, pivot/unpivot, join, union, sort, conditional columns — chainable via `inject_m_steps()`)
@@ -77,6 +77,8 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
   - `dax_recipes.py`: DAX recipe overrides — industry-specific KPI measure templates: Healthcare (6), Finance (8), Retail (7). `apply_recipes()` inject/replace/overwrite, `recipes_to_marketplace_format()` bridge
   - `model_templates.py`: Industry model templates — pre-built semantic model skeletons: Healthcare (Encounters/Patients/Providers/Facilities), Finance (Financials/Accounts/CostCenters/AR), Retail (Sales/Products/Stores/Customers). `apply_template()` merges into migrated tables
   - `geo_passthrough.py`: Shapefile/GeoJSON passthrough — `GeoExtractor` extracts .geojson/.topojson/.shp from .twbx, `build_shape_map_config()` for PBI shapeMap, `copy_to_registered_resources()`, ZIP slip protection
+  - `api_server.py`: REST API server — stdlib `http.server`, `POST /migrate` (multipart upload), `GET /status/{id}`, `GET /download/{id}` (ZIP), `GET /health`, `GET /jobs`. Thread-safe job store, background migration workers.
+  - `schema_drift.py`: Schema drift detection — `detect_schema_drift()` compares extraction snapshots (tables, columns, calculations, worksheets, relationships, parameters, filters). `load_snapshot()`, `save_snapshot()`. JSON + summary output.
   - `deploy/`: Fabric deployment subpackage
     - `auth.py`: Azure AD authentication — Service Principal + Managed Identity (optional `azure-identity`)
     - `client.py`: Fabric REST API client — auto-detects `requests` with retry, falls back to `urllib`
@@ -89,10 +91,11 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
     - `pbi_deployer.py`: PBI Service deployment orchestrator — package, upload, poll, refresh, validate, `deploy_refresh_schedule()` for PBI REST API refresh config, `deploy_rolling()` for blue/green deployment with canary validation and auto-rollback
     - `bundle_deployer.py`: Fabric bundle deployer — deploy shared model + thin reports as atomic bundle, artifact discovery, per-report error isolation, rebind, refresh, `BundleDeploymentResult`
     - `multi_tenant.py`: Multi-tenant deployment — `TenantConfig`/`MultiTenantConfig` (validate/load/save JSON), `_apply_connection_overrides()` (template substitution: `${TENANT_SERVER}`, `${TENANT_DATABASE}`, context-aware escaping, null byte blocking, placeholder validation), `deploy_multi_tenant()` orchestrator with per-tenant results
-- **tests/**: Unit and integration tests (6,450+ tests across 137 test files + conftest.py shared fixtures)
-- **docs/**: FAQ, PBI project guide, mapping reference, **ROADMAP.md** (v22–v24 development roadmap per agent)
+- **tests/**: Unit and integration tests (6,593+ tests across 140 test files + conftest.py shared fixtures)
+- **docs/**: FAQ, PBI project guide, mapping reference, **ROADMAP.md** (v22–v28 development roadmap per agent)
 - **.github/workflows/ci.yml**: CI/CD pipeline (lint → test → validate → deploy)
 - **.github/workflows/publish.yml**: PyPI auto-publish workflow (tag-triggered, OIDC trusted publisher)
+- **Dockerfile**: Production-ready container image for the REST API migration server
 - **examples/plugins/**: Plugin examples (custom visual mapper, DAX post-processor, naming convention)
 - **artifacts/**: Migration output (generated .pbip projects)
 
@@ -135,9 +138,10 @@ python migrate.py --shared-model wb1.twbx wb2.twbx --output-format fabric
 python migrate.py --shared-model wb1.twbx wb2.twbx --output-format fabric --output-dir /tmp/fabric_shared
 python migrate.py path/to/workbook.twbx --output-format fabric
 python migrate.py path/to/workbook.twbx --output-format fabric --output-dir /tmp/fabric_output
+python migrate.py path/to/workbook.twbx --check-drift /path/to/snapshot_dir
 ```
 
-## Extracted Objects (16 types)
+## Extracted Objects (17 types)
 
 | Type | JSON File | Description |
 |------|-----------|-------------|
@@ -157,6 +161,7 @@ python migrate.py path/to/workbook.twbx --output-format fabric --output-dir /tmp
 | aliases | aliases.json | Column aliases |
 | custom_sql | custom_sql.json | Custom SQL queries |
 | user_filters | user_filters.json | User filters, security rules → PBI RLS roles |
+| hyper_files | hyper_files.json | Hyper file row data for M partition inlining |
 
 ## Key Model Files
 
@@ -357,14 +362,14 @@ See `docs/AGENTS.md` for the full architecture diagram, data flow, and handoff p
 
 | Agent | Scope | Key Files |
 |-------|-------|-----------|
-| **@orchestrator** | Pipeline, CLI, batch, wizard | `migrate.py`, `import_to_powerbi.py`, `wizard.py`, `progress.py` |
+| **@orchestrator** | Pipeline, CLI, batch, wizard | `migrate.py`, `import_to_powerbi.py`, `wizard.py`, `progress.py`, `api_server.py` |
 | **@extractor** | Tableau XML parsing, Hyper, Prep, Server API | `tableau_export/*.py` |
 | **@converter** | Tableau→DAX (180+), Power Query M (43 transforms) | `dax_converter.py`, `m_query_builder.py` |
 | **@generator** | TMDL, PBIR v4.0, visuals, Calendar, RLS | `tmdl_generator.py`, `pbip_generator.py`, `visual_generator.py` |
-| **@assessor** | Readiness scoring, strategy, diff reports | `assessment.py`, `server_assessment.py`, `strategy_advisor.py` |
+| **@assessor** | Readiness scoring, strategy, diff reports | `assessment.py`, `server_assessment.py`, `strategy_advisor.py`, `schema_drift.py` |
 | **@merger** | Shared semantic model, fingerprint matching | `shared_model.py`, `merge_config.py` |
 | **@deployer** | Fabric/PBI deployment, auth, gateway | `deploy/*.py`, `gateway_config.py`, `telemetry.py` |
-| **@tester** | Tests (5,170+), coverage, regression | `tests/*.py` |
+| **@tester** | Tests (6,593+), coverage, regression | `tests/*.py` |
 
 ### Rules
 
@@ -372,7 +377,7 @@ See `docs/AGENTS.md` for the full architecture diagram, data flow, and handoff p
 - **Read access is universal** — any agent can read any file for context
 - **Tester is cross-cutting** — reads all source, writes only to `tests/`
 - **Default agent** handles multi-domain tasks, docs, git, sprint planning
-- **Roadmap**: See `docs/ROADMAP.md` for v22–v24 per-agent sprint assignments (Sprints 76–90)
+- **Roadmap**: See `docs/ROADMAP.md` for v22–v28 per-agent sprint assignments (Sprints 76–117)
 
 ### Agent Definitions
 

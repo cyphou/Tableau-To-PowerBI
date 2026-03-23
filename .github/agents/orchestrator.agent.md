@@ -16,6 +16,7 @@ You are the **Orchestrator** agent for the Tableau to Power BI migration project
 - `powerbi_import/incremental.py` — Incremental migration (change tracking)
 - `powerbi_import/plugins.py` — Plugin system (auto-discovery, hooks)
 - `powerbi_import/notebook_api.py` — Interactive Jupyter migration API (MigrationSession)
+- `powerbi_import/api_server.py` — REST API migration server (stdlib http.server)
 - `config.example.json` — Batch config template
 
 ## Responsibilities

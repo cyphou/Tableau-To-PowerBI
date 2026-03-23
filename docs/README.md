@@ -3,8 +3,8 @@
 ## Guides
 
 - [POWERBI_PROJECT_GUIDE.md](POWERBI_PROJECT_GUIDE.md) — Understanding and using `.pbip` projects
-- [MAPPING_REFERENCE.md](MAPPING_REFERENCE.md) — Tableau ↔ Power BI mappings (60+ visuals, formulas, interactions)
-- [TABLEAU_TO_DAX_REFERENCE.md](TABLEAU_TO_DAX_REFERENCE.md) — Complete 172-function Tableau → DAX mapping
+- [MAPPING_REFERENCE.md](MAPPING_REFERENCE.md) — Tableau ↔ Power BI mappings (118+ visuals, formulas, interactions)
+- [TABLEAU_TO_DAX_REFERENCE.md](TABLEAU_TO_DAX_REFERENCE.md) — Complete 180+-function Tableau → DAX mapping
 - [TABLEAU_TO_POWERQUERY_REFERENCE.md](TABLEAU_TO_POWERQUERY_REFERENCE.md) — Complete 108-property Tableau → Power Query M mapping (25 connectors)
 - [TABLEAU_PREP_TO_POWERQUERY_REFERENCE.md](TABLEAU_PREP_TO_POWERQUERY_REFERENCE.md) — Complete 165-operation Tableau Prep → Power Query M transformation mapping
 - [FAQ.md](FAQ.md) — Frequently asked questions
@@ -29,6 +29,6 @@ python migrate.py --skip-conversion                    # Re-generate only
 | `migrate.py` | CLI entry point, batch support, logging |
 | `tableau_export/` | Tableau XML parsing, DAX conversion, Power Query M generation |
 | `powerbi_import/` | .pbip generation, TMDL, visuals, validation, deployment |
-| `tests/` | 6,192 tests (128 files), 0 failures |
+| `tests/` | 6,593 tests (140 files), 0 failures |
 | `artifacts/` | Generated .pbip projects |
 | `.github/workflows/` | CI/CD pipeline (lint, test, validate, deploy) |

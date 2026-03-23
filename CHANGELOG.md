@@ -1,5 +1,27 @@
 # Changelog
 
+## v28.0.0 Phase 1 — Core Extensibility (Sprints 108–111)
+
+### Sprint 111 — Incremental Schema Drift Detection ✅
+- **Schema drift detection** (`schema_drift.py`): New module — `detect_schema_drift()` compares extraction snapshots across 7 categories (tables, columns, calculations, worksheets, relationships, parameters, filters). `SchemaDriftReport` with `summary()`, `to_json()`, `save()`. `load_snapshot()` / `save_snapshot()` for baseline persistence.
+- **CLI flag**: `--check-drift SNAPSHOT_DIR` — compares current extraction against a saved snapshot directory, prints summary, saves updated baseline.
+- **25 tests** in `test_sprint111_schema_drift.py`.
+
+### Sprint 110 — REST API Endpoint ✅
+- **API server** (`api_server.py`): New module — stdlib `http.server` migration API. Endpoints: `POST /migrate` (multipart upload), `GET /status/{id}`, `GET /download/{id}` (ZIP), `GET /health`, `GET /jobs`. Thread-safe job store, background migration workers, 500MB max upload.
+- **Dockerfile**: Production-ready container image (`python:3.12-slim`, port 8000).
+- **21 tests** in `test_sprint110_api_server.py`.
+
+### Sprint 109 — TDSX Hyper Data Inlining ✅
+- **Hyper data inlining**: `hyper_files.json` is now the 17th extracted JSON file (was 16). `tmdl_generator.py` calls `generate_m_from_hyper()` to inline Hyper row data into M `#table()`/`Csv.Document()` partition expressions for `hyper`/`extract`/`dataengine` connection types.
+- **Pipeline wiring**: `import_to_powerbi.py` loads `hyper_files.json`, `pbip_generator.py` passes to TMDL generator.
+- **15 tests** in `test_sprint109_hyper_inlining.py`.
+
+### Sprint 108 — TDS/TDSX Standalone Datasource Migration ✅
+- **Standalone datasource migration**: `.tds`/`.tdsx` files migrate to SemanticModel-only `.pbip` projects (no Report folder). Batch scanner includes `.tds`/`.tdsx` extensions.
+
+---
+
 ## v27.1.0 — Unified HTML Report Template
 
 ### Sprint 107 — HTML Report Template Unification ✅

@@ -292,4 +292,31 @@ The `merge_assessment.json` file lists all conflicts detected.
 python -m pytest tests/ -v
 ```
 
-The project includes **6,192 tests across 128 test files** covering DAX conversion, Power Query M generation, TMDL model building, visual generation, project structure, artifact validation, deployment utilities, Fabric-native generation, DAX optimization, cross-platform equivalence testing, and end-to-end non-regression migration of all 16 real-world workbooks.
+The project includes **6,593 tests across 140 test files** covering DAX conversion, Power Query M generation, TMDL model building, visual generation, project structure, artifact validation, deployment utilities, Fabric-native generation, DAX optimization, cross-platform equivalence testing, and end-to-end non-regression migration of all 16 real-world workbooks.
+
+### How do I run the migration as a REST API?
+
+Use the built-in API server:
+
+```bash
+python -m powerbi_import.api_server --port 8000
+# Or via Docker:
+docker build -t tableau-to-pbi .
+docker run -p 8000:8000 tableau-to-pbi
+```
+
+Endpoints: `POST /migrate` (upload .twbx), `GET /status/{id}`, `GET /download/{id}`, `GET /health`, `GET /jobs`.
+
+### How do I detect schema drift between migrations?
+
+Use `--check-drift` to compare the current extraction against a saved snapshot:
+
+```bash
+# First migration creates a baseline snapshot
+python migrate.py workbook.twbx --check-drift /path/to/snapshot_dir
+# ... time passes, Tableau workbook changes ...
+# Re-run to detect drift
+python migrate.py workbook.twbx --check-drift /path/to/snapshot_dir
+```
+
+The report lists added/removed/modified tables, columns, calculations, worksheets, relationships, parameters, and filters.

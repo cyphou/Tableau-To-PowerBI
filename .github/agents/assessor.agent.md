@@ -20,6 +20,7 @@ You are the **Assessor** agent for the Tableau to Power BI migration project. Yo
 - `powerbi_import/migration_report.py` — Per-item fidelity tracking
 - `powerbi_import/equivalence_tester.py` — Cross-platform validation (measure value comparison, SSIM screenshot framework)
 - `powerbi_import/regression_suite.py` — Regression snapshot generator (content hash comparison, drift detection)
+- `powerbi_import/schema_drift.py` — Schema drift detection (compare extraction snapshots, 7 categories)
 
 ## Constraints
 

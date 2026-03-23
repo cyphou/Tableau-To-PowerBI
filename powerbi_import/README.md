@@ -32,7 +32,7 @@ Converts extracted data into TMDL (Tabular Model Definition Language) files:
 
 ### `visual_generator.py`
 
-Generates JSON visual definitions for the report. Maps 60+ Tableau visual types to Power BI.
+Generates JSON visual definitions for the report. Maps 118+ Tableau visual types to Power BI.
 
 ### `m_query_generator.py`
 
@@ -45,6 +45,14 @@ Validates `.pbip` projects (JSON, TMDL, report structure) before opening in PBI 
 ### `migration_report.py`
 
 Per-item fidelity tracking and migration status reporting.
+
+### `api_server.py`
+
+REST API server (stdlib `http.server`). Endpoints: `POST /migrate`, `GET /status/{id}`, `GET /download/{id}`, `GET /health`, `GET /jobs`.
+
+### `schema_drift.py`
+
+Schema drift detection — compares extraction snapshots. Detects added/removed/changed tables, columns, calculations, worksheets, relationships, parameters, filters.
 
 ## Deployment Subpackage (`deploy/`)
 
@@ -62,7 +70,7 @@ Fabric deployment is in the `deploy/` subpackage:
 ## Output Format
 
 **PBIR v4.0** with schemas:
-- `report/3.1.0`
+- `report/2.0.0`
 - `page/2.0.0`
 - `visualContainer/2.5.0`
 - `pbipProperties/1.0.0`

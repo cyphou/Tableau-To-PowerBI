@@ -126,6 +126,17 @@ python migrate.py --shared-model wb1.twbx wb2.twbx \
   --multi-tenant tenants.json
 ```
 
+### REST API (Docker)
+
+For headless/programmatic migrations, use the REST API server:
+```bash
+docker build -t tableau-to-pbi .
+docker run -p 8000:8000 tableau-to-pbi
+# POST workbooks via /migrate endpoint for headless batch processing
+```
+
+Endpoints: `POST /migrate`, `GET /status/{id}`, `GET /download/{id}`, `GET /health`, `GET /jobs`.
+
 ## Phase 8: Live Sync
 
 Keep migrated artifacts in sync with evolving Tableau workbooks:
@@ -138,6 +149,15 @@ The `--sync` flag:
 2. Re-extracts only modified workbooks
 3. Generates incremental diffs
 4. Deploys updated artifacts
+
+### Schema Drift Detection
+
+Compare a workbook against a previously saved extraction baseline:
+```bash
+python migrate.py workbook.twbx --check-drift /path/to/snapshot_dir
+```
+
+Detects added/removed/changed tables, columns, calculations, worksheets, relationships, parameters, and filters. Saves JSON drift report and updated baseline.
 
 ## Performance Guidelines
 

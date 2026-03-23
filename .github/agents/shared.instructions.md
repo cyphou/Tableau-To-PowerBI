@@ -9,13 +9,13 @@ All agents MUST follow these rules. They apply to every file in the project.
 ## Pipeline Architecture
 
 ```
-.twbx → [Extraction] → 16 JSON files → [Generation] → .pbip (PBIR v4.0 + TMDL)
+.twbx → [Extraction] → 17 JSON files → [Generation] → .pbip (PBIR v4.0 + TMDL)
                                                       → Fabric-native (Lakehouse + Dataflow + Notebook + SemanticModel + Pipeline)
 ```
 
 - **Source**: `tableau_export/` — extraction + DAX converter + M query builder
 - **Target**: `powerbi_import/` — TMDL generator + PBIR report + visual generator + Fabric generators
-- **Tests**: `tests/` — 6,263+ tests across 131+ files
+- **Tests**: `tests/` — 6,593+ tests across 140+ files
 - **Docs**: `docs/` — architecture, dev plan, gap analysis, known limitations, roadmap
 
 ## Hard Constraints
