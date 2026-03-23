@@ -73,3 +73,9 @@ You are the **Extractor** agent for the Tableau to Power BI migration project. Y
 - **Table extensions**: Tableau 2024.2+ (Einstein Discovery, external API). Generates M `Web.Contents()` or placeholder.
 - **Multi-connection blending**: Single worksheets referencing 2+ datasources → separate M partitions + merge-append
 - **Linguistic schema**: Field captions as Q&A synonyms → `linguisticSchema.xml`
+
+## v28 Features (Sprint 109–111)
+
+- **Hyper inlining** (Sprint 109): Hyper file data injected into M `#table()` partitions or `Csv.Document` — falls back gracefully if `tableauhyperapi` unavailable
+- **REST API server** (Sprint 110): `api_server.py` accepts multipart `.twbx` uploads, runs migration in background threads
+- **Schema drift detection** (Sprint 111): `--check-drift` compares extraction snapshots to detect structural changes

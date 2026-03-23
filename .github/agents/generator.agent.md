@@ -58,6 +58,10 @@ You are the **Generator** agent for the Tableau to Power BI migration project. Y
     - Empty-name tables → removed
     - M partitions without try/otherwise → wrapped
     - All repairs tracked in `RecoveryReport`
+14. **M if/else balance fix** (Sprint 109):
+    - `_fix_m_if_else_balance()` in tmdl_generator — scans M partitions for unbalanced `if...then` without `else` and appends `else null`
+    - `calc_column_utils.py` also runs the same fix on M calc column expressions
+    - Prevents Power BI M engine error "Token 'else' expected"
 
 ## Visual Fallback Cascade (Sprint 96)
 
@@ -81,6 +85,8 @@ The `_is_date_table()` function uses two strategies:
 2. **Column heuristic**: DateTime column + ≥50% date-part column names
 
 DO NOT generate a Calendar table if an existing date table is detected.
+
+Calendar M expression uses explicit culture parameter for `Date.MonthName()` and `Date.DayOfWeekName()` — defaults to `"en-US"`, overridden by `--culture` CLI flag.
 
 ## Visual Type Mapping (118 types)
 

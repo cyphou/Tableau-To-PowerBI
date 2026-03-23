@@ -20,7 +20,8 @@ You are the **Assessor** agent for the Tableau to Power BI migration project. Yo
 - `powerbi_import/migration_report.py` — Per-item fidelity tracking
 - `powerbi_import/equivalence_tester.py` — Cross-platform validation (measure value comparison, SSIM screenshot framework)
 - `powerbi_import/regression_suite.py` — Regression snapshot generator (content hash comparison, drift detection)
-- `powerbi_import/schema_drift.py` — Schema drift detection (compare extraction snapshots, 7 categories)
+- `powerbi_import/schema_drift.py` — Schema drift detection (compare extraction snapshots, 7 categories: tables, columns, calculations, worksheets, relationships, parameters, filters)
+- `powerbi_import/validator.py` — Artifact validator (.pbip projects: JSON, TMDL structure, M if/else balance check)
 
 ## Constraints
 
@@ -60,3 +61,4 @@ Recommends Import / DirectQuery / Composite based on 7 signals:
 - `assess_migration_readiness(extracted_data)` → assessment dict
 - `ServerAssessment.assess_portfolio(workbooks)` → portfolio report
 - `diff_manifests(old, new)` → manifest delta (in merge_assessment.py)
+- `detect_schema_drift(old_snapshot, new_snapshot)` → drift report (tables/columns/calcs/relationships/parameters/filters/worksheets)

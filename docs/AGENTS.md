@@ -10,7 +10,7 @@ This project uses an **8-agent specialization model**. Each agent has scoped dom
 | **@extractor** | Parsing Tableau XML, Hyper files, Prep flows, Server API | `tableau_export/*.py` (extract, datasource, hyper, pulse, prep, server) |
 | **@converter** | Tableau→DAX formulas, Power Query M generation, DAX optimization | `dax_converter.py`, `m_query_builder.py`, `dax_optimizer.py` |
 | **@generator** | TMDL semantic model, PBIR report, visuals, Calendar, Fabric generators | `tmdl_generator.py`, `pbip_generator.py`, `visual_generator.py`, `thin_report_generator.py`, `goals_generator.py`, `alerts_generator.py`, `recovery_report.py`, `fabric_project_generator.py`, `lakehouse_generator.py`, `dataflow_generator.py`, `notebook_generator.py`, `pipeline_generator.py`, `fabric_semantic_model_generator.py`, `fabric_constants.py`, `fabric_naming.py`, `calc_column_utils.py` |
-| **@assessor** | Migration readiness, scoring, strategy, diff reports, validation | `assessment.py`, `server_assessment.py`, `global_assessment.py`, `strategy_advisor.py`, `visual_diff.py`, `comparison_report.py`, `migration_report.py`, `equivalence_tester.py`, `regression_suite.py`, `schema_drift.py` |
+| **@assessor** | Migration readiness, scoring, strategy, diff reports, validation | `assessment.py`, `server_assessment.py`, `global_assessment.py`, `strategy_advisor.py`, `visual_diff.py`, `comparison_report.py`, `migration_report.py`, `equivalence_tester.py`, `regression_suite.py`, `schema_drift.py`, `validator.py` |
 | **@merger** | Shared semantic model, multi-workbook merge, Fabric merge | `shared_model.py`, `merge_config.py` (+ co-owns `merge_assessment.py`, `merge_report_html.py`, `thin_report_generator.py`) |
 | **@deployer** | Fabric/PBI deployment, auth, gateway, telemetry, multi-tenant | `deploy/*.py`, `gateway_config.py`, `telemetry.py`, `telemetry_dashboard.py`, `refresh_generator.py` |
 | **@tester** | Tests, coverage, fixtures, regression | `tests/*.py` |
@@ -56,7 +56,7 @@ This project uses an **8-agent specialization model**. Each agent has scoped dom
 6. (Optional) Orchestrator delegates to Assessor → readiness report
 7. (Optional) Orchestrator delegates to Merger → shared semantic model (PBIP or Fabric)
 8. (Optional) Orchestrator delegates to Deployer → Fabric/PBI workspace
-9. Tester validates all steps with 6,593+ tests
+9. Tester validates all steps with 6,714+ tests
 ```
 
 ## Handoff Protocol

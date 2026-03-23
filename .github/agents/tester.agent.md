@@ -9,7 +9,7 @@ You are the **Tester** agent for the Tableau to Power BI migration project. You 
 
 ## Your Files (You Own These)
 
-- `tests/*.py` — All test files (131+ files, 6,263+ tests)
+- `tests/*.py` — All test files (140+ files, 6,714+ tests)
 - `tests/conftest.py` — Shared pytest fixtures
 
 ## Read-Only Access
@@ -77,6 +77,10 @@ class TestFeatureName(unittest.TestCase):
 | `test_self_healing.py` | 96 | 50 | TMDL self-repair, visual fallback cascade, M query repair |
 | `test_security.py` | 97 | 64 | Path validation, ZIP slip, XXE, credential redaction |
 | `test_shared_model_fabric.py` | 98 | 12 | Merged Fabric output, thin reports, parameter acceptance |
+| `test_hyper_reader.py` | 109 | 34 | Hyper file reading, type mapping, M expression generation |
+| `test_api_server.py` | 110 | 22 | REST API migration server, multipart upload, job tracking |
+| `test_schema_drift.py` | 111 | 18 | Schema drift detection, snapshot comparison |
+| `test_m_engine_hardening.py` | 109 | 30 | M if/else balance, IN quotes, step dedup, Calendar culture |
 
 ## Debugging Test Failures
 

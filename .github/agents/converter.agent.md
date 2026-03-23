@@ -57,6 +57,15 @@ convert_tableau_formula_to_dax(formula, column_name, table_name, calc_map, param
 - 43 transformation generators returning `(step_name, step_expression)` tuples
 - `{prev}` placeholder for chaining steps
 - `inject_m_steps()` chains transforms into the final M query
+- `_m_escape_string()` — escapes double-quotes and backslashes in M string literals (use for all connection string values)
+- Step name deduplication: `inject_m_steps()` auto-appends `_2`, `_3` suffixes when duplicate step names are detected
+- IN operator: single-quoted string values in `IN {…}` sets are auto-converted to double-quoted for M compatibility
+
+## M Engine Pitfalls (Learned from Bug Fixes)
+
+- Every `if...then` MUST have a matching `else` clause — M engine rejects `if x then y` without `else`; always emit `else null`
+- `Date.MonthName()` and `Date.DayOfWeekName()` require an explicit culture parameter (e.g., `"en-US"`) — omitting it causes locale-dependent results
+- Connection string values with quotes or backslashes will break M queries if not escaped via `_m_escape_string()`
 
 ## Calculated Column vs Measure Classification
 

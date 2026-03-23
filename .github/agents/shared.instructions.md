@@ -15,7 +15,7 @@ All agents MUST follow these rules. They apply to every file in the project.
 
 - **Source**: `tableau_export/` — extraction + DAX converter + M query builder
 - **Target**: `powerbi_import/` — TMDL generator + PBIR report + visual generator + Fabric generators
-- **Tests**: `tests/` — 6,593+ tests across 140+ files
+- **Tests**: `tests/` — 6,714+ tests across 140+ files
 - **Docs**: `docs/` — architecture, dev plan, gap analysis, known limitations, roadmap
 
 ## Hard Constraints
@@ -40,6 +40,11 @@ All agents MUST follow these rules. They apply to every file in the project.
 - `replace_string_in_file` fails on duplicate matches — use unique surrounding context
 - Never weaken test assertions to make tests pass
 - Stage only files related to the current task
+- M `if...then` without `else` causes Power BI M engine error "Token 'else' expected" — always emit `else null`
+- M single-quoted strings in `IN {…}` sets must be converted to double-quoted
+- `inject_m_steps()` can produce duplicate step names when called multiple times — use dedup suffix
+- Calendar `Date.MonthName()`/`Date.DayOfWeekName()` must pass explicit culture parameter
+- Connection string values must be escaped with `_m_escape_string()` before M injection
 
 ## Cross-Agent Handoff Protocol
 

@@ -91,7 +91,7 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
     - `pbi_deployer.py`: PBI Service deployment orchestrator — package, upload, poll, refresh, validate, `deploy_refresh_schedule()` for PBI REST API refresh config, `deploy_rolling()` for blue/green deployment with canary validation and auto-rollback
     - `bundle_deployer.py`: Fabric bundle deployer — deploy shared model + thin reports as atomic bundle, artifact discovery, per-report error isolation, rebind, refresh, `BundleDeploymentResult`
     - `multi_tenant.py`: Multi-tenant deployment — `TenantConfig`/`MultiTenantConfig` (validate/load/save JSON), `_apply_connection_overrides()` (template substitution: `${TENANT_SERVER}`, `${TENANT_DATABASE}`, context-aware escaping, null byte blocking, placeholder validation), `deploy_multi_tenant()` orchestrator with per-tenant results
-- **tests/**: Unit and integration tests (6,593+ tests across 140 test files + conftest.py shared fixtures)
+- **tests/**: Unit and integration tests (6,714+ tests across 140 test files + conftest.py shared fixtures)
 - **docs/**: FAQ, PBI project guide, mapping reference, **ROADMAP.md** (v22–v28 development roadmap per agent)
 - **.github/workflows/ci.yml**: CI/CD pipeline (lint → test → validate → deploy)
 - **.github/workflows/publish.yml**: PyPI auto-publish workflow (tag-triggered, OIDC trusted publisher)
@@ -369,7 +369,7 @@ See `docs/AGENTS.md` for the full architecture diagram, data flow, and handoff p
 | **@assessor** | Readiness scoring, strategy, diff reports | `assessment.py`, `server_assessment.py`, `strategy_advisor.py`, `schema_drift.py` |
 | **@merger** | Shared semantic model, fingerprint matching | `shared_model.py`, `merge_config.py` |
 | **@deployer** | Fabric/PBI deployment, auth, gateway | `deploy/*.py`, `gateway_config.py`, `telemetry.py` |
-| **@tester** | Tests (6,593+), coverage, regression | `tests/*.py` |
+| **@tester** | Tests (6,714+), coverage, regression | `tests/*.py` |
 
 ### Rules
 
