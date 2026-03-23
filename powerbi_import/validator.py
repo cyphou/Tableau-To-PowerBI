@@ -242,6 +242,19 @@ class ArtifactValidator:
                 if not content.strip().startswith('model Model'):
                     errors.append(f'model.tmdl must start with "model Model"')
 
+            # Validate M partition expressions have balanced if/else
+            parts = re.split(r'partition\s', content)
+            for idx, part in enumerate(parts[1:], 1):
+                if '= m' in part[:100]:
+                    # Strip M string literals to avoid counting keywords inside strings
+                    stripped = re.sub(r'"([^"]|"")*"', '""', part)
+                    if_count = len(re.findall(r'\bif\b', stripped))
+                    else_count = len(re.findall(r'\belse\b', stripped))
+                    if if_count != else_count:
+                        errors.append(
+                            f'M if/else imbalance in partition {idx} of {basename}: '
+                            f'if={if_count}, else={else_count}')
+
             return len(errors) == 0, errors
 
         except OSError as e:

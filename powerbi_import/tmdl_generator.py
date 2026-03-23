@@ -4489,6 +4489,137 @@ _DISPLAY_FOLDER_TRANSLATIONS = {
         'Field Parameters': 'Veldparameters',
         'Calculation Groups': 'Berekeningsgroepen',
     },
+    # ── v28: Additional culture translations ──
+    'sv-SE': {
+        'Dimensions': 'Dimensioner',
+        'Measures': 'Mått',
+        'Time Intelligence': 'Tidsintelligens',
+        'Flags': 'Flaggor',
+        'Calculations': 'Beräkningar',
+        'Groups': 'Grupper',
+        'Sets': 'Uppsättningar',
+        'Bins': 'Intervall',
+        'Parameters': 'Parametrar',
+        'Field Parameters': 'Fältparametrar',
+        'Calculation Groups': 'Beräkningsgrupper',
+    },
+    'da-DK': {
+        'Dimensions': 'Dimensioner',
+        'Measures': 'Målinger',
+        'Time Intelligence': 'Tidsintelligens',
+        'Flags': 'Flag',
+        'Calculations': 'Beregninger',
+        'Groups': 'Grupper',
+        'Sets': 'Sæt',
+        'Bins': 'Intervaller',
+        'Parameters': 'Parametre',
+        'Field Parameters': 'Feltparametre',
+        'Calculation Groups': 'Beregningsgrupper',
+    },
+    'nb-NO': {
+        'Dimensions': 'Dimensjoner',
+        'Measures': 'Målinger',
+        'Time Intelligence': 'Tidsintelligens',
+        'Flags': 'Flagg',
+        'Calculations': 'Beregninger',
+        'Groups': 'Grupper',
+        'Sets': 'Sett',
+        'Bins': 'Intervaller',
+        'Parameters': 'Parametere',
+        'Field Parameters': 'Feltparametere',
+        'Calculation Groups': 'Beregningsgrupper',
+    },
+    'fi-FI': {
+        'Dimensions': 'Dimensiot',
+        'Measures': 'Mittarit',
+        'Time Intelligence': 'Aikaäly',
+        'Flags': 'Liput',
+        'Calculations': 'Laskelmat',
+        'Groups': 'Ryhmät',
+        'Sets': 'Joukot',
+        'Bins': 'Intervallit',
+        'Parameters': 'Parametrit',
+        'Field Parameters': 'Kenttäparametrit',
+        'Calculation Groups': 'Laskelmaryhmät',
+    },
+    'pl-PL': {
+        'Dimensions': 'Wymiary',
+        'Measures': 'Miary',
+        'Time Intelligence': 'Analiza Czasowa',
+        'Flags': 'Flagi',
+        'Calculations': 'Obliczenia',
+        'Groups': 'Grupy',
+        'Sets': 'Zbiory',
+        'Bins': 'Przedziały',
+        'Parameters': 'Parametry',
+        'Field Parameters': 'Parametry Pola',
+        'Calculation Groups': 'Grupy Obliczeń',
+    },
+    'tr-TR': {
+        'Dimensions': 'Boyutlar',
+        'Measures': 'Ölçüler',
+        'Time Intelligence': 'Zaman Zekası',
+        'Flags': 'Bayraklar',
+        'Calculations': 'Hesaplamalar',
+        'Groups': 'Gruplar',
+        'Sets': 'Kümeler',
+        'Bins': 'Aralıklar',
+        'Parameters': 'Parametreler',
+        'Field Parameters': 'Alan Parametreleri',
+        'Calculation Groups': 'Hesaplama Grupları',
+    },
+    'ru-RU': {
+        'Dimensions': 'Измерения',
+        'Measures': 'Метрики',
+        'Time Intelligence': 'Временной анализ',
+        'Flags': 'Флаги',
+        'Calculations': 'Вычисления',
+        'Groups': 'Группы',
+        'Sets': 'Наборы',
+        'Bins': 'Интервалы',
+        'Parameters': 'Параметры',
+        'Field Parameters': 'Параметры полей',
+        'Calculation Groups': 'Группы вычислений',
+    },
+    'ar-SA': {
+        'Dimensions': 'الأبعاد',
+        'Measures': 'المقاييس',
+        'Time Intelligence': 'ذكاء الوقت',
+        'Flags': 'الأعلام',
+        'Calculations': 'الحسابات',
+        'Groups': 'المجموعات',
+        'Sets': 'المجموعات',
+        'Bins': 'الفواصل',
+        'Parameters': 'المعلمات',
+        'Field Parameters': 'معلمات الحقل',
+        'Calculation Groups': 'مجموعات الحساب',
+    },
+    'hi-IN': {
+        'Dimensions': 'आयाम',
+        'Measures': 'माप',
+        'Time Intelligence': 'समय बुद्धिमत्ता',
+        'Flags': 'झंडे',
+        'Calculations': 'गणनाएँ',
+        'Groups': 'समूह',
+        'Sets': 'सेट',
+        'Bins': 'अंतराल',
+        'Parameters': 'पैरामीटर',
+        'Field Parameters': 'फ़ील्ड पैरामीटर',
+        'Calculation Groups': 'गणना समूह',
+    },
+    'th-TH': {
+        'Dimensions': 'มิติ',
+        'Measures': 'การวัด',
+        'Time Intelligence': 'ความฉลาดด้านเวลา',
+        'Flags': 'ธง',
+        'Calculations': 'การคำนวณ',
+        'Groups': 'กลุ่ม',
+        'Sets': 'ชุด',
+        'Bins': 'ช่วง',
+        'Parameters': 'พารามิเตอร์',
+        'Field Parameters': 'พารามิเตอร์ฟิลด์',
+        'Calculation Groups': 'กลุ่มการคำนวณ',
+    },
 }
 
 
@@ -5084,6 +5215,27 @@ def detect_refresh_policy(table, datasources=None):
     }
 
 
+def _fix_m_if_else_balance(m_expr):
+    """Ensure every M ``if...then`` has a matching ``else`` clause.
+
+    Power Query M requires ``if cond then val else fallback`` — an ``if``
+    without ``else`` is a parse error.  This function counts ``if`` vs
+    ``else`` tokens (outside string literals) and appends ``else null`` for
+    each missing ``else``.
+    """
+    if not m_expr or 'if' not in m_expr:
+        return m_expr
+    stripped = re.sub(r'"([^"]|"")*"', '""', m_expr)
+    if_count = len(re.findall(r'\bif\b', stripped))
+    else_count = len(re.findall(r'\belse\b', stripped))
+    if if_count > else_count:
+        deficit = if_count - else_count
+        logger.warning("M if/else imbalance (if=%d, else=%d) — auto-appending %d × 'else null'",
+                        if_count, else_count, deficit)
+        m_expr = m_expr.rstrip() + ' else null' * deficit
+    return m_expr
+
+
 def _write_partition(lines, table_name, partition):
     """Write a partition in TMDL."""
     part_name = f"{table_name}-{uuid.uuid4()}"
@@ -5111,6 +5263,8 @@ def _write_partition(lines, table_name, partition):
             else:
                 lines.append(f"\t\tsource = {expr_clean}")
         else:
+            # Validate M if/else balance before writing
+            expression = _fix_m_if_else_balance(expression)
             lines.append(f"\t\tsource =")
             for expr_line in expression.split('\n'):
                 lines.append(f"\t\t\t\t{expr_line}")

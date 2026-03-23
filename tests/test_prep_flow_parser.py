@@ -851,6 +851,13 @@ class TestCleanActionsExtended(unittest.TestCase):
             'defaultValue': 'Low',
         })
         self.assertIsNotNone(step)
+        # The generated M must NOT have double 'each' (each if each ...)
+        name, expr = step
+        self.assertNotIn('each if each', expr)
+        # Must have proper if...then...else
+        self.assertIn('if', expr)
+        self.assertIn('then', expr)
+        self.assertIn('else', expr)
 
     def test_conditional_column_no_rules(self):
         step = self._step('ConditionalColumn', {'newColumnName': 'X', 'rules': []})

@@ -587,7 +587,7 @@ def _convert_action_to_m_step(action_type, action, counter):
                 value = rule.get('value', '""')
                 if isinstance(value, str) and not value.startswith('"'):
                     value = f'"{value}"'
-                conditions.append((f'each {condition}', str(value)))
+                conditions.append((condition, str(value)))
             return m_transform_conditional_column(new_col, conditions, str(default))
 
     elif action_type == 'ExtractValues':

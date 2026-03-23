@@ -1498,7 +1498,11 @@ def m_transform_conditional_column(new_col_name, conditions, default_value=None)
     """
     expr = ""
     for cond, val in conditions:
-        expr += f'if {cond} then {val} else '
+        # Strip spurious 'each' prefix — each belongs in Table.AddColumn, not in conditions
+        clean_cond = cond
+        if clean_cond.startswith('each '):
+            clean_cond = clean_cond[5:]
+        expr += f'if {clean_cond} then {val} else '
     expr += str(default_value) if default_value is not None else 'null'
     return (f'#"Added {new_col_name}"',
             f'Table.AddColumn({{prev}}, "{new_col_name}", each {expr})')

@@ -709,6 +709,17 @@ class TestCalculatedTransforms(unittest.TestCase):
         )
         self.assertIn("null", expr)
 
+    def test_conditional_column_strips_spurious_each(self):
+        """Conditions with 'each' prefix should be cleaned — avoids 'each if each' in M."""
+        name, expr = m_transform_conditional_column(
+            "Tier",
+            [('each [Sales] > 1000', '"High"')],
+            '"Low"'
+        )
+        # Should have 'each if [Sales]' NOT 'each if each [Sales]'
+        self.assertNotIn("each if each", expr)
+        self.assertIn("each if [Sales]", expr)
+
 
 # ═══════════════════════════════════════════════════════════════════════
 # Step format — all transforms return (name, expr) with {prev}

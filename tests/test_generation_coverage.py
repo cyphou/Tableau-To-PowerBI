@@ -40,6 +40,7 @@ from powerbi_import.tmdl_generator import (
     _dax_to_m_expression,
     _split_dax_args,
     _extract_function_body,
+    _fix_m_if_else_balance,
     generate_tmdl,
     _build_semantic_model,
 )
@@ -53,6 +54,44 @@ from tests.factories import (
 # ═══════════════════════════════════════════════════════════════════════
 # DAX → M Expression Converter (deeper coverage)
 # ═══════════════════════════════════════════════════════════════════════
+
+class TestFixMIfElseBalance(unittest.TestCase):
+    """Test the defensive _fix_m_if_else_balance function."""
+
+    def test_balanced_expression_unchanged(self):
+        expr = 'if [A] > 0 then "Y" else "N"'
+        self.assertEqual(_fix_m_if_else_balance(expr), expr)
+
+    def test_missing_else_gets_null(self):
+        expr = 'if [A] > 0 then "Y"'
+        result = _fix_m_if_else_balance(expr)
+        self.assertIn('else null', result)
+
+    def test_multiple_missing_else(self):
+        expr = 'if [A] > 10 then "High" else if [A] > 5 then "Mid"'
+        result = _fix_m_if_else_balance(expr)
+        # Two ifs, one else → needs one more
+        stripped = result.replace('"', '')
+        import re
+        if_count = len(re.findall(r'\bif\b', stripped))
+        else_count = len(re.findall(r'\belse\b', stripped))
+        self.assertEqual(if_count, else_count)
+
+    def test_no_if_unchanged(self):
+        expr = 'Table.AddColumn(Source, "X", each [A] + 1)'
+        self.assertEqual(_fix_m_if_else_balance(expr), expr)
+
+    def test_empty_string(self):
+        self.assertEqual(_fix_m_if_else_balance(''), '')
+
+    def test_none_input(self):
+        self.assertIsNone(_fix_m_if_else_balance(None))
+
+    def test_if_inside_string_ignored(self):
+        """Keywords inside M string literals should not be counted."""
+        expr = 'if [A] = "if then else" then "Y" else "N"'
+        self.assertEqual(_fix_m_if_else_balance(expr), expr)
+
 
 class TestDaxToMConverterExtended(unittest.TestCase):
     """Extended coverage for _dax_to_m_expression."""
@@ -588,6 +627,43 @@ class TestValidatorTmdlFile(unittest.TestCase):
             f.write("something else\n")
         ok, errors = ArtifactValidator.validate_tmdl_file(path)
         self.assertFalse(ok)
+
+    def test_m_partition_balanced_if_else(self):
+        """TMDL with balanced M if/else should pass."""
+        path = os.path.join(self.tmp, "Orders.tmdl")
+        with open(path, 'w') as f:
+            f.write(
+                'table Orders\n'
+                '\tpartition p1 = m\n'
+                '\t\tmode: import\n'
+                '\t\tsource =\n'
+                '\t\t\t\tlet\n'
+                '\t\t\t\t\tSource = #table({}, {}),\n'
+                '\t\t\t\t\t#"Added Col" = Table.AddColumn(Source, "X", each if [A] > 0 then "Y" else "N")\n'
+                '\t\t\t\tin\n'
+                '\t\t\t\t\t#"Added Col"\n'
+            )
+        ok, errors = ArtifactValidator.validate_tmdl_file(path)
+        self.assertTrue(ok, errors)
+
+    def test_m_partition_imbalanced_if_else(self):
+        """TMDL with missing M else should fail validation."""
+        path = os.path.join(self.tmp, "Orders.tmdl")
+        with open(path, 'w') as f:
+            f.write(
+                'table Orders\n'
+                '\tpartition p1 = m\n'
+                '\t\tmode: import\n'
+                '\t\tsource =\n'
+                '\t\t\t\tlet\n'
+                '\t\t\t\t\tSource = #table({}, {}),\n'
+                '\t\t\t\t\t#"Added Col" = Table.AddColumn(Source, "X", each if [A] > 0 then "Y")\n'
+                '\t\t\t\tin\n'
+                '\t\t\t\t\t#"Added Col"\n'
+            )
+        ok, errors = ArtifactValidator.validate_tmdl_file(path)
+        self.assertFalse(ok)
+        self.assertTrue(any('if/else imbalance' in e for e in errors))
 
 
 # ═══════════════════════════════════════════════════════════════════════

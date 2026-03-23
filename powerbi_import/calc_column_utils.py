@@ -73,10 +73,21 @@ def tableau_formula_to_m(formula):
     """
     m = formula.strip()
 
+    # Pre-process ELSEIF → else if (before keyword lowering)
+    m = re.sub(r'\bELSEIF\b', 'ELSE IF', m, flags=re.IGNORECASE)
+
     m = re.sub(r'\bIF\b', 'if', m, flags=re.IGNORECASE)
     m = re.sub(r'\bTHEN\b', 'then', m, flags=re.IGNORECASE)
     m = re.sub(r'\bELSE\b', 'else', m, flags=re.IGNORECASE)
     m = re.sub(r'\bEND\b', '', m, flags=re.IGNORECASE)
+
+    # Ensure every M 'if...then' has a matching 'else' (Power Query M requires it).
+    # Count if/then/else outside string literals.
+    stripped = re.sub(r'"([^"]|"")*"', '""', m)
+    if_count = len(re.findall(r'\bif\b', stripped))
+    else_count = len(re.findall(r'\belse\b', stripped))
+    if if_count > else_count:
+        m = m.rstrip() + ' else null' * (if_count - else_count)
 
     m = re.sub(r'\bAND\b', 'and', m, flags=re.IGNORECASE)
     m = re.sub(r'\bOR\b', 'or', m, flags=re.IGNORECASE)

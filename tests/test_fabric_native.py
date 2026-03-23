@@ -338,6 +338,27 @@ class TestCalcColumnUtils:
         assert 'else' in result
         assert 'END' not in result
 
+    def test_tableau_formula_to_m_if_without_else(self):
+        """IF...THEN...END without ELSE must produce 'else null' in M."""
+        from powerbi_import.calc_column_utils import tableau_formula_to_m
+        result = tableau_formula_to_m('IF [Sales] > 1000 THEN "High" END')
+        assert 'if' in result
+        assert 'then' in result
+        assert 'else' in result, f"Missing 'else' in M output: {result}"
+        assert 'null' in result
+
+    def test_tableau_formula_to_m_elseif(self):
+        """ELSEIF chains must convert to nested if...else if...else in M."""
+        from powerbi_import.calc_column_utils import tableau_formula_to_m
+        result = tableau_formula_to_m(
+            'IF [A] > 10 THEN "High" ELSEIF [A] > 5 THEN "Mid" ELSE "Low" END')
+        import re
+        stripped = re.sub(r'"[^"]*"', '""', result)
+        if_count = len(re.findall(r'\bif\b', stripped))
+        else_count = len(re.findall(r'\belse\b', stripped))
+        assert if_count == else_count, (
+            f"if/else mismatch: if={if_count}, else={else_count} in: {result}")
+
     def test_tableau_formula_to_m_upper(self):
         from powerbi_import.calc_column_utils import tableau_formula_to_m
         result = tableau_formula_to_m('UPPER([Name])')
