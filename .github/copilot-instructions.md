@@ -79,6 +79,7 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
   - `geo_passthrough.py`: Shapefile/GeoJSON passthrough — `GeoExtractor` extracts .geojson/.topojson/.shp from .twbx, `build_shape_map_config()` for PBI shapeMap, `copy_to_registered_resources()`, ZIP slip protection
   - `api_server.py`: REST API server — stdlib `http.server`, `POST /migrate` (multipart upload), `GET /status/{id}`, `GET /download/{id}` (ZIP), `GET /health`, `GET /jobs`. Thread-safe job store, background migration workers.
   - `schema_drift.py`: Schema drift detection — `detect_schema_drift()` compares extraction snapshots (tables, columns, calculations, worksheets, relationships, parameters, filters). `load_snapshot()`, `save_snapshot()`. JSON + summary output.
+  - `permission_mapper.py`: Post-migration automation — `generate_rls_powershell()` creates .ps1 scripts for Azure AD RLS role assignment via Power BI REST API, `generate_credential_template()` creates JSON credential placeholders per datasource connection
   - `deploy/`: Fabric deployment subpackage
     - `auth.py`: Azure AD authentication — Service Principal + Managed Identity (optional `azure-identity`)
     - `client.py`: Fabric REST API client — auto-detects `requests` with retry, falls back to `urllib`
@@ -91,7 +92,7 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
     - `pbi_deployer.py`: PBI Service deployment orchestrator — package, upload, poll, refresh, validate, `deploy_refresh_schedule()` for PBI REST API refresh config, `deploy_rolling()` for blue/green deployment with canary validation and auto-rollback
     - `bundle_deployer.py`: Fabric bundle deployer — deploy shared model + thin reports as atomic bundle, artifact discovery, per-report error isolation, rebind, refresh, `BundleDeploymentResult`
     - `multi_tenant.py`: Multi-tenant deployment — `TenantConfig`/`MultiTenantConfig` (validate/load/save JSON), `_apply_connection_overrides()` (template substitution: `${TENANT_SERVER}`, `${TENANT_DATABASE}`, context-aware escaping, null byte blocking, placeholder validation), `deploy_multi_tenant()` orchestrator with per-tenant results
-- **tests/**: Unit and integration tests (6,714+ tests across 140 test files + conftest.py shared fixtures)
+- **tests/**: Unit and integration tests (6,819+ tests across 141 test files + conftest.py shared fixtures)
 - **docs/**: FAQ, PBI project guide, mapping reference, **ROADMAP.md** (v22–v28 development roadmap per agent)
 - **.github/workflows/ci.yml**: CI/CD pipeline (lint → test → validate → deploy)
 - **.github/workflows/publish.yml**: PyPI auto-publish workflow (tag-triggered, OIDC trusted publisher)
@@ -139,6 +140,8 @@ python migrate.py --shared-model wb1.twbx wb2.twbx --output-format fabric --outp
 python migrate.py path/to/workbook.twbx --output-format fabric
 python migrate.py path/to/workbook.twbx --output-format fabric --output-dir /tmp/fabric_output
 python migrate.py path/to/workbook.twbx --check-drift /path/to/snapshot_dir
+python migrate.py path/to/workbook.twbx --qa
+python migrate.py path/to/workbook.twbx --no-optimize-dax --no-compare
 ```
 
 ## Extracted Objects (17 types)
@@ -372,7 +375,7 @@ See `docs/AGENTS.md` for the full architecture diagram, data flow, and handoff p
 | **@assessor** | Readiness scoring, strategy, diff reports | `assessment.py`, `server_assessment.py`, `strategy_advisor.py`, `schema_drift.py` |
 | **@merger** | Shared semantic model, fingerprint matching | `shared_model.py`, `merge_config.py` |
 | **@deployer** | Fabric/PBI deployment, auth, gateway | `deploy/*.py`, `gateway_config.py`, `telemetry.py` |
-| **@tester** | Tests (6,714+), coverage, regression | `tests/*.py` |
+| **@tester** | Tests (6,819+), coverage, regression | `tests/*.py` |
 
 ### Rules
 
