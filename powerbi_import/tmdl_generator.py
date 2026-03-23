@@ -728,6 +728,9 @@ def generate_tmdl(datasources, report_name, extra_objects, output_dir,
     # Step 2b: Write TMDL files (clears column/measure data afterward)
     _write_tmdl_files(model, output_dir)
 
+    # Step 2c: Build lineage map — Tableau source → PBI target mapping
+    lineage = _build_lineage_map(tables, rels, extra_objects, datasources)
+
     # Step 3: Return pre-computed stats
     stats = {
         'tables': len(tables),
@@ -740,8 +743,90 @@ def generate_tmdl(datasources, report_name, extra_objects, output_dir,
         'actual_bim_symbols': actual_bim_symbols,
         'self_heal_repairs': repair_count,
         'recovery_summary': recovery.get_summary() if recovery.has_repairs else None,
+        'lineage': lineage,
     }
     return stats
+
+
+def _build_lineage_map(tables, relationships, extra_objects, datasources):
+    """Build a lineage map tracking Tableau source → PBI target for every object.
+
+    Returns:
+        dict with 'tables', 'calculations', 'relationships', 'worksheets' lineage entries.
+    """
+    extra = extra_objects or {}
+    lineage = {
+        'tables': [],
+        'calculations': [],
+        'relationships': [],
+        'worksheets': [],
+    }
+
+    # Table lineage: Tableau datasource.table → PBI table
+    ds_names = {}
+    for ds in (datasources or []):
+        ds_name = ds.get('name', '')
+        for tbl in ds.get('tables', []):
+            tname = tbl.get('name', '')
+            if tname:
+                ds_names[tname] = ds_name
+
+    for t in (tables or []):
+        pbi_name = t.get('name', '')
+        if pbi_name:
+            lineage['tables'].append({
+                'tableau_datasource': ds_names.get(pbi_name, ''),
+                'tableau_table': pbi_name,
+                'pbi_table': pbi_name,
+            })
+
+    # Calculation lineage: Tableau calc → PBI measure or calculated column
+    calcs = extra.get('calculations', [])
+    for t in (tables or []):
+        pbi_table = t.get('name', '')
+        for m in t.get('measures', []):
+            mname = m.get('name', '')
+            # Find source Tableau calculation
+            source_calc = ''
+            for c in calcs:
+                cap = c.get('caption', c.get('name', '')).replace('[', '').replace(']', '')
+                if cap == mname:
+                    source_calc = c.get('formula', c.get('name', ''))
+                    break
+            lineage['calculations'].append({
+                'tableau_calculation': source_calc or mname,
+                'pbi_table': pbi_table,
+                'pbi_object': mname,
+                'pbi_type': 'measure',
+            })
+        for col in t.get('columns', []):
+            if col.get('type') == 'calculated':
+                cname = col.get('name', '')
+                lineage['calculations'].append({
+                    'tableau_calculation': cname,
+                    'pbi_table': pbi_table,
+                    'pbi_object': cname,
+                    'pbi_type': 'calculatedColumn',
+                })
+
+    # Relationship lineage
+    for rel in (relationships or []):
+        lineage['relationships'].append({
+            'from': f"{rel.get('fromTable', '')}[{rel.get('fromColumn', '')}]",
+            'to': f"{rel.get('toTable', '')}[{rel.get('toColumn', '')}]",
+            'cardinality': rel.get('crossFilteringBehavior', rel.get('cardinality', '')),
+        })
+
+    # Worksheet lineage (from extra_objects)
+    for ws in extra.get('worksheets', []):
+        ws_name = ws.get('name', '')
+        if ws_name:
+            lineage['worksheets'].append({
+                'tableau_worksheet': ws_name,
+                'pbi_page': ws_name,
+            })
+
+    return lineage
 
 
 # ════════════════════════════════════════════════════════════════════

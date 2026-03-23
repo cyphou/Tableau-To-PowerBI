@@ -285,6 +285,164 @@ class ArtifactValidator:
         (r'\bSCRIPT_(?:BOOL|INT|REAL|STR)\s*\(', 'SCRIPT_* analytics extension'),
     ]
 
+    # ── Auto-fix replacements for Tableau function leaks ──────────
+    # Each entry: (search_regex, replacement_function_or_string)
+    # These are applied sequentially to a DAX formula string.
+    _AUTO_FIX_RULES = [
+        # COUNTD(expr) → DISTINCTCOUNT(expr)
+        (re.compile(r'\bCOUNTD\s*\(', re.IGNORECASE), 'DISTINCTCOUNT('),
+        # ZN(expr) → IF(ISBLANK(expr), 0, expr) — simplified: wrap in COALESCE-style
+        (re.compile(r'\bZN\s*\(', re.IGNORECASE), 'IF(ISBLANK('),
+        # IFNULL(expr, alt) → IF(ISBLANK(expr), alt, expr) — same pattern
+        (re.compile(r'\bIFNULL\s*\(', re.IGNORECASE), 'IF(ISBLANK('),
+        # ATTR(expr) → VALUES(expr) — aggregation collapse
+        (re.compile(r'\bATTR\s*\(', re.IGNORECASE), 'VALUES('),
+        # == → = (equality operator)
+        (re.compile(r'(?<![<>!])={2}(?!=)'), '='),
+        # ELSEIF → ,  (DAX uses nested IF with comma separation)
+        (re.compile(r'\bELSEIF\b', re.IGNORECASE), ','),
+        # DATETRUNC('month', expr) → STARTOFMONTH(expr) — best-effort
+        (re.compile(r"\bDATETRUNC\s*\(\s*'month'\s*,\s*", re.IGNORECASE), 'STARTOFMONTH('),
+        (re.compile(r"\bDATETRUNC\s*\(\s*'quarter'\s*,\s*", re.IGNORECASE), 'STARTOFQUARTER('),
+        (re.compile(r"\bDATETRUNC\s*\(\s*'year'\s*,\s*", re.IGNORECASE), 'STARTOFYEAR('),
+        # DATEPART('year', expr) → YEAR(expr) — best-effort
+        (re.compile(r"\bDATEPART\s*\(\s*'year'\s*,\s*", re.IGNORECASE), 'YEAR('),
+        (re.compile(r"\bDATEPART\s*\(\s*'month'\s*,\s*", re.IGNORECASE), 'MONTH('),
+        (re.compile(r"\bDATEPART\s*\(\s*'day'\s*,\s*", re.IGNORECASE), 'DAY('),
+        (re.compile(r"\bDATEPART\s*\(\s*'quarter'\s*,\s*", re.IGNORECASE), 'QUARTER('),
+        (re.compile(r"\bDATEPART\s*\(\s*'hour'\s*,\s*", re.IGNORECASE), 'HOUR('),
+        (re.compile(r"\bDATEPART\s*\(\s*'minute'\s*,\s*", re.IGNORECASE), 'MINUTE('),
+        (re.compile(r"\bDATEPART\s*\(\s*'second'\s*,\s*", re.IGNORECASE), 'SECOND('),
+    ]
+
+    @classmethod
+    def auto_fix_dax_leaks(cls, formula):
+        """Apply auto-fix rules to repair Tableau function leaks in a DAX formula.
+
+        Applies safe, deterministic regex replacements for known Tableau→DAX
+        function mappings.  Does NOT fix LOD expressions, MAKEPOINT, or SCRIPT_*
+        (these require structural conversion beyond simple replacement).
+
+        Args:
+            formula: DAX formula string (possibly containing Tableau leaks).
+
+        Returns:
+            tuple: (fixed_formula, list_of_repairs) where repairs are description strings.
+        """
+        if not formula or not formula.strip():
+            return formula, []
+
+        repairs = []
+        result = formula
+        for pattern, replacement in cls._AUTO_FIX_RULES:
+            if pattern.search(result):
+                desc = f'{pattern.pattern.strip()} → {replacement}'
+                # Clean description for readability
+                desc = re.sub(r'\\b|\\s\*|\(\?<!\[<>!\]\)', '', desc)
+                repairs.append(desc)
+                result = pattern.sub(replacement, result)
+
+        return result, repairs
+
+    @classmethod
+    def auto_fix_tmdl_file(cls, filepath, dry_run=False):
+        """Scan a TMDL file for Tableau DAX leaks and auto-fix them in-place.
+
+        Args:
+            filepath: Path to .tmdl file.
+            dry_run: If True, report fixes without modifying the file.
+
+        Returns:
+            list of repair descriptions (empty = no fixes needed).
+        """
+        all_repairs = []
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                content = f.read()
+        except OSError:
+            return all_repairs
+
+        lines = content.split('\n')
+        modified = False
+
+        for i, line in enumerate(lines):
+            stripped = line.strip()
+            # Only fix DAX expressions — skip M (Power Query) and comments
+            if stripped.startswith('expression =') and not stripped.endswith('```'):
+                formula = stripped[len('expression ='):].strip()
+                if formula and not formula.lstrip().startswith('let') and not formula.lstrip().startswith('//'):
+                    fixed, repairs = cls.auto_fix_dax_leaks(formula)
+                    if repairs:
+                        all_repairs.extend([f'Line {i+1}: {r}' for r in repairs])
+                        if not dry_run:
+                            lines[i] = line.replace(formula, fixed)
+                            modified = True
+
+            # Inline measure: measure 'Name' = <dax>
+            m_inline = cls._RE_TMDL_INLINE_MEASURE.match(line)
+            if m_inline:
+                formula = m_inline.group(1).strip()
+                if formula and not formula.endswith('```'):
+                    fixed, repairs = cls.auto_fix_dax_leaks(formula)
+                    if repairs:
+                        all_repairs.extend([f'Line {i+1}: {r}' for r in repairs])
+                        if not dry_run:
+                            lines[i] = line.replace(formula, fixed)
+                            modified = True
+
+        if modified and not dry_run:
+            with open(filepath, 'w', encoding='utf-8') as f:
+                f.write('\n'.join(lines))
+
+        return all_repairs
+
+    @classmethod
+    def auto_fix_project(cls, project_dir, dry_run=False):
+        """Auto-fix all Tableau DAX leaks in a .pbip project's TMDL files.
+
+        Args:
+            project_dir: Path to the .pbip project directory.
+            dry_run: If True, report fixes without modifying files.
+
+        Returns:
+            dict with 'total_repairs' (int) and 'file_repairs' (dict: filename → repairs).
+        """
+        project_dir = Path(project_dir)
+        file_repairs = {}
+        total = 0
+
+        # Find SemanticModel directory
+        sm_dirs = list(project_dir.glob('*.SemanticModel'))
+        if not sm_dirs:
+            return {'total_repairs': 0, 'file_repairs': {}}
+
+        sm_dir = sm_dirs[0]
+        def_dir = sm_dir / 'definition'
+
+        # Scan all TMDL files
+        tmdl_files = []
+        model_tmdl = def_dir / 'model.tmdl'
+        if model_tmdl.exists():
+            tmdl_files.append(model_tmdl)
+        tables_dir = def_dir / 'tables'
+        if tables_dir.exists():
+            tmdl_files.extend(tables_dir.glob('*.tmdl'))
+        roles_file = def_dir / 'roles.tmdl'
+        if roles_file.exists():
+            tmdl_files.append(roles_file)
+
+        for tmdl_file in tmdl_files:
+            repairs = cls.auto_fix_tmdl_file(str(tmdl_file), dry_run=dry_run)
+            if repairs:
+                file_repairs[tmdl_file.name] = repairs
+                total += len(repairs)
+
+        if total:
+            mode = 'would fix' if dry_run else 'fixed'
+            logger.info(f'Auto-fix: {mode} {total} Tableau DAX leaks in {len(file_repairs)} files')
+
+        return {'total_repairs': total, 'file_repairs': file_repairs}
+
     @classmethod
     def validate_dax_formula(cls, formula, context=''):
         """

@@ -1650,8 +1650,14 @@ def _add_migration_args(parser):
     parser.add_argument(
         '--optimize-dax',
         action='store_true',
-        default=False,
-        help='Run DAX optimizer on converted measures (nested IF→SWITCH, COALESCE, constant fold)'
+        default=True,
+        help='Run DAX optimizer on converted measures (nested IF→SWITCH, COALESCE, constant fold). Enabled by default; use --no-optimize-dax to disable.'
+    )
+    parser.add_argument(
+        '--no-optimize-dax',
+        action='store_false',
+        dest='optimize_dax',
+        help='Disable DAX optimization'
     )
 
     parser.add_argument(
@@ -1672,10 +1678,25 @@ def _add_migration_args(parser):
 def _add_report_args(parser):
     """Add report, dashboard, and telemetry arguments."""
     parser.add_argument(
-        '--compare',
+        '--qa',
         action='store_true',
         default=False,
-        help='Generate an HTML side-by-side comparison report (Tableau vs. Power BI)'
+        help='Run unified QA suite after generation: validate artifacts, auto-fix DAX leaks, '
+             'generate comparison report, run governance checks (warn mode), and produce a '
+             'combined QA report. Equivalent to --compare --governance warn --auto-fix.'
+    )
+
+    parser.add_argument(
+        '--compare',
+        action='store_true',
+        default=True,
+        help='Generate an HTML side-by-side comparison report (Tableau vs. Power BI). Enabled by default; use --no-compare to disable.'
+    )
+    parser.add_argument(
+        '--no-compare',
+        action='store_false',
+        dest='compare',
+        help='Disable comparison report generation'
     )
 
     parser.add_argument(
@@ -1697,6 +1718,102 @@ def _add_report_args(parser):
         action='store_true',
         default=False,
         help='Generate a paginated report layout alongside the interactive report'
+    )
+
+
+def _add_ai_args(parser):
+    """Add AI/LLM-assisted migration arguments."""
+    parser.add_argument(
+        '--llm-refine',
+        action='store_true',
+        default=False,
+        help='Use LLM to refine approximated DAX formulas (requires --llm-key or LLM_API_KEY env var)'
+    )
+
+    parser.add_argument(
+        '--llm-provider',
+        choices=['openai', 'anthropic', 'azure_openai'],
+        default='openai',
+        help='LLM provider for DAX refinement (default: openai)'
+    )
+
+    parser.add_argument(
+        '--llm-model',
+        metavar='MODEL',
+        default=None,
+        help='LLM model name override (default: provider default)'
+    )
+
+    parser.add_argument(
+        '--llm-key',
+        metavar='KEY',
+        default=None,
+        help='API key for LLM provider (or set LLM_API_KEY env var)'
+    )
+
+    parser.add_argument(
+        '--llm-max-calls',
+        type=int,
+        default=100,
+        metavar='N',
+        help='Maximum LLM API calls per migration (default: 100)'
+    )
+
+    parser.add_argument(
+        '--llm-dry-run',
+        action='store_true',
+        default=False,
+        help='Preview LLM prompts without calling the API (cost estimation)'
+    )
+
+    parser.add_argument(
+        '--llm-endpoint',
+        metavar='URL',
+        default=None,
+        help='Custom API endpoint (required for azure_openai provider)'
+    )
+
+    parser.add_argument(
+        '--web-ui',
+        action='store_true',
+        default=False,
+        help='Launch the browser-based migration wizard (requires optional streamlit package)'
+    )
+
+    parser.add_argument(
+        '--web-port',
+        type=int,
+        default=8501,
+        metavar='PORT',
+        help='Port for the web UI server (default: 8501)'
+    )
+
+    parser.add_argument(
+        '--prep-to-dataflow',
+        action='store_true',
+        default=False,
+        help='Convert Tableau Prep flow directly to Dataflow Gen2 (used with --prep and --output-format fabric)'
+    )
+
+    parser.add_argument(
+        '--paginated-report',
+        action='store_true',
+        default=False,
+        help='Generate standalone paginated (RDL-style) report with tables, charts, headers/footers'
+    )
+
+    parser.add_argument(
+        '--paginated-orientation',
+        choices=['landscape', 'portrait'],
+        default='landscape',
+        help='Paginated report page orientation (default: landscape)'
+    )
+
+    parser.add_argument(
+        '--paginated-page-size',
+        choices=['letter', 'a4'],
+        default='letter',
+        help='Paginated report page size (default: letter)'
     )
 
 
@@ -2070,6 +2187,7 @@ def _build_argument_parser():
     _add_batch_args(parser)
     _add_migration_args(parser)
     _add_report_args(parser)
+    _add_ai_args(parser)
     _add_deploy_args(parser)
     _add_server_args(parser)
     _add_enterprise_args(parser)
@@ -2848,6 +2966,12 @@ def main():
             return ExitCode.SUCCESS
         args = wizard_to_args(config)
 
+    # ── Web UI mode ───────────────────────────────────────────
+    if getattr(args, 'web_ui', False):
+        from web.app import launch_web_ui
+        launch_web_ui(port=getattr(args, 'web_port', 8501))
+        return ExitCode.SUCCESS
+
     # Setup structured logging
     setup_logging(verbose=args.verbose, log_file=args.log_file,
                   quiet=getattr(args, 'quiet', False))
@@ -3217,6 +3341,109 @@ def _run_governance_checks(args, source_basename):
         print(f"  ⚠ Governance checks failed: {exc}")
 
 
+def _run_qa_suite(args, source_basename):
+    """Unified QA suite: validate → auto-fix → governance (warn) → comparison → QA report JSON."""
+    out_base = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
+    project_dir = os.path.join(out_base, source_basename)
+
+    if not os.path.isdir(project_dir):
+        print(f"  ⚠ QA suite skipped: project directory not found")
+        return
+
+    qa_results = {
+        'workbook': source_basename,
+        'timestamp': datetime.now().isoformat(),
+        'validation': None,
+        'auto_fix': None,
+        'governance': None,
+        'comparison': None,
+    }
+
+    # 1. Validate artifacts
+    try:
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'powerbi_import'))
+        from validator import ArtifactValidator
+
+        val_result = ArtifactValidator.validate_project(project_dir)
+        qa_results['validation'] = {
+            'valid': val_result['valid'],
+            'errors': len(val_result['errors']),
+            'warnings': len(val_result['warnings']),
+            'files_checked': val_result['files_checked'],
+            'error_details': val_result['errors'][:20],
+            'warning_details': val_result['warnings'][:20],
+        }
+        status = '✓' if val_result['valid'] else '✗'
+        print(f"\n  QA Validation: {status} ({val_result['files_checked']} files, "
+              f"{len(val_result['errors'])} errors, {len(val_result['warnings'])} warnings)")
+    except (ImportError, OSError) as exc:
+        logger.warning("QA validation failed: %s", exc)
+
+    # 2. Auto-fix DAX leaks
+    try:
+        from validator import ArtifactValidator
+        fix_result = ArtifactValidator.auto_fix_project(project_dir)
+        qa_results['auto_fix'] = fix_result
+        if fix_result['total_repairs']:
+            print(f"  QA Auto-fix: ✓ {fix_result['total_repairs']} DAX leaks repaired "
+                  f"in {len(fix_result['file_repairs'])} files")
+        else:
+            print(f"  QA Auto-fix: ✓ No DAX leaks found")
+    except (ImportError, OSError) as exc:
+        logger.warning("QA auto-fix failed: %s", exc)
+
+    # 3. Governance (warn mode) — skip if already run with --governance
+    if not getattr(args, 'governance', None):
+        try:
+            from governance import run_governance
+            source_dir = os.path.join(os.path.dirname(__file__), 'tableau_export')
+            tmdl_tables = []
+            ds_path = os.path.join(source_dir, 'datasources.json')
+            if os.path.isfile(ds_path):
+                with open(ds_path, 'r', encoding='utf-8') as f:
+                    datasources = json.load(f)
+                for ds in datasources:
+                    for table in ds.get('tables', []):
+                        tmdl_tables.append({
+                            'name': table.get('name', ''),
+                            'columns': table.get('columns', []),
+                            'measures': [],
+                        })
+            report = run_governance(tmdl_tables, config={"mode": "warn"})
+            qa_results['governance'] = {
+                'issues': report.issue_count,
+                'warns': report.warn_count,
+                'fails': report.fail_count,
+                'pii_columns': len(report.classifications),
+            }
+            print(f"  QA Governance: {report.issue_count} issues "
+                  f"({report.warn_count} warn, {report.fail_count} fail), "
+                  f"{len(report.classifications)} PII columns")
+        except (ImportError, OSError) as exc:
+            logger.warning("QA governance failed: %s", exc)
+
+    # 4. Comparison report
+    try:
+        from powerbi_import.comparison_report import generate_comparison_report
+        extract_dir = os.path.join(os.path.dirname(__file__), 'tableau_export')
+        cmp_path = os.path.join(out_base, f'comparison_{source_basename}.html')
+        html_path = generate_comparison_report(extract_dir, project_dir, output_path=cmp_path)
+        if html_path:
+            qa_results['comparison'] = html_path
+            print(f"  QA Comparison: ✓ {html_path}")
+    except (ImportError, OSError) as exc:
+        logger.warning("QA comparison failed: %s", exc)
+
+    # 5. Write QA report JSON
+    qa_path = os.path.join(project_dir, 'qa_report.json')
+    try:
+        with open(qa_path, 'w', encoding='utf-8') as f:
+            json.dump(qa_results, f, indent=2, ensure_ascii=False, default=str)
+        print(f"  QA Report: ✓ {qa_path}")
+    except OSError as exc:
+        logger.warning("QA report write failed: %s", exc)
+
+
 def _extract_twbx_data_files(args, source_basename):
     """Extract embedded data files from TWBX into the PBI output directory.
 
@@ -3560,9 +3787,75 @@ def _run_single_migration(args):
     if getattr(args, 'goals', False) and results.get('generation'):
         _run_goals_generation(args, source_basename)
 
-    # Step 3c: Governance checks (optional, --governance flag)
+    # Step 3c: LLM-assisted DAX refinement (optional, --llm-refine flag)
+    if getattr(args, 'llm_refine', False) and results.get('generation'):
+        try:
+            from powerbi_import.llm_client import LLMClient, refine_approximated_measures, generate_llm_report
+            print("\n  🤖 LLM-assisted DAX refinement...")
+            client = LLMClient(
+                provider=getattr(args, 'llm_provider', 'openai'),
+                api_key=getattr(args, 'llm_key', None),
+                model=getattr(args, 'llm_model', None),
+                endpoint=getattr(args, 'llm_endpoint', None),
+                max_calls=getattr(args, 'llm_max_calls', 100),
+                dry_run=getattr(args, 'llm_dry_run', False),
+            )
+            # Load measures from migration metadata
+            out_base = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
+            meta_path = os.path.join(out_base, source_basename, 'migration_metadata.json')
+            measures = []
+            if os.path.exists(meta_path):
+                with open(meta_path, 'r', encoding='utf-8') as f:
+                    meta = json.load(f)
+                measures = meta.get('measures', [])
+            if measures:
+                llm_results = refine_approximated_measures(client, measures)
+                refined_count = sum(1 for r in llm_results if r['status'] == 'refined')
+                print(f"  ✓ LLM refined {refined_count}/{len(llm_results)} measures (cost: ${client.total_cost:.4f})")
+                report = generate_llm_report(client, llm_results, os.path.join(out_base, source_basename))
+            else:
+                print("  ℹ No approximated measures found for LLM refinement")
+        except Exception as exc:
+            print(f"  ⚠ LLM refinement error: {exc}")
+            logger.warning("LLM refinement failed: %s", exc)
+
+    # Step 3d: Standalone paginated report (optional, --paginated-report flag)
+    if getattr(args, 'paginated_report', False) and results.get('generation'):
+        try:
+            from powerbi_import.paginated_generator import PaginatedReportGenerator
+            out_base = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
+            project_dir = os.path.join(out_base, source_basename)
+            print("\n  📄 Generating standalone paginated report...")
+            pag_gen = PaginatedReportGenerator(project_dir, source_basename)
+            json_dir = os.path.join(os.path.dirname(__file__), 'tableau_export')
+            ws_path = os.path.join(json_dir, 'worksheets.json')
+            ds_path = os.path.join(json_dir, 'datasources.json')
+            worksheets = []
+            datasources = []
+            if os.path.exists(ws_path):
+                with open(ws_path, 'r', encoding='utf-8') as f:
+                    worksheets = json.load(f)
+            if os.path.exists(ds_path):
+                with open(ds_path, 'r', encoding='utf-8') as f:
+                    datasources = json.load(f)
+            pag_stats = pag_gen.generate(
+                worksheets, datasources,
+                page_size=getattr(args, 'paginated_page_size', 'letter'),
+                orientation=getattr(args, 'paginated_orientation', 'landscape'),
+            )
+            print(f"  ✓ Paginated report: {pag_stats['pages']} pages, "
+                  f"{pag_stats['tablixes']} tables, {pag_stats['charts']} charts")
+        except Exception as exc:
+            print(f"  ⚠ Paginated report error: {exc}")
+            logger.warning("Paginated report failed: %s", exc)
+
+    # Step 3e: Governance checks (optional, --governance flag)
     if getattr(args, 'governance', None) and results.get('generation'):
         _run_governance_checks(args, source_basename)
+
+    # Step 3f: Unified QA suite (--qa flag)
+    if getattr(args, 'qa', False) and results.get('generation') and not args.dry_run:
+        _run_qa_suite(args, source_basename)
 
     # Step 4: Migration report
     progress.start("Generating migration report")

@@ -197,7 +197,7 @@ class TestCLIFullIntegration(unittest.TestCase):
         parser = migrate._build_argument_parser()
         args = parser.parse_args(['test.twbx'])
         self.assertEqual(args.output_format, 'pbip')
-        self.assertFalse(args.optimize_dax)
+        self.assertTrue(args.optimize_dax)  # default changed to True in Sprint 119
         self.assertEqual(args.time_intelligence, 'none')
         self.assertFalse(args.validate_data)
 

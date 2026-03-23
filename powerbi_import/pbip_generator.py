@@ -183,6 +183,9 @@ class PowerBIProjectGenerator:
             pag_dir = self._create_paginated_report(project_dir, report_name, converted_objects)
             print(f"  ✓ Paginated report layout created: {pag_dir}")
         
+        # 6. Generate post-migration automation artifacts
+        self._generate_automation_artifacts(project_dir, report_name, converted_objects)
+        
         print(f"\n✅ Power BI Project generated: {project_dir}")
         print(f"   📂 Open in Power BI Desktop: {pbip_file}")
         
@@ -319,6 +322,12 @@ class PowerBIProjectGenerator:
             # has role='measure' in Tableau but is a column in the BIM model.
             self._actual_bim_measure_names = stats.get('actual_bim_measures', set())
             self._actual_bim_symbols = stats.get('actual_bim_symbols', set())
+
+            # Write lineage map alongside the project for traceability
+            lineage = stats.get('lineage')
+            if lineage:
+                lineage_path = os.path.join(os.path.dirname(sm_dir), 'lineage_map.json')
+                _write_json(lineage_path, lineage)
             
         except Exception as e:
             print(f"  \u26a0 Error during TMDL generation: {e}")
@@ -3940,6 +3949,37 @@ class PowerBIProjectGenerator:
                 return ws
         return None
     
+    def _generate_automation_artifacts(self, project_dir, report_name, converted_objects):
+        """Generate post-migration automation artifacts (RLS script, credential template)."""
+        try:
+            from powerbi_import.permission_mapper import (
+                generate_rls_powershell, generate_credential_template,
+            )
+        except ImportError:
+            return
+
+        # RLS PowerShell script — only if user_filters / RLS roles exist
+        user_filters = converted_objects.get('user_filters', [])
+        if user_filters:
+            rls_path = os.path.join(project_dir, 'assign_rls_roles.ps1')
+            roles = []
+            for uf in user_filters:
+                roles.append({
+                    'name': uf.get('role_name', uf.get('name', 'DefaultRole')),
+                    'members': uf.get('users', uf.get('members', [])),
+                })
+            result = generate_rls_powershell(roles, rls_path, dataset_name=report_name)
+            if result:
+                print(f"  ✓ RLS PowerShell script: {rls_path}")
+
+        # Credential template — always generate if datasources have connections
+        datasources = converted_objects.get('datasources', [])
+        if datasources:
+            cred_path = os.path.join(project_dir, 'credentials_template.json')
+            result = generate_credential_template(datasources, cred_path)
+            if result:
+                print(f"  ✓ Credential template: {cred_path}")
+
     def create_metadata(self, project_dir, report_name, converted_objects):
         """Creates migration metadata file for documentation."""
         # Count visuals and pages from the generated report

@@ -186,11 +186,11 @@ class TestCLIArguments(unittest.TestCase):
         args = parser.parse_args(['test.twbx', '--dashboard'])
         self.assertTrue(args.dashboard)
 
-    def test_compare_default_false(self):
+    def test_compare_default_true(self):
         from migrate import _build_argument_parser
         parser = _build_argument_parser()
         args = parser.parse_args(['test.twbx'])
-        self.assertFalse(args.compare)
+        self.assertTrue(args.compare)  # default changed to True in Sprint 119
         self.assertFalse(args.dashboard)
 
 

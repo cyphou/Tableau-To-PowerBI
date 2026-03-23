@@ -341,7 +341,8 @@ class GovernanceEngine:
     def apply_renames(self, tmdl_tables, report):
         """Apply auto-fix renames from a governance report to TMDL tables.
 
-        Only applies in 'enforce' mode. Returns the number of renames applied.
+        Only applies in 'enforce' mode. Handles table, column, and measure renames.
+        Returns the number of renames applied.
         """
         if self.mode != "enforce":
             return 0
@@ -349,12 +350,27 @@ class GovernanceEngine:
         rename_count = 0
         prefix = self.config.get("naming", {}).get("measure_prefix", "")
 
+        # Build column rename map from issues: "Table.OldCol" → "NewCol"
+        col_rename_map = {}
+        for issue in report.issues:
+            if issue.auto_fix and issue.artifact_type == "column":
+                col_rename_map[issue.artifact_name] = issue.auto_fix
+
         for table in (tmdl_tables or []):
             table_name = table.get("name", "")
             # Table rename
             if table_name in report.renames:
                 table["name"] = report.renames[table_name]
                 rename_count += 1
+
+            # Column renames (from naming convention issues)
+            for col in table.get("columns", []):
+                if isinstance(col, dict):
+                    col_name = col.get("name", "")
+                    full_name = f"{table_name}.{col_name}"
+                    if full_name in col_rename_map:
+                        col["name"] = col_rename_map[full_name]
+                        rename_count += 1
 
             # Measure prefix
             if prefix:
