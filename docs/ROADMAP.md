@@ -20,6 +20,7 @@ The migration engine is **feature-complete for core single-workbook scenarios**.
 | **v27.0.0** | Advanced Intelligence & Marketplace | Sprints 101–106 | ✅ Shipped |
 | **v27.1.0** | Unified HTML Report Template | Sprint 107 | ✅ Shipped |
 | **v28.0.0** | Extensibility, Web UI & AI-Assisted Migration | Sprints 108–117 | In Progress |
+| **v29.0.0** | Copilot Readiness, Semantic Depth & Migration Completeness | Sprints 118–127 | Planned |
 
 ---
 
@@ -1028,3 +1029,259 @@ v26.0.0 targets **zero-touch autonomous migration** for standard workbooks: uplo
 | **@merger** | — | 114 | — |
 | **@deployer** | 110 | 114 | 116, 117 |
 | **@tester** | 108–111 (cross-cutting) | 112–114 (cross-cutting) | 115–117 (cross-cutting) |
+
+---
+
+## v29.0.0 — Copilot Readiness, Semantic Depth & Migration Completeness (Sprints 118–127)
+
+### Motivation
+
+Bug bash and artifact audit revealed **7 systemic gaps** that affect every generated project:
+
+1. **No descriptions** on tables, columns, or measures — breaks Copilot/Q&A natural language
+2. **No alt text** on visuals — fails accessibility compliance (WCAG 2.1 AA)
+3. **No incremental refresh** config — large datasets require full import every time
+4. **M parameters not wired** — ServerName/DatabaseName expressions exist but aren't consumed
+5. **Map visuals lack config** — no zoom, center, base map layer settings
+6. **Annotations not migrated** — Tableau point/area annotations lost entirely
+7. **Set actions not migrated** — interactive analysis patterns broken
+
+v29.0.0 closes these gaps across **4 phases**: Copilot/AI Readiness, Migration Completeness, Advanced Analytics Parity, and Enterprise Polish.
+
+---
+
+### Phase 1 — Copilot & AI Readiness (Sprints 118–119)
+
+#### Sprint 118 — Semantic Descriptions & Linguistic Schema (@generator, @extractor)
+
+**Goal:** Auto-generate descriptions for every table, column, and measure in the semantic model. Populate linguistic schema for PBI Copilot and Q&A natural language queries.
+
+| # | Item | Owner | File(s) | Est. | Details |
+|---|------|-------|---------|------|---------|
+| 118.1 | **Table descriptions** | @generator | `tmdl_generator.py` | Medium | Auto-generate `description` on each TMDL table from: (1) Tableau worksheet `description` field if present, (2) datasource caption/comment, (3) synthesized from table name + column summary (e.g., "Contains 12 columns: Order ID, Customer Name, Sales..."). Emit `description` property in table TMDL. |
+| 118.2 | **Column descriptions** | @generator | `tmdl_generator.py` | Medium | Auto-generate `description` on each column from: (1) Tableau column `comment` attribute, (2) alias/caption as readable name, (3) data type + semantic role hint (e.g., "City name (text, Geographic: City)"). Include `dataCategory` mapping in description. |
+| 118.3 | **Measure descriptions** | @generator | `tmdl_generator.py` | Medium | Auto-generate `description` on each measure from: (1) original Tableau formula as documentation, (2) DAX formula summary, (3) `MigrationNote` content if approximated. Format: "Migrated from Tableau: {original_formula}. DAX: {dax_formula}." |
+| 118.4 | **Linguistic schema depth** | @extractor | `extract_tableau_data.py` | Medium | Extract field captions, aliases, and comments → build comprehensive `linguisticSchema.xml` with: synonyms (caption variants), entity mappings (column→entity), relationship descriptions. Currently generates basic synonyms (Sprint 92); deepen with multi-word aliases and join descriptions. |
+| 118.5 | **Copilot optimization hints** | @generator | `tmdl_generator.py` | Low | Add `extendedProperties` annotations: `@Copilot_Preferred = true` on key measures, `@Copilot_Hidden = true` on technical columns (keys, IDs). Mark Calendar table as `@Copilot_DateTable`. |
+| 118.6 | **Tests** | @tester | `tests/test_copilot_readiness.py` (new) | Medium | 30+ tests: table/column/measure descriptions generated, linguistic schema depth, Copilot annotations, Q&A synonym coverage. |
+
+**Agent work:**
+- **@generator** — table/column/measure `description` properties + Copilot annotations in TMDL
+- **@extractor** — deeper linguistic schema extraction from Tableau XML
+- **@tester** — 30+ tests
+
+---
+
+#### Sprint 119 — Accessibility Compliance (@generator, @assessor)
+
+**Goal:** Add alt text to all visuals, tab order, and accessibility metadata. Generate an accessibility audit report.
+
+| # | Item | Owner | File(s) | Est. | Details |
+|---|------|-------|---------|------|---------|
+| 119.1 | **Visual alt text** | @generator | `pbip_generator.py` | Medium | Auto-generate `altText` on every visual container: "{visualType} showing {measure(s)} by {dimension(s)}". E.g., "Bar chart showing Sales by Region". For textboxes: first 100 chars of text. For images: "Image: {filename}". |
+| 119.2 | **Tab order** | @generator | `pbip_generator.py` | Medium | Assign `tabOrder` to all visuals based on reading order: top-left → right → down. Respect Tableau z-order for floating elements. Ensure keyboard navigation follows logical content flow. |
+| 119.3 | **High-contrast mode hints** | @generator | `pbip_generator.py` | Low | In theme JSON: ensure sufficient color contrast ratios (WCAG AA: 4.5:1 for text, 3:1 for UI). Flag low-contrast colors from Tableau palette, suggest accessible alternatives. |
+| 119.4 | **Accessibility audit report** | @assessor | `powerbi_import/accessibility_report.py` (new) | Medium | Post-migration audit: count visuals with/without alt text, check color contrast, tab order completeness, data table alternatives for charts. Output: HTML report + JSON summary. Score: compliant / needs-review / non-compliant. |
+| 119.5 | **CLI integration** | @orchestrator | `migrate.py` | Low | `--accessibility` flag enables alt text generation + audit report. `--wcag-level AA|AAA` sets compliance target. |
+| 119.6 | **Tests** | @tester | `tests/test_accessibility.py` (new) | Medium | 25+ tests: alt text generation for all visual types, tab order assignment, contrast checking, audit report structure. |
+
+**Agent work:**
+- **@generator** — alt text, tab order, contrast hints in visual.json
+- **@assessor** — accessibility audit report
+- **@orchestrator** — CLI flags
+- **@tester** — 25+ tests
+
+---
+
+### Phase 2 — Migration Completeness (Sprints 120–122)
+
+#### Sprint 120 — Incremental Refresh & M Parameter Wiring (@generator, @converter)
+
+**Goal:** Auto-configure PBI incremental refresh for extract-mode datasources, and wire ServerName/DatabaseName M parameters into partition queries.
+
+| # | Item | Owner | File(s) | Est. | Details |
+|---|------|-------|---------|------|---------|
+| 120.1 | **Incremental refresh detection** | @generator | `tmdl_generator.py` | High | Detect tables with DateTime/Date columns that are likely refresh boundaries (e.g., `OrderDate`, `CreatedAt`, `ModifiedDate`). Heuristic: column name contains "date"/"time"/"created"/"modified"/"updated" + DateTime type. |
+| 120.2 | **RangeStart/RangeEnd M parameters** | @generator | `tmdl_generator.py` | High | Generate M expression parameters `RangeStart` (DateTime) and `RangeEnd` (DateTime) in `expressions.tmdl`. Inject `Table.SelectRows(Source, each [DateCol] >= RangeStart and [DateCol] < RangeEnd)` filter step into M partition. |
+| 120.3 | **refreshPolicy TMDL** | @generator | `tmdl_generator.py` | Medium | Generate `refreshPolicy` section on applicable tables: `incrementalPeriodGranularity: Day`, `rollingWindowGranularity: Month`, `rollingWindowPeriods: 12`, `incrementalPeriods: 3`. Configurable via `--incremental-refresh-months N`. |
+| 120.4 | **M parameter wiring** | @converter | `m_query_builder.py` | Medium | When generating M queries with connection strings, replace literal server/database values with parameter references: `ServerName` and `DatabaseName`. Ensure `expressions.tmdl` parameters are consumed by partition M queries. |
+| 120.5 | **CLI integration** | @orchestrator | `migrate.py` | Low | `--incremental-refresh` flag enables auto-detection. `--incremental-refresh-months N` sets rolling window. `--no-parameterize` disables M parameter wiring. |
+| 120.6 | **Tests** | @tester | `tests/test_incremental_refresh.py` (new) | Medium | 30+ tests: date column detection, RangeStart/RangeEnd generation, refreshPolicy TMDL, M parameter wiring, parameter consumption in partitions. |
+
+**Agent work:**
+- **@generator** — incremental refresh detection, RangeStart/RangeEnd, refreshPolicy TMDL
+- **@converter** — M parameter wiring into partition queries
+- **@orchestrator** — CLI flags
+- **@tester** — 30+ tests
+
+---
+
+#### Sprint 121 — Annotation & Map Migration (@generator, @extractor)
+
+**Goal:** Migrate Tableau point/area annotations to PBI textbox overlays, and configure map visuals with zoom/center/base-map settings.
+
+| # | Item | Owner | File(s) | Est. | Details |
+|---|------|-------|---------|------|---------|
+| 121.1 | **Annotation extraction depth** | @extractor | `extract_tableau_data.py` | Medium | Extract `<point-annotation>` and `<area-annotation>` elements: text, position (x/y), target mark (field+value), font formatting (size/color/bold). Include in worksheet JSON as `annotations[]` array. Currently extracts basic text only. |
+| 121.2 | **Annotation → textbox overlay** | @generator | `pbip_generator.py` | Medium | Convert annotations to PBI textbox visuals positioned near the target area. Include annotation text with formatting. Set `tabOrder` above the chart. Add `MigrationNote: "Converted from Tableau annotation"`. |
+| 121.3 | **Map zoom & center** | @generator | `visual_generator.py` | Medium | Extract Tableau `<map-options>` (zoom level, center lat/lon, base map style) → PBI map visual `mapControl` properties: `autoZoom: false`, `zoom: N`, `center: {lat, lng}`. Map Tableau base styles (normal/dark/light/satellite) to PBI map themes. |
+| 121.4 | **Map layer configuration** | @generator | `visual_generator.py` | Medium | Tableau map layers (marks, density, polygon) → PBI map `layer` configuration. Bubble size range, color saturation. Polygon fill from shape data. Heat map density → filled map color saturation. |
+| 121.5 | **Tests** | @tester | `tests/test_annotation_map.py` (new) | Medium | 25+ tests: annotation extraction (point/area), textbox conversion (position/text/formatting), map zoom/center, map layers, base map style mapping. |
+
+**Agent work:**
+- **@extractor** — deeper annotation extraction from XML
+- **@generator** — annotation→textbox + map visual configuration
+- **@tester** — 25+ tests
+
+---
+
+#### Sprint 122 — Set Actions & Interactive Parity (@generator, @extractor, @converter)
+
+**Goal:** Migrate Tableau set actions to PBI bookmark + selection pane combinations. Close interactive analysis gaps.
+
+| # | Item | Owner | File(s) | Est. | Details |
+|---|------|-------|---------|------|---------|
+| 122.1 | **Set action extraction** | @extractor | `extract_tableau_data.py` | Medium | Deepen `<action type="set">` extraction: target set name, source field, assign behavior (assign/add/remove), clearing behavior, activation (hover/select/menu). Currently extracted as action type only. |
+| 122.2 | **Set action → bookmark + slicer** | @generator | `pbip_generator.py` | High | Map set actions to PBI equivalents: (1) Create a hidden slicer bound to the set field. (2) Generate bookmark states for assign/add/remove. (3) Wire action button to toggle bookmark. Emit `MigrationNote` explaining the approximation. |
+| 122.3 | **Workbook navigation actions** | @generator | `pbip_generator.py` | Medium | Tableau "navigate to sheet" actions → PBI page navigation buttons with `actionType: PageNavigation`, `destination: {page_name}`. Preserve source/target field mapping as drill-through filter if applicable. |
+| 122.4 | **Parameter change actions** | @generator | `pbip_generator.py` | Medium | Tableau "change parameter" actions → PBI What-If parameter slicer with `defaultValue` set by action source. Wire action button to parameter slicer reset. |
+| 122.5 | **Tests** | @tester | `tests/test_set_actions.py` (new) | Medium | 25+ tests: set action extraction, bookmark generation, slicer wiring, navigation actions, parameter actions, clearing behavior. |
+
+**Agent work:**
+- **@extractor** — set action extraction depth
+- **@generator** — set→bookmark/slicer, navigation, parameter actions
+- **@converter** — set membership DAX expressions
+- **@tester** — 25+ tests
+
+---
+
+### Phase 3 — Advanced Analytics Parity (Sprints 123–124)
+
+#### Sprint 123 — Analytics Pane & Trend Lines (@generator, @converter)
+
+**Goal:** Full migration of Tableau analytics pane features: trend lines (all regression types), distribution bands, forecast config, and clustering hints.
+
+| # | Item | Owner | File(s) | Est. | Details |
+|---|------|-------|---------|------|---------|
+| 123.1 | **Trend line full config** | @generator | `visual_generator.py` | High | Migrate all 5 regression types (linear, logarithmic, exponential, polynomial, power) → PBI analytics pane `trendLine` config with `regressionType`, `displayEquation`, `displayRSquared`. Extract degree for polynomial. Currently only constant reference lines migrated. |
+| 123.2 | **Distribution reference lines** | @generator | `visual_generator.py` | Medium | Tableau distribution bands (percentile ranges, standard deviation bands, confidence intervals) → PBI `percentLine` or `constantLine` pairs with shaded range. Map percentile values (25th/75th = IQR) and std dev multipliers. |
+| 123.3 | **Forecast configuration** | @generator | `visual_generator.py` | Medium | Tableau `<forecasting>` config (periods, confidence interval, model type) → PBI `forecast` analytics pane setting with `forecastLength`, `confidenceBand`, `seasonality`. |
+| 123.4 | **Clustering hints** | @generator | `visual_generator.py` | Low | Tableau `<clustering>` config (number of clusters, fields) → PBI `MigrationNote` with recommended R/Python visual for k-means clustering. No native PBI clustering in PBIR. |
+| 123.5 | **R²/p-value annotations** | @converter | `dax_converter.py` | Medium | When trend line has R² visible, generate a DAX measure: `_R2_{measure} = VAR ... RETURN DIVIDE(...)` using Pearson correlation formula. Display as card visual alongside the chart. |
+| 123.6 | **Tests** | @tester | `tests/test_analytics_pane.py` (new) | Medium | 30+ tests: 5 trend types, distribution bands, forecast config, clustering note, R² measure generation. |
+
+**Agent work:**
+- **@generator** — trend lines, distributions, forecast, clustering in visual_generator.py
+- **@converter** — R² DAX measure generation
+- **@tester** — 30+ tests
+
+---
+
+#### Sprint 124 — Dynamic Formatting & Data Quality (@generator, @assessor)
+
+**Goal:** Migrate dynamic number formats, add data quality metadata (endorsement rules, sensitivity auto-classification), and generate DAX query views for validation.
+
+| # | Item | Owner | File(s) | Est. | Details |
+|---|------|-------|---------|------|---------|
+| 124.1 | **Dynamic format strings** | @generator | `tmdl_generator.py` | High | Tableau conditional number formatting (e.g., show % for ratios, $ for currency, K/M/B abbreviation) → DAX `FORMAT()` measure wrapper with conditional logic. Detect format patterns from `default_format` metadata and Tableau number format strings. |
+| 124.2 | **Data quality endorsement rules** | @assessor | `powerbi_import/governance.py` | Medium | Auto-classify migration quality per dataset: GREEN (100% fidelity, 0 approximations) → `certified`. YELLOW (>90% fidelity, <5 approximations) → `promoted`. RED (<90% fidelity) → no endorsement. Output endorsement recommendation JSON. |
+| 124.3 | **DAX query views** | @generator | `powerbi_import/dax_query_generator.py` (new) | Medium | Auto-generate DAX queries for every measure: `EVALUATE SUMMARIZECOLUMNS('Table'[Dimension], "Result", [Measure])`. Output as `.dax` files in a `validation_queries/` subfolder. Users can paste into DAX Studio to verify results match Tableau. |
+| 124.4 | **Sensitivity label inference** | @assessor | `powerbi_import/governance.py` | Medium | Scan column names and data patterns for sensitivity classification: PII columns (email, SSN, phone, name, address) → `Confidential`. Financial data (revenue, salary, cost) → `Internal`. Public aggregates → `General`. Output label recommendation CSV. |
+| 124.5 | **Tests** | @tester | `tests/test_dynamic_formatting.py` (new) | Medium | 25+ tests: conditional format detection, FORMAT() DAX generation, endorsement classification, DAX query generation, sensitivity inference. |
+
+**Agent work:**
+- **@generator** — dynamic format strings + DAX query view generator
+- **@assessor** — endorsement rules + sensitivity label inference
+- **@tester** — 25+ tests
+
+---
+
+### Phase 4 — Enterprise Operations (Sprints 125–127)
+
+#### Sprint 125 — User & Permission Mapping (@deployer, @extractor)
+
+**Goal:** Map Tableau Server users, groups, and project permissions to Azure AD groups and Fabric workspace roles.
+
+| # | Item | Owner | File(s) | Est. | Details |
+|---|------|-------|---------|------|---------|
+| 125.1 | **User inventory extraction** | @extractor | `tableau_export/server_client.py` | Medium | New endpoint: `get_user_inventory()` → all users with site role, group memberships, last login date. Build user→group adjacency. Requires `--server` connection. |
+| 125.2 | **Permission matrix extraction** | @extractor | `tableau_export/server_client.py` | Medium | New endpoint: `get_permission_matrix()` → per-workbook/datasource permission ACLs (view, interact, edit, download). Map Tableau permission verbs to PBI capabilities. |
+| 125.3 | **Azure AD mapping generator** | @deployer | `powerbi_import/permission_mapper.py` (new) | High | Map Tableau groups → Azure AD group recommendations. Map Tableau site roles (Creator/Explorer/Viewer) → Fabric workspace roles (Admin/Member/Contributor/Viewer). Generate mapping CSV + PowerShell script for Azure AD group creation. |
+| 125.4 | **RLS principal reconciliation** | @deployer | `powerbi_import/permission_mapper.py` | Medium | Cross-reference RLS role definitions with user inventory. Verify that `USERPRINCIPALNAME()` format (user@domain.com) matches tenant UPN format. Flag mismatches (DOMAIN\user vs user@domain.com). |
+| 125.5 | **Permission migration report** | @assessor | `powerbi_import/permission_mapper.py` | Medium | HTML report: user count, group mapping table, role mapping matrix, RLS coverage analysis, unmapped users list. Uses shared `html_template.py`. |
+| 125.6 | **Tests** | @tester | `tests/test_permission_mapper.py` (new) | Medium | 25+ tests: user inventory parsing, permission matrix, group→AD mapping, UPN format validation, report generation. |
+
+**Agent work:**
+- **@extractor** — user inventory + permission matrix from Server API
+- **@deployer** — Azure AD mapping + RLS reconciliation + PowerShell generation
+- **@assessor** — permission migration report
+- **@tester** — 25+ tests
+
+---
+
+#### Sprint 126 — Power Automate & Subscription Migration (@deployer, @orchestrator)
+
+**Goal:** Convert Tableau Server subscriptions and data-driven alerts to Power Automate flow definitions and PBI alert rules.
+
+| # | Item | Owner | File(s) | Est. | Details |
+|---|------|-------|---------|------|---------|
+| 126.1 | **Subscription extraction** | @extractor | `tableau_export/server_client.py` | Medium | New endpoint: `get_subscriptions()` → all workbook/view subscriptions with schedule, recipients, format (PDF/PNG/Excel). Requires `--server` connection. |
+| 126.2 | **Alert extraction** | @extractor | `tableau_export/server_client.py` | Medium | New endpoint: `get_alerts()` → data-driven alert conditions (field, threshold, operator, recipient). Map to structured alert rules. |
+| 126.3 | **Power Automate flow templates** | @deployer | `powerbi_import/flow_generator.py` (new) | High | Generate Power Automate flow definition (JSON) for each subscription: trigger (scheduled or data-driven) → get PBI report data → send email/Teams notification. Output as `.json` flow definitions importable via Power Automate portal. |
+| 126.4 | **PBI alert rule mapping** | @deployer | `powerbi_import/alerts_generator.py` | Medium | Extend existing `alerts_generator.py`: map Tableau alert conditions (threshold on measure) → PBI data alert rules (tile-based alerts). Generate alert config JSON with measure reference, threshold, and notification settings. |
+| 126.5 | **Subscription migration report** | @deployer | `powerbi_import/flow_generator.py` | Low | Summary: N subscriptions mapped, N alerts mapped, N recipients, schedule comparison (Tableau vs PBI), unmapped items. |
+| 126.6 | **Tests** | @tester | `tests/test_flow_generator.py` (new) | Medium | 25+ tests: subscription extraction, alert extraction, flow JSON structure, alert rule mapping, schedule conversion, report generation. |
+
+**Agent work:**
+- **@extractor** — subscription + alert extraction from Server API
+- **@deployer** — Power Automate flow definitions + PBI alert rules
+- **@tester** — 25+ tests
+
+---
+
+#### Sprint 127 — v29.0.0 Release & Hardening (All Agents)
+
+**Goal:** Version bump, integration testing, real-world validation, documentation refresh, PyPI publish.
+
+| # | Item | Owner | File(s) | Est. | Details |
+|---|------|-------|---------|------|---------|
+| 127.1 | **Version bump** | @orchestrator | `pyproject.toml` | Low | `28.0.0` → `29.0.0`. |
+| 127.2 | **CHANGELOG update** | @orchestrator | `CHANGELOG.md` | Medium | Document all Sprints 118–127. |
+| 127.3 | **Copilot readiness E2E** | @tester | `tests/test_v29_e2e.py` (new) | High | End-to-end: extract → generate with descriptions → validate Copilot annotations → check accessibility → verify incremental refresh → test DAX queries. 20+ integration tests. |
+| 127.4 | **Real-world re-validation** | @tester | `tests/test_real_world_e2e.py` | Medium | Re-run all 27 workbooks. Assert descriptions generated, alt text present, zero regressions. |
+| 127.5 | **Documentation refresh** | @orchestrator | `docs/*.md`, `README.md` | Medium | Update GAP_ANALYSIS, KNOWN_LIMITATIONS with v29 features. Add Copilot readiness section to MIGRATION_CHECKLIST. |
+| 127.6 | **PyPI publish** | @deployer | `.github/workflows/publish.yml` | Low | Tag `v29.0.0` → publish. |
+| 127.7 | **Test baseline** | @tester | — | — | Target: **7,200+** total tests. |
+
+---
+
+### v29.0.0 Success Criteria
+
+| Metric | Target |
+|--------|--------|
+| Table/column/measure descriptions | 100% coverage on all generated TMDL |
+| Visual alt text | 100% of visuals have auto-generated alt text |
+| Incremental refresh | Auto-configured for extract-mode tables with date columns |
+| M parameter wiring | ServerName/DatabaseName consumed in partition queries |
+| Map visual config | Zoom, center, base map migrated |
+| Annotations migrated | Tableau annotations → PBI textbox overlays |
+| Set actions migrated | Set actions → bookmark + slicer combination |
+| Trend lines (all 5 types) | Full analytics pane migration |
+| DAX query views | Auto-generated .dax test queries for every measure |
+| Permission mapping | Tableau users/groups → Azure AD mapping report |
+| Power Automate flows | Subscriptions/alerts → flow definition JSON |
+| Accessibility score | WCAG AA compliant (alt text + tab order + contrast) |
+| Tests | **7,200+** |
+
+### v29.0.0 Agent Ownership Matrix
+
+| Agent | Phase 1 (118–119) | Phase 2 (120–122) | Phase 3 (123–124) | Phase 4 (125–127) |
+|-------|-------------------|-------------------|-------------------|-------------------|
+| **@orchestrator** | 119 | 120 | — | 127 |
+| **@extractor** | 118 | 121, 122 | — | 125, 126 |
+| **@converter** | — | 120, 122 | 123 | — |
+| **@generator** | 118, 119 | 120, 121, 122 | 123, 124 | — |
+| **@assessor** | 119 | — | 124 | 125 |
+| **@merger** | — | — | — | — |
+| **@deployer** | — | — | — | 125, 126, 127 |
+| **@tester** | 118–119 (cross-cutting) | 120–122 (cross-cutting) | 123–124 (cross-cutting) | 125–127 (cross-cutting) |
