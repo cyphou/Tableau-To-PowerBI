@@ -53,7 +53,7 @@ class TableFingerprint:
 
     def fingerprint(self) -> str:
         """Normalized hash key for matching."""
-        raw = '|'.join([
+        raw = '\x00'.join([
             self.connection_type.lower().strip(),
             self.server.lower().strip(),
             self.database.lower().strip(),

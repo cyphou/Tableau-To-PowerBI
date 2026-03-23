@@ -1,29 +1,29 @@
 table Calendar
-	lineageTag: b8dadff5-107e-4075-9aad-4e870fb1e4e8
+	lineageTag: 8ccf4cf1-0810-4d27-990e-8a1a92195f97
 	description: Contains 8 columns and 3 measures: Date, Year, Quarter, Month, MonthName, Day, DayOfWeek, DayName.
 
 	measure 'Year To Date' = TOTALYTD([Total Sales], 'Calendar'[Date])
 		formatString: #,0.00
 		displayFolder: Time Intelligence
 		description: DAX: TOTALYTD([Total Sales], 'Calendar'[Date])
-		lineageTag: cae56929-5195-4aa8-8ef2-7649311cc8f0
+		lineageTag: 4b9f9a00-04a3-42c9-bb39-310e5df0ee3b
 
 	measure 'Previous Year' = CALCULATE([Total Sales], SAMEPERIODLASTYEAR('Calendar'[Date]))
 		formatString: #,0.00
 		displayFolder: Time Intelligence
 		description: DAX: CALCULATE([Total Sales], SAMEPERIODLASTYEAR('Calendar'[Date]))
-		lineageTag: 8eac5509-ee2c-4618-8fce-4221b24e674a
+		lineageTag: 6750ea91-7765-41ab-8dfc-3e1c5c357efd
 
 	measure 'Year Over Year %' = DIVIDE([Year To Date] - [Previous Year], [Previous Year], 0)
 		formatString: 0.00%
 		displayFolder: Time Intelligence
 		description: DAX: DIVIDE([Year To Date] - [Previous Year], [Previous Year], 0)
-		lineageTag: eb0c1f6f-db69-48dc-89d4-86ff087a1116
+		lineageTag: 98b900c3-7a0f-454d-b634-9a5d073e7682
 
 	column Date
 		dataType: dateTime
 		formatString: dd/mm/yyyy
-		lineageTag: a1bc1417-fd60-4774-9eed-331b7637c3c4
+		lineageTag: 6804858d-b041-49c4-b7fb-d63b1a93b3f5
 		summarizeBy: none
 		sourceColumn: Date
 		isKey
@@ -34,7 +34,7 @@ table Calendar
 
 	column Year
 		dataType: int64
-		lineageTag: 991852f2-6dc0-4b15-b75e-0b4b9c612f7b
+		lineageTag: 8eee52d1-ae8d-4edc-b819-c80a17818ed2
 		summarizeBy: none
 		sourceColumn: Year
 		dataCategory: Years
@@ -44,7 +44,7 @@ table Calendar
 
 	column Quarter
 		dataType: string
-		lineageTag: b1605d0b-4e36-47a7-ada3-fc1c7b300d95
+		lineageTag: e382ff29-41f4-45fc-bdb9-e59b8d41da5f
 		summarizeBy: none
 		sourceColumn: Quarter
 		description: String column.
@@ -53,7 +53,7 @@ table Calendar
 
 	column Month
 		dataType: int64
-		lineageTag: e2038cd7-f6c2-49f6-91c0-2366e51bc49a
+		lineageTag: 5ea30f02-9886-47fe-b23e-4bd98c7f6787
 		summarizeBy: none
 		sourceColumn: Month
 		dataCategory: Months
@@ -63,7 +63,7 @@ table Calendar
 
 	column MonthName
 		dataType: string
-		lineageTag: 15f3d492-a738-4840-a3fe-27bee84211ff
+		lineageTag: f31e6338-d1ae-4242-8172-32358fe4052c
 		summarizeBy: none
 		sourceColumn: MonthName
 		description: String column.
@@ -73,7 +73,7 @@ table Calendar
 
 	column Day
 		dataType: int64
-		lineageTag: cca07811-65e6-48e6-865b-5412d4a7d755
+		lineageTag: d8382324-09af-4b48-8ee1-e54c6d105ee0
 		summarizeBy: none
 		sourceColumn: Day
 		dataCategory: Days
@@ -83,7 +83,7 @@ table Calendar
 
 	column DayOfWeek
 		dataType: int64
-		lineageTag: ee95cc2e-1e4e-4d73-9d97-161f3cb13b93
+		lineageTag: 069cdd17-8538-443a-8e78-7b27e1e89e56
 		summarizeBy: none
 		sourceColumn: DayOfWeek
 		description: Int64 column.
@@ -92,7 +92,7 @@ table Calendar
 
 	column DayName
 		dataType: string
-		lineageTag: 5db72202-7b24-4476-8182-f8aaba77b713
+		lineageTag: 1f729a76-8a3d-411c-917b-0de8e1b0f0b1
 		summarizeBy: none
 		sourceColumn: DayName
 		description: String column.
@@ -101,30 +101,30 @@ table Calendar
 		annotation SummarizationSetBy = Automatic
 
 	hierarchy 'Date Hierarchy'
-		lineageTag: a897802d-e4db-4e21-b210-8bbd594fde04
+		lineageTag: c0d74ddd-9b80-44b4-bf61-9aca56834492
 
 		level Year
 			ordinal: 0
 			column: Year
-			lineageTag: 7b8f09e6-c6f6-4ba6-a1e1-cc69a08d8cf7
+			lineageTag: 2de07333-de6d-470a-bff9-dc004c8bdc81
 
 		level Quarter
 			ordinal: 1
 			column: Quarter
-			lineageTag: f387e25c-eeff-4cc3-97f9-d073c81908ed
+			lineageTag: 111a98ec-c426-40c0-af41-ad0732006ec8
 
 		level Month
 			ordinal: 2
 			column: MonthName
-			lineageTag: c3a1930c-d833-485a-b5e5-e7c238474ae0
+			lineageTag: 73f5be55-3b83-46c3-94c5-7d32711a204a
 
 		level Day
 			ordinal: 3
 			column: Day
-			lineageTag: 3c2dc4f0-8980-4d0a-ac92-17b807801ddb
+			lineageTag: e663a9d5-4a51-4dff-95d1-9c88c70eaaa6
 
 
-	partition 'Calendar-02c958f6-f277-4208-9d10-41348e0e9426' = m
+	partition 'Calendar-70e05ffb-9971-4ecc-b2da-4d6ecd21598f' = m
 		mode: import
 		source =
 				let

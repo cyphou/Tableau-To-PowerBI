@@ -1,23 +1,23 @@
-relationship 541b6646-9c1d-4147-a3ce-6346976cccce
+relationship af453d35-cb03-418b-b2a3-844be53e59e0
 	fromColumn: Commandes.client_id
 	toColumn: Clients.client_id
 	fromCardinality: many
 	toCardinality: many
 	crossFilteringBehavior: bothDirections
 
-relationship a8b611ef-f9fd-46a5-8c44-b8de004d18d0
+relationship 706f47f0-a1b8-4dd6-a78e-0ffa31827295
 	fromColumn: Commandes.produit_id
 	toColumn: Produits.produit_id
 	fromCardinality: many
 	toCardinality: many
 	crossFilteringBehavior: bothDirections
 
-relationship f7a5537b-6a42-4c91-83bf-bab014d0ada5
+relationship 007f51f6-d57d-48c8-a494-a42734c8c80d
 	fromColumn: Commandes.date_commande
 	toColumn: Calendar.Date
 	crossFilteringBehavior: oneDirection
 
-relationship 3d33366b-3ccc-49d4-a01d-34c29f3b6fd2
+relationship f5a092a7-1f77-41c4-9fbe-44ef8b46b2cb
 	fromColumn: Clients.date_inscription
 	toColumn: Calendar.Date
 	fromCardinality: many

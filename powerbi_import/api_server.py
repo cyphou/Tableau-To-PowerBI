@@ -17,10 +17,12 @@ Usage:
 """
 
 import argparse
+import collections
 import io
 import json
 import logging
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -43,11 +45,45 @@ _jobs = {}  # job_id -> {status, created, input_path, output_dir, error, stats}
 _lock = threading.Lock()
 
 MAX_UPLOAD_SIZE = 500 * 1024 * 1024  # 500 MB
+MAX_CONCURRENT_JOBS = 50
+JOB_TTL_SECONDS = 24 * 3600  # 24 hours
+
+# Rate limiting: max requests per IP within a sliding window
+_RATE_LIMIT_MAX = 10  # max jobs per IP per window
+_RATE_LIMIT_WINDOW = 60  # seconds
+_rate_tracker = {}  # ip -> deque of timestamps
+_rate_lock = threading.Lock()
+
+
+def _purge_stale_jobs():
+    """Remove completed/failed jobs older than JOB_TTL_SECONDS."""
+    cutoff = time.time() - JOB_TTL_SECONDS
+    stale = [jid for jid, j in _jobs.items()
+             if j['status'] in ('completed', 'failed') and j['created'] < cutoff]
+    for jid in stale:
+        del _jobs[jid]
+
+
+def _check_rate_limit(client_ip):
+    """Return True if the client IP is within rate limits."""
+    now = time.time()
+    with _rate_lock:
+        if client_ip not in _rate_tracker:
+            _rate_tracker[client_ip] = collections.deque()
+        dq = _rate_tracker[client_ip]
+        # Purge old entries
+        while dq and dq[0] < now - _RATE_LIMIT_WINDOW:
+            dq.popleft()
+        if len(dq) >= _RATE_LIMIT_MAX:
+            return False
+        dq.append(now)
+        return True
 
 
 def _new_job(input_path):
     job_id = uuid.uuid4().hex[:12]
     with _lock:
+        _purge_stale_jobs()
         _jobs[job_id] = {
             'status': 'queued',
             'created': time.time(),
@@ -175,6 +211,12 @@ class MigrationHandler(BaseHTTPRequestHandler):
                 self._send_error(500, 'Output directory not found')
                 return
 
+            # Validate output directory is under temp
+            abs_out = os.path.abspath(output_dir)
+            if not abs_out.startswith(os.path.abspath(tempfile.gettempdir())):
+                self._send_error(400, 'Invalid output directory')
+                return
+
             # Create ZIP from output directory
             buf = io.BytesIO()
             with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
@@ -267,12 +309,47 @@ class MigrationHandler(BaseHTTPRequestHandler):
             # Parse migration options from query string
             parsed_url = urlparse(self.path)
             params = parse_qs(parsed_url.query)
+            calendar_start = _int_param(params, 'calendar_start')
+            calendar_end = _int_param(params, 'calendar_end')
+            if calendar_start is not None and not (1900 <= calendar_start <= 2100):
+                self._send_error(400, 'calendar_start must be between 1900 and 2100')
+                os.unlink(tmp.name)
+                return
+            if calendar_end is not None and not (1900 <= calendar_end <= 2100):
+                self._send_error(400, 'calendar_end must be between 1900 and 2100')
+                os.unlink(tmp.name)
+                return
+            culture = params.get('culture', [None])[0]
+            if culture and not re.match(r'^[a-zA-Z]{2}(-[a-zA-Z]{2,4})?$', culture):
+                self._send_error(400, 'Invalid culture format (expected e.g. en-US)')
+                os.unlink(tmp.name)
+                return
+            model_mode = params.get('model_mode', ['import'])[0]
+            if model_mode not in ('import', 'directquery', 'composite'):
+                self._send_error(400, 'model_mode must be import, directquery, or composite')
+                os.unlink(tmp.name)
+                return
             options = {
-                'calendar_start': _int_param(params, 'calendar_start'),
-                'calendar_end': _int_param(params, 'calendar_end'),
-                'culture': params.get('culture', [None])[0],
-                'model_mode': params.get('model_mode', ['import'])[0],
+                'calendar_start': calendar_start,
+                'calendar_end': calendar_end,
+                'culture': culture,
+                'model_mode': model_mode,
             }
+
+            # Rate limiting
+            client_ip = self.client_address[0] if self.client_address else 'unknown'
+            if not _check_rate_limit(client_ip):
+                self._send_error(429, 'Too many requests. Please try again later.')
+                os.unlink(tmp.name)
+                return
+
+            # Check concurrent job limit
+            with _lock:
+                active = sum(1 for j in _jobs.values() if j['status'] in ('queued', 'running'))
+            if active >= MAX_CONCURRENT_JOBS:
+                self._send_error(429, f'Server busy ({active} active jobs). Try again later.')
+                os.unlink(tmp.name)
+                return
 
             # Create job and start migration
             job_id = _new_job(tmp.name)
@@ -320,8 +397,13 @@ def _parse_multipart(body, boundary):
                 parts2 = line.split('filename=')
                 if len(parts2) > 1:
                     filename = parts2[1].strip('"').strip("'")
-                    # Security: strip path components
+                    # Security: strip path components and dangerous chars
                     filename = os.path.basename(filename)
+                    filename = ''.join(
+                        c for c in filename if ord(c) >= 32 and c != '\x00'
+                    )
+                    if not filename or not re.match(r'^[\w\-. ]+$', filename):
+                        filename = f'upload_{uuid.uuid4().hex[:8]}.twbx'
                 break
         return filename, data
     return None

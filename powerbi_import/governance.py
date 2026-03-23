@@ -497,11 +497,14 @@ class AuditTrail:
         """Compute SHA-256 hash of a file for audit purposes."""
         if not filepath or not os.path.isfile(filepath):
             return ""
-        h = hashlib.sha256()
-        with open(filepath, 'rb') as f:
-            for chunk in iter(lambda: f.read(8192), b''):
-                h.update(chunk)
-        return h.hexdigest()
+        try:
+            h = hashlib.sha256()
+            with open(filepath, 'rb') as f:
+                for chunk in iter(lambda: f.read(8192), b''):
+                    h.update(chunk)
+            return h.hexdigest()
+        except (IOError, OSError):
+            return ""
 
     @staticmethod
     def compute_dir_hash(dirpath):

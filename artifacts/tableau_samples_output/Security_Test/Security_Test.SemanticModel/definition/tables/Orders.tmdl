@@ -1,40 +1,40 @@
 table Orders
-	lineageTag: d090c890-1c4f-4881-b91d-823c2a31b883
+	lineageTag: 2685ecad-3f26-450c-868f-319071e8ec7e
 	description: Contains 7 columns and 5 measures: OrderID, Region, Sales, Profit, CustomerEmail, Category, OrderDate.
 
 	measure 'Is Current User' = 'Orders'[CustomerEmail] = USERPRINCIPALNAME()
 		formatString: True/False
 		displayFolder: Dimensions
 		description: Migrated from Tableau: [CustomerEmail] = USERNAME() | DAX: 'Orders'[CustomerEmail] = USERPRINCIPALNAME()
-		lineageTag: b8b3970a-be2d-42ec-99c5-0061eb7b704e
+		lineageTag: d58cc4de-2ac2-4a5b-987e-2f4bbb474207
 
 	measure 'Manager Access' = TRUE() /* ISMEMBEROF("Managers"): implement via RLS role */ || TRUE() /* ISMEMBEROF("Executives"): implement via RLS role */
 		formatString: True/False
 		displayFolder: Dimensions
 		description: Migrated from Tableau: ISMEMBEROF("Managers") OR ISMEMBEROF("Executives") | DAX: TRUE() /* ISMEMBEROF("Managers"): implement via RLS role */ || TRUE() /* ISMEMBEROF("Executives"): implement via RLS rol...
-		lineageTag: e97053f0-d9b8-482a-96db-31f9dfc07689
+		lineageTag: 7ed597fb-b9a0-4a3e-a96b-e63ed4eee487
 
 	measure 'Region Match' = 'Regions'[RegionManager] = USERPRINCIPALNAME()
 		formatString: True/False
 		displayFolder: Dimensions
 		description: Migrated from Tableau: [RegionManager] = FULLNAME() | DAX: 'Regions'[RegionManager] = USERPRINCIPALNAME()
-		lineageTag: c69fbb3d-9b99-4e55-959e-9625dc81c2f5
+		lineageTag: 2040956c-75ba-40c7-b481-df01be35b9cc
 
 	measure 'Total Sales' = SUM('Orders'[Sales])
 		formatString: #,0.00
 		displayFolder: Measures
 		description: Migrated from Tableau: SUM([Sales]) | DAX: SUM('Orders'[Sales])
-		lineageTag: d0826955-81a0-4371-b55b-081b1cf6afd0
+		lineageTag: f2c199de-df3f-4e4f-a745-115ef5411634
 
 	measure 'Profit Ratio' = SUM('Orders'[Profit]) / SUM('Orders'[Sales])
 		formatString: #,0.00
 		displayFolder: Measures
 		description: Migrated from Tableau: SUM([Profit]) / SUM([Sales]) | DAX: SUM('Orders'[Profit]) / SUM('Orders'[Sales])
-		lineageTag: 94db55c9-521d-445d-afd9-2f04083ccaef
+		lineageTag: 04db43a8-cfb7-4ece-9853-314d80a21b77
 
 	column OrderID
 		dataType: int64
-		lineageTag: c19fae55-aecc-47f4-98c2-20258642f0bf
+		lineageTag: 8b0f1ddf-2af1-41ff-902f-4e09d73416df
 		summarizeBy: sum
 		sourceColumn: OrderID
 		description: Int64 column.
@@ -44,7 +44,7 @@ table Orders
 
 	column Region
 		dataType: string
-		lineageTag: 47b93028-a1f4-46b9-b789-24e0b0771af0
+		lineageTag: 012beb0c-c815-49e3-a51a-81e22446fb6d
 		summarizeBy: none
 		sourceColumn: Region
 		dataCategory: StateOrProvince
@@ -55,7 +55,7 @@ table Orders
 	column Sales
 		dataType: double
 		formatString: #,0.00
-		lineageTag: b462433b-eed8-4c74-bf1e-7450d3c44b49
+		lineageTag: 15f0f0e7-12ca-41e2-a010-6f74e5021479
 		summarizeBy: sum
 		sourceColumn: Sales
 		description: Double column.
@@ -65,7 +65,7 @@ table Orders
 	column Profit
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 232ac17d-3633-48ac-8756-7b07209cde8a
+		lineageTag: 37b333fa-6598-4779-862b-11fc02afd056
 		summarizeBy: sum
 		sourceColumn: Profit
 		description: Double column.
@@ -74,7 +74,7 @@ table Orders
 
 	column CustomerEmail
 		dataType: string
-		lineageTag: 3cf1434d-7412-4cae-b80d-93d3ae4deaf9
+		lineageTag: e70b656f-2af2-4f13-9807-cab6cc274a8b
 		summarizeBy: none
 		sourceColumn: CustomerEmail
 		description: String column.
@@ -83,7 +83,7 @@ table Orders
 
 	column Category
 		dataType: string
-		lineageTag: af0d0044-b5a6-4b6a-a3e3-2267a8d9debf
+		lineageTag: 13075a0e-6136-4c5d-8c80-df57f7ce40c4
 		summarizeBy: none
 		sourceColumn: Category
 		description: String column.
@@ -93,7 +93,7 @@ table Orders
 	column OrderDate
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: d09a45d6-1301-4326-8f36-b6d403895e14
+		lineageTag: fe0ee36c-3770-4138-8717-801e3f69eb47
 		summarizeBy: none
 		sourceColumn: OrderDate
 		dataCategory: DateTime
@@ -101,7 +101,7 @@ table Orders
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Orders-2182c111-5610-42c3-a1b0-a66d193226df' = m
+	partition 'Orders-9b7741ec-31e4-4bae-85b9-c085bea082ec' = m
 		mode: import
 		source =
 				let

@@ -1,10 +1,10 @@
 table Machines
-	lineageTag: b2c6a034-2e75-404f-86dc-fc85bf9b5c08
+	lineageTag: f9486e7f-7e1f-4209-88ea-26369ae04fde
 	description: Contains 7 columns: machine_id, machine_name, machine_type, install_date, location, line_id, rated_capacity.
 
 	column machine_id
 		dataType: int64
-		lineageTag: c631c1cf-c13d-41bf-9d7b-49176c45c1c6
+		lineageTag: d8f9245a-0f5a-4cb5-a8b1-8529cafb4f17
 		summarizeBy: sum
 		sourceColumn: machine_id
 		description: Int64 column.
@@ -14,7 +14,7 @@ table Machines
 
 	column machine_name
 		dataType: string
-		lineageTag: b456afea-e0e5-4b5d-a63a-48791b042858
+		lineageTag: 97f28943-c761-4a22-b046-4e56b9038314
 		summarizeBy: none
 		sourceColumn: machine_name
 		description: String column.
@@ -23,7 +23,7 @@ table Machines
 
 	column machine_type
 		dataType: string
-		lineageTag: 4221fc43-9e16-43e9-a821-c40835eb8bf0
+		lineageTag: 11077306-0b35-4a48-942d-1bf0526a1185
 		summarizeBy: none
 		sourceColumn: machine_type
 		description: String column.
@@ -33,7 +33,7 @@ table Machines
 	column install_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: cc560c32-4403-48e0-8368-50e95118e502
+		lineageTag: 7b724399-19dd-48ef-9fc0-8200755f7186
 		summarizeBy: none
 		sourceColumn: install_date
 		dataCategory: DateTime
@@ -43,7 +43,7 @@ table Machines
 
 	column location
 		dataType: string
-		lineageTag: c495f55a-29c2-4f60-9e60-2bd39cbd2316
+		lineageTag: 0e0eb00f-0f4e-481c-8e4a-0dee8c5c6398
 		summarizeBy: none
 		sourceColumn: location
 		description: String column.
@@ -52,7 +52,7 @@ table Machines
 
 	column line_id
 		dataType: string
-		lineageTag: 6c4a797f-590e-4177-9c94-8f9af8ce05d6
+		lineageTag: c09d2dec-2630-49fc-a8ec-dd8d358e383f
 		summarizeBy: none
 		sourceColumn: line_id
 		description: String column.
@@ -63,14 +63,14 @@ table Machines
 	column rated_capacity
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 2c59903a-3b75-4953-ac0c-b349ae71b8ca
+		lineageTag: cc7f90dc-7d4c-4556-aeac-1b110ab6eb11
 		summarizeBy: sum
 		sourceColumn: rated_capacity
 		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Machines-305c3a6e-c31b-41a6-88c4-3cf9c982748e' = m
+	partition 'Machines-11ca0c6a-643c-43f8-9289-b90cc33d07c6' = m
 		mode: import
 		source =
 				let

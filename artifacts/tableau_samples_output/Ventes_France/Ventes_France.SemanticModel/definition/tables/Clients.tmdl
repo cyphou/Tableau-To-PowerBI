@@ -1,10 +1,10 @@
 table Clients
-	lineageTag: 6f8883d8-7313-4a68-a084-3ba14cafa2ef
+	lineageTag: bea1bb47-0931-4b87-bc7c-bc670579cb79
 	description: Contains 7 columns: client_id, nom_client, prenom_client, email, segment, type_client, date_inscription.
 
 	column client_id
 		dataType: int64
-		lineageTag: 50429d56-bb42-40be-ab38-a237d57e73d5
+		lineageTag: 68d91267-c153-4247-b54f-3fa2f7761191
 		summarizeBy: sum
 		sourceColumn: client_id
 		description: Int64 column.
@@ -14,7 +14,7 @@ table Clients
 
 	column nom_client
 		dataType: string
-		lineageTag: fe43c2ec-28e6-4287-a7ed-980024f1c09d
+		lineageTag: 66be0d78-fa22-497f-b7e2-3dfd26b5ece8
 		summarizeBy: none
 		sourceColumn: nom_client
 		description: String column.
@@ -23,7 +23,7 @@ table Clients
 
 	column prenom_client
 		dataType: string
-		lineageTag: 7bf9c351-8b97-4967-a3fc-d498b6e50754
+		lineageTag: 942ee802-1cd9-438e-b83e-cbaa1638ae74
 		summarizeBy: none
 		sourceColumn: prenom_client
 		description: String column.
@@ -32,7 +32,7 @@ table Clients
 
 	column email
 		dataType: string
-		lineageTag: 24f9a062-7c0d-4fbd-b904-ae06e9a64c71
+		lineageTag: 80dfd666-f8d0-42d1-a83a-c928676b6f16
 		summarizeBy: none
 		sourceColumn: email
 		description: String column.
@@ -41,7 +41,7 @@ table Clients
 
 	column segment
 		dataType: string
-		lineageTag: 0b3677e3-70fb-4bbc-a33d-af43d368be46
+		lineageTag: 55265627-ce8a-418d-9573-a81ee3979e54
 		summarizeBy: none
 		sourceColumn: segment
 		description: String column.
@@ -50,7 +50,7 @@ table Clients
 
 	column type_client
 		dataType: string
-		lineageTag: 12c1ee3c-e8cd-42f2-bff2-3aa7f6959c47
+		lineageTag: eaea96e2-e46c-4d2b-9bc4-1333f22385f1
 		summarizeBy: none
 		sourceColumn: type_client
 		description: String column.
@@ -60,7 +60,7 @@ table Clients
 	column date_inscription
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 538961a8-51ca-43c6-95ac-9a8b044138e3
+		lineageTag: 480ea507-ad20-4e60-99a0-221458a9d4f7
 		summarizeBy: none
 		sourceColumn: date_inscription
 		dataCategory: DateTime
@@ -68,7 +68,7 @@ table Clients
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Clients-a543bcf6-657a-4722-9a18-fb3dfd4f4b64' = m
+	partition 'Clients-178a3c16-1ef5-4b78-b632-7f1dcdfd4229' = m
 		mode: import
 		source =
 				let

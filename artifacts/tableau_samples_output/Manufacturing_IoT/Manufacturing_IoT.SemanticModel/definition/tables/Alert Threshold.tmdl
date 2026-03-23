@@ -1,14 +1,14 @@
 table 'Alert Threshold'
-	lineageTag: 65da06d5-e988-4ad2-af3b-c0526a3f76f7
+	lineageTag: b597ff7b-1899-4a1d-a92e-eedae9e6cdb0
 	description: Contains 1 columns and 1 measures: Value.
 
 	measure 'Alert Threshold' = SELECTEDVALUE('Alert Threshold'[Value], 100)
 		description: DAX: SELECTEDVALUE('Alert Threshold'[Value], 100)
-		lineageTag: 2b2860d1-bbbc-4444-956f-b41ffce95b0a
+		lineageTag: 2f8ebc43-b3da-4054-871c-c16e48f686f2
 
 	column Value
 		dataType: double
-		lineageTag: d5f104ac-43e2-4bcc-b199-bc4cc9c5c329
+		lineageTag: e517102e-6b80-477c-a643-4285dc80fd4c
 		summarizeBy: none
 		sourceColumn: Value
 		description: Double column.
@@ -16,7 +16,7 @@ table 'Alert Threshold'
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Alert Threshold-471d68d4-259a-4b71-9575-0703ec1fb212' = calculated
+	partition 'Alert Threshold-4ecff4e7-ee23-440c-ad30-c71ad5fa5efa' = calculated
 		mode: import
 		source = GENERATESERIES(0, 500, 10)
 

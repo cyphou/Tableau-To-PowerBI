@@ -1,108 +1,108 @@
 table Commandes
-	lineageTag: 81309b37-e5ea-4dac-ae69-39e78a144e84
+	lineageTag: fcfdcfef-8266-454b-9223-8b56e9be6e99
 	description: Contains 22 columns and 17 measures: commande_id, date_commande, date_livraison, client_id, produit_id, region, departement, ville, ... (22 columns total).
 
 	measure 'Chiffre d''Affaires Brut' = SUMX('Commandes', 'Commandes'[quantite] * 'Commandes'[prix_unitaire])
 		formatString: #,0.00
 		displayFolder: Measures
 		description: Migrated from Tableau: SUM([quantite] * [prix_unitaire]) | DAX: SUMX('Commandes', 'Commandes'[quantite] * 'Commandes'[prix_unitaire])
-		lineageTag: 532ba2db-d801-4582-8ed8-ffac4111e579
+		lineageTag: 0fe2e410-5c90-4163-8af1-b284e23ff14b
 
 	measure 'Chiffre d''Affaires Net' = SUMX('Commandes', IF('Commandes'[statut] <> "Annulée", 'Commandes'[quantite] * 'Commandes'[prix_unitaire] * (1 - 'Commandes'[remise]), 0))
 		formatString: #,0.00
 		displayFolder: Measures
 		description: Migrated from Tableau: SUM(IF [statut] != "Annulée" THEN [quantite] * [prix_unitaire] * (1 - [remise]) ELSE 0 END) | DAX: SUMX('Commandes', IF('Commandes'[statut] <> "Annulée", 'Commandes'[quantite] * 'Commandes'[prix_unitaire] * (1 - 'Comman...
-		lineageTag: 3b1f5c71-c4da-4814-9ffb-6ae8b9496d0a
+		lineageTag: 29af2a9f-b801-4a0f-be2e-065ac3f37614
 
 	measure 'Marge Brute' = SUMX('Commandes', IF('Commandes'[statut] <> "Annulée", ('Commandes'[quantite] * 'Commandes'[prix_unitaire] * (1 - 'Commandes'[remise])) - ('Commandes'[quantite] * 'Produits'[cout_achat]) - 'Commandes'[frais_port], 0))
 		formatString: #,0.00
 		displayFolder: Measures
 		description: Migrated from Tableau: SUM(IF [statut] != "Annulée" THEN ([quantite] * [prix_unitaire] * (1 - [remise])) - ([quantite] * [cout_achat]) - [frais_port] ELSE 0 END) | DAX: SUMX('Commandes', IF('Commandes'[statut] <> "Annulée", ('Commandes'[quantite] * 'Commandes'[prix_unitaire] * (1 - 'Comma...
-		lineageTag: cf3a295e-e001-4e9a-860d-0ff81bcbcc17
+		lineageTag: cf64bc0e-d5a3-4ff1-ba36-6ac9f85314b0
 
 	measure 'Taux de Marge (%)' = IF(ISBLANK([Marge Brute] / [Chiffre d"Affaires Net]), 0, [Marge Brute] / [Chiffre d"Affaires Net])
 		formatString: #,0.00
 		displayFolder: Measures
 		description: Migrated from Tableau: ZN([Calc_Marge] / [Calc_CA_Net]) | DAX: IF(ISBLANK([Marge Brute] / [Chiffre d"Affaires Net]), 0, [Marge Brute] / [Chiffre d"Affaires Net])
 		isHidden
-		lineageTag: 8f8db22d-9673-4d5d-81df-fdf383a08bb9
+		lineageTag: 221df406-cc4b-4bdf-98d5-67e956b753f2
 
 	measure 'Montant Remises' = SUMX('Commandes', 'Commandes'[quantite] * 'Commandes'[prix_unitaire] * 'Commandes'[remise])
 		formatString: #,0.00
 		displayFolder: Measures
 		description: Migrated from Tableau: SUM([quantite] * [prix_unitaire] * [remise]) | DAX: SUMX('Commandes', 'Commandes'[quantite] * 'Commandes'[prix_unitaire] * 'Commandes'[remise])
-		lineageTag: a5225773-fca8-48b0-858a-8a64327c2ffd
+		lineageTag: 9e8d03c5-6de4-4033-9e38-f15f1effbeb0
 
 	measure 'Nombre de Commandes' = DISTINCTCOUNT('Commandes'[commande_id])
 		displayFolder: Measures
 		description: Migrated from Tableau: COUNTD([commande_id]) | DAX: DISTINCTCOUNT('Commandes'[commande_id])
-		lineageTag: a58a790f-bbea-4d38-bd7e-279a7a7504a3
+		lineageTag: edeb4cad-5bd2-41cc-9403-c5f4ee46ead4
 
 	measure 'Clients Uniques' = DISTINCTCOUNT('Commandes'[client_id])
 		displayFolder: Measures
 		description: Migrated from Tableau: COUNTD([client_id]) | DAX: DISTINCTCOUNT('Commandes'[client_id])
-		lineageTag: 0e44a6f5-95d5-4744-b984-0af03fa2627d
+		lineageTag: c8560f1f-ac40-4591-b5c7-b4a5cc1c3bc4
 
 	measure 'Panier Moyen' = [Chiffre d'Affaires Net] / [Nombre de Commandes]
 		formatString: #,0.00
 		displayFolder: Measures
 		description: Migrated from Tableau: [Calc_CA_Net] / [Calc_NbCommandes] | DAX: [Chiffre d'Affaires Net] / [Nombre de Commandes]
-		lineageTag: 4f1b87d9-0803-4dba-be21-9f60c83f3b84
+		lineageTag: feed98aa-a175-4113-b5f9-13b45d56b741
 
 	measure 'CA par Client' = CALCULATE(SUMX('Commandes', 'Commandes'[quantite] * 'Commandes'[prix_unitaire]), ALLEXCEPT('Commandes', 'Commandes'[client_id]))
 		formatString: #,0.00
 		displayFolder: Measures
 		description: Migrated from Tableau: {FIXED [client_id] : SUM([quantite] * [prix_unitaire])} | DAX: CALCULATE(SUMX('Commandes', 'Commandes'[quantite] * 'Commandes'[prix_unitaire]), ALLEXCEPT('Commandes', 'Commandes'[clie...
-		lineageTag: 142373b2-0cbd-425f-a9a1-3c57c1d1b241
+		lineageTag: 2e9b6b8c-a41e-4222-bc98-163bc6034e08
 
 	measure 'CA Régional par Catégorie' = CALCULATE(SUMX('Commandes', 'Commandes'[quantite] * 'Commandes'[prix_unitaire]), REMOVEFILTERS('Commandes'[region]), REMOVEFILTERS('Produits'[categorie]))
 		formatString: #,0.00
 		displayFolder: Measures
 		description: Migrated from Tableau: {FIXED [region], [categorie] : SUM([quantite] * [prix_unitaire])} | DAX: CALCULATE(SUMX('Commandes', 'Commandes'[quantite] * 'Commandes'[prix_unitaire]), REMOVEFILTERS('Commandes'[region]), REM...
-		lineageTag: 47056960-ac63-4335-9516-84656ebd169d
+		lineageTag: 502d8f80-1c75-44ce-9043-e7f79d2dd854
 
 	measure 'CA hors Produit' = CALCULATE(SUMX('Commandes', 'Commandes'[quantite] * 'Commandes'[prix_unitaire]), REMOVEFILTERS('Produits'[nom_produit]))
 		formatString: #,0.00
 		displayFolder: Measures
 		description: Migrated from Tableau: {EXCLUDE [nom_produit] : SUM([quantite] * [prix_unitaire])} | DAX: CALCULATE(SUMX('Commandes', 'Commandes'[quantite] * 'Commandes'[prix_unitaire]), REMOVEFILTERS('Produits'[nom_produit]))
-		lineageTag: d067d625-948c-423e-8f47-09b0f003d5e0
+		lineageTag: 505a86f2-7f84-4b16-9e13-fe27f10348c3
 
 	measure 'Classification Client' = IF([CA par Client] > 50000, "Platine", IF([CA par Client] > 20000, "||", IF([CA par Client] > 5000, "Argent", "Bronze")))
 		displayFolder: Dimensions
 		description: Migrated from Tableau: IF [Calc_CAParClient] > 50000 THEN "Platine" ELSEIF [Calc_CAParClient] > 20000 THEN "Or" ELSEIF [Calc_CAParClient] > 5000 THEN "Argent" ELSE "Bronze" END | DAX: IF([CA par Client] > 50000, "Platine", IF([CA par Client] > 20000, "||", IF([CA par Client] > 5000, "Argent", "Bronze"))...
-		lineageTag: 82bc13f2-95e9-4d60-b3e3-af356a3a4dbf
+		lineageTag: b8edb163-872d-402a-897d-a4aaeab4adfe
 
 	measure 'Cumul Mobile CA' = CALCULATE(SUMX('Commandes', 'Commandes'[quantite] * 'Commandes'[prix_unitaire]), FILTER(ALLSELECTED('Commandes'), TRUE())) /* RUNNING_SUM: converted to cumulative — verify window scope */
 		formatString: #,0.00
 		displayFolder: Measures
 		description: Migrated from Tableau: RUNNING_SUM(SUM([quantite] * [prix_unitaire])) | DAX: CALCULATE(SUMX('Commandes', 'Commandes'[quantite] * 'Commandes'[prix_unitaire]), FILTER(ALLSELECTED('Commandes'), TRUE()...
-		lineageTag: 98480e59-16ba-490e-96e0-e3b168ad79a6
+		lineageTag: 119e7e18-b4b4-46ad-bff9-9df855e8d196
 
 	measure 'Moyenne Mobile 3M' = CALCULATE(SUMX('Commandes', 'Commandes'[quantite] * 'Commandes'[prix_unitaire]), WINDOW(-2, REL, 0, REL, ORDERBY('Commandes'[commande_id], ASC)), ALL('Commandes')) /* WINDOW.AVG: frame 'Commandes'[-2,0] */
 		formatString: #,0.00
 		displayFolder: Measures
 		description: Migrated from Tableau: WINDOW_AVG(SUM([quantite] * [prix_unitaire]), -2, 0) | DAX: CALCULATE(SUMX('Commandes', 'Commandes'[quantite] * 'Commandes'[prix_unitaire]), WINDOW(-2, REL, 0, REL, ORDERBY('Comman...
 		isHidden
-		lineageTag: 535baa02-aecb-41be-8b6d-09b040623b80
+		lineageTag: acb309a4-25ea-4242-9943-c7178f60f9ea
 
 	measure 'Classement CA' = RANKX(ALL('Commandes'), SUMX('Commandes', 'Commandes'[quantite] * 'Commandes'[prix_unitaire]))
 		displayFolder: Measures
 		description: Migrated from Tableau: RANK(SUM([quantite] * [prix_unitaire])) | DAX: RANKX(ALL('Commandes'), SUMX('Commandes', 'Commandes'[quantite] * 'Commandes'[prix_unitaire]))
-		lineageTag: 55fede7e-3384-42eb-988e-3fe5f5a36a14
+		lineageTag: bb8e7431-adbf-4fad-85d1-dc4da9404a9b
 
 	measure 'CA Année en Cours' = CALCULATE(SUMX('Commandes', IF(YEAR('Commandes'[date_commande]) = YEAR(TODAY()), 'Commandes'[quantite] * 'Commandes'[prix_unitaire], 0)), ALL('Commandes'))
 		formatString: #,0.00
 		displayFolder: Measures
 		description: Migrated from Tableau: {FIXED : SUM(IF YEAR([date_commande]) = YEAR(TODAY()) THEN [quantite] * [prix_unitaire] ELSE 0 END)} | DAX: CALCULATE(SUMX('Commandes', IF(YEAR('Commandes'[date_commande]) = YEAR(TODAY()), 'Commandes'[quantite] * 'Commandes'[pri...
-		lineageTag: 5a2efe82-658d-46c8-bce4-d2ac8ead93bd
+		lineageTag: 23039b57-e58e-45b6-aed6-1488643708a3
 
 	measure 'Période d''Analyse' = "Année"
 		description: DAX: "Année"
-		lineageTag: fefbb903-9f72-4051-948f-51db43fd3994
+		lineageTag: 6d434046-5fb9-44eb-a80b-cf25050bd40e
 
 	column commande_id
 		dataType: int64
-		lineageTag: 07735751-e567-47dd-b992-cf35e5e76f7d
+		lineageTag: 51a0ffc3-a552-4938-9ad9-28de8c5e7713
 		summarizeBy: sum
 		sourceColumn: commande_id
 		description: Int64 column.
@@ -113,7 +113,7 @@ table Commandes
 	column date_commande
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 92a3eb8c-e29c-410a-b614-beed6995df77
+		lineageTag: 08c9f745-9b87-4d82-9ad6-69c5ef758665
 		summarizeBy: none
 		sourceColumn: date_commande
 		dataCategory: DateTime
@@ -124,7 +124,7 @@ table Commandes
 	column date_livraison
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 64df063f-1d1c-4e91-8201-e7db1095bdba
+		lineageTag: ba94c78f-3156-4868-8c03-e4d952d8e15f
 		summarizeBy: none
 		sourceColumn: date_livraison
 		dataCategory: DateTime
@@ -134,7 +134,7 @@ table Commandes
 
 	column client_id
 		dataType: int64
-		lineageTag: 6b476239-9cf2-4e95-a292-acabe8e3fdd8
+		lineageTag: 5342fee3-708e-4a60-a538-4d307a9b018c
 		summarizeBy: sum
 		sourceColumn: client_id
 		description: Int64 column.
@@ -144,7 +144,7 @@ table Commandes
 
 	column produit_id
 		dataType: int64
-		lineageTag: 71cc9d8c-57b9-4425-8f44-84eda2a6a2b6
+		lineageTag: 90be3fc4-a37b-440a-a4db-93ab07067ceb
 		summarizeBy: sum
 		sourceColumn: produit_id
 		description: Int64 column.
@@ -154,7 +154,7 @@ table Commandes
 
 	column region
 		dataType: string
-		lineageTag: daed56fd-9744-45c3-9afc-a2b5c37c1348
+		lineageTag: b1c21153-b0dc-4e46-b52f-e0ad6221d177
 		summarizeBy: none
 		sourceColumn: region
 		dataCategory: StateOrProvince
@@ -164,7 +164,7 @@ table Commandes
 
 	column departement
 		dataType: string
-		lineageTag: d8695737-6c27-48a8-a98e-98eb3a19d825
+		lineageTag: 26b3b52d-1622-46fe-a74c-4bccd269a0ed
 		summarizeBy: none
 		sourceColumn: departement
 		description: String column.
@@ -173,7 +173,7 @@ table Commandes
 
 	column ville
 		dataType: string
-		lineageTag: 73312228-d914-4659-b9d8-d4da2a1204d9
+		lineageTag: a7b3cf36-4137-44a5-9d50-f2feb4d4f0ba
 		summarizeBy: none
 		sourceColumn: ville
 		dataCategory: City
@@ -183,7 +183,7 @@ table Commandes
 
 	column code_postal
 		dataType: string
-		lineageTag: c8c2bd9c-c5b1-403c-ba8a-1798c7ee4ebb
+		lineageTag: 30c4ec92-7fd0-4b93-ad4e-51be9398cbf3
 		summarizeBy: none
 		sourceColumn: code_postal
 		dataCategory: PostalCode
@@ -194,7 +194,7 @@ table Commandes
 	column quantite
 		dataType: double
 		formatString: #,0.00
-		lineageTag: b7c1e000-0ae0-4410-8e62-1d805f0c1625
+		lineageTag: 45a8c7dd-40a9-4ae5-b5ca-f03bc36fdc0b
 		summarizeBy: sum
 		sourceColumn: quantite
 		description: Double column.
@@ -204,7 +204,7 @@ table Commandes
 	column prix_unitaire
 		dataType: double
 		formatString: #,0.00
-		lineageTag: d6bddef0-2bc5-42e0-90e7-34d8e1bccf85
+		lineageTag: 391ef459-7046-4aa8-b8dd-05868f061424
 		summarizeBy: sum
 		sourceColumn: prix_unitaire
 		description: Double column.
@@ -214,7 +214,7 @@ table Commandes
 	column remise
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 9fb2b7df-b161-4870-83da-b0040fc9247f
+		lineageTag: ddceb25d-9beb-4a2c-9d5e-d06c3baab7e9
 		summarizeBy: sum
 		sourceColumn: remise
 		description: Double column.
@@ -224,7 +224,7 @@ table Commandes
 	column frais_port
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 7845e1c6-be21-446d-9ab6-f0b80857c930
+		lineageTag: 9d627b33-b95b-46d6-b18f-12b56dd892b8
 		summarizeBy: sum
 		sourceColumn: frais_port
 		description: Double column.
@@ -233,7 +233,7 @@ table Commandes
 
 	column mode_paiement
 		dataType: string
-		lineageTag: a2dfbc1c-a68a-438f-8c55-0e800404cb1d
+		lineageTag: 492653fa-fe16-49f2-ab63-de72f02e0acb
 		summarizeBy: none
 		sourceColumn: mode_paiement
 		description: String column.
@@ -242,7 +242,7 @@ table Commandes
 
 	column statut
 		dataType: string
-		lineageTag: a4d522dd-5758-475f-92e3-deb4b0145bf0
+		lineageTag: e3b1d487-4b2e-4a93-9b88-10331cf3a995
 		summarizeBy: none
 		sourceColumn: statut
 		description: String column.
@@ -251,7 +251,7 @@ table Commandes
 
 	column commercial
 		dataType: string
-		lineageTag: 409accf3-0e17-4468-b231-9abc46f34e0b
+		lineageTag: f49aa8e3-7e09-4dc7-afec-9d0a6f06a794
 		summarizeBy: none
 		sourceColumn: commercial
 		description: String column.
@@ -260,7 +260,7 @@ table Commandes
 
 	column 'Délai de Livraison'
 		dataType: int64
-		lineageTag: c75de434-5431-4b01-b0b9-db00571bdefe
+		lineageTag: a9386553-3e0e-4e81-b77f-9d196f7d88ba
 		summarizeBy: none
 		sourceColumn: 'Délai de Livraison'
 		description: Int64 column.
@@ -269,7 +269,7 @@ table Commandes
 
 	column 'Ancienneté Client' = DATEDIFF(LOOKUPVALUE(Clients[date_inscription], Clients[client_id], Commandes[client_id]), TODAY(), DAY)
 		dataType: int64
-		lineageTag: 563f94c9-0753-401b-b90c-fc4beccb3ebd
+		lineageTag: 2f86e51c-9a63-40e1-bd04-43fa2d880008
 		summarizeBy: none
 		description: Calculated column (Int64).
 
@@ -277,7 +277,7 @@ table Commandes
 
 	column 'Nom Complet' = LOOKUPVALUE(Clients[prenom_client], Clients[client_id], Commandes[client_id]) & " " & UPPER(LOOKUPVALUE(Clients[nom_client], Clients[client_id], Commandes[client_id]))
 		dataType: string
-		lineageTag: 740600e9-bd31-495d-be33-43a774d63d8c
+		lineageTag: 41fc6254-b308-4f4a-a0da-633d33ef669e
 		summarizeBy: none
 		description: Calculated column (String).
 
@@ -285,7 +285,7 @@ table Commandes
 
 	column Localisation
 		dataType: string
-		lineageTag: 53ad8470-a31b-4e07-a52e-4585451a2959
+		lineageTag: d16b17e2-6d36-4601-b735-23d11afa9640
 		summarizeBy: none
 		sourceColumn: Localisation
 		description: String column.
@@ -294,7 +294,7 @@ table Commandes
 
 	column 'Catégorie de Remise' = IF(ISBLANK('Commandes'[remise]) || 'Commandes'[remise] = 0, "Aucune Remise", IF('Commandes'[remise] < 0.1, "Faible (<10%)", IF('Commandes'[remise] < 0.25, "Moyenne (10-25%)", "Forte (>25%)")))
 		dataType: string
-		lineageTag: b122fd1a-47e2-4dc0-bfeb-379ba71fb9d3
+		lineageTag: 07cf7867-b75e-4b32-8c6e-e18dba83a6fb
 		summarizeBy: none
 		description: Calculated column (String).
 
@@ -302,13 +302,13 @@ table Commandes
 
 	column Trimestre = "T" & FORMAT(QUARTER('Commandes'[date_commande]), "0") & " " & FORMAT(YEAR('Commandes'[date_commande]), "0")
 		dataType: string
-		lineageTag: 921ded97-1d75-4594-b03b-fbb24503c87e
+		lineageTag: 0f0600b2-6852-4218-843a-530f167668c0
 		summarizeBy: none
 		description: Calculated column (String).
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Commandes-c38b1353-67c4-43f7-bb78-34697504c38e' = m
+	partition 'Commandes-f45af605-e50c-447d-ac25-098f2e61a195' = m
 		mode: import
 		source =
 				let

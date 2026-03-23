@@ -1,10 +1,10 @@
 table Regions
-	lineageTag: 87796e49-f0a8-41bb-adea-9c8ea3bcdfb0
+	lineageTag: fdb7a429-a18d-4b17-9544-812c2dbcb907
 	description: Contains 2 columns: RegionName, RegionManager.
 
 	column RegionName
 		dataType: string
-		lineageTag: e15d0fa8-cc61-4a02-b3f0-c5ef85ede1fe
+		lineageTag: e3e1d5be-e878-488b-9e68-43939fd5dee0
 		summarizeBy: none
 		sourceColumn: RegionName
 		dataCategory: StateOrProvince
@@ -14,7 +14,7 @@ table Regions
 
 	column RegionManager
 		dataType: string
-		lineageTag: 33638930-8bba-47ae-b82c-8f0dbd3a970b
+		lineageTag: ea89de19-c156-4d49-8f33-9d8e82e930d0
 		summarizeBy: none
 		sourceColumn: RegionManager
 		dataCategory: StateOrProvince
@@ -22,7 +22,7 @@ table Regions
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Regions-493e6b81-5c10-4d8f-945d-b2c1d33d05c0' = m
+	partition 'Regions-90059c66-feb1-4e79-b5c3-5882617eaebf' = m
 		mode: import
 		source =
 				let

@@ -9,6 +9,7 @@ Requires: pip install requests (optional dependency)
 
 import logging
 import json as _json
+from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
@@ -89,8 +90,7 @@ class FabricClient:
         """
         url = f'{self.base_url}{endpoint}'
         if params:
-            query = '&'.join(f'{k}={v}' for k, v in params.items())
-            url = f'{url}?{query}'
+            url = f'{url}?{urlencode(params)}'
 
         headers = self.authenticator.get_headers()
 

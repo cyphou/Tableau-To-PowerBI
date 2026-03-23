@@ -1,10 +1,10 @@
 table Produits
-	lineageTag: 97cd91ad-0b38-4728-a330-6f9db2c696e0
+	lineageTag: fc9f810e-962f-44c5-bfc9-5138beb59324
 	description: Contains 6 columns: produit_id, nom_produit, categorie, sous_categorie, marque, cout_achat.
 
 	column produit_id
 		dataType: int64
-		lineageTag: c29a0684-3e6e-4b3a-8956-90eaf4e3b317
+		lineageTag: 32e1a96f-29c7-4563-a8ca-fa90a391d48a
 		summarizeBy: sum
 		sourceColumn: produit_id
 		description: Int64 column.
@@ -14,7 +14,7 @@ table Produits
 
 	column nom_produit
 		dataType: string
-		lineageTag: 86787bae-b241-4932-8d6d-a9172bf78de1
+		lineageTag: 383a01e8-d0cf-406f-813b-f4149387be2f
 		summarizeBy: none
 		sourceColumn: nom_produit
 		description: String column.
@@ -23,7 +23,7 @@ table Produits
 
 	column categorie
 		dataType: string
-		lineageTag: d9082248-a79a-431f-bbb1-57741343ce47
+		lineageTag: 5b3289e3-753f-4d94-927d-416df4d3c56b
 		summarizeBy: none
 		sourceColumn: categorie
 		description: String column.
@@ -32,7 +32,7 @@ table Produits
 
 	column sous_categorie
 		dataType: string
-		lineageTag: 5f6b8551-708c-4677-9e52-5c427482063c
+		lineageTag: 8a6dafe2-89eb-4899-a48d-6f0dbd5eae06
 		summarizeBy: none
 		sourceColumn: sous_categorie
 		description: String column.
@@ -41,7 +41,7 @@ table Produits
 
 	column marque
 		dataType: string
-		lineageTag: 3afd559f-d546-4a38-8b7c-98ca232d13a6
+		lineageTag: a5ed10d7-9c54-487b-852a-985943480212
 		summarizeBy: none
 		sourceColumn: marque
 		description: String column.
@@ -51,14 +51,14 @@ table Produits
 	column cout_achat
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 1a7209a9-c36a-45af-8071-cbf6225b900b
+		lineageTag: 194a64f4-3d93-40f7-97fc-dfa6d766d6dc
 		summarizeBy: sum
 		sourceColumn: cout_achat
 		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Produits-d7bc43c1-3e44-41f1-a51c-92cdc890d9e2' = m
+	partition 'Produits-bfa89445-6e83-4a17-b7ae-681f64641f61' = m
 		mode: import
 		source =
 				let

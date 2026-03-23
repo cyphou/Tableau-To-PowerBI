@@ -1,10 +1,10 @@
 table Maintenance
-	lineageTag: 39132bfa-256a-4a5d-93c6-c98ab1e639b1
+	lineageTag: 05ad68f9-7c74-4c0c-82d8-6658eeb27a0b
 	description: Contains 8 columns: maint_id, machine_id, maint_date, maint_type, maint_cost, downtime_hours, technician, description.
 
 	column maint_id
 		dataType: int64
-		lineageTag: 29498897-0a80-454b-8f9d-438db9ff008c
+		lineageTag: d2e107ec-e69f-4af0-b0fc-4701edb2cf5a
 		summarizeBy: sum
 		sourceColumn: maint_id
 		description: Int64 column.
@@ -14,7 +14,7 @@ table Maintenance
 
 	column machine_id
 		dataType: int64
-		lineageTag: 75153f90-f09e-4879-bf53-6d9276571df5
+		lineageTag: 3000fb82-a31d-43fe-98a8-41ca1340fbf8
 		summarizeBy: sum
 		sourceColumn: machine_id
 		description: Int64 column.
@@ -25,7 +25,7 @@ table Maintenance
 	column maint_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: b24483f8-960b-434a-9dbf-2d13700bd47b
+		lineageTag: be6e9551-54bd-4cf9-acf8-0ea28b562d70
 		summarizeBy: none
 		sourceColumn: maint_date
 		dataCategory: DateTime
@@ -35,7 +35,7 @@ table Maintenance
 
 	column maint_type
 		dataType: string
-		lineageTag: 9f20d8ab-1317-44f2-bf36-74d662845331
+		lineageTag: dafd71e6-6bd3-4f40-b8bc-a623531c0130
 		summarizeBy: none
 		sourceColumn: maint_type
 		description: String column.
@@ -45,7 +45,7 @@ table Maintenance
 	column maint_cost
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 42ece377-9d10-4ef2-a4ac-ac631dde801c
+		lineageTag: 8253343d-844d-4632-ae2a-202285b47d74
 		summarizeBy: sum
 		sourceColumn: maint_cost
 		description: Double column.
@@ -55,7 +55,7 @@ table Maintenance
 	column downtime_hours
 		dataType: double
 		formatString: #,0.00
-		lineageTag: a7403a15-eed9-435e-81da-fb75cf61ef41
+		lineageTag: 4b97e1de-ed59-46a8-9694-c7172312338c
 		summarizeBy: sum
 		sourceColumn: downtime_hours
 		description: Double column.
@@ -64,7 +64,7 @@ table Maintenance
 
 	column technician
 		dataType: string
-		lineageTag: f8dd3d20-8898-4f8b-9911-b14d5cd4ab75
+		lineageTag: d6d24cbf-e6d4-4e95-8aef-f51b18763bd6
 		summarizeBy: none
 		sourceColumn: technician
 		description: String column.
@@ -73,14 +73,14 @@ table Maintenance
 
 	column description
 		dataType: string
-		lineageTag: 2d73d4da-a3e1-4052-a9cd-a2daff95d8be
+		lineageTag: 0739f64b-79e0-4232-9843-9ce381f2375e
 		summarizeBy: none
 		sourceColumn: description
 		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Maintenance-953067a8-bb67-44cc-9e5d-e10f2fa1e3cf' = m
+	partition 'Maintenance-1be6684d-d0e7-4f99-b679-7bfc91710f7b' = m
 		mode: import
 		source =
 				let
