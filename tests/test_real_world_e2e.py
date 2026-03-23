@@ -47,6 +47,10 @@ ALL_WORKBOOKS = REAL_WORLD_WORKBOOKS + SAMPLE_WORKBOOKS
 # Workbooks known to have no datasources or to fail extraction cleanly
 KNOWN_EXTRACTION_FAILURES = {'TABLEAU_10_TWB'}
 
+# Datasource-only workbooks (no worksheets/dashboards) produce
+# SemanticModel only — no Report folder or pages.
+DATASOURCE_ONLY_WORKBOOKS = {'multiple_connections'}
+
 # Visual reference patterns that are known edge cases (sets, pcto, maps)
 KNOWN_VISUAL_REF_PREFIXES = ('io:', 'pcto:', 'South Map', 'North Map', 'East Map', 'West Map')
 
@@ -182,6 +186,8 @@ class _BaseE2ETest(unittest.TestCase):
         self.assertTrue(os.path.isdir(sm), 'Missing SemanticModel directory')
 
     def test_report_dir(self):
+        if self.report_name in DATASOURCE_ONLY_WORKBOOKS:
+            return  # No Report folder for datasource-only workbooks
         rp = os.path.join(self.project_dir, f'{self.report_name}.Report')
         self.assertTrue(os.path.isdir(rp), 'Missing Report directory')
 
@@ -192,6 +198,8 @@ class _BaseE2ETest(unittest.TestCase):
         self.assertTrue(os.path.isfile(model), 'Missing model.tmdl')
 
     def test_report_json_exists(self):
+        if self.report_name in DATASOURCE_ONLY_WORKBOOKS:
+            return  # No report.json for datasource-only workbooks
         rj = os.path.join(self.project_dir,
                           f'{self.report_name}.Report',
                           'definition', 'report.json')
@@ -200,10 +208,14 @@ class _BaseE2ETest(unittest.TestCase):
     # ── Content assertions ──
 
     def test_has_at_least_one_page(self):
+        if self.report_name in DATASOURCE_ONLY_WORKBOOKS:
+            return  # No pages for datasource-only workbooks
         pages = _count_pages(self.project_dir, self.report_name)
         self.assertGreaterEqual(pages, 1, 'No report pages generated')
 
     def test_has_at_least_one_visual(self):
+        if self.report_name in DATASOURCE_ONLY_WORKBOOKS:
+            return  # No visuals for datasource-only workbooks
         visuals = _count_visuals(self.project_dir, self.report_name)
         # Workbooks without dashboards may produce pages with 0 visuals
         # (single-worksheet fallback creates pages but minimal visuals)
@@ -232,10 +244,15 @@ class _BaseE2ETest(unittest.TestCase):
         result = ArtifactValidator.validate_project(self.project_dir)
         critical = [e for e in result.get('errors', [])
                     if 'Missing' in e and '.pbip' not in e]
+        # Datasource-only workbooks don't have a Report directory
+        if self.report_name in DATASOURCE_ONLY_WORKBOOKS:
+            critical = [e for e in critical if 'Report' not in e]
         self.assertEqual(critical, [],
                          f'Validator errors:\n' + '\n'.join(critical))
 
     def test_visual_references_valid(self):
+        if self.report_name in DATASOURCE_ONLY_WORKBOOKS:
+            return  # No visuals for datasource-only workbooks
         errors = ArtifactValidator.validate_visual_references(self.project_dir)
         # Filter out known edge cases (set prefixes, pcto, map visuals)
         real_errors = [e for e in errors
@@ -244,6 +261,8 @@ class _BaseE2ETest(unittest.TestCase):
                          f'Visual reference errors:\n' + '\n'.join(real_errors))
 
     def test_pages_json_has_page_order(self):
+        if self.report_name in DATASOURCE_ONLY_WORKBOOKS:
+            return  # No pages for datasource-only workbooks
         pages_json = os.path.join(self.project_dir,
                                   f'{self.report_name}.Report',
                                   'definition', 'pages', 'pages.json')

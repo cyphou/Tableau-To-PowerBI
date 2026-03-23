@@ -148,6 +148,11 @@ class PowerBIProjectGenerator:
         self._composite_threshold = composite_threshold
         self._agg_tables = agg_tables
         
+        # Detect datasource-only mode (.tds — no worksheets/dashboards)
+        self._datasource_only = not bool(
+            converted_objects.get('worksheets') or converted_objects.get('dashboards')
+        )
+        
         # Create project structure
         project_dir = os.path.join(self.output_dir, report_name)
         os.makedirs(project_dir, exist_ok=True)
@@ -161,10 +166,13 @@ class PowerBIProjectGenerator:
             sm_dir = self.create_semantic_model_structure(project_dir, report_name, converted_objects)
             print(f"  ✓ SemanticModel created: {sm_dir}")
         
-        # 3. Create the Report structure
-        if self._output_format in ('pbip', 'pbir'):
+        # 3. Create the Report structure (skip for datasource-only .tds migrations)
+        has_visuals = bool(converted_objects.get('worksheets') or converted_objects.get('dashboards'))
+        if self._output_format in ('pbip', 'pbir') and has_visuals:
             report_dir = self.create_report_structure(project_dir, report_name, converted_objects)
             print(f"  ✓ Report created: {report_dir}")
+        elif not has_visuals:
+            print(f"  ℹ Datasource-only mode: SemanticModel generated (no Report)")
         
         # 4. Create metadata
         self.create_metadata(project_dir, report_name, converted_objects)
@@ -197,6 +205,17 @@ class PowerBIProjectGenerator:
                 "enableAutoRecovery": True
             }
         }
+        
+        # For datasource-only migrations (.tds), remove report artifact
+        # and reference only the SemanticModel.
+        if hasattr(self, '_datasource_only') and self._datasource_only:
+            pbip_content["artifacts"] = [
+                {
+                    "report": {
+                        "path": f"{report_name}.SemanticModel"
+                    }
+                }
+            ]
         
         pbip_file = os.path.join(project_dir, f"{report_name}.pbip")
         

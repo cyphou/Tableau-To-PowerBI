@@ -169,6 +169,15 @@ class TableauExtractor:
         else:
             root = ET.fromstring(xml_content)
         
+        # Standalone .tds/.tdsx: root IS the <datasource> element.
+        # Wrap it in a synthetic <workbook> so all extract_* methods
+        # that use .//datasource XPath queries find it normally.
+        if root.tag == 'datasource':
+            wrapper = ET.Element('workbook')
+            ds_parent = ET.SubElement(wrapper, 'datasources')
+            ds_parent.append(root)
+            root = wrapper
+        
         # Extract the different objects
         self.extract_worksheets(root)
         self.extract_dashboards(root)

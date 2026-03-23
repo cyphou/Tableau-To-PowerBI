@@ -1196,11 +1196,11 @@ def run_batch_migration(batch_dir, output_dir=None, prep_file=None, skip_extract
     tableau_files = []
     for root, _dirs, files in os.walk(batch_dir):
         for f in files:
-            if f.lower().endswith(('.twb', '.twbx')) and not f.startswith('~'):
+            if f.lower().endswith(('.twb', '.twbx', '.tds', '.tdsx')) and not f.startswith('~'):
                 tableau_files.append(os.path.join(root, f))
 
     if not tableau_files:
-        print(f"Error: No .twb/.twbx files found in {batch_dir}")
+        print(f"Error: No .twb/.twbx/.tds/.tdsx files found in {batch_dir}")
         return 1
 
     tableau_files.sort()
