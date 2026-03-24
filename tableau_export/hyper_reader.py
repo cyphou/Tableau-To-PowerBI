@@ -593,11 +593,12 @@ def generate_m_inline_table(table_info):
     type_list = ', '.join(type_entries)
 
     # Row data
+    col_list = ", ".join("[{}]".format(c["name"]) for c in columns)
     if not rows:
         return (
             f'let\n'
             f'    Source = #table(\n'
-            f'        type table [{", ".join(f"[{c["name"]}]" for c in columns)}],\n'
+            f'        type table [{col_list}],\n'
             f'        {{}}\n'
             f'    )\n'
             f'in\n'

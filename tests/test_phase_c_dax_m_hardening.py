@@ -1,4 +1,4 @@
-﻿"""
+"""
 Tests for Phase C â€” DAX & M Conversion Hardening (v5.3.0).
 
 Tests cover:
