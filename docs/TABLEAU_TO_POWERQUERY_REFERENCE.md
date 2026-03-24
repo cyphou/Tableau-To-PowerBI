@@ -76,7 +76,7 @@ All connector conversions are implemented in `tableau_export/m_query_builder.py`
 
 | # | Tableau Property | Power Query / Semantic Model | Status | Notes |
 |---|-----------------|------------------------------|--------|-------|
-| 1 | Column `name` | M column name + TMDL column name | ✅ | Bracket escaping reversed |
+| 1 | Column `name` | M column name + TMDL column name | ✅ | Bracket escaping reversed, special chars auto-quoted (see §11) |
 | 2 | Column `datatype` | M `Table.TransformColumnTypes()` | ✅ | Full type mapping (see §7) |
 | 3 | Column `role` (dimension/measure) | TMDL `summarizeBy` property | ✅ | |
 | 4 | Column `hidden` | TMDL `isHidden` property | ✅ | |
@@ -248,3 +248,42 @@ in
 | **TOTAL** | **108** | **90** | **12** | **2** | **4** |
 
 **Coverage: 90/108 (83%) fully automatic, 102/108 (94%) automatic+partial**
+
+---
+
+## 11. M Identifier Quoting Rules
+
+Power Query M uses `[ColumnName]` syntax for field access. Column names containing special characters must use the generalized identifier syntax `[#"ColumnName"]` — otherwise M treats special characters as operators (e.g., `-` as subtraction).
+
+### Characters Requiring Quoting
+
+The migration tool auto-detects and quotes identifiers containing any of these characters:
+
+```
+/ ( ) ' " + @ # $ % ^ & * ! ~ ` < > ? ; : { } | \ , -
+```
+
+### Safe Characters (No Quoting Needed)
+
+- Letters (including accented: é, ñ, ü, etc.)
+- Digits
+- Spaces
+- Underscores (`_`)
+- Dots (`.`)
+
+### Examples
+
+| Tableau Column | M Reference | Reason |
+|---------------|-------------|--------|
+| `Sub-Category` | `[#"Sub-Category"]` | Hyphen `-` |
+| `Pays/Région` | `[#"Pays/Région"]` | Slash `/` |
+| `Discount (bin)` | `[#"Discount (bin)"]` | Parentheses `()` |
+| `Order Date` | `[Order Date]` | Space is safe — no quoting |
+| `Customer_Name` | `[Customer_Name]` | Underscore + letters — no quoting |
+
+### Implementation
+
+- `_quote_m_identifiers()` in `tmdl_generator.py` — applied as the final step of `_dax_to_m_expression()`
+- `_quote_m_ids()` in `calc_column_utils.py` — applied in `make_m_add_column_step()` for Fabric dataflow path
+- Already-quoted references (`[#"..."]`) are not double-quoted
+- Record literals (containing `=`) are preserved as-is

@@ -168,6 +168,14 @@ The optimizer applies: nested IF→SWITCH, IF(ISBLANK)→COALESCE, redundant CAL
 
 ## Technical
 
+### Why do I get "Invalid identifier" errors in Power Query M?
+
+Column names with special characters (hyphens, slashes, parentheses) must be quoted as `[#"Name"]` in Power Query M. For example, `[Sub-Category]` is invalid — M interprets the hyphen as a minus operator. The correct syntax is `[#"Sub-Category"]`.
+
+Since **v28.1.1**, the migration tool auto-detects and quotes these identifiers. Characters that trigger quoting: `/ ( ) ' " + @ # $ % ^ & * ! ~ \` < > ? ; : { } | \\ , -`.
+
+If you see this error after migration, re-run with the latest version.
+
 ### What is the difference between a measure and a calculated column?
 
 - **Measure**: computed at aggregation time (e.g., `SUM`, `AVERAGE`). Adapts to the filter context.
@@ -292,7 +300,7 @@ The `merge_assessment.json` file lists all conflicts detected.
 python -m pytest tests/ -v
 ```
 
-The project includes **6,593 tests across 140 test files** covering DAX conversion, Power Query M generation, TMDL model building, visual generation, project structure, artifact validation, deployment utilities, Fabric-native generation, DAX optimization, cross-platform equivalence testing, and end-to-end non-regression migration of all 16 real-world workbooks.
+The project includes **6,818+ tests across 141 test files** covering DAX conversion, Power Query M generation, TMDL model building, visual generation, project structure, artifact validation, deployment utilities, Fabric-native generation, DAX optimization, cross-platform equivalence testing, and end-to-end non-regression migration of all 17 real-world workbooks.
 
 ### How do I run the migration as a REST API?
 

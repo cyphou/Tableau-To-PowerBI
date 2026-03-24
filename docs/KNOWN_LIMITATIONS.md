@@ -2,7 +2,7 @@
 
 This document lists known limitations and approximations in the Tableau to Power BI migration tool.
 
-> **Last updated:** v28.0.0 Phase 1 (Sprint 111) — many previous limitations have been addressed in Sprints 27-111. See below for current status.
+> **Last updated:** v28.1.1 — M Identifier Quoting & Bracket Stripping Hot-fix — many previous limitations have been addressed in Sprints 27-111. See below for current status.
 >
 > **v28.0.0 Phase 1 notes (Sprints 108–111):** TDS/TDSX standalone datasource migration — `.tds`/`.tdsx` files produce SemanticModel-only `.pbip` projects (S108). TDSX Hyper data inlining — `hyper_files.json` as 17th extracted JSON, `generate_m_from_hyper()` for M partition inlining (S109). REST API endpoint — stdlib `http.server` with POST /migrate, GET /status, GET /download, GET /health, GET /jobs; Dockerfile for container deployment (S110). Schema drift detection — `schema_drift.py` with `detect_schema_drift()`, `load_snapshot()`, `save_snapshot()`, `--check-drift` CLI (S111). 6,593+ tests across 140 files.
 >
@@ -82,6 +82,7 @@ This document lists known limitations and approximations in the Tableau to Power
 
 | Area | Limitation |
 |------|-----------|
+| **M identifier quoting** | ✅ FIXED (v28.1.1) — Column names with special characters (hyphens, slashes, parentheses, etc.) are now auto-quoted as `[#"Name"]` in M expressions. Previously, names like `Sub-Category` caused "Invalid identifier" errors |
 | **Custom SQL params** | ✅ IMPLEMENTED — `Value.NativeQuery()` with parameter record binding and `[EnableFolding=true]` |
 | **Hyper data** | ✅ `.hyper` files are now loaded via SQLite interface — row data injected into M `#table()` expressions. Some proprietary `.hyper` v2+ formats may fall back to metadata-only |
 | **Query folding** | ✅ IMPLEMENTED — `m_transform_buffer()` + `m_transform_join(buffer_right=True)` for `Table.Buffer()` folding boundaries |

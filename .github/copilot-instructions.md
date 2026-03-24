@@ -92,7 +92,7 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
     - `pbi_deployer.py`: PBI Service deployment orchestrator — package, upload, poll, refresh, validate, `deploy_refresh_schedule()` for PBI REST API refresh config, `deploy_rolling()` for blue/green deployment with canary validation and auto-rollback
     - `bundle_deployer.py`: Fabric bundle deployer — deploy shared model + thin reports as atomic bundle, artifact discovery, per-report error isolation, rebind, refresh, `BundleDeploymentResult`
     - `multi_tenant.py`: Multi-tenant deployment — `TenantConfig`/`MultiTenantConfig` (validate/load/save JSON), `_apply_connection_overrides()` (template substitution: `${TENANT_SERVER}`, `${TENANT_DATABASE}`, context-aware escaping, null byte blocking, placeholder validation), `deploy_multi_tenant()` orchestrator with per-tenant results
-- **tests/**: Unit and integration tests (6,831+ tests across 141 test files + conftest.py shared fixtures)
+- **tests/**: Unit and integration tests (6,818+ tests across 141 test files + conftest.py shared fixtures)
 - **docs/**: FAQ, PBI project guide, mapping reference, **ROADMAP.md** (v22–v28 development roadmap per agent)
 - **.github/workflows/ci.yml**: CI/CD pipeline (lint → test → validate → deploy)
 - **.github/workflows/publish.yml**: PyPI auto-publish workflow (tag-triggered, OIDC trusted publisher)
@@ -289,6 +289,7 @@ TWB-embedded transforms (column renames from captions) are auto-detected and inj
 - **Calculation groups**: Tableau param-swap actions → PBI Calculation Group tables with CALCULATE(SELECTEDMEASURE())
 - **Field parameters**: Tableau dimension-switching params → PBI Field Parameter tables with NAMEOF()
 - **M-based calculated columns**: DAX calc column expressions converted to Power Query M Table.AddColumn steps via `_dax_to_m_expression()` converter — supports IF, SWITCH, UPPER/LOWER/TRIM/LEN/LEFT/RIGHT/MID, ISBLANK, INT/VALUE, CONCATENATE, IN, &, arithmetic; falls back to DAX for cross-table references (RELATED/LOOKUPVALUE)
+- **M identifier quoting**: `_quote_m_identifiers()` auto-quotes `[field]` references containing special characters (`/()'"+@#$%^&*!~\`<>?;:{}|\\,-`) as `[#"field"]`. Applied as final step of `_dax_to_m_expression()`. `calc_column_utils.py` has its own `_quote_m_ids()` for Fabric dataflow path.
 - **Perspectives**: auto-generated "Full Model" perspective referencing all tables (`perspectives.tmdl`)
 - **Cultures**: culture TMDL file with linguistic metadata for non-en-US locales (`cultures/{locale}.tmdl`)
 - **Multi-language cultures**: `--languages fr-FR,de-DE` generates multiple culture TMDL files with translated display folders (Dimensions→Dimensionen, Measures→Mesures, etc.) and translated calendar column names
@@ -375,7 +376,7 @@ See `docs/AGENTS.md` for the full architecture diagram, data flow, and handoff p
 | **@assessor** | Readiness scoring, strategy, diff reports | `assessment.py`, `server_assessment.py`, `strategy_advisor.py`, `schema_drift.py` |
 | **@merger** | Shared semantic model, fingerprint matching | `shared_model.py`, `merge_config.py` |
 | **@deployer** | Fabric/PBI deployment, auth, gateway | `deploy/*.py`, `gateway_config.py`, `telemetry.py` |
-| **@tester** | Tests (6,831+), coverage, regression | `tests/*.py` |
+| **@tester** | Tests (6,818+), coverage, regression | `tests/*.py` |
 
 ### Rules
 

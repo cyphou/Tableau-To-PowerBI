@@ -1,5 +1,31 @@
 # Changelog
 
+## v28.1.1 — M Identifier Quoting & Bracket Stripping Hot-fix
+
+### M Identifier Quoting (`tmdl_generator.py`, `calc_column_utils.py`) ✅
+- **`_M_SPECIAL_CHARS` fix**: Added hyphen (`-`) to the special character set so column names like `Sub-Category` and `Order-ID` are auto-quoted as `[#"Sub-Category"]` in Power Query M expressions.
+- `_quote_m_identifiers()` now correctly quotes all M column references containing `/()'"+@#$%^&*!~\`<>?;:{}|\\,-`.
+- Added `_quote_m_ids()` in `calc_column_utils.py` so the Fabric Dataflow Gen2 path (`make_m_add_column_step`) also quotes special-character columns.
+- Affects: set, group, bin, SharePoint filter M expressions, and all `_dax_to_m_expression()` outputs.
+
+### Bracket Stripping in Bin/Group Calculations (`tmdl_generator.py`, `pbip_generator.py`) ✅
+- Tableau bin calculations (`class='bin'`) have names like `[Discount (bin)]` with literal square brackets and empty captions. These brackets are now stripped.
+- `tmdl_generator.py`: caption fallback `(calc.get('caption', '') or fallback).replace('[', '').replace(']', '')` applied to calc column M names and `calc_map_lookup` group source resolution.
+- `pbip_generator.py`: `_field_map` construction uses same pattern so visual query Property references resolve correctly.
+- Fixes "Invalid identifier" errors in Power Query M for bin-derived columns.
+
+### Data Source & Image Fixes ✅
+- **DataFolder double-backslash**: M (Power Query) treats `\` as literal — `expressions.tmdl` now uses single backslashes in `DataFolder` paths.
+- **TWBX filesystem scanning**: After hyper→CSV conversion, DataFolder is set from actual filesystem contents instead of ZIP entry paths.
+- **Image embedding**: Images from `.twbx` archives are embedded as base64 data URIs instead of relative file paths.
+- **TWB local Data folder**: `.twb` files with remote DataFolder paths now have a local `Data/` folder created with corrected references.
+
+### Stats
+- 27/27 batch at 100% fidelity.
+- 6,818+ tests passing across 141 test files.
+
+---
+
 ## v28.1.0 — Post-Migration Automation & Lineage Visualization
 
 ### Lineage Map HTML Dashboard ✅

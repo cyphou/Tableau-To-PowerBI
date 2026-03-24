@@ -149,7 +149,7 @@ def slide_title(prs):
 
     # Stats bar
     stats = [
-        ("6,831", "Tests Passed"),
+        ("6,818", "Tests Passed"),
         ("180+", "DAX Conversions"),
         ("118+", "Visual Types"),
         ("42", "Data Connectors"),
@@ -248,7 +248,7 @@ def slide_features(prs):
         ("🧮 180+ DAX Conversions", "LOD, table calcs, RANK, WINDOW\ncross-table RELATED/LOOKUPVALUE", PURPLE),
         ("📊 118+ Visual Types", "Bar, line, map, treemap, Sankey\ncombo, gauge, word cloud, KPI", TEAL),
         ("🔌 42 Data Connectors", "SQL Server, Snowflake, BigQuery\nDatabricks, Oracle, Excel, CSV…", PBI_BLUE),
-        ("🧠 Smart Semantic Model", "Calendar, hierarchies, calc groups\nfield params, RLS, perspectives", PURPLE),
+        ("🧠 Smart Semantic Model", "Calendar, hierarchies, calc groups\nfield params, RLS, perspectives\nM identifier auto-quoting", PURPLE),
         ("⚡ DAX Optimizer", "IF→SWITCH, COALESCE, constant\nfolding, Time Intelligence inject", TEAL),
         ("🔗 Shared Semantic Model", "Multi-WB merge, fingerprint match\nJaccard scoring, thin reports", PBI_BLUE),
         ("🔍 QA Suite & Auto-Fix", "17 auto-fix patterns, governance\nlineage map, comparison reports", PURPLE),
@@ -438,7 +438,7 @@ def slide_migration_results(prs):
         ("27/27", "Workbooks\nSucceeded", SUCCESS),
         ("0", "Failed", RGBColor(0xA4, 0x26, 0x2C)),
         ("100%", "Average\nFidelity", PBI_BLUE),
-        ("6,831", "Tests\nPassed", PURPLE),
+        ("6,818", "Tests\nPassed", PURPLE),
         ("0", "Test\nFailures", SUCCESS),
     ]
     card_w = Inches(2.2)
@@ -543,7 +543,7 @@ def slide_testing(prs):
     # CI steps
     ci_steps = [
         ("🔍 Lint\nflake8 + ruff", PURPLE),
-        ("🧪 Test\n6,831 tests\nPy 3.9–3.14", SUCCESS),
+        ("🧪 Test\n6,818 tests\nPy 3.9–3.14", SUCCESS),
         ("✅ Validate\nStrict .twbx\nmigrations", PBI_BLUE),
         ("📦 Staging\nFabric deploy", PBI_YELLOW),
         ("🚀 Production\nManual approval", RGBColor(0xEF, 0x44, 0x44)),
@@ -569,7 +569,7 @@ def slide_testing(prs):
         ("Visual Generator", "65 tests", "118+ types, sync, buttons"),
         ("Real-World E2E", "63 tests", "End-to-end sample migrations"),
         ("Automation", "64 tests", "Auto-fix, lineage, QA, governance"),
-        ("+ 134 more files", "6,031 tests", "Sprint, coverage, wizard, telemetry…"),
+        ("+ 134 more files", "6,017 tests", "Sprint, coverage, wizard, telemetry…"),
     ]
 
     _add_text(slide, Inches(0.5), Inches(3.0), Inches(4), Inches(0.5),

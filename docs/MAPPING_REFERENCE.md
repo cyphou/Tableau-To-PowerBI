@@ -288,6 +288,28 @@ This document details all mappings between Tableau and Power BI objects to facil
 | GeoJSON | GeoJSON | ✅ |
 | Salesforce | Salesforce | ✅ |
 
+## 🔤 Power Query M Identifier Quoting
+
+Column names with special characters must be quoted as `[#"Name"]` in Power Query M expressions. The migration tool auto-detects and quotes these identifiers.
+
+### Characters Requiring Quoting
+
+| Character | Example Column | M Reference |
+|-----------|---------------|-------------|
+| `-` (hyphen) | `Sub-Category` | `[#"Sub-Category"]` |
+| `/` (slash) | `Pays/Région` | `[#"Pays/Région"]` |
+| `(` `)` (parens) | `Discount (bin)` | `[#"Discount (bin)"]` |
+| `'` (apostrophe) | `O'Brien` | `[#"O'Brien"]` |
+| `+` `@` `#` `$` `%` | Various | `[#"Column+Name"]` |
+
+### Quoting Rules
+
+- Letters (including accented), digits, spaces, underscores, and dots are valid — no quoting needed: `[Order Date]`, `[Col_Name]`
+- All other special characters trigger `[#"..."]` quoting
+- Already-quoted identifiers (`[#"..."]`) are not double-quoted
+- Record literals (containing `=`) are preserved as-is
+- Applied automatically in: sets, groups, bins, calculated columns, SharePoint filters
+
 ## 🎨 Formatting
 
 ### Number Formats
