@@ -106,6 +106,24 @@ def tableau_formula_to_m(formula):
     return m.strip()
 
 
+# Characters invalid in M generalized identifiers (must use [#"name"] quoting).
+_M_SPECIAL = set('/()\'"+@#$%^&*!~`<>?;:{}|\\,-')
+
+
+def _quote_m_ids(m_expr):
+    """Quote [field] refs containing chars invalid in M generalized identifiers."""
+    if not m_expr:
+        return m_expr
+    def _repl(match):
+        name = match.group(1)
+        if name.startswith('#"') or '=' in name:
+            return match.group(0)
+        if any(ch in _M_SPECIAL for ch in name):
+            return f'[#"{name}"]'
+        return match.group(0)
+    return re.sub(r'\[([^\]]+)\]', _repl, m_expr)
+
+
 def make_m_add_column_step(formula, col_name, prev_step):
     """Return a Power Query M ``Table.AddColumn`` step string.
 
@@ -113,7 +131,7 @@ def make_m_add_column_step(formula, col_name, prev_step):
         ``(m_line, step_name)`` tuple.
     """
     safe_col = col_name.replace('"', '""')
-    m_expr = tableau_formula_to_m(formula)
+    m_expr = _quote_m_ids(tableau_formula_to_m(formula))
     step_name = f'CalcCol_{sanitize_calc_col_name(col_name)}'
     line = f'    {step_name} = Table.AddColumn({prev_step}, "{safe_col}", each {m_expr})'
     return line, step_name

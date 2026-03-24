@@ -149,8 +149,8 @@ def _extract_function_body(expr, func_name):
 
 # Characters that are NOT valid in M generalized identifiers inside [...].
 # Letters (incl. accented), digits, spaces, underscores, and dots are OK;
-# everything else (/ ( ) ' " + @ # $ % ^ & * ! ~ ` < > ? ; : { } | \) needs quoting.
-_M_SPECIAL_CHARS = set('/()\'"+@#$%^&*!~`<>?;:{}|\\,')
+# everything else (/ ( ) ' " + @ # $ % ^ & * ! ~ ` < > ? ; : { } | \ - ,) needs quoting.
+_M_SPECIAL_CHARS = set('/()\'"+@#$%^&*!~`<>?;:{}|\\,-')
 
 
 def _quote_m_identifiers(m_expr):
