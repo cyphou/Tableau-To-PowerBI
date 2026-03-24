@@ -1136,6 +1136,16 @@ def _migrate_single_workbook(tableau_file, basename, workbook_output_dir, displa
             output_dir=workbook_output_dir,
         )
 
+    # Step 4: Extract embedded data files and Power Query M expressions from TWBX
+    if file_results.get('generation') and tableau_file.lower().endswith('.twbx'):
+        project_dir = os.path.join(workbook_output_dir, basename)
+        _process_twbx_post_generation(tableau_file, project_dir, basename)
+
+    # Step 4b: For TWB files, ensure DataFolder points to a local Data/ folder
+    if file_results.get('generation') and not tableau_file.lower().endswith('.twbx'):
+        project_dir = os.path.join(workbook_output_dir, basename)
+        _fix_twb_data_folder(project_dir, basename)
+
     all_ok = all(v for v in file_results.values() if v is not None)
     return {
         'success': all_ok,
@@ -3444,34 +3454,386 @@ def _run_qa_suite(args, source_basename):
         logger.warning("QA report write failed: %s", exc)
 
 
-def _extract_twbx_data_files(args, source_basename):
-    """Extract embedded data files from TWBX into the PBI output directory.
+def _export_power_query_files(project_dir, source_basename):
+    """Extract Power Query M expressions from TMDL table files into standalone ``.pq`` files.
 
-    For .twbx sources, extracts xlsx/csv/txt/json data files into a ``Data/``
-    subdirectory alongside the .pbip project and updates the ``DataFolder``
-    M parameter in ``expressions.tmdl`` so Power BI can find them.
+    Walks ``{project}.SemanticModel/definition/tables/*.tmdl``, parses each
+    ``partition ... = m`` block, and writes the M expression into
+    ``{project}/PowerQuery/{table_name}.pq``.
+    Also exports ``expressions.tmdl`` shared expressions (e.g. DataFolder).
     """
-    source = getattr(args, 'tableau_file', '')
-    if not source or not source.lower().endswith('.twbx'):
-        return
-    if not zipfile.is_zipfile(source):
+    import glob as _glob
+
+    tables_dir = os.path.join(
+        project_dir,
+        f'{source_basename}.SemanticModel',
+        'definition',
+        'tables',
+    )
+    if not os.path.isdir(tables_dir):
         return
 
-    out_base = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
-    project_dir = os.path.join(out_base, source_basename)
+    pq_dir = os.path.join(project_dir, 'PowerQuery')
+    exported = 0
+
+    for tmdl_path in _glob.glob(os.path.join(tables_dir, '*.tmdl')):
+        table_name = os.path.splitext(os.path.basename(tmdl_path))[0]
+        m_expr = _extract_m_from_tmdl(tmdl_path)
+        if m_expr:
+            os.makedirs(pq_dir, exist_ok=True)
+            pq_path = os.path.join(pq_dir, f'{table_name}.pq')
+            with open(pq_path, 'w', encoding='utf-8') as f:
+                f.write(m_expr)
+            exported += 1
+
+    # Also export shared expressions (DataFolder parameter, etc.)
+    expr_path = os.path.join(
+        project_dir,
+        f'{source_basename}.SemanticModel',
+        'definition',
+        'expressions.tmdl',
+    )
+    if os.path.isfile(expr_path):
+        try:
+            with open(expr_path, 'r', encoding='utf-8') as f:
+                content = f.read().strip()
+            if content:
+                os.makedirs(pq_dir, exist_ok=True)
+                with open(os.path.join(pq_dir, '_expressions.pq'), 'w', encoding='utf-8') as f:
+                    f.write(content)
+                exported += 1
+        except OSError:
+            pass
+
+    if exported:
+        print(f"  📂 PowerQuery/ folder: {exported} M expression file(s) exported")
+
+
+def _extract_m_from_tmdl(tmdl_path):
+    """Parse a TMDL table file and return the M partition expression, or ``None``."""
+    import re as _re
+
+    try:
+        with open(tmdl_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+    except OSError:
+        return None
+
+    # Find the partition block: "	partition '...' = m"
+    in_partition = False
+    in_source = False
+    m_lines = []
+    indent_base = None
+
+    for line in lines:
+        stripped = line.rstrip('\n\r')
+
+        # Detect start of M partition
+        if not in_partition and _re.match(r'^\tpartition\s+.*=\s*m\s*$', stripped):
+            in_partition = True
+            continue
+
+        if in_partition and not in_source:
+            # Look for "source =" which starts the M expression
+            if _re.match(r'^\t\tsource\s*=\s*$', stripped):
+                in_source = True
+                continue
+
+        if in_source:
+            # End of M block: a line with less indentation than the expression body
+            # The M expression lines are indented with tabs (typically 4 tabs)
+            if indent_base is None and stripped.strip():
+                indent_base = len(stripped) - len(stripped.lstrip('\t'))
+            if stripped.strip() == '' and m_lines:
+                # Blank line might be part of the expression or end of block
+                m_lines.append('')
+                continue
+            if stripped.strip() and indent_base is not None:
+                current_indent = len(stripped) - len(stripped.lstrip('\t'))
+                if current_indent < indent_base:
+                    # We've exited the M expression block
+                    break
+            m_lines.append(stripped)
+
+    if not m_lines:
+        return None
+
+    # Strip trailing blank lines
+    while m_lines and not m_lines[-1].strip():
+        m_lines.pop()
+
+    if not m_lines:
+        return None
+
+    # Remove common leading indentation
+    non_empty = [l for l in m_lines if l.strip()]
+    if non_empty:
+        min_tabs = min(len(l) - len(l.lstrip('\t')) for l in non_empty)
+        m_lines = [l[min_tabs:] if len(l) > min_tabs else l.lstrip('\t') for l in m_lines]
+
+    return '\n'.join(m_lines)
+
+
+def _convert_hyper_to_csv_in_data(data_dir, source_basename, project_dir):
+    """Convert .hyper files in *data_dir* to CSV and patch TMDL M expressions.
+
+    When a TWBX contains only Hyper extracts (no Excel files), the generated M
+    queries reference ``Excel.Workbook(...)`` for files that don't exist.  This
+    function converts the Hyper data to flat CSV files and rewrites the TMDL
+    partition expressions to use ``Csv.Document(...)`` so Power BI can load the
+    data directly.
+    """
+    import csv as _csv
+    import glob as _glob
+
+    hyper_files = []
+    for root, _dirs, files in os.walk(data_dir):
+        for fname in files:
+            if fname.lower().endswith('.hyper'):
+                hyper_files.append(os.path.join(root, fname))
+    if not hyper_files:
+        return
+
+    # Check if real data files (xlsx/xls) already exist — if so, no conversion needed
+    has_xlsx = False
+    for root, _dirs, files in os.walk(data_dir):
+        for fname in files:
+            ext = os.path.splitext(fname)[1].lower()
+            if ext in {'.xlsx', '.xls'}:
+                has_xlsx = True
+                break
+        if has_xlsx:
+            break
+    if has_xlsx:
+        return
+
+    # Check if CSV files already exist (from a previous hyper conversion)
+    existing_csvs = {}
+    for root, _dirs, files in os.walk(data_dir):
+        for fname in files:
+            if fname.lower().endswith('.csv'):
+                name = os.path.splitext(fname)[0]
+                existing_csvs[name] = fname
+
+    # Convert Hyper → CSV using 3-tier strategy (skip if CSVs already present)
+    csv_map = {}  # table_name → csv_filename
+    if not existing_csvs:
+        for hyper_path in hyper_files:
+            converted = _hyper_to_csv_files(hyper_path, data_dir, source_basename, _csv)
+            csv_map.update(converted)
+        if csv_map:
+            print(f"  📊 Converted Hyper → {len(csv_map)} CSV file(s)")
+    else:
+        csv_map = existing_csvs
+
+    if not csv_map:
+        return
+
+    # Patch TMDL table files: replace Excel.Workbook M expressions with Csv.Document
+    tables_dir = os.path.join(
+        project_dir,
+        f'{source_basename}.SemanticModel',
+        'definition',
+        'tables',
+    )
+    if not os.path.isdir(tables_dir):
+        return
+
+    import re as _re
+    for tmdl_path in _glob.glob(os.path.join(tables_dir, '*.tmdl')):
+        try:
+            with open(tmdl_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+        except OSError:
+            continue
+
+        # Match Excel.Workbook(File.Contents(DataFolder & "\name.xlsx"), null, true)
+        # followed by _nav = _src{[Item="SheetName",Kind="Sheet"]}[Data]
+        original = content
+        for table_name, csv_filename in csv_map.items():
+            # Replace the try/otherwise Excel block with Csv.Document
+            pattern = (
+                r'Source\s*=\s*try\s+'
+                r'let\s+'
+                r'_src\s*=\s*Excel\.Workbook\(File\.Contents\(DataFolder\s*&\s*"\\[^"]*"\),\s*null,\s*true\),\s*'
+                r'_nav\s*=\s*_src\{[^\}]*\}\[Data\]\s*'
+                r'in\s+_nav\s+'
+                r'otherwise\s+'
+                r'#table\(\{[^}]*\},\s*\{\}\)'
+            )
+            replacement = (
+                f'Source = Csv.Document(File.Contents(DataFolder & "\\\\{csv_filename}"), '
+                f'[Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv])'
+            )
+            content = _re.sub(pattern, replacement, content, flags=_re.DOTALL)
+
+        if content != original:
+            try:
+                with open(tmdl_path, 'w', encoding='utf-8') as f:
+                    f.write(content)
+            except OSError:
+                pass
+
+
+def _hyper_to_csv_files(hyper_path, out_dir, prefix, _csv):
+    """Convert a single Hyper file to CSV(s). Returns {table_name: csv_filename}."""
+    results = {}
+
+    # Tier 1: tableauhyperapi
+    try:
+        from tableauhyperapi import HyperProcess, Telemetry, Connection
+        hyper_proc = HyperProcess(Telemetry.DO_NOT_SEND_USAGE_DATA_TO_TABLEAU)
+        try:
+            conn = Connection(hyper_proc.endpoint, hyper_path)
+            try:
+                for schema in conn.catalog.get_schema_names():
+                    for table in conn.catalog.get_table_names(schema):
+                        cols = conn.catalog.get_table_definition(table).columns
+                        col_names = [c.name.unescaped for c in cols]
+                        rows = conn.execute_list_query(f"SELECT * FROM {table}")
+                        csv_name = f"{table.name.unescaped}.csv"
+                        csv_path = os.path.join(out_dir, csv_name)
+                        with open(csv_path, 'w', newline='', encoding='utf-8') as f:
+                            writer = _csv.writer(f)
+                            writer.writerow(col_names)
+                            writer.writerows(rows)
+                        results[table.name.unescaped] = csv_name
+            finally:
+                conn.close()
+        finally:
+            hyper_proc.close()
+        return results
+    except ImportError:
+        pass
+    except Exception as exc:
+        logger.debug("tableauhyperapi failed for %s: %s", hyper_path, exc)
+        try:
+            hyper_proc.close()
+        except Exception:
+            pass
+
+    # Tier 2: sqlite3
+    try:
+        import sqlite3 as _sqlite3
+        conn = _sqlite3.connect(hyper_path)
+        cur = conn.cursor()
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        tables = [row[0] for row in cur.fetchall()]
+        for tname in tables:
+            cur.execute(f'PRAGMA table_info("{tname}")')
+            col_names = [c[1] for c in cur.fetchall()]
+            cur.execute(f'SELECT * FROM "{tname}"')
+            rows = cur.fetchall()
+            if rows:
+                csv_name = f"{tname}.csv"
+                csv_path = os.path.join(out_dir, csv_name)
+                with open(csv_path, 'w', newline='', encoding='utf-8') as f:
+                    writer = _csv.writer(f)
+                    writer.writerow(col_names)
+                    writer.writerows(rows)
+                results[tname] = csv_name
+        conn.close()
+        return results
+    except Exception:
+        pass
+
+    # Tier 3: project hyper_reader
+    try:
+        from tableau_export.hyper_reader import read_hyper, export_hyper_to_csv
+        result = read_hyper(hyper_path, max_rows=100000)
+        tbls = result.get('tables', []) if isinstance(result, dict) else []
+        for tbl in tbls:
+            if tbl.get('sample_rows'):
+                name = tbl.get('table', 'data')
+                csv_name = f"{name}.csv"
+                csv_path = export_hyper_to_csv(tbl, out_dir, csv_filename=csv_name)
+                if csv_path:
+                    results[name] = csv_name
+    except Exception:
+        pass
+
+    return results
+
+
+def _fix_twb_data_folder(project_dir, source_basename):
+    """For TWB (non-TWBX) files, ensure DataFolder points to a local Data/ folder.
+
+    When a .twb references local files (Excel, CSV), the DataFolder defaults to
+    the original Tableau author's path which likely doesn't exist on this machine.
+    Create a local Data/ folder and update DataFolder to point there.
+    """
+    import re as _re
+
+    expr_path = os.path.join(
+        project_dir,
+        f'{source_basename}.SemanticModel',
+        'definition',
+        'expressions.tmdl',
+    )
+    if not os.path.isfile(expr_path):
+        return
+
+    try:
+        with open(expr_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+    except OSError:
+        return
+
+    match = _re.search(r'expression\s+DataFolder\s*=\s*"([^"]*)"', content)
+    if not match:
+        return
+    current_folder = match.group(1)
+
+    # If the current DataFolder already exists on disk, keep it
+    if os.path.isdir(current_folder):
+        return
+
+    # Create a local Data/ folder and point DataFolder there
+    data_dir = os.path.join(project_dir, 'Data')
+    os.makedirs(data_dir, exist_ok=True)
+    abs_data = os.path.abspath(data_dir)
+    new_content = _re.sub(
+        r'(expression\s+DataFolder\s*=\s*)"[^"]*"',
+        lambda m: m.group(1) + '"' + abs_data + '"',
+        content,
+    )
+    if new_content != content:
+        with open(expr_path, 'w', encoding='utf-8') as f:
+            f.write(new_content)
+        print(f"  📂 DataFolder updated → {abs_data}")
+        print(f"  ℹ️  Place your data files in: {abs_data}")
+
+    # Also export Power Query M files
+    _export_power_query_files(project_dir, source_basename)
+
+
+def _process_twbx_post_generation(source_path, project_dir, source_basename):
+    """Post-generation processing for TWBX files.
+
+    Extracts embedded data files into ``Data/``, updates the ``DataFolder``
+    M parameter in ``expressions.tmdl``, exports Power Query M files into
+    ``PowerQuery/``, and resolves embedded image references.
+
+    Called from both single-file and batch migration paths.
+    """
+    if not source_path or not source_path.lower().endswith('.twbx'):
+        return
+    if not zipfile.is_zipfile(source_path):
+        return
+
     data_dir = os.path.join(project_dir, 'Data')
 
+    # ── 1. Extract embedded files from TWBX into project dir ───────
     _SKIP_EXT = {'.twb', '.tds', '.twbr'}
     extracted_files = []
 
     try:
-        with zipfile.ZipFile(source, 'r') as zf:
+        with zipfile.ZipFile(source_path, 'r') as zf:
             for entry in zf.namelist():
                 ext = os.path.splitext(entry)[1].lower()
                 if ext in _SKIP_EXT or entry.endswith('/'):
                     continue
-                # Extract data and image files
-                dest = os.path.join(data_dir, entry)
+                dest = os.path.join(project_dir, entry)
                 os.makedirs(os.path.dirname(dest), exist_ok=True)
                 with zf.open(entry) as src, open(dest, 'wb') as dst:
                     dst.write(src.read())
@@ -3483,28 +3845,67 @@ def _extract_twbx_data_files(args, source_basename):
     if not extracted_files:
         return
 
-    # Update DataFolder expression to point to the Data/ directory
-    expr_path = os.path.join(
-        project_dir, f'{source_basename}.SemanticModel', 'definition', 'expressions.tmdl')
-    if os.path.isfile(expr_path):
-        data_abs = os.path.abspath(data_dir).replace('\\', '\\\\')
-        try:
-            with open(expr_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-            import re as _re
-            content = _re.sub(
-                r'(expression DataFolder = )"[^"]*"',
-                rf'\1"{data_abs}"',
-                content,
-            )
-            with open(expr_path, 'w', encoding='utf-8') as f:
-                f.write(content)
-        except OSError as exc:
-            logger.warning("Could not update DataFolder expression: %s", exc)
-
     print(f"  📁 Extracted {len(extracted_files)} data file(s) from TWBX into {data_dir}")
 
-    # Resolve embedded image references in visual.json files to base64 data URIs
+    # ── 1b. Convert Hyper files to CSV so M queries can load data ────
+    _convert_hyper_to_csv_in_data(data_dir, source_basename, project_dir)
+
+    # ── 2. Update DataFolder parameter in expressions.tmdl ──────────
+    #   M queries reference only the file basename (e.g. "nba_players.xlsx").
+    #   DataFolder must point to the actual directory containing those files.
+    #   Scan actual filesystem (not ZIP entries) to include generated CSVs.
+    import re as _re
+
+    _DATA_EXT = {'.xlsx', '.xls', '.csv', '.tsv', '.json', '.xml', '.pdf',
+                 '.geojson', '.topojson', '.parquet', '.hyper', '.tde'}
+    data_parents = set()
+    for root, _dirs, files in os.walk(data_dir):
+        for fname in files:
+            ext = os.path.splitext(fname)[1].lower()
+            if ext in _DATA_EXT:
+                parent = os.path.relpath(root, project_dir).replace('\\', '/')
+                data_parents.add(parent)
+
+    if data_parents:
+        parents_list = sorted(data_parents)
+        if len(parents_list) == 1:
+            resolved = parents_list[0]
+        else:
+            resolved = os.path.commonprefix(parents_list)
+            if resolved and not resolved.endswith('/'):
+                resolved = resolved[:resolved.rfind('/') + 1] if '/' in resolved else ''
+            resolved = resolved.rstrip('/')
+        actual_data_dir = os.path.join(project_dir, resolved) if resolved else data_dir
+    else:
+        actual_data_dir = data_dir
+
+    expr_path = os.path.join(
+        project_dir,
+        f'{source_basename}.SemanticModel',
+        'definition',
+        'expressions.tmdl',
+    )
+    if os.path.isfile(expr_path):
+        try:
+            with open(expr_path, 'r', encoding='utf-8') as f:
+                expr_content = f.read()
+            abs_data_dir = os.path.abspath(actual_data_dir)
+            new_content = _re.sub(
+                r'(expression\s+DataFolder\s*=\s*)"[^"]*"',
+                lambda m: m.group(1) + '"' + abs_data_dir + '"',
+                expr_content,
+            )
+            if new_content != expr_content:
+                with open(expr_path, 'w', encoding='utf-8') as f:
+                    f.write(new_content)
+                print(f"  📂 DataFolder updated → {os.path.abspath(actual_data_dir)}")
+        except OSError as exc:
+            logger.warning("Could not update DataFolder: %s", exc)
+
+    # ── 3. Export standalone Power Query M files ─────────────────────
+    _export_power_query_files(project_dir, source_basename)
+
+    # ── 4. Resolve embedded image references to base64 data URIs ────
     import base64 as _b64
     import glob as _glob
     _MIME_MAP = {'.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
@@ -3518,12 +3919,12 @@ def _extract_twbx_data_files(args, source_basename):
                          .get('properties', {}))
             url_obj = gen_props.get('imageUrl', {})
             url_val = url_obj.get('expr', {}).get('Literal', {}).get('Value', '')
-            # Strip surrounding quotes
             img_ref = url_val.strip("'\"")
             if not img_ref or img_ref.startswith(('http://', 'https://', 'data:')):
                 continue
-            # Try to find the image in extracted Data directory
             img_file = os.path.join(data_dir, img_ref)
+            if not os.path.isfile(img_file):
+                img_file = os.path.join(project_dir, img_ref)
             if os.path.isfile(img_file):
                 ext = os.path.splitext(img_ref)[1].lower()
                 mime = _MIME_MAP.get(ext, 'application/octet-stream')
@@ -3535,6 +3936,16 @@ def _extract_twbx_data_files(args, source_basename):
                     json.dump(vj, f, indent=2, ensure_ascii=False)
         except (OSError, KeyError, IndexError, json.JSONDecodeError):
             continue
+
+
+def _extract_twbx_data_files(args, source_basename):
+    """Single-migration wrapper for TWBX post-generation processing."""
+    source = getattr(args, 'tableau_file', '')
+    if not source or not source.lower().endswith('.twbx'):
+        return
+    out_base = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
+    project_dir = os.path.join(out_base, source_basename)
+    _process_twbx_post_generation(source, project_dir, source_basename)
 
 
 def _run_post_generation_reports(args, source_basename, results):

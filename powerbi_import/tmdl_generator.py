@@ -4831,7 +4831,8 @@ def _write_expressions_tmdl(def_dir, tables, datasources=None):
 
     These M parameters allow easy switching between dev/staging/prod environments.
     """
-    file_paths = []
+    file_dirs = []          # directory paths for DataFolder
+    has_file_source = False  # whether any file-based DataFolder ref exists
     server_names = set()
     database_names = set()
 
@@ -4845,10 +4846,11 @@ def _write_expressions_tmdl(def_dir, tables, datasources=None):
             else:
                 continue
 
-            for m in re.finditer(r'DataFolder\s*&\s*"\\([^"]+)"', expr):
-                file_paths.append(m.group(1))
-            for m in re.finditer(r'File\.Contents\("([^"]+)"\)', expr):
-                file_paths.append(m.group(1))
+            # Detect file-based sources (DataFolder references)
+            if re.search(r'DataFolder\s*&\s*"\\', expr):
+                has_file_source = True
+            if re.search(r'File\.Contents\(', expr):
+                has_file_source = True
 
             # Detect server/database references from M queries
             for m in re.finditer(r'(?:Sql\.Database|PostgreSQL\.Database|Oracle\.Database|Mysql\.Database)\s*\(\s*"([^"]+)"\s*,\s*"([^"]+)"', expr):
@@ -4857,7 +4859,7 @@ def _write_expressions_tmdl(def_dir, tables, datasources=None):
             for m in re.finditer(r'(?:Snowflake\.Databases|AmazonRedshift\.Database|GoogleBigQuery\.Database)\s*\(\s*"([^"]+)"', expr):
                 server_names.add(m.group(1))
 
-    # Also extract from datasource connection metadata
+    # Extract directory info from datasource connection metadata
     if datasources:
         for ds in (datasources if isinstance(datasources, list) else [datasources]):
             conn = ds.get('connection', {})
@@ -4868,23 +4870,37 @@ def _write_expressions_tmdl(def_dir, tables, datasources=None):
             if db:
                 database_names.add(db)
 
-    default_folder = "C:\\\\Data"
+            # Extract file directory from connection details (filename / directory)
+            for cmap_val in list(ds.get('connection_map', {}).values()) + [conn]:
+                details = cmap_val.get('details', cmap_val) if isinstance(cmap_val, dict) else {}
+                fn = details.get('filename', '')
+                dr = details.get('directory', '')
+                if fn:
+                    norm = fn.replace('\\', '/').lstrip('/')
+                    parent = norm.rsplit('/', 1)[0] if '/' in norm else ''
+                    if parent:
+                        file_dirs.append(parent)
+                        has_file_source = True
+                if dr:
+                    file_dirs.append(dr.replace('\\', '/').lstrip('/'))
+                    has_file_source = True
 
-    if file_paths:
-        normalized = [p.replace('\\', '/') for p in file_paths]
+    default_folder = "C:\\Data"
 
-        if len(normalized) == 1:
-            parts = normalized[0].rsplit('/', 1)
-            common_dir = parts[0] if len(parts) > 1 else ''
+    if file_dirs:
+        unique_dirs = list(dict.fromkeys(file_dirs))  # deduplicate, preserve order
+
+        if len(unique_dirs) == 1:
+            common_dir = unique_dirs[0]
         else:
-            common = os.path.commonprefix(normalized)
+            common = os.path.commonprefix(unique_dirs)
             if '/' in common:
                 common_dir = common[:common.rfind('/')]
             else:
-                common_dir = ''
+                common_dir = common  # all in same directory
 
         if common_dir:
-            default_folder = "C:\\\\" + common_dir.replace('/', '\\\\')
+            default_folder = "C:\\" + common_dir.replace('/', '\\')
 
     lines = []
     lines.append(f'expression DataFolder = "{default_folder}" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]')

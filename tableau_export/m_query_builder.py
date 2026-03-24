@@ -35,6 +35,18 @@ def map_tableau_to_m_type(datatype):
     return _M_TYPE_MAP.get((datatype or '').lower(), 'type text')
 
 
+def _file_basename(path):
+    """Extract just the filename from a potentially full file path.
+
+    DataFolder already contains the directory, so M expressions should only
+    reference the filename (e.g. ``DataFolder & "\\file.xlsx"``), not repeat
+    the full directory path.
+    """
+    # Normalise separators, then take the last component
+    name = path.replace('\\', '/').rsplit('/', 1)[-1]
+    return name if name else path
+
+
 def _m_escape_col_name(name):
     """Escape column names for M queries (double-quote any internal quotes)."""
     return name.replace('"', '""')
@@ -78,7 +90,7 @@ def _append_type_step(m_query, columns, prev_step='#"Promoted Headers"'):
 # ── Per-connector generators ─────────────────────────────────────────────────
 
 def _gen_m_excel(details, table_name, columns):
-    filename = details.get('filename') or (table_name + '.xlsx')
+    filename = _file_basename(details.get('filename') or (table_name + '.xlsx'))
     file_path_bs = filename.replace('/', '\\')
     safe_step = '#"' + table_name + ' Sheet"'
 
@@ -123,16 +135,14 @@ def _gen_m_postgresql(details, table_name, columns):
 
 
 def _gen_m_csv(details, table_name, columns):
-    filename = details.get('filename') or (table_name + '.csv')
-    directory = details.get('directory', '')
-    full_path = f"{directory}/{filename}" if directory else filename
+    filename = _file_basename(details.get('filename') or (table_name + '.csv'))
     delimiter = details.get('delimiter', ',')
     encoding = details.get('encoding', 'utf-8').upper()
     encoding_code = {'UTF-8': '65001', 'UTF8': '65001'}.get(encoding, '65001')
-    file_path_bs = full_path.replace('/', '\\')
+    file_path_bs = filename.replace('/', '\\')
 
     m_query = f'''let
-    // Source CSV: {full_path}
+    // Source CSV: {filename}
     Source = Csv.Document(File.Contents(DataFolder & "\\{file_path_bs}"), [
         Delimiter="{delimiter}",
         Columns={len(columns)},
@@ -205,10 +215,8 @@ def _gen_m_snowflake(details, table_name, columns):
 
 
 def _gen_m_geojson(details, table_name, columns):
-    filename = details.get('filename', 'file.geojson')
-    directory = details.get('directory', '')
-    full_path = f"{directory}/{filename}" if directory else filename
-    full_path_bs = full_path.replace('/', '\\')
+    filename = _file_basename(details.get('filename', 'file.geojson'))
+    file_path_bs = filename.replace('/', '\\')
 
     prop_cols = [col for col in columns if col.get('name', '') != 'Geometry']
     prop_names = ", ".join([f'"{_m_escape_col_name(col["name"])}"' for col in prop_cols])
@@ -226,7 +234,7 @@ def _gen_m_geojson(details, table_name, columns):
 
     m_query = f'''let
     // Source GeoJSON: {filename}
-    Source = Json.Document(File.Contents(DataFolder & "\\{full_path_bs}")),
+    Source = Json.Document(File.Contents(DataFolder & "\\{file_path_bs}")),
     features = Source[features],
     #"Converted to Table" = Table.FromList(features, Splitter.SplitByNothing(), null, null, ExtraValues.Error),
     #"Expanded Column1" = Table.ExpandRecordColumn(#"Converted to Table", "Column1", {{"properties", "geometry"}}),
@@ -405,37 +413,31 @@ def _gen_m_sharepoint(details, table_name, columns):
 
 
 def _gen_m_json(details, table_name, columns):
-    filename = details.get('filename', table_name + '.json')
-    directory = details.get('directory', '')
-    full_path = f"{directory}/{filename}" if directory else filename
-    full_path_bs = full_path.replace('/', '\\')
+    filename = _file_basename(details.get('filename', table_name + '.json'))
+    file_path_bs = filename.replace('/', '\\')
 
     m_query = 'let\n'
     m_query += f'    // Source JSON: {filename}\n'
-    m_query += f'    Source = Json.Document(File.Contents(DataFolder & "\\{full_path_bs}")),\n'
+    m_query += f'    Source = Json.Document(File.Contents(DataFolder & "\\{file_path_bs}")),\n'
     m_query += '    #"Converted to Table" = if Value.Is(Source, type list) then Table.FromRecords(Source) else Table.FromRecords({Source}),\n'
     m_query += '    #"Promoted Headers" = #"Converted to Table",\n'
     return _append_type_step(m_query, columns)
 
 
 def _gen_m_xml(details, table_name, columns):
-    filename = details.get('filename', table_name + '.xml')
-    directory = details.get('directory', '')
-    full_path = f"{directory}/{filename}" if directory else filename
-    full_path_bs = full_path.replace('/', '\\')
+    filename = _file_basename(details.get('filename', table_name + '.xml'))
+    file_path_bs = filename.replace('/', '\\')
 
     m_query = 'let\n'
     m_query += f'    // Source XML: {filename}\n'
-    m_query += f'    Source = Xml.Tables(File.Contents(DataFolder & "\\{full_path_bs}")),\n'
+    m_query += f'    Source = Xml.Tables(File.Contents(DataFolder & "\\{file_path_bs}")),\n'
     m_query += '    #"Promoted Headers" = Source,\n'
     return _append_type_step(m_query, columns)
 
 
 def _gen_m_pdf(details, table_name, columns):
-    filename = details.get('filename', table_name + '.pdf')
-    directory = details.get('directory', '')
-    full_path = f"{directory}/{filename}" if directory else filename
-    full_path_bs = full_path.replace('/', '\\')
+    filename = _file_basename(details.get('filename', table_name + '.pdf'))
+    file_path_bs = filename.replace('/', '\\')
 
     # PDF connector depth: page range and table selection
     start_page = details.get('start_page')
@@ -452,9 +454,9 @@ def _gen_m_pdf(details, table_name, columns):
     m_query = 'let\n'
     m_query += f'    // Source PDF: {filename}\n'
     if options_str:
-        m_query += f'    Source = Pdf.Tables(File.Contents(DataFolder & "\\{full_path_bs}"), {options_str}),\n'
+        m_query += f'    Source = Pdf.Tables(File.Contents(DataFolder & "\\{file_path_bs}"), {options_str}),\n'
     else:
-        m_query += f'    Source = Pdf.Tables(File.Contents(DataFolder & "\\{full_path_bs}")),\n'
+        m_query += f'    Source = Pdf.Tables(File.Contents(DataFolder & "\\{file_path_bs}")),\n'
     m_query += f'    Table1 = Source{{{{{table_index}}}}}[Data],\n'
     m_query += '    #"Promoted Headers" = Table.PromoteHeaders(Table1, [PromoteAllScalars=true]),\n'
     return _append_type_step(m_query, columns)

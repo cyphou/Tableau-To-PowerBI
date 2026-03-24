@@ -256,7 +256,8 @@ class TableauExtractor:
         for worksheet in root.findall('.//worksheet'):
             ws_data = {
                 'name': worksheet.get('name', ''),
-                'title': worksheet.findtext('.//title', ''),
+                'title': self._extract_title_text(worksheet),
+                'title_format': self._extract_title_format(worksheet),
                 'chart_type': self.determine_chart_type(worksheet),
                 'original_mark_class': self._extract_mark_class(worksheet),
                 'fields': self.extract_worksheet_fields(worksheet),
@@ -961,6 +962,29 @@ class TableauExtractor:
                                 'shelf': enc_type,
                                 'datasource': col_refs[0][0]
                             })
+
+        # ── LOD (Level of Detail) fields ──────────────────────────
+        # <lod column="[ds].[none:FieldName:nk]"/> elements set the mark
+        # granularity — critical for scatter charts where each dot should
+        # represent one entity (e.g. customer), not the grand total.
+        existing_names = {f.get('name', '') for f in fields}
+        for lod_elem in worksheet.findall('.//lod'):
+            col_ref = lod_elem.get('column', '')
+            if not col_ref:
+                continue
+            col_refs = re.findall(r'\[([^\]]+)\]\.\[([^\]]+)\]', col_ref)
+            if col_refs:
+                clean = re.sub(derivation_re, '', col_refs[0][1])
+                clean = re.sub(suffix_re, '', clean)
+                # Strip multi-part instance qualifiers (e.g. :qk:1, :nk:2)
+                clean = re.sub(r':(nk|qk|ok|fn|tn):\d+$', '', clean)
+                if clean and clean not in existing_names:
+                    existing_names.add(clean)
+                    fields.append({
+                        'name': clean,
+                        'shelf': 'detail',
+                        'datasource': col_refs[0][0],
+                    })
 
         # ── Expand :Measure Names / Multiple Values ───────────────
         # When a worksheet uses these virtual fields, the actual measures
@@ -3071,6 +3095,54 @@ class TableauExtractor:
                 headers['columns'] = False
         return headers
 
+    def _extract_title_format(self, element):
+        """Extract title formatting (font size, color, bold, italic, underline, alignment).
+
+        Returns a dict with formatting properties from the first ``<run>``
+        element that has a non-empty text and formatting attributes.
+        """
+        title_el = element.find('.//title')
+        if title_el is None:
+            return {}
+        fmt = {}
+        for run in title_el.findall('.//run'):
+            text = (run.text or '').strip().rstrip('\u00c6\u00a0')
+            if not text:
+                continue
+            if run.get('fontsize'):
+                fmt['font_size'] = run.get('fontsize')
+            if run.get('fontcolor'):
+                fmt['font_color'] = run.get('fontcolor')
+            if run.get('bold') == 'true':
+                fmt['bold'] = True
+            if run.get('italic') == 'true':
+                fmt['italic'] = True
+            if run.get('underline') == 'true':
+                fmt['underline'] = True
+            if run.get('fontalignment'):
+                fmt['alignment'] = run.get('fontalignment')
+            if fmt:
+                break
+        return fmt
+
+    def _extract_title_text(self, element):
+        """Extract the plain-text title from a worksheet or dashboard element.
+
+        Reads ``<title><formatted-text><run>`` children and concatenates
+        their text; falls back to ``findtext('.//title')`` when no runs exist.
+        """
+        title_el = element.find('.//title')
+        if title_el is None:
+            return ''
+        runs = title_el.findall('.//run')
+        if runs:
+            text = ''.join(r.text or '' for r in runs).strip()
+            # Strip stray Tableau formatting artifacts (e.g. trailing Æ)
+            text = text.rstrip('\u00c6\u00a0')
+            if text:
+                return text
+        return (title_el.text or '').strip()
+
     def extract_dynamic_title(self, worksheet):
         """Extracts dynamic title info — detects field references in title text."""
         title_el = worksheet.find('.//title')
@@ -3171,10 +3243,29 @@ class TableauExtractor:
         zones_elem = dashboard.find('zones')
         if zones_elem is None:
             return {}
-        root_zone = zones_elem.find('zone')
-        if root_zone is None:
+        top_zones = [z for z in zones_elem if z.tag == 'zone']
+        if not top_zones:
             return {}
-        return self._parse_zone_node(root_zone)
+        if len(top_zones) == 1:
+            return self._parse_zone_node(top_zones[0])
+        # Multiple sibling zones with no container — synthesize a root
+        children = [self._parse_zone_node(z) for z in top_zones]
+        all_r = [c['position']['x'] + c['position']['w'] for c in children]
+        all_b = [c['position']['y'] + c['position']['h'] for c in children]
+        return {
+            'id': '_root',
+            'name': '',
+            'zone_type': 'layout-basic',
+            'orientation': '',
+            'position': {
+                'x': 0, 'y': 0,
+                'w': max(all_r) if all_r else 0,
+                'h': max(all_b) if all_b else 0,
+            },
+            'is_floating': False,
+            'is_fixed': False,
+            'children': children,
+        }
 
     def _parse_zone_node(self, zone_elem):
         """Recursively parse a <zone> element into a hierarchy dict."""
@@ -3378,11 +3469,22 @@ class TableauExtractor:
 
     def save_extractions(self):
         """Saves extractions to JSON"""
-        
+        from datetime import date, datetime, time
+
+        def _json_default(obj):
+            """Handle non-serializable types from Hyper API."""
+            if isinstance(obj, (date, datetime)):
+                return obj.isoformat()
+            if isinstance(obj, time):
+                return obj.isoformat()
+            if hasattr(obj, '__str__'):
+                return str(obj)
+            raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+
         for obj_type, data in self.workbook_data.items():
             output_path = os.path.join(self.output_dir, f'{obj_type}.json')
             with open(output_path, 'w', encoding='utf-8') as f:
-                json.dump(data, f, indent=2, ensure_ascii=False)
+                json.dump(data, f, indent=2, ensure_ascii=False, default=_json_default)
             print(f"  → {output_path}")
 
 

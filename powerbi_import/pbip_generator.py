@@ -21,6 +21,9 @@ logger = logging.getLogger(__name__)
 _RE_DERIVATION_PREFIX = re.compile(
     r'^(none|sum|avg|count|cnt|ctd|countd|min|max|usr|yr|mn|dy|qr|wk|attr|md|mdy|hms|hr|mt|sc|thr|trunc|tyr|tqr|tmn|tdy|twk):'
 )
+_RE_TABLE_CALC_PREFIX = re.compile(
+    r'^(pcto|pctd|diff|running_sum|running_avg|running_count|running_min|running_max|rank|rank_unique|rank_dense):(sum|avg|count|min|max|countd)?:?'
+)
 _RE_TYPE_SUFFIX = re.compile(r':(nk|qk|ok|fn|tn)$')
 
 # Tableau shelf aggregation prefix → PBI Aggregation Function ID
@@ -377,12 +380,16 @@ class PowerBIProjectGenerator:
     MIN_GAP = 4  # pixels between adjacent visuals
 
     def _make_visual_position(self, pos, scale_x, scale_y, z_index,
-                               page_width=1280, page_height=720):
+                               page_width=None, page_height=None):
         """Create a standard PBIR position dict from Tableau coordinates.
 
         Applies minimum size constraints, clamps to page bounds, and enforces
         a minimum gap between the visual edge and the page boundary.
         """
+        if page_width is None:
+            page_width = getattr(self, '_current_page_width', 1280)
+        if page_height is None:
+            page_height = getattr(self, '_current_page_height', 720)
         x = round(pos.get('x', 0) * scale_x)
         y = round(pos.get('y', 0) * scale_y)
         w = max(round(pos.get('w', 300) * scale_x), self.MIN_VISUAL_WIDTH)
@@ -447,8 +454,11 @@ class PowerBIProjectGenerator:
         children = zone.get('children', [])
 
         if not children:
-            # Leaf zone — record its pixel rectangle
-            if key:
+            # Leaf zone — record its pixel rectangle.
+            # Skip filter/paramctrl zones: their name is the filtered worksheet,
+            # not a unique identifier, so they'd overwrite the worksheet entry.
+            zone_type = zone.get('zone_type', '')
+            if key and zone_type not in ('filter', 'paramctrl'):
                 layout_map[key] = {
                     'x': round(px_x), 'y': round(px_y),
                     'w': max(round(px_w), self.MIN_VISUAL_WIDTH),
@@ -634,6 +644,37 @@ class PowerBIProjectGenerator:
             )
             if not has_measure:
                 visual_type = 'table'
+            else:
+                # Detect :Measure Names + Multiple Values pattern (strip/dot plot)
+                # → clusteredBarChart shows multiple measures per category better
+                has_measure_names = any(
+                    f.get('name', '') in (':Measure Names', 'Measure Names')
+                    for f in fields
+                )
+                has_multiple_values = any(
+                    f.get('name', '') == 'Multiple Values'
+                    for f in fields
+                )
+                if has_measure_names and has_multiple_values:
+                    visual_type = 'clusteredBarChart'
+
+                # Detect placeholder scatter: all row measures are min(1) dummies
+                # (Tableau shape marks use min(1) for positioning, no real data)
+                if visual_type == 'scatterChart':
+                    calc_formulas = {}
+                    for c in converted_objects.get('calculations', []):
+                        cname = self._clean_field_name(c.get('name', '')).strip('[]')
+                        calc_formulas[cname] = (c.get('formula', '') or '').strip().lower()
+                    row_meas = [
+                        f for f in fields
+                        if f.get('shelf') == 'rows'
+                        and self._is_measure_field(self._clean_field_name(f.get('name', '')))
+                    ]
+                    if row_meas and all(
+                        calc_formulas.get(self._clean_field_name(f.get('name', '')).strip('[]'), '') == 'min(1)'
+                        for f in row_meas
+                    ):
+                        visual_type = 'multiRowCard'
 
         # Spatial detection: map visuals with lat/lon fields → azureMap
         if visual_type in ('map', 'scatterChart') and ws_data:
@@ -650,6 +691,11 @@ class PowerBIProjectGenerator:
             )
             if has_lat and has_lon:
                 visual_type = 'azureMap'
+
+        # Sync overridden visual type back to ws_data so _build_visual_query
+        # generates the correct data-role assignments.
+        if ws_data and ws_data.get('chart_type') != visual_type:
+            ws_data['chart_type'] = visual_type
 
         visual_json = {
             "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
@@ -726,13 +772,39 @@ class PowerBIProjectGenerator:
                         query["sortDefinition"] = {"sort": [sort_entry]}
 
         # Visual container title (visualContainerObjects per PBIR schema)
+        # Prefer the worksheet's extracted title (from Tableau <title><run>)
+        # over the raw worksheet name.
+        display_title = (ws_data.get('title', '') if ws_data else '') or ws_name
+        # Resolve parameter references like <[Parameters].[Parameter 1]>
+        display_title = self._resolve_parameter_title(display_title, converted_objects)
+        # Escape single quotes for PBI literal
+        display_title = display_title.replace("'", "''")
+        title_props = {
+            "show": _L("true"),
+            "text": _L(f"'{display_title}'")
+        }
+        # Apply Tableau title formatting (font size, color, bold, italic, underline, alignment)
+        title_fmt = ws_data.get('title_format', {}) if ws_data else {}
+        if title_fmt.get('font_size'):
+            try:
+                title_props["fontSize"] = _L(f"{int(title_fmt['font_size'])}D")
+            except (ValueError, TypeError):
+                pass
+        if title_fmt.get('font_color'):
+            title_props["fontColor"] = {"solid": {"color": _L(f"'{title_fmt['font_color']}'")}}
+        if title_fmt.get('bold'):
+            title_props["bold"] = _L("true")
+        if title_fmt.get('italic'):
+            title_props["italic"] = _L("true")
+        if title_fmt.get('underline'):
+            title_props["underline"] = _L("true")
+        if title_fmt.get('alignment'):
+            # Tableau: 0=left, 1=center, 2=right → PBI: 'left', 'center', 'right'
+            align_map = {'0': 'left', '1': 'center', '2': 'right'}
+            pbi_align = align_map.get(str(title_fmt['alignment']), 'left')
+            title_props["alignment"] = _L(f"'{pbi_align}'")
         visual_json["visual"]["visualContainerObjects"] = {
-            "title": [{
-                "properties": {
-                    "show": _L("true"),
-                    "text": _L(f"'{ws_name}'")
-                }
-            }]
+            "title": [{"properties": title_props}]
         }
 
         # Visual objects: encodings (labels, legend, axes, colors)
@@ -937,17 +1009,16 @@ class PowerBIProjectGenerator:
         if not table_name:
             table_name = self._find_column_table(column_name, converted_objects)
 
-        vx = round(pos.get('x', 0) * scale_x)
-        vy = round(pos.get('y', 0) * scale_y)
-        vw = round(pos.get('w', 200) * scale_x)
-        vh = round(pos.get('h', 60) * scale_y)
+        vpos = self._make_visual_position(pos, scale_x, scale_y, visual_count)
+        vx, vy, vw, vh = vpos['x'], vpos['y'], vpos['width'], vpos['height']
 
         # Determine slicer mode from parameter/field data type
         slicer_mode = self._detect_slicer_mode(obj, column_name, converted_objects)
 
         slicer_json = self._create_slicer_visual(visual_id, vx, vy, vw, vh,
                                                   column_name, table_name, visual_count,
-                                                  slicer_mode=slicer_mode)
+                                                  slicer_mode=slicer_mode,
+                                                  title=column_name)
         _write_json(os.path.join(visual_dir, 'visual.json'), slicer_json, ensure_ascii=False)
 
     def _create_visual_parameter_control(self, visuals_dir, obj, scale_x, scale_y,
@@ -984,14 +1055,13 @@ class PowerBIProjectGenerator:
         table_name = param_caption
         column_name = "Name" if has_aliases else "Value"
 
-        vx = round(pos.get('x', 0) * scale_x)
-        vy = round(pos.get('y', 0) * scale_y)
-        vw = round(pos.get('w', 200) * scale_x)
-        vh = round(pos.get('h', 60) * scale_y)
+        vpos = self._make_visual_position(pos, scale_x, scale_y, visual_count)
+        vx, vy, vw, vh = vpos['x'], vpos['y'], vpos['width'], vpos['height']
 
         slicer_json = self._create_slicer_visual(visual_id, vx, vy, vw, vh,
                                                   column_name, table_name, visual_count,
-                                                  slicer_mode='Dropdown')
+                                                  slicer_mode='Dropdown',
+                                                  title=param_caption)
         _write_json(os.path.join(visual_dir, 'visual.json'), slicer_json, ensure_ascii=False)
 
     def _create_action_visuals(self, visuals_dir, actions, scale_x, scale_y,
@@ -1501,6 +1571,10 @@ class PowerBIProjectGenerator:
             page_width = size.get('width', 1280)
             page_height = size.get('height', 720)
 
+            # Store for _make_visual_position clamping
+            self._current_page_width = page_width
+            self._current_page_height = page_height
+
             page_json = {
                 "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.0.0/schema.json",
                 "name": page_name,
@@ -1586,8 +1660,13 @@ class PowerBIProjectGenerator:
 
             for obj in db_objects:
                 # Resolve position: grid layout map (preferred) or proportional (fallback)
+                obj_type = obj.get('type', '')
                 obj_name = obj.get('worksheetName', '') or obj.get('name', '') or obj.get('param_name', '')
-                grid_pos = layout_map.get(obj_name) if layout_map and obj_name else None
+                # Filter/parameter controls use their own position (their 'name'
+                # refers to the filtered worksheet, not themselves).
+                grid_pos = None
+                if obj_type not in ('filter_control', 'parameter_control') and layout_map and obj_name:
+                    grid_pos = layout_map.get(obj_name)
                 if grid_pos:
                     eff_obj = dict(obj, position=grid_pos)
                     eff_sx, eff_sy = 1.0, 1.0
@@ -1726,6 +1805,35 @@ class PowerBIProjectGenerator:
                 )
                 if not has_measure:
                     visual_type = 'table'
+                else:
+                    # Detect :Measure Names + Multiple Values pattern (strip/dot plot)
+                    has_measure_names = any(
+                        f.get('name', '') in (':Measure Names', 'Measure Names')
+                        for f in fields
+                    )
+                    has_multiple_values = any(
+                        f.get('name', '') == 'Multiple Values'
+                        for f in fields
+                    )
+                    if has_measure_names and has_multiple_values:
+                        visual_type = 'clusteredBarChart'
+
+                    # Detect placeholder scatter: all row measures are min(1) dummies
+                    if visual_type == 'scatterChart':
+                        calc_formulas = {}
+                        for c in converted_objects.get('calculations', []):
+                            cname = self._clean_field_name(c.get('name', '')).strip('[]')
+                            calc_formulas[cname] = (c.get('formula', '') or '').strip().lower()
+                        row_meas = [
+                            f for f in fields
+                            if f.get('shelf') == 'rows'
+                            and self._is_measure_field(self._clean_field_name(f.get('name', '')))
+                        ]
+                        if row_meas and all(
+                            calc_formulas.get(self._clean_field_name(f.get('name', '')).strip('[]'), '') == 'min(1)'
+                            for f in row_meas
+                        ):
+                            visual_type = 'multiRowCard'
 
             visual_json = {
                 "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
@@ -2008,8 +2116,26 @@ class PowerBIProjectGenerator:
     def _clean_field_name(self, name):
         """Strip all known Tableau derivation prefixes from a field name"""
         clean = _RE_DERIVATION_PREFIX.sub('', name)
+        clean = _RE_TABLE_CALC_PREFIX.sub('', clean)
         clean = _RE_TYPE_SUFFIX.sub('', clean)
         return clean
+
+    _RE_PARAM_REF = re.compile(r'<\[Parameters\]\.\[([^\]]+)\]>')
+
+    def _resolve_parameter_title(self, title, converted_objects):
+        """Replace <[Parameters].[Name]> references in titles with parameter captions."""
+        if not title or '[Parameters]' not in title:
+            return title
+        params = converted_objects.get('parameters', [])
+        param_caption_map = {}
+        for p in params:
+            pname = p.get('name', '').strip('[]')
+            caption = p.get('caption', pname)
+            param_caption_map[pname] = caption
+        def _repl(m):
+            pname = m.group(1)
+            return param_caption_map.get(pname, pname)
+        return self._RE_PARAM_REF.sub(_repl, title)
 
     # ── PBIR data-role names per visual type ─────────────────────
     # (dimension_roles, measure_roles) — must match PBI Desktop expectations
@@ -2165,7 +2291,17 @@ class PowerBIProjectGenerator:
         hier_dims = rows_dims + cols_dims + other_dims
         # All axis measures (rows + columns + expanded from :Measure Names)
         axis_meas = rows_meas + cols_meas + expanded_meas + other_meas
-        # Tooltip-grade fields: explicit tooltips + color measures
+
+        # Promote text-shelf measures to axis_meas when there are no axis
+        # measures yet (e.g. pie/donut charts where the value sits on text
+        # shelf in Tableau).
+        text_meas = [f for f in text_fields if self._is_measure_field(f['name'])]
+        text_dims = [f for f in text_fields if not self._is_measure_field(f['name'])]
+        if not axis_meas and text_meas:
+            axis_meas = text_meas
+            text_fields = text_dims
+
+        # Tooltip-grade fields: explicit tooltips + color measures + remaining text dims
         tip_fields = tooltip_fields + color_meas + text_fields
         # Legacy combined lists (for fallback logic)
         all_dims = axis_dims + color_dims
@@ -2236,7 +2372,8 @@ class PowerBIProjectGenerator:
                 }
 
         elif visual_type == 'multiRowCard':
-            targets = axis_meas if axis_meas else all_dims
+            # Prefer text fields + dims over placeholder measures (e.g. min(1))
+            targets = text_fields + all_dims if text_fields else (axis_meas if axis_meas else all_dims)
             if targets:
                 query_state["Values"] = {
                     "projections": [self._make_projection_entry(f)
@@ -3548,13 +3685,14 @@ class PowerBIProjectGenerator:
             }}]
     
     def _create_slicer_visual(self, visual_id, x, y, w, h, field_name, table_name, z_order,
-                               slicer_mode='Dropdown'):
+                               slicer_mode='Dropdown', title=None):
         """Creates a slicer visual for a filter/parameter control with field binding.
 
         Args:
             slicer_mode: PBI slicer mode string — ``'Dropdown'``, ``'List'``,
                 ``'Between'`` (range/slider), ``'Basic'`` (relative date),
                 ``'Date'`` (date picker), or ``'Search'`` (wildcard text).
+            title: Display title for the slicer. Defaults to field_name.
         """
         clean_field = field_name.replace('[', '').replace(']', '')
         clean_table = table_name.replace("'", "''") if table_name else getattr(self, '_main_table', 'Table')
@@ -3620,6 +3758,14 @@ class PowerBIProjectGenerator:
             "visual": {
                 "visualType": "slicer",
                 "objects": slicer_objects,
+                "visualContainerObjects": {
+                    "title": [{
+                        "properties": {
+                            "show": _L("true"),
+                            "text": _L(f"'{title or clean_field or clean_table}'")
+                        }
+                    }]
+                },
                 "drillFilterOtherVisuals": True
             }
         }
