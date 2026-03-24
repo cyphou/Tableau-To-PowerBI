@@ -2058,7 +2058,7 @@ class PowerBIProjectGenerator:
         for ds in datasources:
             for calc in ds.get('calculations', []):
                 raw_name = calc.get('name', '').replace('[', '').replace(']', '')
-                caption = calc.get('caption', raw_name)
+                caption = (calc.get('caption', '') or raw_name).replace('[', '').replace(']', '')
                 if raw_name not in self._field_map:
                     self._field_map[raw_name] = (measures_table, caption)
                 # Also index by caption for filters using the readable name
@@ -2074,7 +2074,7 @@ class PowerBIProjectGenerator:
         for calc in converted_objects.get('calculations', []):
             if calc.get('role', '') == 'measure':
                 raw_name = calc.get('name', '').replace('[', '').replace(']', '')
-                caption = calc.get('caption', raw_name)
+                caption = (calc.get('caption', '') or raw_name).replace('[', '').replace(']', '')
                 self._measure_names.add(raw_name)
                 if caption:
                     self._measure_names.add(caption)

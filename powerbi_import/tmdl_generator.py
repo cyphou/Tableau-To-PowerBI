@@ -1672,7 +1672,8 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
 
     for calc in calculations:
         calc_name = calc.get('name', '').replace('[', '').replace(']', '')
-        caption = calc.get('caption', calc_name)
+        caption = calc.get('caption', '') or calc_name
+        caption = caption.replace('[', '').replace(']', '')
         formula = calc.get('formula', '').strip()
         role = calc.get('role', 'measure')
         datatype = calc.get('datatype', 'string')
@@ -2442,7 +2443,7 @@ def _process_sets_groups_bins(model, extra_objects, main_table_name, column_tabl
             for ds in extra_objects.get('_datasources', []):
                 for calc in ds.get('calculations', []):
                     raw = calc.get('name', '').replace('[', '').replace(']', '')
-                    cap = calc.get('caption', raw)
+                    cap = (calc.get('caption', '') or raw).replace('[', '').replace(']', '')
                     calc_map_lookup[raw] = cap
                 for tbl in ds.get('tables', []):
                     for col_info in tbl.get('columns', []):
