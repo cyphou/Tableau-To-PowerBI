@@ -1,18 +1,18 @@
 # Comprehensive Gap Analysis — Tableau to Power BI Migration Tool
 
-**Date:** 2026-03-22 — updated through v26.0.0 (Sprint 100)  
+**Date:** 2026-03-24 — updated through v27.1.0 (Sprint 119)  
 **Scope:** Every source file, test file, CI/CD, docs, config, and cross-project comparison with TableauToFabric  
-**Status:** 6,400+ tests passing across 134 test files · 46,000+ source lines (tableau_export + powerbi_import)
+**Status:** 6,831 tests passing across 141 test files · 45,600+ source lines (tableau_export + powerbi_import)
 
 ### Implementation Coverage
 
 ```
  EXTRACTION          GENERATION         INFRA / CI         DOCUMENTATION
 +----------------+  +----------------+  +----------------+  +----------------+
-| 20 object types|  | PBIR v4.0      |  | 5-stage CI/CD  |  | 18 doc files   |
-| .twb/.twbx/.tfl|  | TMDL semantic  |  | 6,192 tests    |  | DAX reference  |
-| 195+ DAX conv  |  | 118 visuals    |  | Artifact valid |  | M query ref    |
-| 42 connectors  |  | 7 slicer modes |  | Fabric deploy  |  | Prep ref       |
+| 20 object types|  | PBIR v4.0      |  | 5-stage CI/CD  |  | 19 doc files   |
+| .twb/.twbx/.tfl|  | TMDL semantic  |  | 6,831 tests    |  | DAX reference  |
+| 125+ DAX conv  |  | 145 visuals    |  | Artifact valid |  | M query ref    |
+| 63 connectors  |  | 7 slicer modes |  | Fabric deploy  |  | Prep ref       |
 | 47+ transforms |  | 4 cond format  |  | Env configs    |  | Architecture   |
 | Prep flow DAG  |  | Grid layout    |  | Settings valid |  | Gap analysis   |
 | Ref lines/bands|  | RLS roles      |  | --dry-run      |  | Migration guide|
@@ -22,7 +22,7 @@
         |                    |                    |                    |
         +--------------------+--------------------+--------------------+
                                      |
-                     v9.0.0 → v25.0.0
+                     v9.0.0 → v27.1.0
                      +-------------------------------+
                      | Grid-snapped layout engine    |
                      | 7 slicer modes (S77)          |
@@ -170,7 +170,7 @@
 ## 3. Test Coverage
 
 ### What IS implemented
-- **887 tests across 18 test files** (original) + **5,305 additional tests in v3.6–v25.0.0**, totaling **6,192 tests across 128 test files** including shared fixtures in `conftest.py`:
+- **887 tests across 18 test files** (original) + **5,944 additional tests in v3.6–v27.1.0**, totaling **6,831 tests across 141 test files** including shared fixtures in `conftest.py`:
 
 | Test File | Tests | Lines | Coverage Focus |
 |-----------|-------|-------|----------------|
@@ -436,18 +436,75 @@
 
 | Area | Implemented | Missing/Incomplete | Approximated | Priority |
 |------|------------|-------------------|-------------|----------|
-| **Extraction** | 20 object types (+4), 10+ connectors, 22 new methods, annotations, layout containers, device layouts, formatting depth, legend, axes, sort depth, **datasource filters**, **reference bands/distributions**, **number formatting**, **custom shapes/fonts/geocoding/hyper metadata**, **dynamic zone visibility**, **clustering/forecasting/trend lines**, **Hyper 3-tier reader** (tableauhyperapi + SQLite + header, multi-schema, `--hyper-rows`, column stats), **Tableau 2024.3+ dynamic params**, **Pulse metric extraction**, **filter type classification** (v22/S77) | Composite connectors, nested LOD edge cases | ✅ Prep VAR/VARP fixed (S84), layout nesting improved (S76) | Low |
-| **TMDL Generation** | 14 phases (4,695 lines), full model, date hierarchy, quick table calcs, partition addressing, **semantic validation**, **calendar customization**, **culture config**, **M-based calc columns** (DAX→M converter), **calculation groups**, **field parameters**, **multi-language cultures** (`--languages`), **Goals/Scorecard** (`--goals`), **dynamic parameter M partitions** | — | — | Low |
-| **PBIR Generation** | 118 visuals (1,940 lines), **7 slicer modes** (S77), **grid-snapped layout** (S76), **dual-axis combo** (S78), **diverging/stepped/categorical cond. formatting** (S79), filters, themes, mobile layout, tooltip binding, action buttons, conditional formatting, axis config, legend, sort state, table formatting, padding, **drill-through pages**, **pages shelf**, **number format conversion**, **SCRIPT_* → Python/R script visuals**, **visual diff report**, **data-driven alerts**, **bump chart RANKX** (S84) | Small Multiples (partial) | Position scaling | Low |
-| **DAX Conversion** | ~195+ patterns (2,356 lines), 38 dedicated converters, ALLEXCEPT for partitioned calcs, **CORR/COVAR/COVARP**, **ATTR→SELECTEDVALUE**, **LOD balanced braces**, **PREVIOUS_VALUE→OFFSET**, **LOOKUP→OFFSET**, **RUNNING_*→CALCULATE+FILTER(ALLSELECTED)**, **TOTAL→CALCULATE+ALL**, **SCRIPT_* → scriptVisual**, **REVERSE/REPEAT/SPACE/CHAR**, **MAKEDATE/MAKETIME/ISDATE/MAKEDATETIME**, **SPLIT enhancements**, **nested SUM(IF(AGG))** | Spatial (6 funcs) | REGEX (4 — ✅ improved with M fallback in S84), WINDOW_* frames | Low |
-| **M Query** | **42 connectors** (+12: OData, Google Analytics, Azure Blob/ADLS, Vertica, Impala, Hadoop Hive, Presto, MongoDB, Cosmos DB, Athena, DB2), 47+ transforms (+regex extract, JSON/XML parse, connection parameterize, **VAR/VARP** ✅ S84), **DAX-to-M expression converter** (calc columns as M steps), **Hyper data → M #table()**, **PDF depth** (page range, table index ✅ S84), **Salesforce SOQL/API/relationships** (✅ S84), **REGEX→M** (4 functions ✅ S84) | OAuth, Google Sheets auth | Fallback #table, BigQuery/Oracle config | Low |
-| **Prep Flow** | DAG traversal (1,190 lines), 20+ action types, **ExtractValues**, **CustomCalculation**, **Script/Prediction/CrossJoin/PublishedDataSource** handlers, 5 new connection mappings, **Hyper data loading** | — | ✅ VAR/VARP fixed (S84) | Low |
-| **Pre-Migration** | **Assessment** (1,487 lines, 14-category scoring + connection string audit + performance + volume + Prep complexity + licensing + multi-datasource + **formatting coverage** S79), **Strategy advisor** (Import/DQ/Composite), **Global assessment** (`--global-assess`, N×N heatmap, BFS clustering), **Migration completeness scoring** (0–100, letter grade), JSON + HTML reports | — | — | Low |
-| **Shared Model** | **Merge engine** (3,736 lines, fingerprint, Jaccard, 0–100 scoring), **thin reports** (byPath + byConnection), **merge config**, **field validation**, **column lineage**, **RLS consolidation**, **measure risk analyzer**, **global assessment**, **table isolation**, **Fabric bundle deployment**, **artifact-level merge**, **post-merge safety**, **thin report binding validation**, **lineage tracking**, **custom SQL fingerprinting** (SHA-256), **multi-tenant deployment**, **live connection**, **fingerprint cache**, **benchmark suite** (100 workbooks) | — | — | Low |
-| **Test Coverage** | **6,192 tests across 128 files** (+conftest.py shared fixtures), **26 real-world E2E workbooks** (S80), **layout regression** (S80), **performance regression** (S80), **Fabric-native** (S91), **DAX optimizer** (S93), **equivalence** (S94) | — | — | Low |
-| **CI/CD** | **5-stage pipeline** (lint+ruff, test, **strict validate+twbx**, **staging deploy**, production deploy), **pip caching**, **PBIR schema forward-compat check** (`--check-schema`), **PyPI auto-publish workflow** (`publish.yml`), **plugin system** (`plugins.py` + `examples/plugins/`), **Windows/macOS/Linux CI matrix** (3 OS × 6 Python versions) | Coverage reporting, PR diff preview | — | Medium |
-| **Documentation** | **18 docs** + copilot instructions (ARCHITECTURE, KNOWN_LIMITATIONS, MIGRATION_CHECKLIST, DEPLOYMENT_GUIDE, TABLEAU_VERSION_COMPATIBILITY, CONTRIBUTING, ENTERPRISE_GUIDE, AGENTS, ROADMAP), **auto-generated API docs** (54 modules) | — | — | Low |
+| **Extraction** | 20 object types (+4), 63 connectors, 22 new methods, annotations, layout containers, device layouts, formatting depth, legend, axes, sort depth, **datasource filters**, **reference bands/distributions**, **number formatting**, **custom shapes/fonts/geocoding/hyper metadata**, **dynamic zone visibility**, **clustering/forecasting/trend lines**, **Hyper 3-tier reader**, **Tableau 2024.3+ dynamic params**, **Pulse metric extraction**, **filter type classification** (v22/S77) | Nested LOD edge cases | ✅ Prep VAR/VARP fixed (S84), layout nesting improved (S76) | Low |
+| **TMDL Generation** | 14 phases (4,769 lines), full model, date hierarchy, quick table calcs, partition addressing, **semantic validation**, **calendar customization**, **culture config**, **M-based calc columns** (DAX→M converter), **calculation groups**, **field parameters**, **multi-language cultures** (`--languages`), **Goals/Scorecard** (`--goals`), **dynamic parameter M partitions**, **semantic descriptions**, **Copilot annotations**, **linguistic schema** | — | — | Low |
+| **PBIR Generation** | 145 visuals (1,933 lines), **7 slicer modes** (S77), **grid-snapped layout** (S76), **dual-axis combo** (S78), **diverging/stepped/categorical cond. formatting** (S79), filters, themes, mobile layout, tooltip binding, action buttons, conditional formatting, axis config, legend, sort state, table formatting, padding, **drill-through pages**, **pages shelf**, **number format conversion**, **SCRIPT_* → Python/R script visuals**, **visual diff report**, **data-driven alerts**, **bump chart RANKX** (S84) | — | Position scaling | Low |
+| **DAX Conversion** | 125 functions (87 regex + 38 dedicated) in 2,200 lines, ALLEXCEPT for partitioned calcs, **CORR/COVAR/COVARP**, **ATTR→SELECTEDVALUE**, **LOD balanced braces**, **PREVIOUS_VALUE→OFFSET**, **LOOKUP→OFFSET**, **RUNNING_*→CALCULATE+FILTER(ALLSELECTED)**, **TOTAL→CALCULATE+ALL**, **SCRIPT_* → scriptVisual**, nested SUM(IF(AGG)) | Spatial (8 funcs), Analytics extensions (4 funcs) | REGEX (4 — ✅ M fallback in S84), WINDOW_* frames | Low |
+| **M Query** | **63 connectors** (+ aliases = 91 refs), 47+ transforms, **DAX-to-M expression converter**, **Hyper data → M #table()**, **PDF depth**, **Salesforce SOQL**, **REGEX→M** (4 functions ✅ S84) | OAuth, Google Sheets auth | Fallback #table for unknown connectors | Low |
+| **Prep Flow** | DAG traversal (1,190 lines), 20+ action types, 5+ new handlers, 5 new connection mappings, **Hyper data loading** | — | ✅ VAR/VARP fixed (S84) | Low |
+| **Pre-Migration** | **Assessment** (1,487 lines, 14-category scoring), **Strategy advisor** (Import/DQ/Composite), **Global assessment** (N×N heatmap, BFS clustering), **Migration completeness scoring** (0–100, letter grade), JSON + HTML reports | — | — | Low |
+| **Shared Model** | **Merge engine** (3,736 lines, fingerprint, Jaccard, 0–100 scoring), **thin reports**, **merge config**, **RLS consolidation**, **global assessment**, **Fabric bundle deployment**, **multi-tenant deployment**, **live connection** | — | — | Low |
+| **QA & Automation** | **Validator auto-fix** (17 patterns), **governance engine** (naming, PII, sensitivity labels), **lineage map** (JSON + HTML dashboard), **RLS PowerShell generation**, **credential templates**, **DAX optimizer** (AST rewriter), **comparison reports**, **schema drift detection** | — | — | Low |
+| **Test Coverage** | **6,831 tests across 141 files** (+conftest.py), **27 workbooks at 100% fidelity** (10 samples + 17 real-world), **layout regression**, **performance regression**, **Fabric-native**, **DAX optimizer**, **cross-platform validation** | 55 conditional skips (sample availability) | — | Low |
+| **CI/CD** | **5-stage pipeline** (lint+ruff, test, **strict validate+twbx**, **staging deploy**, production deploy), **pip caching**, **PyPI auto-publish workflow**, **plugin system**, **REST API server** | Windows CI, PR diff preview | — | Medium |
+| **Deployment** | **Fabric REST API**, **PBI Service REST API**, **bundle deployer**, **multi-tenant**, **gateway config**, **rolling deployment** (canary + rollback), **.pbix packager** | — | — | Low |
+| **Documentation** | **19 docs** + copilot instructions + PPTX presentation, **auto-generated API docs** (54 modules), **8-agent specialization model** | — | — | Low |
 | **Config** | 11 env vars, 3 environments, **settings validation**, **dry-run**, **calendar/culture CLI**, **.env.example**, **config.json** | — | — | Low |
+| **Security** | **Path validation** (null byte, traversal, extension whitelist), **ZIP slip defense**, **XXE protection**, **credential detection/redaction** (10 patterns), **M query credential scrubbing**, **template substitution sanitization**, **rate limiting** (API server), **concurrent job cap**, **job TTL cleanup** | — | — | Low |
+
+---
+
+## 11. Consolidated Gap Summary — What Remains
+
+**Date:** 2026-03-24
+
+### Remaining Gaps by Severity
+
+#### HIGH — No DAX/PBI Equivalent Exists
+
+| Gap | Tableau Feature | Current Output | PBI Workaround |
+|-----|----------------|----------------|----------------|
+| Spatial functions (8) | MAKEPOINT, MAKELINE, DISTANCE, BUFFER, AREA, INTERSECTION, HEXBINX, HEXBINY | `0` + migration note | No DAX spatial support — use Azure Maps visual or R/Python visual |
+| Analytics extensions (4) | SCRIPT_BOOL/INT/REAL/STR | `scriptVisual` container + `BLANK()` DAX | Script content preserved in PBI Python/R visual; requires runtime setup |
+| Motion chart (animation) | Play-axis animation | Not migrated | No PBI equivalent — use bookmarks with auto-advance as approximation |
+
+#### MEDIUM — Approximated or Partial
+
+| Gap | Details | Impact |
+|-----|---------|--------|
+| REGEX functions (4) | REGEXP_MATCH/EXTRACT/EXTRACT_NTH/REPLACE → M fallback for simple patterns; complex PCRE → `BLANK()` | Users with complex regex need manual Power Query M `Text.RegexMatch` |
+| Data blending | Federated `[ref.xxxID]` references partially supported; complex cross-datasource blends may lose context | 2 open TODOs in `pbip_generator.py` for blend-specific visual wiring |
+| Nested LOD edge cases | `{FIXED ... : {INCLUDE ... : AGG}}` nested LODs use text-based parsing | Deeply nested LOD-in-LOD may produce incorrect `CALCULATE` nesting |
+| OAuth/SSO connector auth | Gateway config templates generated; actual OAuth token flow not automated | Users must configure credentials manually in PBI Desktop or gateway |
+| Custom visual dependencies | 10+ visual types require AppSource custom visual installation | Sankey, Chord, Network, Violin, Gantt → custom visual GUIDs provided but not auto-installed |
+| PDF connector data | Returns `Pdf.Tables(File.Contents(...))` but no text extraction | Requires manual Power Query M editing for specific PDF table selection |
+| WINDOW_* frame boundaries | Frame start/end converted to OFFSET pattern; complex window specs approximate | Edge cases with RANGE vs ROWS framing may differ from Tableau behavior |
+
+#### LOW — Cosmetic or Edge Cases
+
+| Gap | Details |
+|-----|---------|
+| Visual positioning | Proportional scaling from Tableau canvas; not pixel-perfect |
+| Rich tooltip HTML | Basic text/formatting preserved; complex HTML tooltip layouts not replicated |
+| Google Sheets OAuth | M query generated; OAuth2 credential setup manual |
+| Stale `conversion/` folder | Legacy per-object converters still present; not used by current pipeline |
+| BigQuery project config | `GoogleBigQuery.Database([BillingProject=...])` — project ID needs manual correction |
+| SAP HANA/BW MDX | Basic connector; MDX query translation not fully automated |
+
+### Quantified Coverage
+
+| Metric | Count | Notes |
+|--------|-------|-------|
+| **DAX functions converted** | 125 (87 regex + 38 dedicated) | 12 unsupported (spatial + analytics) |
+| **Visual types mapped** | 145 entries (incl. aliases) | 10 require AppSource custom visuals |
+| **Data connectors** | 63 generators (91 with aliases) | Fallback `#table` for truly unknown types |
+| **M transforms** | 47+ functions | Full coverage of common transforms |
+| **Extraction object types** | 20 | Comprehensive TWB/TWBX coverage |
+| **Tests** | 6,831 passed, 55 skipped | 0 failures; 27/27 workbooks at 100% fidelity |
+| **Source lines** | 45,600+ | tableau_export + powerbi_import |
+| **Test files** | 141 | + conftest.py shared fixtures |
+| **Doc files** | 19 | + copilot instructions + PPTX |
+| **TODO/FIXME markers** | 10 | All low-to-minor severity |
 
 ---
 
@@ -470,13 +527,13 @@
 |------|-------------|-----------|-----------|-------|
 | `extract_tableau_data.py` | 2,263 | 3,286 | **+1,023** | PBI adds layout engine support, container hierarchy, filter classification, auto chart type inference |
 | `datasource_extractor.py` | 649 | 786 | **+137** | PBI adds deeper column metadata |
-| `dax_converter.py` | 1,676 | 2,356 | **+680** | PBI has 38 dedicated converters (expanded since refactor) |
-| `m_query_builder.py` | 1,165 | 1,848 | **+683** | PBI adds 42 connectors, VAR/VARP fix, REGEX→M, PDF/Salesforce depth |
+| `dax_converter.py` | 1,676 | 2,200 | **+524** | PBI has 38 dedicated converters (expanded since refactor) |
+| `m_query_builder.py` | 1,165 | 1,668 | **+503** | PBI adds 63 connectors, VAR/VARP fix, REGEX→M, PDF/Salesforce depth |
 | `prep_flow_parser.py` | 1,106 | 1,190 | **+84** | Near-equivalent (minor refactoring) |
-| `pbip_generator.py` | 1,842 | 4,149 | **+2,307** | PBI adds grid layout engine, 7 slicer modes, conditional formatting depth, drill-through |
-| `tmdl_generator.py` | 2,280 | 4,695 | **+2,415** | PBI adds M-based calc columns, M transform steps, quick table calcs |
-| `visual_generator.py` | 1,086 | 1,940 | **+854** | PBI adds bump chart RANKX, stacked orientation, dual-axis detection |
-| `validator.py` | 583 | 1,576 | **+993** | PBI adds semantic validation, PBIR structure validation |
+| `pbip_generator.py` | 1,842 | 3,902 | **+2,060** | PBI adds grid layout engine, 7 slicer modes, conditional formatting depth, drill-through |
+| `tmdl_generator.py` | 2,280 | 4,769 | **+2,489** | PBI adds M-based calc columns, M transform steps, quick table calcs, semantic descriptions |
+| `visual_generator.py` | 1,086 | 1,933 | **+847** | PBI adds bump chart RANKX, stacked orientation, dual-axis detection, 145 visual types |
+| `validator.py` | 583 | 1,576 | **+993** | PBI adds semantic validation, PBIR structure validation, auto-fix (17 patterns)
 | `assessment.py` | 1,051 | 1,487 | **+436** | PBI adds 14-category scoring, formatting coverage sub-check |
 | `strategy_advisor.py` | 348 | 334 | **-14** | Different focus: Fabric→ETL strategy, PBI→connection mode |
 
@@ -546,13 +603,13 @@
 
 | Metric | Fabric | PBI |
 |--------|--------|-----|
-| Test files | 40 | 37 (+conftest.py) |
-| Total tests | ~1,205 | **6,263** |
+| Test files | 40 | 141 (+conftest.py) |
+| Total tests | ~1,205 | **6,831** |
 | Coverage test files (Fabric-style) | 9 files, ~750 tests (e.g., `test_*_coverage.py`) | None |
 | PBI-only broad-scope tests | None | 5 files (feature_gaps, gap_implementations, new_features, non_regression, migration_validation) |
-| Real-world E2E | None | **26 workbooks, 369 tests** (v22/S80) |
+| Real-world E2E | None | **27 workbooks, 369+ tests** (S80 + S119) |
 | Performance regression | None | **benchmark + regression suite** (v22/S80) |
-| **Coverage ratio** | ~0.21× PBI test count | Baseline (PBI has ~5.2× more tests than Fabric) |
+| **Coverage ratio** | ~0.18× PBI test count | Baseline (PBI has ~5.7× more tests than Fabric) |
 
 ### Portability Assessment — Remaining Items
 
