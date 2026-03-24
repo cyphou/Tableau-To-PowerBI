@@ -5208,11 +5208,6 @@ def _write_measure(lines, measure):
     if folder:
         lines.append(f"\t\tdisplayFolder: {folder}")
 
-    desc = measure.get('description', '') or _generate_measure_description(measure)
-    if desc:
-        safe_desc = desc.replace('\n', ' ').replace('\r', '')
-        lines.append(f"\t\tdescription: {safe_desc}")
-
     if measure.get('isHidden', False):
         lines.append("\t\tisHidden")
 
@@ -5250,10 +5245,6 @@ def _write_column_flags(lines, column):
     data_category = column.get('dataCategory', '')
     if data_category:
         lines.append(f"\t\tdataCategory: {data_category}")
-    description = column.get('description', '') or _generate_column_description(column)
-    if description:
-        safe_desc = description.replace('\n', ' ').replace('\r', '')
-        lines.append(f"\t\tdescription: {safe_desc}")
     display_folder = column.get('displayFolder', '')
     if display_folder:
         lines.append(f"\t\tdisplayFolder: {display_folder}")
