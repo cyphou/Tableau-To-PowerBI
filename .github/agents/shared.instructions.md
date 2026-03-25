@@ -28,7 +28,7 @@ All agents MUST follow these rules. They apply to every file in the project.
 
 ## Python Conventions
 
-- Python 3.8+ compatible
+- Python 3.12+ compatible
 - `unittest.TestCase` for all test classes
 - No type annotations on code you didn't write
 - No docstrings on code you didn't write

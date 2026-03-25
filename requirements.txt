@@ -1,5 +1,10 @@
-# Aucune dépendance externe requise.
-# Le projet utilise uniquement la bibliothèque standard Python 3.8+.
+# No external dependencies required for core migration.
+# The project uses only the Python 3.12+ standard library.
+#
+# Optional dependencies:
+#   tableauhyperapi  — required for reading .hyper extract files (v2+ format)
+#   azure-identity   — for Fabric/PBI Service deployment (Azure AD auth)
+#   requests         — for HTTP client with retry (deployment)
 #
 # Modules utilisés : xml.etree.ElementTree, json, os, sys, zipfile,
 #                    uuid, re, argparse, datetime, copy

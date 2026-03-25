@@ -14,7 +14,7 @@
   <a href="https://github.com/cyphou/Tableau-To-PowerBI/actions/workflows/ci.yml"><img src="https://github.com/cyphou/Tableau-To-PowerBI/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
   <img src="https://img.shields.io/badge/coverage-96.2%25-brightgreen?style=flat-square" alt="Coverage"/>
   <img src="https://img.shields.io/badge/tests-6%2C818%20passed-brightgreen?style=flat-square" alt="Tests"/>
-  <img src="https://img.shields.io/badge/python-3.9%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python"/>
+  <img src="https://img.shields.io/badge/python-3.12%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python"/>
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License"/>
   <img src="https://img.shields.io/badge/version-28.1.1-blue?style=flat-square" alt="Version"/>
   <img src="https://img.shields.io/badge/deps-zero-orange?style=flat-square" alt="Zero Dependencies"/>
@@ -50,11 +50,12 @@ cd Tableau-To-PowerBI
 python migrate.py your_workbook.twbx
 ```
 
-**Requirements:** Python 3.9+ • No `pip install` needed — pure standard library.
+**Requirements:** Python 3.12+ • No `pip install` needed — pure standard library.
 
-Optional (for deployment only):
+Optional dependencies:
 ```bash
-pip install azure-identity requests
+pip install azure-identity requests   # Fabric/PBI Service deployment
+pip install tableauhyperapi           # .hyper extract file reading (v2+ format)
 ```
 </details>
 
@@ -111,6 +112,8 @@ python migrate.py workbook.twbx --optimize-dax --time-intelligence auto
 ### 🔄 Complete Extraction
 Parses **20 object types** from `.twb`/`.twbx`:
 datasources, calculations, worksheets, dashboards, filters, parameters, stories, actions, sets, groups, bins, hierarchies, relationships, sort orders, aliases, custom SQL, custom geocoding, published datasources, data blending, hyper metadata
+
+**Hyper extract data:** `.hyper` files embedded in `.twbx` are automatically converted to CSV and wired into Power Query M expressions via a 3-tier reader chain (`tableauhyperapi` → SQLite → binary scan). Small extracts are inlined directly into `#table()` M partitions; large extracts produce `Csv.Document()` references. Legacy `.tde` files require the `tableauhyperapi` package.
 
 </td>
 <td width="50%">

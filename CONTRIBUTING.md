@@ -8,7 +8,7 @@ Thank you for your interest in contributing! This guide covers the development s
 
 ### Prerequisites
 
-- Python 3.9+ (tested on 3.9–3.14)
+- Python 3.12+ (tested on 3.12–3.14)
 - Power BI Desktop (December 2025+) for validating output
 - Git
 

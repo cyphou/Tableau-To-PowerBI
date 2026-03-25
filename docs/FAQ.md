@@ -15,8 +15,30 @@ It is a **Power BI Project** — a text-based file format (JSON + TMDL) that rep
 No. The core migration uses only the Python standard library (xml, json, os, uuid, re, etc.).
 
 Optional dependencies for advanced features:
+- `tableauhyperapi` — for reading `.hyper` extract files (v2+ format). Without this, some newer `.hyper` files may only get metadata (no row data).
 - `azure-identity` + `requests` — for Fabric workspace deployment
 - `pydantic-settings` — for typed configuration (falls back to env vars)
+
+### How are `.hyper` extract files handled?
+
+When a `.twbx` contains embedded `.hyper` files, the migration automatically:
+
+1. **Extracts** the `.hyper` file from the TWBX archive
+2. **Reads** column metadata and row data using a 3-tier reader chain:
+   - **Tier 1:** `tableauhyperapi` (pip package) — handles 100% of `.hyper` formats including v2+
+   - **Tier 2:** SQLite fallback — works for older `.hyper` files that are SQLite-compatible
+   - **Tier 3:** Binary header scan — extracts CREATE TABLE/INSERT patterns for metadata-only
+3. **Inlines** small tables (≤500 rows by default) into M `#table()` expressions
+4. **Converts** large tables to CSV files with `Csv.Document()` M expressions
+5. **Patches** TMDL partition expressions to reference the generated CSV files
+
+Use `--hyper-rows N` to control the inline/CSV threshold.
+
+### What about `.tde` files (legacy Tableau Data Extract)?
+
+`.tde` is the **pre-2018 legacy extract format**. It cannot be read by `tableauhyperapi`, SQLite, or the binary scanner. Tables from `.tde`-based workbooks get a placeholder `#table()` partition with a `TODO` comment. To migrate the data, either:
+- Re-save the workbook in Tableau Desktop (which converts `.tde` → `.hyper`)
+- Manually export the data to CSV and update the M expression
 
 ## Migration
 

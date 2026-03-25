@@ -102,8 +102,8 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
 
 ## Technologies
 
-- Python 3.8+ (standard library only — no external dependencies for core migration)
-- Optional dependencies: `azure-identity` (Fabric auth), `requests` (HTTP client with retry), `pydantic-settings` (typed config)
+- Python 3.12+ (standard library only — no external dependencies for core migration)
+- Optional dependencies: `azure-identity` (Fabric auth), `requests` (HTTP client with retry), `pydantic-settings` (typed config), `tableauhyperapi` (Hyper file data extraction)
 - Modules: xml.etree, json, os, uuid, re, zipfile, argparse, datetime, copy, logging, glob
 - Power BI Desktop (December 2025+)
 - Output format: PBIR v4.0 + TMDL (default), or Fabric-native (Lakehouse + Dataflow Gen2 + Notebook + DirectLake Semantic Model + Pipeline)

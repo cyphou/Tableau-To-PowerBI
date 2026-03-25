@@ -173,7 +173,7 @@ def build_presentation():
                  font_size=20, color=PBI_YELLOW, alignment=PP_ALIGN.LEFT)
     # Bottom info
     _add_textbox(slide, Inches(1), Inches(5.5), Inches(6), Inches(0.4),
-                 'Python 3.8+ · Zero external dependencies · 6,593 tests',
+                 'Python 3.12+ · Zero external dependencies · 6,818 tests',
                  font_size=14, color=MID_GRAY)
     _add_textbox(slide, Inches(1), Inches(5.9), Inches(6), Inches(0.4),
                  'v28.0.0 Phase 1', font_size=14, color=MID_GRAY)
@@ -675,7 +675,7 @@ def build_presentation():
         _add_stat_card(slide, x, Inches(1.8), Inches(1.9), Inches(1.3), num, label, color)
 
     _add_textbox(slide, Inches(0.8), Inches(3.8), Inches(11), Inches(0.5),
-                 'Zero external dependencies · Python standard library only · Works on Python 3.8+',
+                 'Zero external dependencies · Python standard library only · Works on Python 3.12+',
                  font_size=16, color=MID_GRAY, alignment=PP_ALIGN.CENTER)
 
     # Feature highlights

@@ -46,11 +46,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
-        exclude:
-          # macos-latest may not have 3.9 easily; skip to avoid CI flakes
-          - os: macos-latest
-            python-version: "3.9"
+        python-version: ["3.12", "3.13", "3.14"]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -93,7 +89,7 @@ jobs:
         run: python -m pytest tests/test_fabric_integration.py -v --tb=short
 
       - name: Upload coverage artifact
-        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
@@ -102,7 +98,7 @@ jobs:
             htmlcov/
 
       - name: Performance regression check
-        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
         run: |
           python -c "
           import time, sys
