@@ -1,0 +1,1415 @@
+{
+  "parameters" : {
+    "parameters" : { }
+  },
+  "initialNodes" : [ "92a40f62-e5e1-4660-99f8-008bcd03decc", "1057498c-093d-4dfc-86cc-2e6dc1ac8731", "2fd52001-d1d5-4809-9a80-d2529515fb35", "bc7de39b-ec36-413f-aef4-0087f3e3f994" ],
+  "nodes" : {
+    "5fde9199-3e12-4811-9a47-cd7fb37a1c6b" : {
+      "nodeType" : ".v1.Container",
+      "name" : "Dates & Fields",
+      "id" : "5fde9199-3e12-4811-9a47-cd7fb37a1c6b",
+      "baseType" : "container",
+      "nextNodes" : [ {
+        "namespace" : "Default",
+        "nextNodeId" : "3412533b-c1f3-4a5a-a89b-3c4d4ae661e8",
+        "nextNamespace" : "Union-Namespace-55a5fb68-2145-4f60-b31d-1e7998de2282"
+      } ],
+      "serialize" : false,
+      "description" : null,
+      "loomContainer" : {
+        "parameters" : {
+          "parameters" : { }
+        },
+        "initialNodes" : [ ],
+        "nodes" : {
+          "520dbd33-f6f0-4c38-ad9f-dac3f785b77f" : {
+            "nodeType" : ".v2018_3_3.Remap",
+            "name" : "Remap Discounts: None to 0 1",
+            "id" : "520dbd33-f6f0-4c38-ad9f-dac3f785b77f",
+            "baseType" : "transform",
+            "nextNodes" : [ ],
+            "serialize" : false,
+            "description" : null,
+            "columnName" : "Discounts",
+            "values" : {
+              "\"0\"" : [ "\"0\"", "\"None\"" ]
+            },
+            "groupMethodProps" : null,
+            "fieldId" : ""
+          },
+          "c137301a-4dd5-4da1-8b06-5c7d06ce3ddd" : {
+            "nodeType" : ".v1.AddColumn",
+            "columnName" : "Order Date",
+            "expression" : "MAKEDATE([Order Year], [Order Month], [Order Day])",
+            "name" : "Add Order Date",
+            "id" : "c137301a-4dd5-4da1-8b06-5c7d06ce3ddd",
+            "baseType" : "transform",
+            "nextNodes" : [ {
+              "namespace" : "Default",
+              "nextNodeId" : "c7efe164-6831-4cb2-b38a-5da2671ce912",
+              "nextNamespace" : "Default"
+            } ],
+            "serialize" : false,
+            "description" : null
+          },
+          "16fc1136-a731-4c87-aa54-4d56b167d126" : {
+            "nodeType" : ".v1.AddColumn",
+            "columnName" : "Region",
+            "expression" : "\"Central\"",
+            "name" : "Add Region",
+            "id" : "16fc1136-a731-4c87-aa54-4d56b167d126",
+            "baseType" : "transform",
+            "nextNodes" : [ {
+              "namespace" : "Default",
+              "nextNodeId" : "c137301a-4dd5-4da1-8b06-5c7d06ce3ddd",
+              "nextNamespace" : "Default"
+            } ],
+            "serialize" : false,
+            "description" : null
+          },
+          "83e058a3-45a2-4311-a0c4-3f405103a73b" : {
+            "nodeType" : ".v1.RemoveColumns",
+            "name" : "Remove Order Year + 2 more 1",
+            "id" : "83e058a3-45a2-4311-a0c4-3f405103a73b",
+            "baseType" : "transform",
+            "nextNodes" : [ {
+              "namespace" : "Default",
+              "nextNodeId" : "520dbd33-f6f0-4c38-ad9f-dac3f785b77f",
+              "nextNamespace" : "Default"
+            } ],
+            "serialize" : false,
+            "description" : null,
+            "columnNames" : [ "Order Year", "Order Month", "Order Day" ]
+          },
+          "c7efe164-6831-4cb2-b38a-5da2671ce912" : {
+            "nodeType" : ".v1.AddColumn",
+            "columnName" : "Ship Date",
+            "expression" : "MAKEDATE([Ship Year], [Ship Month], [Ship Day])",
+            "name" : "Add Ship Date",
+            "id" : "c7efe164-6831-4cb2-b38a-5da2671ce912",
+            "baseType" : "transform",
+            "nextNodes" : [ {
+              "namespace" : "Default",
+              "nextNodeId" : "097097be-0d21-4f72-8e58-ce71f5dc45a0",
+              "nextNamespace" : "Default"
+            } ],
+            "serialize" : false,
+            "description" : null
+          },
+          "097097be-0d21-4f72-8e58-ce71f5dc45a0" : {
+            "nodeType" : ".v1.RemoveColumns",
+            "name" : "Remove Ship Year + 2 more 1",
+            "id" : "097097be-0d21-4f72-8e58-ce71f5dc45a0",
+            "baseType" : "transform",
+            "nextNodes" : [ {
+              "namespace" : "Default",
+              "nextNodeId" : "83e058a3-45a2-4311-a0c4-3f405103a73b",
+              "nextNamespace" : "Default"
+            } ],
+            "serialize" : false,
+            "description" : null,
+            "columnNames" : [ "Ship Year", "Ship Month", "Ship Day" ]
+          }
+        },
+        "connections" : { },
+        "connectionIds" : [ ],
+        "nodeProperties" : { }
+      },
+      "namespacesToInput" : {
+        "Default" : {
+          "nodeId" : "16fc1136-a731-4c87-aa54-4d56b167d126",
+          "namespace" : "Default"
+        }
+      },
+      "namespacesToOutput" : {
+        "Default" : {
+          "nodeId" : "520dbd33-f6f0-4c38-ad9f-dac3f785b77f",
+          "namespace" : "Default"
+        }
+      },
+      "providedParameters" : { }
+    },
+    "3412533b-c1f3-4a5a-a89b-3c4d4ae661e8" : {
+      "nodeType" : ".v2018_2_3.SuperUnion",
+      "name" : "Union 1",
+      "id" : "3412533b-c1f3-4a5a-a89b-3c4d4ae661e8",
+      "baseType" : "superNode",
+      "nextNodes" : [ {
+        "namespace" : "Default",
+        "nextNodeId" : "34f8e4e2-360f-435c-b9d4-3a6dea94ad54",
+        "nextNamespace" : "Left"
+      } ],
+      "serialize" : false,
+      "description" : null,
+      "beforeActionAnnotations" : [ ],
+      "afterActionAnnotations" : [ ],
+      "actionNode" : {
+        "nodeType" : ".v1.SimpleUnion",
+        "name" : "Union 1",
+        "id" : "434d4c2a-a826-4166-b3dd-1e61c04a6c7a",
+        "baseType" : "transform",
+        "nextNodes" : [ ],
+        "serialize" : false,
+        "description" : null,
+        "namespaceFieldMappings" : [ {
+          "namespaceName" : "Union-Namespace-71ccf977-f1ef-42e9-9adc-26119e60f22e",
+          "fieldMappings" : { }
+        }, {
+          "namespaceName" : "Union-Namespace-9e0904c2-48ce-41d3-8c0a-9849f398a7c3",
+          "fieldMappings" : { }
+        }, {
+          "namespaceName" : "Union-Namespace-55a5fb68-2145-4f60-b31d-1e7998de2282",
+          "fieldMappings" : {
+            "[Discounts]" : "Discount"
+          }
+        } ]
+      }
+    },
+    "1057498c-093d-4dfc-86cc-2e6dc1ac8731" : {
+      "nodeType" : ".v1.LoadCsv",
+      "name" : "Orders_Central",
+      "id" : "1057498c-093d-4dfc-86cc-2e6dc1ac8731",
+      "baseType" : "input",
+      "nextNodes" : [ {
+        "namespace" : "Default",
+        "nextNodeId" : "5fde9199-3e12-4811-9a47-cd7fb37a1c6b",
+        "nextNamespace" : "Default"
+      } ],
+      "serialize" : false,
+      "description" : null,
+      "connectionId" : "bffbc0a3-8c1e-4ad3-8678-c26af1cc3ff1",
+      "connectionAttributes" : {
+        "filename" : "C:\\Program Files\\Tableau\\Tableau Prep 2018.3\\help\\Samples\\en_US\\Superstore Files\\Orders_Central.csv"
+      },
+      "fields" : [ {
+        "name" : "Row ID",
+        "type" : "integer",
+        "collation" : null
+      }, {
+        "name" : "Order ID",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Ship Mode",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Customer ID",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Customer Name",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Segment",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Country",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "City",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "State",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Postal Code",
+        "type" : "integer",
+        "collation" : null
+      }, {
+        "name" : "Product ID",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Category",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Sub-Category",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Product",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Sales",
+        "type" : "real",
+        "collation" : null
+      }, {
+        "name" : "Quantity",
+        "type" : "integer",
+        "collation" : null
+      }, {
+        "name" : "Profit",
+        "type" : "real",
+        "collation" : null
+      }, {
+        "name" : "Order Year",
+        "type" : "integer",
+        "collation" : null
+      }, {
+        "name" : "Order Month",
+        "type" : "integer",
+        "collation" : null
+      }, {
+        "name" : "Order Day",
+        "type" : "integer",
+        "collation" : null
+      }, {
+        "name" : "Ship Year",
+        "type" : "integer",
+        "collation" : null
+      }, {
+        "name" : "Ship Month",
+        "type" : "integer",
+        "collation" : null
+      }, {
+        "name" : "Ship Day",
+        "type" : "integer",
+        "collation" : null
+      }, {
+        "name" : "Discounts",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      } ],
+      "actions" : [ ],
+      "debugModeRowLimit" : null,
+      "originalDataTypes" : { },
+      "randomSampling" : null,
+      "updateTimestamp" : null,
+      "restrictedFields" : { },
+      "userRenamedFields" : { },
+      "selectedFields" : null,
+      "filters" : [ ],
+      "separator" : ",",
+      "locale" : "en_US",
+      "charSet" : "ibm-5348_P100-1997",
+      "containsHeaders" : true,
+      "textQualifier" : "A"
+    },
+    "34f8e4e2-360f-435c-b9d4-3a6dea94ad54" : {
+      "nodeType" : ".v2018_2_3.SuperJoin",
+      "name" : "Join 1",
+      "id" : "34f8e4e2-360f-435c-b9d4-3a6dea94ad54",
+      "baseType" : "superNode",
+      "nextNodes" : [ {
+        "namespace" : "Default",
+        "nextNodeId" : "8be41075-5be1-4c69-b75b-4be5d109ba9d",
+        "nextNamespace" : "Default"
+      } ],
+      "serialize" : false,
+      "description" : null,
+      "beforeActionAnnotations" : [ ],
+      "afterActionAnnotations" : [ ],
+      "actionNode" : {
+        "nodeType" : ".v1.SimpleJoin",
+        "name" : "Join 1",
+        "id" : "37e2ba14-2bde-45d3-a5ac-fae47b39cd4c",
+        "baseType" : "transform",
+        "nextNodes" : [ ],
+        "serialize" : false,
+        "description" : null,
+        "conditions" : [ {
+          "leftExpression" : "[Order ID]",
+          "rightExpression" : "[Order ID]",
+          "comparator" : "=="
+        } ],
+        "joinType" : "left"
+      }
+    },
+    "92a40f62-e5e1-4660-99f8-008bcd03decc" : {
+      "nodeType" : ".v1.LoadCsvInputUnion",
+      "name" : "orders_south_2015",
+      "id" : "92a40f62-e5e1-4660-99f8-008bcd03decc",
+      "baseType" : "input",
+      "nextNodes" : [ {
+        "namespace" : "Default",
+        "nextNodeId" : "3412533b-c1f3-4a5a-a89b-3c4d4ae661e8",
+        "nextNamespace" : "Union-Namespace-9e0904c2-48ce-41d3-8c0a-9849f398a7c3"
+      } ],
+      "serialize" : false,
+      "description" : null,
+      "connectionId" : "11eeed47-268c-4ff1-8d45-fa98337e4b36",
+      "connectionAttributes" : {
+        "filename" : "C:\\Program Files\\Tableau\\Tableau Prep 2018.3\\help\\Samples\\en_US\\Superstore Files\\Orders South\\orders_south_2015.csv"
+      },
+      "fields" : [ {
+        "name" : "Sales",
+        "type" : "real",
+        "collation" : null
+      }, {
+        "name" : "Quantity",
+        "type" : "integer",
+        "collation" : null
+      }, {
+        "name" : "Profit",
+        "type" : "real",
+        "collation" : null
+      }, {
+        "name" : "Discount",
+        "type" : "real",
+        "collation" : null
+      }, {
+        "name" : "Region",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "State",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Row ID",
+        "type" : "integer",
+        "collation" : null
+      }, {
+        "name" : "Order ID",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Order Date",
+        "type" : "datetime",
+        "collation" : null
+      }, {
+        "name" : "Ship Date",
+        "type" : "datetime",
+        "collation" : null
+      }, {
+        "name" : "Ship Mode",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Customer ID",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Customer Name",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Segment",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Country",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "City",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Postal Code",
+        "type" : "integer",
+        "collation" : null
+      }, {
+        "name" : "Product ID",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Category",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Sub-Category",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Product Name",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "File Paths",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      } ],
+      "actions" : [ ],
+      "debugModeRowLimit" : null,
+      "originalDataTypes" : { },
+      "randomSampling" : null,
+      "updateTimestamp" : null,
+      "restrictedFields" : { },
+      "userRenamedFields" : { },
+      "selectedFields" : null,
+      "filters" : [ ],
+      "generatedInputs" : [ {
+        "inputUnionInputType" : ".FileInputUnionInput",
+        "inputNode" : {
+          "nodeType" : ".v1.LoadCsv",
+          "name" : "orders_south_2015",
+          "id" : "5b0b9b21-5fc8-4002-a088-8b20557b13be",
+          "baseType" : "input",
+          "nextNodes" : [ ],
+          "serialize" : false,
+          "description" : null,
+          "connectionId" : "11eeed47-268c-4ff1-8d45-fa98337e4b36",
+          "connectionAttributes" : {
+            "filename" : "C:\\Program Files\\Tableau\\Tableau Prep 2018.3\\help\\Samples\\en_US\\Superstore Files\\Orders South\\orders_south_2015.csv",
+            "class" : "textscan"
+          },
+          "fields" : [ {
+            "name" : "Sales",
+            "type" : "real",
+            "collation" : null
+          }, {
+            "name" : "Quantity",
+            "type" : "integer",
+            "collation" : null
+          }, {
+            "name" : "Profit",
+            "type" : "real",
+            "collation" : null
+          }, {
+            "name" : "Discount",
+            "type" : "real",
+            "collation" : null
+          }, {
+            "name" : "Region",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "State",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Row ID",
+            "type" : "integer",
+            "collation" : null
+          }, {
+            "name" : "Order ID",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Order Date",
+            "type" : "datetime",
+            "collation" : null
+          }, {
+            "name" : "Ship Date",
+            "type" : "datetime",
+            "collation" : null
+          }, {
+            "name" : "Ship Mode",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Customer ID",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Customer Name",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Segment",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Country",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "City",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Postal Code",
+            "type" : "integer",
+            "collation" : null
+          }, {
+            "name" : "Product ID",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Category",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Sub-Category",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Product Name",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          } ],
+          "actions" : [ ],
+          "debugModeRowLimit" : null,
+          "originalDataTypes" : {
+            "Ship Date" : "datetime",
+            "Order Date" : "datetime"
+          },
+          "randomSampling" : null,
+          "updateTimestamp" : null,
+          "restrictedFields" : null,
+          "userRenamedFields" : { },
+          "selectedFields" : null,
+          "filters" : null,
+          "separator" : "A",
+          "locale" : "en_US",
+          "charSet" : "ibm-5348_P100-1997",
+          "containsHeaders" : true,
+          "textQualifier" : "A"
+        },
+        "filePath" : "orders_south_2015.csv"
+      }, {
+        "inputUnionInputType" : ".FileInputUnionInput",
+        "inputNode" : {
+          "nodeType" : ".v1.LoadCsv",
+          "name" : "orders_south_2015",
+          "id" : "db5f8c11-38a5-4241-9404-3d0adc053d93",
+          "baseType" : "input",
+          "nextNodes" : [ ],
+          "serialize" : false,
+          "description" : null,
+          "connectionId" : "11eeed47-268c-4ff1-8d45-fa98337e4b36",
+          "connectionAttributes" : {
+            "filename" : "C:\\Program Files\\Tableau\\Tableau Prep 2018.3\\help\\Samples\\en_US\\Superstore Files\\Orders South\\orders_south_2016.csv",
+            "class" : "textscan"
+          },
+          "fields" : [ {
+            "name" : "Sales",
+            "type" : "real",
+            "collation" : null
+          }, {
+            "name" : "Quantity",
+            "type" : "integer",
+            "collation" : null
+          }, {
+            "name" : "Profit",
+            "type" : "real",
+            "collation" : null
+          }, {
+            "name" : "Discount",
+            "type" : "real",
+            "collation" : null
+          }, {
+            "name" : "Region",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "State",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Row ID",
+            "type" : "integer",
+            "collation" : null
+          }, {
+            "name" : "Order ID",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Order Date",
+            "type" : "datetime",
+            "collation" : null
+          }, {
+            "name" : "Ship Date",
+            "type" : "datetime",
+            "collation" : null
+          }, {
+            "name" : "Ship Mode",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Customer ID",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Customer Name",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Segment",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Country",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "City",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Postal Code",
+            "type" : "integer",
+            "collation" : null
+          }, {
+            "name" : "Product ID",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Category",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Sub-Category",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Product Name",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          } ],
+          "actions" : [ ],
+          "debugModeRowLimit" : null,
+          "originalDataTypes" : {
+            "Ship Date" : "datetime",
+            "Order Date" : "datetime"
+          },
+          "randomSampling" : null,
+          "updateTimestamp" : null,
+          "restrictedFields" : null,
+          "userRenamedFields" : { },
+          "selectedFields" : null,
+          "filters" : null,
+          "separator" : "A",
+          "locale" : "en_US",
+          "charSet" : "ibm-5348_P100-1997",
+          "containsHeaders" : true,
+          "textQualifier" : "A"
+        },
+        "filePath" : "orders_south_2016.csv"
+      }, {
+        "inputUnionInputType" : ".FileInputUnionInput",
+        "inputNode" : {
+          "nodeType" : ".v1.LoadCsv",
+          "name" : "orders_south_2015",
+          "id" : "9e5d61ab-584b-4f3e-b392-dd30612c9913",
+          "baseType" : "input",
+          "nextNodes" : [ ],
+          "serialize" : false,
+          "description" : null,
+          "connectionId" : "11eeed47-268c-4ff1-8d45-fa98337e4b36",
+          "connectionAttributes" : {
+            "filename" : "C:\\Program Files\\Tableau\\Tableau Prep 2018.3\\help\\Samples\\en_US\\Superstore Files\\Orders South\\orders_south_2017.csv",
+            "class" : "textscan"
+          },
+          "fields" : [ {
+            "name" : "Sales",
+            "type" : "real",
+            "collation" : null
+          }, {
+            "name" : "Quantity",
+            "type" : "integer",
+            "collation" : null
+          }, {
+            "name" : "Profit",
+            "type" : "real",
+            "collation" : null
+          }, {
+            "name" : "Discount",
+            "type" : "real",
+            "collation" : null
+          }, {
+            "name" : "Region",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "State",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Row ID",
+            "type" : "integer",
+            "collation" : null
+          }, {
+            "name" : "Order ID",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Order Date",
+            "type" : "datetime",
+            "collation" : null
+          }, {
+            "name" : "Ship Date",
+            "type" : "datetime",
+            "collation" : null
+          }, {
+            "name" : "Ship Mode",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Customer ID",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Customer Name",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Segment",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Country",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "City",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Postal Code",
+            "type" : "integer",
+            "collation" : null
+          }, {
+            "name" : "Product ID",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Category",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Sub-Category",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Product Name",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          } ],
+          "actions" : [ ],
+          "debugModeRowLimit" : null,
+          "originalDataTypes" : {
+            "Ship Date" : "datetime",
+            "Order Date" : "datetime"
+          },
+          "randomSampling" : null,
+          "updateTimestamp" : null,
+          "restrictedFields" : null,
+          "userRenamedFields" : { },
+          "selectedFields" : null,
+          "filters" : null,
+          "separator" : "A",
+          "locale" : "en_US",
+          "charSet" : "ibm-5348_P100-1997",
+          "containsHeaders" : true,
+          "textQualifier" : "A"
+        },
+        "filePath" : "orders_south_2017.csv"
+      }, {
+        "inputUnionInputType" : ".FileInputUnionInput",
+        "inputNode" : {
+          "nodeType" : ".v1.LoadCsv",
+          "name" : "orders_south_2015",
+          "id" : "933857d8-0bb5-4f6d-8d66-065ab063cc9d",
+          "baseType" : "input",
+          "nextNodes" : [ ],
+          "serialize" : false,
+          "description" : null,
+          "connectionId" : "11eeed47-268c-4ff1-8d45-fa98337e4b36",
+          "connectionAttributes" : {
+            "filename" : "C:\\Program Files\\Tableau\\Tableau Prep 2018.3\\help\\Samples\\en_US\\Superstore Files\\Orders South\\orders_south_2018.csv",
+            "class" : "textscan"
+          },
+          "fields" : [ {
+            "name" : "Sales",
+            "type" : "real",
+            "collation" : null
+          }, {
+            "name" : "Quantity",
+            "type" : "integer",
+            "collation" : null
+          }, {
+            "name" : "Profit",
+            "type" : "real",
+            "collation" : null
+          }, {
+            "name" : "Discount",
+            "type" : "real",
+            "collation" : null
+          }, {
+            "name" : "Region",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "State",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Row ID",
+            "type" : "integer",
+            "collation" : null
+          }, {
+            "name" : "Order ID",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Order Date",
+            "type" : "datetime",
+            "collation" : null
+          }, {
+            "name" : "Ship Date",
+            "type" : "datetime",
+            "collation" : null
+          }, {
+            "name" : "Ship Mode",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Customer ID",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Customer Name",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Segment",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Country",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "City",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Postal Code",
+            "type" : "integer",
+            "collation" : null
+          }, {
+            "name" : "Product ID",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Category",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Sub-Category",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          }, {
+            "name" : "Product Name",
+            "type" : "string",
+            "collation" : "LEN_RUS"
+          } ],
+          "actions" : [ ],
+          "debugModeRowLimit" : null,
+          "originalDataTypes" : {
+            "Ship Date" : "datetime",
+            "Order Date" : "datetime"
+          },
+          "randomSampling" : null,
+          "updateTimestamp" : null,
+          "restrictedFields" : null,
+          "userRenamedFields" : { },
+          "selectedFields" : null,
+          "filters" : null,
+          "separator" : "A",
+          "locale" : "en_US",
+          "charSet" : "ibm-5348_P100-1997",
+          "containsHeaders" : true,
+          "textQualifier" : "A"
+        },
+        "filePath" : "orders_south_2018.csv"
+      } ],
+      "filePattern" : "",
+      "inclusiveFilePattern" : true,
+      "includeSubDirectory" : false,
+      "containsHeaders" : true,
+      "pathNameField" : "File Paths",
+      "errorOnLoadFiles" : { },
+      "excludedFiles" : [ ],
+      "matchedFiles" : [ "orders_south_2015.csv", "orders_south_2016.csv", "orders_south_2017.csv", "orders_south_2018.csv" ],
+      "separator" : "A",
+      "locale" : "en_US",
+      "charSet" : "ibm-5348_P100-1997",
+      "textQualifier" : "A"
+    },
+    "bc7de39b-ec36-413f-aef4-0087f3e3f994" : {
+      "nodeType" : ".v1.LoadExcel",
+      "name" : "returns_new",
+      "id" : "bc7de39b-ec36-413f-aef4-0087f3e3f994",
+      "baseType" : "input",
+      "nextNodes" : [ {
+        "namespace" : "Default",
+        "nextNodeId" : "4964e8db-6fbd-4592-8fd3-e1a997f70f93",
+        "nextNamespace" : "Default"
+      } ],
+      "serialize" : false,
+      "description" : null,
+      "connectionId" : "9332946e-ea83-4116-9518-8bd07249ff93",
+      "connectionAttributes" : { },
+      "fields" : [ {
+        "name" : "Row ID",
+        "type" : "integer",
+        "collation" : "LROOT"
+      }, {
+        "name" : "Order Date",
+        "type" : "string",
+        "collation" : "LEN_RGB_S2"
+      }, {
+        "name" : "Order ID",
+        "type" : "string",
+        "collation" : "LEN_RGB_S2"
+      }, {
+        "name" : "Product ID",
+        "type" : "string",
+        "collation" : "LEN_RGB_S2"
+      }, {
+        "name" : "Sub-Category",
+        "type" : "string",
+        "collation" : "LEN_RGB_S2"
+      }, {
+        "name" : "Manufacturer",
+        "type" : "string",
+        "collation" : "LEN_RGB_S2"
+      }, {
+        "name" : "Product Name",
+        "type" : "string",
+        "collation" : "LEN_RGB_S2"
+      }, {
+        "name" : "Return Reason",
+        "type" : "string",
+        "collation" : "LEN_RGB_S2"
+      }, {
+        "name" : "Notes",
+        "type" : "string",
+        "collation" : "LEN_RGB_S2"
+      } ],
+      "actions" : [ ],
+      "debugModeRowLimit" : null,
+      "originalDataTypes" : { },
+      "randomSampling" : null,
+      "updateTimestamp" : null,
+      "restrictedFields" : { },
+      "userRenamedFields" : { },
+      "selectedFields" : null,
+      "filters" : [ ],
+      "relation" : {
+        "displayName" : "[returns_new$]",
+        "type" : "table",
+        "table" : "[returns_new$]"
+      }
+    },
+    "8be41075-5be1-4c69-b75b-4be5d109ba9d" : {
+      "nodeType" : ".v1.Container",
+      "name" : "Clean 2",
+      "id" : "8be41075-5be1-4c69-b75b-4be5d109ba9d",
+      "baseType" : "container",
+      "nextNodes" : [ {
+        "namespace" : "Default",
+        "nextNodeId" : "6387ce44-ce5f-44ab-a9bd-8fb73065cede",
+        "nextNamespace" : "Default"
+      } ],
+      "serialize" : false,
+      "description" : null,
+      "loomContainer" : {
+        "parameters" : {
+          "parameters" : { }
+        },
+        "initialNodes" : [ ],
+        "nodes" : { },
+        "connections" : { },
+        "connectionIds" : [ ],
+        "nodeProperties" : { }
+      },
+      "namespacesToInput" : { },
+      "namespacesToOutput" : { },
+      "providedParameters" : { }
+    },
+    "2fd52001-d1d5-4809-9a80-d2529515fb35" : {
+      "nodeType" : ".v1.LoadCsv",
+      "name" : "Orders_West",
+      "id" : "2fd52001-d1d5-4809-9a80-d2529515fb35",
+      "baseType" : "input",
+      "nextNodes" : [ {
+        "namespace" : "Default",
+        "nextNodeId" : "3412533b-c1f3-4a5a-a89b-3c4d4ae661e8",
+        "nextNamespace" : "Union-Namespace-71ccf977-f1ef-42e9-9adc-26119e60f22e"
+      } ],
+      "serialize" : false,
+      "description" : null,
+      "connectionId" : "cbf56dcf-108e-49b4-9be2-17ee080ebeec",
+      "connectionAttributes" : {
+        "filename" : "C:\\Program Files\\Tableau\\Tableau Prep 2018.3\\help\\Samples\\en_US\\Superstore Files\\Orders_West.csv"
+      },
+      "fields" : [ {
+        "name" : "Row ID",
+        "type" : "integer",
+        "collation" : null
+      }, {
+        "name" : "Order ID",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Order Date",
+        "type" : "datetime",
+        "collation" : null
+      }, {
+        "name" : "Ship Date",
+        "type" : "datetime",
+        "collation" : null
+      }, {
+        "name" : "Ship Mode",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Customer ID",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Customer Name",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Segment",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Country",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "City",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Postal Code",
+        "type" : "integer",
+        "collation" : null
+      }, {
+        "name" : "Region",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Product ID",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Category",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Sub-Category",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Product Name",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Sales",
+        "type" : "real",
+        "collation" : null
+      }, {
+        "name" : "Quantity",
+        "type" : "integer",
+        "collation" : null
+      }, {
+        "name" : "Discount",
+        "type" : "real",
+        "collation" : null
+      }, {
+        "name" : "Profit",
+        "type" : "real",
+        "collation" : null
+      }, {
+        "name" : "Right_Row ID",
+        "type" : "integer",
+        "collation" : null
+      }, {
+        "name" : "Right_Order Date",
+        "type" : "datetime",
+        "collation" : null
+      }, {
+        "name" : "Right_Ship Date",
+        "type" : "datetime",
+        "collation" : null
+      }, {
+        "name" : "Right_Ship Mode",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Right_Customer ID",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Right_Customer Name",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Right_Segment",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Right_Country",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Right_City",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Right_State2",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Right_Postal Code",
+        "type" : "integer",
+        "collation" : null
+      }, {
+        "name" : "Right_Region",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Right_Product ID",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Right_Category",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Right_Sub-Category",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Right_Product Name",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      }, {
+        "name" : "Right_Sales",
+        "type" : "real",
+        "collation" : null
+      }, {
+        "name" : "Right_Quantity",
+        "type" : "integer",
+        "collation" : null
+      }, {
+        "name" : "Right_Discount",
+        "type" : "real",
+        "collation" : null
+      }, {
+        "name" : "Right_Profit",
+        "type" : "real",
+        "collation" : null
+      }, {
+        "name" : "State",
+        "type" : "string",
+        "collation" : "LEN_RUS"
+      } ],
+      "actions" : [ {
+        "nodeType" : ".v1.RemoveColumns",
+        "name" : "Remove Right_Row ID + 19 more 1",
+        "id" : "a709d916-8eea-430a-b85c-7aa5e19f6743",
+        "baseType" : "transform",
+        "nextNodes" : [ ],
+        "serialize" : false,
+        "description" : null,
+        "columnNames" : [ "Right_Row ID", "Right_Order Date", "Right_Ship Date", "Right_Ship Mode", "Right_Customer ID", "Right_Customer Name", "Right_Segment", "Right_Country", "Right_City", "Right_State2", "Right_Postal Code", "Right_Region", "Right_Product ID", "Right_Category", "Right_Sub-Category", "Right_Product Name", "Right_Sales", "Right_Quantity", "Right_Discount", "Right_Profit" ]
+      } ],
+      "debugModeRowLimit" : null,
+      "originalDataTypes" : { },
+      "randomSampling" : null,
+      "updateTimestamp" : null,
+      "restrictedFields" : { },
+      "userRenamedFields" : { },
+      "selectedFields" : null,
+      "filters" : [ ],
+      "separator" : ",",
+      "locale" : "en_US",
+      "charSet" : "ibm-5348_P100-1997",
+      "containsHeaders" : true,
+      "textQualifier" : "A"
+    },
+    "6387ce44-ce5f-44ab-a9bd-8fb73065cede" : {
+      "nodeType" : ".v1.WriteToHyper",
+      "name" : "Output",
+      "id" : "6387ce44-ce5f-44ab-a9bd-8fb73065cede",
+      "baseType" : "output",
+      "nextNodes" : [ ],
+      "serialize" : false,
+      "description" : null,
+      "hyperOutputFile" : "C:\\Users\\aloth\\Documents\\My Tableau Prep Repository\\Datasources\\Output.hyper",
+      "tdsOutput" : "C:\\Users\\aloth\\Documents\\My Tableau Prep Repository\\Datasources\\Output.tds"
+    },
+    "4964e8db-6fbd-4592-8fd3-e1a997f70f93" : {
+      "nodeType" : ".v1.Container",
+      "name" : "Clean 1",
+      "id" : "4964e8db-6fbd-4592-8fd3-e1a997f70f93",
+      "baseType" : "container",
+      "nextNodes" : [ {
+        "namespace" : "Default",
+        "nextNodeId" : "34f8e4e2-360f-435c-b9d4-3a6dea94ad54",
+        "nextNamespace" : "Right"
+      } ],
+      "serialize" : false,
+      "description" : null,
+      "loomContainer" : {
+        "parameters" : {
+          "parameters" : { }
+        },
+        "initialNodes" : [ ],
+        "nodes" : {
+          "e29ce704-d082-4da6-beb1-5cb475278c6e" : {
+            "nodeType" : ".v1.AddColumn",
+            "columnName" : "Notes - Split 1",
+            "expression" : "TRIM( SPLIT( [Notes], \"-\", 1 ) )",
+            "name" : "Add Notes - Split 1 1",
+            "id" : "e29ce704-d082-4da6-beb1-5cb475278c6e",
+            "baseType" : "transform",
+            "nextNodes" : [ {
+              "namespace" : "Default",
+              "nextNodeId" : "d8a07de3-1c7c-466c-893c-4284b744e1bb",
+              "nextNamespace" : "Default"
+            } ],
+            "serialize" : false,
+            "description" : null
+          },
+          "1b90ce0a-5e91-4411-ab86-88b1d4056c5f" : {
+            "nodeType" : ".v2018_3_3.Remap",
+            "name" : "Clean 1",
+            "id" : "1b90ce0a-5e91-4411-ab86-88b1d4056c5f",
+            "baseType" : "transform",
+            "nextNodes" : [ ],
+            "serialize" : false,
+            "description" : null,
+            "columnName" : "Approver",
+            "values" : {
+              "\"M Gomez\"" : [ "\"M/ Gomez\"", "\"M. Gomez\"", "\"M Gomez\"" ],
+              "\"S Kelly\"" : [ "\"S. Kelly\"", "\"S Kelly\"" ],
+              "\"F Azad\"" : [ "\"F Azad\"", "\"F. Azad\"" ],
+              "\"L Smith\"" : [ "\"L. Smith\"", "\"L Smith\"" ],
+              "\"E Williams\"" : [ "\"E Williams\"", "\"EWilliams\"", "\"E Wi lliams\"", "\"E   Williams\"" ],
+              "\"G Lindsay\"" : [ "\"G. Lindsay\"", "\"G Lindsay\"" ],
+              "\"C Arnold\"" : [ "\"c. arnold\"", "\"C Arnold\"", "\"C.. Arnold\"", "\"C/ Arnold\"", "\"C  Arnold\"" ],
+              "\"R Chen\"" : [ "\"R. Chen\"", "\"R Chen\"" ],
+              "\"K Lawrence\"" : [ "\"K Lawrence\"", "\"K. Lawrence\"" ],
+              "\"R Duchesne\"" : [ "\"R. Duchesne\"", "\"R Duchesne\"" ],
+              "\"L Jenkins\"" : [ "\"L Jenkins\"", "\"L. Jenkins\"" ]
+            },
+            "groupMethodProps" : {
+              "groupMethod" : "NGramFingerprint",
+              "threshold" : 3.0
+            },
+            "fieldId" : ""
+          },
+          "f3515be1-1152-4414-b094-fe0a233c139a" : {
+            "nodeType" : ".v1.RenameColumn",
+            "columnName" : "Notes - Split 2",
+            "rename" : "Approver",
+            "name" : "renamed Notes - Split 2 to Approver 1",
+            "id" : "f3515be1-1152-4414-b094-fe0a233c139a",
+            "baseType" : "transform",
+            "nextNodes" : [ {
+              "namespace" : "Default",
+              "nextNodeId" : "1b90ce0a-5e91-4411-ab86-88b1d4056c5f",
+              "nextNamespace" : "Default"
+            } ],
+            "serialize" : false,
+            "description" : null
+          },
+          "bc079d21-5a71-41d2-b88e-22423de6b682" : {
+            "nodeType" : ".v1.RenameColumn",
+            "columnName" : "Notes - Split 1",
+            "rename" : "Notes (clean)",
+            "name" : "renamed Notes - Split 1 to Notes (clean) 1",
+            "id" : "bc079d21-5a71-41d2-b88e-22423de6b682",
+            "baseType" : "transform",
+            "nextNodes" : [ {
+              "namespace" : "Default",
+              "nextNodeId" : "f3515be1-1152-4414-b094-fe0a233c139a",
+              "nextNamespace" : "Default"
+            } ],
+            "serialize" : false,
+            "description" : null
+          },
+          "d8a07de3-1c7c-466c-893c-4284b744e1bb" : {
+            "nodeType" : ".v1.AddColumn",
+            "columnName" : "Notes - Split 2",
+            "expression" : "TRIM( SPLIT( [Notes], \"-\", 2 ) )",
+            "name" : "Add Notes - Split 2 1",
+            "id" : "d8a07de3-1c7c-466c-893c-4284b744e1bb",
+            "baseType" : "transform",
+            "nextNodes" : [ {
+              "namespace" : "Default",
+              "nextNodeId" : "bc079d21-5a71-41d2-b88e-22423de6b682",
+              "nextNamespace" : "Default"
+            } ],
+            "serialize" : false,
+            "description" : null
+          }
+        },
+        "connections" : { },
+        "connectionIds" : [ ],
+        "nodeProperties" : { }
+      },
+      "namespacesToInput" : {
+        "Default" : {
+          "nodeId" : "e29ce704-d082-4da6-beb1-5cb475278c6e",
+          "namespace" : "Default"
+        }
+      },
+      "namespacesToOutput" : {
+        "Default" : {
+          "nodeId" : "1b90ce0a-5e91-4411-ab86-88b1d4056c5f",
+          "namespace" : "Default"
+        }
+      },
+      "providedParameters" : { }
+    }
+  },
+  "connections" : {
+    "11eeed47-268c-4ff1-8d45-fa98337e4b36" : {
+      "connectionType" : ".v1.SqlConnection",
+      "id" : "11eeed47-268c-4ff1-8d45-fa98337e4b36",
+      "name" : "orders_south_2015.csv",
+      "isPackaged" : false,
+      "connectionAttributes" : {
+        "class" : "textscan",
+        "filename" : "C:\\Program Files\\Tableau\\Tableau Prep 2018.3\\help\\Samples\\en_US\\Superstore Files\\Orders South\\orders_south_2015.csv",
+        "directory" : "C:\\Program Files\\Tableau\\Tableau Prep 2018.3\\help\\Samples\\en_US\\Superstore Files\\Orders South"
+      }
+    },
+    "bffbc0a3-8c1e-4ad3-8678-c26af1cc3ff1" : {
+      "connectionType" : ".v1.SqlConnection",
+      "id" : "bffbc0a3-8c1e-4ad3-8678-c26af1cc3ff1",
+      "name" : "Orders_Central.csv",
+      "isPackaged" : false,
+      "connectionAttributes" : {
+        "class" : "textscan",
+        "filename" : "C:\\Program Files\\Tableau\\Tableau Prep 2018.3\\help\\Samples\\en_US\\Superstore Files\\Orders_Central.csv",
+        "directory" : "C:\\Program Files\\Tableau\\Tableau Prep 2018.3\\help\\Samples\\en_US\\Superstore Files"
+      }
+    },
+    "9332946e-ea83-4116-9518-8bd07249ff93" : {
+      "connectionType" : ".v1.SqlConnection",
+      "id" : "9332946e-ea83-4116-9518-8bd07249ff93",
+      "name" : "return reasons_new.xlsx",
+      "isPackaged" : false,
+      "connectionAttributes" : {
+        "class" : "excel-direct",
+        "filename" : "C:\\Program Files\\Tableau\\Tableau Prep 2018.3\\help\\Samples\\en_US\\Superstore Files\\return reasons_new.xlsx"
+      }
+    },
+    "cbf56dcf-108e-49b4-9be2-17ee080ebeec" : {
+      "connectionType" : ".v1.SqlConnection",
+      "id" : "cbf56dcf-108e-49b4-9be2-17ee080ebeec",
+      "name" : "Orders_West.csv",
+      "isPackaged" : false,
+      "connectionAttributes" : {
+        "class" : "textscan",
+        "filename" : "C:\\Program Files\\Tableau\\Tableau Prep 2018.3\\help\\Samples\\en_US\\Superstore Files\\Orders_West.csv",
+        "directory" : "C:\\Program Files\\Tableau\\Tableau Prep 2018.3\\help\\Samples\\en_US\\Superstore Files"
+      }
+    }
+  },
+  "connectionIds" : [ "11eeed47-268c-4ff1-8d45-fa98337e4b36", "bffbc0a3-8c1e-4ad3-8678-c26af1cc3ff1", "cbf56dcf-108e-49b4-9be2-17ee080ebeec", "9332946e-ea83-4116-9518-8bd07249ff93" ],
+  "nodeProperties" : { },
+  "selection" : [ ],
+  "majorVersion" : 1,
+  "minorVersion" : 3,
+  "documentId" : "32b30cac-5e30-4cde-be5a-46e980010205"
+}
