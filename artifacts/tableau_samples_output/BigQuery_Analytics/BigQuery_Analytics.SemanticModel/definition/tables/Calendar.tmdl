@@ -1,130 +1,118 @@
 table Calendar
-	lineageTag: 75c335ec-fc0d-4bd0-a8e1-cacb4964e729
-	description: Contains 8 columns and 3 measures: Date, Year, Quarter, Month, MonthName, Day, DayOfWeek, DayName.
+	lineageTag: c7a5887c-6a98-4dca-a1b0-eafb490ee575
 
 	measure 'Year To Date' = TOTALYTD([Total Revenue], 'Calendar'[Date])
 		formatString: #,0.00
 		displayFolder: Time Intelligence
-		description: DAX: TOTALYTD([Total Revenue], 'Calendar'[Date])
-		lineageTag: d1b6a66e-ab5e-4786-9c5f-4036ec1814c2
+		lineageTag: 7838b087-5949-4bc1-af62-49943063a5dc
 
 	measure 'Previous Year' = CALCULATE([Total Revenue], SAMEPERIODLASTYEAR('Calendar'[Date]))
 		formatString: #,0.00
 		displayFolder: Time Intelligence
-		description: DAX: CALCULATE([Total Revenue], SAMEPERIODLASTYEAR('Calendar'[Date]))
-		lineageTag: 27945008-5d6e-49a2-85ea-b1a06779e6f9
+		lineageTag: 0537720a-66e2-4731-b9fd-fea59cdcfcd6
 
 	measure 'Year Over Year %' = DIVIDE([Year To Date] - [Previous Year], [Previous Year], 0)
 		formatString: 0.00%
 		displayFolder: Time Intelligence
-		description: DAX: DIVIDE([Year To Date] - [Previous Year], [Previous Year], 0)
-		lineageTag: 75fab946-23df-4ee8-a04d-0588e2fc76a0
+		lineageTag: 7ac2ea26-062b-4711-b6f1-6fb1f2cfd5eb
 
 	column Date
 		dataType: dateTime
 		formatString: dd/mm/yyyy
-		lineageTag: 2b990bf0-ddd9-460b-bcaa-c2ae51394c74
+		lineageTag: 8eb50463-70e0-4e69-b809-953365b67e6a
 		summarizeBy: none
 		sourceColumn: Date
 		isKey
 		dataCategory: DateTime
-		description: Datetime column. categorized as DateTime. (table key).
 
 		annotation SummarizationSetBy = Automatic
 
 	column Year
 		dataType: int64
-		lineageTag: dcca6d60-c7e1-400e-ad94-b7e7c895155d
+		lineageTag: e1bfb082-eb65-4a4e-a3aa-6f87ba7c706a
 		summarizeBy: none
 		sourceColumn: Year
 		dataCategory: Years
-		description: Int64 column. categorized as Years.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Quarter
 		dataType: string
-		lineageTag: 085c4bea-52a1-4a9a-8a25-a136eb5bb6a8
+		lineageTag: 09f02592-fc68-4c61-9bc3-5b0d117a1ae2
 		summarizeBy: none
 		sourceColumn: Quarter
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Month
 		dataType: int64
-		lineageTag: af425721-5631-479a-a3d6-be34a57cce75
+		lineageTag: dffb6f34-0b81-4aa5-b0f5-4afadb17d0f7
 		summarizeBy: none
 		sourceColumn: Month
 		dataCategory: Months
-		description: Int64 column. categorized as Months.
 
 		annotation SummarizationSetBy = Automatic
 
 	column MonthName
 		dataType: string
-		lineageTag: 20cf8f9c-6573-4989-ad51-b3bafae290c1
+		lineageTag: cf7616c2-a15d-4fa0-83b8-1704f0408376
 		summarizeBy: none
 		sourceColumn: MonthName
-		description: String column.
 		sortByColumn: Month
 
 		annotation SummarizationSetBy = Automatic
 
 	column Day
 		dataType: int64
-		lineageTag: 3072a267-3e59-4d59-9574-c4d9e94155ad
+		lineageTag: 6fe956fa-0050-4084-b73c-d4f18512ab9f
 		summarizeBy: none
 		sourceColumn: Day
 		dataCategory: Days
-		description: Int64 column. categorized as Days.
 
 		annotation SummarizationSetBy = Automatic
 
 	column DayOfWeek
 		dataType: int64
-		lineageTag: e20f5d10-64df-4654-bcd4-39a905b9b7bf
+		lineageTag: 68738c35-e85a-47bb-815e-1774858b0372
 		summarizeBy: none
 		sourceColumn: DayOfWeek
-		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column DayName
 		dataType: string
-		lineageTag: a0d73ee8-8e17-488f-95d4-bbc51abd00aa
+		lineageTag: bde67540-faa0-420a-b91a-e380e55860d6
 		summarizeBy: none
 		sourceColumn: DayName
-		description: String column.
 		sortByColumn: DayOfWeek
 
 		annotation SummarizationSetBy = Automatic
 
 	hierarchy 'Date Hierarchy'
-		lineageTag: 6dd92c22-6702-41cc-b617-542297408acb
+		lineageTag: 28c5a2d3-2c84-483d-b70d-c6a16c6cbf3e
 
 		level Year
 			ordinal: 0
 			column: Year
-			lineageTag: 9feb4ac9-8f34-4f9b-badb-88a7089f3246
+			lineageTag: aa12ceaa-5739-40c5-b25e-350d106c9831
 
 		level Quarter
 			ordinal: 1
 			column: Quarter
-			lineageTag: 25bed596-61ab-45f0-b3d8-94adc3b67589
+			lineageTag: 52e79bf4-07ea-4134-b4b8-5ad6cceb8e61
 
 		level Month
 			ordinal: 2
 			column: MonthName
-			lineageTag: c97de605-f8ab-438b-871b-790087758995
+			lineageTag: 99572904-778f-4af0-ab6d-672ceb339ff0
 
 		level Day
 			ordinal: 3
 			column: Day
-			lineageTag: 22f956f4-179e-4d66-aff6-0765374c9fe9
+			lineageTag: a926cdd8-500a-48bd-850c-a6fb763974ae
 
 
-	partition 'Calendar-f2770e62-d4ad-46d2-8a9c-e7f800b8f7fc' = m
+	partition 'Calendar-f4404759-f3f4-4298-8c22-0e133ad83625' = m
 		mode: import
 		source =
 				let

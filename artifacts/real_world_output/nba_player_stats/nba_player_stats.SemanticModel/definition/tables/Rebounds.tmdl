@@ -1,32 +1,28 @@
 table Rebounds
-	lineageTag: 9e3950e0-4c7b-4df6-ac88-581adbd59b7a
-	description: Contains 2 columns and 1 measures: Value, Name.
+	lineageTag: 42e3c18f-5ebc-4d01-a7e1-3a04ed99390a
 
 	measure Rebounds = SELECTEDVALUE('Rebounds'[Value], 1.0)
-		description: DAX: SELECTEDVALUE('Rebounds'[Value], 1.0)
-		lineageTag: 4039520e-27d0-49a8-9847-fc548ac0db14
+		lineageTag: 0e093c59-a74f-4e77-87ef-ed3dfcf865fe
 
 	column Value
 		dataType: double
-		lineageTag: 652da144-377e-43b6-bd04-f4616fefc9db
+		lineageTag: 644e2c06-9f99-4b61-8eeb-162ce7a0f5d7
 		summarizeBy: none
 		sourceColumn: Value
-		description: Double column.
 		annotation displayFolder = Parameters
 
 		annotation SummarizationSetBy = Automatic
 
 	column Name
 		dataType: string
-		lineageTag: 6ea49a3f-48c2-41fd-9fbe-ab43c0baacba
+		lineageTag: b05c7f63-08b7-4189-879c-e19c562a7e97
 		summarizeBy: none
 		sourceColumn: Name
-		description: String column.
 		annotation displayFolder = Parameters
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Rebounds-65e26117-6e72-42db-9b44-0b8d6cabccde' = calculated
+	partition 'Rebounds-c36ef049-d2b1-4c29-9ffd-2723680df4c8' = calculated
 		mode: import
 		source = DATATABLE("Value", DOUBLE, "Name", STRING, {{1.0, "Average Deffensive Rebounds per Game"}, {2.0, "Average Offensive Rebounds per Game"}, {3.0, "Average Rebound per Game"}})
 

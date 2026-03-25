@@ -1,112 +1,103 @@
 table Calendar
-	lineageTag: 6bbf3da7-de0c-497b-8e4b-b757849ae9ca
-	description: Contains 8 columns: Date, Year, Quarter, Month, MonthName, Day, DayOfWeek, DayName.
+	lineageTag: 49524b76-e0d0-4fbc-b42d-c170040c3efd
 
 	column Date
 		dataType: dateTime
 		formatString: dd/mm/yyyy
-		lineageTag: 0ade9295-de72-49a6-9743-42a2777d28d6
+		lineageTag: 812d20cb-0cf9-475a-ac65-d6b43777a55a
 		summarizeBy: none
 		sourceColumn: Date
 		isKey
 		dataCategory: DateTime
-		description: Datetime column. categorized as DateTime. (table key).
 
 		annotation SummarizationSetBy = Automatic
 
 	column Year
 		dataType: int64
-		lineageTag: 1e21187d-0290-4567-99fe-34e83fec1f1b
+		lineageTag: 91d50836-6a87-4b0d-a32d-9f764d2db767
 		summarizeBy: none
 		sourceColumn: Year
 		dataCategory: Years
-		description: Int64 column. categorized as Years.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Quarter
 		dataType: string
-		lineageTag: 796b2cfd-f555-421f-b1d4-70f475586cc0
+		lineageTag: eb11e020-6cd9-4389-b84b-ce3239a106f6
 		summarizeBy: none
 		sourceColumn: Quarter
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Month
 		dataType: int64
-		lineageTag: b5e50f3c-e2f3-458b-b014-2e062c25d779
+		lineageTag: b9c3ce23-3861-43d3-ab19-62213d52db5d
 		summarizeBy: none
 		sourceColumn: Month
 		dataCategory: Months
-		description: Int64 column. categorized as Months.
 
 		annotation SummarizationSetBy = Automatic
 
 	column MonthName
 		dataType: string
-		lineageTag: 56caf614-3186-417c-96bf-7954a7ea4e1b
+		lineageTag: a8ae0a4f-e07c-4f3f-b9ed-112d77e5ae1e
 		summarizeBy: none
 		sourceColumn: MonthName
-		description: String column.
 		sortByColumn: Month
 
 		annotation SummarizationSetBy = Automatic
 
 	column Day
 		dataType: int64
-		lineageTag: 6c58439f-80b0-4876-8ef0-73712c027aa8
+		lineageTag: b860c463-578f-48c5-bd62-6493ff889ce5
 		summarizeBy: none
 		sourceColumn: Day
 		dataCategory: Days
-		description: Int64 column. categorized as Days.
 
 		annotation SummarizationSetBy = Automatic
 
 	column DayOfWeek
 		dataType: int64
-		lineageTag: 522320aa-8b44-4703-aba7-dd95c8a4d8a0
+		lineageTag: a7e5f325-216c-471f-9d18-1c84287f2686
 		summarizeBy: none
 		sourceColumn: DayOfWeek
-		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column DayName
 		dataType: string
-		lineageTag: 23db1b75-dea5-438a-87ce-0e93a682c2b9
+		lineageTag: 73726c99-fd6d-4d97-b579-51f60b975ef8
 		summarizeBy: none
 		sourceColumn: DayName
-		description: String column.
 		sortByColumn: DayOfWeek
 
 		annotation SummarizationSetBy = Automatic
 
 	hierarchy 'Date Hierarchy'
-		lineageTag: f649a2f8-5c77-449b-8052-7a6c244cef26
+		lineageTag: bc17fdf6-f28e-478a-848c-477972eb919c
 
 		level Year
 			ordinal: 0
 			column: Year
-			lineageTag: 3c315ba5-2fd8-4011-815e-2995eccbeba8
+			lineageTag: c0e10dd2-967b-4a22-a5d2-8a4fe42f039e
 
 		level Quarter
 			ordinal: 1
 			column: Quarter
-			lineageTag: be15c91c-406b-42c1-8c5f-b861ab98fc9a
+			lineageTag: d69d7919-7c93-42f6-9495-1b196751e5e3
 
 		level Month
 			ordinal: 2
 			column: MonthName
-			lineageTag: fe912b7c-55cc-4ea4-ad20-4e58ffe7d4f0
+			lineageTag: cdaa447d-8eaa-4546-9570-860e4a8c637a
 
 		level Day
 			ordinal: 3
 			column: Day
-			lineageTag: 6e3f453b-3ce6-49a9-adad-b9a557b310c0
+			lineageTag: 8d636840-fbd3-4afb-b80c-b2fbde32c6af
 
 
-	partition 'Calendar-7c9effc6-854a-4661-af36-fd4016fb4c03' = m
+	partition 'Calendar-71ef2057-fa72-48aa-8c75-d5298105aece' = m
 		mode: import
 		source =
 				let

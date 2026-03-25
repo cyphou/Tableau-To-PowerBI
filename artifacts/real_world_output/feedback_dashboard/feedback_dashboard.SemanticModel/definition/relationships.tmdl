@@ -1,4 +1,4 @@
-relationship 8fc82f3e-2d90-4424-81eb-eddca6eba1ba
+relationship dfe3bcda-b6d5-458d-aa0f-ddc279e6ba76
 	fromColumn: 'customer_feedback_data.json'.customer_id
 	toColumn: Extract.customer_id
 	fromCardinality: many

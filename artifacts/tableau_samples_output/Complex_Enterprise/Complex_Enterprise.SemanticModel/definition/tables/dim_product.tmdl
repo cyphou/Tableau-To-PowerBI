@@ -1,10 +1,10 @@
 table dim_product
-	lineageTag: 5dd7494f-f64c-4ad8-a529-9b3a076a4438
+	lineageTag: 39233dcd-9ecd-46e3-95ef-9c7ea663e54a
 	description: Contains 10 columns: product_key, product_id, product_name, category, subcategory, brand, supplier, weight_kg, ... (10 columns total).
 
 	column product_key
 		dataType: int64
-		lineageTag: 6c64663b-6f34-4230-a5f9-94095282d017
+		lineageTag: 644fbdb4-fb70-4f0d-87f8-ddde871e9250
 		summarizeBy: sum
 		sourceColumn: product_key
 		description: Int64 column.
@@ -14,7 +14,7 @@ table dim_product
 
 	column product_id
 		dataType: string
-		lineageTag: 583dd240-8070-40d8-82df-3ea74bda44f7
+		lineageTag: cedefc3c-a53d-4abb-bc2f-6915c3dab2ae
 		summarizeBy: none
 		sourceColumn: product_id
 		description: String column.
@@ -24,7 +24,7 @@ table dim_product
 
 	column product_name
 		dataType: string
-		lineageTag: d2ce851c-1d07-4704-85dc-965366b3a2b3
+		lineageTag: 65069836-0ece-4e0c-94dd-132adeb947f7
 		summarizeBy: none
 		sourceColumn: product_name
 		description: String column.
@@ -33,7 +33,7 @@ table dim_product
 
 	column category
 		dataType: string
-		lineageTag: 7145ad53-ad25-4cac-ba1a-e1512d5cef9f
+		lineageTag: 5e3ff88d-0ec7-42af-8b14-91d9178e6d32
 		summarizeBy: none
 		sourceColumn: category
 		description: String column.
@@ -42,7 +42,7 @@ table dim_product
 
 	column subcategory
 		dataType: string
-		lineageTag: 8f4e4dfd-660a-4f92-9185-844a24396bbf
+		lineageTag: 4394ce56-fd9e-4730-affd-6c4522831532
 		summarizeBy: none
 		sourceColumn: subcategory
 		description: String column.
@@ -51,7 +51,7 @@ table dim_product
 
 	column brand
 		dataType: string
-		lineageTag: df6dca44-758b-47a4-9dff-d7af66f22e8c
+		lineageTag: d3115736-bc48-4feb-8395-5bbf75f26d54
 		summarizeBy: none
 		sourceColumn: brand
 		description: String column.
@@ -60,7 +60,7 @@ table dim_product
 
 	column supplier
 		dataType: string
-		lineageTag: 920fdd12-cca1-4c0f-be17-9537f0835100
+		lineageTag: 153f19f1-a27a-499b-bfac-5e7b527b1a98
 		summarizeBy: none
 		sourceColumn: supplier
 		description: String column.
@@ -70,7 +70,7 @@ table dim_product
 	column weight_kg
 		dataType: double
 		formatString: #,0.00
-		lineageTag: c7d97721-1034-4680-aeb2-85fec3cf2d68
+		lineageTag: 1a918ef9-7cc1-43e1-9831-5f13fe061f0c
 		summarizeBy: sum
 		sourceColumn: weight_kg
 		description: Double column.
@@ -79,7 +79,7 @@ table dim_product
 
 	column is_perishable
 		dataType: boolean
-		lineageTag: 970db83c-48b1-4984-a3e0-e754d8cc8d11
+		lineageTag: 596c933e-4003-4186-a9ad-05787e0450d2
 		summarizeBy: none
 		sourceColumn: is_perishable
 		description: Boolean column.
@@ -89,7 +89,7 @@ table dim_product
 	column launch_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 268f7eb7-0eae-4cd0-a51b-82eab12ef5ef
+		lineageTag: 4a53b5c7-dfa6-4478-b94d-1cf51d1b717f
 		summarizeBy: none
 		sourceColumn: launch_date
 		dataCategory: DateTime
@@ -97,7 +97,7 @@ table dim_product
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'dim_product-ae974926-18c1-4b8e-948f-56ec5fe525fd' = m
+	partition 'dim_product-1debf048-86c8-4610-812d-7d92f27aa673' = m
 		mode: import
 		source =
 				let

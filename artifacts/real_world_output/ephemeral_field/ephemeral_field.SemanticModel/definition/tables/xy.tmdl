@@ -1,45 +1,39 @@
 table xy
-	lineageTag: a7645bcb-0135-480b-bf66-2230afd91942
-	description: Contains 3 columns and 2 measures: a, x, y.
+	lineageTag: 24a31535-70ec-476f-9705-f7e075236e24
 
 	measure '[Number of Records]' = 1
 		displayFolder: Measures
-		description: Migrated from Tableau: 1 | DAX: 1
-		lineageTag: 0525a41b-1580-4ad9-b085-6ed2c10ad23b
+		lineageTag: dc381eb1-18dc-40ca-9814-11444deb35ec
 
 	measure 'SUM(X) + SUM(Y)' = SUM('xy'[x]) + SUM('xy'[y])
 		displayFolder: Measures
-		description: Migrated from Tableau: SUM([x]) + SUM([y]) | DAX: SUM('xy'[x]) + SUM('xy'[y])
-		lineageTag: c55897d4-3239-4bd3-b2aa-fce88928a8a4
+		lineageTag: ee4b2f40-6a59-44a2-8a90-c648b79d76c1
 
 	column a
 		dataType: string
-		lineageTag: 0bc58e3f-e08f-4f61-b217-c3e262eeb323
+		lineageTag: a199bdbc-28eb-4eda-a6d9-5022df308687
 		summarizeBy: none
 		sourceColumn: a
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column x
 		dataType: int64
-		lineageTag: 52fc07ad-e763-4e3b-84dc-04aeeb5d36b5
+		lineageTag: 84826607-5ae5-4802-a48b-35f2e3e54c8e
 		summarizeBy: sum
 		sourceColumn: x
-		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column y
 		dataType: int64
-		lineageTag: b6d51262-74e5-49fa-abcd-509358aff06f
+		lineageTag: c87a2ffb-7ee7-437d-8731-eefc41c72c69
 		summarizeBy: sum
 		sourceColumn: y
-		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'xy-4b7db2a8-8bf6-42db-b615-f60594d73130' = m
+	partition 'xy-1546dde4-84cc-43c3-88d4-f6ccc94b334f' = m
 		mode: import
 		source =
 				let

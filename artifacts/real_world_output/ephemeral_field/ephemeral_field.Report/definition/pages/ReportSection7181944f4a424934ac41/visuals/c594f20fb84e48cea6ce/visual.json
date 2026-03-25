@@ -1,0 +1,75 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
+  "name": "c594f20fb84e48cea6ce",
+  "position": {
+    "x": 10,
+    "y": 10,
+    "z": 0,
+    "height": 700,
+    "width": 1260,
+    "tabOrder": 0
+  },
+  "visual": {
+    "visualType": "clusteredBarChart",
+    "drillFilterOtherVisuals": true,
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "xy"
+                    }
+                  },
+                  "Property": "a"
+                }
+              },
+              "queryRef": "xy.a",
+              "active": true
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "xy"
+                        }
+                      },
+                      "Property": "x"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "xy.x",
+              "active": true
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "xy"
+                    }
+                  },
+                  "Property": "SUM(X) + SUM(Y)"
+                }
+              },
+              "queryRef": "xy.SUM(X) + SUM(Y)",
+              "active": true
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,22 +1,19 @@
 table 'Commission Rate'
-	lineageTag: 5cd0cd95-9edf-49f7-933d-3ecef15e59a0
-	description: Contains 1 columns and 1 measures: Value.
+	lineageTag: 413bcb31-7d06-46f4-959e-f7712841705e
 
 	measure 'Commission Rate' = SELECTEDVALUE('Commission Rate'[Value], 18.400000000000002)
-		description: DAX: SELECTEDVALUE('Commission Rate'[Value], 18.400000000000002)
-		lineageTag: d9d7ba81-03d5-4efe-b350-ea2ba715540d
+		lineageTag: 0fc918f9-11f2-47f7-a742-95e50d3635ff
 
 	column Value
 		dataType: double
-		lineageTag: 97e7896e-4e53-4fe9-b49b-ce59c6775820
+		lineageTag: faba1301-27ed-4ee6-81f6-65cb1e5444cf
 		summarizeBy: none
 		sourceColumn: Value
-		description: Double column.
 		annotation displayFolder = Parameters
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Commission Rate-f8d0e8f5-09e2-4191-86fa-a61e753f0d6d' = calculated
+	partition 'Commission Rate-dc3ab98b-04d2-4cc9-b94f-466b5de5329f' = calculated
 		mode: import
 		source = GENERATESERIES(1.0, 100.0, 0.10000000000000001)
 

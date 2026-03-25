@@ -1,215 +1,192 @@
 table Sheet1
-	lineageTag: a2c37b87-d9e0-4e8c-bc59-672a939b2474
-	description: Contains 20 columns and 2 measures: Player, YR, TM, GP, MIN, FGM, FGA, FG%, ... (20 columns total).
+	lineageTag: cef71d92-27ab-4f61-8daa-b03511f4cd3e
 
 	measure 'p. Rebounds' = SWITCH([Rebounds], 1, AVERAGE('Sheet1'[DEF]), 2, AVERAGE('Sheet1'[OFF]), 3, AVERAGE('Sheet1'[REB]))
 		formatString: #,0.00
 		displayFolder: Measures
-		description: Migrated from Tableau: CASE [Parameters].[Parameter 1] When 1 then avg([DEF]) When 2 then AVG([OFF]) When 3 then avg([REB]) END | DAX: SWITCH([Rebounds], 1, AVERAGE('Sheet1'[DEF]), 2, AVERAGE('Sheet1'[OFF]), 3, AVERAGE('Sheet1'[REB]))
-		lineageTag: ff521959-7363-432e-93a9-5b1d942d59a3
+		lineageTag: 20fccde2-7e72-4728-a065-2b45be579e0d
 
 	measure 'min(1)' = MINX('Sheet1', 1)
 		displayFolder: Measures
-		description: Migrated from Tableau: min(1) | DAX: MINX('Sheet1', 1)
-		lineageTag: f75bfb59-a35a-4d8a-a770-26aaaf5dbbf6
+		lineageTag: b8ddef87-2853-4427-83c3-a9aca7279235
 
 	column Player
 		dataType: string
-		lineageTag: 2a8285da-cdfb-46d2-8274-eb505e07015b
+		lineageTag: 9293008a-4c8f-4a1f-a3bf-5e7fcb1f2799
 		summarizeBy: none
 		sourceColumn: Player
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column YR
 		dataType: int64
-		lineageTag: 1a910f48-915e-4188-be61-8baf5bfd8868
+		lineageTag: 7123dd76-0efb-4868-b726-e2db970576ea
 		summarizeBy: sum
 		sourceColumn: YR
-		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column TM
 		dataType: string
-		lineageTag: 85853a58-3f25-4e67-a6c7-d167112d79f7
+		lineageTag: a8d6750c-6996-4905-9559-382251d2ff27
 		summarizeBy: none
 		sourceColumn: TM
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column GP
 		dataType: int64
-		lineageTag: e5f6812f-428b-4b8c-8b94-b70d2f584a47
+		lineageTag: 196f419e-3b67-4374-9b97-91db3896a609
 		summarizeBy: sum
 		sourceColumn: GP
-		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column MIN
 		dataType: double
 		formatString: #,0.00
-		lineageTag: fb557438-3972-475b-8482-daa06df96abc
+		lineageTag: 62b59435-5a34-45a9-a260-534bdbc5257c
 		summarizeBy: sum
 		sourceColumn: MIN
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column FGM
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 6014d8da-1864-4a22-8a42-0577781501af
+		lineageTag: 58cc85b8-f6b9-49fa-ac82-4cbcc5492594
 		summarizeBy: sum
 		sourceColumn: FGM
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column FGA
 		dataType: double
 		formatString: #,0.00
-		lineageTag: e9951aba-d1be-4870-acd8-bf8700c87399
+		lineageTag: 79d94eff-8421-4a5d-a10f-9d140ff5e65c
 		summarizeBy: sum
 		sourceColumn: FGA
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'FG%'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: f22d6ec9-c8ba-4f4e-8ecc-09a9e6aee901
+		lineageTag: 22b86bb9-bb5a-4dc6-bb01-bf5222434e3d
 		summarizeBy: sum
 		sourceColumn: 'FG%'
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column '3PT%'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: ff9afd9f-381c-40b4-94fc-1a0df7038776
+		lineageTag: cdc4cd5a-f8b7-4446-a7d3-d28f94649a65
 		summarizeBy: sum
 		sourceColumn: '3PT%'
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'FT%'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 3aeff994-ef4a-4978-93c1-f91c5b383895
+		lineageTag: 83e2e126-65d1-4c56-9d39-0edc818de654
 		summarizeBy: sum
 		sourceColumn: 'FT%'
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column OFF
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 53e8ad9b-d488-4dfa-81ee-f87a295ebdaa
+		lineageTag: f1339265-8d96-41e0-81d4-89b5b2641405
 		summarizeBy: sum
 		sourceColumn: OFF
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column DEF
 		dataType: double
 		formatString: #,0.00
-		lineageTag: b823d797-ff3c-43e0-8d14-56d0a8378c92
+		lineageTag: f80c44d8-814b-4379-b613-4a9d258cce34
 		summarizeBy: sum
 		sourceColumn: DEF
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column REB
 		dataType: double
 		formatString: #,0.00
-		lineageTag: ab2b2a18-004f-4fe0-bbf8-c79382425e0a
+		lineageTag: 4fb723e1-8751-49ad-b159-881f64358543
 		summarizeBy: sum
 		sourceColumn: REB
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column ASST
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 07263f9f-ae43-4e78-a100-60519ed3e9cb
+		lineageTag: 982a5cb5-cad1-42b1-a2a9-ffbb9cb9feb9
 		summarizeBy: sum
 		sourceColumn: ASST
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column STL
 		dataType: double
 		formatString: #,0.00
-		lineageTag: ccaa80cb-d50a-4db9-9bfe-639ca6e1a09c
+		lineageTag: 02a92791-1e26-4353-9a42-f411937b213b
 		summarizeBy: sum
 		sourceColumn: STL
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column BLK
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 79f9f791-204a-414a-be48-6462e4f5cddc
+		lineageTag: ef4d1cac-0cb1-458d-8c44-0ce53e05ae36
 		summarizeBy: sum
 		sourceColumn: BLK
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column TO
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 72759c47-eb3a-4e6d-82c8-5327c3afce8b
+		lineageTag: 040d9e71-e154-4d0b-8ca8-3a2f9358cfb1
 		summarizeBy: sum
 		sourceColumn: TO
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column PF
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 0e9dd567-c459-4367-bf49-955b4489dde8
+		lineageTag: 5675969f-8d09-4ea6-b220-f8232e77f06c
 		summarizeBy: sum
 		sourceColumn: PF
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column PTS
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 381616a4-b54c-4c82-9ba0-412a81d12c27
+		lineageTag: ccf50a06-6dfe-45cb-afcb-cee97177933d
 		summarizeBy: sum
 		sourceColumn: PTS
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Action (Player)'
 		dataType: string
-		lineageTag: fea8bb2a-255e-471c-89f2-cd18523fe856
+		lineageTag: d7b878c6-6bd6-4423-8fbc-552264338d4a
 		summarizeBy: none
 		sourceColumn: 'Action (Player)'
-		description: String column.
 		displayFolder: Groups
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Sheet1-4a3f3f79-db1e-4083-a2cb-b4b96d0428d0' = m
+	partition 'Sheet1-3b013e67-2b61-4d71-9349-1eeba060ec69' = m
 		mode: import
 		source =
 				let

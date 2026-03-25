@@ -1,22 +1,19 @@
 table 'Churn Rate'
-	lineageTag: d2e14459-62c1-49c2-a99d-96c81f50fa5d
-	description: Contains 1 columns and 1 measures: Value.
+	lineageTag: 6e100ac2-bf8f-465d-97a8-d3eab4fca766
 
 	measure 'Churn Rate' = SELECTEDVALUE('Churn Rate'[Value], 0.064000000000000001)
-		description: DAX: SELECTEDVALUE('Churn Rate'[Value], 0.064000000000000001)
-		lineageTag: ee337440-5371-4fb5-a257-8d9886f514fd
+		lineageTag: a16665e3-9869-4b73-978d-848af3f775a1
 
 	column Value
 		dataType: double
-		lineageTag: 34777a81-7e0e-4033-9371-5b57ab3bd4b9
+		lineageTag: a04f7a27-eb2f-456f-bb48-747fb8c7ccd9
 		summarizeBy: none
 		sourceColumn: Value
-		description: Double column.
 		annotation displayFolder = Parameters
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Churn Rate-b2ac7871-f587-4c5a-8a14-8968744ea3b3' = calculated
+	partition 'Churn Rate-3782755b-9942-429e-9fbe-d7f719e037bc' = calculated
 		mode: import
 		source = GENERATESERIES(0.0, 0.25, 0.001)
 

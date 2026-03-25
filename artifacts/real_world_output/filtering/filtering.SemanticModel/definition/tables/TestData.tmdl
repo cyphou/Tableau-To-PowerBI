@@ -1,103 +1,91 @@
 table TestData
-	lineageTag: 2c392af1-b69b-4360-9298-680ebdd35902
-	description: Contains 41 columns and 1 measures: Account Account Name, Account Number, Account Number Burst Out Account, Acct Name, Burst Out, Burst Out Join, Burst Out Set list, Burst Out View, ... (41 columns total).
+	lineageTag: d681d541-534b-4e9d-a8d2-bc482207aa48
 
 	measure 'Number of Records' = COUNTROWS('TestData')
 		displayFolder: Measures
-		description: DAX: COUNTROWS('TestData')
-		lineageTag: ba31a25b-0a0b-4cc7-bf4c-2ac8a3ded682
+		lineageTag: aa8361b7-6399-4291-b382-4a5cd919d280
 
 	column 'Account Account Name'
 		dataType: string
-		lineageTag: 9d4bb4c7-a778-4c37-a887-f3ecc9c78599
+		lineageTag: 0825c664-3528-4d93-b8c9-ca4cdc0616c2
 		summarizeBy: none
 		sourceColumn: 'Account Account Name'
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Account Number'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: d9a2889f-795a-48df-8139-5ac0415b1df4
+		lineageTag: f4ef7aa8-a5af-4ac4-a9ab-421d6e7327a7
 		summarizeBy: sum
 		sourceColumn: 'Account Number'
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Account Number Burst Out Account'
 		dataType: string
-		lineageTag: dcd26ab8-fdf9-4bb0-876c-3e9a592da740
+		lineageTag: 7f97a836-553f-4121-b9f2-2a2b597586ea
 		summarizeBy: none
 		sourceColumn: 'Account Number Burst Out Account'
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Acct Name'
 		dataType: string
-		lineageTag: d2a02946-a7ab-436c-aa07-f89260f35548
+		lineageTag: ce40c3b5-6e40-4d95-a2e7-2031ca74fbf0
 		summarizeBy: none
 		sourceColumn: 'Acct Name'
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Burst Out'
 		dataType: string
-		lineageTag: 6c4cc1a8-c46d-40b1-85dd-f99940edc1b4
+		lineageTag: dff8f714-0380-4ec5-a905-45b8ac4bdbe9
 		summarizeBy: none
 		sourceColumn: 'Burst Out'
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Burst Out Join'
 		dataType: string
-		lineageTag: fe1a4577-f223-45e6-bcc2-9bef2f88ae84
+		lineageTag: 568c52aa-a248-4b35-9121-7f17e3efcf8f
 		summarizeBy: none
 		sourceColumn: 'Burst Out Join'
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Burst Out Set list'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 918ad629-df78-4071-a530-5fe8dec63447
+		lineageTag: 53d868e3-f647-480d-8589-4d6207b98cae
 		summarizeBy: sum
 		sourceColumn: 'Burst Out Set list'
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Burst Out View'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 5d0a2bbb-45d0-4411-97dd-af1f5b8d8d7c
+		lineageTag: 56987196-91c9-46c3-912a-5e33f80891a2
 		summarizeBy: sum
 		sourceColumn: 'Burst Out View'
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Count JE Number'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: c467159f-4667-4b13-8008-4f61fe2d7273
+		lineageTag: 83800dd4-4a43-45ea-a45f-cb3747333a12
 		summarizeBy: sum
 		sourceColumn: 'Count JE Number'
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Entity ID'
 		dataType: string
-		lineageTag: 02b1c247-2b06-45de-b532-76cfe9797a2a
+		lineageTag: 227f96ac-8b83-45b8-8ab4-5967ace84e7f
 		summarizeBy: none
 		sourceColumn: 'Entity ID'
-		description: String column.
 		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
@@ -105,302 +93,271 @@ table TestData
 	column Filter
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 1aefdf88-3608-4e26-be48-7755e9c2c235
+		lineageTag: 94ac12c2-006c-42b6-9f4f-088163a4e0d1
 		summarizeBy: sum
 		sourceColumn: Filter
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Fiscal Year'
 		dataType: string
-		lineageTag: 9c2a8720-b498-4186-b3dc-958a316bfcb5
+		lineageTag: 4183ce61-4949-4571-ae4f-2b3dded0bc46
 		summarizeBy: none
 		sourceColumn: 'Fiscal Year'
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Flag
 		dataType: boolean
-		lineageTag: 6b36f95e-047b-4992-a883-5849b396cb4e
+		lineageTag: 2d0fb796-6cfe-4f75-845d-7ba567b77413
 		summarizeBy: none
 		sourceColumn: Flag
-		description: Boolean column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Flag__copy_
 		dataType: boolean
-		lineageTag: 720995fd-a911-4db2-ad97-d9d287cff203
+		lineageTag: 2a801ec8-6c82-4f13-9836-e1155cf0790b
 		summarizeBy: none
 		sourceColumn: Flag__copy_
-		description: Boolean column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'FS Line'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: a492ddf0-fa8b-4d75-8099-d3d1a02896d7
+		lineageTag: fac91fc0-546d-4974-a15f-9d89353068d2
 		summarizeBy: sum
 		sourceColumn: 'FS Line'
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'FS Line Burst Out Account'
 		dataType: string
-		lineageTag: 0614f5cd-32b0-4d77-b3c9-6996746c76c2
+		lineageTag: 92791ea7-3f39-4c58-b2ff-2902238a08c4
 		summarizeBy: none
 		sourceColumn: 'FS Line Burst Out Account'
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Group By'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 8bff3809-20ad-48ed-a3bb-d73ffa0b0e0c
+		lineageTag: 4d41ad33-1fb5-4843-bc82-6b8c03e79a42
 		summarizeBy: sum
 		sourceColumn: 'Group By'
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Image
 		dataType: string
-		lineageTag: 6cc2de1c-9e6c-428e-b030-c4205212c4d7
+		lineageTag: 1a590417-fb29-411c-9527-b744c2a98e70
 		summarizeBy: none
 		sourceColumn: Image
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Note Line'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: aa546807-f19d-444b-8302-3b4dce3bfa58
+		lineageTag: 5abcb016-092c-4690-b72c-d8712f970061
 		summarizeBy: sum
 		sourceColumn: 'Note Line'
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Note Line Burst Out Account'
 		dataType: string
-		lineageTag: 0362f9f6-22c1-4853-b920-3614fc49f776
+		lineageTag: 12cb4b1a-abfb-4222-8393-c67fcea362b6
 		summarizeBy: none
 		sourceColumn: 'Note Line Burst Out Account'
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Selection
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 57cdcf0b-d7b0-41df-98f8-b74914361810
+		lineageTag: 88cd4e19-a548-4611-a63d-89c60a095af4
 		summarizeBy: sum
 		sourceColumn: Selection
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column SHOW
 		dataType: string
-		lineageTag: b40d16b4-bac7-4e3f-a122-2518e03a133e
+		lineageTag: 828fa5ed-ec83-418d-b3ac-f44cad9181a8
 		summarizeBy: none
 		sourceColumn: SHOW
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Show Cycle Based'
 		dataType: string
-		lineageTag: 9d258863-c35b-4043-a452-32bced651c47
+		lineageTag: 7ae9573f-b956-43f7-840f-475113e7c5ea
 		summarizeBy: none
 		sourceColumn: 'Show Cycle Based'
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Sub Class'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 96f8e597-9cb7-41da-ad87-525f619a136b
+		lineageTag: 06723812-3bef-43ae-805b-2faefe170f6f
 		summarizeBy: sum
 		sourceColumn: 'Sub Class'
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'SubClass Burst Out Account'
 		dataType: string
-		lineageTag: c002cdce-52f5-40e6-a20e-bdd5f24f33fd
+		lineageTag: 36aff44b-cc7e-405f-9a88-471ad84f981f
 		summarizeBy: none
 		sourceColumn: 'SubClass Burst Out Account'
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Type
 		dataType: string
-		lineageTag: 96f89797-15c1-4875-9ff1-ac8f3dd04785
+		lineageTag: 4a98bdc2-55a7-4189-9ecb-268aa682f64a
 		summarizeBy: none
 		sourceColumn: Type
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Amount
 		dataType: string
-		lineageTag: 305e55c3-b090-41c5-b1ef-874ea1f73527
+		lineageTag: f297ba12-1b7c-423e-bc21-c90e4c82e221
 		summarizeBy: none
 		sourceColumn: Amount
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Amount1
 		dataType: string
-		lineageTag: 64b98573-36d5-49d0-8f27-12c9f0e035a5
+		lineageTag: ccbdd829-05c9-4d16-9048-c35a914af1e7
 		summarizeBy: none
 		sourceColumn: Amount1
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Count of Amount Calculation'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 30e680cf-67b3-49b9-b150-a096c8825f33
+		lineageTag: fcd3eccb-31ab-4839-90f1-7f25fe45b2e7
 		summarizeBy: sum
 		sourceColumn: 'Count of Amount Calculation'
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Number of Records'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 114f8495-cf72-4070-83a3-eff33f1039e8
+		lineageTag: cbb0e196-471d-499c-9202-977cdb02626e
 		summarizeBy: sum
 		sourceColumn: 'Number of Records'
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Number of Records1'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: ca8c3fbf-73d3-45e4-8ccc-49da370d0123
+		lineageTag: 4a6f14d9-1c36-4944-9dcd-ed45c9dd908d
 		summarizeBy: sum
 		sourceColumn: 'Number of Records1'
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Select Burst Out'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 130d60bb-91d4-428e-ac8d-0bdfeda81e92
+		lineageTag: c4aa85d8-d7b5-404f-8426-7246530a1106
 		summarizeBy: sum
 		sourceColumn: 'Select Burst Out'
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Select Transaction Analysis view'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 62134f2b-ce4c-4aea-b011-dcaf70a64b36
+		lineageTag: b815717e-e2f0-4bb4-9e52-acc301d2a0e3
 		summarizeBy: sum
 		sourceColumn: 'Select Transaction Analysis view'
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Sum Cy'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 642ff9f7-ff2c-436d-8e89-3a7de03289b3
+		lineageTag: fd7b9f10-a949-43b8-be72-c6818de63da9
 		summarizeBy: sum
 		sourceColumn: 'Sum Cy'
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Sum Py1'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: b39b5539-2b5e-4209-aa83-7178b46ea636
+		lineageTag: 040a5871-d102-4ecd-9e2c-739436df2a84
 		summarizeBy: sum
 		sourceColumn: 'Sum Py1'
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Sum Py2'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 2a686646-bc83-48ee-bac3-e9f109bf2326
+		lineageTag: eb40205b-96ba-4fd7-87d4-877123daba95
 		summarizeBy: sum
 		sourceColumn: 'Sum Py2'
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Sum Py3'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 47c24690-d680-4210-b50c-2282f473a232
+		lineageTag: 5e6299e1-3c6e-4483-b6a8-2575c0d284f8
 		summarizeBy: sum
 		sourceColumn: 'Sum Py3'
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Sum Py4'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: b4c6d518-a0ab-492f-bb92-aceb4f027044
+		lineageTag: 0a4253f5-6c98-48cf-bb4f-a3eeb3cdd03d
 		summarizeBy: sum
 		sourceColumn: 'Sum Py4'
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Total Credits'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: b6a74b43-4b22-454d-b1a4-f7d5ce066ac5
+		lineageTag: 6702fd9f-a6dc-43a6-a19f-33e704598c94
 		summarizeBy: sum
 		sourceColumn: 'Total Credits'
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Total Debits'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: b1845595-3ab4-408d-a07b-7039f9eb12f4
+		lineageTag: 3796bcfb-57d6-44c9-b95a-099048cb5cc9
 		summarizeBy: sum
 		sourceColumn: 'Total Debits'
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column BurstoutSet
 		dataType: string
-		lineageTag: 8c6ead13-bf3c-4291-8cb7-665899ae5873
+		lineageTag: 7febbf56-9a19-4eb0-a127-08e4dd7de5cf
 		summarizeBy: none
 		sourceColumn: BurstoutSet
-		description: String column.
 		displayFolder: Groups
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'TestData-4d1cd8f7-eca7-44e4-b5b8-9ad2b56f0c64' = m
+	partition 'TestData-a33cedd0-9793-4d4a-9903-cf166fd9ff83' = m
 		mode: import
 		source =
 				let

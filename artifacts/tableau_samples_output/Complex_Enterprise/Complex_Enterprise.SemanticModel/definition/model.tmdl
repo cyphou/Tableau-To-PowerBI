@@ -15,9 +15,9 @@ ref table dim_product
 ref table 'Target Margin %'
 ref table 'Top N Items'
 
-ref relationship d7eaacf6-a75c-407b-aa5f-ba49fa3adcb5
-ref relationship e486334e-d112-43fd-bc12-3a93cc29954a
-ref relationship e7dd9238-abfa-41ea-89bf-a5f3d551a290
+ref relationship efb26717-712d-41f5-9c4b-755a1ea3b8df
+ref relationship dcfa433a-839e-4837-bbd9-0320402dd1db
+ref relationship d2fb6deb-8a1e-4231-8203-e39d694dd3d0
 
 ref expression DataFolder
 

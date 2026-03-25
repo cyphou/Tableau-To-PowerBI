@@ -1,40 +1,35 @@
 table xy
-	lineageTag: 10147937-9dae-4c81-abb3-fde9f856c30b
-	description: Contains 3 columns and 1 measures: a, x, y.
+	lineageTag: d86b64c2-ea56-454b-ba31-c0d162ab17e5
 
 	measure '[Number of Records]' = 1
 		displayFolder: Measures
-		description: Migrated from Tableau: 1 | DAX: 1
-		lineageTag: 24961876-7943-4ad1-ac40-2a6758cd7890
+		lineageTag: f9119e6b-7a1f-4702-b247-02b1d6b8daa6
 
 	column a
 		dataType: string
-		lineageTag: 805ec2a5-eeaa-4c5e-ab68-ec7c4800199a
+		lineageTag: 254b55b4-aa3a-4a4c-9413-6736c3fb6b56
 		summarizeBy: none
 		sourceColumn: a
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column x
 		dataType: int64
-		lineageTag: 27a599b1-f265-47c7-9cec-423df0d9173b
+		lineageTag: cb856f2d-03df-434f-9950-2332b7cec2fd
 		summarizeBy: sum
 		sourceColumn: x
-		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column y
 		dataType: int64
-		lineageTag: 9002b5c3-3f6e-4bd7-b3ed-fd79dc9a099c
+		lineageTag: cd668d09-b50e-4d2b-a203-7a6360942d8c
 		summarizeBy: sum
 		sourceColumn: y
-		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'xy-2e6ffc50-464f-4dfd-82e7-d8b5c2eca2f7' = m
+	partition 'xy-d48679eb-7f86-4a1c-9328-b294c58af43e' = m
 		mode: import
 		source =
 				let

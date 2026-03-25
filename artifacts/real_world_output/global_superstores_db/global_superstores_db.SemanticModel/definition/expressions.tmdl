@@ -1,2 +1,2 @@
-expression DataFolder = "C:\\\\Users\\bs\\Mac Drive\\MSBA\\INFO584_01SP21\\Datasets" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+expression DataFolder = "C:\\Users\\bs\\Mac Drive\\MSBA\\INFO584_01SP21\\Datasets" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
 

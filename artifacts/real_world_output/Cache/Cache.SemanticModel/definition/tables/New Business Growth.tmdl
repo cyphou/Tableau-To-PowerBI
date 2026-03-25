@@ -1,22 +1,19 @@
 table 'New Business Growth'
-	lineageTag: d70c83d9-2300-4e70-a40c-f27eb60a6b56
-	description: Contains 1 columns and 1 measures: Value.
+	lineageTag: 8090aead-289c-4a3e-b6bb-c35f9aaca7d0
 
 	measure 'New Business Growth' = SELECTEDVALUE('New Business Growth'[Value], 0.59999999999999998)
-		description: DAX: SELECTEDVALUE('New Business Growth'[Value], 0.59999999999999998)
-		lineageTag: 41e9251e-1927-4087-83c4-aa629d0fbe3b
+		lineageTag: fd223426-834a-497d-8c69-6bf3b5f90237
 
 	column Value
 		dataType: double
-		lineageTag: 51483613-be8e-4c41-863b-740762aacf40
+		lineageTag: 820ddb25-41d9-4ffc-ad13-0b8d34d32101
 		summarizeBy: none
 		sourceColumn: Value
-		description: Double column.
 		annotation displayFolder = Parameters
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'New Business Growth-0e15131c-6df1-4412-9146-d1c014653f8c' = calculated
+	partition 'New Business Growth-d68606e6-45c4-4b74-9a26-3474e351cb66' = calculated
 		mode: import
 		source = GENERATESERIES(0.0, 1.0, 0.01)
 

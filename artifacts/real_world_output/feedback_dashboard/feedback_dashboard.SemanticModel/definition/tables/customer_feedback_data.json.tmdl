@@ -1,120 +1,107 @@
 table 'customer_feedback_data.json'
-	lineageTag: 553bdd70-8334-4647-8bf2-fba700d84a2a
-	description: Contains 12 columns: Document Index (generated), category, customer_id, date, email, feedback_score, feedback_text, name, ... (12 columns total).
+	lineageTag: d761bae3-05e9-4a22-8bd3-d8c3485ab222
 
 	column 'Document Index (generated)'
 		dataType: int64
-		lineageTag: 8024184c-42cc-4903-9b02-a1c7eb00defa
+		lineageTag: 83339958-24e4-433c-b0ce-8347eafe9f21
 		summarizeBy: sum
 		sourceColumn: 'Document Index (generated)'
-		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column category
 		dataType: string
-		lineageTag: 3f1f4f3a-c4a5-4b61-a807-bf4e37272eb4
+		lineageTag: d6c8ef6c-aba6-4956-87f0-5a1c3ec29423
 		summarizeBy: none
 		sourceColumn: category
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column customer_id
 		dataType: string
-		lineageTag: f419f89b-617e-4ea9-a311-2d6b7ec9e869
+		lineageTag: ecc888bf-86d9-4ab4-bc10-f4154a1980e4
 		summarizeBy: none
 		sourceColumn: customer_id
-		description: String column.
 		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column date
 		dataType: string
-		lineageTag: 17c336c5-3125-49bd-9032-adf2e63492e7
+		lineageTag: f2d3352b-6e98-4daf-a954-284b0a9970fe
 		summarizeBy: none
 		sourceColumn: date
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column email
 		dataType: string
-		lineageTag: e68fcf7c-ca64-4c20-8034-0663e0cd69f8
+		lineageTag: 0026fa32-c901-4d61-817e-f07bc4f45de6
 		summarizeBy: none
 		sourceColumn: email
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column feedback_score
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 7696e5c8-1b05-42e3-9c79-ad8b238ad2e7
+		lineageTag: 484c55e9-9241-4502-a9fd-e28a877c9a1d
 		summarizeBy: sum
 		sourceColumn: feedback_score
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column feedback_text
 		dataType: string
-		lineageTag: 7cab42ab-382b-4a4d-9c1e-6183cc332533
+		lineageTag: 6fd36908-1678-411c-9a53-8140ce1fe6bb
 		summarizeBy: none
 		sourceColumn: feedback_text
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column name
 		dataType: string
-		lineageTag: 8cd1844e-95f2-4aef-be08-c5e8660e603a
+		lineageTag: 77752b68-e4b9-494c-a976-e81e49765372
 		summarizeBy: none
 		sourceColumn: name
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column sentiment
 		dataType: string
-		lineageTag: f9c10385-dc37-4714-b386-e1c5dd788f37
+		lineageTag: 7209374d-5df9-47fe-a2d4-9b95a32db559
 		summarizeBy: none
 		sourceColumn: sentiment
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Promoter
 		dataType: int64
-		lineageTag: 3730990f-27db-46c5-a169-6ce83646b0fc
+		lineageTag: 5d36e6bd-95ef-4539-a87a-e093d925e0bd
 		summarizeBy: none
 		sourceColumn: Promoter
-		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Action (Category)'
 		dataType: string
-		lineageTag: cf6403fb-5b84-479b-82d0-bd4f22cb6f5b
+		lineageTag: 000bd39f-e8ce-4669-af5a-23dc47c9753c
 		summarizeBy: none
 		sourceColumn: 'Action (Category)'
-		description: String column.
 		displayFolder: Groups
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Action (Sentiment)'
 		dataType: string
-		lineageTag: 8d90a88b-048b-4362-b0a1-40d714d5f473
+		lineageTag: 9b904808-e03e-4d2b-8620-a60a1d045897
 		summarizeBy: none
 		sourceColumn: 'Action (Sentiment)'
-		description: String column.
 		displayFolder: Groups
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'customer_feedback_data.json-57fa4c48-66e5-45b8-be88-31b7c536a16c' = m
+	partition 'customer_feedback_data.json-3628dda1-843b-4126-8342-579901a05f33' = m
 		mode: import
 		source =
 				let

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
+  "name": "0cf688d2364e445e952c",
+  "position": {
+    "x": 8,
+    "y": 8,
+    "z": 0,
+    "height": 110,
+    "width": 496,
+    "tabOrder": 0
+  },
+  "visual": {
+    "visualType": "image",
+    "objects": {
+      "general": [
+        {
+          "properties": {
+            "imageUrl": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Image/nba-logo-vector-png1.png'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

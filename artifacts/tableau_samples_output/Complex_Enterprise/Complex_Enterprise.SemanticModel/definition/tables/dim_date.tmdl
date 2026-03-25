@@ -1,10 +1,10 @@
 table dim_date
-	lineageTag: a0db92ca-80dd-4add-9046-2dda232a4e3d
+	lineageTag: 6ccd396a-7680-4efa-a8e7-f1381c637c45
 	description: Contains 12 columns: date_key, full_date, year, quarter, month_num, month_name, week_num, day_name, ... (12 columns total).
 
 	column date_key
 		dataType: int64
-		lineageTag: fdac95ab-fed7-4246-ad03-148d64e92bbd
+		lineageTag: e5193dca-d071-4471-8d74-0ed4021ae5e9
 		summarizeBy: sum
 		sourceColumn: date_key
 		description: Int64 column.
@@ -15,7 +15,7 @@ table dim_date
 	column full_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 37dcb841-7099-4234-a44b-9f28a4298823
+		lineageTag: 8dccf462-718e-4fc7-97fc-1bd408199275
 		summarizeBy: none
 		sourceColumn: full_date
 		dataCategory: DateTime
@@ -25,7 +25,7 @@ table dim_date
 
 	column year
 		dataType: int64
-		lineageTag: 2ab0e86e-ea77-492f-bf91-85de557f991b
+		lineageTag: 32c51442-0105-49b2-a590-1b9425edefe9
 		summarizeBy: sum
 		sourceColumn: year
 		description: Int64 column.
@@ -34,7 +34,7 @@ table dim_date
 
 	column quarter
 		dataType: int64
-		lineageTag: e3632333-57db-4208-bd8c-bc6ebcaebd4b
+		lineageTag: 5f5a4c51-be41-4cef-a814-a59bf3dbf53c
 		summarizeBy: sum
 		sourceColumn: quarter
 		description: Int64 column.
@@ -43,7 +43,7 @@ table dim_date
 
 	column month_num
 		dataType: int64
-		lineageTag: bad5fbec-cca7-40a8-868d-2c2c1914c833
+		lineageTag: 82e0640c-537d-4c69-b750-324f4a132085
 		summarizeBy: sum
 		sourceColumn: month_num
 		description: Int64 column.
@@ -52,7 +52,7 @@ table dim_date
 
 	column month_name
 		dataType: string
-		lineageTag: d84a2b4a-2213-46f4-a8b1-63321eecec8e
+		lineageTag: d0a6a1af-79ce-4d28-ab1d-31f9460b1066
 		summarizeBy: none
 		sourceColumn: month_name
 		description: String column.
@@ -61,7 +61,7 @@ table dim_date
 
 	column week_num
 		dataType: int64
-		lineageTag: 4ff998fc-3690-4d93-97e2-4e36fe2e1270
+		lineageTag: 198ea93e-4ba3-4712-8af3-596579d6651b
 		summarizeBy: sum
 		sourceColumn: week_num
 		description: Int64 column.
@@ -70,7 +70,7 @@ table dim_date
 
 	column day_name
 		dataType: string
-		lineageTag: da7ee6dd-a967-49a9-9032-75a810c0c170
+		lineageTag: d1920e62-56e5-41cb-b219-d423758c0e49
 		summarizeBy: none
 		sourceColumn: day_name
 		description: String column.
@@ -79,7 +79,7 @@ table dim_date
 
 	column is_weekend
 		dataType: boolean
-		lineageTag: b423a822-743a-4f80-828c-934d8b8ceace
+		lineageTag: 39aa6843-7e28-499e-b43b-9dd49c7640ae
 		summarizeBy: none
 		sourceColumn: is_weekend
 		description: Boolean column.
@@ -88,7 +88,7 @@ table dim_date
 
 	column is_holiday
 		dataType: boolean
-		lineageTag: a02ea15e-b85b-4a8c-bc16-b5b713b6337e
+		lineageTag: 89bb7284-ecae-4e18-ac30-2d38c0447bef
 		summarizeBy: none
 		sourceColumn: is_holiday
 		description: Boolean column.
@@ -97,7 +97,7 @@ table dim_date
 
 	column fiscal_quarter
 		dataType: string
-		lineageTag: affd7531-5970-4684-9c62-7e48404f8992
+		lineageTag: db71bcfb-d8ab-46e0-ac22-c8cfb055618a
 		summarizeBy: none
 		sourceColumn: fiscal_quarter
 		description: String column.
@@ -106,14 +106,14 @@ table dim_date
 
 	column fiscal_year
 		dataType: int64
-		lineageTag: 15bf43da-2941-4fec-9c6d-b20d24cdda6c
+		lineageTag: 803fa900-c1c0-4da7-9d29-58e23030c9da
 		summarizeBy: sum
 		sourceColumn: fiscal_year
 		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'dim_date-16cd825b-42c9-4f6f-af7b-6e5b49e33bb0' = m
+	partition 'dim_date-aa57e3d4-2a9c-4a36-bd72-9f7d8f148f89' = m
 		mode: import
 		source =
 				let

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-23T14:58:14.644075",
+  "generated_at": "2026-03-24T21:41:25.328247",
   "source": "Tableau Migration",
   "report_name": "global_superstores_db",
   "objects_converted": {
@@ -180,38 +180,45 @@
     {
       "worksheet": "Profit Map",
       "tableau_mark": "Automatic",
-      "pbi_visual": "map",
-      "dimensions": [],
+      "pbi_visual": "azureMap",
+      "dimensions": [
+        "Country",
+        "Market"
+      ],
       "measures": [
         "Profit",
         "Sales"
       ],
-      "field_count": 2
+      "field_count": 4
     },
     {
       "worksheet": "Profit and Sales",
       "tableau_mark": "Automatic",
       "pbi_visual": "scatterChart",
-      "dimensions": [],
+      "dimensions": [
+        "Country",
+        "Market"
+      ],
       "measures": [
         "Sales",
         "Profit",
         "Profit"
       ],
-      "field_count": 3
+      "field_count": 5
     },
     {
       "worksheet": "Profit and Sales Relationship",
       "tableau_mark": "Automatic",
       "pbi_visual": "scatterChart",
       "dimensions": [
-        "Segment"
+        "Segment",
+        "Country"
       ],
       "measures": [
         "Sales",
         "Profit"
       ],
-      "field_count": 3
+      "field_count": 4
     },
     {
       "worksheet": "Profit and Sales by Sub Categories",
@@ -286,24 +293,28 @@
     {
       "worksheet": "South Map",
       "tableau_mark": "Automatic",
-      "pbi_visual": "map",
-      "dimensions": [],
+      "pbi_visual": "azureMap",
+      "dimensions": [
+        "State"
+      ],
       "measures": [
         "Profit",
         "Sales"
       ],
-      "field_count": 2
+      "field_count": 3
     },
     {
       "worksheet": "World's Profit and Sales Reln",
       "tableau_mark": "Automatic",
-      "pbi_visual": "map",
-      "dimensions": [],
+      "pbi_visual": "azureMap",
+      "dimensions": [
+        "Country"
+      ],
       "measures": [
         "Profit",
         "Sales"
       ],
-      "field_count": 2
+      "field_count": 3
     },
     {
       "worksheet": "YOY Profit",

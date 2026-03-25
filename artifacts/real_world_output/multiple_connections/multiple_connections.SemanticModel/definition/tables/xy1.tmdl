@@ -1,8 +1,7 @@
 table xy1
-	lineageTag: 12b1d811-9668-4dfb-a77b-298e634d34fa
-	description: Contains 0 columns.
+	lineageTag: e9bdc0e6-eb2a-43da-9226-6f62b77ef7ba
 
-	partition 'xy1-24b2ebec-18ee-458e-ae59-70eae2d1d11e' = m
+	partition 'xy1-aaa540c3-56e3-49c6-bbc1-10ad77346c29' = m
 		mode: import
 		source =
 				let

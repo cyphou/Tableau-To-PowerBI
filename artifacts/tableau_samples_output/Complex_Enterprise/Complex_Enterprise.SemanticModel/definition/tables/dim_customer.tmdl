@@ -1,10 +1,10 @@
 table dim_customer
-	lineageTag: b5401b9f-375e-44f7-96be-0b0eaa8dd8cd
+	lineageTag: 249d5268-2d8f-4226-b7aa-f63d3c8c778b
 	description: Contains 12 columns: customer_key, customer_id, customer_name, email, phone, segment, industry, company_size, ... (12 columns total).
 
 	column customer_key
 		dataType: int64
-		lineageTag: 467f6db1-208a-4e40-b68d-54dc65ec313f
+		lineageTag: 4f069562-0e96-4867-b086-3a7ea6089492
 		summarizeBy: sum
 		sourceColumn: customer_key
 		description: Int64 column.
@@ -14,7 +14,7 @@ table dim_customer
 
 	column customer_id
 		dataType: string
-		lineageTag: 8eebf0a1-bcda-4aeb-8d4d-7bebee9a7cc4
+		lineageTag: 877da1f2-495b-4461-85ba-dd05453ed4a9
 		summarizeBy: none
 		sourceColumn: customer_id
 		description: String column.
@@ -24,7 +24,7 @@ table dim_customer
 
 	column customer_name
 		dataType: string
-		lineageTag: a56ba574-35ba-4b66-bda8-640b70a671f9
+		lineageTag: fa03d850-9f46-42fd-8181-5da2cb916b01
 		summarizeBy: none
 		sourceColumn: customer_name
 		description: String column.
@@ -33,7 +33,7 @@ table dim_customer
 
 	column email
 		dataType: string
-		lineageTag: dad8aabf-1920-4286-9cf0-4cd165a43a62
+		lineageTag: 071d4b2d-675a-4236-a327-a81040005d75
 		summarizeBy: none
 		sourceColumn: email
 		description: String column.
@@ -42,7 +42,7 @@ table dim_customer
 
 	column phone
 		dataType: string
-		lineageTag: 6896c089-c5b1-4fc1-9e97-047b2adde8c5
+		lineageTag: 25b0ef5b-ce4b-4ad2-81c9-6cb73fda692c
 		summarizeBy: none
 		sourceColumn: phone
 		description: String column.
@@ -51,7 +51,7 @@ table dim_customer
 
 	column segment
 		dataType: string
-		lineageTag: 10113f01-84d2-4e2e-ac87-8c2b72d421b2
+		lineageTag: 688cf74d-ceef-45e1-be7b-3920a5031c92
 		summarizeBy: none
 		sourceColumn: segment
 		description: String column.
@@ -60,7 +60,7 @@ table dim_customer
 
 	column industry
 		dataType: string
-		lineageTag: c8e61e4a-6344-466a-b71f-2fe99e1958d6
+		lineageTag: 70d4606c-505e-46e3-946a-c151b01c376f
 		summarizeBy: none
 		sourceColumn: industry
 		description: String column.
@@ -69,7 +69,7 @@ table dim_customer
 
 	column company_size
 		dataType: string
-		lineageTag: 9eb8b8e5-183a-4dcf-9cb2-b6943f6162a1
+		lineageTag: 1023c66f-9492-4b42-9358-65cbd86df7c6
 		summarizeBy: none
 		sourceColumn: company_size
 		description: String column.
@@ -79,7 +79,7 @@ table dim_customer
 	column first_order_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 52b0c43d-c46c-436d-87a1-0212b582b876
+		lineageTag: 8b82d448-9e49-4052-9a5e-7537a9ca2947
 		summarizeBy: none
 		sourceColumn: first_order_date
 		dataCategory: DateTime
@@ -90,7 +90,7 @@ table dim_customer
 	column credit_limit
 		dataType: double
 		formatString: #,0.00
-		lineageTag: f90c4ce0-7984-4ab8-9e83-31edfb5cfb5d
+		lineageTag: 185881fa-d9c2-4d31-a166-32fef493148d
 		summarizeBy: sum
 		sourceColumn: credit_limit
 		description: Double column.
@@ -99,7 +99,7 @@ table dim_customer
 
 	column account_manager
 		dataType: string
-		lineageTag: 059c80d2-79ce-4f6f-a462-3d092a2effb3
+		lineageTag: 8296ffd5-e9a9-4f70-a247-acfab56d808d
 		summarizeBy: none
 		sourceColumn: account_manager
 		description: String column.
@@ -108,14 +108,14 @@ table dim_customer
 
 	column is_active
 		dataType: boolean
-		lineageTag: 20420c67-5ead-4fb1-8336-12dcc9e0f122
+		lineageTag: 179edda9-1a75-4155-a78b-a2c672806680
 		summarizeBy: none
 		sourceColumn: is_active
 		description: Boolean column.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'dim_customer-edd72960-2174-4d94-9304-27c317f83dbd' = m
+	partition 'dim_customer-d316cd2b-5255-4170-871d-e79840526bdb' = m
 		mode: import
 		source =
 				let

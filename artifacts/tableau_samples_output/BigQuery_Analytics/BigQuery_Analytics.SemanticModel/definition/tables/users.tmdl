@@ -1,66 +1,59 @@
 table users
-	lineageTag: b6bfe988-4357-4de1-b153-d1c75c3338bd
-	description: Contains 6 columns: user_id, user_name, email, signup_date, plan, region.
+	lineageTag: a18e16a3-abb4-4bdf-adf0-47d10a6851a4
 
 	column user_id
 		dataType: string
-		lineageTag: 851565cf-1994-487e-bb36-91601cecf104
+		lineageTag: 1b4cca4c-2f53-4625-874f-c334cf367745
 		summarizeBy: none
 		sourceColumn: user_id
-		description: String column.
 		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column user_name
 		dataType: string
-		lineageTag: 909df982-e1c3-49ed-ae5e-2470a325d007
+		lineageTag: 66523f40-fdb4-4cc4-a24e-c1c712bc9d6a
 		summarizeBy: none
 		sourceColumn: user_name
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column email
 		dataType: string
-		lineageTag: a11ba104-c50e-4cf2-aad4-f2b859dcdb0c
+		lineageTag: c08dc581-0919-4842-8e9e-e0fbc03e5e50
 		summarizeBy: none
 		sourceColumn: email
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column signup_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: da0fd8f3-6255-4c8c-be9a-b85aa17950f3
+		lineageTag: de33fd86-d651-4ca8-b85d-3c0d964c6e08
 		summarizeBy: none
 		sourceColumn: signup_date
 		dataCategory: DateTime
-		description: Datetime column. categorized as DateTime.
 
 		annotation SummarizationSetBy = Automatic
 
 	column plan
 		dataType: string
-		lineageTag: 37488fac-7779-4911-bc0e-541789cd80ba
+		lineageTag: ed0192d7-c979-426b-b49a-96b03fa3db8e
 		summarizeBy: none
 		sourceColumn: plan
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column region
 		dataType: string
-		lineageTag: 69ad0689-7bc0-41ca-b336-0924033aeef5
+		lineageTag: 294df92a-af80-423a-9fa7-9e56c0730578
 		summarizeBy: none
 		sourceColumn: region
 		dataCategory: StateOrProvince
-		description: String column. categorized as StateOrProvince.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'users-10955af5-e4bb-4c32-823c-388ae972e0c9' = m
+	partition 'users-bc12cf63-d103-4d4c-a36d-9e29b12ba76b' = m
 		mode: import
 		source =
 				let

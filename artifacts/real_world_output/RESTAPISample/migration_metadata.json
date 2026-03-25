@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-23T21:32:30.797846",
+  "generated_at": "2026-03-24T21:45:15.962133",
   "source": "Tableau Migration",
   "report_name": "RESTAPISample",
   "objects_converted": {
@@ -82,21 +82,25 @@
         "Region"
       ],
       "measures": [
-        "Calculation_1590906174513693"
+        "Calculation_1590906174513693",
+        "F: GDP (curr $)"
       ],
-      "field_count": 3
+      "field_count": 4
     },
     {
       "worksheet": "GDP per capita map",
       "tableau_mark": "Automatic",
-      "pbi_visual": "map",
+      "pbi_visual": "azureMap",
       "dimensions": [
-        "Region"
+        "Region",
+        "Subregion",
+        "Country / Region"
       ],
       "measures": [
-        "F: GDP per capita (curr $)"
+        "F: GDP per capita (curr $)",
+        "Calculation1"
       ],
-      "field_count": 2
+      "field_count": 5
     },
     {
       "worksheet": "Health spending vs life expectancy",

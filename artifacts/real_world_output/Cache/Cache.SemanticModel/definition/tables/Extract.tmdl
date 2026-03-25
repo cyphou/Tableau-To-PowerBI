@@ -1,61 +1,54 @@
 table Extract
-	lineageTag: d2a096dc-a426-4472-9ff1-336bbc2f0dc4
-	description: Contains 5 columns and 1 measures: Category, Number of Records, Order Date, Sales Target, Segment.
+	lineageTag: 09706c7e-7cc8-4503-bca8-c5e8864aca66
 
 	measure 'Number of Records' = COUNTROWS('Extract')
 		displayFolder: Measures
-		description: DAX: COUNTROWS('Extract')
-		lineageTag: 821a3a03-ca7d-4b2f-a94d-13428a41209f
+		lineageTag: 7bc713c0-095b-4ae8-994a-fe5cd5be85a8
 
 	column Category
 		dataType: string
-		lineageTag: 12612651-beb9-418a-93bd-48e22c8d4792
+		lineageTag: 6f5fbe95-ae48-49ac-a840-a486d222954f
 		summarizeBy: none
 		sourceColumn: Category
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Number of Records'
 		dataType: int64
-		lineageTag: f867a326-a611-489f-af5d-a192fb4c2b60
+		lineageTag: dfaf20a5-679c-45bf-b895-5e1c01228c06
 		summarizeBy: sum
 		sourceColumn: 'Number of Records'
-		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Order Date'
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: ce7f371b-6165-4ad2-9618-38da27866303
+		lineageTag: 96bee128-e94c-4f94-bc07-0e7cb856ce24
 		summarizeBy: none
 		sourceColumn: 'Order Date'
 		dataCategory: DateTime
-		description: Datetime column. categorized as DateTime.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Sales Target'
 		dataType: int64
 		formatString: c"$"#,#0;("$"#,#0)
-		lineageTag: 23cb939f-6fc0-4462-87c4-9f815a635b75
+		lineageTag: f97a0a75-da2e-4503-8d65-e951858d6158
 		summarizeBy: sum
 		sourceColumn: 'Sales Target'
-		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Segment
 		dataType: string
-		lineageTag: c5aa0335-b73c-43ec-924b-785ade96aea7
+		lineageTag: d4d5687b-a1f2-43ca-a95d-2fcd50434589
 		summarizeBy: none
 		sourceColumn: Segment
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Extract-b8f81445-525c-4190-9925-86f0b68ec305' = m
+	partition 'Extract-b330ba20-3c9b-462b-be03-6b5925a1bae3' = m
 		mode: import
 		source =
 				let

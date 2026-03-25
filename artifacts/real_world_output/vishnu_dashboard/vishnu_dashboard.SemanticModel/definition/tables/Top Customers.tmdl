@@ -1,22 +1,19 @@
 table 'Top Customers'
-	lineageTag: a88a9394-daa1-4df3-ac3d-372caa3167cd
-	description: Contains 1 columns and 1 measures: Value.
+	lineageTag: f40b9a9b-35ba-49eb-93e3-96e737558065
 
 	measure 'Top Customers' = SELECTEDVALUE('Top Customers'[Value], 5)
-		description: DAX: SELECTEDVALUE('Top Customers'[Value], 5)
-		lineageTag: 7a9e14e9-3370-447a-a847-a4d84e1d7a09
+		lineageTag: 80f75f3e-6b01-42d6-9b0c-a975a8c2a16d
 
 	column Value
 		dataType: int64
-		lineageTag: ead74314-b59a-425c-bd69-33b613ccbc47
+		lineageTag: c85417c8-8f22-4dab-8eaa-4bd68a372dd5
 		summarizeBy: none
 		sourceColumn: Value
-		description: Int64 column.
 		annotation displayFolder = Parameters
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Top Customers-08f8177d-3559-4d27-a747-7898d687d508' = calculated
+	partition 'Top Customers-57c4fb9f-7f3a-40fc-a857-64da3831f888' = calculated
 		mode: import
 		source = GENERATESERIES(5, 20, 5)
 

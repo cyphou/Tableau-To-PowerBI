@@ -1,22 +1,19 @@
 table 'Base Salary'
-	lineageTag: 4d790e91-cff6-4e54-af2c-eb619d85b466
-	description: Contains 1 columns and 1 measures: Value.
+	lineageTag: 1a3084bc-3751-4a7e-a4f6-57604650edc9
 
 	measure 'Base Salary' = SELECTEDVALUE('Base Salary'[Value], 50000)
-		description: DAX: SELECTEDVALUE('Base Salary'[Value], 50000)
-		lineageTag: d42ed0d8-546d-48d0-9d0e-88445803d12f
+		lineageTag: 322176f9-ce9d-43d9-88d2-99460fdaf5f4
 
 	column Value
 		dataType: int64
-		lineageTag: e045d0cf-6219-416f-8120-f7a0799e134b
+		lineageTag: bd7bc9ae-71a4-4092-af4f-0fda62e0294c
 		summarizeBy: none
 		sourceColumn: Value
-		description: Int64 column.
 		annotation displayFolder = Parameters
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Base Salary-fe6979ad-304f-4a79-a7b6-7633df598c1c' = calculated
+	partition 'Base Salary-5021a33c-ec0d-4bfe-bf90-ebb1cbc2ac1f' = calculated
 		mode: import
 		source = GENERATESERIES(0, , 1000)
 
