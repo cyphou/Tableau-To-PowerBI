@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 380" width="1100" height="380">
+  <defs>
+    <linearGradient id="conv-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FAFAFA"/>
+      <stop offset="100%" stop-color="#F3F2F1"/>
+    </linearGradient>
+    <filter id="card-shadow" x="-2%" y="-2%" width="104%" height="108%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <rect width="1100" height="380" fill="url(#conv-bg)" rx="12"/>
+
+  <!-- Title -->
+  <text x="550" y="32" font-family="Segoe UI, sans-serif" font-size="18" font-weight="bold" fill="#242424" text-anchor="middle">Conversion Examples — Tableau Formula → DAX</text>
+
+  <!-- Row 1: LOD Fixed -->
+  <g transform="translate(20, 48)">
+    <!-- Tableau side -->
+    <rect width="460" height="68" rx="8" fill="white" stroke="#E97627" stroke-width="1.5" filter="url(#card-shadow)"/>
+    <rect width="70" height="68" rx="8" fill="#E97627"/>
+    <rect x="70" y="0" width="1" height="68" fill="#E97627"/>
+    <text x="35" y="28" font-family="Segoe UI, sans-serif" font-size="10" font-weight="bold" fill="white" text-anchor="middle">Tableau</text>
+    <text x="35" y="44" font-family="Segoe UI, sans-serif" font-size="9" fill="rgba(255,255,255,0.8)" text-anchor="middle">LOD Fixed</text>
+    <text x="82" y="42" font-family="Cascadia Code, Consolas, monospace" font-size="12" fill="#E97627">{FIXED [Customer] : SUM([Sales])}</text>
+  </g>
+
+  <!-- Arrow -->
+  <g transform="translate(490, 68)">
+    <polygon points="0,8 20,16 0,24" fill="#605E5C" opacity="0.5"/>
+    <text x="30" y="22" font-family="Segoe UI, sans-serif" font-size="11" fill="#605E5C">→</text>
+  </g>
+
+  <!-- DAX side -->
+  <g transform="translate(540, 48)">
+    <rect width="540" height="68" rx="8" fill="white" stroke="#0078D4" stroke-width="1.5" filter="url(#card-shadow)"/>
+    <rect width="56" height="68" rx="8" fill="#0078D4"/>
+    <rect x="56" y="0" width="1" height="68" fill="#0078D4"/>
+    <text x="28" y="28" font-family="Segoe UI, sans-serif" font-size="10" font-weight="bold" fill="white" text-anchor="middle">DAX</text>
+    <text x="28" y="44" font-family="Segoe UI, sans-serif" font-size="9" fill="rgba(255,255,255,0.8)" text-anchor="middle">Measure</text>
+    <text x="68" y="36" font-family="Cascadia Code, Consolas, monospace" font-size="11" fill="#0078D4">CALCULATE(SUM([Sales]),</text>
+    <text x="68" y="54" font-family="Cascadia Code, Consolas, monospace" font-size="11" fill="#0078D4">  ALLEXCEPT('Table','Table'[Customer]))</text>
+  </g>
+
+  <!-- Row 2: Iterator -->
+  <g transform="translate(20, 128)">
+    <rect width="460" height="68" rx="8" fill="white" stroke="#E97627" stroke-width="1.5" filter="url(#card-shadow)"/>
+    <rect width="70" height="68" rx="8" fill="#E97627"/>
+    <rect x="70" y="0" width="1" height="68" fill="#E97627"/>
+    <text x="35" y="28" font-family="Segoe UI, sans-serif" font-size="10" font-weight="bold" fill="white" text-anchor="middle">Tableau</text>
+    <text x="35" y="44" font-family="Segoe UI, sans-serif" font-size="9" fill="rgba(255,255,255,0.8)" text-anchor="middle">Iterator</text>
+    <text x="82" y="42" font-family="Cascadia Code, Consolas, monospace" font-size="12" fill="#E97627">SUM(IF [Status]="OK" THEN [Qty] END)</text>
+  </g>
+
+  <g transform="translate(490, 148)">
+    <polygon points="0,8 20,16 0,24" fill="#605E5C" opacity="0.5"/>
+    <text x="30" y="22" font-family="Segoe UI, sans-serif" font-size="11" fill="#605E5C">→</text>
+  </g>
+
+  <g transform="translate(540, 128)">
+    <rect width="540" height="68" rx="8" fill="white" stroke="#0078D4" stroke-width="1.5" filter="url(#card-shadow)"/>
+    <rect width="56" height="68" rx="8" fill="#0078D4"/>
+    <rect x="56" y="0" width="1" height="68" fill="#0078D4"/>
+    <text x="28" y="28" font-family="Segoe UI, sans-serif" font-size="10" font-weight="bold" fill="white" text-anchor="middle">DAX</text>
+    <text x="28" y="44" font-family="Segoe UI, sans-serif" font-size="9" fill="rgba(255,255,255,0.8)" text-anchor="middle">Iterator</text>
+    <text x="68" y="36" font-family="Cascadia Code, Consolas, monospace" font-size="11" fill="#0078D4">SUMX('Table',</text>
+    <text x="68" y="54" font-family="Cascadia Code, Consolas, monospace" font-size="11" fill="#0078D4">  IF([Status]="OK", [Qty], 0))</text>
+  </g>
+
+  <!-- Row 3: Table Calc -->
+  <g transform="translate(20, 208)">
+    <rect width="460" height="68" rx="8" fill="white" stroke="#E97627" stroke-width="1.5" filter="url(#card-shadow)"/>
+    <rect width="70" height="68" rx="8" fill="#E97627"/>
+    <rect x="70" y="0" width="1" height="68" fill="#E97627"/>
+    <text x="35" y="28" font-family="Segoe UI, sans-serif" font-size="10" font-weight="bold" fill="white" text-anchor="middle">Tableau</text>
+    <text x="35" y="44" font-family="Segoe UI, sans-serif" font-size="9" fill="rgba(255,255,255,0.8)" text-anchor="middle">Rank</text>
+    <text x="82" y="42" font-family="Cascadia Code, Consolas, monospace" font-size="12" fill="#E97627">RANK(SUM([Revenue]))</text>
+  </g>
+
+  <g transform="translate(490, 228)">
+    <polygon points="0,8 20,16 0,24" fill="#605E5C" opacity="0.5"/>
+    <text x="30" y="22" font-family="Segoe UI, sans-serif" font-size="11" fill="#605E5C">→</text>
+  </g>
+
+  <g transform="translate(540, 208)">
+    <rect width="540" height="68" rx="8" fill="white" stroke="#0078D4" stroke-width="1.5" filter="url(#card-shadow)"/>
+    <rect width="56" height="68" rx="8" fill="#0078D4"/>
+    <rect x="56" y="0" width="1" height="68" fill="#0078D4"/>
+    <text x="28" y="28" font-family="Segoe UI, sans-serif" font-size="10" font-weight="bold" fill="white" text-anchor="middle">DAX</text>
+    <text x="28" y="44" font-family="Segoe UI, sans-serif" font-size="9" fill="rgba(255,255,255,0.8)" text-anchor="middle">RANKX</text>
+    <text x="68" y="36" font-family="Cascadia Code, Consolas, monospace" font-size="11" fill="#0078D4">RANKX(ALL('Table'),</text>
+    <text x="68" y="54" font-family="Cascadia Code, Consolas, monospace" font-size="11" fill="#0078D4">  SUM('Table'[Revenue]))</text>
+  </g>
+
+  <!-- Row 4: Security -->
+  <g transform="translate(20, 288)">
+    <rect width="460" height="68" rx="8" fill="white" stroke="#E97627" stroke-width="1.5" filter="url(#card-shadow)"/>
+    <rect width="70" height="68" rx="8" fill="#E97627"/>
+    <rect x="70" y="0" width="1" height="68" fill="#E97627"/>
+    <text x="35" y="28" font-family="Segoe UI, sans-serif" font-size="10" font-weight="bold" fill="white" text-anchor="middle">Tableau</text>
+    <text x="35" y="44" font-family="Segoe UI, sans-serif" font-size="9" fill="rgba(255,255,255,0.8)" text-anchor="middle">Security</text>
+    <text x="82" y="42" font-family="Cascadia Code, Consolas, monospace" font-size="12" fill="#E97627">USERNAME()  /  ISMEMBEROF("group")</text>
+  </g>
+
+  <g transform="translate(490, 308)">
+    <polygon points="0,8 20,16 0,24" fill="#605E5C" opacity="0.5"/>
+    <text x="30" y="22" font-family="Segoe UI, sans-serif" font-size="11" fill="#605E5C">→</text>
+  </g>
+
+  <g transform="translate(540, 288)">
+    <rect width="540" height="68" rx="8" fill="white" stroke="#0078D4" stroke-width="1.5" filter="url(#card-shadow)"/>
+    <rect width="56" height="68" rx="8" fill="#0078D4"/>
+    <rect x="56" y="0" width="1" height="68" fill="#0078D4"/>
+    <text x="28" y="28" font-family="Segoe UI, sans-serif" font-size="10" font-weight="bold" fill="white" text-anchor="middle">DAX</text>
+    <text x="28" y="44" font-family="Segoe UI, sans-serif" font-size="9" fill="rgba(255,255,255,0.8)" text-anchor="middle">RLS</text>
+    <text x="68" y="36" font-family="Cascadia Code, Consolas, monospace" font-size="11" fill="#0078D4">USERPRINCIPALNAME()</text>
+    <text x="68" y="54" font-family="Cascadia Code, Consolas, monospace" font-size="11" fill="#0078D4">+ RLS role per group (Azure AD assignment)</text>
+  </g>
+</svg>

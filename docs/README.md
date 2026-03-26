@@ -1,7 +1,7 @@
 # Documentation
 
 <p align="center">
-  <img src="images/logo.svg" alt="Tableau to Power BI Migration Tool" width="560"/>
+  <img src="images/banner.svg" alt="Tableau to Power BI Migration Tool" width="960"/>
 </p>
 
 ## Guides

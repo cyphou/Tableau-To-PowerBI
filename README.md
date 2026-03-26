@@ -1,17 +1,5 @@
 <p align="center">
-  <img src="docs/images/logo.svg" alt="Tableau to Power BI Migration Tool" width="640"/>
-</p>
-
-<p align="center">
-  <img src="https://img.shields.io/badge/Tableau-E97627?style=for-the-badge&logo=tableau&logoColor=white" alt="Tableau"/>
-  <img src="https://img.shields.io/badge/%E2%86%92-gray?style=for-the-badge" alt="arrow"/>
-  <img src="https://img.shields.io/badge/Power%20BI-F2C811?style=for-the-badge&logo=powerbi&logoColor=black" alt="Power BI"/>
-</p>
-
-<h1 align="center">Tableau to Power BI Migration</h1>
-
-<p align="center">
-  <strong>Migrate your Tableau workbooks to Power BI in seconds — fully automated, zero manual rework.</strong>
+  <img src="docs/images/banner.svg" alt="Tableau to Power BI — Automated Migration Tool" width="1200"/>
 </p>
 
 <p align="center">
@@ -31,6 +19,10 @@
   <a href="#-dax-conversions-180-functions">DAX Mappings</a> •
   <a href="#-deployment">Deployment</a> •
   <a href="#-documentation">Docs</a>
+</p>
+
+<p align="center">
+  <img src="docs/images/features.svg" alt="Key capabilities" width="1200"/>
 </p>
 
 ---
@@ -387,6 +379,10 @@ SharedSales/
 ---
 
 ## 🧮 DAX Conversions (180+ functions)
+
+<p align="center">
+  <img src="docs/images/conversions.svg" alt="Tableau → DAX conversion examples" width="1100"/>
+</p>
 
 > **Full reference:** [docs/TABLEAU_TO_DAX_REFERENCE.md](docs/TABLEAU_TO_DAX_REFERENCE.md)
 

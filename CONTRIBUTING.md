@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/images/logo.svg" alt="Tableau to Power BI" width="480"/>
+</p>
+
 # Contributing to Tableau to Power BI Migration Tool
 
 Thank you for your interest in contributing! This guide covers the development setup, coding standards, and contribution workflow.

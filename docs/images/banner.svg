@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 320" width="1200" height="320">
+  <defs>
+    <linearGradient id="hero-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#001D3D"/>
+      <stop offset="50%" stop-color="#003566"/>
+      <stop offset="100%" stop-color="#0078D4"/>
+    </linearGradient>
+    <linearGradient id="accent-line" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#E97627"/>
+      <stop offset="50%" stop-color="#F2C811"/>
+      <stop offset="100%" stop-color="#0078D4"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="rgba(242,200,17,0.3)"/>
+      <stop offset="100%" stop-color="rgba(242,200,17,0)"/>
+    </linearGradient>
+    <filter id="blur-bg">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="60"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="320" fill="url(#hero-bg)"/>
+
+  <!-- Decorative blurred circles -->
+  <circle cx="150" cy="160" r="180" fill="rgba(233,118,39,0.08)" filter="url(#blur-bg)"/>
+  <circle cx="1050" cy="160" r="200" fill="rgba(0,120,212,0.1)" filter="url(#blur-bg)"/>
+  <circle cx="600" cy="80" r="150" fill="rgba(242,200,17,0.06)" filter="url(#blur-bg)"/>
+
+  <!-- Accent line -->
+  <rect x="0" y="305" width="1200" height="4" fill="url(#accent-line)"/>
+
+  <!-- Grid pattern (subtle) -->
+  <g opacity="0.04">
+    <line x1="0" y1="60" x2="1200" y2="60" stroke="white" stroke-width="0.5"/>
+    <line x1="0" y1="120" x2="1200" y2="120" stroke="white" stroke-width="0.5"/>
+    <line x1="0" y1="180" x2="1200" y2="180" stroke="white" stroke-width="0.5"/>
+    <line x1="0" y1="240" x2="1200" y2="240" stroke="white" stroke-width="0.5"/>
+    <line x1="200" y1="0" x2="200" y2="320" stroke="white" stroke-width="0.5"/>
+    <line x1="400" y1="0" x2="400" y2="320" stroke="white" stroke-width="0.5"/>
+    <line x1="600" y1="0" x2="600" y2="320" stroke="white" stroke-width="0.5"/>
+    <line x1="800" y1="0" x2="800" y2="320" stroke="white" stroke-width="0.5"/>
+    <line x1="1000" y1="0" x2="1000" y2="320" stroke="white" stroke-width="0.5"/>
+  </g>
+
+  <!-- Left: Tableau icon -->
+  <circle cx="130" cy="130" r="52" fill="#E97627" opacity="0.95"/>
+  <text x="130" y="148" font-family="Segoe UI, Arial, sans-serif" font-size="52" font-weight="bold" fill="white" text-anchor="middle">T</text>
+
+  <!-- Arrow flow -->
+  <g opacity="0.7">
+    <circle cx="215" cy="130" r="4" fill="#F2C811"/>
+    <circle cx="240" cy="130" r="5" fill="#F2C811"/>
+    <circle cx="268" cy="130" r="6" fill="#F2C811"/>
+  </g>
+  <polygon points="290,118 320,130 290,142" fill="#F2C811" opacity="0.9"/>
+
+  <!-- Right: Power BI icon -->
+  <circle cx="370" cy="130" r="52" fill="#F2C811" opacity="0.95"/>
+  <text x="370" y="144" font-family="Segoe UI, Arial, sans-serif" font-size="32" font-weight="bold" fill="#1E1E2E" text-anchor="middle">PBI</text>
+
+  <!-- Title -->
+  <text x="480" y="105" font-family="Segoe UI, Arial, sans-serif" font-size="42" font-weight="bold" fill="white">Tableau → Power BI</text>
+  <text x="480" y="148" font-family="Segoe UI, Arial, sans-serif" font-size="22" fill="#F2C811" font-weight="600">Automated Migration Tool</text>
+  <text x="480" y="178" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="rgba(255,255,255,0.7)">Migrate workbooks to .pbip in seconds — fully automated, zero manual rework</text>
+
+  <!-- Stats row -->
+  <g transform="translate(480, 200)">
+    <!-- Stat 1 -->
+    <rect x="0" y="0" width="108" height="52" rx="8" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+    <text x="54" y="22" font-family="Segoe UI, sans-serif" font-size="18" font-weight="bold" fill="#F2C811" text-anchor="middle">180+</text>
+    <text x="54" y="40" font-family="Segoe UI, sans-serif" font-size="11" fill="rgba(255,255,255,0.7)" text-anchor="middle">DAX Conversions</text>
+
+    <!-- Stat 2 -->
+    <rect x="118" y="0" width="108" height="52" rx="8" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+    <text x="172" y="22" font-family="Segoe UI, sans-serif" font-size="18" font-weight="bold" fill="#F2C811" text-anchor="middle">118+</text>
+    <text x="172" y="40" font-family="Segoe UI, sans-serif" font-size="11" fill="rgba(255,255,255,0.7)" text-anchor="middle">Visual Types</text>
+
+    <!-- Stat 3 -->
+    <rect x="236" y="0" width="108" height="52" rx="8" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+    <text x="290" y="22" font-family="Segoe UI, sans-serif" font-size="18" font-weight="bold" fill="#F2C811" text-anchor="middle">42</text>
+    <text x="290" y="40" font-family="Segoe UI, sans-serif" font-size="11" fill="rgba(255,255,255,0.7)" text-anchor="middle">Connectors</text>
+
+    <!-- Stat 4 -->
+    <rect x="354" y="0" width="108" height="52" rx="8" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+    <text x="408" y="22" font-family="Segoe UI, sans-serif" font-size="18" font-weight="bold" fill="#F2C811" text-anchor="middle">6,818+</text>
+    <text x="408" y="40" font-family="Segoe UI, sans-serif" font-size="11" fill="rgba(255,255,255,0.7)" text-anchor="middle">Tests Passing</text>
+
+    <!-- Stat 5 -->
+    <rect x="472" y="0" width="108" height="52" rx="8" fill="rgba(16,124,16,0.3)" stroke="rgba(16,124,16,0.5)" stroke-width="1"/>
+    <text x="526" y="22" font-family="Segoe UI, sans-serif" font-size="18" font-weight="bold" fill="#4ADE80" text-anchor="middle">100%</text>
+    <text x="526" y="40" font-family="Segoe UI, sans-serif" font-size="11" fill="rgba(255,255,255,0.7)" text-anchor="middle">Fidelity</text>
+  </g>
+
+  <!-- Command hint -->
+  <rect x="480" y="268" width="380" height="28" rx="6" fill="rgba(0,0,0,0.3)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <text x="495" y="286" font-family="Cascadia Code, Consolas, monospace" font-size="13" fill="rgba(255,255,255,0.5)">$</text>
+  <text x="512" y="286" font-family="Cascadia Code, Consolas, monospace" font-size="13" fill="#4ADE80">python migrate.py workbook.twbx</text>
+
+  <!-- Version tag -->
+  <rect x="1080" y="276" width="100" height="24" rx="12" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+  <text x="1130" y="293" font-family="Segoe UI, sans-serif" font-size="12" fill="rgba(255,255,255,0.6)" text-anchor="middle">v28.1.1</text>
+
+  <!-- Zero deps badge -->
+  <rect x="60" y="210" width="130" height="28" rx="14" fill="rgba(233,118,39,0.2)" stroke="rgba(233,118,39,0.4)" stroke-width="1"/>
+  <text x="125" y="229" font-family="Segoe UI, sans-serif" font-size="12" fill="#E97627" text-anchor="middle">Zero Dependencies</text>
+
+  <rect x="60" y="248" width="130" height="28" rx="14" fill="rgba(0,120,212,0.2)" stroke="rgba(0,120,212,0.4)" stroke-width="1"/>
+  <text x="125" y="267" font-family="Segoe UI, sans-serif" font-size="12" fill="#60B5FF" text-anchor="middle">Python 3.12+</text>
+</svg>

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="images/banner.svg" alt="Tableau to Power BI Migration Tool" width="960"/>
+</p>
+
 # Enterprise Deployment Guide
 
 Step-by-step guide for migrating Tableau workbooks to Power BI at enterprise scale (100–500+ workbooks).
