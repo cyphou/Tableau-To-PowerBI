@@ -1,34 +1,60 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 160" width="640" height="160">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#004578"/>
-      <stop offset="100%" stop-color="#0078D4"/>
-    </linearGradient>
-    <linearGradient id="arrow-grad" x1="0" y1="0" x2="1" y2="0">
+    <radialGradient id="l-bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1A2240"/>
+      <stop offset="100%" stop-color="#0A0E27"/>
+    </radialGradient>
+    <radialGradient id="l-tab" cx="40%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#FF9040"/>
+      <stop offset="60%" stop-color="#E97627"/>
+      <stop offset="100%" stop-color="#C45A10"/>
+    </radialGradient>
+    <radialGradient id="l-pbi" cx="40%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#FFD94A"/>
+      <stop offset="60%" stop-color="#F2C811"/>
+      <stop offset="100%" stop-color="#D4A800"/>
+    </radialGradient>
+    <linearGradient id="l-arrow" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0%" stop-color="#E97627"/>
       <stop offset="100%" stop-color="#F2C811"/>
     </linearGradient>
+    <filter id="l-glow">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="6"/>
+    </filter>
+    <filter id="l-glow-sm">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3"/>
+    </filter>
   </defs>
+
   <!-- Background -->
-  <rect width="640" height="160" rx="16" fill="url(#bg)"/>
-  <!-- Tableau icon (stylized "T" in orange circle) -->
-  <circle cx="70" cy="80" r="40" fill="#E97627"/>
-  <text x="70" y="96" font-family="Segoe UI, Arial, sans-serif" font-size="44" font-weight="bold" fill="white" text-anchor="middle">T</text>
+  <rect width="200" height="200" rx="24" fill="url(#l-bg)"/>
+
+  <!-- Glow backdrops -->
+  <circle cx="62" cy="100" r="36" fill="#E97627" opacity="0.08" filter="url(#l-glow)"/>
+  <circle cx="138" cy="100" r="36" fill="#F2C811" opacity="0.08" filter="url(#l-glow)"/>
+
+  <!-- Tableau orb -->
+  <circle cx="62" cy="100" r="30" fill="url(#l-tab)"/>
+  <ellipse cx="56" cy="90" rx="12" ry="8" fill="white" opacity="0.18"/>
+  <text x="62" y="106" font-family="Segoe UI, sans-serif" font-size="14" font-weight="bold" fill="white" text-anchor="middle">T</text>
+
   <!-- Arrow -->
-  <polygon points="140,70 180,70 180,55 210,80 180,105 180,90 140,90" fill="url(#arrow-grad)"/>
-  <!-- Power BI icon (stylized "PBI" in yellow circle) -->
-  <circle cx="250" cy="80" r="40" fill="#F2C811"/>
-  <text x="250" y="93" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="bold" fill="#1E1E2E" text-anchor="middle">PBI</text>
-  <!-- Title text -->
-  <text x="310" y="65" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="bold" fill="white">Tableau → Power BI</text>
-  <text x="310" y="100" font-family="Segoe UI, Arial, sans-serif" font-size="16" fill="#F2C811">Automated Migration Tool</text>
-  <!-- Stats badges -->
-  <rect x="310" y="112" width="70" height="22" rx="4" fill="rgba(255,255,255,0.15)"/>
-  <text x="345" y="127" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">180+ DAX</text>
-  <rect x="388" y="112" width="80" height="22" rx="4" fill="rgba(255,255,255,0.15)"/>
-  <text x="428" y="127" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">118+ Visuals</text>
-  <rect x="476" y="112" width="82" height="22" rx="4" fill="rgba(255,255,255,0.15)"/>
-  <text x="517" y="127" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">6,818+ Tests</text>
-  <rect x="566" y="112" width="60" height="22" rx="4" fill="rgba(16,124,16,0.6)"/>
-  <text x="596" y="127" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">100%</text>
+  <path d="M 97 100 L 113 100" stroke="url(#l-arrow)" stroke-width="3" stroke-linecap="round"/>
+  <polygon points="113,94 125,100 113,106" fill="url(#l-arrow)"/>
+  <path d="M 97 100 L 113 100" stroke="url(#l-arrow)" stroke-width="3" stroke-linecap="round" filter="url(#l-glow-sm)" opacity="0.5"/>
+
+  <!-- PBI orb -->
+  <circle cx="138" cy="100" r="30" fill="url(#l-pbi)"/>
+  <ellipse cx="132" cy="90" rx="12" ry="8" fill="white" opacity="0.18"/>
+  <text x="138" y="106" font-family="Segoe UI, sans-serif" font-size="13" font-weight="bold" fill="white" text-anchor="middle">PBI</text>
+
+  <!-- Bottom text -->
+  <text x="100" y="155" font-family="Segoe UI, sans-serif" font-size="10" font-weight="700" fill="white" text-anchor="middle" letter-spacing="2">TABLEAU</text>
+  <text x="100" y="170" font-family="Segoe UI, sans-serif" font-size="8" fill="#F2C811" text-anchor="middle" letter-spacing="1">TO POWER BI</text>
+
+  <!-- Corner particles -->
+  <circle cx="24" cy="28" r="1.5" fill="rgba(255,255,255,0.1)"/>
+  <circle cx="175" cy="32" r="1" fill="rgba(255,255,255,0.08)"/>
+  <circle cx="30" cy="175" r="0.8" fill="rgba(255,255,255,0.06)"/>
+  <circle cx="170" cy="172" r="1.2" fill="rgba(255,255,255,0.09)"/>
 </svg>

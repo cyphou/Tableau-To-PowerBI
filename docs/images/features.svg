@@ -1,64 +1,79 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 90" width="1200" height="90">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 100" width="1200" height="100">
   <defs>
-    <linearGradient id="feat-bg" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#F8F8F8"/>
-      <stop offset="100%" stop-color="#F0F0F0"/>
+    <linearGradient id="f-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0D1B3E"/>
+      <stop offset="100%" stop-color="#122550"/>
     </linearGradient>
+    <linearGradient id="f-glass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.08)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0.02)"/>
+    </linearGradient>
+    <linearGradient id="f-border" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.15)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0.04)"/>
+    </linearGradient>
+    <filter id="f-glow"><feGaussianBlur in="SourceGraphic" stdDeviation="6"/></filter>
   </defs>
 
-  <rect width="1200" height="90" fill="url(#feat-bg)" rx="8"/>
+  <rect width="1200" height="100" fill="url(#f-bg)"/>
 
-  <!-- Feature 1 -->
-  <g transform="translate(20, 10)">
-    <rect width="185" height="70" rx="8" fill="white" stroke="#E8E8E8" stroke-width="1"/>
-    <circle cx="32" cy="35" r="18" fill="#E97627" opacity="0.12"/>
-    <text x="32" y="41" font-family="Segoe UI, sans-serif" font-size="18" text-anchor="middle">🔍</text>
-    <text x="58" y="30" font-family="Segoe UI, sans-serif" font-size="12" font-weight="bold" fill="#242424">20 Object Types</text>
-    <text x="58" y="48" font-family="Segoe UI, sans-serif" font-size="10" fill="#605E5C">Full XML extraction</text>
+  <!-- Card 1 -->
+  <g transform="translate(16, 14)">
+    <rect width="185" height="72" rx="10" fill="url(#f-glass)" stroke="url(#f-border)" stroke-width="1"/>
+    <circle cx="34" cy="36" r="16" fill="#E97627" opacity="0.15"/>
+    <circle cx="34" cy="36" r="8" fill="#E97627" opacity="0.15" filter="url(#f-glow)"/>
+    <text x="34" y="42" font-family="Segoe UI, sans-serif" font-size="17" text-anchor="middle">🔍</text>
+    <text x="60" y="30" font-family="Segoe UI, sans-serif" font-size="13" font-weight="bold" fill="white">20 Object Types</text>
+    <text x="60" y="50" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.45)">Full XML extraction</text>
   </g>
 
-  <!-- Feature 2 -->
-  <g transform="translate(218, 10)">
-    <rect width="185" height="70" rx="8" fill="white" stroke="#E8E8E8" stroke-width="1"/>
-    <circle cx="32" cy="35" r="18" fill="#8764B8" opacity="0.12"/>
-    <text x="32" y="41" font-family="Segoe UI, sans-serif" font-size="18" text-anchor="middle">🧮</text>
-    <text x="58" y="30" font-family="Segoe UI, sans-serif" font-size="12" font-weight="bold" fill="#242424">180+ DAX</text>
-    <text x="58" y="48" font-family="Segoe UI, sans-serif" font-size="10" fill="#605E5C">Formula conversions</text>
+  <!-- Card 2 -->
+  <g transform="translate(214, 14)">
+    <rect width="185" height="72" rx="10" fill="url(#f-glass)" stroke="url(#f-border)" stroke-width="1"/>
+    <circle cx="34" cy="36" r="16" fill="#8764B8" opacity="0.15"/>
+    <circle cx="34" cy="36" r="8" fill="#8764B8" opacity="0.15" filter="url(#f-glow)"/>
+    <text x="34" y="42" font-family="Segoe UI, sans-serif" font-size="17" text-anchor="middle">🧮</text>
+    <text x="60" y="30" font-family="Segoe UI, sans-serif" font-size="13" font-weight="bold" fill="white">180+ DAX</text>
+    <text x="60" y="50" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.45)">Formula conversions</text>
   </g>
 
-  <!-- Feature 3 -->
-  <g transform="translate(416, 10)">
-    <rect width="185" height="70" rx="8" fill="white" stroke="#E8E8E8" stroke-width="1"/>
-    <circle cx="32" cy="35" r="18" fill="#038387" opacity="0.12"/>
-    <text x="32" y="41" font-family="Segoe UI, sans-serif" font-size="18" text-anchor="middle">📊</text>
-    <text x="58" y="30" font-family="Segoe UI, sans-serif" font-size="12" font-weight="bold" fill="#242424">118+ Visuals</text>
-    <text x="58" y="48" font-family="Segoe UI, sans-serif" font-size="10" fill="#605E5C">Type mappings</text>
+  <!-- Card 3 -->
+  <g transform="translate(412, 14)">
+    <rect width="185" height="72" rx="10" fill="url(#f-glass)" stroke="url(#f-border)" stroke-width="1"/>
+    <circle cx="34" cy="36" r="16" fill="#038387" opacity="0.15"/>
+    <circle cx="34" cy="36" r="8" fill="#038387" opacity="0.15" filter="url(#f-glow)"/>
+    <text x="34" y="42" font-family="Segoe UI, sans-serif" font-size="17" text-anchor="middle">📊</text>
+    <text x="60" y="30" font-family="Segoe UI, sans-serif" font-size="13" font-weight="bold" fill="white">118+ Visuals</text>
+    <text x="60" y="50" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.45)">Type mappings</text>
   </g>
 
-  <!-- Feature 4 -->
-  <g transform="translate(614, 10)">
-    <rect width="185" height="70" rx="8" fill="white" stroke="#E8E8E8" stroke-width="1"/>
-    <circle cx="32" cy="35" r="18" fill="#0078D4" opacity="0.12"/>
-    <text x="32" y="41" font-family="Segoe UI, sans-serif" font-size="18" text-anchor="middle">🔌</text>
-    <text x="58" y="30" font-family="Segoe UI, sans-serif" font-size="12" font-weight="bold" fill="#242424">42 Connectors</text>
-    <text x="58" y="48" font-family="Segoe UI, sans-serif" font-size="10" fill="#605E5C">Power Query M</text>
+  <!-- Card 4 -->
+  <g transform="translate(610, 14)">
+    <rect width="185" height="72" rx="10" fill="url(#f-glass)" stroke="url(#f-border)" stroke-width="1"/>
+    <circle cx="34" cy="36" r="16" fill="#0078D4" opacity="0.15"/>
+    <circle cx="34" cy="36" r="8" fill="#0078D4" opacity="0.15" filter="url(#f-glow)"/>
+    <text x="34" y="42" font-family="Segoe UI, sans-serif" font-size="17" text-anchor="middle">🔌</text>
+    <text x="60" y="30" font-family="Segoe UI, sans-serif" font-size="13" font-weight="bold" fill="white">42 Connectors</text>
+    <text x="60" y="50" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.45)">Power Query M</text>
   </g>
 
-  <!-- Feature 5 -->
-  <g transform="translate(812, 10)">
-    <rect width="185" height="70" rx="8" fill="white" stroke="#E8E8E8" stroke-width="1"/>
-    <circle cx="32" cy="35" r="18" fill="#107C10" opacity="0.12"/>
-    <text x="32" y="41" font-family="Segoe UI, sans-serif" font-size="18" text-anchor="middle">✅</text>
-    <text x="58" y="30" font-family="Segoe UI, sans-serif" font-size="12" font-weight="bold" fill="#242424">6,818+ Tests</text>
-    <text x="58" y="48" font-family="Segoe UI, sans-serif" font-size="10" fill="#605E5C">96.2% coverage</text>
+  <!-- Card 5 -->
+  <g transform="translate(808, 14)">
+    <rect width="185" height="72" rx="10" fill="url(#f-glass)" stroke="url(#f-border)" stroke-width="1"/>
+    <circle cx="34" cy="36" r="16" fill="#107C10" opacity="0.15"/>
+    <circle cx="34" cy="36" r="8" fill="#107C10" opacity="0.15" filter="url(#f-glow)"/>
+    <text x="34" y="42" font-family="Segoe UI, sans-serif" font-size="17" text-anchor="middle">✅</text>
+    <text x="60" y="30" font-family="Segoe UI, sans-serif" font-size="13" font-weight="bold" fill="white">6,818+ Tests</text>
+    <text x="60" y="50" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.45)">96.2% coverage</text>
   </g>
 
-  <!-- Feature 6 -->
-  <g transform="translate(1010, 10)">
-    <rect width="170" height="70" rx="8" fill="white" stroke="#E8E8E8" stroke-width="1"/>
-    <circle cx="30" cy="35" r="18" fill="#E97627" opacity="0.12"/>
-    <text x="30" y="41" font-family="Segoe UI, sans-serif" font-size="18" text-anchor="middle">🚀</text>
-    <text x="56" y="30" font-family="Segoe UI, sans-serif" font-size="12" font-weight="bold" fill="#242424">Deploy</text>
-    <text x="56" y="48" font-family="Segoe UI, sans-serif" font-size="10" fill="#605E5C">PBI / Fabric / Docker</text>
+  <!-- Card 6 -->
+  <g transform="translate(1006, 14)">
+    <rect width="178" height="72" rx="10" fill="url(#f-glass)" stroke="url(#f-border)" stroke-width="1"/>
+    <circle cx="32" cy="36" r="16" fill="#E97627" opacity="0.15"/>
+    <circle cx="32" cy="36" r="8" fill="#E97627" opacity="0.15" filter="url(#f-glow)"/>
+    <text x="32" y="42" font-family="Segoe UI, sans-serif" font-size="17" text-anchor="middle">🚀</text>
+    <text x="58" y="30" font-family="Segoe UI, sans-serif" font-size="13" font-weight="bold" fill="white">Deploy</text>
+    <text x="58" y="50" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.45)">PBI / Fabric / Docker</text>
   </g>
 </svg>

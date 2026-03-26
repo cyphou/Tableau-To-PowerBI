@@ -1,70 +1,94 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200" width="800" height="200">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 180" width="1200" height="180">
   <defs>
-    <linearGradient id="pipe-bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#FAFAFA"/>
-      <stop offset="100%" stop-color="#F3F2F1"/>
+    <linearGradient id="p-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0A0E27"/>
+      <stop offset="100%" stop-color="#141E40"/>
     </linearGradient>
-    <filter id="s" x="-3%" y="-8%" width="106%" height="116%">
-      <feDropShadow dx="1" dy="2" stdDeviation="2" flood-opacity="0.10"/>
-    </filter>
-    <marker id="ah" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-      <polygon points="0 0, 8 3, 0 6" fill="#605E5C"/>
-    </marker>
+    <linearGradient id="p-card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.07)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0.015)"/>
+    </linearGradient>
+    <linearGradient id="p-border" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.14)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0.03)"/>
+    </linearGradient>
+    <linearGradient id="p-flow" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#E97627"/>
+      <stop offset="40%" stop-color="#F2C811"/>
+      <stop offset="100%" stop-color="#0078D4"/>
+    </linearGradient>
+    <filter id="p-glow"><feGaussianBlur in="SourceGraphic" stdDeviation="5"/></filter>
+    <radialGradient id="p-tab-orb" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#E97627" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#E97627" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="p-json-orb" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#F2C811" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#F2C811" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="p-pbi-orb" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0078D4" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#0078D4" stop-opacity="0"/>
+    </radialGradient>
   </defs>
 
-  <rect width="800" height="200" fill="url(#pipe-bg)" rx="10"/>
+  <rect width="1200" height="180" rx="12" fill="url(#p-bg)"/>
+  <!-- Particles -->
+  <circle cx="80" cy="30" r="0.8" fill="rgba(255,255,255,0.08)"/>
+  <circle cx="250" cy="150" r="1" fill="rgba(255,255,255,0.06)"/>
+  <circle cx="600" cy="20" r="1.2" fill="rgba(255,255,255,0.1)"/>
+  <circle cx="950" cy="160" r="0.7" fill="rgba(255,255,255,0.07)"/>
+  <circle cx="1120" cy="40" r="0.9" fill="rgba(255,255,255,0.08)"/>
 
-  <!-- Step 1: Source -->
-  <rect x="15" y="40" width="120" height="120" rx="10" fill="#E97627" filter="url(#s)"/>
-  <text x="75" y="78" font-family="Segoe UI, sans-serif" font-size="28" fill="white" text-anchor="middle">📄</text>
-  <text x="75" y="102" font-family="Segoe UI, sans-serif" font-size="12" font-weight="bold" fill="white" text-anchor="middle">.twb / .twbx</text>
-  <text x="75" y="118" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.85)" text-anchor="middle">.tds / .tfl</text>
-  <text x="75" y="134" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.85)" text-anchor="middle">Server API</text>
-  <text x="75" y="150" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.85)" text-anchor="middle">.hyper data</text>
+  <!-- Flow line -->
+  <line x1="260" y1="90" x2="440" y2="90" stroke="url(#p-flow)" stroke-width="2" stroke-dasharray="6 4" opacity="0.4"/>
+  <line x1="740" y1="90" x2="920" y2="90" stroke="url(#p-flow)" stroke-width="2" stroke-dasharray="6 4" opacity="0.4"/>
+
+  <!-- Step 1: Tableau Input -->
+  <g transform="translate(30, 20)">
+    <circle cx="120" cy="70" r="60" fill="url(#p-tab-orb)"/>
+    <rect width="240" height="140" rx="10" fill="url(#p-card)" stroke="url(#p-border)" stroke-width="0.8"/>
+    <text x="120" y="36" font-family="Segoe UI, sans-serif" font-size="30" text-anchor="middle">📁</text>
+    <text x="120" y="64" font-family="Segoe UI, sans-serif" font-size="15" font-weight="bold" fill="white" text-anchor="middle">Tableau Input</text>
+    <text x="120" y="84" font-family="Consolas, monospace" font-size="11" fill="#E97627" text-anchor="middle">.twb / .twbx / .tfl</text>
+    <text x="120" y="106" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.4)" text-anchor="middle">Worksheets • Dashboards</text>
+    <text x="120" y="122" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.4)" text-anchor="middle">Calculations • 20 types</text>
+  </g>
 
   <!-- Arrow 1 -->
-  <line x1="140" y1="100" x2="175" y2="100" stroke="#605E5C" stroke-width="2" marker-end="url(#ah)"/>
+  <g transform="translate(310, 70)">
+    <rect x="0" y="6" width="90" height="28" rx="14" fill="url(#p-card)" stroke="url(#p-border)" stroke-width="0.6"/>
+    <text x="45" y="26" font-family="Segoe UI, sans-serif" font-size="10" font-weight="bold" fill="#E97627" text-anchor="middle">EXTRACT</text>
+  </g>
 
-  <!-- Step 2: Extract -->
-  <rect x="180" y="40" width="155" height="120" rx="10" fill="#0078D4" filter="url(#s)"/>
-  <text x="257" y="70" font-family="Segoe UI, sans-serif" font-size="13" font-weight="bold" fill="white" text-anchor="middle">🔍 EXTRACT</text>
-  <text x="257" y="88" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.85)" text-anchor="middle">Parse Tableau XML</text>
-  <text x="257" y="105" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.85)" text-anchor="middle">Convert formulas → DAX</text>
-  <text x="257" y="122" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.85)" text-anchor="middle">Build M queries</text>
-  <text x="257" y="148" font-family="Segoe UI, sans-serif" font-size="10" fill="#F2C811" text-anchor="middle">→ 17 JSON files</text>
+  <!-- Step 2: JSON Intermediate -->
+  <g transform="translate(440, 20)">
+    <circle cx="160" cy="70" r="70" fill="url(#p-json-orb)"/>
+    <rect width="320" height="140" rx="10" fill="url(#p-card)" stroke="url(#p-border)" stroke-width="0.8"/>
+    <text x="160" y="36" font-family="Segoe UI, sans-serif" font-size="30" text-anchor="middle">⚙️</text>
+    <text x="160" y="64" font-family="Segoe UI, sans-serif" font-size="15" font-weight="bold" fill="white" text-anchor="middle">17 JSON Files</text>
+    <text x="160" y="84" font-family="Consolas, monospace" font-size="10" fill="#F2C811" text-anchor="middle">worksheets • dashboards • datasources</text>
+    <text x="160" y="100" font-family="Consolas, monospace" font-size="10" fill="#F2C811" text-anchor="middle">calculations • parameters • filters</text>
+    <text x="160" y="122" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.4)" text-anchor="middle">+ sets, groups, bins, hierarchies, actions...</text>
+  </g>
 
   <!-- Arrow 2 -->
-  <line x1="340" y1="100" x2="375" y2="100" stroke="#605E5C" stroke-width="2" marker-end="url(#ah)"/>
+  <g transform="translate(800, 70)">
+    <rect x="0" y="6" width="90" height="28" rx="14" fill="url(#p-card)" stroke="url(#p-border)" stroke-width="0.6"/>
+    <text x="45" y="26" font-family="Segoe UI, sans-serif" font-size="10" font-weight="bold" fill="#F2C811" text-anchor="middle">GENERATE</text>
+  </g>
 
-  <!-- Step 3: Generate -->
-  <rect x="380" y="40" width="155" height="120" rx="10" fill="#0078D4" filter="url(#s)"/>
-  <text x="457" y="70" font-family="Segoe UI, sans-serif" font-size="13" font-weight="bold" fill="white" text-anchor="middle">⚙️ GENERATE</text>
-  <text x="457" y="88" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.85)" text-anchor="middle">TMDL Semantic Model</text>
-  <text x="457" y="105" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.85)" text-anchor="middle">PBIR v4.0 Report</text>
-  <text x="457" y="122" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.85)" text-anchor="middle">118+ visual types</text>
-  <text x="457" y="148" font-family="Segoe UI, sans-serif" font-size="10" fill="#F2C811" text-anchor="middle">→ .pbip project</text>
+  <!-- Step 3: PBI Output -->
+  <g transform="translate(930, 20)">
+    <circle cx="120" cy="70" r="60" fill="url(#p-pbi-orb)"/>
+    <rect width="240" height="140" rx="10" fill="url(#p-card)" stroke="url(#p-border)" stroke-width="0.8"/>
+    <text x="120" y="36" font-family="Segoe UI, sans-serif" font-size="30" text-anchor="middle">📊</text>
+    <text x="120" y="64" font-family="Segoe UI, sans-serif" font-size="15" font-weight="bold" fill="white" text-anchor="middle">Power BI Project</text>
+    <text x="120" y="84" font-family="Consolas, monospace" font-size="11" fill="#0078D4" text-anchor="middle">.pbip (PBIR v4.0)</text>
+    <text x="120" y="106" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.4)" text-anchor="middle">TMDL • Visuals • Filters</text>
+    <text x="120" y="122" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.4)" text-anchor="middle">DAX • M Queries • RLS</text>
+  </g>
 
-  <!-- Arrow 3 -->
-  <line x1="540" y1="100" x2="575" y2="100" stroke="#605E5C" stroke-width="2" marker-end="url(#ah)"/>
-
-  <!-- Step 4: Validate -->
-  <rect x="580" y="40" width="100" height="120" rx="10" fill="#8764B8" filter="url(#s)"/>
-  <text x="630" y="70" font-family="Segoe UI, sans-serif" font-size="13" font-weight="bold" fill="white" text-anchor="middle">✅ QA</text>
-  <text x="630" y="90" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.85)" text-anchor="middle">Validate</text>
-  <text x="630" y="107" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.85)" text-anchor="middle">Auto-fix</text>
-  <text x="630" y="124" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.85)" text-anchor="middle">Compare</text>
-  <text x="630" y="148" font-family="Segoe UI, sans-serif" font-size="10" fill="#F2C811" text-anchor="middle">Lineage</text>
-
-  <!-- Arrow 4 -->
-  <line x1="685" y1="100" x2="715" y2="100" stroke="#605E5C" stroke-width="2" marker-end="url(#ah)"/>
-
-  <!-- Step 5: Deploy -->
-  <rect x="720" y="40" width="65" height="120" rx="10" fill="#107C10" filter="url(#s)"/>
-  <text x="752" y="70" font-family="Segoe UI, sans-serif" font-size="13" font-weight="bold" fill="white" text-anchor="middle">🚀</text>
-  <text x="752" y="92" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.85)" text-anchor="middle">PBI</text>
-  <text x="752" y="109" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.85)" text-anchor="middle">Fabric</text>
-  <text x="752" y="126" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.85)" text-anchor="middle">Docker</text>
-
-  <!-- Bottom label -->
-  <text x="400" y="188" font-family="Segoe UI, sans-serif" font-size="11" fill="#605E5C" text-anchor="middle">python migrate.py workbook.twbx  →  fully automated, zero external dependencies</text>
+  <!-- Bottom gradient accent -->
+  <rect y="174" width="1200" height="6" rx="0 0 12 12" fill="url(#p-flow)" opacity="0.5"/>
 </svg>
