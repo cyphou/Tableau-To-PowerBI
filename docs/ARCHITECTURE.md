@@ -4,6 +4,10 @@
 
 The migration follows a **2-step pipeline**: Extraction → Generation.
 
+<p align="center">
+  <img src="images/architecture.svg" alt="Architecture diagram" width="960"/>
+</p>
+
 ```mermaid
 flowchart LR
     subgraph Input

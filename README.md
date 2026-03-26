@@ -1,4 +1,8 @@
 <p align="center">
+  <img src="docs/images/logo.svg" alt="Tableau to Power BI Migration Tool" width="640"/>
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/Tableau-E97627?style=for-the-badge&logo=tableau&logoColor=white" alt="Tableau"/>
   <img src="https://img.shields.io/badge/%E2%86%92-gray?style=for-the-badge" alt="arrow"/>
   <img src="https://img.shields.io/badge/Power%20BI-F2C811?style=for-the-badge&logo=powerbi&logoColor=black" alt="Power BI"/>
@@ -198,6 +202,10 @@ Merge multiple Tableau workbooks into **one shared semantic model** with thin re
 ---
 
 ## 🔧 How It Works
+
+<p align="center">
+  <img src="docs/images/pipeline.svg" alt="Migration Pipeline" width="800"/>
+</p>
 
 ```mermaid
 flowchart LR
@@ -487,6 +495,10 @@ SharedSales/
 ---
 
 ## 🏗️ Architecture
+
+<p align="center">
+  <img src="docs/images/architecture.svg" alt="Architecture Diagram" width="960"/>
+</p>
 
 <details>
 <summary><b>📁 Project structure</b> (click to expand)</summary>

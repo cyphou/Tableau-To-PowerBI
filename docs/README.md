@@ -1,5 +1,9 @@
 # Documentation
 
+<p align="center">
+  <img src="images/logo.svg" alt="Tableau to Power BI Migration Tool" width="560"/>
+</p>
+
 ## Guides
 
 - [POWERBI_PROJECT_GUIDE.md](POWERBI_PROJECT_GUIDE.md) — Understanding and using `.pbip` projects

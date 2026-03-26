@@ -18,6 +18,11 @@ from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 from pptx.enum.shapes import MSO_SHAPE
 
+# ── Image paths ───────────────────────────────────────────────────────
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+IMG_MIGRATION_RESULTS = os.path.join(_SCRIPT_DIR, "images", "migration_results.png")
+IMG_SHARE_ASSESSMENT = os.path.join(_SCRIPT_DIR, "images", "share_assessment.png")
+
 # ── Color palette (PBI / Fluent) ──────────────────────────────────────
 PBI_BLUE = RGBColor(0x00, 0x78, 0xD4)
 PBI_DARK = RGBColor(0x00, 0x45, 0x78)
@@ -423,6 +428,11 @@ def slide_shared_model(prs):
     _add_bullet_list(slide, Inches(0.5), Inches(5.0), Inches(12), Inches(2.0),
                      features, 14, DARK)
 
+    # Share assessment screenshot
+    if os.path.isfile(IMG_SHARE_ASSESSMENT):
+        slide.shapes.add_picture(IMG_SHARE_ASSESSMENT,
+                                 Inches(3.5), Inches(4.3), Inches(9.0))
+
 
 def slide_migration_results(prs):
     """Slide 7: Migration Results (27/27 workbooks)."""
@@ -482,6 +492,11 @@ def slide_migration_results(prs):
     _add_text(slide, Inches(0.5), Inches(5.5), Inches(12), Inches(0.5),
               "All 27 workbooks migrated at 100% fidelity — zero errors, zero manual intervention required.",
               16, SUCCESS, bold=True, alignment=PP_ALIGN.CENTER)
+
+    # Migration results screenshot
+    if os.path.isfile(IMG_MIGRATION_RESULTS):
+        slide.shapes.add_picture(IMG_MIGRATION_RESULTS,
+                                 Inches(6.5), Inches(5.3), Inches(6.5))
 
 
 def slide_qa_automation(prs):

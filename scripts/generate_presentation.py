@@ -1,11 +1,19 @@
 #!/usr/bin/env python3
 """Generate a PPTX presentation for the Tableau to Power BI Migration Tool."""
 
+import os
+
 from pptx import Presentation
 from pptx.util import Inches, Pt, Emu
 from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 from pptx.enum.shapes import MSO_SHAPE
+
+# ── Image paths ──
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+_PROJECT_ROOT = os.path.dirname(_SCRIPT_DIR)
+IMG_MIGRATION_RESULTS = os.path.join(_PROJECT_ROOT, "docs", "images", "migration_results.png")
+IMG_SHARE_ASSESSMENT = os.path.join(_PROJECT_ROOT, "docs", "images", "share_assessment.png")
 
 # ── Brand colors ──
 TABLEAU_ORANGE = RGBColor(0xE9, 0x76, 0x27)
@@ -173,10 +181,10 @@ def build_presentation():
                  font_size=20, color=PBI_YELLOW, alignment=PP_ALIGN.LEFT)
     # Bottom info
     _add_textbox(slide, Inches(1), Inches(5.5), Inches(6), Inches(0.4),
-                 'Python 3.12+ · Zero external dependencies · 6,818 tests',
+                 'Python 3.12+ · Zero external dependencies · 6,818+ tests',
                  font_size=14, color=MID_GRAY)
     _add_textbox(slide, Inches(1), Inches(5.9), Inches(6), Inches(0.4),
-                 'v28.0.0 Phase 1', font_size=14, color=MID_GRAY)
+                 'v28.1.1', font_size=14, color=MID_GRAY)
 
     # ══════════════════════════════════════════════════════════════
     # SLIDE 2 — What It Does
@@ -573,6 +581,11 @@ def build_presentation():
                   '# Deploy shared model + thin reports as bundle\n'
                   'python migrate.py --shared-model wb1.twbx wb2.twbx --deploy-bundle WORKSPACE_ID')
 
+    # Share assessment screenshot
+    if os.path.isfile(IMG_SHARE_ASSESSMENT):
+        slide.shapes.add_picture(IMG_SHARE_ASSESSMENT,
+                                 Inches(0.8), Inches(6.8), Inches(11.5))
+
     # ══════════════════════════════════════════════════════════════
     # SLIDE 13 — Schema Drift & Incremental
     # ══════════════════════════════════════════════════════════════
@@ -668,7 +681,7 @@ def build_presentation():
         ('43', 'M Query\nTransforms', AZURE_BLUE),
         ('33', 'Data Source\nConnectors', GREEN),
         ('17', 'Extracted\nObject Types', ACCENT_PURPLE),
-        ('6,593', 'Automated\nTests', RGBColor(0xEF, 0x44, 0x44)),
+        ('6,818+', 'Automated\nTests', RGBColor(0xEF, 0x44, 0x44)),
     ]
     for i, (num, label, color) in enumerate(stats):
         x = Inches(0.7) + Inches(i * 2.1)
@@ -694,6 +707,11 @@ def build_presentation():
         y = Inches(4.5) + Inches(row * 0.45)
         _add_textbox(slide, x, y, Inches(5.5), Inches(0.4),
                      '✓  ' + feat, font_size=14, color=WHITE)
+
+    # Migration results screenshot
+    if os.path.isfile(IMG_MIGRATION_RESULTS):
+        slide.shapes.add_picture(IMG_MIGRATION_RESULTS,
+                                 Inches(0.7), Inches(6.0), Inches(11.8))
 
     # ══════════════════════════════════════════════════════════════
     # SLIDE 16 — Getting Started
@@ -742,7 +760,7 @@ def build_presentation():
                  'python migrate.py workbook.twbx', font_size=20,
                  color=PBI_YELLOW, alignment=PP_ALIGN.CENTER, font_name='Cascadia Code')
     _add_textbox(slide, Inches(1), Inches(5.5), Inches(11), Inches(0.4),
-                 'v28.0.0 · 6,593 tests · 180+ DAX conversions · 118 visual mappings',
+                 'v28.1.1 · 6,818+ tests · 180+ DAX conversions · 118 visual mappings',
                  font_size=14, color=MID_GRAY, alignment=PP_ALIGN.CENTER)
 
     # ── Save ──

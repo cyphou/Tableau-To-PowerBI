@@ -1,0 +1,152 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" width="960" height="540">
+  <defs>
+    <linearGradient id="bg-arch" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FAFAFA"/>
+      <stop offset="100%" stop-color="#F0F0F0"/>
+    </linearGradient>
+    <filter id="shadow" x="-4%" y="-4%" width="108%" height="108%">
+      <feDropShadow dx="1" dy="2" stdDeviation="3" flood-opacity="0.12"/>
+    </filter>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#605E5C"/>
+    </marker>
+    <marker id="arrowhead-blue" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#0078D4"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="960" height="540" fill="url(#bg-arch)"/>
+
+  <!-- Title -->
+  <text x="480" y="36" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="bold" fill="#242424" text-anchor="middle">2-Step Migration Pipeline Architecture</text>
+
+  <!-- ═══ ROW 1: Main pipeline ═══ -->
+
+  <!-- Source box -->
+  <rect x="20" y="60" width="150" height="100" rx="10" fill="#E97627" filter="url(#shadow)"/>
+  <text x="95" y="90" font-family="Segoe UI, sans-serif" font-size="24" fill="white" text-anchor="middle">📄</text>
+  <text x="95" y="112" font-family="Segoe UI, sans-serif" font-size="13" font-weight="bold" fill="white" text-anchor="middle">Tableau Source</text>
+  <text x="95" y="128" font-family="Segoe UI, sans-serif" font-size="11" fill="rgba(255,255,255,0.85)" text-anchor="middle">.twb / .twbx / .tds</text>
+  <text x="95" y="144" font-family="Segoe UI, sans-serif" font-size="11" fill="rgba(255,255,255,0.85)" text-anchor="middle">Prep flows (.tfl)</text>
+
+  <!-- Arrow 1 -->
+  <line x1="175" y1="110" x2="215" y2="110" stroke="#605E5C" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+  <!-- Step 1: Extract -->
+  <rect x="220" y="55" width="220" height="110" rx="10" fill="#0078D4" filter="url(#shadow)"/>
+  <text x="330" y="80" font-family="Segoe UI, sans-serif" font-size="14" font-weight="bold" fill="white" text-anchor="middle">🔍 STEP 1 — EXTRACT</text>
+  <text x="330" y="100" font-family="Segoe UI, sans-serif" font-size="11" fill="rgba(255,255,255,0.9)" text-anchor="middle">tableau_export/</text>
+  <line x1="245" y1="108" x2="415" y2="108" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+  <text x="330" y="125" font-family="Segoe UI, sans-serif" font-size="11" fill="rgba(255,255,255,0.85)" text-anchor="middle">Parse XML → 17 JSON files</text>
+  <text x="330" y="142" font-family="Segoe UI, sans-serif" font-size="11" fill="rgba(255,255,255,0.85)" text-anchor="middle">180+ DAX conversions</text>
+  <text x="330" y="155" font-family="Segoe UI, sans-serif" font-size="11" fill="rgba(255,255,255,0.85)" text-anchor="middle">43 M query transforms</text>
+
+  <!-- Arrow 2 -->
+  <line x1="445" y1="110" x2="485" y2="110" stroke="#605E5C" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+  <!-- Intermediate JSON -->
+  <rect x="490" y="70" width="110" height="80" rx="8" fill="white" stroke="#E0E0E0" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="545" y="100" font-family="Segoe UI, sans-serif" font-size="13" font-weight="bold" fill="#242424" text-anchor="middle">17 JSON</text>
+  <text x="545" y="118" font-family="Segoe UI, sans-serif" font-size="11" fill="#605E5C" text-anchor="middle">intermediate</text>
+  <text x="545" y="133" font-family="Segoe UI, sans-serif" font-size="11" fill="#605E5C" text-anchor="middle">files</text>
+
+  <!-- Arrow 3 -->
+  <line x1="605" y1="110" x2="645" y2="110" stroke="#605E5C" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+  <!-- Step 2: Generate -->
+  <rect x="650" y="55" width="220" height="110" rx="10" fill="#0078D4" filter="url(#shadow)"/>
+  <text x="760" y="80" font-family="Segoe UI, sans-serif" font-size="14" font-weight="bold" fill="white" text-anchor="middle">⚙️ STEP 2 — GENERATE</text>
+  <text x="760" y="100" font-family="Segoe UI, sans-serif" font-size="11" fill="rgba(255,255,255,0.9)" text-anchor="middle">powerbi_import/</text>
+  <line x1="675" y1="108" x2="845" y2="108" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+  <text x="760" y="125" font-family="Segoe UI, sans-serif" font-size="11" fill="rgba(255,255,255,0.85)" text-anchor="middle">TMDL Semantic Model</text>
+  <text x="760" y="142" font-family="Segoe UI, sans-serif" font-size="11" fill="rgba(255,255,255,0.85)" text-anchor="middle">PBIR v4.0 Report</text>
+  <text x="760" y="155" font-family="Segoe UI, sans-serif" font-size="11" fill="rgba(255,255,255,0.85)" text-anchor="middle">118+ visual mappings</text>
+
+  <!-- Arrow 4 -->
+  <line x1="875" y1="110" x2="905" y2="110" stroke="#605E5C" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+  <!-- Output box -->
+  <rect x="908" y="70" width="40" height="80" rx="8" fill="#107C10" filter="url(#shadow)"/>
+  <text x="928" y="118" font-family="Segoe UI, sans-serif" font-size="13" font-weight="bold" fill="white" text-anchor="middle" transform="rotate(-90 928 110)">.pbip</text>
+
+  <!-- ═══ ROW 2: Extract modules ═══ -->
+  <text x="330" y="198" font-family="Segoe UI, sans-serif" font-size="13" font-weight="bold" fill="#004578" text-anchor="middle">Extraction Modules</text>
+
+  <!-- Module boxes (extract) -->
+  <rect x="30" y="210" width="155" height="48" rx="6" fill="white" stroke="#E97627" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="107" y="232" font-family="Cascadia Code, Consolas, monospace" font-size="10" fill="#E97627" text-anchor="middle">extract_tableau_data</text>
+  <text x="107" y="248" font-family="Segoe UI, sans-serif" font-size="9" fill="#605E5C" text-anchor="middle">TWB/TWBX parser</text>
+
+  <rect x="195" y="210" width="155" height="48" rx="6" fill="white" stroke="#E97627" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="272" y="232" font-family="Cascadia Code, Consolas, monospace" font-size="10" fill="#E97627" text-anchor="middle">dax_converter</text>
+  <text x="272" y="248" font-family="Segoe UI, sans-serif" font-size="9" fill="#605E5C" text-anchor="middle">180+ formula conversions</text>
+
+  <rect x="360" y="210" width="155" height="48" rx="6" fill="white" stroke="#E97627" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="437" y="232" font-family="Cascadia Code, Consolas, monospace" font-size="10" fill="#E97627" text-anchor="middle">m_query_builder</text>
+  <text x="437" y="248" font-family="Segoe UI, sans-serif" font-size="9" fill="#605E5C" text-anchor="middle">33 connectors + 43 transforms</text>
+
+  <rect x="30" y="266" width="155" height="48" rx="6" fill="white" stroke="#E97627" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="107" y="288" font-family="Cascadia Code, Consolas, monospace" font-size="10" fill="#E97627" text-anchor="middle">datasource_extractor</text>
+  <text x="107" y="304" font-family="Segoe UI, sans-serif" font-size="9" fill="#605E5C" text-anchor="middle">connections, tables, rels</text>
+
+  <rect x="195" y="266" width="155" height="48" rx="6" fill="white" stroke="#E97627" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="272" y="288" font-family="Cascadia Code, Consolas, monospace" font-size="10" fill="#E97627" text-anchor="middle">hyper_reader</text>
+  <text x="272" y="304" font-family="Segoe UI, sans-serif" font-size="9" fill="#605E5C" text-anchor="middle">3-tier .hyper file reader</text>
+
+  <rect x="360" y="266" width="155" height="48" rx="6" fill="white" stroke="#E97627" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="437" y="288" font-family="Cascadia Code, Consolas, monospace" font-size="10" fill="#E97627" text-anchor="middle">server_client</text>
+  <text x="437" y="304" font-family="Segoe UI, sans-serif" font-size="9" fill="#605E5C" text-anchor="middle">Tableau Server REST API</text>
+
+  <!-- ═══ ROW 2: Generate modules ═══ -->
+  <text x="760" y="198" font-family="Segoe UI, sans-serif" font-size="13" font-weight="bold" fill="#004578" text-anchor="middle">Generation Modules</text>
+
+  <rect x="615" y="210" width="155" height="48" rx="6" fill="white" stroke="#0078D4" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="692" y="232" font-family="Cascadia Code, Consolas, monospace" font-size="10" fill="#0078D4" text-anchor="middle">tmdl_generator</text>
+  <text x="692" y="248" font-family="Segoe UI, sans-serif" font-size="9" fill="#605E5C" text-anchor="middle">Semantic model + RLS</text>
+
+  <rect x="780" y="210" width="155" height="48" rx="6" fill="white" stroke="#0078D4" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="857" y="232" font-family="Cascadia Code, Consolas, monospace" font-size="10" fill="#0078D4" text-anchor="middle">pbip_generator</text>
+  <text x="857" y="248" font-family="Segoe UI, sans-serif" font-size="9" fill="#605E5C" text-anchor="middle">PBIR v4.0 report</text>
+
+  <rect x="615" y="266" width="155" height="48" rx="6" fill="white" stroke="#0078D4" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="692" y="288" font-family="Cascadia Code, Consolas, monospace" font-size="10" fill="#0078D4" text-anchor="middle">visual_generator</text>
+  <text x="692" y="304" font-family="Segoe UI, sans-serif" font-size="9" fill="#605E5C" text-anchor="middle">118+ visual type mappings</text>
+
+  <rect x="780" y="266" width="155" height="48" rx="6" fill="white" stroke="#0078D4" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="857" y="288" font-family="Cascadia Code, Consolas, monospace" font-size="10" fill="#0078D4" text-anchor="middle">shared_model</text>
+  <text x="857" y="304" font-family="Segoe UI, sans-serif" font-size="9" fill="#605E5C" text-anchor="middle">Multi-WB merge engine</text>
+
+  <!-- ═══ ROW 3: 17 Extracted Object Types ═══ -->
+  <rect x="20" y="335" width="520" height="80" rx="8" fill="white" stroke="#E0E0E0" stroke-width="1" filter="url(#shadow)"/>
+  <text x="280" y="356" font-family="Segoe UI, sans-serif" font-size="12" font-weight="bold" fill="#004578" text-anchor="middle">17 Extracted Object Types</text>
+  <text x="280" y="375" font-family="Segoe UI, sans-serif" font-size="10" fill="#605E5C" text-anchor="middle">worksheets · dashboards · datasources · calculations · parameters · filters · stories</text>
+  <text x="280" y="392" font-family="Segoe UI, sans-serif" font-size="10" fill="#605E5C" text-anchor="middle">actions · sets · groups · bins · hierarchies · sort_orders · aliases · custom_sql · user_filters · hyper_files</text>
+
+  <!-- ═══ ROW 3: Output formats ═══ -->
+  <rect x="560" y="335" width="190" height="80" rx="8" fill="#107C10" filter="url(#shadow)"/>
+  <text x="655" y="358" font-family="Segoe UI, sans-serif" font-size="12" font-weight="bold" fill="white" text-anchor="middle">📊 Default Output</text>
+  <text x="655" y="376" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.9)" text-anchor="middle">.pbip (PBIR v4.0 + TMDL)</text>
+  <text x="655" y="393" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.9)" text-anchor="middle">→ Power BI Desktop</text>
+
+  <rect x="760" y="335" width="190" height="80" rx="8" fill="#0078D4" filter="url(#shadow)"/>
+  <text x="855" y="358" font-family="Segoe UI, sans-serif" font-size="12" font-weight="bold" fill="white" text-anchor="middle">🏭 Fabric Output</text>
+  <text x="855" y="376" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.9)" text-anchor="middle">Lakehouse + Dataflow</text>
+  <text x="855" y="393" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.9)" text-anchor="middle">Notebook + DirectLake + Pipeline</text>
+
+  <!-- ═══ ROW 4: Bottom bar — QA & Deploy ═══ -->
+  <rect x="20" y="435" width="280" height="85" rx="8" fill="#8764B8" filter="url(#shadow)"/>
+  <text x="160" y="460" font-family="Segoe UI, sans-serif" font-size="13" font-weight="bold" fill="white" text-anchor="middle">🔍 QA &amp; Validation</text>
+  <text x="160" y="478" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.9)" text-anchor="middle">Validator · DAX Optimizer · Auto-Fix (17 patterns)</text>
+  <text x="160" y="494" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.9)" text-anchor="middle">Governance · Lineage Map · Comparison Report</text>
+
+  <rect x="315" y="435" width="280" height="85" rx="8" fill="#038387" filter="url(#shadow)"/>
+  <text x="455" y="460" font-family="Segoe UI, sans-serif" font-size="13" font-weight="bold" fill="white" text-anchor="middle">📋 Assessment</text>
+  <text x="455" y="478" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.9)" text-anchor="middle">9-category readiness · Portfolio scoring</text>
+  <text x="455" y="494" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.9)" text-anchor="middle">Strategy advisor · Schema drift detection</text>
+
+  <rect x="610" y="435" width="340" height="85" rx="8" fill="#004578" filter="url(#shadow)"/>
+  <text x="780" y="460" font-family="Segoe UI, sans-serif" font-size="13" font-weight="bold" fill="white" text-anchor="middle">🚀 Deploy</text>
+  <text x="780" y="478" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.9)" text-anchor="middle">PBI Service · Fabric · Docker REST API</text>
+  <text x="780" y="494" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.9)" text-anchor="middle">Bundle deploy · Multi-tenant · Blue/green rollout</text>
+</svg>
