@@ -1,8 +1,8 @@
-# Development Roadmap — v22.0.0 → v28.0.0
+# Development Roadmap — v22.0.0 → v29.0.0
 
-**Date:** 2026-03-23
-**Baseline:** v27.1.0 — 6,532 tests across 138 test files, 0 failures
-**Current state:** v28.0.0 Phase 1 shipped (Sprints 108–111). 6,714 tests.
+**Date:** 2026-03-26
+**Baseline:** v28.1.1 — 6,818+ tests across 141 test files, 0 failures
+**Current state:** v28.1.1 shipped (Sprints 108–111 + 118–119). Migration Confidence Score: 91.9/100 (Grade A).
 
 ---
 
@@ -19,8 +19,10 @@ The migration engine is **feature-complete for core single-workbook scenarios**.
 | **v26.0.0** | Autonomous Migration & Production Hardening | Sprints 96–100 | ✅ Shipped |
 | **v27.0.0** | Advanced Intelligence & Marketplace | Sprints 101–106 | ✅ Shipped |
 | **v27.1.0** | Unified HTML Report Template | Sprint 107 | ✅ Shipped |
-| **v28.0.0** | Extensibility, Web UI & AI-Assisted Migration | Sprints 108–117 | In Progress |
-| **v29.0.0** | Copilot Readiness, Semantic Depth & Migration Completeness | Sprints 118–127 | Planned |
+| **v28.0.0** | Extensibility & Core Infrastructure | Sprints 108–111 | ✅ Shipped |
+| **v28.1.0** | Copilot Readiness & Semantic Descriptions | Sprints 118–119 | ✅ Shipped |
+| **v28.1.1** | M Quoting, Bracket Stripping, Bug Fixes | Hotfix | ✅ Shipped |
+| **v29.0.0** | Migration Completeness & Enterprise Operations | Sprints 112–117, 120–127 | Planned |
 
 ---
 
@@ -845,7 +847,7 @@ v26.0.0 targets **zero-touch autonomous migration** for standard workbooks: uplo
 
 ---
 
-## v28.0.0 — Extensibility, Web UI & AI-Assisted Migration (Sprints 108–117)
+## v28.0.0 — Extensibility & Core Infrastructure (Sprints 108–111) ✅ SHIPPED
 
 ### Sprint 108: TDS/TDSX Standalone Datasource Migration ✅ SHIPPED
 
@@ -1005,95 +1007,186 @@ v26.0.0 targets **zero-touch autonomous migration** for standard workbooks: uplo
 
 ### v28.0.0 Success Criteria
 
-| Metric | Target | Phase 1 Actual |
+| Metric | Target | v28.0.0 Actual |
 |--------|--------|----------------|
 | TDS standalone migration | ✅ | ✅ Shipped (Sprint 108) |
 | TDSX with embedded Hyper data | ✅ | ✅ Shipped (Sprint 109) |
 | REST API with Docker | ✅ | ✅ Shipped (Sprint 110) |
 | Schema drift detection | ✅ | ✅ Shipped (Sprint 111) |
-| LLM-assisted DAX | Sprint 112 | — |
-| Web UI (Streamlit) | Sprints 113–114 | — |
-| PDF report export | Sprint 115 | — |
-| Migration planner | Sprint 116 | — |
-| Tests | **6,900+** | 6,714 |
+| Tests | **6,900+** | 6,818+ |
 
 ### v28.0.0 Agent Ownership Matrix
 
-| Agent | Phase 1 (108–111) | Phase 2 (112–114) | Phase 3 (115–117) |
-|-------|-------------------|-------------------|-------------------|
-| **@orchestrator** | 108, 110 | 112, 113, 114 | 115, 116, 117 |
-| **@extractor** | 108, 109, 111 | — | 116 |
-| **@converter** | — | 112 | — |
-| **@generator** | 108, 109 | 113 | 115 |
-| **@assessor** | 111 | 114 | 115, 116 |
-| **@merger** | — | 114 | — |
-| **@deployer** | 110 | 114 | 116, 117 |
-| **@tester** | 108–111 (cross-cutting) | 112–114 (cross-cutting) | 115–117 (cross-cutting) |
+| Agent | Sprints 108–111 |
+|-------|-----------------|
+| **@orchestrator** | 108, 110 |
+| **@extractor** | 108, 109, 111 |
+| **@converter** | — |
+| **@generator** | 108, 109 |
+| **@assessor** | 111 |
+| **@merger** | — |
+| **@deployer** | 110 |
+| **@tester** | 108–111 (cross-cutting) |
 
 ---
 
-## v29.0.0 — Copilot Readiness, Semantic Depth & Migration Completeness (Sprints 118–127)
+## v28.1.x — Copilot Readiness & Semantic Descriptions (Sprints 118–119) ✅ SHIPPED
+
+> Sprints 118–119 originally scoped for v29.0.0 were shipped ahead of schedule as hotfixes v28.1.0 and v28.1.1.
 
 ### Motivation
 
-Bug bash and artifact audit revealed **7 systemic gaps** that affect every generated project:
+Bug bash and artifact audit revealed **5 remaining systemic gaps** after v28.1.x shipped Copilot readiness:
 
-1. **No descriptions** on tables, columns, or measures — breaks Copilot/Q&A natural language
-2. **No alt text** on visuals — fails accessibility compliance (WCAG 2.1 AA)
+1. ~~**No descriptions** on tables, columns, or measures~~ → ✅ **Fixed in v28.1.0 (Sprint 118)**
+2. ~~**No alt text** on visuals~~ → Partial — accessibility audit still needed
 3. **No incremental refresh** config — large datasets require full import every time
 4. **M parameters not wired** — ServerName/DatabaseName expressions exist but aren't consumed
 5. **Map visuals lack config** — no zoom, center, base map layer settings
 6. **Annotations not migrated** — Tableau point/area annotations lost entirely
 7. **Set actions not migrated** — interactive analysis patterns broken
 
-v29.0.0 closes these gaps across **4 phases**: Copilot/AI Readiness, Migration Completeness, Advanced Analytics Parity, and Enterprise Polish.
+v29.0.0 closes these gaps across **5 phases**: Remaining v28 items (LLM, Web UI, PDF), Migration Completeness, Advanced Analytics Parity, Enterprise Operations, and Release.
 
 ---
 
-### Phase 1 — Copilot & AI Readiness (Sprints 118–119)
+### Phase 0 — Already Shipped as v28.1.x (Sprints 118–119) ✅
 
-#### Sprint 118 — Semantic Descriptions & Linguistic Schema (@generator, @extractor)
+> **Note:** These sprints were planned for v29.0.0 but shipped early as hotfixes v28.1.0 and v28.1.1.
+
+#### Sprint 118 — Semantic Descriptions & Linguistic Schema ✅ SHIPPED (v28.1.0)
 
 **Goal:** Auto-generate descriptions for every table, column, and measure in the semantic model. Populate linguistic schema for PBI Copilot and Q&A natural language queries.
 
-| # | Item | Owner | File(s) | Est. | Details |
-|---|------|-------|---------|------|---------|
-| 118.1 | **Table descriptions** | @generator | `tmdl_generator.py` | Medium | Auto-generate `description` on each TMDL table from: (1) Tableau worksheet `description` field if present, (2) datasource caption/comment, (3) synthesized from table name + column summary (e.g., "Contains 12 columns: Order ID, Customer Name, Sales..."). Emit `description` property in table TMDL. |
-| 118.2 | **Column descriptions** | @generator | `tmdl_generator.py` | Medium | Auto-generate `description` on each column from: (1) Tableau column `comment` attribute, (2) alias/caption as readable name, (3) data type + semantic role hint (e.g., "City name (text, Geographic: City)"). Include `dataCategory` mapping in description. |
-| 118.3 | **Measure descriptions** | @generator | `tmdl_generator.py` | Medium | Auto-generate `description` on each measure from: (1) original Tableau formula as documentation, (2) DAX formula summary, (3) `MigrationNote` content if approximated. Format: "Migrated from Tableau: {original_formula}. DAX: {dax_formula}." |
-| 118.4 | **Linguistic schema depth** | @extractor | `extract_tableau_data.py` | Medium | Extract field captions, aliases, and comments → build comprehensive `linguisticSchema.xml` with: synonyms (caption variants), entity mappings (column→entity), relationship descriptions. Currently generates basic synonyms (Sprint 92); deepen with multi-word aliases and join descriptions. |
-| 118.5 | **Copilot optimization hints** | @generator | `tmdl_generator.py` | Low | Add `extendedProperties` annotations: `@Copilot_Preferred = true` on key measures, `@Copilot_Hidden = true` on technical columns (keys, IDs). Mark Calendar table as `@Copilot_DateTable`. |
-| 118.6 | **Tests** | @tester | `tests/test_copilot_readiness.py` (new) | Medium | 30+ tests: table/column/measure descriptions generated, linguistic schema depth, Copilot annotations, Q&A synonym coverage. |
-
-**Agent work:**
-- **@generator** — table/column/measure `description` properties + Copilot annotations in TMDL
-- **@extractor** — deeper linguistic schema extraction from Tableau XML
-- **@tester** — 30+ tests
+| # | Item | Owner | Status |
+|---|------|-------|--------|
+| 118.1 | **Table descriptions** | @generator | ✅ |
+| 118.2 | **Column descriptions** | @generator | ✅ |
+| 118.3 | **Measure descriptions** | @generator | ✅ |
+| 118.4 | **Linguistic schema depth** | @extractor | ✅ |
+| 118.5 | **Copilot optimization hints** | @generator | ✅ |
+| 118.6 | **Tests** | @tester | ✅ |
 
 ---
 
-#### Sprint 119 — Accessibility Compliance (@generator, @assessor)
+#### Sprint 119 — Lineage Dashboard, Validator Auto-Fix & QA Suite ✅ SHIPPED (v28.1.0/v28.1.1)
 
-**Goal:** Add alt text to all visuals, tab order, and accessibility metadata. Generate an accessibility audit report.
+**Goal:** Lineage visualization, validator auto-fix, QA automation suite, and M identifier quoting.
 
-| # | Item | Owner | File(s) | Est. | Details |
-|---|------|-------|---------|------|---------|
-| 119.1 | **Visual alt text** | @generator | `pbip_generator.py` | Medium | Auto-generate `altText` on every visual container: "{visualType} showing {measure(s)} by {dimension(s)}". E.g., "Bar chart showing Sales by Region". For textboxes: first 100 chars of text. For images: "Image: {filename}". |
-| 119.2 | **Tab order** | @generator | `pbip_generator.py` | Medium | Assign `tabOrder` to all visuals based on reading order: top-left → right → down. Respect Tableau z-order for floating elements. Ensure keyboard navigation follows logical content flow. |
-| 119.3 | **High-contrast mode hints** | @generator | `pbip_generator.py` | Low | In theme JSON: ensure sufficient color contrast ratios (WCAG AA: 4.5:1 for text, 3:1 for UI). Flag low-contrast colors from Tableau palette, suggest accessible alternatives. |
-| 119.4 | **Accessibility audit report** | @assessor | `powerbi_import/accessibility_report.py` (new) | Medium | Post-migration audit: count visuals with/without alt text, check color contrast, tab order completeness, data table alternatives for charts. Output: HTML report + JSON summary. Score: compliant / needs-review / non-compliant. |
-| 119.5 | **CLI integration** | @orchestrator | `migrate.py` | Low | `--accessibility` flag enables alt text generation + audit report. `--wcag-level AA|AAA` sets compliance target. |
-| 119.6 | **Tests** | @tester | `tests/test_accessibility.py` (new) | Medium | 25+ tests: alt text generation for all visual types, tab order assignment, contrast checking, audit report structure. |
-
-**Agent work:**
-- **@generator** — alt text, tab order, contrast hints in visual.json
-- **@assessor** — accessibility audit report
-- **@orchestrator** — CLI flags
-- **@tester** — 25+ tests
+| # | Item | Owner | Status |
+|---|------|-------|--------|
+| 119.1 | **Lineage dashboard (JSON+HTML)** | @generator | ✅ |
+| 119.2 | **Validator auto-fix (17 patterns)** | @generator | ✅ |
+| 119.3 | **QA suite (`--qa` flag)** | @orchestrator | ✅ |
+| 119.4 | **M identifier quoting (`_quote_m_identifiers`)** | @generator | ✅ (v28.1.1) |
+| 119.5 | **Bracket stripping fix** | @converter | ✅ (v28.1.1) |
+| 119.6 | **Tests** | @tester | ✅ |
 
 ---
 
-### Phase 2 — Migration Completeness (Sprints 120–122)
+## v29.0.0 — Migration Completeness & Enterprise Operations (Sprints 112–117, 120–127)
+
+> v29.0.0 combines the remaining v28 Phase 2–3 items (Sprints 112–117) with the original v29 Phase 2–4 items (Sprints 120–127).
+> See [GAP_ANALYSIS.md §13](GAP_ANALYSIS.md) for the gap priority matrix driving this sprint order.
+
+### Phase 1 — Intelligence & UX (Sprints 112–114)
+
+These were originally v28.0.0 Phase 2–3 but deferred to v29.0.0 to ship v28.x faster.
+
+#### Sprint 112 — LLM-Assisted DAX Correction (@converter, @orchestrator)
+
+**Goal:** Optional AI-powered refinement for approximated DAX formulas — send measures tagged with `MigrationNote` containing "approximated" to an LLM for semantic correction. Pluggable backend (Azure OpenAI, OpenAI, local/Ollama). Original DAX preserved as annotation.
+
+| # | Item | Owner | File(s) | Est. | Details |
+|---|------|-------|---------|------|---------|
+| 112.1 | **LLM client module** | @converter | `powerbi_import/llm_client.py` | High | Pluggable backend: Azure OpenAI, OpenAI, local/Ollama. Token counting, cost tracking, exponential retry. `--llm-max-calls N` budget cap. No external deps (stdlib `urllib.request`). |
+| 112.2 | **DAX refinement prompt engine** | @converter | `powerbi_import/llm_client.py` | High | Structured prompt: Tableau formula + approximated DAX + table schema → refined DAX + confidence score. |
+| 112.3 | **Selective targeting** | @generator | `tmdl_generator.py` | Medium | Scan measures for `MigrationNote` containing "approximated". Queue for LLM refinement. Cap at `--llm-max-calls`. |
+| 112.4 | **Accept/reject validation** | @converter | `powerbi_import/llm_client.py` | Medium | Parse LLM response → validate DAX syntax → accept if valid, reject and keep original if malformed. |
+| 112.5 | **CLI integration** | @orchestrator | `migrate.py` | Low | `--llm-refine`, `--llm-provider`, `--llm-model`, `--llm-endpoint`, `--llm-max-calls`. |
+| 112.6 | **Cost & refinement report** | @converter | `powerbi_import/llm_client.py` | Low | JSON report: per-measure original → refined, confidence, tokens, cost. |
+| 112.7 | **Tests** | @tester | `tests/test_llm_client.py` | Medium | 30+ tests with mock LLM responses. |
+
+> **Note:** `llm_client.py` already exists as a scaffold — Sprint 112 fills in the full implementation.
+
+---
+
+#### Sprint 113 — Streamlit Web UI Phase 1 (@orchestrator, @generator)
+
+**Goal:** Browser-based 6-step migration wizard. Streamlit is an **optional dependency**.
+
+| # | Item | Owner | File(s) | Est. |
+|---|------|-------|---------|------|
+| 113.1 | **App scaffold & routing** | @orchestrator | `web/app.py` | High |
+| 113.2 | **File upload & extraction** | @orchestrator | `web/app.py` | Medium |
+| 113.3 | **Assessment preview** | @orchestrator | `web/app.py` | Medium |
+| 113.4 | **Migration execution with progress** | @orchestrator | `web/app.py` | Medium |
+| 113.5 | **Download & artifact preview** | @generator | `web/app.py` | Medium |
+| 113.6 | **Docker packaging** | @orchestrator | `web/Dockerfile` | Low |
+| 113.7 | **Tests** | @tester | `tests/test_web_app.py` | Medium |
+
+> **Note:** `web/app.py` already exists as a scaffold — Sprint 113 fills in the full implementation.
+
+---
+
+#### Sprint 114 — Streamlit Web UI Phase 2 (@orchestrator, @assessor, @merger)
+
+**Goal:** Batch mode, shared-model merge UI, visual diff, DAX editor, Fabric deploy button.
+
+| # | Item | Owner | File(s) | Est. |
+|---|------|-------|---------|------|
+| 114.1 | **Batch mode page** | @orchestrator | `web/pages/batch.py` | Medium |
+| 114.2 | **Shared model merge page** | @merger | `web/pages/merge.py` | High |
+| 114.3 | **Visual diff viewer** | @assessor | `web/pages/diff.py` | Medium |
+| 114.4 | **DAX formula editor** | @orchestrator | `web/pages/editor.py` | Medium |
+| 114.5 | **Fabric deployment button** | @deployer | `web/pages/deploy.py` | Medium |
+| 114.6 | **Tests** | @tester | `tests/test_web_app_v2.py` | Medium |
+
+---
+
+### Phase 2 — Production & Enterprise (Sprints 115–117)
+
+#### Sprint 115 — PDF Export & Report Packaging (@generator, @assessor)
+
+**Goal:** PDF versions of all HTML migration/assessment reports for offline distribution.
+
+| # | Item | Owner | File(s) | Est. |
+|---|------|-------|---------|------|
+| 115.1 | **PDF renderer module** | @generator | `powerbi_import/pdf_renderer.py` | High |
+| 115.2 | **Print-optimized CSS** | @generator | `powerbi_import/html_template.py` | Medium |
+| 115.3 | **CLI integration** | @orchestrator | `migrate.py` | Low |
+| 115.4 | **Report packaging** | @assessor | `powerbi_import/assessment.py` | Medium |
+| 115.5 | **Tests** | @tester | `tests/test_pdf_export.py` | Medium |
+
+---
+
+#### Sprint 116 — Workspace-Level Migration Planner (@assessor, @deployer, @extractor)
+
+**Goal:** Server-level enterprise migration plan: dependency graph, wave assignments, effort estimates, workspace mapping.
+
+| # | Item | Owner | File(s) | Est. |
+|---|------|-------|---------|------|
+| 116.1 | **Server site discovery** | @extractor | `tableau_export/server_client.py` | Medium |
+| 116.2 | **Migration plan generator** | @assessor | `powerbi_import/migration_planner.py` | High |
+| 116.3 | **Fabric workspace mapper** | @deployer | `powerbi_import/migration_planner.py` | Medium |
+| 116.4 | **RLS group mapping** | @deployer | `powerbi_import/migration_planner.py` | Medium |
+| 116.5 | **Migration plan HTML report** | @assessor | `powerbi_import/migration_planner.py` | Medium |
+| 116.6 | **Tests** | @tester | `tests/test_migration_planner.py` | Medium |
+
+---
+
+#### Sprint 117 — v29.0.0 Stabilization (All Agents)
+
+**Goal:** Integration testing and stabilization before proceeding to Phase 3.
+
+| # | Item | Owner | File(s) | Est. |
+|---|------|-------|---------|------|
+| 117.1 | **Cross-phase E2E tests** | @tester | `tests/test_v29_e2e.py` | High |
+| 117.2 | **Real-world validation** | @tester | `tests/test_real_world_e2e.py` | Medium |
+
+---
+
+### Phase 3 — Migration Completeness (Sprints 120–122)
 
 #### Sprint 120 — Incremental Refresh & M Parameter Wiring (@generator, @converter)
 
@@ -1101,18 +1194,12 @@ v29.0.0 closes these gaps across **4 phases**: Copilot/AI Readiness, Migration C
 
 | # | Item | Owner | File(s) | Est. | Details |
 |---|------|-------|---------|------|---------|
-| 120.1 | **Incremental refresh detection** | @generator | `tmdl_generator.py` | High | Detect tables with DateTime/Date columns that are likely refresh boundaries (e.g., `OrderDate`, `CreatedAt`, `ModifiedDate`). Heuristic: column name contains "date"/"time"/"created"/"modified"/"updated" + DateTime type. |
-| 120.2 | **RangeStart/RangeEnd M parameters** | @generator | `tmdl_generator.py` | High | Generate M expression parameters `RangeStart` (DateTime) and `RangeEnd` (DateTime) in `expressions.tmdl`. Inject `Table.SelectRows(Source, each [DateCol] >= RangeStart and [DateCol] < RangeEnd)` filter step into M partition. |
-| 120.3 | **refreshPolicy TMDL** | @generator | `tmdl_generator.py` | Medium | Generate `refreshPolicy` section on applicable tables: `incrementalPeriodGranularity: Day`, `rollingWindowGranularity: Month`, `rollingWindowPeriods: 12`, `incrementalPeriods: 3`. Configurable via `--incremental-refresh-months N`. |
-| 120.4 | **M parameter wiring** | @converter | `m_query_builder.py` | Medium | When generating M queries with connection strings, replace literal server/database values with parameter references: `ServerName` and `DatabaseName`. Ensure `expressions.tmdl` parameters are consumed by partition M queries. |
-| 120.5 | **CLI integration** | @orchestrator | `migrate.py` | Low | `--incremental-refresh` flag enables auto-detection. `--incremental-refresh-months N` sets rolling window. `--no-parameterize` disables M parameter wiring. |
-| 120.6 | **Tests** | @tester | `tests/test_incremental_refresh.py` (new) | Medium | 30+ tests: date column detection, RangeStart/RangeEnd generation, refreshPolicy TMDL, M parameter wiring, parameter consumption in partitions. |
-
-**Agent work:**
-- **@generator** — incremental refresh detection, RangeStart/RangeEnd, refreshPolicy TMDL
-- **@converter** — M parameter wiring into partition queries
-- **@orchestrator** — CLI flags
-- **@tester** — 30+ tests
+| 120.1 | **Incremental refresh detection** | @generator | `tmdl_generator.py` | High | Detect tables with DateTime/Date columns that are likely refresh boundaries. |
+| 120.2 | **RangeStart/RangeEnd M parameters** | @generator | `tmdl_generator.py` | High | Generate M expression parameters and inject `Table.SelectRows` filter step into M partition. |
+| 120.3 | **refreshPolicy TMDL** | @generator | `tmdl_generator.py` | Medium | Generate `refreshPolicy` section on applicable tables. Configurable via `--incremental-refresh-months N`. |
+| 120.4 | **M parameter wiring** | @converter | `m_query_builder.py` | Medium | Replace literal server/database values with parameter references in M queries. |
+| 120.5 | **CLI integration** | @orchestrator | `migrate.py` | Low | `--incremental-refresh`, `--incremental-refresh-months N`, `--no-parameterize`. |
+| 120.6 | **Tests** | @tester | `tests/test_incremental_refresh.py` | Medium | 30+ tests. |
 
 ---
 
@@ -1155,7 +1242,7 @@ v29.0.0 closes these gaps across **4 phases**: Copilot/AI Readiness, Migration C
 
 ---
 
-### Phase 3 — Advanced Analytics Parity (Sprints 123–124)
+### Phase 4 — Advanced Analytics Parity (Sprints 123–124)
 
 #### Sprint 123 — Analytics Pane & Trend Lines (@generator, @converter)
 
@@ -1196,7 +1283,7 @@ v29.0.0 closes these gaps across **4 phases**: Copilot/AI Readiness, Migration C
 
 ---
 
-### Phase 4 — Enterprise Operations (Sprints 125–127)
+### Phase 5 — Enterprise Operations (Sprints 125–127)
 
 #### Sprint 125 — User & Permission Mapping (@deployer, @extractor)
 
@@ -1257,31 +1344,34 @@ v29.0.0 closes these gaps across **4 phases**: Copilot/AI Readiness, Migration C
 
 ### v29.0.0 Success Criteria
 
-| Metric | Target |
-|--------|--------|
-| Table/column/measure descriptions | 100% coverage on all generated TMDL |
-| Visual alt text | 100% of visuals have auto-generated alt text |
-| Incremental refresh | Auto-configured for extract-mode tables with date columns |
-| M parameter wiring | ServerName/DatabaseName consumed in partition queries |
-| Map visual config | Zoom, center, base map migrated |
-| Annotations migrated | Tableau annotations → PBI textbox overlays |
-| Set actions migrated | Set actions → bookmark + slicer combination |
-| Trend lines (all 5 types) | Full analytics pane migration |
-| DAX query views | Auto-generated .dax test queries for every measure |
-| Permission mapping | Tableau users/groups → Azure AD mapping report |
-| Power Automate flows | Subscriptions/alerts → flow definition JSON |
-| Accessibility score | WCAG AA compliant (alt text + tab order + contrast) |
-| Tests | **7,200+** |
+| Metric | Target | Status |
+|--------|--------|--------|
+| Table/column/measure descriptions | 100% coverage on all generated TMDL | ✅ Shipped (v28.1.0) |
+| Linguistic schema + Copilot annotations | Q&A synonyms, `@Copilot_DateTable`, `@Copilot_Hidden` | ✅ Shipped (v28.1.0) |
+| LLM-assisted DAX | Pluggable AI refinement for approximated formulas | Sprint 112 |
+| Web UI (Streamlit) | 6-step browser wizard | Sprints 113–114 |
+| PDF report export | All 9 HTML reports as PDF | Sprint 115 |
+| Migration planner | Server-level wave planning | Sprint 116 |
+| Incremental refresh | Auto-configured for extract-mode tables with date columns | Sprint 120 |
+| M parameter wiring | ServerName/DatabaseName consumed in partition queries | Sprint 120 |
+| Annotations migrated | Tableau annotations → PBI textbox overlays | Sprint 121 |
+| Set actions migrated | Set actions → bookmark + slicer combination | Sprint 122 |
+| Trend lines (all 5 types) | Full analytics pane migration | Sprint 123 |
+| Dynamic format strings | Conditional FORMAT() DAX measures | Sprint 124 |
+| Permission mapping | Tableau users/groups → Azure AD mapping report | Sprint 125 |
+| Power Automate flows | Subscriptions/alerts → flow definition JSON | Sprint 126 |
+| **Migration Confidence Score** | **≥95.5 (Grade A+)** | See [GAP_ANALYSIS.md §12](GAP_ANALYSIS.md) |
+| Tests | **7,200+** | Sprint 127 |
 
 ### v29.0.0 Agent Ownership Matrix
 
-| Agent | Phase 1 (118–119) | Phase 2 (120–122) | Phase 3 (123–124) | Phase 4 (125–127) |
-|-------|-------------------|-------------------|-------------------|-------------------|
-| **@orchestrator** | 119 | 120 | — | 127 |
-| **@extractor** | 118 | 121, 122 | — | 125, 126 |
-| **@converter** | — | 120, 122 | 123 | — |
-| **@generator** | 118, 119 | 120, 121, 122 | 123, 124 | — |
-| **@assessor** | 119 | — | 124 | 125 |
-| **@merger** | — | — | — | — |
-| **@deployer** | — | — | — | 125, 126, 127 |
-| **@tester** | 118–119 (cross-cutting) | 120–122 (cross-cutting) | 123–124 (cross-cutting) | 125–127 (cross-cutting) |
+| Agent | Phase 0 (118–119) | Phase 1 (112–114) | Phase 2 (115–117) | Phase 3 (120–122) | Phase 4 (123–124) | Phase 5 (125–127) |
+|-------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|
+| **@orchestrator** | 119 | 112, 113, 114 | 115, 116, 117 | 120 | — | 127 |
+| **@extractor** | 118 | — | 116 | 121, 122 | — | 125, 126 |
+| **@converter** | — | 112 | — | 120, 122 | 123 | — |
+| **@generator** | 118, 119 | 113 | 115 | 120, 121, 122 | 123, 124 | — |
+| **@assessor** | — | 114 | 115, 116 | — | 124 | 125 |
+| **@merger** | — | 114 | — | — | — | — |
+| **@deployer** | — | 114 | 116 | — | — | 125, 126, 127 |
+| **@tester** | ✅ Shipped | 112–114 | 115–117 | 120–122 | 123–124 | 125–127 |
