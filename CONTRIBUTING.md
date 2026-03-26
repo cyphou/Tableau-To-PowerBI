@@ -42,7 +42,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for a detailed architecture ove
 ```
 tableau_export/   → Extraction layer (Tableau XML → JSON)
 powerbi_import/   → Generation layer (JSON → .pbip project)
-tests/            → Unit and integration tests (2,057 tests across 40 files)
+tests/            → Unit and integration tests (6,818+ tests across 141 files)
 docs/             → Documentation
 examples/         → Sample Tableau workbooks
 artifacts/        → Migration output
@@ -112,7 +112,7 @@ python -m pytest tests/test_dax_converter.py::TestDaxConverter::test_isnull_to_i
 | `test_non_regression.py` | Per-sample project regression |
 | `test_integration.py` | End-to-end pipeline tests |
 | `test_assessment.py` | Pre-migration assessment |
-| ... | 39 test files total — see [README](README.md) for full list |
+| ... | 141 test files total — see [README](README.md) for full list |
 
 ### Writing Tests
 

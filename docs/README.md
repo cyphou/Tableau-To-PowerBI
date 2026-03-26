@@ -33,6 +33,6 @@ python migrate.py --skip-conversion                    # Re-generate only
 | `migrate.py` | CLI entry point, batch support, logging |
 | `tableau_export/` | Tableau XML parsing, DAX conversion, Power Query M generation |
 | `powerbi_import/` | .pbip generation, TMDL, visuals, validation, deployment |
-| `tests/` | 6,593 tests (140 files), 0 failures |
+| `tests/` | 6,818+ tests (141 files), 0 failures |
 | `artifacts/` | Generated .pbip projects |
 | `.github/workflows/` | CI/CD pipeline (lint, test, validate, deploy) |

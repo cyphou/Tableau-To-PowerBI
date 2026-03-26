@@ -1,8 +1,8 @@
 # Comprehensive Gap Analysis — Tableau to Power BI Migration Tool
 
-**Date:** 2026-03-24 — updated through v27.1.0 (Sprint 119)  
+**Date:** 2026-03-26 — updated through v28.1.1  
 **Scope:** Every source file, test file, CI/CD, docs, config, and cross-project comparison with TableauToFabric  
-**Status:** 6,831 tests passing across 141 test files · 45,600+ source lines (tableau_export + powerbi_import)
+**Status:** 6,818+ tests passing across 141 test files · 45,600+ source lines (tableau_export + powerbi_import)
 
 ### Implementation Coverage
 
@@ -10,7 +10,7 @@
  EXTRACTION          GENERATION         INFRA / CI         DOCUMENTATION
 +----------------+  +----------------+  +----------------+  +----------------+
 | 20 object types|  | PBIR v4.0      |  | 5-stage CI/CD  |  | 19 doc files   |
-| .twb/.twbx/.tfl|  | TMDL semantic  |  | 6,831 tests    |  | DAX reference  |
+| .twb/.twbx/.tfl|  | TMDL semantic  |  | 6,818+ tests   |  | DAX reference  |
 | 125+ DAX conv  |  | 145 visuals    |  | Artifact valid |  | M query ref    |
 | 63 connectors  |  | 7 slicer modes |  | Fabric deploy  |  | Prep ref       |
 | 47+ transforms |  | 4 cond format  |  | Env configs    |  | Architecture   |
@@ -170,7 +170,7 @@
 ## 3. Test Coverage
 
 ### What IS implemented
-- **887 tests across 18 test files** (original) + **5,944 additional tests in v3.6–v27.1.0**, totaling **6,831 tests across 141 test files** including shared fixtures in `conftest.py`:
+- **887 tests across 18 test files** (original) + **5,944 additional tests in v3.6–v27.1.0**, totaling **6,818+ tests across 141 test files** including shared fixtures in `conftest.py`:
 
 | Test File | Tests | Lines | Coverage Focus |
 |-----------|-------|-------|----------------|
@@ -445,7 +445,7 @@
 | **Pre-Migration** | **Assessment** (1,487 lines, 14-category scoring), **Strategy advisor** (Import/DQ/Composite), **Global assessment** (N×N heatmap, BFS clustering), **Migration completeness scoring** (0–100, letter grade), JSON + HTML reports | — | — | Low |
 | **Shared Model** | **Merge engine** (3,736 lines, fingerprint, Jaccard, 0–100 scoring), **thin reports**, **merge config**, **RLS consolidation**, **global assessment**, **Fabric bundle deployment**, **multi-tenant deployment**, **live connection** | — | — | Low |
 | **QA & Automation** | **Validator auto-fix** (17 patterns), **governance engine** (naming, PII, sensitivity labels), **lineage map** (JSON + HTML dashboard), **RLS PowerShell generation**, **credential templates**, **DAX optimizer** (AST rewriter), **comparison reports**, **schema drift detection** | — | — | Low |
-| **Test Coverage** | **6,831 tests across 141 files** (+conftest.py), **27 workbooks at 100% fidelity** (10 samples + 17 real-world), **layout regression**, **performance regression**, **Fabric-native**, **DAX optimizer**, **cross-platform validation** | 55 conditional skips (sample availability) | — | Low |
+| **Test Coverage** | **6,818+ tests across 141 files** (+conftest.py), **27 workbooks at 100% fidelity** (10 samples + 17 real-world), **layout regression**, **performance regression**, **Fabric-native**, **DAX optimizer**, **cross-platform validation** | 55 conditional skips (sample availability) | — | Low |
 | **CI/CD** | **5-stage pipeline** (lint+ruff, test, **strict validate+twbx**, **staging deploy**, production deploy), **pip caching**, **PyPI auto-publish workflow**, **plugin system**, **REST API server** | Windows CI, PR diff preview | — | Medium |
 | **Deployment** | **Fabric REST API**, **PBI Service REST API**, **bundle deployer**, **multi-tenant**, **gateway config**, **rolling deployment** (canary + rollback), **.pbix packager** | — | — | Low |
 | **Documentation** | **19 docs** + copilot instructions + PPTX presentation, **auto-generated API docs** (54 modules), **8-agent specialization model** | — | — | Low |
@@ -500,7 +500,7 @@
 | **Data connectors** | 63 generators (91 with aliases) | Fallback `#table` for truly unknown types |
 | **M transforms** | 47+ functions | Full coverage of common transforms |
 | **Extraction object types** | 20 | Comprehensive TWB/TWBX coverage |
-| **Tests** | 6,831 passed, 55 skipped | 0 failures; 27/27 workbooks at 100% fidelity |
+| **Tests** | 6,818+ passed, 55 skipped | 0 failures; 27/27 workbooks at 100% fidelity |
 | **Source lines** | 45,600+ | tableau_export + powerbi_import |
 | **Test files** | 141 | + conftest.py shared fixtures |
 | **Doc files** | 19 | + copilot instructions + PPTX |
@@ -604,7 +604,7 @@
 | Metric | Fabric | PBI |
 |--------|--------|-----|
 | Test files | 40 | 141 (+conftest.py) |
-| Total tests | ~1,205 | **6,831** |
+| Total tests | ~1,205 | **6,818+** |
 | Coverage test files (Fabric-style) | 9 files, ~750 tests (e.g., `test_*_coverage.py`) | None |
 | PBI-only broad-scope tests | None | 5 files (feature_gaps, gap_implementations, new_features, non_regression, migration_validation) |
 | Real-world E2E | None | **27 workbooks, 369+ tests** (S80 + S119) |

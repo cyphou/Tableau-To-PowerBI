@@ -534,7 +534,7 @@ TableauToPowerBI/
 │   ├── schema_drift.py                        #   Schema drift detection (v28)
 │   └── deploy/                                #   Deploy to PBI Service / Fabric
 ├── Dockerfile                                 # Docker image for API server
-├── tests/                                     # 6,831 tests across 141 files
+├── tests/                                     # 6,818+ tests across 141 files
 ├── docs/                                      # 18 documentation files
 └── examples/                                  # Sample Tableau workbooks
 ```
@@ -683,13 +683,13 @@ The validator checks `.pbip` JSON, `report.json`, `model.tmdl`, page/visual stru
 ## 🧪 Testing
 
 <p align="center">
-  <img src="https://img.shields.io/badge/tests-6%2C831%20passed-brightgreen?style=for-the-badge" alt="Tests"/>
+  <img src="https://img.shields.io/badge/tests-6%2C818%2B%20passed-brightgreen?style=for-the-badge" alt="Tests"/>
   <img src="https://img.shields.io/badge/coverage-96.2%25-brightgreen?style=for-the-badge" alt="Coverage"/>
   <img src="https://img.shields.io/badge/test%20files-141-blue?style=for-the-badge" alt="Test Files"/>
 </p>
 
 ```bash
-python -m pytest tests/ -v                          # Run all 6,831 tests
+python -m pytest tests/ -v                          # Run all tests
 python -m pytest tests/test_dax_converter.py -v      # Run specific file
 python -m pytest tests/ --cov --cov-report=html      # Coverage report
 ```
@@ -721,7 +721,7 @@ python -m pytest tests/ --cov --cov-report=html      # Coverage report
 
 ```mermaid
 flowchart LR
-    L["🔍 Lint\nflake8 + ruff"] --> T["🧪 Test\n6,831 tests\nPy 3.9–3.14"]
+    L["🔍 Lint\nflake8 + ruff"] --> T["🧪 Test\n6,818+ tests\nPy 3.9–3.14"]
     T --> V["✅ Validate\nStrict .twbx\nmigrations"]
     V --> S["📦 Staging\nFabric deploy"]
     S --> P["🚀 Production\nManual approval"]

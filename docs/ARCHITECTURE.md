@@ -23,7 +23,7 @@ flowchart LR
         PFP["prep_flow_parser.py<br/>PrepFlowParser"]
     end
 
-    subgraph "Intermediate JSON (16 files)"
+    subgraph "Intermediate JSON (17 files)"
         JSON["worksheets.json<br/>dashboards.json<br/>datasources.json<br/>calculations.json<br/>parameters.json<br/>filters.json<br/>stories.json<br/>actions.json<br/>sets.json<br/>groups.json<br/>bins.json<br/>hierarchies.json<br/>sort_orders.json<br/>aliases.json<br/>custom_sql.json<br/>user_filters.json"]
     end
 
