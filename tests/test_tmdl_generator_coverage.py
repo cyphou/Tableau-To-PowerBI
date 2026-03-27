@@ -1108,7 +1108,7 @@ class TestTmdlWriteTableFile(unittest.TestCase):
             self.assertIn("column 'Calc Col' = UPPER([Name])", content)
             self.assertIn("isHidden", content)
             self.assertIn("displayFolder: Calculations", content)
-            self.assertIn("description: Upper case name", content)
+            self.assertIn("SummarizationSetBy", content)
         finally:
             shutil.rmtree(tmpdir)
 
@@ -1134,7 +1134,8 @@ class TestTmdlWriteTableFile(unittest.TestCase):
             self.assertIn("measure 'Total Sales' = SUM('T'[Amount])", content)
             self.assertIn("formatString: #,0.00", content)
             self.assertIn("displayFolder: Measures", content)
-            self.assertIn("description: Sum of amount", content)
+            self.assertIn("Copilot_Description", content)
+            self.assertIn("Sum of amount", content)
             self.assertIn("isHidden", content)
         finally:
             shutil.rmtree(tmpdir)

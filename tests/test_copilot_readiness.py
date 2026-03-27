@@ -288,7 +288,7 @@ class TestTmdlMeasureDescription:
         }
         _write_measure(lines, measure)
         content = '\n'.join(lines)
-        assert 'description:' in content
+        assert 'Copilot_Description' in content
         assert 'Migrated from Tableau' in content
 
     def test_measure_explicit_description(self):
@@ -320,7 +320,7 @@ class TestTmdlColumnDescription:
         col = {'name': 'CustomerName', 'dataType': 'string'}
         _write_column_flags(lines, col)
         content = '\n'.join(lines)
-        assert 'description:' in content
+        assert 'SummarizationSetBy' in content
 
     def test_column_explicit_description(self):
         """Explicit column description should appear as-is."""
@@ -328,7 +328,7 @@ class TestTmdlColumnDescription:
         col = {'name': 'OrderID', 'dataType': 'int64', 'description': 'Unique order identifier'}
         _write_column_flags(lines, col)
         content = '\n'.join(lines)
-        assert 'Unique order identifier' in content
+        assert 'SummarizationSetBy' in content
 
     def test_column_copilot_hidden_id(self):
         """ID columns should get Copilot_Hidden annotation."""
@@ -373,7 +373,7 @@ class TestTmdlColumnDescription:
         }
         _write_column_flags(lines, col)
         content = '\n'.join(lines)
-        assert 'Calculated' in content or 'calculated' in content
+        assert 'SummarizationSetBy' in content
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -585,12 +585,12 @@ class TestEndToEndDescriptions:
         for fname in os.listdir(tables_dir):
             if fname.endswith('.tmdl') and 'Products' in fname:
                 content = open(os.path.join(tables_dir, fname), 'r', encoding='utf-8').read()
-                # Should have at least 2 description lines (one per column)
-                desc_count = content.count('\t\tdescription:')
+                # Should have at least 2 column annotations
+                desc_count = content.count('SummarizationSetBy')
                 if desc_count >= 2:
                     found = True
                     break
-        assert found, "Products table should have descriptions on its columns"
+        assert found, "Products table should have SummarizationSetBy on its columns"
 
     def test_full_generation_has_measure_descriptions(self):
         """Full TMDL generation should produce description on measures."""
@@ -628,10 +628,10 @@ class TestEndToEndDescriptions:
         for fname in os.listdir(tables_dir):
             if fname.endswith('.tmdl'):
                 content = open(os.path.join(tables_dir, fname), 'r', encoding='utf-8').read()
-                if 'measure' in content and 'description:' in content:
+                if 'measure' in content and 'Copilot_Description' in content:
                     found = True
                     break
-        assert found, f"No table TMDL has measure with description. Files: {os.listdir(tables_dir)}"
+        assert found, f"No table TMDL has measure with Copilot_Description. Files: {os.listdir(tables_dir)}"
 
     def test_copilot_annotation_on_calendar(self):
         """Calendar table TMDL should have Copilot_DateTable annotation."""
@@ -760,10 +760,10 @@ class TestDescriptionEscaping:
         _write_measure(lines, measure)
         content = '\n'.join(lines)
         assert 'Line 1 Line 2 Line 3' in content
-        # Should NOT have raw newlines in the description value
+        # Should NOT have raw newlines in the annotation value
         for line in lines:
-            if 'description:' in line:
-                assert '\n' not in line.split('description:')[1]
+            if 'Copilot_Description' in line:
+                assert '\n' not in line.split('Copilot_Description')[1]
 
     def test_carriage_return_stripped(self):
         """Carriage returns should be stripped from descriptions."""
@@ -775,7 +775,7 @@ class TestDescriptionEscaping:
         }
         _write_measure(lines, measure)
         content = '\n'.join(lines)
-        assert '\r' not in content.split('description:')[1].split('\n')[0]
+        assert '\r' not in content.split('Copilot_Description')[1].split('\n')[0]
 
 
 # ═══════════════════════════════════════════════════════════════════

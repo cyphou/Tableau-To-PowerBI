@@ -196,6 +196,10 @@ def _assert_no_tableau_leakage(test_case, project_dir, report_name):
             # Search only in DAX expressions (after = sign)
             for line in content.split('\n'):
                 if '=' in line and 'expression' not in line.lower():
+                    # Skip annotations (descriptions preserve original Tableau formulas intentionally)
+                    stripped = line.strip()
+                    if stripped.startswith('annotation'):
+                        continue
                     expr_part = line.split('=', 1)[-1]
                     # Skip comments (lines starting with //)
                     if expr_part.strip().startswith('//'):

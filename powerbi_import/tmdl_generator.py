@@ -5217,12 +5217,6 @@ def _write_measure(lines, measure):
     else:
         lines.append(f"\tmeasure {mname} = {expression}")
 
-    # Description for Copilot/Q&A readiness
-    measure_desc = _generate_measure_description(measure)
-    safe_desc = measure_desc.replace('\n', ' ').replace('\r', '').strip()
-    if safe_desc:
-        lines.append(f"\t\tdescription: {safe_desc}")
-
     fmt = measure.get('formatString', '')
     if fmt and fmt != '0':
         lines.append(f"\t\tformatString: {fmt}")
@@ -5235,6 +5229,12 @@ def _write_measure(lines, measure):
         lines.append("\t\tisHidden")
 
     lines.append(f"\t\tlineageTag: {uuid.uuid4()}")
+
+    # Description as annotation for Copilot/Q&A readiness
+    measure_desc = _generate_measure_description(measure)
+    safe_desc = measure_desc.replace('\n', ' ').replace('\r', '').strip()
+    if safe_desc:
+        lines.append(f"\t\tannotation Copilot_Description = {safe_desc}")
 
     # Lineage annotations (from merge)
     source_wbs = measure.get('_source_workbooks', [])
@@ -5274,12 +5274,6 @@ def _write_column_flags(lines, column):
     sort_by = column.get('sortByColumn', '')
     if sort_by:
         lines.append(f"\t\tsortByColumn: {_quote_name(sort_by)}")
-
-    # Description for Copilot/Q&A readiness
-    col_desc = _generate_column_description(column)
-    safe_desc = col_desc.replace('\n', ' ').replace('\r', '').strip()
-    if safe_desc:
-        lines.append(f"\t\tdescription: {safe_desc}")
 
     # Custom annotations (e.g. alternateOf for agg tables)
     for ann in column.get('annotations', []):
