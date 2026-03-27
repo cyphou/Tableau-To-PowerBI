@@ -5116,11 +5116,9 @@ def _write_table_tmdl(tables_dir, table):
     lines.append(f"table {tname_quoted}")
     lines.append(f"\tlineageTag: {uuid.uuid4()}")
 
-    # Table description — emit as TMDL property for Copilot/Q&A readiness.
+    # Table description — TMDL does not support 'description:' at the table level.
+    # The description is preserved as a Copilot_TableDescription annotation instead.
     table_desc = _generate_table_description(table)
-    safe_desc = table_desc.replace('\n', ' ').replace('\r', '').strip()
-    if safe_desc:
-        lines.append(f"\tdescription: {safe_desc}")
 
     lines.append("")
 

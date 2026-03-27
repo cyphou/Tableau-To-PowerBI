@@ -231,7 +231,7 @@ class TestTmdlTableDescription:
         }
         _write_table_tmdl(self.tmpdir, table)
         content = open(os.path.join(self.tmpdir, 'Orders.tmdl'), 'r', encoding='utf-8').read()
-        assert 'description:' in content
+        assert 'Copilot_TableDescription' in content
 
     def test_table_tmdl_explicit_description(self):
         """Explicit table description should appear in TMDL."""
@@ -552,10 +552,10 @@ class TestEndToEndDescriptions:
         for fname in os.listdir(tables_dir):
             if fname.endswith('.tmdl'):
                 content = open(os.path.join(tables_dir, fname), 'r', encoding='utf-8').read()
-                if 'description:' in content:
+                if 'Copilot_TableDescription' in content:
                     found_desc = True
                     break
-        assert found_desc, "No table TMDL file contains a description"
+        assert found_desc, "No table TMDL file contains a Copilot_TableDescription annotation"
 
     def test_full_generation_has_column_descriptions(self):
         """Full TMDL generation should produce description on columns."""
