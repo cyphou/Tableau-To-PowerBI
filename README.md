@@ -534,7 +534,7 @@ TableauToPowerBI/
 │   ├── schema_drift.py                        #   Schema drift detection (v28)
 │   └── deploy/                                #   Deploy to PBI Service / Fabric
 ├── Dockerfile                                 # Docker image for API server
-├── tests/                                     # 6,818+ tests across 141 files
+├── tests/                                     # 6,831 tests across 141 files
 ├── docs/                                      # 18 documentation files
 └── examples/                                  # Sample Tableau workbooks
 ```
@@ -721,7 +721,7 @@ python -m pytest tests/ --cov --cov-report=html      # Coverage report
 
 ```mermaid
 flowchart LR
-    L["🔍 Lint\nflake8 + ruff"] --> T["🧪 Test\n6,818+ tests\nPy 3.9–3.14"]
+    L["🔍 Lint\nflake8 + ruff"] --> T["🧪 Test\n6,831 tests\nPy 3.9–3.14"]
     T --> V["✅ Validate\nStrict .twbx\nmigrations"]
     V --> S["📦 Staging\nFabric deploy"]
     S --> P["🚀 Production\nManual approval"]

@@ -1,7 +1,7 @@
 # Development Roadmap — v22.0.0 → v29.0.0
 
 **Date:** 2026-03-26
-**Baseline:** v28.1.1 — 6,818+ tests across 141 test files, 0 failures
+**Baseline:** v28.1.1 — 6,831 tests across 141 test files, 0 failures
 **Current state:** v28.1.1 shipped (Sprints 108–111 + 118–119). Migration Confidence Score: 91.9/100 (Grade A).
 
 ---
@@ -1013,7 +1013,7 @@ v26.0.0 targets **zero-touch autonomous migration** for standard workbooks: uplo
 | TDSX with embedded Hyper data | ✅ | ✅ Shipped (Sprint 109) |
 | REST API with Docker | ✅ | ✅ Shipped (Sprint 110) |
 | Schema drift detection | ✅ | ✅ Shipped (Sprint 111) |
-| Tests | **6,900+** | 6,818+ |
+| Tests | **6,900+** | 6,831 |
 
 ### v28.0.0 Agent Ownership Matrix
 

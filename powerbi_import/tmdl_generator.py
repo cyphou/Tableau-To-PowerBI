@@ -5116,9 +5116,11 @@ def _write_table_tmdl(tables_dir, table):
     lines.append(f"table {tname_quoted}")
     lines.append(f"\tlineageTag: {uuid.uuid4()}")
 
-    # Table description — TMDL does not support 'description' at the table level.
-    # The description is preserved as a Copilot_TableDescription annotation instead.
+    # Table description — emit as TMDL property for Copilot/Q&A readiness.
     table_desc = _generate_table_description(table)
+    safe_desc = table_desc.replace('\n', ' ').replace('\r', '').strip()
+    if safe_desc:
+        lines.append(f"\tdescription: {safe_desc}")
 
     lines.append("")
 
@@ -5217,6 +5219,12 @@ def _write_measure(lines, measure):
     else:
         lines.append(f"\tmeasure {mname} = {expression}")
 
+    # Description for Copilot/Q&A readiness
+    measure_desc = _generate_measure_description(measure)
+    safe_desc = measure_desc.replace('\n', ' ').replace('\r', '').strip()
+    if safe_desc:
+        lines.append(f"\t\tdescription: {safe_desc}")
+
     fmt = measure.get('formatString', '')
     if fmt and fmt != '0':
         lines.append(f"\t\tformatString: {fmt}")
@@ -5268,6 +5276,12 @@ def _write_column_flags(lines, column):
     sort_by = column.get('sortByColumn', '')
     if sort_by:
         lines.append(f"\t\tsortByColumn: {_quote_name(sort_by)}")
+
+    # Description for Copilot/Q&A readiness
+    col_desc = _generate_column_description(column)
+    safe_desc = col_desc.replace('\n', ' ').replace('\r', '').strip()
+    if safe_desc:
+        lines.append(f"\t\tdescription: {safe_desc}")
 
     # Custom annotations (e.g. alternateOf for agg tables)
     for ann in column.get('annotations', []):
