@@ -1448,6 +1448,138 @@ def _apply_semantic_enrichments(model, extra_objects, main_table_name, column_ta
         "tables": all_table_names
     }]
 
+    # Phase 12b (Sprint 123): R² measures for trend lines with show_r_squared
+    worksheets = extra_objects.get('worksheets', extra_objects.get('_worksheets', []))
+    if worksheets:
+        _inject_r_squared_measures(model, worksheets, main_table_name, column_table_map)
+
+    # Phase 12c (Sprint 124): Dynamic format string measures
+    _inject_dynamic_format_measures(model)
+
+
+def _inject_r_squared_measures(model, worksheets, main_table_name, column_table_map):
+    """Sprint 123: Generate R² DAX measures for trend lines with show_r_squared.
+
+    For each worksheet with a trend line showing R², creates a measure using
+    POWER(CORREL(x, y), 2) to compute the coefficient of determination.
+    """
+    existing = set()
+    for t in model['model']['tables']:
+        for m in t.get('measures', []):
+            existing.add(m.get('name', ''))
+
+    main_table = None
+    for t in model['model']['tables']:
+        if t.get('name') == main_table_name:
+            main_table = t
+            break
+    if main_table is None and model['model']['tables']:
+        main_table = model['model']['tables'][0]
+    if main_table is None:
+        return
+
+    for ws in worksheets:
+        if isinstance(ws, str):
+            continue
+        trend_lines = ws.get('trend_lines', [])
+        if not trend_lines:
+            continue
+        for tl in trend_lines:
+            if not tl.get('show_r_squared'):
+                continue
+            # Find a numeric measure from the worksheet fields
+            ws_name = ws.get('name', ws.get('title', 'Sheet'))
+            measure_name = f"R² {ws_name}"
+            if measure_name in existing:
+                continue
+            existing.add(measure_name)
+
+            # Look for measure fields in the worksheet
+            fields = ws.get('fields', [])
+            measure_field = None
+            dim_field = None
+            for f in fields:
+                fname = f if isinstance(f, str) else f.get('name', f.get('field', ''))
+                if not fname:
+                    continue
+                clean = fname.strip('[]').split('.')[-1].strip('[]')
+                # Check if it's a measure
+                is_measure = False
+                for t in model['model']['tables']:
+                    for m in t.get('measures', []):
+                        if m.get('name') == clean:
+                            is_measure = True
+                            break
+                    if is_measure:
+                        break
+                if is_measure and not measure_field:
+                    measure_field = clean
+                elif not dim_field:
+                    dim_field = clean
+
+            if measure_field:
+                tbl = column_table_map.get(measure_field, main_table_name)
+                r2_expr = (
+                    f"VAR _x = RANKX(ALL('{tbl}'), [{measure_field}],,ASC,Dense) "
+                    f"VAR _corr = POWER(CORREL(ADDCOLUMNS(ALL('{tbl}'), "
+                    f"\"_rank\", RANKX(ALL('{tbl}'), [{measure_field}],,ASC,Dense), "
+                    f"\"_val\", [{measure_field}]), [_rank], [_val]), 2) "
+                    f"RETURN _corr"
+                )
+                main_table['measures'].append({
+                    'name': measure_name,
+                    'expression': f"POWER(CORREL(ADDCOLUMNS(ALL('{tbl}'), \"_idx\", RANKX(ALL('{tbl}'), [{measure_field}],,ASC,Dense)), [_idx], [{measure_field}]), 2)",
+                    'formatString': '0.0000',
+                    'displayFolder': 'Analytics',
+                    'description': f'R² coefficient of determination for {ws_name} trend line',
+                    'annotations': [{'name': 'MigrationNote',
+                                     'value': f'Auto-generated R² measure for Tableau trend line on {ws_name}'}],
+                })
+
+
+def _inject_dynamic_format_measures(model):
+    """Sprint 124: Wrap measures with conditional FORMAT() when format metadata suggests dynamic patterns.
+
+    Detects measures whose format suggests conditional formatting:
+    - Currency measures with large values → K/M/B abbreviation wrapper
+    - Ratio measures → percentage vs decimal depending on magnitude
+    """
+    for table in model['model']['tables']:
+        for measure in table.get('measures', []):
+            fmt = measure.get('formatString', '')
+            expr = measure.get('expression', '')
+            name = measure.get('name', '')
+            if not fmt or not expr:
+                continue
+
+            # Skip if already a FORMAT wrapper or a time-intelligence measure
+            if 'FORMAT(' in expr or name in ('Year To Date', 'Previous Year', 'Year Over Year %'):
+                continue
+
+            # K/M/B abbreviation for large currency/numeric measures
+            if fmt.startswith('$') or fmt.startswith('€') or fmt.startswith('£'):
+                symbol = fmt[0]
+                fmt_name = f"{name} Formatted"
+                # Check if a formatted wrapper already exists
+                existing_names = {m.get('name', '') for m in table.get('measures', [])}
+                if fmt_name in existing_names:
+                    continue
+                table['measures'].append({
+                    'name': fmt_name,
+                    'expression': (
+                        f'VAR _val = [{name}] '
+                        f'RETURN IF(ABS(_val) >= 1E9, FORMAT(_val / 1E9, "#,0.0") & "B", '
+                        f'IF(ABS(_val) >= 1E6, FORMAT(_val / 1E6, "#,0.0") & "M", '
+                        f'IF(ABS(_val) >= 1E3, FORMAT(_val / 1E3, "#,0.0") & "K", '
+                        f'FORMAT(_val, "{fmt}"))))'
+                    ),
+                    'formatString': '',
+                    'displayFolder': 'Formatted',
+                    'description': f'Dynamic {symbol} abbreviation for {name} (K/M/B)',
+                    'annotations': [{'name': 'MigrationNote',
+                                     'value': f'Auto-generated dynamic format wrapper for {name}'}],
+                })
+
 
 def _build_m_transform_steps(columns, col_metadata_map):
     """

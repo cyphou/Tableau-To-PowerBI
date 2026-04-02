@@ -3582,7 +3582,7 @@ class PowerBIProjectGenerator:
                 all_lines = y_ref_lines + dynamic_ref_lines
                 objects["valueAxis"][0]["properties"]["referenceLine"] = all_lines
 
-        # Trend lines (analytics pane)
+        # Trend lines (analytics pane) — Sprint 123: full regression type config
         trend_lines = ws_data.get('trend_lines', [])
         if trend_lines:
             trend_objs = []
@@ -3595,16 +3595,39 @@ class PowerBIProjectGenerator:
                     "show": _L("true"),
                     "lineColor": {"solid": {"color": _L(f"'{tl.get('color', '#666666')}'")}}
                 }
+                trend_obj["regressionType"] = _L(f"'{trend_type}'")
+                if trend_type == 'Polynomial':
+                    order = tl.get('order', tl.get('degree', 2))
+                    trend_obj["polynomialOrder"] = _L(f"{order}L")
                 if tl.get('show_equation'):
                     trend_obj["displayEquation"] = _L("true")
                 if tl.get('show_r_squared'):
                     trend_obj["displayRSquared"] = _L("true")
+                if tl.get('show_confidence'):
+                    trend_obj["confidenceBand"] = _L("true")
                 trend_objs.append({"properties": trend_obj})
             objects["trend"] = trend_objs
 
+        # Clustering → MigrationNote (no native PBI clustering in PBIR)
+        clustering = ws_data.get('clustering', [])
+        if clustering:
+            cl = clustering[0]
+            num_clusters = cl.get('num_clusters', 'auto')
+            variables = cl.get('variables', [])
+            hint = f"Tableau clustering ({num_clusters} clusters"
+            if variables:
+                hint += f", fields: {', '.join(variables[:5])}"
+            hint += "). Use R/Python visual with k-means clustering in Power BI."
+            objects.setdefault("subTitle", [{"properties": {}}])
+            objects["subTitle"][0]["properties"]["show"] = _L("true")
+            existing = objects["subTitle"][0]["properties"].get("text")
+            if existing:
+                hint = existing.get("expr", {}).get("Literal", {}).get("Value", "''").strip("'") + " | " + hint
+            objects["subTitle"][0]["properties"]["text"] = _L(json.dumps(hint))
+
         # Annotations → subtitle text
         annotations = ws_data.get('annotations', [])
-        if annotations:
+        if annotations and not clustering:
             anno_texts = [a.get('text', '') for a in annotations if a.get('text')]
             if anno_texts:
                 subtitle_text = "; ".join(anno_texts[:3])
@@ -3612,7 +3635,7 @@ class PowerBIProjectGenerator:
                 objects["subTitle"][0]["properties"]["show"] = _L("true")
                 objects["subTitle"][0]["properties"]["text"] = _L(json.dumps(subtitle_text))
 
-        # Forecast config (analytics pane)
+        # Forecast config (analytics pane) — Sprint 123: seasonality + model
         forecasts = ws_data.get('forecasting', [])
         if forecasts:
             fc = forecasts[0]
@@ -3625,6 +3648,15 @@ class PowerBIProjectGenerator:
             forecast_obj["confidenceLevel"] = _L(f"'{ci}'")
             if fc.get('ignore_last', '0') != '0':
                 forecast_obj["ignoreLast"] = _L(f"{fc['ignore_last']}L")
+            if fc.get('periods_back', 0):
+                forecast_obj["forecastBackLength"] = _L(f"{fc['periods_back']}L")
+            model = fc.get('model', 'automatic')
+            model_map = {'automatic': "'Auto'", 'additive': "'Additive'",
+                         'multiplicative': "'Multiplicative'",
+                         'ets_aaa': "'Auto'", 'ets_mmm': "'Multiplicative'"}
+            forecast_obj["seasonality"] = _L(model_map.get(model.lower(), "'Auto'"))
+            if not fc.get('show_prediction_bands', True):
+                forecast_obj["confidenceBandStyle"] = _L("'none'")
             objects["forecast"] = [{"properties": forecast_obj}]
 
         # Map options (washout/transparency + style)
@@ -3647,16 +3679,39 @@ class PowerBIProjectGenerator:
             if map_props:
                 objects["mapControl"] = [{"properties": map_props}]
 
-        # Reference bands and statistical reference lines (analytics_stats)
+        # Reference bands, statistical lines, confidence intervals (analytics_stats) — Sprint 123
         analytics_stats = ws_data.get('analytics_stats', [])
         for stat in analytics_stats:
             if stat.get('type') == 'distribution_band':
                 band_from = stat.get('value_from', '')
                 band_to = stat.get('value_to', '')
-                if band_from and band_to:
-                    if "valueAxis" not in objects:
-                        objects["valueAxis"] = [{"properties": {"show": _L("true")}}]
-                    objects["valueAxis"][0]["properties"].setdefault("referenceLine", [])
+                computation = stat.get('computation', '').lower()
+                if "valueAxis" not in objects:
+                    objects["valueAxis"] = [{"properties": {"show": _L("true")}}]
+                objects["valueAxis"][0]["properties"].setdefault("referenceLine", [])
+                if computation in ('standard deviation', 'std_dev', 'stddev'):
+                    # Standard deviation band → percentile line pair
+                    objects["valueAxis"][0]["properties"]["referenceLine"].append({
+                        "type": "Band",
+                        "lowerBound": str(band_from) if band_from else "-1",
+                        "upperBound": str(band_to) if band_to else "1",
+                        "transparency": _L("60L"),
+                        "show": _L("true"),
+                        "displayName": _L("'Std Dev Band'"),
+                        "style": _L("'dashed'"),
+                    })
+                elif computation in ('percentile', 'quantile', 'iqr'):
+                    # Percentile band (e.g. IQR: 25th–75th)
+                    objects["valueAxis"][0]["properties"]["referenceLine"].append({
+                        "type": "Band",
+                        "lowerBound": str(band_from) if band_from else "25",
+                        "upperBound": str(band_to) if band_to else "75",
+                        "transparency": _L("50L"),
+                        "show": _L("true"),
+                        "displayName": _L(f"'Percentile {band_from}-{band_to}'"),
+                        "style": _L("'dashed'"),
+                    })
+                elif band_from and band_to:
                     objects["valueAxis"][0]["properties"]["referenceLine"].append({
                         "type": "Band",
                         "lowerBound": str(band_from),
@@ -3664,20 +3719,37 @@ class PowerBIProjectGenerator:
                         "transparency": _L("50L"),
                         "show": _L("true"),
                     })
-            elif stat.get('type') in ('stat_line', 'stat_reference'):
-                comp = stat.get('computation', stat.get('stat', ''))
-                stat_map = {'mean': 'Average', 'median': 'Median',
-                            'constant': 'Constant', 'percentile': 'Percentile',
-                            'mode': 'Average'}
-                stat_type = stat_map.get(comp.lower(), 'Average')
+            elif stat.get('type') == 'confidence_interval':
+                ci_level = stat.get('level', '95')
                 if "valueAxis" not in objects:
                     objects["valueAxis"] = [{"properties": {"show": _L("true")}}]
                 objects["valueAxis"][0]["properties"].setdefault("referenceLine", [])
                 objects["valueAxis"][0]["properties"]["referenceLine"].append({
+                    "type": "Band",
+                    "transparency": _L("70L"),
+                    "show": _L("true"),
+                    "displayName": _L(f"'{ci_level}% CI'"),
+                    "style": _L("'dotted'"),
+                })
+            elif stat.get('type') in ('stat_line', 'stat_reference'):
+                comp = stat.get('computation', stat.get('stat', ''))
+                stat_map = {'mean': 'Average', 'median': 'Median',
+                            'constant': 'Constant', 'percentile': 'Percentile',
+                            'mode': 'Average', 'min': 'Min', 'max': 'Max'}
+                stat_type = stat_map.get(comp.lower(), 'Average')
+                if "valueAxis" not in objects:
+                    objects["valueAxis"] = [{"properties": {"show": _L("true")}}]
+                objects["valueAxis"][0]["properties"].setdefault("referenceLine", [])
+                ref_entry = {
                     "type": stat_type,
                     "show": _L("true"),
                     "style": _L("'dashed'"),
-                })
+                }
+                if stat_type == 'Percentile' and stat.get('value'):
+                    ref_entry["percentile"] = _L(f"{stat['value']}D")
+                if stat_type == 'Constant' and stat.get('value'):
+                    ref_entry["value"] = str(stat['value'])
+                objects["valueAxis"][0]["properties"]["referenceLine"].append(ref_entry)
 
         # Small multiples formatting
         sm_field = ws_data.get('small_multiples', '')

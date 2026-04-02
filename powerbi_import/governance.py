@@ -551,3 +551,127 @@ def run_governance(tmdl_tables, config=None, worksheets=None,
         engine.apply_classifications(tmdl_tables, report)
 
     return report
+
+
+# ── Sprint 124: Endorsement Classification ────────────────────────────────────
+
+# Sensitivity patterns: (name, regex, label)
+_SENSITIVITY_PATTERNS = [
+    # Confidential — PII and personal data
+    ("email", re.compile(r"\bemail|e[-_]?mail\b", re.IGNORECASE), "Confidential"),
+    ("ssn", re.compile(r"\bssn|social.?security|sin\b", re.IGNORECASE), "Highly Confidential"),
+    ("phone", re.compile(r"\bphone|mobile|cell.?phone|telephone|fax\b", re.IGNORECASE), "Confidential"),
+    ("personal_name", re.compile(r"\b(?:first|last|middle|full).?name|surname|given.?name\b", re.IGNORECASE), "Confidential"),
+    ("address", re.compile(r"\baddress|street|zip.?code|postal.?code\b", re.IGNORECASE), "Confidential"),
+    ("dob", re.compile(r"\b(?:date.?of.?birth|dob|birth.?date|birthday)\b", re.IGNORECASE), "Highly Confidential"),
+    ("credit_card", re.compile(r"\bcredit.?card|card.?number|ccn|pan\b", re.IGNORECASE), "Highly Confidential"),
+    ("passport", re.compile(r"\bpassport|visa.?number\b", re.IGNORECASE), "Highly Confidential"),
+    # Internal — financial data
+    ("salary", re.compile(r"\bsalary|wage|compensation|bonus|payroll\b", re.IGNORECASE), "Internal"),
+    ("revenue", re.compile(r"\brevenue|profit|margin|cost|budget|expense\b", re.IGNORECASE), "Internal"),
+    ("price", re.compile(r"\bprice|discount|markup|wholesale\b", re.IGNORECASE), "Internal"),
+]
+
+
+def classify_endorsement(fidelity_score, approximation_count=0, validation_errors=0):
+    """Classify migration artifact for PBI endorsement.
+
+    Args:
+        fidelity_score: Migration fidelity percentage (0–100)
+        approximation_count: Number of approximated DAX formulas
+        validation_errors: Number of TMDL validation errors
+
+    Returns:
+        dict with 'endorsement' ('certified'|'promoted'|'none'),
+        'reason', and 'confidence' (0–100)
+    """
+    if validation_errors > 0:
+        return {
+            'endorsement': 'none',
+            'reason': f'{validation_errors} validation error(s) — fix before endorsement',
+            'confidence': max(0, fidelity_score - validation_errors * 10),
+        }
+
+    if fidelity_score >= 100 and approximation_count == 0:
+        return {
+            'endorsement': 'certified',
+            'reason': 'Perfect fidelity, no approximations',
+            'confidence': 100,
+        }
+
+    if fidelity_score >= 90 and approximation_count <= 5:
+        return {
+            'endorsement': 'promoted',
+            'reason': f'{fidelity_score}% fidelity, {approximation_count} approximation(s)',
+            'confidence': fidelity_score,
+        }
+
+    return {
+        'endorsement': 'none',
+        'reason': f'{fidelity_score}% fidelity, {approximation_count} approximation(s) — manual review needed',
+        'confidence': fidelity_score,
+    }
+
+
+def infer_sensitivity_labels(tmdl_tables):
+    """Scan all column names and infer sensitivity labels.
+
+    Returns:
+        list of dicts: [{'table': str, 'column': str, 'label': str, 'pattern': str}]
+    """
+    results = []
+    for table in (tmdl_tables or []):
+        table_name = table.get('name', '')
+        for col in table.get('columns', []):
+            col_name = col if isinstance(col, str) else col.get('name', '')
+            for pattern_name, regex, label in _SENSITIVITY_PATTERNS:
+                if regex.search(col_name):
+                    results.append({
+                        'table': table_name,
+                        'column': col_name,
+                        'label': label,
+                        'pattern': pattern_name,
+                    })
+                    break
+    return results
+
+
+def generate_endorsement_report(migration_metadata, tmdl_tables=None):
+    """Generate endorsement + sensitivity report for a migration.
+
+    Args:
+        migration_metadata: dict with 'fidelity_score', 'approximation_count',
+                           'validation_errors' (from migration_report.py)
+        tmdl_tables: optional tables for sensitivity inference
+
+    Returns:
+        dict: Combined endorsement + sensitivity report
+    """
+    fidelity = migration_metadata.get('fidelity_score', 100)
+    approx = migration_metadata.get('approximation_count', 0)
+    val_errors = migration_metadata.get('validation_errors', 0)
+
+    endorsement = classify_endorsement(fidelity, approx, val_errors)
+
+    report = {
+        'endorsement': endorsement,
+        'sensitivity_labels': [],
+        'summary': {
+            'fidelity_score': fidelity,
+            'approximation_count': approx,
+            'validation_errors': val_errors,
+        },
+    }
+
+    if tmdl_tables:
+        report['sensitivity_labels'] = infer_sensitivity_labels(tmdl_tables)
+        # Determine overall label from highest
+        label_order = ['General', 'Internal', 'Confidential', 'Highly Confidential']
+        highest = 'General'
+        for sl in report['sensitivity_labels']:
+            lbl = sl.get('label', 'General')
+            if lbl in label_order and label_order.index(lbl) > label_order.index(highest):
+                highest = lbl
+        report['overall_sensitivity'] = highest
+
+    return report
