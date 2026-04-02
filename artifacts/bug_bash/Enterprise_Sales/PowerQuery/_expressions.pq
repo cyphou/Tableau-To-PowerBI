@@ -1,0 +1,3 @@
+expression DataFolder = "C:\Users\pidoudet\OneDrive - Microsoft\Boulot\PBI SME\OracleToPostgre\TableauToPowerBI\artifacts\bug_bash\Enterprise_Sales\Data" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+
+expression ServerName = "acme.snowflakecomputing.com" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]

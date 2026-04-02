@@ -1,0 +1,99 @@
+table Maintenance
+	lineageTag: 4c9c68fe-40e5-48cf-bb41-19e94bf60207
+
+	column maint_id
+		dataType: int64
+		lineageTag: fe1527e4-8003-439c-a524-c97aaea4c5a8
+		summarizeBy: sum
+		sourceColumn: maint_id
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column machine_id
+		dataType: int64
+		lineageTag: 824be312-2cc9-4a6e-8719-f4b53d17c76c
+		summarizeBy: sum
+		sourceColumn: machine_id
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column maint_date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 14b2703a-be22-4fe2-97d8-2bda0f64b6c7
+		summarizeBy: none
+		sourceColumn: maint_date
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column maint_type
+		dataType: string
+		lineageTag: 1e217ccd-5ec8-41d2-8f13-6365952ddb9f
+		summarizeBy: none
+		sourceColumn: maint_type
+
+		annotation SummarizationSetBy = Automatic
+
+	column maint_cost
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 3583affb-de18-444b-9f84-a8b2b154e4fc
+		summarizeBy: sum
+		sourceColumn: maint_cost
+
+		annotation SummarizationSetBy = Automatic
+
+	column downtime_hours
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 271124cf-562b-4bc7-8047-6370c5de8a70
+		summarizeBy: sum
+		sourceColumn: downtime_hours
+
+		annotation SummarizationSetBy = Automatic
+
+	column technician
+		dataType: string
+		lineageTag: d2850cc3-d4da-45d0-aac7-7211d2d6295b
+		summarizeBy: none
+		sourceColumn: technician
+
+		annotation SummarizationSetBy = Automatic
+
+	column description
+		dataType: string
+		lineageTag: 3f5e54a6-07b6-4a89-81aa-de20729c4053
+		summarizeBy: none
+		sourceColumn: description
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Maintenance-b1886bb0-8fe5-41b1-a53b-69f7357e25bd' = m
+		mode: import
+		source =
+				let
+				    // Source Oracle: mfg-oracle.corp.local:1521/MFGDB
+				    Source = try
+				
+				        let
+				
+				            _src = Oracle.Database("mfg-oracle.corp.local:1521/MFGDB"),
+				
+				            _nav = _src{[Schema="DBO", Item="Maintenance"]}[Data]
+				
+				        in _nav
+				
+				    otherwise
+				
+				        #table({"maint_id", "machine_id", "maint_date", "maint_type", "maint_cost", "downtime_hours", "technician", "description"}, {}),
+				    #"Renamed Columns" = Table.RenameColumns(Source, {{"maint_id", "Maint ID"}, {"machine_id", "Machine ID"}, {"maint_date", "Maint Date"}, {"maint_type", "Maint Type"}, {"maint_cost", "Maint Cost"}, {"downtime_hours", "Downtime Hours"}, {"technician", "Technician"}, {"description", "Description"}}),
+				    Result = #"Renamed Columns"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 8 columns: maint_id, machine_id, maint_date, maint_type, maint_cost, downtime_hours, technician, description.
+

@@ -1,0 +1,19 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation PBI_QueryOrder = ["Employees","Calendar"]
+
+ref table Employees
+ref table Calendar
+
+ref relationship 66967d38-eb81-4896-b80b-e608ca707faa
+
+ref expression DataFolder
+
+ref perspective 'Full Model'
+

@@ -1,0 +1,12 @@
+{
+  "tables": [
+    {
+      "tableau_datasource": "prep.Products_Master",
+      "tableau_table": "Products_Master",
+      "pbi_table": "Products_Master"
+    }
+  ],
+  "calculations": [],
+  "relationships": [],
+  "worksheets": []
+}

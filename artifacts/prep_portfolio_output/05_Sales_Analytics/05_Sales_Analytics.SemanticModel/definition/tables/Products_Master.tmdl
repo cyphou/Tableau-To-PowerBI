@@ -1,0 +1,85 @@
+table Products_Master
+	lineageTag: 88da96ea-29ab-46ff-b2ea-01052334d4eb
+
+	column ProductID
+		dataType: string
+		lineageTag: 8024d09c-3aae-4f7e-9700-2e655a5d0eec
+		summarizeBy: none
+		sourceColumn: ProductID
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column ProductName
+		dataType: string
+		lineageTag: 6e917c49-a20a-4a3b-9620-c328d0462873
+		summarizeBy: none
+		sourceColumn: ProductName
+
+		annotation SummarizationSetBy = Automatic
+
+	column Category
+		dataType: string
+		lineageTag: 6f85e741-c3b9-4eb3-92ca-fa25846b4aeb
+		summarizeBy: none
+		sourceColumn: Category
+
+		annotation SummarizationSetBy = Automatic
+
+	column SubCategory
+		dataType: string
+		lineageTag: 340d8c25-fa47-41e8-8646-a33308798e7d
+		summarizeBy: none
+		sourceColumn: SubCategory
+
+		annotation SummarizationSetBy = Automatic
+
+	column UnitCost
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 4574ced4-3101-4925-bd25-cf13bdad11ee
+		summarizeBy: sum
+		sourceColumn: UnitCost
+
+		annotation SummarizationSetBy = Automatic
+
+	column UnitPrice
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 6e117b4f-4d31-4c04-932c-23538277778a
+		summarizeBy: sum
+		sourceColumn: UnitPrice
+
+		annotation SummarizationSetBy = Automatic
+
+	column Margin
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 316298d6-098b-4aa1-98f7-0643c134c8e1
+		summarizeBy: sum
+		sourceColumn: Margin
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Products_Master-6a50a587-bb61-46bc-9bb8-82e42464d0d9' = m
+		mode: import
+		source =
+				let
+				    // TODO: Configure the data source for connector type: sqlserver
+				    // Replace the sample table below with the actual source expression.
+				    Source = try
+				        #table(
+				            {"ProductID", "ProductName", "Category", "SubCategory", "UnitCost", "UnitPrice", "Margin"},
+				            {
+				                {"Sample 1", "Sample 2", "Sample 3", "Sample 4", 5, 6, 7},
+				                {"Sample 2", "Sample 3", "Sample 4", "Sample 5", 6, 7, 8}
+				            }
+				        )
+				    otherwise
+				        #table({"ProductID", "ProductName", "Category", "SubCategory", "UnitCost", "UnitPrice", "Margin"}, {})  // Empty table on error
+				in
+				    Source
+
+	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 7 columns: ProductID, ProductName, Category, SubCategory, UnitCost, UnitPrice, Margin.
+

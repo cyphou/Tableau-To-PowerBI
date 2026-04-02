@@ -88,14 +88,17 @@ class TestDynamicZoneVisibility(unittest.TestCase):
         ]
         bookmarks = gen._create_swap_bookmarks(dynamic_zones, 'Page1')
         self.assertEqual(len(bookmarks), 2)
-        # First bookmark shows Sales, hides Profit
-        vis0 = bookmarks[0]['explorationState']['visualsVisibility']
-        self.assertTrue(vis0['Sales'])
-        self.assertFalse(vis0['Profit'])
-        # Second bookmark shows Profit, hides Sales
-        vis1 = bookmarks[1]['explorationState']['visualsVisibility']
-        self.assertFalse(vis1['Sales'])
-        self.assertTrue(vis1['Profit'])
+        # Both bookmarks use PBIR sections/visualContainers for visibility
+        es0 = bookmarks[0]['explorationState']
+        self.assertIn('sections', es0)
+        self.assertIn('Page1', es0['sections'])
+        vc0 = es0['sections']['Page1']['visualContainers']
+        # First bookmark targets Sales, so Profit is hidden
+        self.assertIn('Profit', vc0)
+        # Second bookmark targets Profit, so Sales is hidden
+        es1 = bookmarks[1]['explorationState']
+        vc1 = es1['sections']['Page1']['visualContainers']
+        self.assertIn('Sales', vc1)
 
     def test_swap_bookmark_has_target_visual_name(self):
         from powerbi_import.pbip_generator import PowerBIProjectGenerator
@@ -105,7 +108,7 @@ class TestDynamicZoneVisibility(unittest.TestCase):
              'condition': 'equals', 'default_visible': True},
         ]
         bookmarks = gen._create_swap_bookmarks(dynamic_zones, 'PageX')
-        self.assertEqual(bookmarks[0]['options']['targetVisualName'], 'Chart')
+        self.assertEqual(bookmarks[0]['options']['targetVisualNames'], ['Chart'])
         self.assertEqual(bookmarks[0]['explorationState']['activeSection'], 'PageX')
 
 

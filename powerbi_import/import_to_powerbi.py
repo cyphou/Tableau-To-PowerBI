@@ -465,8 +465,13 @@ class PowerBIImporter:
         # Minimal report.json (empty report -- user opens Model view)
         _write_json_file(os.path.join(model_report_dir, 'definition', 'report.json'), {
             "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/2.0.0/schema.json",
-            "name": model_report_name,
-            "description": f"Model explorer for shared semantic model '{model_name}'. Open this to view and edit the data model.",
+            "themeCollection": {
+                "baseTheme": {
+                    "name": "CY24SU06",
+                    "reportVersionAtImport": "5.55",
+                    "type": "SharedResources"
+                }
+            },
         })
 
         # version.json

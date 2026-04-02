@@ -596,6 +596,40 @@ def get_report_css() -> str:
     .mb-0         { margin-bottom: 0; }
     .nowrap       { white-space: nowrap; }
 
+    /* ── Theme toggle ─────────────────────────────────────────── */
+    .theme-toggle {
+        position: fixed;
+        top: 14px;
+        right: 18px;
+        z-index: 1000;
+        background: rgba(255,255,255,0.18);
+        border: 1px solid rgba(255,255,255,0.25);
+        color: #fff;
+        border-radius: 20px;
+        padding: 5px 14px;
+        font-size: 0.82em;
+        font-weight: 500;
+        cursor: pointer;
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        transition: background 0.2s, color 0.2s, border-color 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-family: inherit;
+    }
+    .theme-toggle:hover {
+        background: rgba(255,255,255,0.3);
+    }
+    .dark .theme-toggle {
+        background: rgba(255,255,255,0.1);
+        border-color: rgba(255,255,255,0.15);
+        color: #e0e0e0;
+    }
+    .dark .theme-toggle:hover {
+        background: rgba(255,255,255,0.18);
+    }
+
     /* ── Footer ──────────────────────────────────────────────── */
     .report-footer {
         text-align: center;
@@ -654,60 +688,58 @@ def get_report_css() -> str:
         .donut-container { flex-direction: column; }
     }
 
-    /* ── Dark mode ────────────────────────────────────────────── */
-    @media (prefers-color-scheme: dark) {
-        :root {
-            --pbi-bg: #1b1a19;
-            --pbi-surface: #252423;
-            --pbi-dark: #f3f2f1;
-            --pbi-gray: #b3b0ad;
-            --pbi-light-gray: #8a8886;
-        }
-        body { background: var(--pbi-bg); color: var(--pbi-dark); }
-        .report-header { background: linear-gradient(135deg, #004578 0%, #001d33 100%); }
-        .stat-card { background: var(--pbi-surface); box-shadow: 0 1.6px 3.6px rgba(0,0,0,0.4); }
-        .card { background: var(--pbi-surface); box-shadow: 0 1.6px 3.6px rgba(0,0,0,0.4); }
-        table { background: var(--pbi-surface); }
-        thead th { background: #004578; }
-        thead th.sortable:hover { background: #005a9e; }
-        .detail-table thead th { background: #3b3a39; }
-        tbody td { border-bottom-color: #3b3a39; }
-        tbody tr:hover { background: #323130; }
-        .section-header:hover { border-bottom-color: #2b88d8; }
-        .section-header { border-bottom-color: #3b3a39; }
-        .tab-bar { border-bottom-color: #3b3a39; }
-        .tab:hover { background: rgba(0,120,212,0.15); }
-        .fidelity-track { background: #3b3a39; }
-        .bar-track { background: #3b3a39; }
-        .badge-gray { background: #3b3a39; color: #b3b0ad; }
-        .connector-tag { background: #1a3a5c; color: #6cb8f6; }
-        .success-tag { background: #1a3a1a; color: #6ccb5f; }
-        .warn-tag { background: #3a3500; color: #d4c75f; }
-        .danger-tag { background: #4a1a1d; color: #f5707a; }
-        .isolated-tag { background: #3b3a39; color: #b3b0ad; }
-        .tag-connector { background: #1a3a5c; color: #6cb8f6; }
-        .tag-success { background: #1a3a1a; color: #6ccb5f; }
-        .tag-warn { background: #3a3500; color: #d4c75f; }
-        .tag-danger { background: #4a1a1d; color: #f5707a; }
-        code { background: #3b3a39; }
-        .cmd-box { background: #0d0d0d; }
-        .report-footer { border-top-color: #3b3a39; }
-        .table-search input { background: #323130; border-color: #3b3a39; color: var(--pbi-dark); }
-        .table-search input:focus { border-color: #2b88d8; }
-        .cluster-card { background: var(--pbi-surface); box-shadow: 0 1.6px 3.6px rgba(0,0,0,0.4); }
-        .flow-box { background: var(--pbi-surface); border-color: #2b88d8; box-shadow: 0 1.6px 3.6px rgba(0,0,0,0.4); }
+    /* ── Dark mode (class-based, toggled by JS) ──────────────── */
+    html.dark {
+        --pbi-bg: #1b1a19;
+        --pbi-surface: #252423;
+        --pbi-dark: #f3f2f1;
+        --pbi-gray: #b3b0ad;
+        --pbi-light-gray: #8a8886;
     }
+    html.dark body { background: var(--pbi-bg); color: var(--pbi-dark); }
+    html.dark .report-header { background: linear-gradient(135deg, #004578 0%, #001d33 100%); }
+    html.dark .stat-card { background: var(--pbi-surface); box-shadow: 0 1.6px 3.6px rgba(0,0,0,0.4); }
+    html.dark .card { background: var(--pbi-surface); box-shadow: 0 1.6px 3.6px rgba(0,0,0,0.4); }
+    html.dark table { background: var(--pbi-surface); }
+    html.dark thead th { background: #004578; }
+    html.dark thead th.sortable:hover { background: #005a9e; }
+    html.dark .detail-table thead th { background: #3b3a39; }
+    html.dark tbody td { border-bottom-color: #3b3a39; }
+    html.dark tbody tr:hover { background: #323130; }
+    html.dark .section-header:hover { border-bottom-color: #2b88d8; }
+    html.dark .section-header { border-bottom-color: #3b3a39; }
+    html.dark .tab-bar { border-bottom-color: #3b3a39; }
+    html.dark .tab:hover { background: rgba(0,120,212,0.15); }
+    html.dark .fidelity-track { background: #3b3a39; }
+    html.dark .bar-track { background: #3b3a39; }
+    html.dark .badge-gray { background: #3b3a39; color: #b3b0ad; }
+    html.dark .connector-tag { background: #1a3a5c; color: #6cb8f6; }
+    html.dark .success-tag { background: #1a3a1a; color: #6ccb5f; }
+    html.dark .warn-tag { background: #3a3500; color: #d4c75f; }
+    html.dark .danger-tag { background: #4a1a1d; color: #f5707a; }
+    html.dark .isolated-tag { background: #3b3a39; color: #b3b0ad; }
+    html.dark .tag-connector { background: #1a3a5c; color: #6cb8f6; }
+    html.dark .tag-success { background: #1a3a1a; color: #6ccb5f; }
+    html.dark .tag-warn { background: #3a3500; color: #d4c75f; }
+    html.dark .tag-danger { background: #4a1a1d; color: #f5707a; }
+    html.dark code { background: #3b3a39; }
+    html.dark .cmd-box { background: #0d0d0d; }
+    html.dark .report-footer { border-top-color: #3b3a39; }
+    html.dark .table-search input { background: #323130; border-color: #3b3a39; color: var(--pbi-dark); }
+    html.dark .table-search input:focus { border-color: #2b88d8; }
+    html.dark .cluster-card { background: var(--pbi-surface); box-shadow: 0 1.6px 3.6px rgba(0,0,0,0.4); }
+    html.dark .flow-box { background: var(--pbi-surface); border-color: #2b88d8; box-shadow: 0 1.6px 3.6px rgba(0,0,0,0.4); }
 
-    @media print and (prefers-color-scheme: dark) {
-        :root {
+    @media print {
+        html.dark {
             --pbi-bg: #fff;
             --pbi-surface: #fff;
             --pbi-dark: #323130;
             --pbi-gray: #605e5c;
             --pbi-light-gray: #a19f9d;
         }
-        body { background: #fff; color: #323130; }
-        .report-header { background: #0078d4 !important; }
+        html.dark body { background: #fff; color: #323130; }
+        html.dark .report-header { background: #0078d4 !important; }
     }
 """
 
@@ -779,6 +811,32 @@ function sortTable(tableId, colIndex) {
 
     rows.forEach(function(row) { tbody.appendChild(row); });
 }
+
+/* ── Theme toggle (dark / light) ──────────────────────── */
+function toggleTheme() {
+    var html = document.documentElement;
+    var isDark = html.classList.toggle('dark');
+    var btn = document.getElementById('theme-toggle-btn');
+    if (btn) {
+        btn.innerHTML = isDark ? '&#9788; Light' : '&#9790; Dark';
+    }
+    try { localStorage.setItem('pbi-theme', isDark ? 'dark' : 'light'); } catch(e) {}
+}
+
+(function initTheme() {
+    var saved = null;
+    try { saved = localStorage.getItem('pbi-theme'); } catch(e) {}
+    if (saved === 'dark') {
+        document.documentElement.classList.add('dark');
+    }
+    // Update button label once DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        var btn = document.getElementById('theme-toggle-btn');
+        if (btn && document.documentElement.classList.contains('dark')) {
+            btn.innerHTML = '&#9788; Light';
+        }
+    });
+})();
 """
 
 
@@ -810,8 +868,10 @@ def html_open(
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{esc(title)}</title>
 <style>{get_report_css()}</style>
+<script>(function(){{var s=null;try{{s=localStorage.getItem('pbi-theme')}}catch(e){{}}if(s==='dark')document.documentElement.classList.add('dark')}})();</script>
 </head>
 <body>
+<button id="theme-toggle-btn" class="theme-toggle" onclick="toggleTheme()">&#9790; Dark</button>
 <div class="report-header">
     <h1>{esc(title)}</h1>
     {"<div class='subtitle'>" + esc(subtitle) + "</div>" if subtitle else ""}

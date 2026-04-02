@@ -1,0 +1,121 @@
+table Orders
+	lineageTag: a677fd64-471c-4db5-b32c-f7d066c54ea7
+
+	measure 'Is Current User' = 'Orders'[CustomerEmail] = USERPRINCIPALNAME()
+		formatString: True/False
+		displayFolder: Dimensions
+		lineageTag: 41b87a0c-6b9f-4134-b2cb-5055d9e266be
+		annotation Copilot_Description = Migrated from Tableau: [CustomerEmail] = USERNAME() | DAX: 'Orders'[CustomerEmail] = USERPRINCIPALNAME()
+
+	measure 'Manager Access' = TRUE() /* ISMEMBEROF("Managers"): implement via RLS role */ || TRUE() /* ISMEMBEROF("Executives"): implement via RLS role */
+		formatString: True/False
+		displayFolder: Dimensions
+		lineageTag: 41befe6d-532b-454d-94b8-4e274d841e39
+		annotation Copilot_Description = Migrated from Tableau: ISMEMBEROF("Managers") OR ISMEMBEROF("Executives") | DAX: TRUE() /* ISMEMBEROF("Managers"): implement via RLS role */ || TRUE() /* ISMEMBEROF("Executives"): implement via RLS rol...
+
+	measure 'Region Match' = 'Regions'[RegionManager] = USERPRINCIPALNAME()
+		formatString: True/False
+		displayFolder: Dimensions
+		lineageTag: 084ef9ea-31be-4a42-b24e-5bf9dac64e8d
+		annotation Copilot_Description = Migrated from Tableau: [RegionManager] = FULLNAME() | DAX: 'Regions'[RegionManager] = USERPRINCIPALNAME()
+
+	measure 'Total Sales' = SUM('Orders'[Sales])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 931d0a56-315e-4839-99f2-d1224c09d1aa
+		annotation Copilot_Description = Migrated from Tableau: SUM([Sales]) | DAX: SUM('Orders'[Sales])
+
+	measure 'Profit Ratio' = SUM('Orders'[Profit]) / SUM('Orders'[Sales])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 6638009e-a8a5-4f09-b013-733b44f9a3dd
+		annotation Copilot_Description = Migrated from Tableau: SUM([Profit]) / SUM([Sales]) | DAX: SUM('Orders'[Profit]) / SUM('Orders'[Sales])
+
+	column OrderID
+		dataType: int64
+		lineageTag: 6ec0ea83-ce50-4f02-9505-12a24eb88d2a
+		summarizeBy: sum
+		sourceColumn: OrderID
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column Region
+		dataType: string
+		lineageTag: a82cf67e-6bd1-4087-9db3-badcd2de1969
+		summarizeBy: none
+		sourceColumn: Region
+		dataCategory: StateOrProvince
+
+		annotation SummarizationSetBy = Automatic
+
+	column Sales
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 1d7a88e9-cb6a-4a2c-b772-5f007c2870e7
+		summarizeBy: sum
+		sourceColumn: Sales
+
+		annotation SummarizationSetBy = Automatic
+
+	column Profit
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 263eca41-9f80-42ab-80e5-f5283953132d
+		summarizeBy: sum
+		sourceColumn: Profit
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerEmail
+		dataType: string
+		lineageTag: 16440233-ee4b-4f1e-a98b-4165b63aea41
+		summarizeBy: none
+		sourceColumn: CustomerEmail
+
+		annotation SummarizationSetBy = Automatic
+
+	column Category
+		dataType: string
+		lineageTag: 1e050926-e16e-4f92-a930-efe6b4f221e2
+		summarizeBy: none
+		sourceColumn: Category
+
+		annotation SummarizationSetBy = Automatic
+
+	column OrderDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: b34e66f1-7544-46f2-81d3-947d1a21185a
+		summarizeBy: none
+		sourceColumn: OrderDate
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Orders-511546f5-db8c-4cb1-b5d8-d6bb310803c8' = m
+		mode: import
+		source =
+				let
+				    // Source SQL Server
+				    Source = try
+				
+				        let
+				
+				            _src = Sql.Database("localhost", "SalesDB"),
+				
+				            _nav = _src{[Schema="dbo", Item="Orders"]}[Data]
+				
+				        in _nav
+				
+				    otherwise
+				
+				        #table({"OrderID", "Region", "Sales", "Profit", "CustomerEmail", "Category", "OrderDate"}, {}),
+				    #"Renamed Columns" = Table.RenameColumns(Source, {{"OrderID", "Order ID"}, {"CustomerEmail", "Customer Email"}, {"OrderDate", "Order Date"}}),
+				    Result = #"Renamed Columns"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 7 columns and 5 measures: OrderID, Region, Sales, Profit, CustomerEmail, Category, OrderDate.
+

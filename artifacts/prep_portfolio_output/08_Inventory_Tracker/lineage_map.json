@@ -1,0 +1,28 @@
+{
+  "tables": [
+    {
+      "tableau_datasource": "prep.Inventory_Levels",
+      "tableau_table": "Inventory_Levels",
+      "pbi_table": "Inventory_Levels"
+    },
+    {
+      "tableau_datasource": "prep.Inventory_Status",
+      "tableau_table": "Inventory_Status",
+      "pbi_table": "Inventory_Status"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Calendar",
+      "pbi_table": "Calendar"
+    }
+  ],
+  "calculations": [],
+  "relationships": [
+    {
+      "from": "Inventory_Levels[LAST_RECEIPT_DATE]",
+      "to": "Calendar[Date]",
+      "cardinality": "bothDirections"
+    }
+  ],
+  "worksheets": []
+}

@@ -1,0 +1,81 @@
+table users
+	lineageTag: 5f537321-cefe-4681-8a82-a9f7f543ac50
+
+	column user_id
+		dataType: string
+		lineageTag: a5d150e6-4905-419f-8d82-7ea8062af988
+		summarizeBy: none
+		sourceColumn: user_id
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column user_name
+		dataType: string
+		lineageTag: 448524fd-1dc5-40cf-84c3-35eff050718a
+		summarizeBy: none
+		sourceColumn: user_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column email
+		dataType: string
+		lineageTag: ec62e5ad-7eed-4eb2-8be5-ec510ede26de
+		summarizeBy: none
+		sourceColumn: email
+
+		annotation SummarizationSetBy = Automatic
+
+	column signup_date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 2a8c16b0-b26e-464d-8dc9-f3daa47c74c7
+		summarizeBy: none
+		sourceColumn: signup_date
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column plan
+		dataType: string
+		lineageTag: b112c088-f9b3-4a40-8db6-627622c34496
+		summarizeBy: none
+		sourceColumn: plan
+
+		annotation SummarizationSetBy = Automatic
+
+	column region
+		dataType: string
+		lineageTag: 2b33a514-e440-4dc2-8c9f-711aac554512
+		summarizeBy: none
+		sourceColumn: region
+		dataCategory: StateOrProvince
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'users-b6572c66-5cc9-483f-ace8-944f58ab44b3' = m
+		mode: import
+		source =
+				let
+				    // Source Google BigQuery: my-analytics-project.web_data
+				    Source = try
+				
+				        let
+				
+				            _src = GoogleBigQuery.Database([BillingProject="my-analytics-project"]),
+				
+				            _nav = _src{[Name="web_data"]}[Data]
+				
+				        in _nav
+				
+				    otherwise
+				
+				        #table({"user_id", "user_name", "email", "signup_date", "plan", "region"}, {}),
+				    #"users Table" = Source{[Name="users"]}[Data],
+				    Result = #"users Table"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 6 columns: user_id, user_name, email, signup_date, plan, region.
+

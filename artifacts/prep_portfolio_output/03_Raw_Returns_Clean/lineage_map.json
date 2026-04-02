@@ -1,0 +1,23 @@
+{
+  "tables": [
+    {
+      "tableau_datasource": "prep.Returns_Processed",
+      "tableau_table": "Returns_Processed",
+      "pbi_table": "Returns_Processed"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Calendar",
+      "pbi_table": "Calendar"
+    }
+  ],
+  "calculations": [],
+  "relationships": [
+    {
+      "from": "Returns_Processed[Return_Date]",
+      "to": "Calendar[Date]",
+      "cardinality": "bothDirections"
+    }
+  ],
+  "worksheets": []
+}

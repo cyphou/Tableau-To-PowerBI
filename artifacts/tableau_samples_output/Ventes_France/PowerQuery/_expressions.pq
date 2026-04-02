@@ -1,0 +1,5 @@
+expression DataFolder = "C:\Users\pidoudet\OneDrive - Microsoft\Boulot\PBI SME\OracleToPostgre\TableauToPowerBI\artifacts\tableau_samples_output\Ventes_France\Data" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+
+expression ServerName = "db.entreprise.fr:5432" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+
+expression DatabaseName = "ventes_db" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]

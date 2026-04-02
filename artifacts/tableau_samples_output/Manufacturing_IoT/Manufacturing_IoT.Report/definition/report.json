@@ -27,28 +27,5 @@
     "defaultDrillFilterOtherVisuals": true,
     "allowChangeFilterTypes": true,
     "useEnhancedTooltips": true
-  },
-  "bookmarks": [
-    {
-      "name": "Bookmark_a19549c1ea86",
-      "displayName": "",
-      "explorationState": {
-        "version": "1.0"
-      }
-    },
-    {
-      "name": "Bookmark_06214ed57ed4",
-      "displayName": "",
-      "explorationState": {
-        "version": "1.0"
-      }
-    },
-    {
-      "name": "Bookmark_9bbabac1aa9a",
-      "displayName": "",
-      "explorationState": {
-        "version": "1.0"
-      }
-    }
-  ]
+  }
 }

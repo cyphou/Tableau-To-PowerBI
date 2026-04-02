@@ -1,0 +1,145 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
+  "name": "9bac10dbb1b7485e8225",
+  "position": {
+    "x": 840,
+    "y": 550,
+    "z": 3000,
+    "height": 450,
+    "width": 560,
+    "tabOrder": 3000
+  },
+  "visual": {
+    "visualType": "treemap",
+    "drillFilterOtherVisuals": true,
+    "query": {
+      "queryState": {
+        "Group": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Regional_Sales_Summary"
+                    }
+                  },
+                  "Property": "PerformanceRating"
+                }
+              },
+              "queryRef": "Regional_Sales_Summary.PerformanceRating",
+              "active": true
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Regional_Sales_Summary"
+                    }
+                  },
+                  "Property": "Tenure_Category"
+                }
+              },
+              "queryRef": "Regional_Sales_Summary.Tenure_Category",
+              "active": true
+            }
+          ]
+        },
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Regional_Sales_Summary"
+                        }
+                      },
+                      "Property": "Employee_Count"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Regional_Sales_Summary.Employee_Count",
+              "active": true
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Performance Matrix'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "objects": {
+      "legend": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "position": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Right'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "categoryAxis": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "valueAxis": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

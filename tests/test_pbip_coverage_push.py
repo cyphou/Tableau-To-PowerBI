@@ -213,9 +213,24 @@ class TestSwapBookmarks(unittest.TestCase):
         rpath = os.path.join(project_dir, 'Test.Report', 'definition', 'report.json')
         with open(rpath) as f:
             report = json.load(f)
-        # Should have bookmarks from both stories and swap
-        self.assertIn('bookmarks', report)
-        self.assertGreater(len(report['bookmarks']), 0)
+        # Bookmarks should NOT be in report.json (PBIR format uses separate files)
+        self.assertNotIn('bookmarks', report)
+        # Bookmarks should be in definition/bookmarks/ directory
+        bookmarks_dir = os.path.join(project_dir, 'Test.Report', 'definition', 'bookmarks')
+        self.assertTrue(os.path.isdir(bookmarks_dir))
+        bookmark_dirs = os.listdir(bookmarks_dir)
+        self.assertGreater(len(bookmark_dirs), 0)
+        # Verify each bookmark file has correct schema
+        for bm_dir in bookmark_dirs:
+            bm_path = os.path.join(bookmarks_dir, bm_dir, 'bookmark.json')
+            self.assertTrue(os.path.isfile(bm_path))
+            with open(bm_path) as f:
+                bm = json.load(f)
+            self.assertIn('$schema', bm)
+            self.assertIn('bookmark/1.1.0', bm['$schema'])
+            self.assertIn('name', bm)
+            self.assertIn('displayName', bm)
+            self.assertIn('explorationState', bm)
 
 
 # ─── Custom visual repository (lines 992-999) ───────────────────────

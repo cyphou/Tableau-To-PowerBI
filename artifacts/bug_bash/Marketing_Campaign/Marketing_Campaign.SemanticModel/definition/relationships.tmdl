@@ -1,0 +1,18 @@
+relationship 35c97b04-84ed-4b4b-9cd2-abc7138157cb
+	fromColumn: Campaigns.campaign_id
+	toColumn: Leads.campaign_id
+	fromCardinality: many
+	toCardinality: many
+	crossFilteringBehavior: bothDirections
+
+relationship c492df73-08c0-4db8-9745-6754f5a37270
+	fromColumn: Campaigns.start_date
+	toColumn: Calendar.Date
+	crossFilteringBehavior: oneDirection
+
+relationship 1aa1e48a-d96f-492a-ae73-95440c91962c
+	fromColumn: Leads.created_date
+	toColumn: Calendar.Date
+	crossFilteringBehavior: oneDirection
+	isActive: false
+

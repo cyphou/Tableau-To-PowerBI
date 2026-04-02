@@ -1,0 +1,33 @@
+{
+  "tables": [
+    {
+      "tableau_datasource": "prep.Demographics",
+      "tableau_table": "Demographics",
+      "pbi_table": "Demographics"
+    },
+    {
+      "tableau_datasource": "prep.Customer_360",
+      "tableau_table": "Customer_360",
+      "pbi_table": "Customer_360"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Calendar",
+      "pbi_table": "Calendar"
+    }
+  ],
+  "calculations": [],
+  "relationships": [
+    {
+      "from": "Customer_360[created_at]",
+      "to": "Calendar[Date]",
+      "cardinality": "bothDirections"
+    },
+    {
+      "from": "Customer_360[customer_id]",
+      "to": "Demographics[customer_id]",
+      "cardinality": "bothDirections"
+    }
+  ],
+  "worksheets": []
+}

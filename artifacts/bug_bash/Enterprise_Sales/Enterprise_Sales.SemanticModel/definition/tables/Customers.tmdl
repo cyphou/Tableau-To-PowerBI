@@ -1,0 +1,130 @@
+table Customers
+	lineageTag: 2ec91f65-c537-4a7a-a6ce-e07bf0b1a15e
+
+	column customer_id
+		dataType: int64
+		lineageTag: 8de80cfc-9f83-4846-8493-9b1077fef663
+		summarizeBy: sum
+		sourceColumn: customer_id
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column customer_name
+		dataType: string
+		lineageTag: 38cb4114-f068-455a-88fe-ff45225278f6
+		summarizeBy: none
+		sourceColumn: customer_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column segment
+		dataType: string
+		lineageTag: 3c0effd5-20b6-40ef-968c-8f401323f7ec
+		summarizeBy: none
+		sourceColumn: segment
+
+		annotation SummarizationSetBy = Automatic
+
+	column city
+		dataType: string
+		lineageTag: a4f6fe42-796b-4c28-997c-51dfcfa18581
+		summarizeBy: none
+		sourceColumn: city
+		dataCategory: City
+
+		annotation SummarizationSetBy = Automatic
+
+	column state
+		dataType: string
+		lineageTag: 6f92009c-4177-4397-90a3-d6bb73aa3403
+		summarizeBy: none
+		sourceColumn: state
+		dataCategory: StateOrProvince
+
+		annotation SummarizationSetBy = Automatic
+
+	column country
+		dataType: string
+		lineageTag: eb339120-f8d1-4c75-80fe-1df52147cbb5
+		summarizeBy: none
+		sourceColumn: country
+		dataCategory: Country
+
+		annotation SummarizationSetBy = Automatic
+
+	column postal_code
+		dataType: string
+		lineageTag: 0210c6d1-882c-4175-909c-f643e6864163
+		summarizeBy: none
+		sourceColumn: postal_code
+		dataCategory: PostalCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column latitude
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 1a7918d2-610c-424e-8dbc-304834eb4520
+		summarizeBy: sum
+		sourceColumn: latitude
+		dataCategory: Latitude
+
+		annotation SummarizationSetBy = Automatic
+
+	column longitude
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 2a4df4d0-a107-400d-a7ad-57266a9db8eb
+		summarizeBy: sum
+		sourceColumn: longitude
+		dataCategory: Longitude
+
+		annotation SummarizationSetBy = Automatic
+
+	column customer_email
+		dataType: string
+		lineageTag: 7e49fe34-ab7a-4c02-82ce-1f9422b00c13
+		summarizeBy: none
+		sourceColumn: customer_email
+
+		annotation SummarizationSetBy = Automatic
+
+	column first_purchase_date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: e5e66403-04b3-4a4a-987d-c606c9e5d22b
+		summarizeBy: none
+		sourceColumn: first_purchase_date
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Customers-40312581-aea4-4abb-a5dd-635d224944b7' = m
+		mode: import
+		source =
+				let
+				    // Source Snowflake: acme.snowflakecomputing.com
+				    Source = try
+				
+				        let
+				
+				            _src = Snowflake.Databases("acme.snowflakecomputing.com", "COMPUTE_WH"),
+				
+				            _nav = _src{[Name="ANALYTICS"]}[Data]
+				
+				        in _nav
+				
+				    otherwise
+				
+				        #table({"customer_id", "customer_name", "segment", "city", "state", "country", "postal_code", "latitude", "longitude", "customer_email", "first_purchase_date"}, {}),
+				    #"PUBLIC" = Source{[Name="PUBLIC"]}[Data],
+				    #"Customers Table" = #"PUBLIC"{[Name="Customers"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(#"Customers Table", {{"customer_id", "Customer ID"}, {"customer_name", "Customer Name"}, {"segment", "Segment"}, {"city", "City"}, {"state", "State"}, {"country", "Country"}, {"postal_code", "Postal Code"}, {"latitude", "Latitude"}, {"longitude", "Longitude"}, {"customer_email", "Customer Email"}, {"first_purchase_date", "First Purchase Date"}}),
+				    Result = #"Renamed Columns"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 11 columns: customer_id, customer_name, segment, city, state, country, postal_code, latitude, ... (11 columns total).
+

@@ -1,0 +1,33 @@
+{
+  "tables": [
+    {
+      "tableau_datasource": "prep.Customers",
+      "tableau_table": "Customers",
+      "pbi_table": "Customers"
+    },
+    {
+      "tableau_datasource": "prep.Regional_Sales_Summary",
+      "tableau_table": "Regional_Sales_Summary",
+      "pbi_table": "Regional_Sales_Summary"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Calendar",
+      "pbi_table": "Calendar"
+    }
+  ],
+  "calculations": [],
+  "relationships": [
+    {
+      "from": "Regional_Sales_Summary[Order_Date]",
+      "to": "Calendar[Date]",
+      "cardinality": "oneDirection"
+    },
+    {
+      "from": "Regional_Sales_Summary[Customer_ID]",
+      "to": "Customers[Customer_ID]",
+      "cardinality": "bothDirections"
+    }
+  ],
+  "worksheets": []
+}

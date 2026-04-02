@@ -1,0 +1,51 @@
+table People
+	lineageTag: 4b088f62-c202-43ba-99b4-733877c08bb7
+
+	column 'Regional Manager'
+		dataType: string
+		lineageTag: 931d91d3-dc46-4712-9ca8-23c5e9deaf9d
+		summarizeBy: none
+		sourceColumn: 'Regional Manager'
+		dataCategory: StateOrProvince
+
+		annotation SummarizationSetBy = Automatic
+
+	column Region
+		dataType: string
+		lineageTag: 4247ee05-e28b-42c0-923d-2cc3132fb063
+		summarizeBy: none
+		sourceColumn: Region
+		dataCategory: StateOrProvince
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'People-327ab1fb-c129-49f1-9bcf-3d1b66334bff' = m
+		mode: import
+		source =
+				let
+				    // Source Excel: Sample - Superstore.xlsx
+				    Source = try
+				
+				        let
+				
+				            _src = Excel.Workbook(File.Contents(DataFolder & "\Sample - Superstore.xlsx"), null, true),
+				
+				            _nav = _src{[Item="People",Kind="Sheet"]}[Data]
+				
+				        in _nav
+				
+				    otherwise
+				
+				        #table({"Regional Manager", "Region"}, {}),
+				    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+				    #"Changed Types" = Table.TransformColumnTypes(#"Promoted Headers", {
+				        {"Regional Manager", type text},
+				        {"Region", type text}
+				    }),
+				    Result = #"Changed Types"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 2 columns: Regional Manager, Region.
+

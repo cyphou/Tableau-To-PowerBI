@@ -1,0 +1,185 @@
+{
+  "objectVersion": 4,
+  "nodes": {
+    "a5000001-0001-0001-0001-000000000001": {
+      "nodeType": ".v1.LoadSql",
+      "name": "Orders_Clean",
+      "id": "a5000001-0001-0001-0001-000000000001",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a5000001-0001-0001-0001-000000000004", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-orders-clean",
+      "connectionAttributes": {
+        "class": "sqlserver",
+        "server": "tableau-prod.corp.local",
+        "dbname": "PrepOutputs",
+        "table": "Orders_Clean"
+      },
+      "fields": [
+        {"name": "OrderID", "type": "string"},
+        {"name": "OrderDate", "type": "date"},
+        {"name": "CustomerID", "type": "string"},
+        {"name": "ProductID", "type": "string"},
+        {"name": "Region", "type": "string"},
+        {"name": "Sales", "type": "real"},
+        {"name": "Quantity", "type": "integer"},
+        {"name": "Discount", "type": "real"},
+        {"name": "Profit", "type": "real"},
+        {"name": "Revenue", "type": "real"}
+      ]
+    },
+    "a5000001-0001-0001-0001-000000000002": {
+      "nodeType": ".v1.LoadSql",
+      "name": "Products_Master",
+      "id": "a5000001-0001-0001-0001-000000000002",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a5000001-0001-0001-0001-000000000004", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-products-master",
+      "connectionAttributes": {
+        "class": "sqlserver",
+        "server": "tableau-prod.corp.local",
+        "dbname": "PrepOutputs",
+        "table": "Products_Master"
+      },
+      "fields": [
+        {"name": "ProductID", "type": "string"},
+        {"name": "ProductName", "type": "string"},
+        {"name": "Category", "type": "string"},
+        {"name": "SubCategory", "type": "string"},
+        {"name": "UnitCost", "type": "real"},
+        {"name": "UnitPrice", "type": "real"},
+        {"name": "Margin", "type": "real"}
+      ]
+    },
+    "a5000001-0001-0001-0001-000000000003": {
+      "nodeType": ".v1.LoadSql",
+      "name": "Customer_360",
+      "id": "a5000001-0001-0001-0001-000000000003",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a5000001-0001-0001-0001-000000000005", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-customer-360",
+      "connectionAttributes": {
+        "class": "sqlserver",
+        "server": "tableau-prod.corp.local",
+        "dbname": "PrepOutputs",
+        "table": "Customer_360"
+      },
+      "fields": [
+        {"name": "CustomerID", "type": "string"},
+        {"name": "CustomerName", "type": "string"},
+        {"name": "segment", "type": "string"},
+        {"name": "loyalty_tier", "type": "string"},
+        {"name": "city", "type": "string"},
+        {"name": "state", "type": "string"},
+        {"name": "country", "type": "string"}
+      ]
+    },
+    "a5000001-0001-0001-0001-000000000004": {
+      "nodeType": ".v1.Join",
+      "name": "Orders + Products",
+      "id": "a5000001-0001-0001-0001-000000000004",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a5000001-0001-0001-0001-000000000005", "nextNamespace": "Default"}
+      ],
+      "joinType": "left",
+      "joinConditions": [
+        {"leftColumn": "ProductID", "rightColumn": "ProductID", "operator": "="}
+      ]
+    },
+    "a5000001-0001-0001-0001-000000000005": {
+      "nodeType": ".v1.Join",
+      "name": "Add Customer Info",
+      "id": "a5000001-0001-0001-0001-000000000005",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a5000001-0001-0001-0001-000000000006", "nextNamespace": "Default"}
+      ],
+      "joinType": "left",
+      "joinConditions": [
+        {"leftColumn": "CustomerID", "rightColumn": "CustomerID", "operator": "="}
+      ]
+    },
+    "a5000001-0001-0001-0001-000000000006": {
+      "nodeType": ".v1.Aggregate",
+      "name": "Sales Summary",
+      "id": "a5000001-0001-0001-0001-000000000006",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a5000001-0001-0001-0001-000000000007", "nextNamespace": "Default"}
+      ],
+      "groupByFields": [
+        {"name": "Region"},
+        {"name": "Category"},
+        {"name": "segment"},
+        {"name": "loyalty_tier"}
+      ],
+      "aggregateFields": [
+        {"name": "Revenue", "aggregation": "SUM", "newColumnName": "TotalRevenue"},
+        {"name": "Profit", "aggregation": "SUM", "newColumnName": "TotalProfit"},
+        {"name": "OrderID", "aggregation": "COUNTD", "newColumnName": "OrderCount"},
+        {"name": "Quantity", "aggregation": "SUM", "newColumnName": "TotalQuantity"},
+        {"name": "Discount", "aggregation": "AVG", "newColumnName": "AvgDiscount"}
+      ]
+    },
+    "a5000001-0001-0001-0001-000000000007": {
+      "nodeType": ".v1.PublishExtract",
+      "name": "Sales_Summary",
+      "id": "a5000001-0001-0001-0001-000000000007",
+      "baseType": "output",
+      "nextNodes": [],
+      "connectionAttributes": {
+        "class": "sqlserver",
+        "server": "tableau-prod.corp.local",
+        "dbname": "PrepOutputs",
+        "table": "Sales_Summary"
+      },
+      "publishSettings": {
+        "datasourceName": "Sales_Summary",
+        "writeMode": "overwrite"
+      },
+      "fields": [
+        {"name": "Region", "type": "string"},
+        {"name": "Category", "type": "string"},
+        {"name": "segment", "type": "string"},
+        {"name": "loyalty_tier", "type": "string"},
+        {"name": "TotalRevenue", "type": "real"},
+        {"name": "TotalProfit", "type": "real"},
+        {"name": "OrderCount", "type": "integer"},
+        {"name": "TotalQuantity", "type": "integer"},
+        {"name": "AvgDiscount", "type": "real"}
+      ]
+    }
+  },
+  "connections": {
+    "conn-orders-clean": {
+      "connectionAttributes": {
+        "class": "sqlserver",
+        "server": "tableau-prod.corp.local",
+        "dbname": "PrepOutputs",
+        "table": "Orders_Clean"
+      }
+    },
+    "conn-products-master": {
+      "connectionAttributes": {
+        "class": "sqlserver",
+        "server": "tableau-prod.corp.local",
+        "dbname": "PrepOutputs",
+        "table": "Products_Master"
+      }
+    },
+    "conn-customer-360": {
+      "connectionAttributes": {
+        "class": "sqlserver",
+        "server": "tableau-prod.corp.local",
+        "dbname": "PrepOutputs",
+        "table": "Customer_360"
+      }
+    }
+  }
+}

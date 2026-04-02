@@ -1,0 +1,159 @@
+{
+  "report_name": "01_Raw_Orders_Clean",
+  "created_at": "2026-04-02T14:05:05.823771",
+  "summary": {
+    "total_items": 12,
+    "exact": 7,
+    "approximate": 0,
+    "placeholder": 0,
+    "unsupported": 0,
+    "skipped": 5,
+    "fidelity_score": 100.0,
+    "by_category": {
+      "datasource": {
+        "total": 1,
+        "exact": 1
+      },
+      "calculation": {
+        "total": 5,
+        "skipped": 5
+      },
+      "visual": {
+        "total": 2,
+        "exact": 2
+      },
+      "rls_role": {
+        "total": 4,
+        "exact": 4
+      }
+    }
+  },
+  "completeness": {
+    "categories": {
+      "datasource": {
+        "total": 1,
+        "exact": 1,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "calculation": {
+        "total": 5,
+        "exact": 0,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 5,
+        "fidelity_pct": 100.0
+      },
+      "visual": {
+        "total": 2,
+        "exact": 2,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "rls_role": {
+        "total": 4,
+        "exact": 4,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      }
+    },
+    "overall_score": 100.0,
+    "grade": "A"
+  },
+  "table_mapping": [
+    {
+      "source_datasource": "Orders_Clean",
+      "source_table": "Orders_Clean",
+      "target_table": "Orders_Clean",
+      "connection_type": "textscan",
+      "columns": 12
+    }
+  ],
+  "items": [
+    {
+      "category": "datasource",
+      "name": "prep.Orders_Clean",
+      "status": "exact",
+      "note": "textscan, 1 table(s)"
+    },
+    {
+      "category": "calculation",
+      "name": "Is Current User",
+      "status": "skipped",
+      "source_formula": "[CustomerEmail] = USERNAME()",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Manager Access",
+      "status": "skipped",
+      "source_formula": "ISMEMBEROF(\"Managers\") OR ISMEMBEROF(\"Executives\")",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Region Match",
+      "status": "skipped",
+      "source_formula": "[RegionManager] = FULLNAME()",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Total Sales",
+      "status": "skipped",
+      "source_formula": "SUM([Sales])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Profit Ratio",
+      "status": "skipped",
+      "source_formula": "SUM([Profit]) / SUM([Sales])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "visual",
+      "name": "Sales Overview",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Profit Analysis",
+      "status": "exact"
+    },
+    {
+      "category": "rls_role",
+      "name": "Region Access",
+      "status": "exact",
+      "note": "User filter with explicit mappings → RLS role"
+    },
+    {
+      "category": "rls_role",
+      "name": "Is Current User",
+      "status": "exact",
+      "note": "Calculated security (USERNAME) → USERPRINCIPALNAME()"
+    },
+    {
+      "category": "rls_role",
+      "name": "Manager Access",
+      "status": "exact",
+      "note": "ISMEMBEROF → RLS role (assign Azure AD group members: Managers, Executives)"
+    },
+    {
+      "category": "rls_role",
+      "name": "Region Match",
+      "status": "exact",
+      "note": "Calculated security (FULLNAME) → USERPRINCIPALNAME()"
+    }
+  ]
+}

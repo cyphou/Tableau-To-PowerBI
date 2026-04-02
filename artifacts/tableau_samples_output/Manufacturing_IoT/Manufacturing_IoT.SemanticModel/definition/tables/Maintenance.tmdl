@@ -1,23 +1,20 @@
 table Maintenance
-	lineageTag: 05ad68f9-7c74-4c0c-82d8-6658eeb27a0b
-	description: Contains 8 columns: maint_id, machine_id, maint_date, maint_type, maint_cost, downtime_hours, technician, description.
+	lineageTag: f36d3b21-7a8a-44da-acfb-b83c8808947c
 
 	column maint_id
 		dataType: int64
-		lineageTag: d2e107ec-e69f-4af0-b0fc-4701edb2cf5a
+		lineageTag: ae371344-7efc-4f1c-9897-2efc739ec814
 		summarizeBy: sum
 		sourceColumn: maint_id
-		description: Int64 column.
 		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column machine_id
 		dataType: int64
-		lineageTag: 3000fb82-a31d-43fe-98a8-41ca1340fbf8
+		lineageTag: 32502a28-fff3-426f-9230-d31b8b79d7a5
 		summarizeBy: sum
 		sourceColumn: machine_id
-		description: Int64 column.
 		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
@@ -25,62 +22,56 @@ table Maintenance
 	column maint_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: be6e9551-54bd-4cf9-acf8-0ea28b562d70
+		lineageTag: fe4df680-bd19-4da7-a7b9-c7d91ee3caeb
 		summarizeBy: none
 		sourceColumn: maint_date
 		dataCategory: DateTime
-		description: Datetime column. categorized as DateTime.
 
 		annotation SummarizationSetBy = Automatic
 
 	column maint_type
 		dataType: string
-		lineageTag: dafd71e6-6bd3-4f40-b8bc-a623531c0130
+		lineageTag: b8c4c20a-af95-40fc-aeab-a9568f0d73d5
 		summarizeBy: none
 		sourceColumn: maint_type
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column maint_cost
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 8253343d-844d-4632-ae2a-202285b47d74
+		lineageTag: 299a4d06-2175-414d-858f-41c77bcff1eb
 		summarizeBy: sum
 		sourceColumn: maint_cost
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column downtime_hours
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 4b97e1de-ed59-46a8-9694-c7172312338c
+		lineageTag: 9c03a6aa-b45c-4b11-b01b-2c576383c04d
 		summarizeBy: sum
 		sourceColumn: downtime_hours
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column technician
 		dataType: string
-		lineageTag: d6d24cbf-e6d4-4e95-8aef-f51b18763bd6
+		lineageTag: 6267cadd-ef54-40d4-87d0-f56f84659681
 		summarizeBy: none
 		sourceColumn: technician
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column description
 		dataType: string
-		lineageTag: 0739f64b-79e0-4232-9843-9ce381f2375e
+		lineageTag: cecdf1e9-a7ec-4f4c-a9b5-0592705964b9
 		summarizeBy: none
 		sourceColumn: description
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Maintenance-1be6684d-d0e7-4f99-b679-7bfc91710f7b' = m
+	partition 'Maintenance-ca6722ee-6f8e-4f89-ac73-f5974fed545f' = m
 		mode: import
 		source =
 				let

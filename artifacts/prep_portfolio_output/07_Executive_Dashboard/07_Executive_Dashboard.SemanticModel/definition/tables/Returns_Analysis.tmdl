@@ -1,0 +1,68 @@
+table Returns_Analysis
+	lineageTag: 2b35fc0a-bbf2-4666-9de4-f8ada6f3f251
+
+	column Region
+		dataType: string
+		lineageTag: 173fe9bd-09c7-400a-a7ee-9aebbb88c79e
+		summarizeBy: none
+		sourceColumn: Region
+		dataCategory: StateOrProvince
+
+		annotation SummarizationSetBy = Automatic
+
+	column ReasonCode
+		dataType: string
+		lineageTag: 2990eade-b521-4a5c-8bfa-8786e4009770
+		summarizeBy: none
+		sourceColumn: ReasonCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column NetRefund
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 54ef9e57-94b8-4470-beb1-b4ca05be0b73
+		summarizeBy: sum
+		sourceColumn: NetRefund
+
+		annotation SummarizationSetBy = Automatic
+
+	column ReturnRate
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 959184a0-a41e-4224-9020-e45b93a2fa67
+		summarizeBy: sum
+		sourceColumn: ReturnRate
+
+		annotation SummarizationSetBy = Automatic
+
+	column anomaly_score
+		dataType: int64
+		lineageTag: d1055481-351a-483a-9500-008aa6530a4f
+		summarizeBy: sum
+		sourceColumn: anomaly_score
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Returns_Analysis-11f8d767-6947-469c-a7a9-45463bb54aa0' = m
+		mode: import
+		source =
+				let
+				    // TODO: Configure the data source for connector type: sqlserver
+				    // Replace the sample table below with the actual source expression.
+				    Source = try
+				        #table(
+				            {"Region", "ReasonCode", "NetRefund", "ReturnRate", "anomaly_score"},
+				            {
+				                {"Sample 1", "Sample 2", 3, 4, 5},
+				                {"Sample 2", "Sample 3", 4, 5, 6}
+				            }
+				        )
+				    otherwise
+				        #table({"Region", "ReasonCode", "NetRefund", "ReturnRate", "anomaly_score"}, {})  // Empty table on error
+				in
+				    Source
+
+	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 5 columns: Region, ReasonCode, NetRefund, ReturnRate, anomaly_score.
+

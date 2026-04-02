@@ -1,0 +1,101 @@
+table Returns_Processed
+	lineageTag: af1ab452-fff1-445a-9e10-efaa8837b30a
+
+	column Return_ID
+		dataType: string
+		lineageTag: 81ed59fd-8f3c-4480-ba96-4d4929175de9
+		summarizeBy: none
+		sourceColumn: Return_ID
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column Order_ID
+		dataType: string
+		lineageTag: 9fd50c2b-7bfc-4805-b404-dafd7eb0ab13
+		summarizeBy: none
+		sourceColumn: Order_ID
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column Return_Date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: e571e5f8-9811-470d-b9ac-8345a2a4f5bc
+		summarizeBy: none
+		sourceColumn: Return_Date
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column Reason_Code
+		dataType: string
+		lineageTag: 09705486-2200-4683-b0b4-29541da3d6a5
+		summarizeBy: none
+		sourceColumn: Reason_Code
+
+		annotation SummarizationSetBy = Automatic
+
+	column Reason_Text
+		dataType: string
+		lineageTag: e62b6d57-904a-4f4c-af57-e13df2189eb3
+		summarizeBy: none
+		sourceColumn: Reason_Text
+
+		annotation SummarizationSetBy = Automatic
+
+	column Refund_Amount
+		dataType: double
+		formatString: #,0.00
+		lineageTag: b61ef91c-faa3-4e87-88ee-5034e9670ba5
+		summarizeBy: sum
+		sourceColumn: Refund_Amount
+
+		annotation SummarizationSetBy = Automatic
+
+	column Restocking_Fee
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 58a52661-b90e-4ed8-962e-f56c4e5d473c
+		summarizeBy: sum
+		sourceColumn: Restocking_Fee
+
+		annotation SummarizationSetBy = Automatic
+
+	column Return_Status
+		dataType: string
+		lineageTag: addbd79c-120b-4d57-9a58-18641aae9d4c
+		summarizeBy: none
+		sourceColumn: Return_Status
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Returns_Processed-ebe83fc6-71dd-4b17-8da7-6650814afb53' = m
+		mode: import
+		source =
+				let
+				    // TODO: Configure the data source for connector type: textscan
+				    // Replace the sample table below with the actual source expression.
+				    Source = try
+				        #table(
+				            {"Return_ID", "Order_ID", "Return_Date", "Reason_Code", "Reason_Text", "Refund_Amount", "Restocking_Fee", "Return_Status"},
+				            {
+				                {"Sample 1", "Sample 2", 3, "Sample 4", "Sample 5", 6, 7, "Sample 8"},
+				                {"Sample 2", "Sample 3", 4, "Sample 5", "Sample 6", 7, 8, "Sample 9"}
+				            }
+				        )
+				    otherwise
+				        #table({"Return_ID", "Order_ID", "Return_Date", "Reason_Code", "Reason_Text", "Refund_Amount", "Restocking_Fee", "Return_Status"}, {}),
+				    #"Renamed Columns" = Table.RenameColumns(Source, {{"Return_ID", "ReturnID"}, {"Order_ID", "OrderID"}, {"Return_Date", "ReturnDate"}, {"Reason_Code", "ReasonCode"}, {"Refund_Amount", "RefundAmount"}}),
+				    #"Filtered Rows" = Table.SelectRows(#"Renamed Columns", each [Return_Status] <> "Voided"),
+				    #"Removed Columns" = Table.RemoveColumns(#"Filtered Rows", {"Return_Status"}),
+				    #"Trimmed Text" = Table.TransformColumns(#"Removed Columns", {{"Reason_Text", Text.Trim}}),
+				    #"Added NetRefund" = Table.AddColumn(#"Trimmed Text", "NetRefund", each [RefundAmount] - [Restocking_Fee]),
+				    Result = #"Added NetRefund"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 8 columns: Return_ID, Order_ID, Return_Date, Reason_Code, Reason_Text, Refund_Amount, Restocking_Fee, Return_Status.
+

@@ -27,21 +27,5 @@
     "defaultDrillFilterOtherVisuals": true,
     "allowChangeFilterTypes": true,
     "useEnhancedTooltips": true
-  },
-  "bookmarks": [
-    {
-      "name": "Bookmark_0c62bfbe683b",
-      "displayName": "",
-      "explorationState": {
-        "version": "1.0"
-      }
-    },
-    {
-      "name": "Bookmark_4772caba1401",
-      "displayName": "",
-      "explorationState": {
-        "version": "1.0"
-      }
-    }
-  ]
+  }
 }

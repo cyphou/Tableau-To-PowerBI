@@ -1,0 +1,7 @@
+relationship 6115f3a7-887e-419e-a640-9a8da4d80af9
+	fromColumn: 'Orders_+_Products'.OrderDate
+	toColumn: Calendar.Date
+	fromCardinality: many
+	toCardinality: many
+	crossFilteringBehavior: bothDirections
+

@@ -1,0 +1,23 @@
+table 'Alert Threshold'
+	lineageTag: 39407948-bc56-4d0a-a60a-46d790023296
+
+	measure 'Alert Threshold' = SELECTEDVALUE('Alert Threshold'[Value], 100)
+		lineageTag: 751d2d44-1c9e-40ad-87cd-f7b34d3640ce
+		annotation Copilot_Description = DAX: SELECTEDVALUE('Alert Threshold'[Value], 100)
+
+	column Value
+		dataType: double
+		lineageTag: 14526ebc-5d53-44db-8584-5cddf3e9f5fb
+		summarizeBy: none
+		sourceColumn: Value
+		annotation displayFolder = Parameters
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Alert Threshold-c6942181-2c16-4d7d-a897-282531233a96' = calculated
+		mode: import
+		source = GENERATESERIES(0, 500, 10)
+
+	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 1 columns and 1 measures: Value.
+

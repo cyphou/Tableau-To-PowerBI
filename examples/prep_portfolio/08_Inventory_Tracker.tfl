@@ -1,0 +1,134 @@
+{
+  "objectVersion": 4,
+  "nodes": {
+    "a8000001-0001-0001-0001-000000000001": {
+      "nodeType": ".v1.LoadSql",
+      "name": "CRM Customers",
+      "id": "a8000001-0001-0001-0001-000000000001",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a8000001-0001-0001-0001-000000000003", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-pg-crm",
+      "connectionAttributes": {
+        "class": "postgres",
+        "server": "crm-db.corp.local",
+        "port": "5432",
+        "dbname": "crm_production",
+        "schema": "public",
+        "table": "customers"
+      },
+      "fields": [
+        {"name": "customer_id", "type": "string"},
+        {"name": "first_name", "type": "string"},
+        {"name": "last_name", "type": "string"},
+        {"name": "email", "type": "string"},
+        {"name": "segment", "type": "string"},
+        {"name": "lifetime_value", "type": "real"}
+      ]
+    },
+    "a8000001-0001-0001-0001-000000000002": {
+      "nodeType": ".v1.LoadSql",
+      "name": "Inventory Levels",
+      "id": "a8000001-0001-0001-0001-000000000002",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a8000001-0001-0001-0001-000000000003", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-snowflake",
+      "connectionAttributes": {
+        "class": "snowflake",
+        "server": "acme.snowflakecomputing.com",
+        "dbname": "WAREHOUSE",
+        "schema": "SUPPLY_CHAIN",
+        "table": "INVENTORY_LEVELS"
+      },
+      "fields": [
+        {"name": "SKU", "type": "string"},
+        {"name": "WAREHOUSE_ID", "type": "string"},
+        {"name": "QTY_ON_HAND", "type": "integer"},
+        {"name": "QTY_RESERVED", "type": "integer"},
+        {"name": "REORDER_POINT", "type": "integer"},
+        {"name": "LAST_RECEIPT_DATE", "type": "date"},
+        {"name": "UNIT_COST", "type": "real"}
+      ]
+    },
+    "a8000001-0001-0001-0001-000000000003": {
+      "nodeType": ".v1.Join",
+      "name": "Customer Inventory",
+      "id": "a8000001-0001-0001-0001-000000000003",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a8000001-0001-0001-0001-000000000004", "nextNamespace": "Default"}
+      ],
+      "joinType": "full",
+      "joinConditions": [
+        {"leftColumn": "customer_id", "rightColumn": "WAREHOUSE_ID", "operator": "="}
+      ]
+    },
+    "a8000001-0001-0001-0001-000000000004": {
+      "nodeType": ".v2018_3_3.SuperTransform",
+      "name": "Inventory Metrics",
+      "id": "a8000001-0001-0001-0001-000000000004",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a8000001-0001-0001-0001-000000000005", "nextNamespace": "Default"}
+      ],
+      "beforeActionGroup": {
+        "actions": [
+          {"actionType": ".v1.AddColumn", "columnName": "AvailableQty", "expression": "[QTY_ON_HAND] - [QTY_RESERVED]", "columnType": "integer"},
+          {"actionType": ".v1.AddColumn", "columnName": "NeedsReorder", "expression": "IF [AvailableQty] < [REORDER_POINT] THEN 'Yes' ELSE 'No' END", "columnType": "string"},
+          {"actionType": ".v1.AddColumn", "columnName": "InventoryValue", "expression": "[QTY_ON_HAND] * [UNIT_COST]", "columnType": "real"}
+        ]
+      }
+    },
+    "a8000001-0001-0001-0001-000000000005": {
+      "nodeType": ".v1.PublishExtract",
+      "name": "Inventory_Status",
+      "id": "a8000001-0001-0001-0001-000000000005",
+      "baseType": "output",
+      "nextNodes": [],
+      "connectionAttributes": {
+        "class": "snowflake",
+        "server": "acme.snowflakecomputing.com",
+        "dbname": "WAREHOUSE",
+        "schema": "REPORTING",
+        "table": "INVENTORY_STATUS"
+      },
+      "publishSettings": {
+        "datasourceName": "Inventory_Status",
+        "writeMode": "overwrite"
+      },
+      "fields": [
+        {"name": "SKU", "type": "string"},
+        {"name": "WAREHOUSE_ID", "type": "string"},
+        {"name": "QTY_ON_HAND", "type": "integer"},
+        {"name": "AvailableQty", "type": "integer"},
+        {"name": "NeedsReorder", "type": "string"},
+        {"name": "InventoryValue", "type": "real"},
+        {"name": "LAST_RECEIPT_DATE", "type": "date"}
+      ]
+    }
+  },
+  "connections": {
+    "conn-pg-crm": {
+      "connectionAttributes": {
+        "class": "postgres",
+        "server": "crm-db.corp.local",
+        "port": "5432",
+        "dbname": "crm_production",
+        "schema": "public",
+        "table": "customers"
+      }
+    },
+    "conn-snowflake": {
+      "connectionAttributes": {
+        "class": "snowflake",
+        "server": "acme.snowflakecomputing.com",
+        "dbname": "WAREHOUSE",
+        "schema": "SUPPLY_CHAIN",
+        "table": "INVENTORY_LEVELS"
+      }
+    }
+  }
+}

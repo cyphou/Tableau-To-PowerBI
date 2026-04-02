@@ -172,6 +172,99 @@ def slide_title(prs):
         shape.fill.fore_color.rgb = RGBColor(0x00, 0x35, 0x60)
 
 
+def slide_executive_summary(prs):
+    """Slide 2: Executive Summary — Functionality, Optimization & ROI."""
+    slide = prs.slides.add_slide(prs.slide_layouts[6])  # blank
+    slide.background.fill.solid()
+    slide.background.fill.fore_color.rgb = WHITE
+
+    _add_text(slide, Inches(0.5), Inches(0.2), Inches(12), Inches(0.6),
+              "Executive Summary — End-to-End Value", 32, PBI_DARK, bold=True)
+
+    # ── Left column: Functionality layers diagram ──
+    _add_text(slide, Inches(0.3), Inches(0.9), Inches(5.5), Inches(0.4),
+              "Full-Stack Migration Pipeline", 18, PBI_DARK, bold=True)
+
+    layers = [
+        ("📥 INPUT", "TWB / TWBX / TDS / Prep / Hyper / Server API", TABLEAU_ORANGE),
+        ("🔍 EXTRACT", "20 object types → 17 JSON intermediate files", PBI_BLUE),
+        ("🧮 CONVERT", "180+ DAX formulas • 43 M transforms • 42 connectors", PURPLE),
+        ("⚙️ GENERATE", "TMDL semantic model • PBIR v4.0 report • themes", PBI_BLUE),
+        ("🧠 OPTIMIZE", "DAX AST rewriter • Time Intelligence inject • auto-fix", TEAL),
+        ("✅ VALIDATE", "QA suite • governance • lineage • comparison report", SUCCESS),
+        ("🚀 DEPLOY", "PBI Service • Fabric • bundle • multi-tenant • gateway", PBI_DARK),
+    ]
+
+    layer_w = Inches(5.5)
+    layer_h = Inches(0.62)
+    layer_x = Inches(0.3)
+    layer_y_start = Inches(1.35)
+    layer_gap = Inches(0.08)
+
+    for i, (label, desc, color) in enumerate(layers):
+        y = layer_y_start + i * (layer_h + layer_gap)
+        _add_box(slide, layer_x, y, layer_w, layer_h, color,
+                 f"{label}  —  {desc}", 11, WHITE, bold=False)
+        # Down arrow between layers
+        if i < len(layers) - 1:
+            ay = y + layer_h
+            _add_text(slide, Inches(2.7), ay - Inches(0.05), Inches(0.5), Inches(0.2),
+                      "▼", 10, GRAY, alignment=PP_ALIGN.CENTER)
+
+    # ── Right column top: Optimization at every level ──
+    _add_text(slide, Inches(6.2), Inches(0.9), Inches(6.5), Inches(0.4),
+              "Optimization at Every Level", 18, PBI_DARK, bold=True)
+
+    optimizations = [
+        ("Data Layer", "Smart M queries • incremental refresh\nconnection parameterization", PBI_BLUE),
+        ("Semantic Layer", "DAX optimizer (IF→SWITCH • COALESCE)\nTime Intelligence auto-inject\nSortByColumn • displayFolder • isHidden", PURPLE),
+        ("Visual Layer", "118+ visual mappings • conditional format\ntheme extraction • responsive layout\nreference lines • tooltips", TEAL),
+        ("Security Layer", "RLS roles • USERPRINCIPALNAME()\nZIP slip / XXE defense\ncredential redaction", RGBColor(0xA4, 0x26, 0x2C)),
+    ]
+
+    opt_w = Inches(3.3)
+    opt_h = Inches(1.15)
+    opt_gap_x = Inches(0.15)
+    opt_gap_y = Inches(0.15)
+
+    for i, (title, desc, color) in enumerate(optimizations):
+        col = i % 2
+        row = i // 2
+        x = Inches(6.2) + col * (opt_w + opt_gap_x)
+        y = Inches(1.35) + row * (opt_h + opt_gap_y)
+        _add_box(slide, x, y, opt_w, opt_h, color,
+                 f"{title}\n{desc}", 10, WHITE, bold=False)
+
+    # ── Right column bottom: ROI metrics ──
+    _add_text(slide, Inches(6.2), Inches(4.0), Inches(6.5), Inches(0.4),
+              "Migration ROI & Business Impact", 18, PBI_DARK, bold=True)
+
+    roi_cards = [
+        ("⏱️", "95%+", "Time Saved", "vs. manual rework"),
+        ("💰", "~$0", "Tooling Cost", "Python stdlib only"),
+        ("🎯", "100%", "Fidelity", "27/27 workbooks"),
+        ("🔒", "0", "Dependencies", "No 3rd-party risk"),
+    ]
+
+    roi_w = Inches(1.6)
+    roi_h = Inches(1.4)
+    roi_gap = Inches(0.1)
+    roi_x_start = Inches(6.2)
+    roi_y = Inches(4.5)
+
+    for i, (icon, val, label, sub) in enumerate(roi_cards):
+        x = roi_x_start + i * (roi_w + roi_gap)
+        shape = _add_box(slide, x, roi_y, roi_w, roi_h, LIGHT_GRAY,
+                         f"{icon}\n{val}\n{label}\n{sub}", 11, DARK, bold=False,
+                         border_color=PBI_BLUE)
+
+    # ROI summary line
+    _add_text(slide, Inches(0.3), Inches(6.6), Inches(12.5), Inches(0.5),
+              "Zero external dependencies • Zero manual rework on standard workbooks • "
+              "Enterprise-grade security (OWASP Top 10) • Full audit trail & governance",
+              13, GRAY, alignment=PP_ALIGN.CENTER)
+
+
 def slide_pipeline(prs):
     """Slide 2: 2-Step Migration Pipeline diagram."""
     slide = prs.slides.add_slide(prs.slide_layouts[6])
@@ -650,6 +743,7 @@ def generate_presentation(output_path):
     prs.slide_height = SLIDE_HEIGHT
 
     slide_title(prs)
+    slide_executive_summary(prs)
     slide_pipeline(prs)
     slide_features(prs)
     slide_dax(prs)

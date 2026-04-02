@@ -1,0 +1,1 @@
+expression DataFolder = "C:\Users\pidoudet\OneDrive - Microsoft\Boulot\PBI SME\OracleToPostgre\TableauToPowerBI\artifacts\tableau_samples_output\Marketing_Campaign\Data" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]

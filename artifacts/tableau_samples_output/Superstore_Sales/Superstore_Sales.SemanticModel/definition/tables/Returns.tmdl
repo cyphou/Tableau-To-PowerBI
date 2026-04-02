@@ -1,27 +1,24 @@
 table Returns
-	lineageTag: e3a3b510-0be2-4ace-bfc4-a1592b007b60
-	description: Contains 2 columns: Returned, Order ID.
+	lineageTag: 928b4f86-b8e0-42a1-b60d-554694c415ba
 
 	column Returned
 		dataType: string
-		lineageTag: 2e902246-a2e0-495e-b527-7bb1f52d48b9
+		lineageTag: 31b0c3fa-409b-452c-9ffb-1022933aa57c
 		summarizeBy: none
 		sourceColumn: Returned
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Order ID'
 		dataType: string
-		lineageTag: be5926f6-1bea-498c-9229-95d4188ca9af
+		lineageTag: 40eb9cd1-0724-4427-821b-fecd21932e83
 		summarizeBy: none
 		sourceColumn: 'Order ID'
-		description: String column.
 		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Returns-d3fc61ca-96c7-433b-816e-e440ee13070a' = m
+	partition 'Returns-b620aa05-4690-4fa2-8403-2c6559ebee94' = m
 		mode: import
 		source =
 				let

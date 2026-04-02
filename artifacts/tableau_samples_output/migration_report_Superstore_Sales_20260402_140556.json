@@ -1,0 +1,340 @@
+{
+  "report_name": "Superstore_Sales",
+  "created_at": "2026-04-02T14:05:56.865874",
+  "summary": {
+    "total_items": 35,
+    "exact": 10,
+    "approximate": 0,
+    "placeholder": 0,
+    "unsupported": 0,
+    "skipped": 25,
+    "fidelity_score": 100.0,
+    "by_category": {
+      "datasource": {
+        "total": 1,
+        "exact": 1
+      },
+      "calculation": {
+        "total": 25,
+        "skipped": 25
+      },
+      "visual": {
+        "total": 6,
+        "exact": 6
+      },
+      "parameter": {
+        "total": 2,
+        "exact": 2
+      },
+      "bookmark": {
+        "total": 1,
+        "exact": 1
+      }
+    }
+  },
+  "completeness": {
+    "categories": {
+      "datasource": {
+        "total": 1,
+        "exact": 1,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "calculation": {
+        "total": 25,
+        "exact": 0,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 25,
+        "fidelity_pct": 100.0
+      },
+      "visual": {
+        "total": 6,
+        "exact": 6,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "parameter": {
+        "total": 2,
+        "exact": 2,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "bookmark": {
+        "total": 1,
+        "exact": 1,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      }
+    },
+    "overall_score": 100.0,
+    "grade": "A"
+  },
+  "table_mapping": [
+    {
+      "source_datasource": "Manufacturing IoT",
+      "source_table": "Sensors",
+      "target_table": "(deduplicated / merged)",
+      "connection_type": "Oracle",
+      "columns": 13
+    },
+    {
+      "source_datasource": "Manufacturing IoT",
+      "source_table": "Machines",
+      "target_table": "(deduplicated / merged)",
+      "connection_type": "Oracle",
+      "columns": 7
+    },
+    {
+      "source_datasource": "Manufacturing IoT",
+      "source_table": "Maintenance",
+      "target_table": "(deduplicated / merged)",
+      "connection_type": "Oracle",
+      "columns": 8
+    }
+  ],
+  "items": [
+    {
+      "category": "datasource",
+      "name": "federated.iot",
+      "status": "exact",
+      "note": "Oracle, 3 table(s)"
+    },
+    {
+      "category": "calculation",
+      "name": "Abs Deviation",
+      "status": "skipped",
+      "source_formula": "ABS([value] - ([threshold_min] + [threshold_max]) / 2)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Ceiling Value",
+      "status": "skipped",
+      "source_formula": "CEILING([value])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Floor Value",
+      "status": "skipped",
+      "source_formula": "FLOOR([value])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Rounded Value",
+      "status": "skipped",
+      "source_formula": "ROUND([value], 2)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Energy Index",
+      "status": "skipped",
+      "source_formula": "SQRT(POWER([power_watts], 2) + POWER([delta_value], 2))",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Log Scale",
+      "status": "skipped",
+      "source_formula": "IF [value] > 0 THEN LOG([value]) ELSE LN(EXP(1)) END",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Vibration X",
+      "status": "skipped",
+      "source_formula": "[value] * COS(RADIANS([angle_degrees]))",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Vibration Y",
+      "status": "skipped",
+      "source_formula": "[value] * SIN(RADIANS([angle_degrees]))",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Score Label",
+      "status": "skipped",
+      "source_formula": "\"Score: \" + STR(INT([quality_score])) + \" / \" + STR(FLOAT([value]))",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Median Value",
+      "status": "skipped",
+      "source_formula": "MEDIAN([value])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "P95 Value",
+      "status": "skipped",
+      "source_formula": "PERCENTILE([value], 0.95)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Value Variance",
+      "status": "skipped",
+      "source_formula": "VAR([value])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Value Variance Pop",
+      "status": "skipped",
+      "source_formula": "VARP([value])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Avg by Sensor Machine",
+      "status": "skipped",
+      "source_formula": "{INCLUDE [sensor_type], [machine_id] : AVG([value])}",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Reading Month",
+      "status": "skipped",
+      "source_formula": "DATETRUNC(\"month\", [reading_time])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Reading Quarter",
+      "status": "skipped",
+      "source_formula": "DATETRUNC(\"quarter\", [reading_time])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Reading Hour",
+      "status": "skipped",
+      "source_formula": "DATEPART(\"hour\", [reading_time])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Weekday",
+      "status": "skipped",
+      "source_formula": "DATEPART(\"weekday\", [reading_time])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Running Avg Value",
+      "status": "skipped",
+      "source_formula": "RUNNING_AVG(AVG([value]))",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Running Count",
+      "status": "skipped",
+      "source_formula": "RUNNING_COUNT(COUNT([reading_id]))",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Running Max Value",
+      "status": "skipped",
+      "source_formula": "RUNNING_MAX(MAX([value]))",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Running Min Value",
+      "status": "skipped",
+      "source_formula": "RUNNING_MIN(MIN([value]))",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Dense Rank",
+      "status": "skipped",
+      "source_formula": "RANK_DENSE(SUM([value]))",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Unique Rank",
+      "status": "skipped",
+      "source_formula": "RANK_UNIQUE(AVG([value]))",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Window Total",
+      "status": "skipped",
+      "source_formula": "WINDOW_SUM(SUM([value]))",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "visual",
+      "name": "Sensor Monitor",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Machine Health",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Maintenance Costs",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Value Distribution",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Vibration Analysis",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Machine Rankings",
+      "status": "exact"
+    },
+    {
+      "category": "parameter",
+      "name": "[Parameters].[Alert Threshold]",
+      "status": "exact",
+      "note": "domain=range"
+    },
+    {
+      "category": "parameter",
+      "name": "[Parameters].[Time Granularity]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "bookmark",
+      "name": "Plant Review",
+      "status": "exact",
+      "note": "Converted to 3 bookmark(s)"
+    }
+  ]
+}

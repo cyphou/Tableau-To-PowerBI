@@ -1,0 +1,33 @@
+{
+  "tables": [
+    {
+      "tableau_datasource": "federated.sales",
+      "tableau_table": "Orders",
+      "pbi_table": "Orders"
+    },
+    {
+      "tableau_datasource": "federated.sales",
+      "tableau_table": "Regions",
+      "pbi_table": "Regions"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Calendar",
+      "pbi_table": "Calendar"
+    }
+  ],
+  "calculations": [],
+  "relationships": [
+    {
+      "from": "Orders[OrderDate]",
+      "to": "Calendar[Date]",
+      "cardinality": "bothDirections"
+    },
+    {
+      "from": "Orders[Region]",
+      "to": "Regions[RegionName]",
+      "cardinality": "bothDirections"
+    }
+  ],
+  "worksheets": []
+}

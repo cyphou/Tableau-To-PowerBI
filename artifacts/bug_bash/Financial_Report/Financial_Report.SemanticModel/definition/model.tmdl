@@ -1,0 +1,21 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation PBI_QueryOrder = ["transactions","Calendar","Fiscal Year","Business Unit"]
+
+ref table transactions
+ref table Calendar
+ref table 'Fiscal Year'
+ref table 'Business Unit'
+
+ref relationship eb3296c4-8a96-4e26-96f3-b3d19066615c
+
+ref expression DataFolder
+
+ref perspective 'Full Model'
+

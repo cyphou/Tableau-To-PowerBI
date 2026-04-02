@@ -1,0 +1,88 @@
+table Clients
+	lineageTag: 335e840b-9e39-4072-bd43-f598a4ae14b3
+
+	column client_id
+		dataType: int64
+		lineageTag: 8a605453-f6a7-43e7-9af5-807da3966413
+		summarizeBy: sum
+		sourceColumn: client_id
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column nom_client
+		dataType: string
+		lineageTag: 415e3ffa-94f0-4936-a613-afe35754c5d7
+		summarizeBy: none
+		sourceColumn: nom_client
+
+		annotation SummarizationSetBy = Automatic
+
+	column prenom_client
+		dataType: string
+		lineageTag: 92cb49aa-8053-4bc0-adef-00239ca8d91b
+		summarizeBy: none
+		sourceColumn: prenom_client
+
+		annotation SummarizationSetBy = Automatic
+
+	column email
+		dataType: string
+		lineageTag: 1f1e85c7-cf0e-4b8b-9a6c-7c4213c0dc1d
+		summarizeBy: none
+		sourceColumn: email
+
+		annotation SummarizationSetBy = Automatic
+
+	column segment
+		dataType: string
+		lineageTag: 7c1f4180-ef9b-4a28-a132-3bbf0b22f806
+		summarizeBy: none
+		sourceColumn: segment
+
+		annotation SummarizationSetBy = Automatic
+
+	column type_client
+		dataType: string
+		lineageTag: c6408f9e-e42a-4304-9563-81e4b9f384f9
+		summarizeBy: none
+		sourceColumn: type_client
+
+		annotation SummarizationSetBy = Automatic
+
+	column date_inscription
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: ed2aa890-476f-4f33-9432-83890e53346a
+		summarizeBy: none
+		sourceColumn: date_inscription
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Clients-11c8b80d-607f-4f6b-9cd8-f1a5ef92ed56' = m
+		mode: import
+		source =
+				let
+				    // Source PostgreSQL
+				    Source = try
+				
+				        let
+				
+				            _src = PostgreSQL.Database("db.entreprise.fr:5432", "ventes_db"),
+				
+				            _nav = _src{[Schema="public", Item="Clients"]}[Data]
+				
+				        in _nav
+				
+				    otherwise
+				
+				        #table({"client_id", "nom_client", "prenom_client", "email", "segment", "type_client", "date_inscription"}, {}),
+				    #"Renamed Columns" = Table.RenameColumns(Source, {{"client_id", "ID Client"}, {"nom_client", "Nom du Client"}, {"prenom_client", "Prénom du Client"}, {"email", "Email"}, {"segment", "Segment"}, {"type_client", "Type de Client"}, {"date_inscription", "Date d'Inscription"}}),
+				    Result = #"Renamed Columns"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 7 columns: client_id, nom_client, prenom_client, email, segment, type_client, date_inscription.
+

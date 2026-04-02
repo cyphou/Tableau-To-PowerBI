@@ -1,64 +1,57 @@
 table Produits
-	lineageTag: fc9f810e-962f-44c5-bfc9-5138beb59324
-	description: Contains 6 columns: produit_id, nom_produit, categorie, sous_categorie, marque, cout_achat.
+	lineageTag: f7b83e26-02ee-4f3e-9e5b-1582121e10d6
 
 	column produit_id
 		dataType: int64
-		lineageTag: 32e1a96f-29c7-4563-a8ca-fa90a391d48a
+		lineageTag: 442741ab-de29-4493-ae43-fe2a847909c2
 		summarizeBy: sum
 		sourceColumn: produit_id
-		description: Int64 column.
 		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column nom_produit
 		dataType: string
-		lineageTag: 383a01e8-d0cf-406f-813b-f4149387be2f
+		lineageTag: 1dccfcfe-2594-4eda-992a-ce67f1f28bda
 		summarizeBy: none
 		sourceColumn: nom_produit
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column categorie
 		dataType: string
-		lineageTag: 5b3289e3-753f-4d94-927d-416df4d3c56b
+		lineageTag: 80151852-6abf-4e9c-8c4b-c72769440abe
 		summarizeBy: none
 		sourceColumn: categorie
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column sous_categorie
 		dataType: string
-		lineageTag: 8a6dafe2-89eb-4899-a48d-6f0dbd5eae06
+		lineageTag: 8bbd96a4-f5c8-4310-991e-0f62da40d783
 		summarizeBy: none
 		sourceColumn: sous_categorie
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column marque
 		dataType: string
-		lineageTag: a5ed10d7-9c54-487b-852a-985943480212
+		lineageTag: 44005a09-4c36-4d41-a3a0-c9903003f981
 		summarizeBy: none
 		sourceColumn: marque
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column cout_achat
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 194a64f4-3d93-40f7-97fc-dfa6d766d6dc
+		lineageTag: fb601b1d-0c62-4b95-890d-253211183cc4
 		summarizeBy: sum
 		sourceColumn: cout_achat
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Produits-bfa89445-6e83-4a17-b7ae-681f64641f61' = m
+	partition 'Produits-d65e9c46-4a94-40cc-bfcd-6b9803ee2c33' = m
 		mode: import
 		source =
 				let

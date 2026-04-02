@@ -69,9 +69,16 @@ Fabric deployment is in the `deploy/` subpackage:
 
 ## Output Format
 
-**PBIR v4.0** with schemas:
-- `report/2.0.0`
-- `page/2.0.0`
-- `visualContainer/2.5.0`
-- `pbipProperties/1.0.0`
-- `definitionProperties/2.0.0`
+**PBIR v4.0** — compatible with **Power BI Desktop December 2024 (CY24SU06)** and later.
+Base theme: `CY24SU06`, report version at import: `5.55`.
+
+| Artifact | Schema | Version |
+|----------|--------|--------|
+| report.json | `report/2.0.0` | 2.0.0 |
+| page.json | `page/2.0.0` | 2.0.0 |
+| visual.json | `visualContainer/2.5.0` | 2.5.0 |
+| bookmark.json | `bookmark/1.1.0` | 1.1.0 |
+| pages.json | `pagesMetadata/1.0.0` | 1.0.0 |
+| definition.pbir | `definitionProperties/2.0.0` | PBIR v4.0 |
+| .platform | `platformProperties/2.0.0` | 2.0.0 |
+| .pbip | `pbipProperties/1.0.0` | 1.0.0 |

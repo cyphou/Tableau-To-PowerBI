@@ -1,0 +1,17 @@
+{
+  "tables": [
+    {
+      "tableau_datasource": "prep.Returns_Analysis",
+      "tableau_table": "Returns_Analysis",
+      "pbi_table": "Returns_Analysis"
+    },
+    {
+      "tableau_datasource": "prep.Executive_KPIs",
+      "tableau_table": "Executive_KPIs",
+      "pbi_table": "Executive_KPIs"
+    }
+  ],
+  "calculations": [],
+  "relationships": [],
+  "worksheets": []
+}

@@ -1,0 +1,23 @@
+table 'Objectif Marge'
+	lineageTag: 4be7d4c9-3576-4f7c-a30a-70f4c4cc898e
+
+	measure 'Objectif Marge' = SELECTEDVALUE('Objectif Marge'[Value], 0.15)
+		lineageTag: 1ae2160a-7151-4066-8dc9-1db0f9c24a8e
+		annotation Copilot_Description = DAX: SELECTEDVALUE('Objectif Marge'[Value], 0.15)
+
+	column Value
+		dataType: double
+		lineageTag: 3d448fd8-6c91-405c-92c2-4a0b2f250e9a
+		summarizeBy: none
+		sourceColumn: Value
+		annotation displayFolder = Parameters
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Objectif Marge-d48a6a37-4bf4-4425-af8d-5cf3875bfde3' = calculated
+		mode: import
+		source = GENERATESERIES(0, 0.5, 0.01)
+
+	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 1 columns and 1 measures: Value.
+

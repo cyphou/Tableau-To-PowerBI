@@ -155,15 +155,16 @@ class TestCSSFramework(unittest.TestCase):
     def test_responsive_media_query(self):
         self.assertIn('@media (max-width: 768px)', self.css)
 
-    def test_dark_mode_media_query(self):
-        self.assertIn('@media (prefers-color-scheme: dark)', self.css)
+    def test_dark_mode_class_based(self):
+        self.assertIn('html.dark', self.css)
 
     def test_dark_mode_overrides_background(self):
         self.assertIn('--pbi-bg: #1b1a19', self.css)
         self.assertIn('--pbi-surface: #252423', self.css)
 
     def test_dark_mode_print_reset(self):
-        self.assertIn('@media print and (prefers-color-scheme: dark)', self.css)
+        # Dark mode print reset uses class-based selector inside @media print
+        self.assertIn('html.dark body { background: #fff', self.css)
 
 
 # ═══════════════════════════════════════════════════════════════════════

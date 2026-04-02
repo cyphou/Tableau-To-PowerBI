@@ -1,0 +1,89 @@
+{
+  "objectVersion": 4,
+  "nodes": {
+    "a2000001-0001-0001-0001-000000000001": {
+      "nodeType": ".v1.LoadCsv",
+      "name": "Products_Master.csv",
+      "id": "a2000001-0001-0001-0001-000000000001",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a2000001-0001-0001-0001-000000000002", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-products",
+      "connectionAttributes": {
+        "class": "csv",
+        "filename": "Products_Master.csv",
+        "separator": ","
+      },
+      "fields": [
+        {"name": "Product_ID", "type": "string"},
+        {"name": "Product_Name", "type": "string"},
+        {"name": "Category", "type": "string"},
+        {"name": "Sub_Category", "type": "string"},
+        {"name": "Unit_Cost", "type": "real"},
+        {"name": "Unit_Price", "type": "real"},
+        {"name": "Supplier", "type": "string"},
+        {"name": "Weight_kg", "type": "real"}
+      ]
+    },
+    "a2000001-0001-0001-0001-000000000002": {
+      "nodeType": ".v2018_3_3.SuperTransform",
+      "name": "Clean Products",
+      "id": "a2000001-0001-0001-0001-000000000002",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a2000001-0001-0001-0001-000000000003", "nextNamespace": "Default"}
+      ],
+      "beforeActionGroup": {
+        "actions": [
+          {"actionType": ".v1.RenameColumn", "columnName": "Product_ID", "newColumnName": "ProductID"},
+          {"actionType": ".v1.RenameColumn", "columnName": "Product_Name", "newColumnName": "ProductName"},
+          {"actionType": ".v1.RenameColumn", "columnName": "Sub_Category", "newColumnName": "SubCategory"},
+          {"actionType": ".v1.RenameColumn", "columnName": "Unit_Cost", "newColumnName": "UnitCost"},
+          {"actionType": ".v1.RenameColumn", "columnName": "Unit_Price", "newColumnName": "UnitPrice"},
+          {"actionType": ".v1.CleanOperation", "columnName": "ProductName", "operation": "proper"},
+          {"actionType": ".v1.CleanOperation", "columnName": "Category", "operation": "trim"},
+          {"actionType": ".v1.ReplaceNulls", "columnName": "Weight_kg", "replacement": "0"},
+          {"actionType": ".v1.AddColumn", "columnName": "Margin", "expression": "([UnitPrice] - [UnitCost]) / [UnitPrice]", "columnType": "real"}
+        ]
+      }
+    },
+    "a2000001-0001-0001-0001-000000000003": {
+      "nodeType": ".v1.PublishExtract",
+      "name": "Products_Master",
+      "id": "a2000001-0001-0001-0001-000000000003",
+      "baseType": "output",
+      "nextNodes": [],
+      "connectionAttributes": {
+        "class": "sqlserver",
+        "server": "tableau-prod.corp.local",
+        "dbname": "PrepOutputs",
+        "table": "Products_Master"
+      },
+      "publishSettings": {
+        "datasourceName": "Products_Master",
+        "writeMode": "overwrite"
+      },
+      "fields": [
+        {"name": "ProductID", "type": "string"},
+        {"name": "ProductName", "type": "string"},
+        {"name": "Category", "type": "string"},
+        {"name": "SubCategory", "type": "string"},
+        {"name": "UnitCost", "type": "real"},
+        {"name": "UnitPrice", "type": "real"},
+        {"name": "Supplier", "type": "string"},
+        {"name": "Weight_kg", "type": "real"},
+        {"name": "Margin", "type": "real"}
+      ]
+    }
+  },
+  "connections": {
+    "conn-products": {
+      "connectionAttributes": {
+        "class": "csv",
+        "directory": "/data/raw/",
+        "filename": "Products_Master.csv"
+      }
+    }
+  }
+}

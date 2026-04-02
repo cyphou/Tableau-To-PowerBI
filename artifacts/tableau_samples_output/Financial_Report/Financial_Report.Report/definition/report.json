@@ -31,7 +31,7 @@
   "filterConfig": {
     "filters": [
       {
-        "name": "Filter_eada179bcaea",
+        "name": "Filter_cbe5367cb65f",
         "type": "Advanced",
         "field": {
           "Column": {
@@ -101,23 +101,5 @@
         }
       }
     ]
-  },
-  "bookmarks": [
-    {
-      "name": "Bookmark_abeaf69908f9",
-      "displayName": "",
-      "explorationState": {
-        "version": "1.0",
-        "activeSection": ""
-      }
-    },
-    {
-      "name": "Bookmark_2d01fbc577ef",
-      "displayName": "",
-      "explorationState": {
-        "version": "1.0",
-        "activeSection": ""
-      }
-    }
-  ]
+  }
 }

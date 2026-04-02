@@ -1,0 +1,43 @@
+{
+  "tables": [
+    {
+      "tableau_datasource": "federated.marketing",
+      "tableau_table": "Campaigns",
+      "pbi_table": "Campaigns"
+    },
+    {
+      "tableau_datasource": "federated.marketing",
+      "tableau_table": "Leads",
+      "pbi_table": "Leads"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Calendar",
+      "pbi_table": "Calendar"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Min Budget",
+      "pbi_table": "Min Budget"
+    }
+  ],
+  "calculations": [],
+  "relationships": [
+    {
+      "from": "Campaigns[campaign_id]",
+      "to": "Leads[campaign_id]",
+      "cardinality": "bothDirections"
+    },
+    {
+      "from": "Campaigns[start_date]",
+      "to": "Calendar[Date]",
+      "cardinality": "oneDirection"
+    },
+    {
+      "from": "Leads[created_date]",
+      "to": "Calendar[Date]",
+      "cardinality": "oneDirection"
+    }
+  ],
+  "worksheets": []
+}

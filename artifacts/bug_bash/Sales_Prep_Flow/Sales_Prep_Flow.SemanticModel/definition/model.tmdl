@@ -1,0 +1,22 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation PBI_QueryOrder = ["Customers","Regional_Sales_Summary","Calendar","Min Budget"]
+
+ref table Customers
+ref table Regional_Sales_Summary
+ref table Calendar
+ref table 'Min Budget'
+
+ref relationship 7d24f87f-0e28-45db-b1f9-c844ef9eb117
+ref relationship 75aeca7c-319f-4169-8cc6-652b81dd2f24
+
+ref expression DataFolder
+
+ref perspective 'Full Model'
+

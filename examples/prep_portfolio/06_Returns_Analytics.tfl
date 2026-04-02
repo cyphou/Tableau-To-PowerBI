@@ -1,0 +1,140 @@
+{
+  "objectVersion": 4,
+  "nodes": {
+    "a6000001-0001-0001-0001-000000000001": {
+      "nodeType": ".v1.LoadSql",
+      "name": "Returns_Processed",
+      "id": "a6000001-0001-0001-0001-000000000001",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a6000001-0001-0001-0001-000000000003", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-returns-processed",
+      "connectionAttributes": {
+        "class": "sqlserver",
+        "server": "tableau-prod.corp.local",
+        "dbname": "PrepOutputs",
+        "table": "Returns_Processed"
+      },
+      "fields": [
+        {"name": "ReturnID", "type": "string"},
+        {"name": "OrderID", "type": "string"},
+        {"name": "ReturnDate", "type": "date"},
+        {"name": "ReasonCode", "type": "string"},
+        {"name": "Reason_Text", "type": "string"},
+        {"name": "RefundAmount", "type": "real"},
+        {"name": "NetRefund", "type": "real"}
+      ]
+    },
+    "a6000001-0001-0001-0001-000000000002": {
+      "nodeType": ".v1.LoadSql",
+      "name": "Orders_Clean",
+      "id": "a6000001-0001-0001-0001-000000000002",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a6000001-0001-0001-0001-000000000003", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-orders-clean",
+      "connectionAttributes": {
+        "class": "sqlserver",
+        "server": "tableau-prod.corp.local",
+        "dbname": "PrepOutputs",
+        "table": "Orders_Clean"
+      },
+      "fields": [
+        {"name": "OrderID", "type": "string"},
+        {"name": "OrderDate", "type": "date"},
+        {"name": "CustomerID", "type": "string"},
+        {"name": "ProductID", "type": "string"},
+        {"name": "Region", "type": "string"},
+        {"name": "Sales", "type": "real"},
+        {"name": "Revenue", "type": "real"}
+      ]
+    },
+    "a6000001-0001-0001-0001-000000000003": {
+      "nodeType": ".v1.Join",
+      "name": "Returns + Orders",
+      "id": "a6000001-0001-0001-0001-000000000003",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a6000001-0001-0001-0001-000000000004", "nextNamespace": "Default"}
+      ],
+      "joinType": "left",
+      "joinConditions": [
+        {"leftColumn": "OrderID", "rightColumn": "OrderID", "operator": "="}
+      ]
+    },
+    "a6000001-0001-0001-0001-000000000004": {
+      "nodeType": ".v2018_3_3.SuperTransform",
+      "name": "Calc Return Metrics",
+      "id": "a6000001-0001-0001-0001-000000000004",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a6000001-0001-0001-0001-000000000005", "nextNamespace": "Default"}
+      ],
+      "beforeActionGroup": {
+        "actions": [
+          {"actionType": ".v1.AddColumn", "columnName": "ReturnRate", "expression": "[NetRefund] / [Revenue]", "columnType": "real"},
+          {"actionType": ".v1.AddColumn", "columnName": "DaysToReturn", "expression": "DATEDIFF('day', [OrderDate], [ReturnDate])", "columnType": "integer"}
+        ]
+      }
+    },
+    "a6000001-0001-0001-0001-000000000005": {
+      "nodeType": ".v2018_3_3.Script",
+      "name": "Anomaly Detection",
+      "id": "a6000001-0001-0001-0001-000000000005",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a6000001-0001-0001-0001-000000000006", "nextNamespace": "Default"}
+      ],
+      "scriptLanguage": "Python",
+      "scriptSource": "import pandas as pd\nfrom sklearn.ensemble import IsolationForest\nmodel = IsolationForest(contamination=0.05)\ndf['anomaly_score'] = model.fit_predict(df[['ReturnRate', 'DaysToReturn', 'NetRefund']])\n"
+    },
+    "a6000001-0001-0001-0001-000000000006": {
+      "nodeType": ".v1.PublishExtract",
+      "name": "Returns_Analysis",
+      "id": "a6000001-0001-0001-0001-000000000006",
+      "baseType": "output",
+      "nextNodes": [],
+      "connectionAttributes": {
+        "class": "sqlserver",
+        "server": "tableau-prod.corp.local",
+        "dbname": "PrepOutputs",
+        "table": "Returns_Analysis"
+      },
+      "publishSettings": {
+        "datasourceName": "Returns_Analysis",
+        "writeMode": "overwrite"
+      },
+      "fields": [
+        {"name": "ReturnID", "type": "string"},
+        {"name": "OrderID", "type": "string"},
+        {"name": "Region", "type": "string"},
+        {"name": "ReasonCode", "type": "string"},
+        {"name": "RefundAmount", "type": "real"},
+        {"name": "NetRefund", "type": "real"},
+        {"name": "ReturnRate", "type": "real"},
+        {"name": "DaysToReturn", "type": "integer"},
+        {"name": "anomaly_score", "type": "integer"}
+      ]
+    }
+  },
+  "connections": {
+    "conn-returns-processed": {
+      "connectionAttributes": {
+        "class": "sqlserver",
+        "server": "tableau-prod.corp.local",
+        "dbname": "PrepOutputs",
+        "table": "Returns_Processed"
+      }
+    },
+    "conn-orders-clean": {
+      "connectionAttributes": {
+        "class": "sqlserver",
+        "server": "tableau-prod.corp.local",
+        "dbname": "PrepOutputs",
+        "table": "Orders_Clean"
+      }
+    }
+  }
+}

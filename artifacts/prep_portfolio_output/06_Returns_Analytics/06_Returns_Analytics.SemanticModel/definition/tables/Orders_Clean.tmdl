@@ -1,0 +1,89 @@
+table Orders_Clean
+	lineageTag: af7ca7a8-2107-4591-a95b-80da7b104d64
+
+	column OrderID
+		dataType: string
+		lineageTag: 11aafaeb-572f-4bf5-9fce-6198db540bec
+		summarizeBy: none
+		sourceColumn: OrderID
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column OrderDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 60998398-3d83-473b-ad21-f5546df16a5b
+		summarizeBy: none
+		sourceColumn: OrderDate
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerID
+		dataType: string
+		lineageTag: 1a68d4be-1eed-443a-941f-3975433a98cc
+		summarizeBy: none
+		sourceColumn: CustomerID
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column ProductID
+		dataType: string
+		lineageTag: 0524adc7-eea1-4111-8ea7-69f6e0409d23
+		summarizeBy: none
+		sourceColumn: ProductID
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column Region
+		dataType: string
+		lineageTag: 42052372-4e4e-44bf-aca3-5e3bb3f0583e
+		summarizeBy: none
+		sourceColumn: Region
+		dataCategory: StateOrProvince
+
+		annotation SummarizationSetBy = Automatic
+
+	column Sales
+		dataType: double
+		formatString: #,0.00
+		lineageTag: ff9df840-b8ab-4eb8-b21e-132ce9e83296
+		summarizeBy: sum
+		sourceColumn: Sales
+
+		annotation SummarizationSetBy = Automatic
+
+	column Revenue
+		dataType: double
+		formatString: #,0.00
+		lineageTag: e9e33f6e-7a8c-4659-aaef-5077a625c814
+		summarizeBy: sum
+		sourceColumn: Revenue
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Orders_Clean-e195cfdb-0e0c-4776-95b5-a750bb545e5f' = m
+		mode: import
+		source =
+				let
+				    // TODO: Configure the data source for connector type: sqlserver
+				    // Replace the sample table below with the actual source expression.
+				    Source = try
+				        #table(
+				            {"OrderID", "OrderDate", "CustomerID", "ProductID", "Region", "Sales", "Revenue"},
+				            {
+				                {"Sample 1", 2, "Sample 3", "Sample 4", "Sample 5", 6, 7},
+				                {"Sample 2", 3, "Sample 4", "Sample 5", "Sample 6", 7, 8}
+				            }
+				        )
+				    otherwise
+				        #table({"OrderID", "OrderDate", "CustomerID", "ProductID", "Region", "Sales", "Revenue"}, {})  // Empty table on error
+				in
+				    Source
+
+	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 7 columns: OrderID, OrderDate, CustomerID, ProductID, Region, Sales, Revenue.
+

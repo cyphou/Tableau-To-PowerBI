@@ -1,0 +1,22 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation PBI_QueryOrder = ["Products_Master"]
+
+ref table Products_Master
+
+ref expression DataFolder
+
+ref role 'Region Access'
+ref role 'Is Current User'
+ref role Managers
+ref role Executives
+ref role 'Region Match'
+
+ref perspective 'Full Model'
+

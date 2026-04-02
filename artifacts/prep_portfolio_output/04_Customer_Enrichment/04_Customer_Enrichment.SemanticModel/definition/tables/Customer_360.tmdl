@@ -1,0 +1,108 @@
+table Customer_360
+	lineageTag: 617b23b0-c983-4908-a412-aafe6ce33076
+
+	column customer_id
+		dataType: string
+		lineageTag: b0677684-1cf4-4c95-9588-1a64a0fd6546
+		summarizeBy: none
+		sourceColumn: customer_id
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column first_name
+		dataType: string
+		lineageTag: f9d24c16-4601-48c6-b8ce-c51ba3685c0f
+		summarizeBy: none
+		sourceColumn: first_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column last_name
+		dataType: string
+		lineageTag: e99509d9-9677-4764-9352-2778bda535b0
+		summarizeBy: none
+		sourceColumn: last_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column email
+		dataType: string
+		lineageTag: a4f99296-e111-434d-b34b-20280319ccd0
+		summarizeBy: none
+		sourceColumn: email
+
+		annotation SummarizationSetBy = Automatic
+
+	column phone
+		dataType: string
+		lineageTag: c5d84b96-553b-44a3-ab4b-cbdb4b52dc8c
+		summarizeBy: none
+		sourceColumn: phone
+
+		annotation SummarizationSetBy = Automatic
+
+	column created_at
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 661d9db1-626c-4212-80dd-acd491d9dfb9
+		summarizeBy: none
+		sourceColumn: created_at
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column segment
+		dataType: string
+		lineageTag: b1ab67d1-4c7d-4718-b030-545f83279fe3
+		summarizeBy: none
+		sourceColumn: segment
+
+		annotation SummarizationSetBy = Automatic
+
+	column loyalty_tier
+		dataType: string
+		lineageTag: fbe5723c-0561-40ee-9c98-2f145e3dccd3
+		summarizeBy: none
+		sourceColumn: loyalty_tier
+
+		annotation SummarizationSetBy = Automatic
+
+	column lifetime_value
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 8ccc1ce7-4161-42ac-ab59-2a01b4d0d54d
+		summarizeBy: sum
+		sourceColumn: lifetime_value
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Customer_360-dddb9194-de09-4c48-a2f0-8577da36c016' = m
+		mode: import
+		source =
+				let
+				    // TODO: Configure the data source for connector type: postgres
+				    // Replace the sample table below with the actual source expression.
+				    Source = try
+				        #table(
+				            {"customer_id", "first_name", "last_name", "email", "phone", "created_at", "segment", "loyalty_tier", "lifetime_value"},
+				            {
+				                {"Sample 1", "Sample 2", "Sample 3", "Sample 4", "Sample 5", 6, "Sample 7", "Sample 8", 9},
+				                {"Sample 2", "Sample 3", "Sample 4", "Sample 5", "Sample 6", 7, "Sample 8", "Sample 9", 10}
+				            }
+				        )
+				    otherwise
+				        #table({"customer_id", "first_name", "last_name", "email", "phone", "created_at", "segment", "loyalty_tier", "lifetime_value"}, {}),
+				    #"Joined Joined" = Table.NestedJoin(Source, "customer_id", Demographics, "customer_id", "Joined", JoinKind.LeftOuter),
+				    #"Expanded Joined" = Table.ExpandTableColumn(#"Joined Joined", "Joined", {"age_group", "income_bracket", "city", "state", "country", "postal_code"}),
+				    #"Renamed Columns" = Table.RenameColumns(#"Expanded Joined", {{"customer_id", "CustomerID"}}),
+				    #"Lowercased" = Table.TransformColumns(#"Renamed Columns", {{"email", Text.Lower}}),
+				    #"Replaced Nulls in loyalty_tier" = Table.ReplaceValue(#"Lowercased", null, "Bronze", Replacer.ReplaceValue, {"loyalty_tier"}),
+				    #"Added FullAddress" = Table.AddColumn(#"Replaced Nulls in loyalty_tier", "FullAddress", each [city] + ", " + [state] + " " + [postal_code]),
+				    Result = #"Added FullAddress"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 9 columns: customer_id, first_name, last_name, email, phone, created_at, segment, loyalty_tier, ... (9 columns total).
+

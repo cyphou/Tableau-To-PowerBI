@@ -1,22 +1,20 @@
 table 'Fiscal Year'
-	lineageTag: a59d247d-cb7c-4104-b197-77fbbf2ec2ec
-	description: Contains 1 columns and 1 measures: Value.
+	lineageTag: eaae5128-b9aa-4590-9bfb-99fe37fb334e
 
 	measure 'Fiscal Year' = SELECTEDVALUE('Fiscal Year'[Value], 2024)
-		description: DAX: SELECTEDVALUE('Fiscal Year'[Value], 2024)
-		lineageTag: ab647c12-223b-4ced-b712-54303f4a576c
+		lineageTag: 4e91af90-b75e-4f86-8b59-517b367f68a3
+		annotation Copilot_Description = DAX: SELECTEDVALUE('Fiscal Year'[Value], 2024)
 
 	column Value
 		dataType: int64
-		lineageTag: 223d52a8-d7f3-4fb2-af57-10388781bd81
+		lineageTag: 156d4369-c16f-4d99-9859-f85c22e3127b
 		summarizeBy: none
 		sourceColumn: Value
-		description: Int64 column.
 		annotation displayFolder = Parameters
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Fiscal Year-b5834c1b-b462-4808-bb3f-80b9727d6155' = calculated
+	partition 'Fiscal Year-e75dec35-6752-4c5f-b697-02647e091940' = calculated
 		mode: import
 		source = GENERATESERIES(2020, 2030, 1)
 

@@ -1,0 +1,1 @@
+expression DataFolder = "C:\Users\pidoudet\OneDrive - Microsoft\Boulot\PBI SME\OracleToPostgre\TableauToPowerBI\artifacts\prep_portfolio_output\08_Inventory_Tracker\Data" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]

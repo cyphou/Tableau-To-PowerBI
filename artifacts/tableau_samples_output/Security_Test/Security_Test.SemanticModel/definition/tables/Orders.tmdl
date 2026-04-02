@@ -1,107 +1,99 @@
 table Orders
-	lineageTag: 2685ecad-3f26-450c-868f-319071e8ec7e
-	description: Contains 7 columns and 5 measures: OrderID, Region, Sales, Profit, CustomerEmail, Category, OrderDate.
+	lineageTag: c7ec0b27-b089-4819-a32a-4eb6fea4bf08
 
 	measure 'Is Current User' = 'Orders'[CustomerEmail] = USERPRINCIPALNAME()
 		formatString: True/False
 		displayFolder: Dimensions
-		description: Migrated from Tableau: [CustomerEmail] = USERNAME() | DAX: 'Orders'[CustomerEmail] = USERPRINCIPALNAME()
-		lineageTag: d58cc4de-2ac2-4a5b-987e-2f4bbb474207
+		lineageTag: 6a77fb4a-6217-4df0-abe7-a67302f8b502
+		annotation Copilot_Description = Migrated from Tableau: [CustomerEmail] = USERNAME() | DAX: 'Orders'[CustomerEmail] = USERPRINCIPALNAME()
 
 	measure 'Manager Access' = TRUE() /* ISMEMBEROF("Managers"): implement via RLS role */ || TRUE() /* ISMEMBEROF("Executives"): implement via RLS role */
 		formatString: True/False
 		displayFolder: Dimensions
-		description: Migrated from Tableau: ISMEMBEROF("Managers") OR ISMEMBEROF("Executives") | DAX: TRUE() /* ISMEMBEROF("Managers"): implement via RLS role */ || TRUE() /* ISMEMBEROF("Executives"): implement via RLS rol...
-		lineageTag: 7ed597fb-b9a0-4a3e-a96b-e63ed4eee487
+		lineageTag: 8f1c1229-1f7f-462a-ad57-8c980395c3db
+		annotation Copilot_Description = Migrated from Tableau: ISMEMBEROF("Managers") OR ISMEMBEROF("Executives") | DAX: TRUE() /* ISMEMBEROF("Managers"): implement via RLS role */ || TRUE() /* ISMEMBEROF("Executives"): implement via RLS rol...
 
 	measure 'Region Match' = 'Regions'[RegionManager] = USERPRINCIPALNAME()
 		formatString: True/False
 		displayFolder: Dimensions
-		description: Migrated from Tableau: [RegionManager] = FULLNAME() | DAX: 'Regions'[RegionManager] = USERPRINCIPALNAME()
-		lineageTag: 2040956c-75ba-40c7-b481-df01be35b9cc
+		lineageTag: 45eaa777-9711-4c5a-a245-c8c26df38411
+		annotation Copilot_Description = Migrated from Tableau: [RegionManager] = FULLNAME() | DAX: 'Regions'[RegionManager] = USERPRINCIPALNAME()
 
 	measure 'Total Sales' = SUM('Orders'[Sales])
 		formatString: #,0.00
 		displayFolder: Measures
-		description: Migrated from Tableau: SUM([Sales]) | DAX: SUM('Orders'[Sales])
-		lineageTag: f2c199de-df3f-4e4f-a745-115ef5411634
+		lineageTag: 1cc5eff3-fbe4-4dc6-9477-4ada5f705dda
+		annotation Copilot_Description = Migrated from Tableau: SUM([Sales]) | DAX: SUM('Orders'[Sales])
 
 	measure 'Profit Ratio' = SUM('Orders'[Profit]) / SUM('Orders'[Sales])
 		formatString: #,0.00
 		displayFolder: Measures
-		description: Migrated from Tableau: SUM([Profit]) / SUM([Sales]) | DAX: SUM('Orders'[Profit]) / SUM('Orders'[Sales])
-		lineageTag: 04db43a8-cfb7-4ece-9853-314d80a21b77
+		lineageTag: 71453b4a-60e6-46d1-979c-1dfc80f3b1df
+		annotation Copilot_Description = Migrated from Tableau: SUM([Profit]) / SUM([Sales]) | DAX: SUM('Orders'[Profit]) / SUM('Orders'[Sales])
 
 	column OrderID
 		dataType: int64
-		lineageTag: 8b0f1ddf-2af1-41ff-902f-4e09d73416df
+		lineageTag: 5f96c0d9-a243-4446-9024-d6835cc6b790
 		summarizeBy: sum
 		sourceColumn: OrderID
-		description: Int64 column.
 		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column Region
 		dataType: string
-		lineageTag: 012beb0c-c815-49e3-a51a-81e22446fb6d
+		lineageTag: 71355eab-302a-46a4-b487-9d4e8ef054ef
 		summarizeBy: none
 		sourceColumn: Region
 		dataCategory: StateOrProvince
-		description: String column. categorized as StateOrProvince.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Sales
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 15f0f0e7-12ca-41e2-a010-6f74e5021479
+		lineageTag: 1f4395f8-e1f4-499c-b4a4-75a83e2aa1a4
 		summarizeBy: sum
 		sourceColumn: Sales
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Profit
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 37b333fa-6598-4779-862b-11fc02afd056
+		lineageTag: 3a7ae352-9e39-4cf6-b840-280e24470e4b
 		summarizeBy: sum
 		sourceColumn: Profit
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column CustomerEmail
 		dataType: string
-		lineageTag: e70b656f-2af2-4f13-9807-cab6cc274a8b
+		lineageTag: a6da919b-dabf-4e6b-9179-1a1c4c49ec43
 		summarizeBy: none
 		sourceColumn: CustomerEmail
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column Category
 		dataType: string
-		lineageTag: 13075a0e-6136-4c5d-8c80-df57f7ce40c4
+		lineageTag: 675be457-2bc2-41d7-bdcc-a65a7f61357b
 		summarizeBy: none
 		sourceColumn: Category
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column OrderDate
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: fe0ee36c-3770-4138-8717-801e3f69eb47
+		lineageTag: 3968d226-686b-4080-9a1f-7b35f25292b3
 		summarizeBy: none
 		sourceColumn: OrderDate
 		dataCategory: DateTime
-		description: Datetime column. categorized as DateTime.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Orders-9b7741ec-31e4-4bae-85b9-c085bea082ec' = m
+	partition 'Orders-eff7de1b-4d63-49bb-a551-3778aea6aefa' = m
 		mode: import
 		source =
 				let

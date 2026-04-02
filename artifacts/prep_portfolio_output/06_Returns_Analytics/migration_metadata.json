@@ -1,0 +1,59 @@
+{
+  "generated_at": "2026-04-02T14:05:06.749408",
+  "source": "Tableau Migration",
+  "report_name": "06_Returns_Analytics",
+  "objects_converted": {
+    "worksheets": 2,
+    "dashboards": 1,
+    "datasources": 2,
+    "calculations": 5,
+    "parameters": 0,
+    "filters": 0,
+    "stories": 0,
+    "sets": 0,
+    "groups": 0,
+    "bins": 0,
+    "hierarchies": 0,
+    "user_filters": 4,
+    "actions": 0,
+    "custom_sql": 0
+  },
+  "generated_output": {
+    "pages": 1,
+    "visuals": 2,
+    "theme_applied": false,
+    "theme_detail": {
+      "status": "skipped",
+      "reason": "no dashboard colors detected"
+    }
+  },
+  "tmdl_stats": {
+    "tables": 3,
+    "measures": 0,
+    "columns": 22,
+    "relationships": 1
+  },
+  "visual_type_mappings": {
+    "Sales Overview": "Automatic",
+    "Profit Analysis": "Automatic"
+  },
+  "visual_details": [
+    {
+      "worksheet": "Sales Overview",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "bar",
+      "dimensions": [],
+      "measures": [],
+      "field_count": 0
+    },
+    {
+      "worksheet": "Profit Analysis",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "bar",
+      "dimensions": [],
+      "measures": [],
+      "field_count": 0
+    }
+  ],
+  "approximations": []
+}

@@ -1,0 +1,77 @@
+table Customers
+	lineageTag: c556d32c-9b46-4c75-8dae-ad0d783bfd04
+
+	column Customer_ID
+		dataType: string
+		lineageTag: bbeb46d8-89ad-4695-b199-0a908326f3e1
+		summarizeBy: none
+		sourceColumn: Customer_ID
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column Customer_Name
+		dataType: string
+		lineageTag: 6fd227bc-d924-4981-b1dd-5cd257fafaf9
+		summarizeBy: none
+		sourceColumn: Customer_Name
+
+		annotation SummarizationSetBy = Automatic
+
+	column Segment
+		dataType: string
+		lineageTag: 7e237635-cb91-413b-a497-8e20fec203a8
+		summarizeBy: none
+		sourceColumn: Segment
+
+		annotation SummarizationSetBy = Automatic
+
+	column City
+		dataType: string
+		lineageTag: bc07e152-143b-4bf3-975b-2fe00e32dc7f
+		summarizeBy: none
+		sourceColumn: City
+		dataCategory: City
+
+		annotation SummarizationSetBy = Automatic
+
+	column State
+		dataType: string
+		lineageTag: 44f74550-a32d-40fb-a103-4255be574583
+		summarizeBy: none
+		sourceColumn: State
+		dataCategory: StateOrProvince
+
+		annotation SummarizationSetBy = Automatic
+
+	column Country
+		dataType: string
+		lineageTag: d1f0f5e8-804f-4e16-bc36-637c4f5c7e82
+		summarizeBy: none
+		sourceColumn: Country
+		dataCategory: Country
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Customers-ee774d2c-d9c9-46a6-bac1-5863025d60dd' = m
+		mode: import
+		source =
+				let
+				    // TODO: Configure the data source for connector type: textscan
+				    // Replace the sample table below with the actual source expression.
+				    Source = try
+				        #table(
+				            {"Customer_ID", "Customer_Name", "Segment", "City", "State", "Country"},
+				            {
+				                {"Sample 1", "Sample 2", "Sample 3", "Sample 4", "Sample 5", "Sample 6"},
+				                {"Sample 2", "Sample 3", "Sample 4", "Sample 5", "Sample 6", "Sample 7"}
+				            }
+				        )
+				    otherwise
+				        #table({"Customer_ID", "Customer_Name", "Segment", "City", "State", "Country"}, {})  // Empty table on error
+				in
+				    Source
+
+	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 6 columns: Customer_ID, Customer_Name, Segment, City, State, Country.
+

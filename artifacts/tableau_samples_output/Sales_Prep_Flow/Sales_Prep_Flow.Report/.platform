@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Report",
+    "displayName": "Sales_Prep_Flow"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "1eb5b416-7090-4577-b0d8-59b000e2591d"
+  }
+}

@@ -1,0 +1,85 @@
+table Inventory_Levels
+	lineageTag: 96d38d8b-3b6c-4746-a483-6d83b4436055
+
+	column SKU
+		dataType: string
+		lineageTag: 68719f1a-c876-4e42-b83f-3fd839554db3
+		summarizeBy: none
+		sourceColumn: SKU
+
+		annotation SummarizationSetBy = Automatic
+
+	column WAREHOUSE_ID
+		dataType: string
+		lineageTag: a1797159-3055-4e54-ba79-2686fb92a340
+		summarizeBy: none
+		sourceColumn: WAREHOUSE_ID
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column QTY_ON_HAND
+		dataType: int64
+		lineageTag: e9109802-be31-452d-8786-e56856176253
+		summarizeBy: sum
+		sourceColumn: QTY_ON_HAND
+
+		annotation SummarizationSetBy = Automatic
+
+	column QTY_RESERVED
+		dataType: int64
+		lineageTag: 6cfa5112-0436-4df0-a771-feb03a4659a6
+		summarizeBy: sum
+		sourceColumn: QTY_RESERVED
+
+		annotation SummarizationSetBy = Automatic
+
+	column REORDER_POINT
+		dataType: int64
+		lineageTag: 4a44e336-9710-4a8a-87da-f123c57d6937
+		summarizeBy: sum
+		sourceColumn: REORDER_POINT
+
+		annotation SummarizationSetBy = Automatic
+
+	column LAST_RECEIPT_DATE
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 9e6262cc-c044-4b0a-868c-e17241d95b70
+		summarizeBy: none
+		sourceColumn: LAST_RECEIPT_DATE
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column UNIT_COST
+		dataType: double
+		formatString: #,0.00
+		lineageTag: c8ef3ad9-0054-422c-9515-349d3fa40d20
+		summarizeBy: sum
+		sourceColumn: UNIT_COST
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Inventory_Levels-e67f9d18-368b-499c-b52d-2e977a1dce62' = m
+		mode: import
+		source =
+				let
+				    // TODO: Configure the data source for connector type: snowflake
+				    // Replace the sample table below with the actual source expression.
+				    Source = try
+				        #table(
+				            {"SKU", "WAREHOUSE_ID", "QTY_ON_HAND", "QTY_RESERVED", "REORDER_POINT", "LAST_RECEIPT_DATE", "UNIT_COST"},
+				            {
+				                {"Sample 1", "Sample 2", 3, 4, 5, 6, 7},
+				                {"Sample 2", "Sample 3", 4, 5, 6, 7, 8}
+				            }
+				        )
+				    otherwise
+				        #table({"SKU", "WAREHOUSE_ID", "QTY_ON_HAND", "QTY_RESERVED", "REORDER_POINT", "LAST_RECEIPT_DATE", "UNIT_COST"}, {})  // Empty table on error
+				in
+				    Source
+
+	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 7 columns: SKU, WAREHOUSE_ID, QTY_ON_HAND, QTY_RESERVED, REORDER_POINT, LAST_RECEIPT_DATE, UNIT_COST.
+

@@ -1,0 +1,33 @@
+{
+  "tables": [
+    {
+      "tableau_datasource": "prep.Orders_+_Products",
+      "tableau_table": "Orders_+_Products",
+      "pbi_table": "Orders_+_Products"
+    },
+    {
+      "tableau_datasource": "prep.Products_Master",
+      "tableau_table": "Products_Master",
+      "pbi_table": "Products_Master"
+    },
+    {
+      "tableau_datasource": "prep.Sales_Summary",
+      "tableau_table": "Sales_Summary",
+      "pbi_table": "Sales_Summary"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Calendar",
+      "pbi_table": "Calendar"
+    }
+  ],
+  "calculations": [],
+  "relationships": [
+    {
+      "from": "Orders_+_Products[OrderDate]",
+      "to": "Calendar[Date]",
+      "cardinality": "bothDirections"
+    }
+  ],
+  "worksheets": []
+}

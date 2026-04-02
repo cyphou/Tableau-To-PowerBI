@@ -1,103 +1,92 @@
 table dim_product
-	lineageTag: 39233dcd-9ecd-46e3-95ef-9c7ea663e54a
-	description: Contains 10 columns: product_key, product_id, product_name, category, subcategory, brand, supplier, weight_kg, ... (10 columns total).
+	lineageTag: 41b79756-d547-418c-8d29-31166e4ecdcf
 
 	column product_key
 		dataType: int64
-		lineageTag: 644fbdb4-fb70-4f0d-87f8-ddde871e9250
+		lineageTag: d3765a7f-bf6b-4cec-90e2-92a7f947fbbf
 		summarizeBy: sum
 		sourceColumn: product_key
-		description: Int64 column.
 		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column product_id
 		dataType: string
-		lineageTag: cedefc3c-a53d-4abb-bc2f-6915c3dab2ae
+		lineageTag: ab1ee99e-2ae8-4817-baad-522634f5eaa4
 		summarizeBy: none
 		sourceColumn: product_id
-		description: String column.
 		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column product_name
 		dataType: string
-		lineageTag: 65069836-0ece-4e0c-94dd-132adeb947f7
+		lineageTag: 83ba9ae1-791a-45bf-b98f-4e4bd418fffe
 		summarizeBy: none
 		sourceColumn: product_name
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column category
 		dataType: string
-		lineageTag: 5e3ff88d-0ec7-42af-8b14-91d9178e6d32
+		lineageTag: 0b328846-7b40-492e-9608-0eed274ea7e2
 		summarizeBy: none
 		sourceColumn: category
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column subcategory
 		dataType: string
-		lineageTag: 4394ce56-fd9e-4730-affd-6c4522831532
+		lineageTag: b0360505-98ff-48c1-a68e-6bd1513fda09
 		summarizeBy: none
 		sourceColumn: subcategory
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column brand
 		dataType: string
-		lineageTag: d3115736-bc48-4feb-8395-5bbf75f26d54
+		lineageTag: 10a1348c-907e-40f6-8789-d483799f6d12
 		summarizeBy: none
 		sourceColumn: brand
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column supplier
 		dataType: string
-		lineageTag: 153f19f1-a27a-499b-bfac-5e7b527b1a98
+		lineageTag: 255d865c-237e-4df8-8415-9ada3e9304bf
 		summarizeBy: none
 		sourceColumn: supplier
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column weight_kg
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 1a918ef9-7cc1-43e1-9831-5f13fe061f0c
+		lineageTag: ebf03b32-c56e-4bba-b7f8-f1382cec4efc
 		summarizeBy: sum
 		sourceColumn: weight_kg
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column is_perishable
 		dataType: boolean
-		lineageTag: 596c933e-4003-4186-a9ad-05787e0450d2
+		lineageTag: 4b5a4752-3fbd-4359-b317-8b02179c265b
 		summarizeBy: none
 		sourceColumn: is_perishable
-		description: Boolean column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column launch_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 4a53b5c7-dfa6-4478-b94d-1cf51d1b717f
+		lineageTag: 48ee8891-417d-4a62-a46a-96c3524c18df
 		summarizeBy: none
 		sourceColumn: launch_date
 		dataCategory: DateTime
-		description: Datetime column. categorized as DateTime.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'dim_product-1debf048-86c8-4610-812d-7d92f27aa673' = m
+	partition 'dim_product-ce9a16c0-6ea0-4e4a-9a8f-6966a297a519' = m
 		mode: import
 		source =
 				let

@@ -1,0 +1,86 @@
+table Demographics
+	lineageTag: 1151fba6-776b-482c-94c3-550ff7ae737b
+
+	column customer_id
+		dataType: string
+		lineageTag: 8c0c5a09-f971-448f-943d-5c28f790115a
+		summarizeBy: none
+		sourceColumn: customer_id
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column age_group
+		dataType: string
+		lineageTag: 08eac895-c032-45d9-8748-123180ba52ea
+		summarizeBy: none
+		sourceColumn: age_group
+
+		annotation SummarizationSetBy = Automatic
+
+	column income_bracket
+		dataType: string
+		lineageTag: 9890d529-097b-4f8d-b9e8-178b12a17090
+		summarizeBy: none
+		sourceColumn: income_bracket
+
+		annotation SummarizationSetBy = Automatic
+
+	column city
+		dataType: string
+		lineageTag: ee7dfdbe-a117-4bc8-8a59-48a8fd899dc0
+		summarizeBy: none
+		sourceColumn: city
+		dataCategory: City
+
+		annotation SummarizationSetBy = Automatic
+
+	column state
+		dataType: string
+		lineageTag: 016f05b2-e4cd-4b99-a120-bfac4bc494e5
+		summarizeBy: none
+		sourceColumn: state
+		dataCategory: StateOrProvince
+
+		annotation SummarizationSetBy = Automatic
+
+	column country
+		dataType: string
+		lineageTag: 03e88b2d-44dd-464a-9bc9-c0d41f0d0518
+		summarizeBy: none
+		sourceColumn: country
+		dataCategory: Country
+
+		annotation SummarizationSetBy = Automatic
+
+	column postal_code
+		dataType: string
+		lineageTag: c31c4b9e-e8d3-4376-8bf8-b0e5b3753566
+		summarizeBy: none
+		sourceColumn: postal_code
+		dataCategory: PostalCode
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Demographics-f23798d0-c9a8-4a9f-8d30-2c6d196f48c1' = m
+		mode: import
+		source =
+				let
+				    // TODO: Configure the data source for connector type: textscan
+				    // Replace the sample table below with the actual source expression.
+				    Source = try
+				        #table(
+				            {"customer_id", "age_group", "income_bracket", "city", "state", "country", "postal_code"},
+				            {
+				                {"Sample 1", "Sample 2", "Sample 3", "Sample 4", "Sample 5", "Sample 6", "Sample 7"},
+				                {"Sample 2", "Sample 3", "Sample 4", "Sample 5", "Sample 6", "Sample 7", "Sample 8"}
+				            }
+				        )
+				    otherwise
+				        #table({"customer_id", "age_group", "income_bracket", "city", "state", "country", "postal_code"}, {})  // Empty table on error
+				in
+				    Source
+
+	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 7 columns: customer_id, age_group, income_bracket, city, state, country, postal_code.
+

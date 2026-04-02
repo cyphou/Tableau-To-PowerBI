@@ -1,0 +1,89 @@
+table Sales_Summary
+	lineageTag: 052883b5-d851-495f-9357-91002d749481
+
+	column CustomerID
+		dataType: string
+		lineageTag: e8d10505-1209-4e1c-99ca-1a1ac11e0532
+		summarizeBy: none
+		sourceColumn: CustomerID
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerName
+		dataType: string
+		lineageTag: ae13e4bd-ff7f-452b-a5e7-28e707d4aac5
+		summarizeBy: none
+		sourceColumn: CustomerName
+
+		annotation SummarizationSetBy = Automatic
+
+	column segment
+		dataType: string
+		lineageTag: 5948de96-3b82-424d-ac99-23c5dd92a39e
+		summarizeBy: none
+		sourceColumn: segment
+
+		annotation SummarizationSetBy = Automatic
+
+	column loyalty_tier
+		dataType: string
+		lineageTag: a593aac3-7ddd-4c3c-86a1-1f51099bcca5
+		summarizeBy: none
+		sourceColumn: loyalty_tier
+
+		annotation SummarizationSetBy = Automatic
+
+	column city
+		dataType: string
+		lineageTag: bedce02e-f3df-47e5-b632-48cd1bf7ddde
+		summarizeBy: none
+		sourceColumn: city
+		dataCategory: City
+
+		annotation SummarizationSetBy = Automatic
+
+	column state
+		dataType: string
+		lineageTag: 9c86d476-6e2e-4a15-9846-4dccbf40b431
+		summarizeBy: none
+		sourceColumn: state
+		dataCategory: StateOrProvince
+
+		annotation SummarizationSetBy = Automatic
+
+	column country
+		dataType: string
+		lineageTag: 10753579-02e4-48d7-9f7b-3d341b3e1219
+		summarizeBy: none
+		sourceColumn: country
+		dataCategory: Country
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Sales_Summary-184b5c55-7d56-48ff-9607-713a7386b88a' = m
+		mode: import
+		source =
+				let
+				    // TODO: Configure the data source for connector type: sqlserver
+				    // Replace the sample table below with the actual source expression.
+				    Source = try
+				        #table(
+				            {"CustomerID", "CustomerName", "segment", "loyalty_tier", "city", "state", "country"},
+				            {
+				                {"Sample 1", "Sample 2", "Sample 3", "Sample 4", "Sample 5", "Sample 6", "Sample 7"},
+				                {"Sample 2", "Sample 3", "Sample 4", "Sample 5", "Sample 6", "Sample 7", "Sample 8"}
+				            }
+				        )
+				    otherwise
+				        #table({"CustomerID", "CustomerName", "segment", "loyalty_tier", "city", "state", "country"}, {}),
+				    #"Joined Joined" = Table.NestedJoin(Source, "CustomerID", Orders_+_Products, "CustomerID", "Joined", JoinKind.LeftOuter),
+				    #"Expanded Joined" = Table.ExpandTableColumn(#"Joined Joined", "Joined", {"OrderID", "OrderDate", "ProductID", "Region", "Sales", "Quantity", "Discount", "Profit", "Revenue"}),
+				    #"Grouped Rows" = Table.Group(#"Expanded Joined", {"Region", "Category", "segment", "loyalty_tier"}, {{"TotalRevenue", each List.Sum([Revenue]), type number}, {"TotalProfit", each List.Sum([Profit]), type number}, {"OrderCount", each List.Count(List.Distinct([OrderID])), Int64.Type}, {"TotalQuantity", each List.Sum([Quantity]), type number}, {"AvgDiscount", each List.Average([Discount]), type number}}),
+				    Result = #"Grouped Rows"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 7 columns: CustomerID, CustomerName, segment, loyalty_tier, city, state, country.
+

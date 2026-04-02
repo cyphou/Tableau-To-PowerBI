@@ -1,0 +1,53 @@
+{
+  "tables": [
+    {
+      "tableau_datasource": "federated.global",
+      "tableau_table": "fact_sales",
+      "pbi_table": "fact_sales"
+    },
+    {
+      "tableau_datasource": "federated.global",
+      "tableau_table": "dim_date",
+      "pbi_table": "dim_date"
+    },
+    {
+      "tableau_datasource": "federated.global",
+      "tableau_table": "dim_customer",
+      "pbi_table": "dim_customer"
+    },
+    {
+      "tableau_datasource": "federated.global",
+      "tableau_table": "dim_product",
+      "pbi_table": "dim_product"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Target Margin %",
+      "pbi_table": "Target Margin %"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Top N Items",
+      "pbi_table": "Top N Items"
+    }
+  ],
+  "calculations": [],
+  "relationships": [
+    {
+      "from": "fact_sales[product_key]",
+      "to": "dim_product[product_key]",
+      "cardinality": "bothDirections"
+    },
+    {
+      "from": "fact_sales[customer_key]",
+      "to": "dim_customer[customer_key]",
+      "cardinality": "bothDirections"
+    },
+    {
+      "from": "fact_sales[date_key]",
+      "to": "dim_date[date_key]",
+      "cardinality": "bothDirections"
+    }
+  ],
+  "worksheets": []
+}

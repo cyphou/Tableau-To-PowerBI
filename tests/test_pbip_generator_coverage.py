@@ -1884,9 +1884,9 @@ class TestCreateSwapBookmarks(unittest.TestCase):
         ]
         result = self.gen._create_swap_bookmarks(dynamic_zones, 'Page1')
         self.assertTrue(len(result) >= 2)
-        # Check MigrationNote is present
+        # Check PBIR-compliant options are present
         bm_str = json.dumps(result)
-        self.assertIn('MigrationNote', bm_str)
+        self.assertIn('targetVisualNames', bm_str)
 
     def test_empty_zones(self):
         result = self.gen._create_swap_bookmarks([], 'Page1')

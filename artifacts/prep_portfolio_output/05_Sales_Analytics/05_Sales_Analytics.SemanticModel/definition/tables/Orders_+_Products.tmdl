@@ -1,0 +1,118 @@
+table 'Orders_+_Products'
+	lineageTag: 4cf12d8f-7709-4163-9fc8-d07cd4da3752
+
+	column OrderID
+		dataType: string
+		lineageTag: b4e4c708-0bbc-4f44-ba8c-bcc8b9f81684
+		summarizeBy: none
+		sourceColumn: OrderID
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column OrderDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 26f96b99-f47c-459f-a014-4a1c4b67bcaf
+		summarizeBy: none
+		sourceColumn: OrderDate
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerID
+		dataType: string
+		lineageTag: e24f4d9b-eb37-473e-86b2-f01500faa3e1
+		summarizeBy: none
+		sourceColumn: CustomerID
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column ProductID
+		dataType: string
+		lineageTag: 1f5195ba-1746-42b8-9797-472039c541d9
+		summarizeBy: none
+		sourceColumn: ProductID
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column Region
+		dataType: string
+		lineageTag: 608fa413-9d00-4897-857e-2a99b5309e32
+		summarizeBy: none
+		sourceColumn: Region
+		dataCategory: StateOrProvince
+
+		annotation SummarizationSetBy = Automatic
+
+	column Sales
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 26a3a4be-0a6a-4eaa-a9ab-16515f572972
+		summarizeBy: sum
+		sourceColumn: Sales
+
+		annotation SummarizationSetBy = Automatic
+
+	column Quantity
+		dataType: int64
+		lineageTag: 9bfa3b8b-79df-40bd-9015-1229a3ce0aa0
+		summarizeBy: sum
+		sourceColumn: Quantity
+
+		annotation SummarizationSetBy = Automatic
+
+	column Discount
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 59a45721-c11b-4eac-840b-ff58a5e8238e
+		summarizeBy: sum
+		sourceColumn: Discount
+
+		annotation SummarizationSetBy = Automatic
+
+	column Profit
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 8569c384-31f3-4a5b-8138-c74328d5801c
+		summarizeBy: sum
+		sourceColumn: Profit
+
+		annotation SummarizationSetBy = Automatic
+
+	column Revenue
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 9ba4c827-436f-401f-bc6f-3d100153b829
+		summarizeBy: sum
+		sourceColumn: Revenue
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Orders_+_Products-216be6fd-3f39-446f-af45-4199f129444a' = m
+		mode: import
+		source =
+				let
+				    // TODO: Configure the data source for connector type: sqlserver
+				    // Replace the sample table below with the actual source expression.
+				    Source = try
+				        #table(
+				            {"OrderID", "OrderDate", "CustomerID", "ProductID", "Region", "Sales", "Quantity", "Discount", "Profit", "Revenue"},
+				            {
+				                {"Sample 1", 2, "Sample 3", "Sample 4", "Sample 5", 6, 7, 8, 9, 10},
+				                {"Sample 2", 3, "Sample 4", "Sample 5", "Sample 6", 7, 8, 9, 10, 11}
+				            }
+				        )
+				    otherwise
+				        #table({"OrderID", "OrderDate", "CustomerID", "ProductID", "Region", "Sales", "Quantity", "Discount", "Profit", "Revenue"}, {}),
+				    #"Joined Joined" = Table.NestedJoin(Source, "ProductID", Products_Master, "ProductID", "Joined", JoinKind.LeftOuter),
+				    #"Expanded Joined" = Table.ExpandTableColumn(#"Joined Joined", "Joined", {"ProductName", "Category", "SubCategory", "UnitCost", "UnitPrice", "Margin"}),
+				    Result = #"Expanded Joined"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 10 columns: OrderID, OrderDate, CustomerID, ProductID, Region, Sales, Quantity, Discount, ... (10 columns total).
+

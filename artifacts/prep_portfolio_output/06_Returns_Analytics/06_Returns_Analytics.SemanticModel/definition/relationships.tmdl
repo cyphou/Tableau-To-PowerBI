@@ -1,0 +1,14 @@
+relationship b5764a99-4b55-476a-8eb0-d46a3b5bc419
+	fromColumn: Orders_Clean.OrderDate
+	toColumn: Calendar.Date
+	fromCardinality: many
+	toCardinality: many
+	crossFilteringBehavior: bothDirections
+
+relationship 0f5b649b-e175-44a1-90c4-1622fdde40cf
+	fromColumn: Returns_Analysis.ReturnDate
+	toColumn: Calendar.Date
+	fromCardinality: many
+	toCardinality: many
+	crossFilteringBehavior: bothDirections
+

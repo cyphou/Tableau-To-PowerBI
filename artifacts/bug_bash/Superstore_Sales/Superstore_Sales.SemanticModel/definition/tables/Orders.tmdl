@@ -1,0 +1,259 @@
+table Orders
+	lineageTag: 7697b175-301c-423b-9a9b-e5829c27c412
+
+	measure 'Total Sales' = SUM('Orders'[Sales])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 1a4b7937-daa0-42a9-a296-3659432ad554
+		annotation Copilot_Description = Migrated from Tableau: SUM([Sales]) | DAX: SUM('Orders'[Sales])
+
+	measure 'Total Profit' = SUM('Orders'[Profit])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 586ae62f-f2ff-4565-8971-c836ccf00426
+		annotation Copilot_Description = Migrated from Tableau: SUM([Profit]) | DAX: SUM('Orders'[Profit])
+
+	measure 'Profit Ratio' = SUM('Orders'[Profit]) / SUM('Orders'[Sales])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 29be99b4-c4d9-4e80-af23-31267fe6ee16
+		annotation Copilot_Description = Migrated from Tableau: SUM([Profit]) / SUM([Sales]) | DAX: SUM('Orders'[Profit]) / SUM('Orders'[Sales])
+
+	measure 'Number of Orders' = DISTINCTCOUNT('Orders'[Order ID])
+		displayFolder: Measures
+		lineageTag: 6d8ed5a8-2707-4b3f-b837-3ebf0128a8a9
+		annotation Copilot_Description = Migrated from Tableau: COUNTD([Order ID]) | DAX: DISTINCTCOUNT('Orders'[Order ID])
+
+	column 'Row ID'
+		dataType: int64
+		lineageTag: 823b55f8-ca48-478a-8d27-d3f5d66fce0c
+		summarizeBy: sum
+		sourceColumn: 'Row ID'
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Order ID'
+		dataType: string
+		lineageTag: 6064b9d4-fa65-432a-a5da-1abfb27c937e
+		summarizeBy: none
+		sourceColumn: 'Order ID'
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Order Date'
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: d2fc1aea-9532-459f-a36d-0123d5d0c02b
+		summarizeBy: none
+		sourceColumn: 'Order Date'
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Ship Date'
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: ba88cc15-9aa2-4f77-aad4-ab471bab74e8
+		summarizeBy: none
+		sourceColumn: 'Ship Date'
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Ship Mode'
+		dataType: string
+		lineageTag: 7a20e83a-1cf5-4668-8dbc-6ee7dde1726b
+		summarizeBy: none
+		sourceColumn: 'Ship Mode'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Customer ID'
+		dataType: string
+		lineageTag: d6eb1562-5e30-41a3-b7b0-6ed3bcd11c5e
+		summarizeBy: none
+		sourceColumn: 'Customer ID'
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Customer Name'
+		dataType: string
+		lineageTag: 4b26272f-8607-4241-9f86-7f77934e6e08
+		summarizeBy: none
+		sourceColumn: 'Customer Name'
+
+		annotation SummarizationSetBy = Automatic
+
+	column Segment
+		dataType: string
+		lineageTag: d6619a29-8b96-41f5-92ab-79aeeaa98dc1
+		summarizeBy: none
+		sourceColumn: Segment
+
+		annotation SummarizationSetBy = Automatic
+
+	column Country
+		dataType: string
+		lineageTag: ccef840c-3075-469f-85c4-dfad36c84fd6
+		summarizeBy: none
+		sourceColumn: Country
+		dataCategory: Country
+
+		annotation SummarizationSetBy = Automatic
+
+	column City
+		dataType: string
+		lineageTag: c71a3aac-0d24-46f3-add2-fca96b55eccd
+		summarizeBy: none
+		sourceColumn: City
+		dataCategory: City
+
+		annotation SummarizationSetBy = Automatic
+
+	column State
+		dataType: string
+		lineageTag: 3ebaa726-be53-4410-b97f-a2a27de4a29c
+		summarizeBy: none
+		sourceColumn: State
+		dataCategory: StateOrProvince
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Postal Code'
+		dataType: int64
+		lineageTag: 00013b65-f035-4a78-92b2-f9207f8645f7
+		summarizeBy: sum
+		sourceColumn: 'Postal Code'
+		dataCategory: PostalCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column Region
+		dataType: string
+		lineageTag: fe82fbb7-e9c1-4c7d-8b7e-f364711f7a9c
+		summarizeBy: none
+		sourceColumn: Region
+		dataCategory: StateOrProvince
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Product ID'
+		dataType: string
+		lineageTag: ba39dd23-1527-4b6a-ade9-70c41638779f
+		summarizeBy: none
+		sourceColumn: 'Product ID'
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column Category
+		dataType: string
+		lineageTag: 34971945-a6d8-4052-9af0-4f5c82f5cbce
+		summarizeBy: none
+		sourceColumn: Category
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Sub-Category'
+		dataType: string
+		lineageTag: 0e10fc1e-cedc-42b8-8f1a-cccd834474b3
+		summarizeBy: none
+		sourceColumn: 'Sub-Category'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Product Name'
+		dataType: string
+		lineageTag: 2b7fb6a1-3401-4015-b035-26b398a20f3b
+		summarizeBy: none
+		sourceColumn: 'Product Name'
+
+		annotation SummarizationSetBy = Automatic
+
+	column Sales
+		dataType: double
+		formatString: #,0.00
+		lineageTag: ce66ae7c-116e-4414-ba6e-59f875f6d571
+		summarizeBy: sum
+		sourceColumn: Sales
+
+		annotation SummarizationSetBy = Automatic
+
+	column Quantity
+		dataType: int64
+		lineageTag: 7c199e57-b24a-4bcb-a911-b101da466a57
+		summarizeBy: sum
+		sourceColumn: Quantity
+
+		annotation SummarizationSetBy = Automatic
+
+	column Discount
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 880314c0-1afe-4ae4-b04f-80bae984c500
+		summarizeBy: sum
+		sourceColumn: Discount
+
+		annotation SummarizationSetBy = Automatic
+
+	column Profit
+		dataType: double
+		formatString: #,0.00
+		lineageTag: e16c05c9-62fe-4988-8be0-d7fb6af776dd
+		summarizeBy: sum
+		sourceColumn: Profit
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Orders-f6807072-a43a-4d73-a55c-57c0dfef9e17' = m
+		mode: import
+		source =
+				let
+				    // Source Excel: Sample - Superstore.xlsx
+				    Source = try
+				
+				        let
+				
+				            _src = Excel.Workbook(File.Contents(DataFolder & "\Sample - Superstore.xlsx"), null, true),
+				
+				            _nav = _src{[Item="Orders",Kind="Sheet"]}[Data]
+				
+				        in _nav
+				
+				    otherwise
+				
+				        #table({"Row ID", "Order ID", "Order Date", "Ship Date", "Ship Mode", "Customer ID", "Customer Name", "Segment", "Country", "City", "State", "Postal Code", "Region", "Product ID", "Category", "Sub-Category", "Product Name", "Sales", "Quantity", "Discount", "Profit"}, {}),
+				    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+				    #"Changed Types" = Table.TransformColumnTypes(#"Promoted Headers", {
+				        {"Row ID", Int64.Type},
+				        {"Order ID", type text},
+				        {"Order Date", type date},
+				        {"Ship Date", type date},
+				        {"Ship Mode", type text},
+				        {"Customer ID", type text},
+				        {"Customer Name", type text},
+				        {"Segment", type text},
+				        {"Country", type text},
+				        {"City", type text},
+				        {"State", type text},
+				        {"Postal Code", Int64.Type},
+				        {"Region", type text},
+				        {"Product ID", type text},
+				        {"Category", type text},
+				        {"Sub-Category", type text},
+				        {"Product Name", type text},
+				        {"Sales", type number},
+				        {"Quantity", Int64.Type},
+				        {"Discount", type number},
+				        {"Profit", type number}
+				    }),
+				    Result = #"Changed Types"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 21 columns and 4 measures: Row ID, Order ID, Order Date, Ship Date, Ship Mode, Customer ID, Customer Name, Segment, ... (21 columns total).
+

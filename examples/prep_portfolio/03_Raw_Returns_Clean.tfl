@@ -1,0 +1,88 @@
+{
+  "objectVersion": 4,
+  "nodes": {
+    "a3000001-0001-0001-0001-000000000001": {
+      "nodeType": ".v1.LoadCsv",
+      "name": "Returns_2024.csv",
+      "id": "a3000001-0001-0001-0001-000000000001",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a3000001-0001-0001-0001-000000000002", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-returns",
+      "connectionAttributes": {
+        "class": "csv",
+        "filename": "Returns_2024.csv",
+        "separator": ","
+      },
+      "fields": [
+        {"name": "Return_ID", "type": "string"},
+        {"name": "Order_ID", "type": "string"},
+        {"name": "Return_Date", "type": "date"},
+        {"name": "Reason_Code", "type": "string"},
+        {"name": "Reason_Text", "type": "string"},
+        {"name": "Refund_Amount", "type": "real"},
+        {"name": "Restocking_Fee", "type": "real"},
+        {"name": "Return_Status", "type": "string"}
+      ]
+    },
+    "a3000001-0001-0001-0001-000000000002": {
+      "nodeType": ".v2018_3_3.SuperTransform",
+      "name": "Clean Returns",
+      "id": "a3000001-0001-0001-0001-000000000002",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a3000001-0001-0001-0001-000000000003", "nextNamespace": "Default"}
+      ],
+      "beforeActionGroup": {
+        "actions": [
+          {"actionType": ".v1.RenameColumn", "columnName": "Return_ID", "newColumnName": "ReturnID"},
+          {"actionType": ".v1.RenameColumn", "columnName": "Order_ID", "newColumnName": "OrderID"},
+          {"actionType": ".v1.RenameColumn", "columnName": "Return_Date", "newColumnName": "ReturnDate"},
+          {"actionType": ".v1.RenameColumn", "columnName": "Reason_Code", "newColumnName": "ReasonCode"},
+          {"actionType": ".v1.RenameColumn", "columnName": "Refund_Amount", "newColumnName": "RefundAmount"},
+          {"actionType": ".v1.FilterOperation", "filterExpression": "[Return_Status] != \"Voided\"", "filterType": "keep"},
+          {"actionType": ".v1.RemoveColumn", "columnName": "Return_Status"},
+          {"actionType": ".v1.CleanOperation", "columnName": "Reason_Text", "operation": "trim"},
+          {"actionType": ".v1.AddColumn", "columnName": "NetRefund", "expression": "[RefundAmount] - [Restocking_Fee]", "columnType": "real"}
+        ]
+      }
+    },
+    "a3000001-0001-0001-0001-000000000003": {
+      "nodeType": ".v1.PublishExtract",
+      "name": "Returns_Processed",
+      "id": "a3000001-0001-0001-0001-000000000003",
+      "baseType": "output",
+      "nextNodes": [],
+      "connectionAttributes": {
+        "class": "sqlserver",
+        "server": "tableau-prod.corp.local",
+        "dbname": "PrepOutputs",
+        "table": "Returns_Processed"
+      },
+      "publishSettings": {
+        "datasourceName": "Returns_Processed",
+        "writeMode": "overwrite"
+      },
+      "fields": [
+        {"name": "ReturnID", "type": "string"},
+        {"name": "OrderID", "type": "string"},
+        {"name": "ReturnDate", "type": "date"},
+        {"name": "ReasonCode", "type": "string"},
+        {"name": "Reason_Text", "type": "string"},
+        {"name": "RefundAmount", "type": "real"},
+        {"name": "Restocking_Fee", "type": "real"},
+        {"name": "NetRefund", "type": "real"}
+      ]
+    }
+  },
+  "connections": {
+    "conn-returns": {
+      "connectionAttributes": {
+        "class": "csv",
+        "directory": "/data/raw/",
+        "filename": "Returns_2024.csv"
+      }
+    }
+  }
+}

@@ -1,0 +1,93 @@
+table Returns_Analysis
+	lineageTag: 0ea82807-07a3-4765-8f38-bbe3d0781621
+
+	column ReturnID
+		dataType: string
+		lineageTag: 0c7d7875-80dc-499a-b9b3-ed76f6e75a96
+		summarizeBy: none
+		sourceColumn: ReturnID
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column OrderID
+		dataType: string
+		lineageTag: af0f8169-01a9-4df9-8e37-c61af2e1b5c6
+		summarizeBy: none
+		sourceColumn: OrderID
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column ReturnDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 50a4aedf-38e3-423e-81fd-bd2080551da4
+		summarizeBy: none
+		sourceColumn: ReturnDate
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column ReasonCode
+		dataType: string
+		lineageTag: 706bcfa7-60b5-480c-8063-0ccc75bd91f8
+		summarizeBy: none
+		sourceColumn: ReasonCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column Reason_Text
+		dataType: string
+		lineageTag: f7b1f14b-ad6c-474e-bd38-ea2073245770
+		summarizeBy: none
+		sourceColumn: Reason_Text
+
+		annotation SummarizationSetBy = Automatic
+
+	column RefundAmount
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 8713681e-54d8-4078-adf4-9cf40119de0b
+		summarizeBy: sum
+		sourceColumn: RefundAmount
+
+		annotation SummarizationSetBy = Automatic
+
+	column NetRefund
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 0571c63e-bf31-4ead-b64f-c3137791ac48
+		summarizeBy: sum
+		sourceColumn: NetRefund
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Returns_Analysis-226dcbcf-14fc-4544-8cd2-853057c6ca5a' = m
+		mode: import
+		source =
+				let
+				    // TODO: Configure the data source for connector type: sqlserver
+				    // Replace the sample table below with the actual source expression.
+				    Source = try
+				        #table(
+				            {"ReturnID", "OrderID", "ReturnDate", "ReasonCode", "Reason_Text", "RefundAmount", "NetRefund"},
+				            {
+				                {"Sample 1", "Sample 2", 3, "Sample 4", "Sample 5", 6, 7},
+				                {"Sample 2", "Sample 3", 4, "Sample 5", "Sample 6", 7, 8}
+				            }
+				        )
+				    otherwise
+				        #table({"ReturnID", "OrderID", "ReturnDate", "ReasonCode", "Reason_Text", "RefundAmount", "NetRefund"}, {}),
+				    #"Joined Joined" = Table.NestedJoin(Source, "OrderID", Orders_Clean, "OrderID", "Joined", JoinKind.LeftOuter),
+				    #"Expanded Joined" = Table.ExpandTableColumn(#"Joined Joined", "Joined", {"OrderDate", "CustomerID", "ProductID", "Region", "Sales", "Revenue"}),
+				    #"Added ReturnRate" = Table.AddColumn(#"Expanded Joined", "ReturnRate", each [NetRefund] / [Revenue]),
+				    #"Added DaysToReturn" = Table.AddColumn(#"Added ReturnRate", "DaysToReturn", each DATEDIFF('day', [OrderDate], [ReturnDate])),
+				    #"Script Warning" = Table.AddColumn(#"Added DaysToReturn", "__script_warning", each "/* Python script step not auto-converted — manual migration required */", type text),
+				    Result = #"Script Warning"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 7 columns: ReturnID, OrderID, ReturnDate, ReasonCode, Reason_Text, RefundAmount, NetRefund.
+

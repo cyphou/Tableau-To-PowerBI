@@ -1,121 +1,108 @@
 table dim_customer
-	lineageTag: 249d5268-2d8f-4226-b7aa-f63d3c8c778b
-	description: Contains 12 columns: customer_key, customer_id, customer_name, email, phone, segment, industry, company_size, ... (12 columns total).
+	lineageTag: a7252255-357a-47ff-9423-201c05a3bee7
 
 	column customer_key
 		dataType: int64
-		lineageTag: 4f069562-0e96-4867-b086-3a7ea6089492
+		lineageTag: e3391049-4f8a-439f-b27d-357c930da9bd
 		summarizeBy: sum
 		sourceColumn: customer_key
-		description: Int64 column.
 		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column customer_id
 		dataType: string
-		lineageTag: 877da1f2-495b-4461-85ba-dd05453ed4a9
+		lineageTag: 9b6e8db7-83b0-4983-835d-39a2d8a65431
 		summarizeBy: none
 		sourceColumn: customer_id
-		description: String column.
 		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column customer_name
 		dataType: string
-		lineageTag: fa03d850-9f46-42fd-8181-5da2cb916b01
+		lineageTag: 857b142f-0082-4062-aed0-669309a2da67
 		summarizeBy: none
 		sourceColumn: customer_name
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column email
 		dataType: string
-		lineageTag: 071d4b2d-675a-4236-a327-a81040005d75
+		lineageTag: bdec573c-3360-4995-8b6f-93e400ecc539
 		summarizeBy: none
 		sourceColumn: email
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column phone
 		dataType: string
-		lineageTag: 25b0ef5b-ce4b-4ad2-81c9-6cb73fda692c
+		lineageTag: 86331a6d-0fcb-497b-a14f-09e7f596cf81
 		summarizeBy: none
 		sourceColumn: phone
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column segment
 		dataType: string
-		lineageTag: 688cf74d-ceef-45e1-be7b-3920a5031c92
+		lineageTag: bb7e9973-be4f-42b7-9648-4f9c1bbab5e4
 		summarizeBy: none
 		sourceColumn: segment
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column industry
 		dataType: string
-		lineageTag: 70d4606c-505e-46e3-946a-c151b01c376f
+		lineageTag: 83a0b961-fd98-4531-afb8-34b0bf728465
 		summarizeBy: none
 		sourceColumn: industry
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column company_size
 		dataType: string
-		lineageTag: 1023c66f-9492-4b42-9358-65cbd86df7c6
+		lineageTag: 10731c94-97bc-4d83-8e63-eaccfcffa69d
 		summarizeBy: none
 		sourceColumn: company_size
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column first_order_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 8b82d448-9e49-4052-9a5e-7537a9ca2947
+		lineageTag: 3b14afe3-8d40-4c7e-ac87-0b250af0f047
 		summarizeBy: none
 		sourceColumn: first_order_date
 		dataCategory: DateTime
-		description: Datetime column. categorized as DateTime.
 
 		annotation SummarizationSetBy = Automatic
 
 	column credit_limit
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 185881fa-d9c2-4d31-a166-32fef493148d
+		lineageTag: 2e1a916f-d36a-44cc-bbbb-459693956a71
 		summarizeBy: sum
 		sourceColumn: credit_limit
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column account_manager
 		dataType: string
-		lineageTag: 8296ffd5-e9a9-4f70-a247-acfab56d808d
+		lineageTag: 042c9d9f-75ae-40af-931e-a8385c31360a
 		summarizeBy: none
 		sourceColumn: account_manager
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column is_active
 		dataType: boolean
-		lineageTag: 179edda9-1a75-4155-a78b-a2c672806680
+		lineageTag: fcd79a4a-4685-479c-9237-e4f225c3dd7e
 		summarizeBy: none
 		sourceColumn: is_active
-		description: Boolean column.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'dim_customer-d316cd2b-5255-4170-871d-e79840526bdb' = m
+	partition 'dim_customer-02e0f659-82f7-4034-99cc-b77a9a83da7e' = m
 		mode: import
 		source =
 				let

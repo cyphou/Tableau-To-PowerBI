@@ -1,22 +1,20 @@
 table 'Target Margin %'
-	lineageTag: bd28e12f-c7de-4e07-ab3f-6fb87dc3eeef
-	description: Contains 1 columns and 1 measures: Value.
+	lineageTag: d11ed138-7ea0-4275-9f5d-6e7d1a6346d5
 
 	measure 'Target Margin %' = SELECTEDVALUE('Target Margin %'[Value], 0.20)
-		description: DAX: SELECTEDVALUE('Target Margin %'[Value], 0.20)
-		lineageTag: 624a523c-d41e-45ec-b6b3-604562f1c9c1
+		lineageTag: 46bae666-04a0-431d-94b7-8a4777dd78b1
+		annotation Copilot_Description = DAX: SELECTEDVALUE('Target Margin %'[Value], 0.20)
 
 	column Value
 		dataType: double
-		lineageTag: 1eb18bb5-2e04-4103-bb0e-08fe7971080c
+		lineageTag: 6030ccb0-1277-4801-82bb-95faee32946e
 		summarizeBy: none
 		sourceColumn: Value
-		description: Double column.
 		annotation displayFolder = Parameters
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Target Margin %-c4151b24-2a58-451b-b842-0c0fbb6cfca1' = calculated
+	partition 'Target Margin %-873a565b-01e9-4543-812c-f3d5905817a8' = calculated
 		mode: import
 		source = GENERATESERIES(0.00, 0.60, 0.01)
 

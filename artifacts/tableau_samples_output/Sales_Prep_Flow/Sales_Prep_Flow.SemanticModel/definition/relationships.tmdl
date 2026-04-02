@@ -1,0 +1,12 @@
+relationship a844fe85-e0f2-4705-a641-d0dc7c934757
+	fromColumn: Regional_Sales_Summary.Order_Date
+	toColumn: Calendar.Date
+	crossFilteringBehavior: oneDirection
+
+relationship 8149ca8d-8c29-4d83-881e-7801a4b69eca
+	fromColumn: Regional_Sales_Summary.Customer_ID
+	toColumn: Customers.Customer_ID
+	fromCardinality: many
+	toCardinality: many
+	crossFilteringBehavior: bothDirections
+

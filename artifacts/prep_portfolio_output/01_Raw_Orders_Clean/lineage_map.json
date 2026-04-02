@@ -1,0 +1,23 @@
+{
+  "tables": [
+    {
+      "tableau_datasource": "prep.Orders_Clean",
+      "tableau_table": "Orders_Clean",
+      "pbi_table": "Orders_Clean"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Calendar",
+      "pbi_table": "Calendar"
+    }
+  ],
+  "calculations": [],
+  "relationships": [
+    {
+      "from": "Orders_Clean[Order_Date]",
+      "to": "Calendar[Date]",
+      "cardinality": "oneDirection"
+    }
+  ],
+  "worksheets": []
+}

@@ -1,122 +1,109 @@
 table Leads
-	lineageTag: aedb610e-37df-4961-a424-b857bdf7a53b
-	description: Contains 12 columns: lead_id, campaign_id, lead_name, email, phone, company, job_title, created_date, ... (12 columns total).
+	lineageTag: f0435462-c785-4ef8-8da3-77cc9c958939
 
 	column lead_id
 		dataType: int64
-		lineageTag: c1172ae8-8dc7-4e0c-b3e1-67d613f4565f
+		lineageTag: f69cbfef-1797-4c47-8ae3-5b791e2f87c8
 		summarizeBy: sum
 		sourceColumn: lead_id
-		description: Int64 column.
 		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column campaign_id
 		dataType: int64
-		lineageTag: a48301e7-8e13-4508-a21d-05f9950244b7
+		lineageTag: 7b73e2d7-a3fb-42af-8d1e-d9e4b0ad1046
 		summarizeBy: sum
 		sourceColumn: campaign_id
-		description: Int64 column.
 		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column lead_name
 		dataType: string
-		lineageTag: d790ff7d-f47c-485e-9b2b-4497553c2ef7
+		lineageTag: 40ec6fd1-2170-4457-a7ad-c34ba2d7a48d
 		summarizeBy: none
 		sourceColumn: lead_name
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column email
 		dataType: string
-		lineageTag: ac13c292-a9bf-4e43-bdb0-2cdd99921cb9
+		lineageTag: 4cb9bd9f-d050-4c49-9913-02d3ec68c639
 		summarizeBy: none
 		sourceColumn: email
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column phone
 		dataType: string
-		lineageTag: f1ca6763-69a9-4f3a-b007-64e06e47ef20
+		lineageTag: c6da34ad-23dc-429b-8b15-354c9300cf1b
 		summarizeBy: none
 		sourceColumn: phone
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column company
 		dataType: string
-		lineageTag: 247eb139-d7ee-4256-a031-5350e90e1d76
+		lineageTag: 2b919954-c62a-4c88-bb8f-4aafed4217ee
 		summarizeBy: none
 		sourceColumn: company
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column job_title
 		dataType: string
-		lineageTag: d417b1f9-b7a9-4ba2-bc37-f6ee4cfa8d77
+		lineageTag: cbd3507e-bf47-4f00-858e-0f264f1d0e19
 		summarizeBy: none
 		sourceColumn: job_title
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column created_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 59d8b665-c549-4f10-af2e-74a67babe334
+		lineageTag: cd69a896-6eb0-4c93-96e2-86a7dec75e1b
 		summarizeBy: none
 		sourceColumn: created_date
 		dataCategory: DateTime
-		description: Datetime column. categorized as DateTime.
 
 		annotation SummarizationSetBy = Automatic
 
 	column deal_value
 		dataType: double
 		formatString: #,0.00
-		lineageTag: ba461678-d5dc-4f86-a772-908026f9002f
+		lineageTag: fcd3db25-b213-4f64-8840-ac28c7ea6765
 		summarizeBy: sum
 		sourceColumn: deal_value
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column lead_source
 		dataType: string
-		lineageTag: b0c010a6-8637-48da-a41a-4ed718dbedb2
+		lineageTag: 6eaeb66b-8d3b-4283-9276-08c131000717
 		summarizeBy: none
 		sourceColumn: lead_source
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column lead_status
 		dataType: string
-		lineageTag: 780a1ffd-bc32-427c-8b15-e53aec6e8991
+		lineageTag: 327c3dba-83e3-4801-a29f-5ba66aecdd95
 		summarizeBy: none
 		sourceColumn: lead_status
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column engagement_score
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 4959f31e-2d72-41af-860e-a641e75db6d7
+		lineageTag: 14fa6b18-d935-4ea0-8389-774d8bf1bebf
 		summarizeBy: sum
 		sourceColumn: engagement_score
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Leads-36737144-276f-420f-bceb-2be4a98ba1b1' = m
+	partition 'Leads-c430bfd1-0e88-4b6b-b9a2-abda288c9a38' = m
 		mode: import
 		source =
 				let

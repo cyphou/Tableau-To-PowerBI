@@ -1,0 +1,123 @@
+{
+  "generated_at": "2026-04-02T13:39:19.781184",
+  "source": "Tableau Migration",
+  "report_name": "Ventes_France",
+  "objects_converted": {
+    "worksheets": 6,
+    "dashboards": 2,
+    "datasources": 1,
+    "calculations": 22,
+    "parameters": 3,
+    "filters": 0,
+    "stories": 1,
+    "sets": 0,
+    "groups": 0,
+    "bins": 0,
+    "hierarchies": 0,
+    "user_filters": 1,
+    "actions": 2,
+    "custom_sql": 0
+  },
+  "generated_output": {
+    "pages": 2,
+    "visuals": 9,
+    "theme_applied": false,
+    "theme_detail": {
+      "status": "skipped",
+      "reason": "no dashboard colors detected"
+    }
+  },
+  "tmdl_stats": {
+    "tables": 6,
+    "measures": 19,
+    "columns": 45,
+    "relationships": 3
+  },
+  "visual_type_mappings": {
+    "Indicateurs Cl\u00e9s": "Automatic",
+    "CA par R\u00e9gion": "Automatic",
+    "\u00c9volution du CA": "Automatic",
+    "Carte des Ventes": "Automatic",
+    "Top Produits": "Automatic",
+    "Modes de Paiement": "Automatic"
+  },
+  "visual_details": [
+    {
+      "worksheet": "Indicateurs Cl\u00e9s",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "tableEx",
+      "dimensions": [],
+      "measures": [
+        "Calc_CA_Net",
+        "Calc_Marge"
+      ],
+      "field_count": 2
+    },
+    {
+      "worksheet": "CA par R\u00e9gion",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "stackedBarChart",
+      "dimensions": [
+        "region",
+        "categorie"
+      ],
+      "measures": [
+        "Calc_CA_Net",
+        "Calc_CA_Net"
+      ],
+      "field_count": 4
+    },
+    {
+      "worksheet": "\u00c9volution du CA",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "lineChart",
+      "dimensions": [
+        "date_commande"
+      ],
+      "measures": [
+        "Calc_CA_Net"
+      ],
+      "field_count": 2
+    },
+    {
+      "worksheet": "Carte des Ventes",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "map",
+      "dimensions": [
+        "region",
+        "region"
+      ],
+      "measures": [
+        "Calc_CA_Brut",
+        "Calc_CA_Brut"
+      ],
+      "field_count": 4
+    },
+    {
+      "worksheet": "Top Produits",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "clusteredBarChart",
+      "dimensions": [
+        "nom_produit"
+      ],
+      "measures": [
+        "Calc_CA_Net",
+        "Calc_CA_Net"
+      ],
+      "field_count": 3
+    },
+    {
+      "worksheet": "Modes de Paiement",
+      "tableau_mark": "Automatic",
+      "pbi_visual": "pieChart",
+      "dimensions": [
+        "mode_paiement"
+      ],
+      "measures": [
+        "Calc_NbCommandes"
+      ],
+      "field_count": 2
+    }
+  ],
+  "approximations": []
+}

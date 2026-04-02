@@ -136,7 +136,9 @@ class TestSwapBookmarks(unittest.TestCase):
         self.assertTrue(bm['name'].startswith('Swap_'))
         self.assertIn('Sheet1', bm['displayName'])
         self.assertEqual(bm['explorationState']['activeSection'], 'ReportSection')
-        self.assertIn('MigrationNote', bm.get('options', {}))
+        # Options should use PBIR-compliant keys
+        opts = bm.get('options', {})
+        self.assertIn('targetVisualNames', opts)
 
     def test_multiple_zones(self):
         gen = self._make_gen()

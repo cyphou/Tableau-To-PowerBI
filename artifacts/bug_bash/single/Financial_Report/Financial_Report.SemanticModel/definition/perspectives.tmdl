@@ -1,5 +1,0 @@
-perspective 'Full Model'
-	perspectiveTable transactions
-	perspectiveTable Calendar
-	perspectiveTable 'Fiscal Year'
-	perspectiveTable 'Business Unit'

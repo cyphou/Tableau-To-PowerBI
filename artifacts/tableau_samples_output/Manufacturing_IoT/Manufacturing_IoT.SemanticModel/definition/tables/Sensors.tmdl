@@ -1,86 +1,84 @@
 table Sensors
-	lineageTag: 95e1b060-1ab3-4bb7-a246-c6f41187a360
-	description: Contains 26 columns and 13 measures: reading_id, reading_time, machine_id, sensor_type, value, threshold_min, threshold_max, unit, ... (26 columns total).
+	lineageTag: ebcc64e4-fb8c-4842-be0d-94238d5ad00e
 
 	measure 'Median Value' = MEDIAN('Sensors'[value])
 		formatString: #,0.00
 		displayFolder: Measures
-		description: Migrated from Tableau: MEDIAN([value]) | DAX: MEDIAN('Sensors'[value])
-		lineageTag: 97b0341f-8d10-4b46-82d5-9ed4e3385c9c
+		lineageTag: 5dbc6dd3-a345-4ff8-83be-dc119f474b6b
+		annotation Copilot_Description = Migrated from Tableau: MEDIAN([value]) | DAX: MEDIAN('Sensors'[value])
 
 	measure 'P95 Value' = PERCENTILE.INC('Sensors'[value], 0.95)
 		formatString: #,0.00
 		displayFolder: Measures
-		description: Migrated from Tableau: PERCENTILE([value], 0.95) | DAX: PERCENTILE.INC('Sensors'[value], 0.95)
-		lineageTag: 049f9a30-36e7-4423-91d0-51d602f15776
+		lineageTag: 237584cd-8934-4a79-9823-988230bb86d4
+		annotation Copilot_Description = Migrated from Tableau: PERCENTILE([value], 0.95) | DAX: PERCENTILE.INC('Sensors'[value], 0.95)
 
 	measure 'Value Variance' = VAR.S('Sensors'[value])
 		formatString: #,0.00
 		displayFolder: Measures
-		description: Migrated from Tableau: VAR([value]) | DAX: VAR.S('Sensors'[value])
-		lineageTag: 3e36e934-d429-4684-a482-d35cdf91cb1d
+		lineageTag: 59d1057a-5e3b-42a8-a26b-3eb8b1315bc9
+		annotation Copilot_Description = Migrated from Tableau: VAR([value]) | DAX: VAR.S('Sensors'[value])
 
 	measure 'Value Variance Pop' = VAR.P('Sensors'[value])
 		formatString: #,0.00
 		displayFolder: Measures
-		description: Migrated from Tableau: VARP([value]) | DAX: VAR.P('Sensors'[value])
-		lineageTag: 98ee4a2c-00a9-4aad-8052-b5e0502fa0fa
+		lineageTag: fab54a82-edd7-4932-82e3-8aaa8f1ddee2
+		annotation Copilot_Description = Migrated from Tableau: VARP([value]) | DAX: VAR.P('Sensors'[value])
 
 	measure 'Avg by Sensor Machine' = CALCULATE(AVERAGE('Sensors'[value]))
 		formatString: #,0.00
 		displayFolder: Measures
-		description: Migrated from Tableau: {INCLUDE [sensor_type], [machine_id] : AVG([value])} | DAX: CALCULATE(AVERAGE('Sensors'[value]))
-		lineageTag: cf57eb04-84ea-4693-8ced-21c0c0cf2af3
+		lineageTag: 2366790f-b37c-4400-a2f8-9f1253f50489
+		annotation Copilot_Description = Migrated from Tableau: {INCLUDE [sensor_type], [machine_id] : AVG([value])} | DAX: CALCULATE(AVERAGE('Sensors'[value]))
 
 	measure 'Running Avg Value' = CALCULATE(AVERAGE('Sensors'[value]), FILTER(ALLSELECTED('Sensors'), TRUE())) /* RUNNING_AVG: converted to cumulative — verify window scope */
 		formatString: #,0.00
 		displayFolder: Measures
-		description: Migrated from Tableau: RUNNING_AVG(AVG([value])) | DAX: CALCULATE(AVERAGE('Sensors'[value]), FILTER(ALLSELECTED('Sensors'), TRUE())) /* RUNNING_AVG: converted to cumulative — v...
-		lineageTag: 9890a638-fd29-4b91-9ec4-0911f9cb8cfc
+		lineageTag: 57de0a1f-d86f-4c19-95aa-87e340824e6f
+		annotation Copilot_Description = Migrated from Tableau: RUNNING_AVG(AVG([value])) | DAX: CALCULATE(AVERAGE('Sensors'[value]), FILTER(ALLSELECTED('Sensors'), TRUE())) /* RUNNING_AVG: converted to cumulative — v...
 
 	measure 'Running Count' = CALCULATE(COUNT('Sensors'[reading_id]), FILTER(ALLSELECTED('Sensors'), TRUE())) /* RUNNING_COUNT: converted to cumulative — verify window scope */
 		displayFolder: Measures
-		description: Migrated from Tableau: RUNNING_COUNT(COUNT([reading_id])) | DAX: CALCULATE(COUNT('Sensors'[reading_id]), FILTER(ALLSELECTED('Sensors'), TRUE())) /* RUNNING_COUNT: converted to cumulativ...
-		lineageTag: 8463ae76-9020-4656-b5dc-301585deb88e
+		lineageTag: ffb1e0da-cbbd-4e64-8d52-0b3cb6e77f0e
+		annotation Copilot_Description = Migrated from Tableau: RUNNING_COUNT(COUNT([reading_id])) | DAX: CALCULATE(COUNT('Sensors'[reading_id]), FILTER(ALLSELECTED('Sensors'), TRUE())) /* RUNNING_COUNT: converted to cumulativ...
 
 	measure 'Running Max Value' = CALCULATE(MAX('Sensors'[value]), FILTER(ALLSELECTED('Sensors'), TRUE())) /* RUNNING_MAX: converted to cumulative — verify window scope */
 		formatString: #,0.00
 		displayFolder: Measures
-		description: Migrated from Tableau: RUNNING_MAX(MAX([value])) | DAX: CALCULATE(MAX('Sensors'[value]), FILTER(ALLSELECTED('Sensors'), TRUE())) /* RUNNING_MAX: converted to cumulative — verif...
-		lineageTag: 2e767a0f-ee3f-4f0e-83b5-f8a9ebec74f3
+		lineageTag: 3f9e716b-338b-4d05-ae9e-7615f895132d
+		annotation Copilot_Description = Migrated from Tableau: RUNNING_MAX(MAX([value])) | DAX: CALCULATE(MAX('Sensors'[value]), FILTER(ALLSELECTED('Sensors'), TRUE())) /* RUNNING_MAX: converted to cumulative — verif...
 
 	measure 'Running Min Value' = CALCULATE(MIN('Sensors'[value]), FILTER(ALLSELECTED('Sensors'), TRUE())) /* RUNNING_MIN: converted to cumulative — verify window scope */
 		formatString: #,0.00
 		displayFolder: Measures
-		description: Migrated from Tableau: RUNNING_MIN(MIN([value])) | DAX: CALCULATE(MIN('Sensors'[value]), FILTER(ALLSELECTED('Sensors'), TRUE())) /* RUNNING_MIN: converted to cumulative — verif...
-		lineageTag: 7f68923e-944a-4b1b-83ce-c1b748208b75
+		lineageTag: 0311ba5d-6f8a-40b3-995b-2687bd1a2c08
+		annotation Copilot_Description = Migrated from Tableau: RUNNING_MIN(MIN([value])) | DAX: CALCULATE(MIN('Sensors'[value]), FILTER(ALLSELECTED('Sensors'), TRUE())) /* RUNNING_MIN: converted to cumulative — verif...
 
 	measure 'Dense Rank' = RANKX(ALL('Sensors'), SUM('Sensors'[value]),, ASC, DENSE)
 		displayFolder: Measures
-		description: Migrated from Tableau: RANK_DENSE(SUM([value])) | DAX: RANKX(ALL('Sensors'), SUM('Sensors'[value]),, ASC, DENSE)
-		lineageTag: d7b6c97a-10b3-4d67-b2f4-3d0a10323617
+		lineageTag: 5cf12be8-f3c2-47e4-8fd6-32febd46fa12
+		annotation Copilot_Description = Migrated from Tableau: RANK_DENSE(SUM([value])) | DAX: RANKX(ALL('Sensors'), SUM('Sensors'[value]),, ASC, DENSE)
 
 	measure 'Unique Rank' = RANKX(ALL('Sensors'), AVERAGE('Sensors'[value]))
 		displayFolder: Measures
-		description: Migrated from Tableau: RANK_UNIQUE(AVG([value])) | DAX: RANKX(ALL('Sensors'), AVERAGE('Sensors'[value]))
-		lineageTag: d25a42e8-6029-4426-abd0-18d39c55aad8
+		lineageTag: e260b594-ab4f-4ec5-9f43-64058df043f5
+		annotation Copilot_Description = Migrated from Tableau: RANK_UNIQUE(AVG([value])) | DAX: RANKX(ALL('Sensors'), AVERAGE('Sensors'[value]))
 
 	measure 'Window Total' = CALCULATE(SUM('Sensors'[value]), ALL('Sensors'))
 		formatString: #,0.00
 		displayFolder: Measures
-		description: Migrated from Tableau: WINDOW_SUM(SUM([value])) | DAX: CALCULATE(SUM('Sensors'[value]), ALL('Sensors'))
-		lineageTag: cdafea92-d15c-49f7-bbe7-0b1d821e3799
+		lineageTag: ca9b18a0-f369-4c7e-b817-a690420a626d
+		annotation Copilot_Description = Migrated from Tableau: WINDOW_SUM(SUM([value])) | DAX: CALCULATE(SUM('Sensors'[value]), ALL('Sensors'))
 
 	measure 'Time Granularity' = "Hour"
-		description: DAX: "Hour"
-		lineageTag: 797c37a7-0a51-4a6a-ba3b-03848dce27d4
+		lineageTag: 207ac075-8a61-4f76-8845-fc919c97214a
+		annotation Copilot_Description = DAX: "Hour"
 
 	column reading_id
 		dataType: int64
-		lineageTag: a69501f2-c3f0-4dc0-a5c8-63c775d66685
+		lineageTag: ab062c3b-053c-4ed8-b19f-320db8da1de3
 		summarizeBy: sum
 		sourceColumn: reading_id
-		description: Int64 column.
 		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
@@ -88,87 +86,78 @@ table Sensors
 	column reading_time
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 01a2a3d0-8313-4820-8886-bfe4aee7fc4a
+		lineageTag: 6b376ab0-f1ee-4570-af6f-c556f6897c2a
 		summarizeBy: none
 		sourceColumn: reading_time
 		dataCategory: DateTime
-		description: Datetime column. categorized as DateTime.
 
 		annotation SummarizationSetBy = Automatic
 
 	column machine_id
 		dataType: int64
-		lineageTag: 93e4eeb7-6255-4a4e-b68a-b9ff321f1570
+		lineageTag: 79bdd3d8-e300-4cdf-ae36-7fafe8c16afb
 		summarizeBy: sum
 		sourceColumn: machine_id
-		description: Int64 column.
 		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
 
 	column sensor_type
 		dataType: string
-		lineageTag: 1b9cf47a-cbe8-4212-9caa-bfe103a105d3
+		lineageTag: 74618cf5-8f3b-4bb9-8127-7f12879a3ff5
 		summarizeBy: none
 		sourceColumn: sensor_type
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column value
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 2d56ebe7-039d-4093-aafc-0ab73d4c9e27
+		lineageTag: 066fb1cf-1a46-4488-b5f2-c105e7e41a25
 		summarizeBy: sum
 		sourceColumn: value
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column threshold_min
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 54a89a74-fe25-4139-b535-3c9160eb7e71
+		lineageTag: 79a0bbf6-ee48-4e60-ad65-9c42014c1942
 		summarizeBy: sum
 		sourceColumn: threshold_min
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column threshold_max
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 59d27b7b-8445-4479-9802-a88d6d4abe16
+		lineageTag: de2e05a8-a7ff-444e-bf6c-59f14ffa0a9a
 		summarizeBy: sum
 		sourceColumn: threshold_max
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column unit
 		dataType: string
-		lineageTag: c7f50859-ef54-4de3-832c-2132c89b292e
+		lineageTag: 6b19f88d-7c26-4ecf-8bd4-70133fea68c8
 		summarizeBy: none
 		sourceColumn: unit
-		description: String column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column quality_score
 		dataType: int64
-		lineageTag: 3476b178-38d2-4b42-b9d0-8fe069bd56a9
+		lineageTag: efdac12b-86af-44f3-8ddb-d7c526f0c8fe
 		summarizeBy: sum
 		sourceColumn: quality_score
-		description: Int64 column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column plant_id
 		dataType: string
-		lineageTag: 16212506-d4b2-4739-94fa-5a1f8048fc3f
+		lineageTag: dd0b316e-5404-4ba0-aa56-2dc62e9e274e
 		summarizeBy: none
 		sourceColumn: plant_id
-		description: String column.
 		annotation Copilot_Hidden = true
 
 		annotation SummarizationSetBy = Automatic
@@ -176,150 +165,134 @@ table Sensors
 	column delta_value
 		dataType: double
 		formatString: #,0.00
-		lineageTag: f8c8717b-1576-4c80-8bac-f827338a74c1
+		lineageTag: 0e87e375-693d-4ff4-9750-c1c0efcee673
 		summarizeBy: sum
 		sourceColumn: delta_value
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column angle_degrees
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 6b9d1ba2-64a8-48c0-bae4-42f933ecacbd
+		lineageTag: 538fd924-c632-49e8-a5a2-6fddc03acd80
 		summarizeBy: sum
 		sourceColumn: angle_degrees
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column power_watts
 		dataType: double
 		formatString: #,0.00
-		lineageTag: bad69754-1111-4c79-a524-c168efb21644
+		lineageTag: 4d1647a4-671b-4c01-8dca-029d289c5732
 		summarizeBy: sum
 		sourceColumn: power_watts
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Abs Deviation'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 0ee4ac1c-e606-4b01-9122-cbeebe574e85
+		lineageTag: 27f2cee3-9ca0-437c-bcfa-5d167401ef3f
 		summarizeBy: none
 		sourceColumn: 'Abs Deviation'
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Ceiling Value' = CEILING('Sensors'[value], 1)
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 4b237618-fc06-4ede-b219-646b3b7f842e
+		lineageTag: 1dbbcfb7-0839-4517-865b-b82a7767dbde
 		summarizeBy: none
-		description: Calculated column (Double).
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Floor Value'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: e074ffde-9e01-4586-a033-c95ee5a1813c
+		lineageTag: fdda2b45-70d1-4335-87b2-095017131736
 		summarizeBy: none
 		sourceColumn: 'Floor Value'
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Rounded Value'
 		dataType: double
 		formatString: #,0.00
-		lineageTag: d35ac0f8-2c34-42a2-846f-1b6314abe101
+		lineageTag: 187c9102-5bef-4184-8117-4f05b99b007f
 		summarizeBy: none
 		sourceColumn: 'Rounded Value'
-		description: Double column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Energy Index' = SQRT(POWER('Sensors'[power_watts], 2) + POWER('Sensors'[delta_value], 2))
 		dataType: double
 		formatString: #,0.00
-		lineageTag: ecfd1bf9-cc93-4a49-a8cb-1bd37a3994aa
+		lineageTag: 8bd85e95-6a5f-43e1-84d2-3a8683605512
 		summarizeBy: none
-		description: Calculated column (Double).
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Log Scale' = IF('Sensors'[value] > 0, LOG('Sensors'[value]), LN(EXP(1)))
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 58cb695d-a9e7-4675-8f46-25b445f8d25b
+		lineageTag: 8d2c9ff7-e63e-458b-93a8-d6b904ed3393
 		summarizeBy: none
-		description: Calculated column (Double).
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Vibration X' = 'Sensors'[value] * COS((('Sensors'[angle_degrees])*PI()/180))
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 15620d5d-b596-4e41-b30c-25508f38e956
+		lineageTag: b0ece3d6-42d5-4c13-bece-849490fb54c9
 		summarizeBy: none
-		description: Calculated column (Double).
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Vibration Y' = 'Sensors'[value] * SIN((('Sensors'[angle_degrees])*PI()/180))
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 5b754bfd-fb87-49fd-b606-29b4b4c6cd84
+		lineageTag: 559f4742-7666-49ce-be1f-f566fdfe14fd
 		summarizeBy: none
-		description: Calculated column (Double).
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Score Label' = "Score: " & FORMAT(INT('Sensors'[quality_score]), "0") & " / " & FORMAT(CONVERT('Sensors'[value], DOUBLE), "0")
 		dataType: string
-		lineageTag: aa4ed1b6-d71d-46c6-affd-b1595bfa2b1c
+		lineageTag: 9089a0ea-6af0-4286-aa5b-ad9734d23ae8
 		summarizeBy: none
-		description: Calculated column (String).
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Reading Month'
 		dataType: dateTime
-		lineageTag: 19a8128a-1a7f-428f-a21d-a3496f704489
+		lineageTag: 9df663e5-ab13-4ed3-8675-11a10db6bbef
 		summarizeBy: none
 		sourceColumn: 'Reading Month'
-		description: Datetime column.
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Reading Quarter' = DATE(YEAR('Sensors'[reading_time]), 3 * INT((MONTH('Sensors'[reading_time]) - 1) / 3) + 1, 1)
 		dataType: dateTime
-		lineageTag: dee279c3-1b6c-4531-81a8-62c1afaf99c2
+		lineageTag: 6054b538-ac9a-44b2-b6f3-ad3850d35005
 		summarizeBy: none
-		description: Calculated column (DateTime).
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Reading Hour' = HOUR('Sensors'[reading_time])
 		dataType: int64
-		lineageTag: 81567aec-fa07-4d0b-8659-007cde529db0
+		lineageTag: 8cf6c414-a93f-4496-9f75-62a1b2c591bf
 		summarizeBy: none
-		description: Calculated column (Int64).
 
 		annotation SummarizationSetBy = Automatic
 
 	column Weekday = WEEKDAY('Sensors'[reading_time])
 		dataType: int64
-		lineageTag: 0d1f1e12-8318-408c-ab63-15dc03b65cd8
+		lineageTag: ec08cb94-c0b5-4e48-94d3-09b3ece49a47
 		summarizeBy: none
-		description: Calculated column (Int64).
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Sensors-26e92506-8392-4268-9e54-8b166a8cb8fd' = m
+	partition 'Sensors-6298b247-7646-4329-b500-4a1acd5cae5b' = m
 		mode: import
 		source =
 				let

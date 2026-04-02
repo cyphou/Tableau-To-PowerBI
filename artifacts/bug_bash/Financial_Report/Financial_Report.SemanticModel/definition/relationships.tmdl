@@ -1,0 +1,7 @@
+relationship eb3296c4-8a96-4e26-96f3-b3d19066615c
+	fromColumn: transactions.transaction_date
+	toColumn: Calendar.Date
+	fromCardinality: many
+	toCardinality: many
+	crossFilteringBehavior: bothDirections
+

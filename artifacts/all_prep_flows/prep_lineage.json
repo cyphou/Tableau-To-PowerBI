@@ -1,0 +1,1569 @@
+{
+  "total_flows": 11,
+  "total_sources": 10,
+  "total_outputs": 4,
+  "total_transforms": 19,
+  "total_cross_flow_edges": 10,
+  "max_chain_depth": 0,
+  "flows": [
+    {
+      "name": "01_Raw_Orders_Clean",
+      "file_path": "C:\\Users\\pidoudet\\OneDrive - Microsoft\\Boulot\\PBI SME\\OracleToPostgre\\TableauToPowerBI\\examples\\prep_portfolio\\01_Raw_Orders_Clean.tfl",
+      "inputs": [
+        {
+          "node_id": "a1000001-0001-0001-0001-000000000001",
+          "name": "Orders_2024.csv",
+          "connection_type": "textscan",
+          "server": "",
+          "database": "",
+          "schema": "",
+          "table_name": "Orders_2024.csv",
+          "filename": "Orders_2024.csv",
+          "column_count": 12,
+          "column_names": [
+            "Order_ID",
+            "Order_Date",
+            "Customer_ID",
+            "Product_ID",
+            "Region",
+            "Sales",
+            "Quantity",
+            "Discount",
+            "Profit",
+            "Ship_Mode",
+            "Status",
+            "_temp_col"
+          ],
+          "fingerprint": "dd72c5fb6c424ef5"
+        }
+      ],
+      "outputs": [
+        {
+          "node_id": "a1000001-0001-0001-0001-000000000003",
+          "name": "Orders_Clean",
+          "output_type": "PublishExtract",
+          "target_server": "tableau-prod.corp.local",
+          "target_database": "PrepOutputs",
+          "target_table": "Orders_Clean",
+          "target_filename": "",
+          "column_count": 11,
+          "column_names": [
+            "OrderID",
+            "OrderDate",
+            "CustomerID",
+            "ProductID",
+            "Region",
+            "Sales",
+            "Quantity",
+            "Discount",
+            "Profit",
+            "Ship_Mode",
+            "Revenue"
+          ],
+          "fingerprint": "23231a2adb5fb1a4"
+        }
+      ],
+      "transforms": [
+        {
+          "node_id": "a1000001-0001-0001-0001-000000000002",
+          "name": "Clean Orders",
+          "transform_type": "Clean",
+          "details": {
+            "action_count": 0,
+            "action_types": []
+          }
+        }
+      ],
+      "node_count": 3,
+      "edge_count": 2,
+      "dag_depth": 2,
+      "join_count": 0,
+      "union_count": 0,
+      "script_count": 0,
+      "calc_count": 0,
+      "complexity_score": 1,
+      "complexity_label": "Low",
+      "node_graph": {
+        "a1000001-0001-0001-0001-000000000001": [
+          "a1000001-0001-0001-0001-000000000002"
+        ],
+        "a1000001-0001-0001-0001-000000000002": [
+          "a1000001-0001-0001-0001-000000000003"
+        ],
+        "a1000001-0001-0001-0001-000000000003": []
+      }
+    },
+    {
+      "name": "02_Raw_Products_Clean",
+      "file_path": "C:\\Users\\pidoudet\\OneDrive - Microsoft\\Boulot\\PBI SME\\OracleToPostgre\\TableauToPowerBI\\examples\\prep_portfolio\\02_Raw_Products_Clean.tfl",
+      "inputs": [
+        {
+          "node_id": "a2000001-0001-0001-0001-000000000001",
+          "name": "Products_Master.csv",
+          "connection_type": "textscan",
+          "server": "",
+          "database": "",
+          "schema": "",
+          "table_name": "Products_Master.csv",
+          "filename": "Products_Master.csv",
+          "column_count": 8,
+          "column_names": [
+            "Product_ID",
+            "Product_Name",
+            "Category",
+            "Sub_Category",
+            "Unit_Cost",
+            "Unit_Price",
+            "Supplier",
+            "Weight_kg"
+          ],
+          "fingerprint": "c3507562d4d3f179"
+        }
+      ],
+      "outputs": [
+        {
+          "node_id": "a2000001-0001-0001-0001-000000000003",
+          "name": "Products_Master",
+          "output_type": "PublishExtract",
+          "target_server": "tableau-prod.corp.local",
+          "target_database": "PrepOutputs",
+          "target_table": "Products_Master",
+          "target_filename": "",
+          "column_count": 9,
+          "column_names": [
+            "ProductID",
+            "ProductName",
+            "Category",
+            "SubCategory",
+            "UnitCost",
+            "UnitPrice",
+            "Supplier",
+            "Weight_kg",
+            "Margin"
+          ],
+          "fingerprint": "e527534fabcb66cf"
+        }
+      ],
+      "transforms": [
+        {
+          "node_id": "a2000001-0001-0001-0001-000000000002",
+          "name": "Clean Products",
+          "transform_type": "Clean",
+          "details": {
+            "action_count": 0,
+            "action_types": []
+          }
+        }
+      ],
+      "node_count": 3,
+      "edge_count": 2,
+      "dag_depth": 2,
+      "join_count": 0,
+      "union_count": 0,
+      "script_count": 0,
+      "calc_count": 0,
+      "complexity_score": 1,
+      "complexity_label": "Low",
+      "node_graph": {
+        "a2000001-0001-0001-0001-000000000001": [
+          "a2000001-0001-0001-0001-000000000002"
+        ],
+        "a2000001-0001-0001-0001-000000000002": [
+          "a2000001-0001-0001-0001-000000000003"
+        ],
+        "a2000001-0001-0001-0001-000000000003": []
+      }
+    },
+    {
+      "name": "03_Raw_Returns_Clean",
+      "file_path": "C:\\Users\\pidoudet\\OneDrive - Microsoft\\Boulot\\PBI SME\\OracleToPostgre\\TableauToPowerBI\\examples\\prep_portfolio\\03_Raw_Returns_Clean.tfl",
+      "inputs": [
+        {
+          "node_id": "a3000001-0001-0001-0001-000000000001",
+          "name": "Returns_2024.csv",
+          "connection_type": "textscan",
+          "server": "",
+          "database": "",
+          "schema": "",
+          "table_name": "Returns_2024.csv",
+          "filename": "Returns_2024.csv",
+          "column_count": 8,
+          "column_names": [
+            "Return_ID",
+            "Order_ID",
+            "Return_Date",
+            "Reason_Code",
+            "Reason_Text",
+            "Refund_Amount",
+            "Restocking_Fee",
+            "Return_Status"
+          ],
+          "fingerprint": "76ed540e7e1829ed"
+        }
+      ],
+      "outputs": [
+        {
+          "node_id": "a3000001-0001-0001-0001-000000000003",
+          "name": "Returns_Processed",
+          "output_type": "PublishExtract",
+          "target_server": "tableau-prod.corp.local",
+          "target_database": "PrepOutputs",
+          "target_table": "Returns_Processed",
+          "target_filename": "",
+          "column_count": 8,
+          "column_names": [
+            "ReturnID",
+            "OrderID",
+            "ReturnDate",
+            "ReasonCode",
+            "Reason_Text",
+            "RefundAmount",
+            "Restocking_Fee",
+            "NetRefund"
+          ],
+          "fingerprint": "88b9bd394a1397bc"
+        }
+      ],
+      "transforms": [
+        {
+          "node_id": "a3000001-0001-0001-0001-000000000002",
+          "name": "Clean Returns",
+          "transform_type": "Clean",
+          "details": {
+            "action_count": 0,
+            "action_types": []
+          }
+        }
+      ],
+      "node_count": 3,
+      "edge_count": 2,
+      "dag_depth": 2,
+      "join_count": 0,
+      "union_count": 0,
+      "script_count": 0,
+      "calc_count": 0,
+      "complexity_score": 1,
+      "complexity_label": "Low",
+      "node_graph": {
+        "a3000001-0001-0001-0001-000000000001": [
+          "a3000001-0001-0001-0001-000000000002"
+        ],
+        "a3000001-0001-0001-0001-000000000002": [
+          "a3000001-0001-0001-0001-000000000003"
+        ],
+        "a3000001-0001-0001-0001-000000000003": []
+      }
+    },
+    {
+      "name": "04_Customer_Enrichment",
+      "file_path": "C:\\Users\\pidoudet\\OneDrive - Microsoft\\Boulot\\PBI SME\\OracleToPostgre\\TableauToPowerBI\\examples\\prep_portfolio\\04_Customer_Enrichment.tfl",
+      "inputs": [
+        {
+          "node_id": "a4000001-0001-0001-0001-000000000001",
+          "name": "CRM Customers",
+          "connection_type": "postgres",
+          "server": "crm-db.corp.local",
+          "database": "crm_production",
+          "schema": "public",
+          "table_name": "customers",
+          "filename": "",
+          "column_count": 9,
+          "column_names": [
+            "customer_id",
+            "first_name",
+            "last_name",
+            "email",
+            "phone",
+            "created_at",
+            "segment",
+            "loyalty_tier",
+            "lifetime_value"
+          ],
+          "fingerprint": "8d96b90c648a5fa7"
+        },
+        {
+          "node_id": "a4000001-0001-0001-0001-000000000002",
+          "name": "Demographics.csv",
+          "connection_type": "textscan",
+          "server": "",
+          "database": "",
+          "schema": "",
+          "table_name": "Demographics.csv",
+          "filename": "Demographics.csv",
+          "column_count": 7,
+          "column_names": [
+            "customer_id",
+            "age_group",
+            "income_bracket",
+            "city",
+            "state",
+            "country",
+            "postal_code"
+          ],
+          "fingerprint": "60d1daa32bc4c74a"
+        }
+      ],
+      "outputs": [
+        {
+          "node_id": "a4000001-0001-0001-0001-000000000005",
+          "name": "Customer_360",
+          "output_type": "PublishExtract",
+          "target_server": "tableau-prod.corp.local",
+          "target_database": "PrepOutputs",
+          "target_table": "Customer_360",
+          "target_filename": "",
+          "column_count": 13,
+          "column_names": [
+            "CustomerID",
+            "CustomerName",
+            "email",
+            "phone",
+            "segment",
+            "loyalty_tier",
+            "lifetime_value",
+            "age_group",
+            "income_bracket",
+            "city",
+            "state",
+            "country",
+            "FullAddress"
+          ],
+          "fingerprint": "918dc61e975bb173"
+        }
+      ],
+      "transforms": [
+        {
+          "node_id": "a4000001-0001-0001-0001-000000000003",
+          "name": "Enrich Customers",
+          "transform_type": "Join",
+          "details": {
+            "join_type": "left",
+            "key_count": 1
+          }
+        },
+        {
+          "node_id": "a4000001-0001-0001-0001-000000000004",
+          "name": "Standardize Customer",
+          "transform_type": "Clean",
+          "details": {
+            "action_count": 0,
+            "action_types": []
+          }
+        }
+      ],
+      "node_count": 5,
+      "edge_count": 4,
+      "dag_depth": 3,
+      "join_count": 1,
+      "union_count": 0,
+      "script_count": 0,
+      "calc_count": 0,
+      "complexity_score": 5,
+      "complexity_label": "Low",
+      "node_graph": {
+        "a4000001-0001-0001-0001-000000000001": [
+          "a4000001-0001-0001-0001-000000000003"
+        ],
+        "a4000001-0001-0001-0001-000000000002": [
+          "a4000001-0001-0001-0001-000000000003"
+        ],
+        "a4000001-0001-0001-0001-000000000003": [
+          "a4000001-0001-0001-0001-000000000004"
+        ],
+        "a4000001-0001-0001-0001-000000000004": [
+          "a4000001-0001-0001-0001-000000000005"
+        ],
+        "a4000001-0001-0001-0001-000000000005": []
+      }
+    },
+    {
+      "name": "05_Sales_Analytics",
+      "file_path": "C:\\Users\\pidoudet\\OneDrive - Microsoft\\Boulot\\PBI SME\\OracleToPostgre\\TableauToPowerBI\\examples\\prep_portfolio\\05_Sales_Analytics.tfl",
+      "inputs": [
+        {
+          "node_id": "a5000001-0001-0001-0001-000000000001",
+          "name": "Orders_Clean",
+          "connection_type": "sqlserver",
+          "server": "tableau-prod.corp.local",
+          "database": "PrepOutputs",
+          "schema": "",
+          "table_name": "Orders_Clean",
+          "filename": "",
+          "column_count": 10,
+          "column_names": [
+            "OrderID",
+            "OrderDate",
+            "CustomerID",
+            "ProductID",
+            "Region",
+            "Sales",
+            "Quantity",
+            "Discount",
+            "Profit",
+            "Revenue"
+          ],
+          "fingerprint": "6fdff1968fff4045"
+        },
+        {
+          "node_id": "a5000001-0001-0001-0001-000000000002",
+          "name": "Products_Master",
+          "connection_type": "sqlserver",
+          "server": "tableau-prod.corp.local",
+          "database": "PrepOutputs",
+          "schema": "",
+          "table_name": "Products_Master",
+          "filename": "",
+          "column_count": 7,
+          "column_names": [
+            "ProductID",
+            "ProductName",
+            "Category",
+            "SubCategory",
+            "UnitCost",
+            "UnitPrice",
+            "Margin"
+          ],
+          "fingerprint": "45e38c456767e63e"
+        },
+        {
+          "node_id": "a5000001-0001-0001-0001-000000000003",
+          "name": "Customer_360",
+          "connection_type": "sqlserver",
+          "server": "tableau-prod.corp.local",
+          "database": "PrepOutputs",
+          "schema": "",
+          "table_name": "Customer_360",
+          "filename": "",
+          "column_count": 7,
+          "column_names": [
+            "CustomerID",
+            "CustomerName",
+            "segment",
+            "loyalty_tier",
+            "city",
+            "state",
+            "country"
+          ],
+          "fingerprint": "43e9dc63aae4b3c9"
+        }
+      ],
+      "outputs": [
+        {
+          "node_id": "a5000001-0001-0001-0001-000000000007",
+          "name": "Sales_Summary",
+          "output_type": "PublishExtract",
+          "target_server": "tableau-prod.corp.local",
+          "target_database": "PrepOutputs",
+          "target_table": "Sales_Summary",
+          "target_filename": "",
+          "column_count": 9,
+          "column_names": [
+            "Region",
+            "Category",
+            "segment",
+            "loyalty_tier",
+            "TotalRevenue",
+            "TotalProfit",
+            "OrderCount",
+            "TotalQuantity",
+            "AvgDiscount"
+          ],
+          "fingerprint": "ec7b85b290b40ebf"
+        }
+      ],
+      "transforms": [
+        {
+          "node_id": "a5000001-0001-0001-0001-000000000004",
+          "name": "Orders + Products",
+          "transform_type": "Join",
+          "details": {
+            "join_type": "left",
+            "key_count": 1
+          }
+        },
+        {
+          "node_id": "a5000001-0001-0001-0001-000000000005",
+          "name": "Add Customer Info",
+          "transform_type": "Join",
+          "details": {
+            "join_type": "left",
+            "key_count": 1
+          }
+        },
+        {
+          "node_id": "a5000001-0001-0001-0001-000000000006",
+          "name": "Sales Summary",
+          "transform_type": "Other",
+          "details": {}
+        }
+      ],
+      "node_count": 7,
+      "edge_count": 6,
+      "dag_depth": 4,
+      "join_count": 2,
+      "union_count": 0,
+      "script_count": 0,
+      "calc_count": 0,
+      "complexity_score": 9,
+      "complexity_label": "Low",
+      "node_graph": {
+        "a5000001-0001-0001-0001-000000000001": [
+          "a5000001-0001-0001-0001-000000000004"
+        ],
+        "a5000001-0001-0001-0001-000000000002": [
+          "a5000001-0001-0001-0001-000000000004"
+        ],
+        "a5000001-0001-0001-0001-000000000003": [
+          "a5000001-0001-0001-0001-000000000005"
+        ],
+        "a5000001-0001-0001-0001-000000000004": [
+          "a5000001-0001-0001-0001-000000000005"
+        ],
+        "a5000001-0001-0001-0001-000000000005": [
+          "a5000001-0001-0001-0001-000000000006"
+        ],
+        "a5000001-0001-0001-0001-000000000006": [
+          "a5000001-0001-0001-0001-000000000007"
+        ],
+        "a5000001-0001-0001-0001-000000000007": []
+      }
+    },
+    {
+      "name": "06_Returns_Analytics",
+      "file_path": "C:\\Users\\pidoudet\\OneDrive - Microsoft\\Boulot\\PBI SME\\OracleToPostgre\\TableauToPowerBI\\examples\\prep_portfolio\\06_Returns_Analytics.tfl",
+      "inputs": [
+        {
+          "node_id": "a6000001-0001-0001-0001-000000000001",
+          "name": "Returns_Processed",
+          "connection_type": "sqlserver",
+          "server": "tableau-prod.corp.local",
+          "database": "PrepOutputs",
+          "schema": "",
+          "table_name": "Returns_Processed",
+          "filename": "",
+          "column_count": 7,
+          "column_names": [
+            "ReturnID",
+            "OrderID",
+            "ReturnDate",
+            "ReasonCode",
+            "Reason_Text",
+            "RefundAmount",
+            "NetRefund"
+          ],
+          "fingerprint": "a4098c517543c7f9"
+        },
+        {
+          "node_id": "a6000001-0001-0001-0001-000000000002",
+          "name": "Orders_Clean",
+          "connection_type": "sqlserver",
+          "server": "tableau-prod.corp.local",
+          "database": "PrepOutputs",
+          "schema": "",
+          "table_name": "Orders_Clean",
+          "filename": "",
+          "column_count": 7,
+          "column_names": [
+            "OrderID",
+            "OrderDate",
+            "CustomerID",
+            "ProductID",
+            "Region",
+            "Sales",
+            "Revenue"
+          ],
+          "fingerprint": "6fdff1968fff4045"
+        }
+      ],
+      "outputs": [
+        {
+          "node_id": "a6000001-0001-0001-0001-000000000006",
+          "name": "Returns_Analysis",
+          "output_type": "PublishExtract",
+          "target_server": "tableau-prod.corp.local",
+          "target_database": "PrepOutputs",
+          "target_table": "Returns_Analysis",
+          "target_filename": "",
+          "column_count": 9,
+          "column_names": [
+            "ReturnID",
+            "OrderID",
+            "Region",
+            "ReasonCode",
+            "RefundAmount",
+            "NetRefund",
+            "ReturnRate",
+            "DaysToReturn",
+            "anomaly_score"
+          ],
+          "fingerprint": "b43c6effd6e43bf2"
+        }
+      ],
+      "transforms": [
+        {
+          "node_id": "a6000001-0001-0001-0001-000000000003",
+          "name": "Returns + Orders",
+          "transform_type": "Join",
+          "details": {
+            "join_type": "left",
+            "key_count": 1
+          }
+        },
+        {
+          "node_id": "a6000001-0001-0001-0001-000000000004",
+          "name": "Calc Return Metrics",
+          "transform_type": "Clean",
+          "details": {
+            "action_count": 0,
+            "action_types": []
+          }
+        },
+        {
+          "node_id": "a6000001-0001-0001-0001-000000000005",
+          "name": "Anomaly Detection",
+          "transform_type": "Script",
+          "details": {}
+        }
+      ],
+      "node_count": 6,
+      "edge_count": 5,
+      "dag_depth": 4,
+      "join_count": 1,
+      "union_count": 0,
+      "script_count": 1,
+      "calc_count": 0,
+      "complexity_score": 11,
+      "complexity_label": "Medium",
+      "node_graph": {
+        "a6000001-0001-0001-0001-000000000001": [
+          "a6000001-0001-0001-0001-000000000003"
+        ],
+        "a6000001-0001-0001-0001-000000000002": [
+          "a6000001-0001-0001-0001-000000000003"
+        ],
+        "a6000001-0001-0001-0001-000000000003": [
+          "a6000001-0001-0001-0001-000000000004"
+        ],
+        "a6000001-0001-0001-0001-000000000004": [
+          "a6000001-0001-0001-0001-000000000005"
+        ],
+        "a6000001-0001-0001-0001-000000000005": [
+          "a6000001-0001-0001-0001-000000000006"
+        ],
+        "a6000001-0001-0001-0001-000000000006": []
+      }
+    },
+    {
+      "name": "07_Executive_Dashboard",
+      "file_path": "C:\\Users\\pidoudet\\OneDrive - Microsoft\\Boulot\\PBI SME\\OracleToPostgre\\TableauToPowerBI\\examples\\prep_portfolio\\07_Executive_Dashboard.tfl",
+      "inputs": [
+        {
+          "node_id": "a7000001-0001-0001-0001-000000000001",
+          "name": "Sales_Summary",
+          "connection_type": "sqlserver",
+          "server": "tableau-prod.corp.local",
+          "database": "PrepOutputs",
+          "schema": "",
+          "table_name": "Sales_Summary",
+          "filename": "",
+          "column_count": 6,
+          "column_names": [
+            "Region",
+            "Category",
+            "segment",
+            "TotalRevenue",
+            "TotalProfit",
+            "OrderCount"
+          ],
+          "fingerprint": "76f221890a8213d6"
+        },
+        {
+          "node_id": "a7000001-0001-0001-0001-000000000002",
+          "name": "Returns_Analysis",
+          "connection_type": "sqlserver",
+          "server": "tableau-prod.corp.local",
+          "database": "PrepOutputs",
+          "schema": "",
+          "table_name": "Returns_Analysis",
+          "filename": "",
+          "column_count": 5,
+          "column_names": [
+            "Region",
+            "ReasonCode",
+            "NetRefund",
+            "ReturnRate",
+            "anomaly_score"
+          ],
+          "fingerprint": "d5897ef174a5fa02"
+        }
+      ],
+      "outputs": [
+        {
+          "node_id": "a7000001-0001-0001-0001-000000000006",
+          "name": "Executive_KPIs",
+          "output_type": "PublishExtract",
+          "target_server": "tableau-prod.corp.local",
+          "target_database": "PrepOutputs",
+          "target_table": "Executive_KPIs",
+          "target_filename": "",
+          "column_count": 9,
+          "column_names": [
+            "Region",
+            "GrandRevenue",
+            "GrandProfit",
+            "TotalOrders",
+            "TotalRefunds",
+            "AvgReturnRate",
+            "ProfitMargin",
+            "NetRevenue",
+            "AvgOrderValue"
+          ],
+          "fingerprint": "8df4000bae2f196c"
+        }
+      ],
+      "transforms": [
+        {
+          "node_id": "a7000001-0001-0001-0001-000000000003",
+          "name": "Sales + Returns by Region",
+          "transform_type": "Join",
+          "details": {
+            "join_type": "left",
+            "key_count": 1
+          }
+        },
+        {
+          "node_id": "a7000001-0001-0001-0001-000000000004",
+          "name": "Executive KPIs",
+          "transform_type": "Other",
+          "details": {}
+        },
+        {
+          "node_id": "a7000001-0001-0001-0001-000000000005",
+          "name": "Final KPI Calcs",
+          "transform_type": "Clean",
+          "details": {
+            "action_count": 0,
+            "action_types": []
+          }
+        }
+      ],
+      "node_count": 6,
+      "edge_count": 5,
+      "dag_depth": 4,
+      "join_count": 1,
+      "union_count": 0,
+      "script_count": 0,
+      "calc_count": 0,
+      "complexity_score": 6,
+      "complexity_label": "Low",
+      "node_graph": {
+        "a7000001-0001-0001-0001-000000000001": [
+          "a7000001-0001-0001-0001-000000000003"
+        ],
+        "a7000001-0001-0001-0001-000000000002": [
+          "a7000001-0001-0001-0001-000000000003"
+        ],
+        "a7000001-0001-0001-0001-000000000003": [
+          "a7000001-0001-0001-0001-000000000004"
+        ],
+        "a7000001-0001-0001-0001-000000000004": [
+          "a7000001-0001-0001-0001-000000000005"
+        ],
+        "a7000001-0001-0001-0001-000000000005": [
+          "a7000001-0001-0001-0001-000000000006"
+        ],
+        "a7000001-0001-0001-0001-000000000006": []
+      }
+    },
+    {
+      "name": "08_Inventory_Tracker",
+      "file_path": "C:\\Users\\pidoudet\\OneDrive - Microsoft\\Boulot\\PBI SME\\OracleToPostgre\\TableauToPowerBI\\examples\\prep_portfolio\\08_Inventory_Tracker.tfl",
+      "inputs": [
+        {
+          "node_id": "a8000001-0001-0001-0001-000000000001",
+          "name": "CRM Customers",
+          "connection_type": "postgres",
+          "server": "crm-db.corp.local",
+          "database": "crm_production",
+          "schema": "public",
+          "table_name": "customers",
+          "filename": "",
+          "column_count": 6,
+          "column_names": [
+            "customer_id",
+            "first_name",
+            "last_name",
+            "email",
+            "segment",
+            "lifetime_value"
+          ],
+          "fingerprint": "8d96b90c648a5fa7"
+        },
+        {
+          "node_id": "a8000001-0001-0001-0001-000000000002",
+          "name": "Inventory Levels",
+          "connection_type": "snowflake",
+          "server": "acme.snowflakecomputing.com",
+          "database": "WAREHOUSE",
+          "schema": "SUPPLY_CHAIN",
+          "table_name": "INVENTORY_LEVELS",
+          "filename": "",
+          "column_count": 7,
+          "column_names": [
+            "SKU",
+            "WAREHOUSE_ID",
+            "QTY_ON_HAND",
+            "QTY_RESERVED",
+            "REORDER_POINT",
+            "LAST_RECEIPT_DATE",
+            "UNIT_COST"
+          ],
+          "fingerprint": "957ca75eea0a8f15"
+        }
+      ],
+      "outputs": [
+        {
+          "node_id": "a8000001-0001-0001-0001-000000000005",
+          "name": "Inventory_Status",
+          "output_type": "PublishExtract",
+          "target_server": "acme.snowflakecomputing.com",
+          "target_database": "WAREHOUSE",
+          "target_table": "INVENTORY_STATUS",
+          "target_filename": "",
+          "column_count": 7,
+          "column_names": [
+            "SKU",
+            "WAREHOUSE_ID",
+            "QTY_ON_HAND",
+            "AvailableQty",
+            "NeedsReorder",
+            "InventoryValue",
+            "LAST_RECEIPT_DATE"
+          ],
+          "fingerprint": "66d39286c5f4ad3c"
+        }
+      ],
+      "transforms": [
+        {
+          "node_id": "a8000001-0001-0001-0001-000000000003",
+          "name": "Customer Inventory",
+          "transform_type": "Join",
+          "details": {
+            "join_type": "full",
+            "key_count": 1
+          }
+        },
+        {
+          "node_id": "a8000001-0001-0001-0001-000000000004",
+          "name": "Inventory Metrics",
+          "transform_type": "Clean",
+          "details": {
+            "action_count": 0,
+            "action_types": []
+          }
+        }
+      ],
+      "node_count": 5,
+      "edge_count": 4,
+      "dag_depth": 3,
+      "join_count": 1,
+      "union_count": 0,
+      "script_count": 0,
+      "calc_count": 0,
+      "complexity_score": 5,
+      "complexity_label": "Low",
+      "node_graph": {
+        "a8000001-0001-0001-0001-000000000001": [
+          "a8000001-0001-0001-0001-000000000003"
+        ],
+        "a8000001-0001-0001-0001-000000000002": [
+          "a8000001-0001-0001-0001-000000000003"
+        ],
+        "a8000001-0001-0001-0001-000000000003": [
+          "a8000001-0001-0001-0001-000000000004"
+        ],
+        "a8000001-0001-0001-0001-000000000004": [
+          "a8000001-0001-0001-0001-000000000005"
+        ],
+        "a8000001-0001-0001-0001-000000000005": []
+      }
+    },
+    {
+      "name": "Sales_Prep_Flow",
+      "file_path": "C:\\Users\\pidoudet\\OneDrive - Microsoft\\Boulot\\PBI SME\\OracleToPostgre\\TableauToPowerBI\\examples\\tableau_samples\\Sales_Prep_Flow.tfl",
+      "inputs": [
+        {
+          "node_id": "11111111-1111-1111-1111-111111111111",
+          "name": "Orders.csv",
+          "connection_type": "textscan",
+          "server": "",
+          "database": "",
+          "schema": "",
+          "table_name": "Orders.csv",
+          "filename": "Orders.csv",
+          "column_count": 12,
+          "column_names": [
+            "Order_ID",
+            "Order_Date",
+            "Customer_ID",
+            "Region",
+            "Category",
+            "Product_Name",
+            "Sales",
+            "Quantity",
+            "Discount",
+            "Profit",
+            "Status",
+            "TempCol"
+          ],
+          "fingerprint": "431d4f3082d0f727"
+        },
+        {
+          "node_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "name": "Customers.csv",
+          "connection_type": "textscan",
+          "server": "",
+          "database": "",
+          "schema": "",
+          "table_name": "Customers.csv",
+          "filename": "Customers.csv",
+          "column_count": 6,
+          "column_names": [
+            "Customer_ID",
+            "Customer_Name",
+            "Segment",
+            "City",
+            "State",
+            "Country"
+          ],
+          "fingerprint": "a1871dfd30514730"
+        }
+      ],
+      "outputs": [
+        {
+          "node_id": "55555555-5555-5555-5555-555555555555",
+          "name": "Regional Sales Summary",
+          "output_type": "PublishExtract",
+          "target_server": "",
+          "target_database": "",
+          "target_table": "Regional Sales Summary",
+          "target_filename": "",
+          "column_count": 0,
+          "column_names": [],
+          "fingerprint": "7cbc80c5725e363b"
+        }
+      ],
+      "transforms": [
+        {
+          "node_id": "22222222-2222-2222-2222-222222222222",
+          "name": "Clean Orders",
+          "transform_type": "Clean",
+          "details": {
+            "action_count": 0,
+            "action_types": []
+          }
+        },
+        {
+          "node_id": "33333333-3333-3333-3333-333333333333",
+          "name": "Join Orders + Customers",
+          "transform_type": "Join",
+          "details": {
+            "join_type": "left",
+            "key_count": 1
+          }
+        },
+        {
+          "node_id": "44444444-4444-4444-4444-444444444444",
+          "name": "Sales by Region",
+          "transform_type": "Other",
+          "details": {}
+        }
+      ],
+      "node_count": 6,
+      "edge_count": 5,
+      "dag_depth": 4,
+      "join_count": 1,
+      "union_count": 0,
+      "script_count": 0,
+      "calc_count": 0,
+      "complexity_score": 6,
+      "complexity_label": "Low",
+      "node_graph": {
+        "11111111-1111-1111-1111-111111111111": [
+          "22222222-2222-2222-2222-222222222222"
+        ],
+        "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa": [
+          "33333333-3333-3333-3333-333333333333"
+        ],
+        "22222222-2222-2222-2222-222222222222": [
+          "33333333-3333-3333-3333-333333333333"
+        ],
+        "33333333-3333-3333-3333-333333333333": [
+          "44444444-4444-4444-4444-444444444444"
+        ],
+        "44444444-4444-4444-4444-444444444444": [
+          "55555555-5555-5555-5555-555555555555"
+        ],
+        "55555555-5555-5555-5555-555555555555": []
+      }
+    },
+    {
+      "name": "tableau_prep_book",
+      "file_path": "C:\\Users\\pidoudet\\OneDrive - Microsoft\\Boulot\\PBI SME\\OracleToPostgre\\TableauToPowerBI\\examples\\real_world\\tableau_prep_book.tfl",
+      "inputs": [
+        {
+          "node_id": "1057498c-093d-4dfc-86cc-2e6dc1ac8731",
+          "name": "Orders_Central",
+          "connection_type": "textscan",
+          "server": "",
+          "database": "",
+          "schema": "",
+          "table_name": "Orders_Central",
+          "filename": "C:\\Program Files\\Tableau\\Tableau Prep 2018.3\\help\\Samples\\en_US\\Superstore Files\\Orders_Central.csv",
+          "column_count": 24,
+          "column_names": [
+            "Row ID",
+            "Order ID",
+            "Ship Mode",
+            "Customer ID",
+            "Customer Name",
+            "Segment",
+            "Country",
+            "City",
+            "State",
+            "Postal Code",
+            "Product ID",
+            "Category",
+            "Sub-Category",
+            "Product",
+            "Sales",
+            "Quantity",
+            "Profit",
+            "Order Year",
+            "Order Month",
+            "Order Day",
+            "Ship Year",
+            "Ship Month",
+            "Ship Day",
+            "Discounts"
+          ],
+          "fingerprint": "c1f2f8eaf624a73b"
+        },
+        {
+          "node_id": "92a40f62-e5e1-4660-99f8-008bcd03decc",
+          "name": "orders_south_2015",
+          "connection_type": "textscan",
+          "server": "",
+          "database": "",
+          "schema": "",
+          "table_name": "orders_south_2015",
+          "filename": "C:\\Program Files\\Tableau\\Tableau Prep 2018.3\\help\\Samples\\en_US\\Superstore Files\\Orders South\\orders_south_2015.csv",
+          "column_count": 22,
+          "column_names": [
+            "Sales",
+            "Quantity",
+            "Profit",
+            "Discount",
+            "Region",
+            "State",
+            "Row ID",
+            "Order ID",
+            "Order Date",
+            "Ship Date",
+            "Ship Mode",
+            "Customer ID",
+            "Customer Name",
+            "Segment",
+            "Country",
+            "City",
+            "Postal Code",
+            "Product ID",
+            "Category",
+            "Sub-Category",
+            "Product Name",
+            "File Paths"
+          ],
+          "fingerprint": "bd5b51157fbbeb6f"
+        },
+        {
+          "node_id": "bc7de39b-ec36-413f-aef4-0087f3e3f994",
+          "name": "returns_new",
+          "connection_type": "excel-direct",
+          "server": "",
+          "database": "",
+          "schema": "",
+          "table_name": "returns_new",
+          "filename": "C:\\Program Files\\Tableau\\Tableau Prep 2018.3\\help\\Samples\\en_US\\Superstore Files\\return reasons_new.xlsx",
+          "column_count": 9,
+          "column_names": [
+            "Row ID",
+            "Order Date",
+            "Order ID",
+            "Product ID",
+            "Sub-Category",
+            "Manufacturer",
+            "Product Name",
+            "Return Reason",
+            "Notes"
+          ],
+          "fingerprint": "eef9fa923301e032"
+        },
+        {
+          "node_id": "2fd52001-d1d5-4809-9a80-d2529515fb35",
+          "name": "Orders_West",
+          "connection_type": "textscan",
+          "server": "",
+          "database": "",
+          "schema": "",
+          "table_name": "Orders_West",
+          "filename": "C:\\Program Files\\Tableau\\Tableau Prep 2018.3\\help\\Samples\\en_US\\Superstore Files\\Orders_West.csv",
+          "column_count": 41,
+          "column_names": [
+            "Row ID",
+            "Order ID",
+            "Order Date",
+            "Ship Date",
+            "Ship Mode",
+            "Customer ID",
+            "Customer Name",
+            "Segment",
+            "Country",
+            "City",
+            "Postal Code",
+            "Region",
+            "Product ID",
+            "Category",
+            "Sub-Category",
+            "Product Name",
+            "Sales",
+            "Quantity",
+            "Discount",
+            "Profit",
+            "Right_Row ID",
+            "Right_Order Date",
+            "Right_Ship Date",
+            "Right_Ship Mode",
+            "Right_Customer ID",
+            "Right_Customer Name",
+            "Right_Segment",
+            "Right_Country",
+            "Right_City",
+            "Right_State2",
+            "Right_Postal Code",
+            "Right_Region",
+            "Right_Product ID",
+            "Right_Category",
+            "Right_Sub-Category",
+            "Right_Product Name",
+            "Right_Sales",
+            "Right_Quantity",
+            "Right_Discount",
+            "Right_Profit",
+            "State"
+          ],
+          "fingerprint": "312340c93f1b2ace"
+        }
+      ],
+      "outputs": [
+        {
+          "node_id": "6387ce44-ce5f-44ab-a9bd-8fb73065cede",
+          "name": "Output",
+          "output_type": "WriteToHyper",
+          "target_server": "",
+          "target_database": "",
+          "target_table": "Output",
+          "target_filename": "",
+          "column_count": 0,
+          "column_names": [],
+          "fingerprint": "dfc189fc900ebd31"
+        }
+      ],
+      "transforms": [],
+      "node_count": 10,
+      "edge_count": 9,
+      "dag_depth": 5,
+      "join_count": 0,
+      "union_count": 0,
+      "script_count": 0,
+      "calc_count": 0,
+      "complexity_score": 5,
+      "complexity_label": "Low",
+      "node_graph": {
+        "5fde9199-3e12-4811-9a47-cd7fb37a1c6b": [
+          "3412533b-c1f3-4a5a-a89b-3c4d4ae661e8"
+        ],
+        "3412533b-c1f3-4a5a-a89b-3c4d4ae661e8": [
+          "34f8e4e2-360f-435c-b9d4-3a6dea94ad54"
+        ],
+        "1057498c-093d-4dfc-86cc-2e6dc1ac8731": [
+          "5fde9199-3e12-4811-9a47-cd7fb37a1c6b"
+        ],
+        "34f8e4e2-360f-435c-b9d4-3a6dea94ad54": [
+          "8be41075-5be1-4c69-b75b-4be5d109ba9d"
+        ],
+        "92a40f62-e5e1-4660-99f8-008bcd03decc": [
+          "3412533b-c1f3-4a5a-a89b-3c4d4ae661e8"
+        ],
+        "bc7de39b-ec36-413f-aef4-0087f3e3f994": [
+          "4964e8db-6fbd-4592-8fd3-e1a997f70f93"
+        ],
+        "8be41075-5be1-4c69-b75b-4be5d109ba9d": [
+          "6387ce44-ce5f-44ab-a9bd-8fb73065cede"
+        ],
+        "2fd52001-d1d5-4809-9a80-d2529515fb35": [
+          "3412533b-c1f3-4a5a-a89b-3c4d4ae661e8"
+        ],
+        "6387ce44-ce5f-44ab-a9bd-8fb73065cede": [],
+        "4964e8db-6fbd-4592-8fd3-e1a997f70f93": [
+          "34f8e4e2-360f-435c-b9d4-3a6dea94ad54"
+        ]
+      }
+    },
+    {
+      "name": "SampleFlow",
+      "file_path": "C:\\Users\\pidoudet\\OneDrive - Microsoft\\Boulot\\PBI SME\\OracleToPostgre\\TableauToPowerBI\\examples\\real_world\\SampleFlow.tfl",
+      "inputs": [],
+      "outputs": [],
+      "transforms": [],
+      "node_count": 0,
+      "edge_count": 0,
+      "dag_depth": 0,
+      "join_count": 0,
+      "union_count": 0,
+      "script_count": 0,
+      "calc_count": 0,
+      "complexity_score": 0,
+      "complexity_label": "Low",
+      "node_graph": {}
+    }
+  ],
+  "edges": [
+    {
+      "source_flow": "02_Raw_Products_Clean",
+      "source_output": "Products_Master",
+      "target_flow": "04_Customer_Enrichment",
+      "target_input": "CRM Customers",
+      "match_type": "fuzzy",
+      "confidence": 0.75
+    },
+    {
+      "source_flow": "01_Raw_Orders_Clean",
+      "source_output": "Orders_Clean",
+      "target_flow": "05_Sales_Analytics",
+      "target_input": "Orders_Clean",
+      "match_type": "table_name",
+      "confidence": 0.8
+    },
+    {
+      "source_flow": "02_Raw_Products_Clean",
+      "source_output": "Products_Master",
+      "target_flow": "05_Sales_Analytics",
+      "target_input": "Products_Master",
+      "match_type": "table_name",
+      "confidence": 0.8
+    },
+    {
+      "source_flow": "04_Customer_Enrichment",
+      "source_output": "Customer_360",
+      "target_flow": "05_Sales_Analytics",
+      "target_input": "Customer_360",
+      "match_type": "table_name",
+      "confidence": 0.8
+    },
+    {
+      "source_flow": "03_Raw_Returns_Clean",
+      "source_output": "Returns_Processed",
+      "target_flow": "06_Returns_Analytics",
+      "target_input": "Returns_Processed",
+      "match_type": "table_name",
+      "confidence": 0.8
+    },
+    {
+      "source_flow": "01_Raw_Orders_Clean",
+      "source_output": "Orders_Clean",
+      "target_flow": "06_Returns_Analytics",
+      "target_input": "Orders_Clean",
+      "match_type": "table_name",
+      "confidence": 0.8
+    },
+    {
+      "source_flow": "05_Sales_Analytics",
+      "source_output": "Sales_Summary",
+      "target_flow": "07_Executive_Dashboard",
+      "target_input": "Sales_Summary",
+      "match_type": "table_name",
+      "confidence": 0.8
+    },
+    {
+      "source_flow": "06_Returns_Analytics",
+      "source_output": "Returns_Analysis",
+      "target_flow": "07_Executive_Dashboard",
+      "target_input": "Returns_Analysis",
+      "match_type": "table_name",
+      "confidence": 0.8
+    },
+    {
+      "source_flow": "02_Raw_Products_Clean",
+      "source_output": "Products_Master",
+      "target_flow": "08_Inventory_Tracker",
+      "target_input": "CRM Customers",
+      "match_type": "fuzzy",
+      "confidence": 0.75
+    },
+    {
+      "source_flow": "01_Raw_Orders_Clean",
+      "source_output": "Orders_Clean",
+      "target_flow": "tableau_prep_book",
+      "target_input": "Orders_Central",
+      "match_type": "fuzzy",
+      "confidence": 0.91
+    }
+  ],
+  "external_sources": [
+    {
+      "fingerprint": "dd72c5fb6c424ef5",
+      "connection_type": "textscan",
+      "server": "",
+      "database": "",
+      "table_name": "Orders_2024.csv",
+      "filename": "Orders_2024.csv",
+      "consumed_by": [
+        {
+          "flow": "01_Raw_Orders_Clean",
+          "input": "Orders_2024.csv"
+        }
+      ]
+    },
+    {
+      "fingerprint": "c3507562d4d3f179",
+      "connection_type": "textscan",
+      "server": "",
+      "database": "",
+      "table_name": "Products_Master.csv",
+      "filename": "Products_Master.csv",
+      "consumed_by": [
+        {
+          "flow": "02_Raw_Products_Clean",
+          "input": "Products_Master.csv"
+        }
+      ]
+    },
+    {
+      "fingerprint": "76ed540e7e1829ed",
+      "connection_type": "textscan",
+      "server": "",
+      "database": "",
+      "table_name": "Returns_2024.csv",
+      "filename": "Returns_2024.csv",
+      "consumed_by": [
+        {
+          "flow": "03_Raw_Returns_Clean",
+          "input": "Returns_2024.csv"
+        }
+      ]
+    },
+    {
+      "fingerprint": "60d1daa32bc4c74a",
+      "connection_type": "textscan",
+      "server": "",
+      "database": "",
+      "table_name": "Demographics.csv",
+      "filename": "Demographics.csv",
+      "consumed_by": [
+        {
+          "flow": "04_Customer_Enrichment",
+          "input": "Demographics.csv"
+        }
+      ]
+    },
+    {
+      "fingerprint": "957ca75eea0a8f15",
+      "connection_type": "snowflake",
+      "server": "acme.snowflakecomputing.com",
+      "database": "WAREHOUSE",
+      "table_name": "INVENTORY_LEVELS",
+      "filename": "",
+      "consumed_by": [
+        {
+          "flow": "08_Inventory_Tracker",
+          "input": "Inventory Levels"
+        }
+      ]
+    },
+    {
+      "fingerprint": "431d4f3082d0f727",
+      "connection_type": "textscan",
+      "server": "",
+      "database": "",
+      "table_name": "Orders.csv",
+      "filename": "Orders.csv",
+      "consumed_by": [
+        {
+          "flow": "Sales_Prep_Flow",
+          "input": "Orders.csv"
+        }
+      ]
+    },
+    {
+      "fingerprint": "a1871dfd30514730",
+      "connection_type": "textscan",
+      "server": "",
+      "database": "",
+      "table_name": "Customers.csv",
+      "filename": "Customers.csv",
+      "consumed_by": [
+        {
+          "flow": "Sales_Prep_Flow",
+          "input": "Customers.csv"
+        }
+      ]
+    },
+    {
+      "fingerprint": "bd5b51157fbbeb6f",
+      "connection_type": "textscan",
+      "server": "",
+      "database": "",
+      "table_name": "orders_south_2015",
+      "filename": "C:\\Program Files\\Tableau\\Tableau Prep 2018.3\\help\\Samples\\en_US\\Superstore Files\\Orders South\\orders_south_2015.csv",
+      "consumed_by": [
+        {
+          "flow": "tableau_prep_book",
+          "input": "orders_south_2015"
+        }
+      ]
+    },
+    {
+      "fingerprint": "eef9fa923301e032",
+      "connection_type": "excel-direct",
+      "server": "",
+      "database": "",
+      "table_name": "returns_new",
+      "filename": "C:\\Program Files\\Tableau\\Tableau Prep 2018.3\\help\\Samples\\en_US\\Superstore Files\\return reasons_new.xlsx",
+      "consumed_by": [
+        {
+          "flow": "tableau_prep_book",
+          "input": "returns_new"
+        }
+      ]
+    },
+    {
+      "fingerprint": "312340c93f1b2ace",
+      "connection_type": "textscan",
+      "server": "",
+      "database": "",
+      "table_name": "Orders_West",
+      "filename": "C:\\Program Files\\Tableau\\Tableau Prep 2018.3\\help\\Samples\\en_US\\Superstore Files\\Orders_West.csv",
+      "consumed_by": [
+        {
+          "flow": "tableau_prep_book",
+          "input": "Orders_West"
+        }
+      ]
+    }
+  ],
+  "final_sinks": [
+    {
+      "fingerprint": "8df4000bae2f196c",
+      "output_type": "PublishExtract",
+      "target_table": "Executive_KPIs",
+      "target_filename": "",
+      "produced_by": {
+        "flow": "07_Executive_Dashboard",
+        "output": "Executive_KPIs"
+      }
+    },
+    {
+      "fingerprint": "66d39286c5f4ad3c",
+      "output_type": "PublishExtract",
+      "target_table": "INVENTORY_STATUS",
+      "target_filename": "",
+      "produced_by": {
+        "flow": "08_Inventory_Tracker",
+        "output": "Inventory_Status"
+      }
+    },
+    {
+      "fingerprint": "7cbc80c5725e363b",
+      "output_type": "PublishExtract",
+      "target_table": "Regional Sales Summary",
+      "target_filename": "",
+      "produced_by": {
+        "flow": "Sales_Prep_Flow",
+        "output": "Regional Sales Summary"
+      }
+    },
+    {
+      "fingerprint": "dfc189fc900ebd31",
+      "output_type": "WriteToHyper",
+      "target_table": "Output",
+      "target_filename": "",
+      "produced_by": {
+        "flow": "tableau_prep_book",
+        "output": "Output"
+      }
+    }
+  ],
+  "layers": [
+    [
+      "01_Raw_Orders_Clean",
+      "02_Raw_Products_Clean",
+      "03_Raw_Returns_Clean",
+      "Sales_Prep_Flow",
+      "SampleFlow"
+    ],
+    [
+      "04_Customer_Enrichment",
+      "06_Returns_Analytics",
+      "08_Inventory_Tracker",
+      "tableau_prep_book"
+    ],
+    [
+      "05_Sales_Analytics"
+    ],
+    [
+      "07_Executive_Dashboard"
+    ]
+  ],
+  "isolated_flows": [
+    "Sales_Prep_Flow",
+    "SampleFlow"
+  ],
+  "chains": [],
+  "recommendations": [
+    {
+      "type": "source_consolidation",
+      "flows": [
+        "04_Customer_Enrichment",
+        "08_Inventory_Tracker"
+      ],
+      "description": "Both read 1 common source(s), 100% transform similarity",
+      "impact": "Eliminate 1 flow, reduce 1 duplicate source connections",
+      "score": 48,
+      "level": "yellow",
+      "label": "Possible merge"
+    },
+    {
+      "type": "isolated",
+      "flows": [
+        "Sales_Prep_Flow"
+      ],
+      "description": "No cross-flow connections detected",
+      "impact": "Standalone migration — no merge needed",
+      "score": 0,
+      "level": "gray",
+      "label": "Keep separate"
+    },
+    {
+      "type": "isolated",
+      "flows": [
+        "SampleFlow"
+      ],
+      "description": "No cross-flow connections detected",
+      "impact": "Standalone migration — no merge needed",
+      "score": 0,
+      "level": "gray",
+      "label": "Keep separate"
+    }
+  ],
+  "timestamp": "2026-04-02T11:43:01.060223+00:00"
+}

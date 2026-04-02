@@ -1,0 +1,48 @@
+{
+  "tables": [
+    {
+      "tableau_datasource": "federated.enterprise",
+      "tableau_table": "Orders",
+      "pbi_table": "Orders"
+    },
+    {
+      "tableau_datasource": "federated.enterprise",
+      "tableau_table": "Customers",
+      "pbi_table": "Customers"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Calendar",
+      "pbi_table": "Calendar"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Target Margin",
+      "pbi_table": "Target Margin"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Top N",
+      "pbi_table": "Top N"
+    }
+  ],
+  "calculations": [],
+  "relationships": [
+    {
+      "from": "Orders[customer_id]",
+      "to": "Customers[customer_id]",
+      "cardinality": "bothDirections"
+    },
+    {
+      "from": "Orders[order_date]",
+      "to": "Calendar[Date]",
+      "cardinality": "oneDirection"
+    },
+    {
+      "from": "Customers[first_purchase_date]",
+      "to": "Calendar[Date]",
+      "cardinality": "bothDirections"
+    }
+  ],
+  "worksheets": []
+}

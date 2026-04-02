@@ -1,0 +1,334 @@
+{
+  "report_name": "Sales_Prep_Flow",
+  "created_at": "2026-04-02T13:39:18.428482",
+  "summary": {
+    "total_items": 35,
+    "exact": 10,
+    "approximate": 0,
+    "placeholder": 0,
+    "unsupported": 0,
+    "skipped": 25,
+    "fidelity_score": 100.0,
+    "by_category": {
+      "datasource": {
+        "total": 2,
+        "exact": 2
+      },
+      "calculation": {
+        "total": 25,
+        "skipped": 25
+      },
+      "visual": {
+        "total": 5,
+        "exact": 5
+      },
+      "parameter": {
+        "total": 2,
+        "exact": 2
+      },
+      "bookmark": {
+        "total": 1,
+        "exact": 1
+      }
+    }
+  },
+  "completeness": {
+    "categories": {
+      "datasource": {
+        "total": 2,
+        "exact": 2,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "calculation": {
+        "total": 25,
+        "exact": 0,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 25,
+        "fidelity_pct": 100.0
+      },
+      "visual": {
+        "total": 5,
+        "exact": 5,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "parameter": {
+        "total": 2,
+        "exact": 2,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "bookmark": {
+        "total": 1,
+        "exact": 1,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      }
+    },
+    "overall_score": 100.0,
+    "grade": "A"
+  },
+  "table_mapping": [
+    {
+      "source_datasource": "Customers.csv",
+      "source_table": "Customers",
+      "target_table": "Customers",
+      "connection_type": "textscan",
+      "columns": 6
+    },
+    {
+      "source_datasource": "Regional Sales Summary",
+      "source_table": "Regional_Sales_Summary",
+      "target_table": "Regional_Sales_Summary",
+      "connection_type": "textscan",
+      "columns": 12
+    }
+  ],
+  "items": [
+    {
+      "category": "datasource",
+      "name": "prep.Customers",
+      "status": "exact",
+      "note": "textscan, 1 table(s)"
+    },
+    {
+      "category": "datasource",
+      "name": "prep.Regional_Sales_Summary",
+      "status": "exact",
+      "note": "textscan, 1 table(s)"
+    },
+    {
+      "category": "calculation",
+      "name": "Email Domain",
+      "status": "skipped",
+      "source_formula": "MID([email], FIND([email], \"@\") + 1, LEN([email]))",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "First Name",
+      "status": "skipped",
+      "source_formula": "LEFT([lead_name], FIND([lead_name], \" \") - 1)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Last Name",
+      "status": "skipped",
+      "source_formula": "MID([lead_name], FIND([lead_name], \" \") + 1, LEN([lead_name]))",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Name Length",
+      "status": "skipped",
+      "source_formula": "LEN([lead_name])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Clean Phone",
+      "status": "skipped",
+      "source_formula": "TRIM(REPLACE(REPLACE([phone], \"-\", \"\"), \" \", \"\"))",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Phone Last 4",
+      "status": "skipped",
+      "source_formula": "RIGHT([phone], 4)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Campaign Code",
+      "status": "skipped",
+      "source_formula": "UPPER(LEFT([channel], 3)) + \"-\" + STR([campaign_id]) + SPACE(5 - LEN(STR([campaign_id])))",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Is Enterprise",
+      "status": "skipped",
+      "source_formula": "CONTAINS([target_audience], \"Enterprise\")",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Has Valid UTM",
+      "status": "skipped",
+      "source_formula": "REGEXP_MATCH([utm_campaign], \"^[a-z0-9_-]+$\")",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Clean URL",
+      "status": "skipped",
+      "source_formula": "REGEXP_REPLACE([creative_url], \"https?://\", \"\")",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Campaign Year",
+      "status": "skipped",
+      "source_formula": "DATETRUNC(\"year\", [start_date])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Start Month",
+      "status": "skipped",
+      "source_formula": "DATEPART(\"month\", [start_date])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Month Name",
+      "status": "skipped",
+      "source_formula": "DATENAME(\"month\", [start_date])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Campaign Days",
+      "status": "skipped",
+      "source_formula": "DATEDIFF(\"day\", [start_date], [end_date])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Non-Blank Leads",
+      "status": "skipped",
+      "source_formula": "COUNTA([lead_name])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Budget Deal Correlation",
+      "status": "skipped",
+      "source_formula": "CORR([budget], [deal_value])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Spend Engagement Covar",
+      "status": "skipped",
+      "source_formula": "COVAR([spend], [engagement_score])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Avg Deal by Channel",
+      "status": "skipped",
+      "source_formula": "{INCLUDE [channel] : AVG([deal_value])}",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Campaign ROI",
+      "status": "skipped",
+      "source_formula": "(SUM([deal_value]) - SUM([spend])) / SUM([spend])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Cost Per Lead",
+      "status": "skipped",
+      "source_formula": "SUM([spend]) / COUNTD([lead_id])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Window Best ROI",
+      "status": "skipped",
+      "source_formula": "WINDOW_MAX((SUM([deal_value]) - SUM([spend])) / SUM([spend]))",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Window Worst ROI",
+      "status": "skipped",
+      "source_formula": "WINDOW_MIN((SUM([deal_value]) - SUM([spend])) / SUM([spend]))",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Cumulative Leads",
+      "status": "skipped",
+      "source_formula": "RUNNING_COUNT(COUNTD([lead_id]))",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Budget Band",
+      "status": "skipped",
+      "source_formula": "INT([budget] / 1000) * 1000",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Conversion Rate",
+      "status": "skipped",
+      "source_formula": "SUM(IF [lead_status] = \"Won\" THEN 1 ELSE 0 END) / COUNT([lead_id])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "visual",
+      "name": "Campaign Performance",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Lead Funnel",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Conversion Trend",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Budget Analysis",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Lead Details",
+      "status": "exact"
+    },
+    {
+      "category": "parameter",
+      "name": "[Parameters].[Min Budget]",
+      "status": "exact",
+      "note": "domain=range"
+    },
+    {
+      "category": "parameter",
+      "name": "[Parameters].[Target Channel]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "bookmark",
+      "name": "Campaign Review",
+      "status": "exact",
+      "note": "Converted to 3 bookmark(s)"
+    }
+  ]
+}

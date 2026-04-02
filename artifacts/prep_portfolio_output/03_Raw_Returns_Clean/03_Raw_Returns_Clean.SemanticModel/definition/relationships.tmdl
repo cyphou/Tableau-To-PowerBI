@@ -1,0 +1,7 @@
+relationship fbbe24c0-76ba-4e55-9b29-d6cf74ef91e5
+	fromColumn: Returns_Processed.Return_Date
+	toColumn: Calendar.Date
+	fromCardinality: many
+	toCardinality: many
+	crossFilteringBehavior: bothDirections
+

@@ -1,0 +1,90 @@
+table Machines
+	lineageTag: 44196f95-448d-4a55-980c-ede9b8d5a191
+
+	column machine_id
+		dataType: int64
+		lineageTag: 3fd82f1f-ea18-44fd-b352-3ff2516a1b73
+		summarizeBy: sum
+		sourceColumn: machine_id
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column machine_name
+		dataType: string
+		lineageTag: 4dd0fd7a-e62e-4685-ad6f-1565842ec82c
+		summarizeBy: none
+		sourceColumn: machine_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column machine_type
+		dataType: string
+		lineageTag: 6d2799a0-2f81-443a-bbb1-872f9ece3780
+		summarizeBy: none
+		sourceColumn: machine_type
+
+		annotation SummarizationSetBy = Automatic
+
+	column install_date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: d6b21ee4-ccaf-48ad-9822-8ff00ef07a8b
+		summarizeBy: none
+		sourceColumn: install_date
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column location
+		dataType: string
+		lineageTag: bef95b2a-719b-45e3-ac44-b40f15ee7b93
+		summarizeBy: none
+		sourceColumn: location
+
+		annotation SummarizationSetBy = Automatic
+
+	column line_id
+		dataType: string
+		lineageTag: 622c2474-ae8f-4623-999b-beba6c5f8782
+		summarizeBy: none
+		sourceColumn: line_id
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column rated_capacity
+		dataType: double
+		formatString: #,0.00
+		lineageTag: f6ecef51-d3cd-4aee-a0c1-8eb02ca91d89
+		summarizeBy: sum
+		sourceColumn: rated_capacity
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Machines-bd80251e-587e-442f-878b-4c65ed980f89' = m
+		mode: import
+		source =
+				let
+				    // Source Oracle: mfg-oracle.corp.local:1521/MFGDB
+				    Source = try
+				
+				        let
+				
+				            _src = Oracle.Database("mfg-oracle.corp.local:1521/MFGDB"),
+				
+				            _nav = _src{[Schema="DBO", Item="Machines"]}[Data]
+				
+				        in _nav
+				
+				    otherwise
+				
+				        #table({"machine_id", "machine_name", "machine_type", "install_date", "location", "line_id", "rated_capacity"}, {}),
+				    #"Renamed Columns" = Table.RenameColumns(Source, {{"machine_id", "Machine ID"}, {"machine_name", "Machine Name"}, {"machine_type", "Machine Type"}, {"install_date", "Install Date"}, {"location", "Location"}, {"line_id", "Line ID"}, {"rated_capacity", "Rated Capacity"}}),
+				    Result = #"Renamed Columns"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 7 columns: machine_id, machine_name, machine_type, install_date, location, line_id, rated_capacity.
+

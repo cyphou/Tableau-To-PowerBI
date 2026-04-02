@@ -1,0 +1,5 @@
+expression DataFolder = "C:\Users\pidoudet\OneDrive - Microsoft\Boulot\PBI SME\OracleToPostgre\TableauToPowerBI\artifacts\tableau_samples_output\HR_Analytics\Data" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+
+expression ServerName = "localhost" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+
+expression DatabaseName = "HRDatabase" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]

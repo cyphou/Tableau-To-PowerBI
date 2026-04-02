@@ -1,0 +1,97 @@
+{
+  "objectVersion": 4,
+  "nodes": {
+    "a1000001-0001-0001-0001-000000000001": {
+      "nodeType": ".v1.LoadCsv",
+      "name": "Orders_2024.csv",
+      "id": "a1000001-0001-0001-0001-000000000001",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a1000001-0001-0001-0001-000000000002", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-orders",
+      "connectionAttributes": {
+        "class": "csv",
+        "filename": "Orders_2024.csv",
+        "separator": ","
+      },
+      "fields": [
+        {"name": "Order_ID", "type": "string"},
+        {"name": "Order_Date", "type": "date"},
+        {"name": "Customer_ID", "type": "string"},
+        {"name": "Product_ID", "type": "string"},
+        {"name": "Region", "type": "string"},
+        {"name": "Sales", "type": "real"},
+        {"name": "Quantity", "type": "integer"},
+        {"name": "Discount", "type": "real"},
+        {"name": "Profit", "type": "real"},
+        {"name": "Ship_Mode", "type": "string"},
+        {"name": "Status", "type": "string"},
+        {"name": "_temp_col", "type": "string"}
+      ]
+    },
+    "a1000001-0001-0001-0001-000000000002": {
+      "nodeType": ".v2018_3_3.SuperTransform",
+      "name": "Clean Orders",
+      "id": "a1000001-0001-0001-0001-000000000002",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a1000001-0001-0001-0001-000000000003", "nextNamespace": "Default"}
+      ],
+      "beforeActionGroup": {
+        "actions": [
+          {"actionType": ".v1.RemoveColumn", "columnName": "_temp_col"},
+          {"actionType": ".v1.RenameColumn", "columnName": "Order_ID", "newColumnName": "OrderID"},
+          {"actionType": ".v1.RenameColumn", "columnName": "Order_Date", "newColumnName": "OrderDate"},
+          {"actionType": ".v1.RenameColumn", "columnName": "Customer_ID", "newColumnName": "CustomerID"},
+          {"actionType": ".v1.RenameColumn", "columnName": "Product_ID", "newColumnName": "ProductID"},
+          {"actionType": ".v1.CleanOperation", "columnName": "Region", "operation": "trim"},
+          {"actionType": ".v1.FilterOperation", "filterExpression": "[Status] != \"Cancelled\"", "filterType": "keep"},
+          {"actionType": ".v1.RemoveColumn", "columnName": "Status"},
+          {"actionType": ".v1.ReplaceNulls", "columnName": "Discount", "replacement": "0"},
+          {"actionType": ".v1.AddColumn", "columnName": "Revenue", "expression": "[Sales] * (1 - [Discount])", "columnType": "real"},
+          {"actionType": ".v1.ChangeColumnType", "columnName": "OrderDate", "newType": "date"}
+        ]
+      }
+    },
+    "a1000001-0001-0001-0001-000000000003": {
+      "nodeType": ".v1.PublishExtract",
+      "name": "Orders_Clean",
+      "id": "a1000001-0001-0001-0001-000000000003",
+      "baseType": "output",
+      "nextNodes": [],
+      "connectionAttributes": {
+        "class": "sqlserver",
+        "server": "tableau-prod.corp.local",
+        "dbname": "PrepOutputs",
+        "table": "Orders_Clean"
+      },
+      "publishSettings": {
+        "datasourceName": "Orders_Clean",
+        "writeMode": "overwrite"
+      },
+      "fields": [
+        {"name": "OrderID", "type": "string"},
+        {"name": "OrderDate", "type": "date"},
+        {"name": "CustomerID", "type": "string"},
+        {"name": "ProductID", "type": "string"},
+        {"name": "Region", "type": "string"},
+        {"name": "Sales", "type": "real"},
+        {"name": "Quantity", "type": "integer"},
+        {"name": "Discount", "type": "real"},
+        {"name": "Profit", "type": "real"},
+        {"name": "Ship_Mode", "type": "string"},
+        {"name": "Revenue", "type": "real"}
+      ]
+    }
+  },
+  "connections": {
+    "conn-orders": {
+      "connectionAttributes": {
+        "class": "csv",
+        "directory": "/data/raw/",
+        "filename": "Orders_2024.csv"
+      }
+    }
+  }
+}

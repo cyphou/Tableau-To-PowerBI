@@ -1,0 +1,14 @@
+relationship c1d54365-35e6-4040-aea5-7765b3a22724
+	fromColumn: Customer_360.created_at
+	toColumn: Calendar.Date
+	fromCardinality: many
+	toCardinality: many
+	crossFilteringBehavior: bothDirections
+
+relationship 2bfc1970-eb30-405b-8655-8d05ab869a1c
+	fromColumn: Customer_360.customer_id
+	toColumn: Demographics.customer_id
+	fromCardinality: many
+	toCardinality: many
+	crossFilteringBehavior: bothDirections
+

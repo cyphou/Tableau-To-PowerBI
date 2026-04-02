@@ -1,0 +1,146 @@
+{
+  "objectVersion": 4,
+  "nodes": {
+    "a7000001-0001-0001-0001-000000000001": {
+      "nodeType": ".v1.LoadSql",
+      "name": "Sales_Summary",
+      "id": "a7000001-0001-0001-0001-000000000001",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a7000001-0001-0001-0001-000000000003", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-sales-summary",
+      "connectionAttributes": {
+        "class": "sqlserver",
+        "server": "tableau-prod.corp.local",
+        "dbname": "PrepOutputs",
+        "table": "Sales_Summary"
+      },
+      "fields": [
+        {"name": "Region", "type": "string"},
+        {"name": "Category", "type": "string"},
+        {"name": "segment", "type": "string"},
+        {"name": "TotalRevenue", "type": "real"},
+        {"name": "TotalProfit", "type": "real"},
+        {"name": "OrderCount", "type": "integer"}
+      ]
+    },
+    "a7000001-0001-0001-0001-000000000002": {
+      "nodeType": ".v1.LoadSql",
+      "name": "Returns_Analysis",
+      "id": "a7000001-0001-0001-0001-000000000002",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a7000001-0001-0001-0001-000000000003", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-returns-analysis",
+      "connectionAttributes": {
+        "class": "sqlserver",
+        "server": "tableau-prod.corp.local",
+        "dbname": "PrepOutputs",
+        "table": "Returns_Analysis"
+      },
+      "fields": [
+        {"name": "Region", "type": "string"},
+        {"name": "ReasonCode", "type": "string"},
+        {"name": "NetRefund", "type": "real"},
+        {"name": "ReturnRate", "type": "real"},
+        {"name": "anomaly_score", "type": "integer"}
+      ]
+    },
+    "a7000001-0001-0001-0001-000000000003": {
+      "nodeType": ".v1.Join",
+      "name": "Sales + Returns by Region",
+      "id": "a7000001-0001-0001-0001-000000000003",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a7000001-0001-0001-0001-000000000004", "nextNamespace": "Default"}
+      ],
+      "joinType": "left",
+      "joinConditions": [
+        {"leftColumn": "Region", "rightColumn": "Region", "operator": "="}
+      ]
+    },
+    "a7000001-0001-0001-0001-000000000004": {
+      "nodeType": ".v1.Aggregate",
+      "name": "Executive KPIs",
+      "id": "a7000001-0001-0001-0001-000000000004",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a7000001-0001-0001-0001-000000000005", "nextNamespace": "Default"}
+      ],
+      "groupByFields": [
+        {"name": "Region"}
+      ],
+      "aggregateFields": [
+        {"name": "TotalRevenue", "aggregation": "SUM", "newColumnName": "GrandRevenue"},
+        {"name": "TotalProfit", "aggregation": "SUM", "newColumnName": "GrandProfit"},
+        {"name": "OrderCount", "aggregation": "SUM", "newColumnName": "TotalOrders"},
+        {"name": "NetRefund", "aggregation": "SUM", "newColumnName": "TotalRefunds"},
+        {"name": "ReturnRate", "aggregation": "AVG", "newColumnName": "AvgReturnRate"}
+      ]
+    },
+    "a7000001-0001-0001-0001-000000000005": {
+      "nodeType": ".v2018_3_3.SuperTransform",
+      "name": "Final KPI Calcs",
+      "id": "a7000001-0001-0001-0001-000000000005",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a7000001-0001-0001-0001-000000000006", "nextNamespace": "Default"}
+      ],
+      "beforeActionGroup": {
+        "actions": [
+          {"actionType": ".v1.AddColumn", "columnName": "ProfitMargin", "expression": "[GrandProfit] / [GrandRevenue]", "columnType": "real"},
+          {"actionType": ".v1.AddColumn", "columnName": "NetRevenue", "expression": "[GrandRevenue] - [TotalRefunds]", "columnType": "real"},
+          {"actionType": ".v1.AddColumn", "columnName": "AvgOrderValue", "expression": "[GrandRevenue] / [TotalOrders]", "columnType": "real"}
+        ]
+      }
+    },
+    "a7000001-0001-0001-0001-000000000006": {
+      "nodeType": ".v1.PublishExtract",
+      "name": "Executive_KPIs",
+      "id": "a7000001-0001-0001-0001-000000000006",
+      "baseType": "output",
+      "nextNodes": [],
+      "connectionAttributes": {
+        "class": "sqlserver",
+        "server": "tableau-prod.corp.local",
+        "dbname": "PrepOutputs",
+        "table": "Executive_KPIs"
+      },
+      "publishSettings": {
+        "datasourceName": "Executive_KPIs",
+        "writeMode": "overwrite"
+      },
+      "fields": [
+        {"name": "Region", "type": "string"},
+        {"name": "GrandRevenue", "type": "real"},
+        {"name": "GrandProfit", "type": "real"},
+        {"name": "TotalOrders", "type": "integer"},
+        {"name": "TotalRefunds", "type": "real"},
+        {"name": "AvgReturnRate", "type": "real"},
+        {"name": "ProfitMargin", "type": "real"},
+        {"name": "NetRevenue", "type": "real"},
+        {"name": "AvgOrderValue", "type": "real"}
+      ]
+    }
+  },
+  "connections": {
+    "conn-sales-summary": {
+      "connectionAttributes": {
+        "class": "sqlserver",
+        "server": "tableau-prod.corp.local",
+        "dbname": "PrepOutputs",
+        "table": "Sales_Summary"
+      }
+    },
+    "conn-returns-analysis": {
+      "connectionAttributes": {
+        "class": "sqlserver",
+        "server": "tableau-prod.corp.local",
+        "dbname": "PrepOutputs",
+        "table": "Returns_Analysis"
+      }
+    }
+  }
+}

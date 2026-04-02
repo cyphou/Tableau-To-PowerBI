@@ -1,0 +1,27 @@
+relationship 93fc0033-dd37-47f0-8165-6f0dcad87a1b
+	fromColumn: Commandes.client_id
+	toColumn: Clients.client_id
+	fromCardinality: many
+	toCardinality: many
+	crossFilteringBehavior: bothDirections
+
+relationship 10f3050c-0b9c-4bd1-a48b-9095790edf74
+	fromColumn: Commandes.produit_id
+	toColumn: Produits.produit_id
+	fromCardinality: many
+	toCardinality: many
+	crossFilteringBehavior: bothDirections
+
+relationship 24e0145f-f121-44dc-bfdd-07163f5a7539
+	fromColumn: Commandes.date_commande
+	toColumn: Calendar.Date
+	crossFilteringBehavior: oneDirection
+
+relationship 79da80cb-f7a8-4005-9f85-20fece66adda
+	fromColumn: Clients.date_inscription
+	toColumn: Calendar.Date
+	fromCardinality: many
+	toCardinality: many
+	crossFilteringBehavior: bothDirections
+	isActive: false
+

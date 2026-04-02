@@ -1,0 +1,132 @@
+table dim_customer
+	lineageTag: 8dff38b0-3216-40dc-89ee-584024fcc111
+
+	column customer_key
+		dataType: int64
+		lineageTag: 0d438ff6-3e3a-4071-84d2-925c8a7b0e4c
+		summarizeBy: sum
+		sourceColumn: customer_key
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column customer_id
+		dataType: string
+		lineageTag: bb2efb5f-e0aa-447b-a67e-0f6adb1758de
+		summarizeBy: none
+		sourceColumn: customer_id
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column customer_name
+		dataType: string
+		lineageTag: 8fc7dcf7-9d00-4858-acdb-840a393b287e
+		summarizeBy: none
+		sourceColumn: customer_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column email
+		dataType: string
+		lineageTag: 66c20136-82ab-4b5e-890f-84ca1d0032af
+		summarizeBy: none
+		sourceColumn: email
+
+		annotation SummarizationSetBy = Automatic
+
+	column phone
+		dataType: string
+		lineageTag: 6fc7e2fe-be55-4f7f-b232-916cdf5e9cb0
+		summarizeBy: none
+		sourceColumn: phone
+
+		annotation SummarizationSetBy = Automatic
+
+	column segment
+		dataType: string
+		lineageTag: d10f2042-29e0-4471-b907-c2fd76a4c420
+		summarizeBy: none
+		sourceColumn: segment
+
+		annotation SummarizationSetBy = Automatic
+
+	column industry
+		dataType: string
+		lineageTag: 7579f19f-4b04-410d-ad1b-5e98505dc851
+		summarizeBy: none
+		sourceColumn: industry
+
+		annotation SummarizationSetBy = Automatic
+
+	column company_size
+		dataType: string
+		lineageTag: 24d54f78-d822-471c-9fc5-d5339fa24f60
+		summarizeBy: none
+		sourceColumn: company_size
+
+		annotation SummarizationSetBy = Automatic
+
+	column first_order_date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: caef1427-cb2b-4f62-b936-25de1f4a4751
+		summarizeBy: none
+		sourceColumn: first_order_date
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column credit_limit
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 31822496-e611-4e7d-953a-cfe9cc9b8261
+		summarizeBy: sum
+		sourceColumn: credit_limit
+
+		annotation SummarizationSetBy = Automatic
+
+	column account_manager
+		dataType: string
+		lineageTag: 70c9762a-0d6e-4e88-9777-7a9dab792c03
+		summarizeBy: none
+		sourceColumn: account_manager
+
+		annotation SummarizationSetBy = Automatic
+
+	column is_active
+		dataType: boolean
+		lineageTag: c6dec602-3e0b-4806-ba11-f974c0021af0
+		summarizeBy: none
+		sourceColumn: is_active
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'dim_customer-bbcedee7-3f62-46b0-b761-5565be54091b' = m
+		mode: import
+		source =
+				let
+				    // Source Snowflake: analytics.snowflakecomputing.com
+				    Source = try
+				
+				        let
+				
+				            _src = Snowflake.Databases("analytics.snowflakecomputing.com", "ANALYTICS_WH"),
+				
+				            _nav = _src{[Name="ENTERPRISE_DW"]}[Data]
+				
+				        in _nav
+				
+				    otherwise
+				
+				        #table({"customer_key", "customer_id", "customer_name", "email", "phone", "segment", "industry", "company_size", "first_order_date", "credit_limit", "account_manager", "is_active"}, {}),
+				    #"SALES" = Source{[Name="SALES"]}[Data],
+				    #"dim_customer Table" = #"SALES"{[Name="dim_customer"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(#"dim_customer Table", {{"customer_id", "Customer ID"}, {"customer_name", "Customer Name"}, {"email", "Email"}, {"phone", "Phone"}, {"segment", "Segment"}, {"industry", "Industry"}, {"company_size", "Company Size"}, {"first_order_date", "First Order"}, {"credit_limit", "Credit Limit"}, {"account_manager", "Account Manager"}, {"is_active", "Active?"}}),
+				    Result = #"Renamed Columns"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 12 columns: customer_key, customer_id, customer_name, email, phone, segment, industry, company_size, ... (12 columns total).
+

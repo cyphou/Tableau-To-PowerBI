@@ -1,0 +1,324 @@
+table Campaigns
+	lineageTag: deb7641b-01ac-48ad-bb2d-2fd0a1162517
+
+	measure 'Non-Blank Leads' = COUNTA('Leads'[lead_name])
+		displayFolder: Measures
+		lineageTag: 2ee70d1f-d9bd-4ae3-b338-1d8a40a5f944
+		annotation Copilot_Description = Migrated from Tableau: COUNTA([lead_name]) | DAX: COUNTA('Leads'[lead_name])
+
+	measure 'Budget Deal Correlation' = VAR _MeanX = AVERAGEX(ALL('Campaigns'), 'Campaigns'[budget]) VAR _MeanY = AVERAGEX(ALL('Campaigns'), 'Leads'[deal_value]) VAR _Cov = SUMX(ALL('Campaigns'), ('Campaigns'[budget] - _MeanX) * ('Leads'[deal_value] - _MeanY)) VAR _StdX = SQRT(SUMX(ALL('Campaigns'), ('Campaigns'[budget] - _MeanX) ^ 2)) VAR _StdY = SQRT(SUMX(ALL('Campaigns'), ('Leads'[deal_value] - _MeanY) ^ 2)) RETURN DIVIDE(_Cov, _StdX * _StdY, 0)
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 108aeb14-e7db-46a1-8775-0095843727c6
+		annotation Copilot_Description = Migrated from Tableau: CORR([budget], [deal_value]) | DAX: VAR _MeanX = AVERAGEX(ALL('Campaigns'), 'Campaigns'[budget]) VAR _MeanY = AVERAGEX(ALL('Campaigns'), 'Leads'[deal_value]...
+
+	measure 'Spend Engagement Covar' = VAR _MeanX = AVERAGEX(ALL('Campaigns'), 'Campaigns'[spend]) VAR _MeanY = AVERAGEX(ALL('Campaigns'), 'Leads'[engagement_score]) VAR _N = COUNTROWS(ALL('Campaigns')) RETURN DIVIDE(SUMX(ALL('Campaigns'), ('Campaigns'[spend] - _MeanX) * ('Leads'[engagement_score] - _MeanY)), _N - 1, 0)
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: b02a6d73-166b-4316-b49d-645477264a30
+		annotation Copilot_Description = Migrated from Tableau: COVAR([spend], [engagement_score]) | DAX: VAR _MeanX = AVERAGEX(ALL('Campaigns'), 'Campaigns'[spend]) VAR _MeanY = AVERAGEX(ALL('Campaigns'), 'Leads'[engagement_s...
+
+	measure 'Avg Deal by Channel' = CALCULATE(AVERAGE('Leads'[deal_value]))
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 40a845f1-9773-4459-abd5-95e262ce9c2c
+		annotation Copilot_Description = Migrated from Tableau: {INCLUDE [channel] : AVG([deal_value])} | DAX: CALCULATE(AVERAGE('Leads'[deal_value]))
+
+	measure 'Campaign ROI' = (SUM('Leads'[deal_value]) - SUM('Campaigns'[spend])) / SUM('Campaigns'[spend])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 43bf9508-9909-4505-8779-db84d0f58a97
+		annotation Copilot_Description = Migrated from Tableau: (SUM([deal_value]) - SUM([spend])) / SUM([spend]) | DAX: (SUM('Leads'[deal_value]) - SUM('Campaigns'[spend])) / SUM('Campaigns'[spend])
+
+	measure 'Cost Per Lead' = SUM('Campaigns'[spend]) / DISTINCTCOUNT('Leads'[lead_id])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 1eba6c5a-0020-4560-98ca-616917db3c09
+		annotation Copilot_Description = Migrated from Tableau: SUM([spend]) / COUNTD([lead_id]) | DAX: SUM('Campaigns'[spend]) / DISTINCTCOUNT('Leads'[lead_id])
+
+	measure 'Window Best ROI' = CALCULATE((SUM('Leads'[deal_value]) - SUM('Campaigns'[spend])) / SUM('Campaigns'[spend]), ALL('Campaigns'))
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: eb627068-add5-4074-a803-ede261babd2e
+		annotation Copilot_Description = Migrated from Tableau: WINDOW_MAX((SUM([deal_value]) - SUM([spend])) / SUM([spend])) | DAX: CALCULATE((SUM('Leads'[deal_value]) - SUM('Campaigns'[spend])) / SUM('Campaigns'[spend]), ALL('Campaigns'))
+
+	measure 'Window Worst ROI' = CALCULATE((SUM('Leads'[deal_value]) - SUM('Campaigns'[spend])) / SUM('Campaigns'[spend]), ALL('Campaigns'))
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 09be6ae8-178c-4094-9e74-4e3c2a9762a7
+		annotation Copilot_Description = Migrated from Tableau: WINDOW_MIN((SUM([deal_value]) - SUM([spend])) / SUM([spend])) | DAX: CALCULATE((SUM('Leads'[deal_value]) - SUM('Campaigns'[spend])) / SUM('Campaigns'[spend]), ALL('Campaigns'))
+
+	measure 'Cumulative Leads' = CALCULATE(DISTINCTCOUNT('Leads'[lead_id]), FILTER(ALLSELECTED("Campaigns"), TRUE())) /* RUNNING_COUNT: converted to cumulative — verify window scope */
+		displayFolder: Measures
+		lineageTag: d046fad1-2583-4b3a-9608-3d60cc82adac
+		annotation Copilot_Description = Migrated from Tableau: RUNNING_COUNT(COUNTD([lead_id])) | DAX: CALCULATE(DISTINCTCOUNT('Leads'[lead_id]), FILTER(ALLSELECTED("Campaigns"), TRUE())) /* RUNNING_COUNT: converted to cumu...
+
+	measure 'Conversion Rate' = SUMX('Leads', IF('Leads'[lead_status] = "Won", 1, 0)) / COUNT('Leads'[lead_id])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 57009152-ed62-4acf-8600-4b170106f815
+		annotation Copilot_Description = Migrated from Tableau: SUM(IF [lead_status] = "Won" THEN 1 ELSE 0 END) / COUNT([lead_id]) | DAX: SUMX('Leads', IF('Leads'[lead_status] = "Won", 1, 0)) / COUNT('Leads'[lead_id])
+
+	measure 'Target Channel' = "Email"
+		lineageTag: f925c4fa-9e6b-4226-9000-8e0731132cff
+		annotation Copilot_Description = DAX: "Email"
+
+	column campaign_id
+		dataType: int64
+		lineageTag: 86d4d4ee-f6de-4552-8704-144db653b550
+		summarizeBy: sum
+		sourceColumn: campaign_id
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column campaign_name
+		dataType: string
+		lineageTag: 3e511a81-4a4d-44de-b96f-508995204c6f
+		summarizeBy: none
+		sourceColumn: campaign_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column channel
+		dataType: string
+		lineageTag: a55c0dba-5cb8-42b7-a2ff-538c4059d5bb
+		summarizeBy: none
+		sourceColumn: channel
+
+		annotation SummarizationSetBy = Automatic
+
+	column start_date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 6855445b-386e-4dc0-912c-4c76902e8fd1
+		summarizeBy: none
+		sourceColumn: start_date
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column end_date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 26c12202-b1bd-43c4-8cb5-485a186711dc
+		summarizeBy: none
+		sourceColumn: end_date
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column budget
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 3b0c50f1-905b-419e-8003-fa021577b2e7
+		summarizeBy: sum
+		sourceColumn: budget
+
+		annotation SummarizationSetBy = Automatic
+
+	column spend
+		dataType: double
+		formatString: #,0.00
+		lineageTag: baf5ab8f-c607-4422-aa84-4e3c8b09d5e8
+		summarizeBy: sum
+		sourceColumn: spend
+
+		annotation SummarizationSetBy = Automatic
+
+	column target_audience
+		dataType: string
+		lineageTag: de63e46b-49fb-43d5-88e1-f7698c38b87b
+		summarizeBy: none
+		sourceColumn: target_audience
+
+		annotation SummarizationSetBy = Automatic
+
+	column creative_url
+		dataType: string
+		lineageTag: b86f7255-9f8c-40a9-9ab6-6e6160f4764b
+		summarizeBy: none
+		sourceColumn: creative_url
+
+		annotation SummarizationSetBy = Automatic
+
+	column utm_source
+		dataType: string
+		lineageTag: 582ddb22-daa2-408c-85be-b3cc18065d3e
+		summarizeBy: none
+		sourceColumn: utm_source
+
+		annotation SummarizationSetBy = Automatic
+
+	column utm_medium
+		dataType: string
+		lineageTag: 0d7c0551-e2cd-4449-9997-5a244c6e38d1
+		summarizeBy: none
+		sourceColumn: utm_medium
+
+		annotation SummarizationSetBy = Automatic
+
+	column utm_campaign
+		dataType: string
+		lineageTag: cd89ff6b-b92c-4d05-909f-2957be2615a6
+		summarizeBy: none
+		sourceColumn: utm_campaign
+
+		annotation SummarizationSetBy = Automatic
+
+	column region
+		dataType: string
+		lineageTag: 8fe876d8-a464-46ea-bac0-b6311497a6f6
+		summarizeBy: none
+		sourceColumn: region
+		dataCategory: StateOrProvince
+
+		annotation SummarizationSetBy = Automatic
+
+	column status
+		dataType: string
+		lineageTag: ffbfc246-79f8-4b7f-9b82-2ab7701e8ff5
+		summarizeBy: none
+		sourceColumn: status
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Email Domain' = MID(LOOKUPVALUE(Leads[email], Leads[campaign_id], Campaigns[campaign_id]), FIND("@", LOOKUPVALUE(Leads[email], Leads[campaign_id], Campaigns[campaign_id])) + 1, LEN(LOOKUPVALUE(Leads[email], Leads[campaign_id], Campaigns[campaign_id])))
+		dataType: string
+		lineageTag: 366bdce1-d6f9-4fc0-aa42-6b8e42f235aa
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'First Name' = LEFT(LOOKUPVALUE(Leads[lead_name], Leads[campaign_id], Campaigns[campaign_id]), FIND(" ", LOOKUPVALUE(Leads[lead_name], Leads[campaign_id], Campaigns[campaign_id])) - 1)
+		dataType: string
+		lineageTag: 12355e2e-b354-41fa-92ed-de1c9858b93f
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Last Name' = MID(LOOKUPVALUE(Leads[lead_name], Leads[campaign_id], Campaigns[campaign_id]), FIND(" ", LOOKUPVALUE(Leads[lead_name], Leads[campaign_id], Campaigns[campaign_id])) + 1, LEN(LOOKUPVALUE(Leads[lead_name], Leads[campaign_id], Campaigns[campaign_id])))
+		dataType: string
+		lineageTag: 741ef7fe-df28-45c1-a22f-f255de78786c
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Name Length' = LEN(LOOKUPVALUE(Leads[lead_name], Leads[campaign_id], Campaigns[campaign_id]))
+		dataType: int64
+		lineageTag: 94a33fba-ea4d-4449-a42b-a1b6142055fa
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Clean Phone' = TRIM(SUBSTITUTE(SUBSTITUTE(LOOKUPVALUE(Leads[phone], Leads[campaign_id], Campaigns[campaign_id]), "-", ""), " ", ""))
+		dataType: string
+		lineageTag: b1857ca2-f444-478a-8af4-f08a735a9a95
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Phone Last 4' = RIGHT(LOOKUPVALUE(Leads[phone], Leads[campaign_id], Campaigns[campaign_id]), 4)
+		dataType: string
+		lineageTag: 4fea9918-4ce5-4176-9e80-1ef88660069f
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Campaign Code' = UPPER(LEFT('Campaigns'[channel], 3)) & "-" & FORMAT('Campaigns'[campaign_id], "0") & REPT(" ", 5 - LEN(FORMAT('Campaigns'[campaign_id], "0")))
+		dataType: string
+		lineageTag: da291d69-9598-4ae9-9886-6349717f2cde
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Is Enterprise'
+		dataType: boolean
+		lineageTag: 397eaee0-d94e-48b2-b492-4e2dc6e8a921
+		summarizeBy: none
+		sourceColumn: 'Is Enterprise'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Has Valid UTM' = /* REGEXP_MATCH: complex regex "^[a-z0-9_-]+$" — verify manually */ CONTAINSSTRING('Campaigns'[utm_campaign], "^[a-z0-9_-]+$")
+		dataType: boolean
+		lineageTag: 8933efe6-764b-4728-b401-10fee6149014
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Clean URL' = /* REGEXP_REPLACE("https?://"): complex regex — verify manually */ SUBSTITUTE('Campaigns'[creative_url], "https?://", "")
+		dataType: string
+		lineageTag: 3f6d36fb-e44a-4178-817d-cdd26011bd0b
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Campaign Year'
+		dataType: dateTime
+		lineageTag: 88af84bb-830c-4784-b0b0-e5f626bc4ba8
+		summarizeBy: none
+		sourceColumn: 'Campaign Year'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Start Month'
+		dataType: int64
+		lineageTag: 671f8433-a97d-405d-949e-3ae7145ff1e0
+		summarizeBy: none
+		sourceColumn: 'Start Month'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Month Name' = FORMAT('Campaigns'[start_date], "MMMM")
+		dataType: string
+		lineageTag: 70fe37ca-1a23-4e83-b798-98b2ee5992fc
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Campaign Days'
+		dataType: int64
+		lineageTag: 74a09839-e474-4f87-bcc6-89cd5451da74
+		summarizeBy: none
+		sourceColumn: 'Campaign Days'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Budget Band' = INT('Campaigns'[budget] / 1000) * 1000
+		dataType: int64
+		lineageTag: db897f68-de0b-47f3-a857-05b5cb432deb
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Campaigns-c8663d4b-3a7b-4e31-825b-9952554d37bc' = m
+		mode: import
+		source =
+				let
+				    // Source MySQL: analytics-mysql.corp.local:3306
+				    Source = try
+				
+				        let
+				
+				            _src = MySQL.Database("analytics-mysql.corp.local:3306", "marketing_db"),
+				
+				            _nav = _src{[Schema="marketing_db", Item="Campaigns"]}[Data]
+				
+				        in _nav
+				
+				    otherwise
+				
+				        #table({"campaign_id", "campaign_name", "channel", "start_date", "end_date", "budget", "spend", "target_audience", "creative_url", "utm_source", "utm_medium", "utm_campaign", "region", "status"}, {}),
+				    #"Renamed Columns" = Table.RenameColumns(Source, {{"campaign_id", "Campaign ID"}, {"campaign_name", "Campaign Name"}, {"channel", "Channel"}, {"start_date", "Start Date"}, {"end_date", "End Date"}, {"budget", "Budget"}, {"spend", "Spend"}, {"target_audience", "Target Audience"}, {"creative_url", "Creative URL"}, {"utm_source", "UTM Source"}, {"utm_medium", "UTM Medium"}, {"utm_campaign", "UTM Campaign"}, {"region", "Region"}, {"status", "Status"}}),
+				    #"Added Is Enterprise" = Table.AddColumn(#"Renamed Columns", "Is Enterprise", each Text.Contains([target_audience], "Enterprise"), type logical),
+				    #"Added Campaign Year" = Table.AddColumn(#"Added Is Enterprise", "Campaign Year", each #date(Date.Year([start_date]), 1, 1), type datetime),
+				    #"Added Start Month" = Table.AddColumn(#"Added Campaign Year", "Start Month", each Date.Month([start_date]), Int64.Type),
+				    #"Added Campaign Days" = Table.AddColumn(#"Added Start Month", "Campaign Days", each Duration.Days([end_date] - [start_date]), Int64.Type),
+				    Result = #"Added Campaign Days"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 29 columns and 11 measures: campaign_id, campaign_name, channel, start_date, end_date, budget, spend, target_audience, ... (29 columns total).
+

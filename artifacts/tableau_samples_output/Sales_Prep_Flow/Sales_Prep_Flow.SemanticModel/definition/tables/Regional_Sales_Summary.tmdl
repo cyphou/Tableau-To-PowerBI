@@ -1,0 +1,141 @@
+table Regional_Sales_Summary
+	lineageTag: 0722724a-c0e5-49d9-9a86-900aadfc9227
+
+	column Order_ID
+		dataType: string
+		lineageTag: 2fc3e512-cd6b-4568-8bda-df77e04e67f6
+		summarizeBy: none
+		sourceColumn: Order_ID
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column Order_Date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 4ccd82c7-a0be-4839-aa41-b4e865049cf8
+		summarizeBy: none
+		sourceColumn: Order_Date
+		dataCategory: DateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column Customer_ID
+		dataType: string
+		lineageTag: 553b7551-0790-4280-918e-dd44e0975747
+		summarizeBy: none
+		sourceColumn: Customer_ID
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column Region
+		dataType: string
+		lineageTag: f4d61305-1397-494e-b02f-fd2a44255d9a
+		summarizeBy: none
+		sourceColumn: Region
+		dataCategory: StateOrProvince
+
+		annotation SummarizationSetBy = Automatic
+
+	column Category
+		dataType: string
+		lineageTag: cbe26e3b-7194-4a1f-8037-aac5de9bdc89
+		summarizeBy: none
+		sourceColumn: Category
+
+		annotation SummarizationSetBy = Automatic
+
+	column Product_Name
+		dataType: string
+		lineageTag: d2ac4a8a-1360-45fe-8c8a-f39898a2eaa1
+		summarizeBy: none
+		sourceColumn: Product_Name
+
+		annotation SummarizationSetBy = Automatic
+
+	column Sales
+		dataType: double
+		formatString: #,0.00
+		lineageTag: dcabde04-9df4-4c0a-a734-d76da7d59d0b
+		summarizeBy: sum
+		sourceColumn: Sales
+
+		annotation SummarizationSetBy = Automatic
+
+	column Quantity
+		dataType: int64
+		lineageTag: 19b0c274-cd0a-4f2a-bb1d-b434a338a42c
+		summarizeBy: sum
+		sourceColumn: Quantity
+
+		annotation SummarizationSetBy = Automatic
+
+	column Discount
+		dataType: double
+		formatString: #,0.00
+		lineageTag: b4766113-296f-4dad-a7f9-7b6f52e45df0
+		summarizeBy: sum
+		sourceColumn: Discount
+
+		annotation SummarizationSetBy = Automatic
+
+	column Profit
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 3a08dbb5-8678-412f-9657-14786be739af
+		summarizeBy: sum
+		sourceColumn: Profit
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		lineageTag: d3335b4d-a928-4e04-80bc-f785b9f43d0b
+		summarizeBy: none
+		sourceColumn: Status
+
+		annotation SummarizationSetBy = Automatic
+
+	column TempCol
+		dataType: string
+		lineageTag: 65dac51b-62a8-4166-93cd-1426cb87e2dd
+		summarizeBy: none
+		sourceColumn: TempCol
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Regional_Sales_Summary-8dd8d6e6-fd69-43ac-9a8f-4f27cffd165c' = m
+		mode: import
+		source =
+				let
+				    // TODO: Configure the data source for connector type: textscan
+				    // Replace the sample table below with the actual source expression.
+				    Source = try
+				        #table(
+				            {"Order_ID", "Order_Date", "Customer_ID", "Region", "Category", "Product_Name", "Sales", "Quantity", "Discount", "Profit", "Status", "TempCol"},
+				            {
+				                {"Sample 1", 2, "Sample 3", "Sample 4", "Sample 5", "Sample 6", 7, 8, 9, 10, "Sample 11", "Sample 12"},
+				                {"Sample 2", 3, "Sample 4", "Sample 5", "Sample 6", "Sample 7", 8, 9, 10, 11, "Sample 12", "Sample 13"}
+				            }
+				        )
+				    otherwise
+				        #table({"Order_ID", "Order_Date", "Customer_ID", "Region", "Category", "Product_Name", "Sales", "Quantity", "Discount", "Profit", "Status", "TempCol"}, {}),
+				    #"Renamed Columns" = Table.RenameColumns(Source, {{"Order_ID", "Order ID"}, {"Order_Date", "Order Date"}, {"Customer_ID", "Customer ID"}, {"Product_Name", "Product Name"}}),
+				    #"Removed Columns" = Table.RemoveColumns(#"Renamed Columns", {"TempCol"}),
+				    #"Filtered Rows" = Table.SelectRows(#"Removed Columns", each [Status] <> "Cancelled"),
+				    #"Trimmed Text" = Table.TransformColumns(#"Filtered Rows", {{"Region", Text.Trim}}),
+				    #"Proper Cased" = Table.TransformColumns(#"Trimmed Text", {{"Category", Text.Proper}}),
+				    #"Replaced Nulls in Discount" = Table.ReplaceValue(#"Proper Cased", null, "0", Replacer.ReplaceValue, {"Discount"}),
+				    #"Added Revenue" = Table.AddColumn(#"Replaced Nulls in Discount", "Revenue", each [Sales] * [Quantity] * (1 - [Discount])),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Added Revenue", {{"Order Date", type date}}),
+				    #"Joined Joined" = Table.NestedJoin(#"Changed Type", "Customer ID", Customers, "Customer_ID", "Joined", JoinKind.LeftOuter),
+				    #"Expanded Joined" = Table.ExpandTableColumn(#"Joined Joined", "Joined", {"Customer_Name", "Segment", "City", "State", "Country"}),
+				    #"Grouped Rows" = Table.Group(#"Expanded Joined", {"Region", "Category", "Segment"}, {{"Total Revenue", each List.Sum([Revenue]), type number}, {"Total Profit", each List.Sum([Profit]), type number}, {"Distinct Orders", each List.Count(List.Distinct([Order ID])), Int64.Type}, {"Avg Quantity", each List.Average([Quantity]), type number}}),
+				    Result = #"Grouped Rows"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 12 columns: Order_ID, Order_Date, Customer_ID, Region, Category, Product_Name, Sales, Quantity, ... (12 columns total).
+

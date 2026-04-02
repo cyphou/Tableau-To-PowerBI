@@ -1,0 +1,33 @@
+{
+  "tables": [
+    {
+      "tableau_datasource": "prep.Orders_Clean",
+      "tableau_table": "Orders_Clean",
+      "pbi_table": "Orders_Clean"
+    },
+    {
+      "tableau_datasource": "prep.Returns_Analysis",
+      "tableau_table": "Returns_Analysis",
+      "pbi_table": "Returns_Analysis"
+    },
+    {
+      "tableau_datasource": "",
+      "tableau_table": "Calendar",
+      "pbi_table": "Calendar"
+    }
+  ],
+  "calculations": [],
+  "relationships": [
+    {
+      "from": "Orders_Clean[OrderDate]",
+      "to": "Calendar[Date]",
+      "cardinality": "bothDirections"
+    },
+    {
+      "from": "Returns_Analysis[ReturnDate]",
+      "to": "Calendar[Date]",
+      "cardinality": "bothDirections"
+    }
+  ],
+  "worksheets": []
+}

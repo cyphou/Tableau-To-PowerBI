@@ -1,42 +1,49 @@
 table sessions
-	lineageTag: 75e62af8-e801-49a6-9b97-7f01e29c6800
+	lineageTag: 4f0c5b41-4af4-497f-b64b-b54e73539a80
 
 	measure 'Total Sessions' = COUNT('sessions'[session_id])
 		displayFolder: Measures
-		lineageTag: f7f3ef44-2ee3-4b7f-9740-bc1bf5faddb3
+		lineageTag: 32f7841e-5cd6-48f6-b1cd-c6504687d85b
+		annotation Copilot_Description = Migrated from Tableau: COUNT([session_id]) | DAX: COUNT('sessions'[session_id])
 
 	measure 'Unique Visitors' = DISTINCTCOUNT('sessions'[user_id])
 		displayFolder: Measures
-		lineageTag: 6d74e974-f1ea-43bb-a5a0-4f4db7f967af
+		lineageTag: 78d25093-8ac5-4990-ac69-7207e9267d46
+		annotation Copilot_Description = Migrated from Tableau: COUNTD([user_id]) | DAX: DISTINCTCOUNT('sessions'[user_id])
 
 	measure 'Conversion Rate' = SUMX('sessions', IF('sessions'[converted], 1, 0)) / COUNT('sessions'[session_id])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 5c9d11f9-3698-4607-98fa-c8309dabacaa
+		lineageTag: 6390fe2c-8375-4314-bb8a-fc0c86487a94
+		annotation Copilot_Description = Migrated from Tableau: SUM(IF [converted] THEN 1 ELSE 0 END) / COUNT([session_id]) | DAX: SUMX('sessions', IF('sessions'[converted], 1, 0)) / COUNT('sessions'[session_id])
 
 	measure 'Avg Session Duration' = AVERAGE('sessions'[session_duration])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 812b6910-cc97-420c-b521-cd19496dcc70
+		lineageTag: aac30e44-dadf-4a8a-86e6-4407352e19c6
+		annotation Copilot_Description = Migrated from Tableau: AVG([session_duration]) | DAX: AVERAGE('sessions'[session_duration])
 
 	measure 'Total Revenue' = SUM('sessions'[revenue])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: 7b9b8775-c35c-4be5-8d55-6f4706801f49
+		lineageTag: 69c6d8a0-d77a-4828-9ec1-35c183c61749
+		annotation Copilot_Description = Migrated from Tableau: SUM([revenue]) | DAX: SUM('sessions'[revenue])
 
 	measure 'Revenue per Session' = SUM('sessions'[revenue]) / COUNT('sessions'[session_id])
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: c27bf345-5f11-4aea-9918-48aaf80ada31
+		lineageTag: 81ba0067-45f7-49c7-9909-4096420c6364
+		annotation Copilot_Description = Migrated from Tableau: SUM([revenue]) / COUNT([session_id]) | DAX: SUM('sessions'[revenue]) / COUNT('sessions'[session_id])
 
 	measure 'Revenue by Channel' = CALCULATE(SUM('sessions'[revenue]), ALLEXCEPT('sessions', 'sessions'[channel]))
 		formatString: #,0.00
 		displayFolder: Measures
-		lineageTag: e42e6f3f-e12a-44bd-a108-9bf6236b6921
+		lineageTag: 7175d461-fdc9-4ba6-a1b7-f08d88131084
+		annotation Copilot_Description = Migrated from Tableau: {FIXED [channel] : SUM([revenue])} | DAX: CALCULATE(SUM('sessions'[revenue]), ALLEXCEPT('sessions', 'sessions'[channel]))
 
 	column session_id
 		dataType: string
-		lineageTag: f768ddfe-5248-44a7-8a41-2c86b8ace9bd
+		lineageTag: cfa50f10-666a-4bde-be14-32bf734841ad
 		summarizeBy: none
 		sourceColumn: session_id
 		annotation Copilot_Hidden = true
@@ -46,7 +53,7 @@ table sessions
 	column session_date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 62fcc8fc-7a76-4994-89da-9e53067e848e
+		lineageTag: 922f7fc7-d7ab-45d0-aab0-56c44fcfd0d0
 		summarizeBy: none
 		sourceColumn: session_date
 		dataCategory: DateTime
@@ -55,7 +62,7 @@ table sessions
 
 	column user_id
 		dataType: string
-		lineageTag: bf29440b-28ae-4090-b568-6fbca77fc246
+		lineageTag: 487d926c-c618-435c-aa88-14a8b07ae732
 		summarizeBy: none
 		sourceColumn: user_id
 		annotation Copilot_Hidden = true
@@ -64,7 +71,7 @@ table sessions
 
 	column channel
 		dataType: string
-		lineageTag: 519e6123-e5c1-46d6-8dca-18bdbdc68a86
+		lineageTag: f97c6b6c-c0d6-4a32-b334-860190b0957c
 		summarizeBy: none
 		sourceColumn: channel
 
@@ -72,7 +79,7 @@ table sessions
 
 	column device_type
 		dataType: string
-		lineageTag: 9befe569-c122-4844-94c5-641c56b320fb
+		lineageTag: d6fff250-09ef-42f7-88d5-89aa91687a57
 		summarizeBy: none
 		sourceColumn: device_type
 
@@ -80,7 +87,7 @@ table sessions
 
 	column country
 		dataType: string
-		lineageTag: 10f521b2-ffc9-4d51-9075-1c6e7e5e71dd
+		lineageTag: 91fabe57-78f5-4ebb-8b37-7a3edd6dee94
 		summarizeBy: none
 		sourceColumn: country
 		dataCategory: Country
@@ -89,7 +96,7 @@ table sessions
 
 	column page_views
 		dataType: int64
-		lineageTag: d7c9b89f-4cd3-4023-92bc-b961ad644c1b
+		lineageTag: ae5ed8bd-aeb6-49f0-8ed6-f06880e31d4c
 		summarizeBy: sum
 		sourceColumn: page_views
 
@@ -98,7 +105,7 @@ table sessions
 	column session_duration
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 667f3c58-5a56-47c7-95b1-640ee6e796b7
+		lineageTag: 4397197f-267e-4ea2-95da-4079f7c71602
 		summarizeBy: sum
 		sourceColumn: session_duration
 
@@ -106,7 +113,7 @@ table sessions
 
 	column converted
 		dataType: boolean
-		lineageTag: 92461cf0-e0ac-46be-b018-fb5128b79870
+		lineageTag: dacda8c4-533b-4624-af47-85b6ad549acf
 		summarizeBy: none
 		sourceColumn: converted
 
@@ -115,7 +122,7 @@ table sessions
 	column revenue
 		dataType: double
 		formatString: #,0.00
-		lineageTag: be64547a-ad50-4090-a686-11604137428d
+		lineageTag: bf2f9293-6520-452b-9827-238992885a08
 		summarizeBy: sum
 		sourceColumn: revenue
 
@@ -123,7 +130,7 @@ table sessions
 
 	column 'Channel Category'
 		dataType: string
-		lineageTag: be021616-a807-4300-b50f-ac1ef627ed96
+		lineageTag: fbdbde2a-8e07-471d-9cff-668b055baa64
 		summarizeBy: none
 		sourceColumn: 'Channel Category'
 
@@ -131,7 +138,7 @@ table sessions
 
 	column 'Engagement Level'
 		dataType: string
-		lineageTag: 7964823a-28c3-4518-ba21-7356dbfe2150
+		lineageTag: e8946e39-5936-4d6d-ae89-ab6447a50d5c
 		summarizeBy: none
 		sourceColumn: 'Engagement Level'
 
@@ -139,12 +146,12 @@ table sessions
 
 	column 'Days Since Signup' = DATEDIFF(LOOKUPVALUE(users[signup_date], users[user_id], sessions[user_id]), TODAY(), DAY)
 		dataType: int64
-		lineageTag: 64f95663-ab8f-49ee-8ce2-bc997916a356
+		lineageTag: 7b6b8d5e-b28d-40fd-9eee-5c1c37f43080
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'sessions-b3d09b3f-35c2-49a8-9316-6e3e732dd0d2' = m
+	partition 'sessions-de85aae8-6e84-4d1c-8461-5f15d9d79b11' = m
 		mode: import
 		source =
 				let

@@ -1,0 +1,7 @@
+relationship 453f2152-9553-4f73-abef-ad073fa5e5b2
+	fromColumn: Inventory_Levels.LAST_RECEIPT_DATE
+	toColumn: Calendar.Date
+	fromCardinality: many
+	toCardinality: many
+	crossFilteringBehavior: bothDirections
+

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-23T21:54:18.904280",
+  "generated_at": "2026-04-02T14:01:39.866055",
   "source": "Tableau Migration",
   "report_name": "Complex_Enterprise",
   "objects_converted": {
@@ -126,7 +126,7 @@
     {
       "worksheet": "Profit Waterfall",
       "tableau_mark": "Automatic",
-      "pbi_visual": "clusteredBarChart",
+      "pbi_visual": "ganttChart",
       "dimensions": [],
       "measures": [],
       "field_count": 0

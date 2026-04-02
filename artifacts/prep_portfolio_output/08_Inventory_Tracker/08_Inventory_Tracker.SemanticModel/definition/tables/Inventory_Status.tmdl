@@ -1,0 +1,81 @@
+table Inventory_Status
+	lineageTag: 0850d52e-9a3c-483a-92cb-f2d670eefb93
+
+	column customer_id
+		dataType: string
+		lineageTag: c7e31761-e105-42da-8bbc-9da300a64b73
+		summarizeBy: none
+		sourceColumn: customer_id
+		annotation Copilot_Hidden = true
+
+		annotation SummarizationSetBy = Automatic
+
+	column first_name
+		dataType: string
+		lineageTag: bc2be239-a1e8-4030-8de8-c4892b2f3373
+		summarizeBy: none
+		sourceColumn: first_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column last_name
+		dataType: string
+		lineageTag: 578a2b91-e02b-47af-9325-7dd45c05d3bb
+		summarizeBy: none
+		sourceColumn: last_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column email
+		dataType: string
+		lineageTag: 95396557-09fb-4ee1-8dba-d4eccc84fcc6
+		summarizeBy: none
+		sourceColumn: email
+
+		annotation SummarizationSetBy = Automatic
+
+	column segment
+		dataType: string
+		lineageTag: 23703987-f2d0-4e7a-a915-a6355a105040
+		summarizeBy: none
+		sourceColumn: segment
+
+		annotation SummarizationSetBy = Automatic
+
+	column lifetime_value
+		dataType: double
+		formatString: #,0.00
+		lineageTag: fd117c8d-b88e-4285-afed-78e878b8a765
+		summarizeBy: sum
+		sourceColumn: lifetime_value
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Inventory_Status-aad45404-cf4e-411b-9d7a-653c238c7bf0' = m
+		mode: import
+		source =
+				let
+				    // TODO: Configure the data source for connector type: postgres
+				    // Replace the sample table below with the actual source expression.
+				    Source = try
+				        #table(
+				            {"customer_id", "first_name", "last_name", "email", "segment", "lifetime_value"},
+				            {
+				                {"Sample 1", "Sample 2", "Sample 3", "Sample 4", "Sample 5", 6},
+				                {"Sample 2", "Sample 3", "Sample 4", "Sample 5", "Sample 6", 7}
+				            }
+				        )
+				    otherwise
+				        #table({"customer_id", "first_name", "last_name", "email", "segment", "lifetime_value"}, {}),
+				    #"Joined Joined" = Table.NestedJoin(Source, "customer_id", Inventory_Levels, "WAREHOUSE_ID", "Joined", JoinKind.FullOuter),
+				    #"Expanded Joined" = Table.ExpandTableColumn(#"Joined Joined", "Joined", {"SKU", "QTY_ON_HAND", "QTY_RESERVED", "REORDER_POINT", "LAST_RECEIPT_DATE", "UNIT_COST"}),
+				    #"Added AvailableQty" = Table.AddColumn(#"Expanded Joined", "AvailableQty", each [QTY_ON_HAND] - [QTY_RESERVED]),
+				    #"Added NeedsReorder" = Table.AddColumn(#"Added AvailableQty", "NeedsReorder", each if [AvailableQty] < [REORDER_POINT] then 'Yes' else 'No' ),
+				    #"Added InventoryValue" = Table.AddColumn(#"Added NeedsReorder", "InventoryValue", each [QTY_ON_HAND] * [UNIT_COST]),
+				    Result = #"Added InventoryValue"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 6 columns: customer_id, first_name, last_name, email, segment, lifetime_value.
+

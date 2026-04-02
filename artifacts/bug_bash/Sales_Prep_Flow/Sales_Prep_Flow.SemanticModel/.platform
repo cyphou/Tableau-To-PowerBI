@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "SemanticModel",
+    "displayName": "Sales_Prep_Flow"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "a36e1ef3-6bc2-4458-b776-65b6d0a0c589"
+  }
+}

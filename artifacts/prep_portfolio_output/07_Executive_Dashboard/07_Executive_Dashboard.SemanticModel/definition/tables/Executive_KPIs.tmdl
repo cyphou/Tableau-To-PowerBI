@@ -1,0 +1,83 @@
+table Executive_KPIs
+	lineageTag: 4173a37a-f63d-4eda-8f99-f1ad467961f9
+
+	column Region
+		dataType: string
+		lineageTag: bfaf7020-ab11-4414-9832-dbe06eabd3e0
+		summarizeBy: none
+		sourceColumn: Region
+		dataCategory: StateOrProvince
+
+		annotation SummarizationSetBy = Automatic
+
+	column Category
+		dataType: string
+		lineageTag: 8b0abcd5-413d-4f53-84e8-ad31874232ab
+		summarizeBy: none
+		sourceColumn: Category
+
+		annotation SummarizationSetBy = Automatic
+
+	column segment
+		dataType: string
+		lineageTag: 4080597d-f945-496b-8817-6cde8bdc2072
+		summarizeBy: none
+		sourceColumn: segment
+
+		annotation SummarizationSetBy = Automatic
+
+	column TotalRevenue
+		dataType: double
+		formatString: #,0.00
+		lineageTag: c1c788f3-3a93-41f4-8e4d-7a2a9d6afb5d
+		summarizeBy: sum
+		sourceColumn: TotalRevenue
+
+		annotation SummarizationSetBy = Automatic
+
+	column TotalProfit
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 7ac7642f-6e31-4ad0-bbec-b4bb6580cb2b
+		summarizeBy: sum
+		sourceColumn: TotalProfit
+
+		annotation SummarizationSetBy = Automatic
+
+	column OrderCount
+		dataType: int64
+		lineageTag: 207a332c-6bb2-49cc-af7c-ccf203a53f87
+		summarizeBy: sum
+		sourceColumn: OrderCount
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Executive_KPIs-d8179471-0515-40c7-848c-1847fec3d6e5' = m
+		mode: import
+		source =
+				let
+				    // TODO: Configure the data source for connector type: sqlserver
+				    // Replace the sample table below with the actual source expression.
+				    Source = try
+				        #table(
+				            {"Region", "Category", "segment", "TotalRevenue", "TotalProfit", "OrderCount"},
+				            {
+				                {"Sample 1", "Sample 2", "Sample 3", 4, 5, 6},
+				                {"Sample 2", "Sample 3", "Sample 4", 5, 6, 7}
+				            }
+				        )
+				    otherwise
+				        #table({"Region", "Category", "segment", "TotalRevenue", "TotalProfit", "OrderCount"}, {}),
+				    #"Joined Joined" = Table.NestedJoin(Source, "Region", Returns_Analysis, "Region", "Joined", JoinKind.LeftOuter),
+				    #"Expanded Joined" = Table.ExpandTableColumn(#"Joined Joined", "Joined", {"ReasonCode", "NetRefund", "ReturnRate", "anomaly_score"}),
+				    #"Grouped Rows" = Table.Group(#"Expanded Joined", {"Region"}, {{"GrandRevenue", each List.Sum([TotalRevenue]), type number}, {"GrandProfit", each List.Sum([TotalProfit]), type number}, {"TotalOrders", each List.Sum([OrderCount]), type number}, {"TotalRefunds", each List.Sum([NetRefund]), type number}, {"AvgReturnRate", each List.Average([ReturnRate]), type number}}),
+				    #"Added ProfitMargin" = Table.AddColumn(#"Grouped Rows", "ProfitMargin", each [GrandProfit] / [GrandRevenue]),
+				    #"Added NetRevenue" = Table.AddColumn(#"Added ProfitMargin", "NetRevenue", each [GrandRevenue] - [TotalRefunds]),
+				    #"Added AvgOrderValue" = Table.AddColumn(#"Added NetRevenue", "AvgOrderValue", each [GrandRevenue] / [TotalOrders]),
+				    Result = #"Added AvgOrderValue"
+				in
+				    Result
+
+	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 6 columns: Region, Category, segment, TotalRevenue, TotalProfit, OrderCount.
+

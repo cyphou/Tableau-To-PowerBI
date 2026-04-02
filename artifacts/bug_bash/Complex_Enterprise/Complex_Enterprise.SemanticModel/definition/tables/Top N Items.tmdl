@@ -1,0 +1,23 @@
+table 'Top N Items'
+	lineageTag: 6995ff50-9982-42fa-afff-557b2bd86ddb
+
+	measure 'Top N Items' = SELECTEDVALUE('Top N Items'[Value], 15)
+		lineageTag: d13aa40a-98c2-4954-bf42-86374ef79d2b
+		annotation Copilot_Description = DAX: SELECTEDVALUE('Top N Items'[Value], 15)
+
+	column Value
+		dataType: int64
+		lineageTag: 8c842276-552c-4871-afaf-1b1762763cc5
+		summarizeBy: none
+		sourceColumn: Value
+		annotation displayFolder = Parameters
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Top N Items-612c3717-955b-4c52-a8c6-a5dd2c8d8c88' = calculated
+		mode: import
+		source = GENERATESERIES(1, 100, 1)
+
+	annotation PBI_ResultType = Table
+	annotation Copilot_TableDescription = Contains 1 columns and 1 measures: Value.
+

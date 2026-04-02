@@ -35,7 +35,7 @@ python migrate.py your_workbook.twbx
 ```
 
 > [!TIP]
-> The output is a `.pbip` project — just double-click to open in **Power BI Desktop** (December 2025+).
+> The output is a `.pbip` project (PBIR v4.0) — just double-click to open in **Power BI Desktop** (December 2024 / CY24SU06 or later).
 
 <details>
 <summary><b>📦 Installation</b></summary>
@@ -95,6 +95,12 @@ python migrate.py workbook.twbx --output-format fabric
 
 # ⚡ Optimize DAX + auto-inject Time Intelligence measures
 python migrate.py workbook.twbx --optimize-dax --time-intelligence auto
+
+# 🔗 Prep Flow Lineage — analyze cross-flow dependencies & merge candidates
+python migrate.py --prep-lineage examples/prep_portfolio/ flow1.tfl flow2.tfl
+
+# 📦 Bulk Prep Flow Migration — migrate all .tfl files in a folder
+python migrate.py --batch examples/prep_portfolio/ --output-dir /tmp/prep_output
 ```
 
 ---

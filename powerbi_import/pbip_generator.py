@@ -34,6 +34,21 @@ _TABLEAU_AGG_TO_PBI_FUNC = {
     'median': 0, 'attr': 0,
 }
 
+# ── PBIR schema constants ──────────────────────────────────────────────
+SCHEMA_REPORT = "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/2.0.0/schema.json"
+SCHEMA_PAGE = "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.0.0/schema.json"
+SCHEMA_VISUAL = "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json"
+SCHEMA_BOOKMARK = "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/bookmark/1.1.0/schema.json"
+SCHEMA_PAGES_METADATA = "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/pagesMetadata/1.0.0/schema.json"
+SCHEMA_VERSION = "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/versionMetadata/1.0.0/schema.json"
+SCHEMA_DEFINITION_PBIR = "https://developer.microsoft.com/json-schemas/fabric/item/report/definitionProperties/2.0.0/schema.json"
+SCHEMA_PLATFORM = "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json"
+SCHEMA_PBIP = "https://developer.microsoft.com/json-schemas/fabric/pbip/pbipProperties/1.0.0/schema.json"
+
+# Theme baseline — updated when PBI Desktop ships new monthly theme
+PBI_BASE_THEME_NAME = "CY24SU06"
+PBI_REPORT_VERSION_AT_IMPORT = "5.55"
+
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -1231,13 +1246,12 @@ class PowerBIProjectGenerator:
         
         # 3a. version.json
         version_json = {
-            "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/versionMetadata/1.0.0/schema.json",
+            "$schema": SCHEMA_VERSION,
             "version": "2.0.0"
         }
         _write_json(os.path.join(def_dir, 'version.json'), version_json)
         
-        # 3b. report.json (schema 3.1.0 — format PBI Hero)
-        #     Generate custom theme from extracted Tableau dashboard colors
+        # 3b. report.json — generate custom theme from extracted Tableau dashboard colors
         theme_data = None
         dashboards = converted_objects.get('dashboards', [])
         for db in dashboards:
@@ -1249,11 +1263,11 @@ class PowerBIProjectGenerator:
         custom_theme = tmdl_generator.generate_theme_json(theme_data)
 
         report_json = {
-            "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/2.0.0/schema.json",
+            "$schema": SCHEMA_REPORT,
             "themeCollection": {
                 "baseTheme": {
-                    "name": "CY24SU06",
-                    "reportVersionAtImport": "5.55",
+                    "name": PBI_BASE_THEME_NAME,
+                    "reportVersionAtImport": PBI_REPORT_VERSION_AT_IMPORT,
                     "type": "SharedResources"
                 }
             },
@@ -1263,8 +1277,8 @@ class PowerBIProjectGenerator:
                     "type": "SharedResources",
                     "items": [
                         {
-                            "name": "CY24SU06",
-                            "path": "BaseThemes/CY24SU06.json",
+                            "name": PBI_BASE_THEME_NAME,
+                            "path": f"BaseThemes/{PBI_BASE_THEME_NAME}.json",
                             "type": "BaseTheme"
                         }
                     ]
@@ -1295,7 +1309,7 @@ class PowerBIProjectGenerator:
             })
             report_json["themeCollection"]["customTheme"] = {
                 "name": "TableauMigrationTheme",
-                "reportVersionAtImport": "5.55",
+                "reportVersionAtImport": PBI_REPORT_VERSION_AT_IMPORT,
                 "type": "RegisteredResources"
             }
         
@@ -1349,7 +1363,7 @@ class PowerBIProjectGenerator:
                     pg_name = page_names[db_idx] if db_idx < len(page_names) else ''
                     all_bookmarks.extend(self._create_swap_bookmarks(dz_vis, pg_name))
         if all_bookmarks:
-            report_json["bookmarks"] = all_bookmarks
+            self._write_bookmark_files(def_dir, all_bookmarks)
 
         # Fallback: default page
         if not page_names or (dashboards and all(len(d.get('objects', [])) == 0 for d in dashboards)):
@@ -1366,7 +1380,7 @@ class PowerBIProjectGenerator:
         self._create_drillthrough_pages(pages_dir, page_names, worksheets,
                                         converted_objects)
         pages_metadata = {
-            "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/pagesMetadata/1.0.0/schema.json",
+            "$schema": SCHEMA_PAGES_METADATA,
             "pageOrder": page_names,
             "activePageName": page_names[0] if page_names else ""
         }
@@ -1403,18 +1417,6 @@ class PowerBIProjectGenerator:
             )
             print(f"  ⚠ {stale_count} stale page directories could not be removed (OneDrive lock)")
         
-        # Add custom visual repository to report.json if any custom
-        # visuals were discovered during page creation
-        if self._used_custom_guids:
-            custom_vis_list = []
-            for key, info in self._used_custom_guids.items():
-                custom_vis_list.append({
-                    "name": info["guid"],
-                    "displayName": info["name"],
-                    "visualType": info.get("class", key),
-                })
-            report_json["customVisualsRepository"] = custom_vis_list
-        
         _write_json(os.path.join(def_dir, 'report.json'), report_json)
         
         return report_dir
@@ -1433,7 +1435,7 @@ class PowerBIProjectGenerator:
 
         # version.json
         version_json = {
-            "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/versionMetadata/1.0.0/schema.json",
+            "$schema": SCHEMA_VERSION,
             "version": "2.0.0",
         }
         _write_json(os.path.join(def_dir, 'version.json'), version_json)
@@ -1450,11 +1452,11 @@ class PowerBIProjectGenerator:
         custom_theme = tmdl_generator.generate_theme_json(theme_data)
 
         report_json = {
-            "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/2.0.0/schema.json",
+            "$schema": SCHEMA_REPORT,
             "themeCollection": {
                 "baseTheme": {
-                    "name": "CY24SU06",
-                    "reportVersionAtImport": "5.55",
+                    "name": PBI_BASE_THEME_NAME,
+                    "reportVersionAtImport": PBI_REPORT_VERSION_AT_IMPORT,
                     "type": "SharedResources",
                 },
             },
@@ -1462,7 +1464,7 @@ class PowerBIProjectGenerator:
                 {
                     "name": "SharedResources",
                     "type": "SharedResources",
-                    "items": [{"name": "CY24SU06", "path": "BaseThemes/CY24SU06.json", "type": "BaseTheme"}],
+                    "items": [{"name": PBI_BASE_THEME_NAME, "path": f"BaseThemes/{PBI_BASE_THEME_NAME}.json", "type": "BaseTheme"}],
                 },
             ],
             "settings": {
@@ -1484,7 +1486,7 @@ class PowerBIProjectGenerator:
             })
             report_json["themeCollection"]["customTheme"] = {
                 "name": "TableauMigrationTheme",
-                "reportVersionAtImport": "5.55",
+                "reportVersionAtImport": PBI_REPORT_VERSION_AT_IMPORT,
                 "type": "RegisteredResources",
             }
             res_dir = os.path.join(def_dir, 'RegisteredResources')
@@ -1523,7 +1525,7 @@ class PowerBIProjectGenerator:
                     pg_name = page_names[db_idx] if db_idx < len(page_names) else ''
                     all_bookmarks.extend(self._create_swap_bookmarks(dz_vis, pg_name))
         if all_bookmarks:
-            report_json["bookmarks"] = all_bookmarks
+            self._write_bookmark_files(def_dir, all_bookmarks)
 
         if not page_names or (dashboards and all(len(d.get('objects', [])) == 0 for d in dashboards)):
             page_names = self._create_fallback_page(pages_dir, worksheets, converted_objects)
@@ -1534,20 +1536,11 @@ class PowerBIProjectGenerator:
         self._create_drillthrough_pages(pages_dir, page_names, worksheets, converted_objects)
 
         pages_metadata = {
-            "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/pagesMetadata/1.0.0/schema.json",
+            "$schema": SCHEMA_PAGES_METADATA,
             "pageOrder": page_names,
             "activePageName": page_names[0] if page_names else "",
         }
         _write_json(os.path.join(pages_dir, 'pages.json'), pages_metadata)
-
-        if self._used_custom_guids:
-            custom_vis_list = []
-            for key, info in self._used_custom_guids.items():
-                custom_vis_list.append({
-                    "name": info["guid"], "displayName": info["name"],
-                    "visualType": info.get("class", key),
-                })
-            report_json["customVisualsRepository"] = custom_vis_list
 
         _write_json(os.path.join(def_dir, 'report.json'), report_json)
 
@@ -2745,22 +2738,24 @@ class PowerBIProjectGenerator:
         }
     
     def _create_bookmarks(self, stories):
-        """Converts Tableau stories to Power BI bookmarks"""
+        """Converts Tableau stories to Power BI bookmarks (PBIR format)."""
         bookmarks = []
         for story in stories:
             story_name = story.get('name', 'Story')
             for sp_idx, sp in enumerate(story.get('story_points', [])):
                 caption = sp.get('caption', f'{story_name} - Point {sp_idx + 1}')
+                active_section = sp.get('captured_sheet', 'ReportSection')
                 bookmark = {
                     "name": f"Bookmark_{uuid.uuid4().hex[:12]}",
                     "displayName": caption,
                     "explorationState": {
-                        "version": "1.0"
+                        "version": "1.0",
+                        "activeSection": active_section,
+                        "sections": {
+                            active_section: {"visualContainers": {}}
+                        },
                     }
                 }
-                # Add captured filters if available
-                if sp.get('filters_state'):
-                    bookmark["explorationState"]["activeSection"] = sp.get('captured_sheet', '')
                 bookmarks.append(bookmark)
         return bookmarks
 
@@ -2770,9 +2765,6 @@ class PowerBIProjectGenerator:
         Each dynamic zone maps to a bookmark that toggles visual visibility
         for its zone. This simulates Tableau's show/hide sheet feature.
 
-        When a zone's default_visible is False, the bookmark shows it (and
-        vice versa), enabling swap behaviour via bookmark selection.
-
         Args:
             dynamic_zones: List from extract_dynamic_zone_visibility
             page_name: The PBI page name these bookmarks belong to
@@ -2781,47 +2773,62 @@ class PowerBIProjectGenerator:
             List of PBI bookmark dicts
         """
         bookmarks = []
-        # Build visibility map: each bookmark shows its target zone
-        # and hides all other dynamic zones on the same page
         zone_names = [dz.get('zone_name', '') for dz in dynamic_zones if dz.get('zone_name')]
 
         for dz in dynamic_zones:
             zone_name = dz.get('zone_name', 'Zone')
             field = dz.get('field', '')
             value = dz.get('value', '')
-            condition = dz.get('condition', 'equals')
-            default_visible = dz.get('default_visible', True)
             label = f"Show {zone_name}" if zone_name else f"Swap: {field}={value}"
+            section = page_name or 'ReportSection'
 
-            # Build visualsVisibility: show this zone, hide others
-            visuals_visibility = {}
+            # Build visual container state: show target zone, hide others
+            visual_containers = {}
             for zn in zone_names:
-                visuals_visibility[zn] = zn == zone_name
+                if zn == zone_name:
+                    continue
+                visual_containers[zn] = {
+                    "singleVisual": {},
+                    "display": {"mode": "hidden"},
+                }
 
             bookmark = {
                 "name": f"Swap_{uuid.uuid4().hex[:12]}",
                 "displayName": label,
                 "explorationState": {
                     "version": "1.0",
-                    "activeSection": page_name,
-                    "visualsVisibility": visuals_visibility,
+                    "activeSection": section,
+                    "sections": {
+                        section: {"visualContainers": visual_containers}
+                    },
                 },
                 "options": {
-                    "targetVisualName": zone_name,
-                    "field": field,
-                    "value": value,
-                    "condition": condition,
-                    "defaultVisible": default_visible,
-                    "MigrationNote": (
-                        f"Dynamic zone visibility: zone '{zone_name}', "
-                        f"field='{field}', value='{value}', "
-                        f"condition='{condition}'. "
-                        "Review visual visibility toggles in Power BI Desktop."
-                    )
+                    "applyOnlyToTargetVisuals": True,
+                    "targetVisualNames": [zone_name],
                 },
             }
             bookmarks.append(bookmark)
         return bookmarks
+
+    def _write_bookmark_files(self, def_dir, bookmarks):
+        """Write bookmarks as individual PBIR bookmark files.
+
+        Each bookmark gets its own directory under ``definition/bookmarks/``.
+        """
+        bookmarks_dir = os.path.join(def_dir, 'bookmarks')
+        for bm in bookmarks:
+            bm_name = bm["name"]
+            bm_dir = os.path.join(bookmarks_dir, bm_name)
+            os.makedirs(bm_dir, exist_ok=True)
+            bookmark_json = {
+                "$schema": SCHEMA_BOOKMARK,
+                "name": bm["name"],
+                "displayName": bm["displayName"],
+                "explorationState": bm["explorationState"],
+            }
+            if bm.get("options"):
+                bookmark_json["options"] = bm["options"]
+            _write_json(os.path.join(bm_dir, 'bookmark.json'), bookmark_json)
 
     def _copy_custom_shapes(self, def_dir, converted_objects):
         """Copy extracted custom shape files to RegisteredResources/.

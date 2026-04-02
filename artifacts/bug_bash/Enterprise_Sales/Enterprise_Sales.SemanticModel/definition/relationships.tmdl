@@ -1,0 +1,20 @@
+relationship efb14691-35c3-43b1-a194-022bf4ce1f8d
+	fromColumn: Orders.customer_id
+	toColumn: Customers.customer_id
+	fromCardinality: many
+	toCardinality: many
+	crossFilteringBehavior: bothDirections
+
+relationship 3be38976-f84d-408f-9fb6-d4b0b44f0df6
+	fromColumn: Orders.order_date
+	toColumn: Calendar.Date
+	crossFilteringBehavior: oneDirection
+
+relationship f1140c17-b0c7-4bb0-889c-40b9544de78c
+	fromColumn: Customers.first_purchase_date
+	toColumn: Calendar.Date
+	fromCardinality: many
+	toCardinality: many
+	crossFilteringBehavior: bothDirections
+	isActive: false
+

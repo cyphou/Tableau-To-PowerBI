@@ -1,0 +1,140 @@
+{
+  "objectVersion": 4,
+  "nodes": {
+    "a4000001-0001-0001-0001-000000000001": {
+      "nodeType": ".v1.LoadSql",
+      "name": "CRM Customers",
+      "id": "a4000001-0001-0001-0001-000000000001",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a4000001-0001-0001-0001-000000000003", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-pg-crm",
+      "connectionAttributes": {
+        "class": "postgres",
+        "server": "crm-db.corp.local",
+        "port": "5432",
+        "dbname": "crm_production",
+        "schema": "public",
+        "table": "customers"
+      },
+      "fields": [
+        {"name": "customer_id", "type": "string"},
+        {"name": "first_name", "type": "string"},
+        {"name": "last_name", "type": "string"},
+        {"name": "email", "type": "string"},
+        {"name": "phone", "type": "string"},
+        {"name": "created_at", "type": "datetime"},
+        {"name": "segment", "type": "string"},
+        {"name": "loyalty_tier", "type": "string"},
+        {"name": "lifetime_value", "type": "real"}
+      ]
+    },
+    "a4000001-0001-0001-0001-000000000002": {
+      "nodeType": ".v1.LoadCsv",
+      "name": "Demographics.csv",
+      "id": "a4000001-0001-0001-0001-000000000002",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a4000001-0001-0001-0001-000000000003", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-demographics",
+      "connectionAttributes": {
+        "class": "csv",
+        "filename": "Demographics.csv",
+        "separator": ","
+      },
+      "fields": [
+        {"name": "customer_id", "type": "string"},
+        {"name": "age_group", "type": "string"},
+        {"name": "income_bracket", "type": "string"},
+        {"name": "city", "type": "string"},
+        {"name": "state", "type": "string"},
+        {"name": "country", "type": "string"},
+        {"name": "postal_code", "type": "string"}
+      ]
+    },
+    "a4000001-0001-0001-0001-000000000003": {
+      "nodeType": ".v1.Join",
+      "name": "Enrich Customers",
+      "id": "a4000001-0001-0001-0001-000000000003",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a4000001-0001-0001-0001-000000000004", "nextNamespace": "Default"}
+      ],
+      "joinType": "left",
+      "joinConditions": [
+        {"leftColumn": "customer_id", "rightColumn": "customer_id", "operator": "="}
+      ]
+    },
+    "a4000001-0001-0001-0001-000000000004": {
+      "nodeType": ".v2018_3_3.SuperTransform",
+      "name": "Standardize Customer",
+      "id": "a4000001-0001-0001-0001-000000000004",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a4000001-0001-0001-0001-000000000005", "nextNamespace": "Default"}
+      ],
+      "beforeActionGroup": {
+        "actions": [
+          {"actionType": ".v1.RenameColumn", "columnName": "customer_id", "newColumnName": "CustomerID"},
+          {"actionType": ".v1.MergeColumns", "columnNames": ["first_name", "last_name"], "separator": " ", "newColumnName": "CustomerName"},
+          {"actionType": ".v1.CleanOperation", "columnName": "email", "operation": "lower"},
+          {"actionType": ".v1.ReplaceNulls", "columnName": "loyalty_tier", "replacement": "Bronze"},
+          {"actionType": ".v1.AddColumn", "columnName": "FullAddress", "expression": "[city] + \", \" + [state] + \" \" + [postal_code]", "columnType": "string"}
+        ]
+      }
+    },
+    "a4000001-0001-0001-0001-000000000005": {
+      "nodeType": ".v1.PublishExtract",
+      "name": "Customer_360",
+      "id": "a4000001-0001-0001-0001-000000000005",
+      "baseType": "output",
+      "nextNodes": [],
+      "connectionAttributes": {
+        "class": "sqlserver",
+        "server": "tableau-prod.corp.local",
+        "dbname": "PrepOutputs",
+        "table": "Customer_360"
+      },
+      "publishSettings": {
+        "datasourceName": "Customer_360",
+        "writeMode": "overwrite"
+      },
+      "fields": [
+        {"name": "CustomerID", "type": "string"},
+        {"name": "CustomerName", "type": "string"},
+        {"name": "email", "type": "string"},
+        {"name": "phone", "type": "string"},
+        {"name": "segment", "type": "string"},
+        {"name": "loyalty_tier", "type": "string"},
+        {"name": "lifetime_value", "type": "real"},
+        {"name": "age_group", "type": "string"},
+        {"name": "income_bracket", "type": "string"},
+        {"name": "city", "type": "string"},
+        {"name": "state", "type": "string"},
+        {"name": "country", "type": "string"},
+        {"name": "FullAddress", "type": "string"}
+      ]
+    }
+  },
+  "connections": {
+    "conn-pg-crm": {
+      "connectionAttributes": {
+        "class": "postgres",
+        "server": "crm-db.corp.local",
+        "port": "5432",
+        "dbname": "crm_production",
+        "schema": "public",
+        "table": "customers"
+      }
+    },
+    "conn-demographics": {
+      "connectionAttributes": {
+        "class": "csv",
+        "directory": "/data/raw/",
+        "filename": "Demographics.csv"
+      }
+    }
+  }
+}

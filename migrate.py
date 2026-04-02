@@ -162,9 +162,9 @@ def run_extraction(tableau_file, hyper_max_rows=None):
     # Resolve and validate path
     resolved = os.path.realpath(tableau_file)
     ext = os.path.splitext(resolved)[1].lower()
-    if ext not in ('.twb', '.twbx', '.tds', '.tdsx'):
+    if ext not in ('.twb', '.twbx', '.tds', '.tdsx', '.tfl', '.tflx'):
         logger.error(f"Unsupported file extension: {ext}")
-        print(f"Error: Unsupported file type: {ext}. Use .twb, .twbx, .tds, or .tdsx")
+        print(f"Error: Unsupported file type: {ext}. Use .twb, .twbx, .tds, .tdsx, .tfl, or .tflx")
         return False
 
     if not os.path.exists(resolved):
@@ -797,6 +797,68 @@ def run_prep_flow(prep_file, datasources_json='tableau_export/datasources.json')
         return False
 
 
+def run_standalone_prep(prep_file):
+    """Migrate a standalone Tableau Prep flow (.tfl/.tflx) without a workbook.
+
+    Parses the Prep flow, converts all steps to Power Query M, and writes
+    synthetic extraction JSON files so the standard generation pipeline
+    can produce a SemanticModel-only .pbip project.
+
+    Args:
+        prep_file: Path to .tfl or .tflx file
+
+    Returns:
+        bool: True if extraction-equivalent step succeeded
+    """
+    import json as _json
+
+    print_step("1", 2, "TABLEAU PREP FLOW (STANDALONE)")
+
+    if not os.path.exists(prep_file):
+        print(f"Error: Prep flow file not found: {prep_file}")
+        return False
+
+    print(f"Prep flow: {prep_file}")
+
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'tableau_export'))
+    try:
+        from prep_flow_parser import parse_prep_flow
+
+        # Parse the Prep flow → list of datasource dicts with M queries
+        prep_datasources = parse_prep_flow(prep_file)
+        print(f"  [OK] {len(prep_datasources)} Prep output(s) parsed")
+
+        # Write synthetic extraction JSON files
+        json_dir = os.path.join(os.path.dirname(__file__), 'tableau_export')
+        os.makedirs(json_dir, exist_ok=True)
+
+        with open(os.path.join(json_dir, 'datasources.json'), 'w', encoding='utf-8') as f:
+            _json.dump(prep_datasources, f, indent=2, ensure_ascii=False)
+
+        # Write empty placeholder files for the other 16 extracted object types
+        empty_list_files = [
+            'worksheets.json', 'calculations.json', 'parameters.json',
+            'filters.json', 'stories.json', 'actions.json', 'sets.json',
+            'groups.json', 'bins.json', 'hierarchies.json', 'sort_orders.json',
+            'aliases.json', 'custom_sql.json', 'user_filters.json',
+            'hyper_files.json', 'dashboards.json',
+        ]
+        for fname in empty_list_files:
+            fpath = os.path.join(json_dir, fname)
+            if not os.path.exists(fpath):
+                with open(fpath, 'w', encoding='utf-8') as f:
+                    _json.dump([], f)
+
+        print(f"  [OK] Extraction JSON written to {json_dir}")
+        print("\n[OK] Prep flow standalone extraction completed")
+        return True
+
+    except (ImportError, OSError, json.JSONDecodeError) as e:
+        logger.error("Standalone Prep flow parsing failed: %s", e, exc_info=True)
+        print(f"\nError during Prep flow parsing: {str(e)}")
+        return False
+
+
 def _run_check_hyper(args):
     """Analyse .hyper files in a workbook and print diagnostic report."""
     import sys as _sys
@@ -1105,8 +1167,12 @@ def _migrate_single_workbook(tableau_file, basename, workbook_output_dir, displa
     file_results = {}
 
     # Step 1: Extract
+    _is_prep_standalone = os.path.splitext(tableau_file)[1].lower() in ('.tfl', '.tflx')
     if not skip_extraction:
-        file_results['extraction'] = run_extraction(tableau_file)
+        if _is_prep_standalone:
+            file_results['extraction'] = run_standalone_prep(tableau_file)
+        else:
+            file_results['extraction'] = run_extraction(tableau_file)
         if not file_results['extraction']:
             logger.warning("Extraction failed for %s, skipping", display_name)
             return {'success': False, 'error': 'extraction', 'report_name': basename,
@@ -1115,8 +1181,8 @@ def _migrate_single_workbook(tableau_file, basename, workbook_output_dir, displa
     else:
         file_results['extraction'] = True
 
-    # Step 1b: Prep flow (optional)
-    if wb_prep:
+    # Step 1b: Prep flow (optional — skip if already standalone .tfl)
+    if wb_prep and not _is_prep_standalone:
         file_results['prep'] = run_prep_flow(wb_prep)
 
     # Step 2: Generate
@@ -1254,11 +1320,11 @@ def run_batch_migration(batch_dir, output_dir=None, prep_file=None, skip_extract
     tableau_files = []
     for root, _dirs, files in os.walk(batch_dir):
         for f in files:
-            if f.lower().endswith(('.twb', '.twbx', '.tds', '.tdsx')) and not f.startswith('~'):
+            if f.lower().endswith(('.twb', '.twbx', '.tds', '.tdsx', '.tfl', '.tflx')) and not f.startswith('~'):
                 tableau_files.append(os.path.join(root, f))
 
     if not tableau_files:
-        print(f"Error: No .twb/.twbx/.tds/.tdsx files found in {batch_dir}")
+        print(f"Error: No .twb/.twbx/.tds/.tdsx/.tfl/.tflx files found in {batch_dir}")
         return 1
 
     tableau_files.sort()
@@ -2185,6 +2251,19 @@ def _add_shared_model_args(parser):
         )
     )
 
+    parser.add_argument(
+        '--prep-lineage',
+        nargs='*',
+        metavar='PATH',
+        default=None,
+        help=(
+            'Analyze Tableau Prep flows (.tfl/.tflx) in bulk and produce a '
+            'cross-flow lineage report with merge recommendations. '
+            'Provide file paths or a directory. '
+            'Generates HTML report + JSON export.'
+        )
+    )
+
 
 def _build_argument_parser():
     """Build and return the CLI argument parser."""
@@ -2469,6 +2548,117 @@ def _run_bundle_deploy(project_dir, workspace_id, refresh=False):
         logger.error("Bundle deployment failed: %s", exc, exc_info=True)
         print(f"\n  ✗ Bundle deployment error: {exc}")
         return ExitCode.GENERAL_ERROR
+
+
+# ── Prep Lineage mode ──────────────────────────────────────────────────────
+
+def run_prep_lineage_mode(args):
+    """Bulk-analyze Tableau Prep flows and produce cross-flow lineage report.
+
+    Discovers .tfl/.tflx files from --prep-lineage paths (files or directories),
+    builds a cross-flow lineage graph, computes merge recommendations,
+    and outputs HTML + JSON reports.
+
+    Returns:
+        ExitCode
+    """
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'tableau_export'))
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'powerbi_import'))
+
+    try:
+        from prep_flow_analyzer import analyze_flow, analyze_flows_bulk
+        from powerbi_import.prep_lineage import build_lineage_graph
+        from powerbi_import.prep_lineage_report import (
+            compute_merge_recommendations,
+            generate_prep_lineage_report,
+            save_lineage_json,
+            print_lineage_summary,
+        )
+    except ImportError:
+        from prep_flow_analyzer import analyze_flow, analyze_flows_bulk
+        from prep_lineage import build_lineage_graph
+        from prep_lineage_report import (
+            compute_merge_recommendations,
+            generate_prep_lineage_report,
+            save_lineage_json,
+            print_lineage_summary,
+        )
+
+    # Collect .tfl/.tflx paths
+    paths = list(args.prep_lineage or [])
+
+    # If --batch is also given and no explicit paths, scan batch dir
+    if not paths and getattr(args, 'batch', None):
+        paths = [args.batch]
+
+    if not paths:
+        print('Error: --prep-lineage requires file paths or a directory')
+        return ExitCode.GENERAL_ERROR
+
+    # Expand directories and collect files
+    flow_files = []
+    for p in paths:
+        if os.path.isdir(p):
+            for root, _dirs, files in os.walk(p):
+                for fname in sorted(files):
+                    if fname.lower().endswith(('.tfl', '.tflx')):
+                        flow_files.append(os.path.join(root, fname))
+        elif os.path.isfile(p) and p.lower().endswith(('.tfl', '.tflx')):
+            flow_files.append(p)
+        else:
+            print(f'Warning: Skipping non-TFL path: {p}')
+
+    if not flow_files:
+        print('Error: No .tfl/.tflx files found')
+        return ExitCode.GENERAL_ERROR
+
+    print_header('PREP FLOW LINEAGE ANALYSIS')
+    print(f'  Found {len(flow_files)} Tableau Prep flow(s)')
+    print()
+
+    # Phase 1: Analyze each flow
+    profiles = []
+    for i, fpath in enumerate(flow_files, 1):
+        basename = os.path.basename(fpath)
+        print(f'  [{i}/{len(flow_files)}] Analyzing: {basename}')
+        try:
+            profile = analyze_flow(fpath)
+            profiles.append(profile)
+            print(f'    → {len(profile.inputs)} inputs, {len(profile.outputs)} outputs, '
+                  f'{len(profile.transforms)} transforms')
+        except (ValueError, OSError, KeyError) as exc:
+            print(f'    ⚠ Failed: {exc}')
+            logger.warning('Failed to analyze %s: %s', fpath, exc)
+
+    if not profiles:
+        print('\nError: No flows could be analyzed')
+        return ExitCode.GENERAL_ERROR
+
+    # Phase 2: Build cross-flow lineage
+    print(f'\n  Building cross-flow lineage graph...')
+    graph = build_lineage_graph(profiles)
+
+    # Phase 3: Merge recommendations
+    recommendations = compute_merge_recommendations(graph)
+
+    # Console summary
+    print_lineage_summary(graph, recommendations)
+
+    # Save outputs
+    out = getattr(args, 'output_dir', None) or os.path.join(
+        'artifacts', 'powerbi_projects', 'prep_lineage'
+    )
+    os.makedirs(out, exist_ok=True)
+
+    html_path = os.path.join(out, 'prep_lineage_report.html')
+    generate_prep_lineage_report(graph, recommendations, html_path)
+    print(f'  HTML report: {html_path}')
+
+    json_path = os.path.join(out, 'prep_lineage.json')
+    save_lineage_json(graph, recommendations, json_path)
+    print(f'  JSON report: {json_path}')
+
+    return ExitCode.SUCCESS
 
 
 # ── Global Assessment mode ──────────────────────────────────────────────────
@@ -3019,6 +3209,10 @@ def main():
     if getattr(args, 'consolidate', None):
         result = run_consolidate_reports(args.consolidate)
         return ExitCode.SUCCESS if result == 0 else ExitCode.GENERAL_ERROR
+
+    # ── Prep Lineage mode ──────────────────────────────────────
+    if getattr(args, 'prep_lineage', None) is not None:
+        return run_prep_lineage_mode(args)
 
     # ── Global Assessment mode ─────────────────────────────────
     if getattr(args, 'global_assess', None) is not None:
@@ -4119,11 +4313,15 @@ def _run_single_migration(args):
 
     # Step 1: Extraction
     progress.start("Extracting Tableau data")
+    _is_prep_standalone = os.path.splitext(args.tableau_file)[1].lower() in ('.tfl', '.tflx')
     if not args.skip_extraction:
-        results['extraction'] = run_extraction(
-            args.tableau_file,
-            hyper_max_rows=getattr(args, 'hyper_rows', None),
-        )
+        if _is_prep_standalone:
+            results['extraction'] = run_standalone_prep(args.tableau_file)
+        else:
+            results['extraction'] = run_extraction(
+                args.tableau_file,
+                hyper_max_rows=getattr(args, 'hyper_rows', None),
+            )
         if not results['extraction']:
             progress.fail("Extraction failed")
             print("\nMigration aborted due to extraction failure")
@@ -4133,8 +4331,8 @@ def _run_single_migration(args):
         progress.complete("Skipped (using existing data)")
         results['extraction'] = True
 
-    # Step 1b: Prep flow (optional)
-    if args.prep:
+    # Step 1b: Prep flow (optional — skip if already standalone .tfl)
+    if args.prep and not _is_prep_standalone:
         progress.start("Parsing Prep flow")
         results['prep'] = run_prep_flow(args.prep)
         if not results['prep']:

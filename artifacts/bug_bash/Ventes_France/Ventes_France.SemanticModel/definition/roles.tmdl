@@ -1,0 +1,7 @@
+role 'Accès Commercial'
+	modelPermission: read
+	annotation MigrationNote = "Migrated from Tableau user filter 'Accès Commercial'. Each user is mapped to their allowed commercial values inline. Consider creating a security table for dynamic RLS."
+
+	tablePermission Commandes
+		filterExpression = (USERPRINCIPALNAME() = "marie.dupont@entreprise.fr" && [commercial] = "Marie Dupont") || (USERPRINCIPALNAME() = "jean.martin@entreprise.fr" && [commercial] = "Jean Martin") || (USERPRINCIPALNAME() = "sophie.bernard@entreprise.fr" && [commercial] = "Sophie Bernard") || (USERPRINCIPALNAME() = "pierre.durand@entreprise.fr" && [commercial] = "Pierre Durand")
+
