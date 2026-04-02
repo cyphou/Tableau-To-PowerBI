@@ -1,8 +1,8 @@
 # Development Roadmap — v22.0.0 → v29.0.0
 
-**Date:** 2026-03-26
-**Baseline:** v28.1.1 — 6,831 tests across 141 test files, 0 failures
-**Current state:** v28.1.1 shipped (Sprints 108–111 + 118–119). Migration Confidence Score: 91.9/100 (Grade A).
+**Date:** 2026-04-02
+**Baseline:** v28.2.0 — 6,988 tests across 141+ test files, 0 failures
+**Current state:** v28.2.0 shipped (Sprints 108–111 + 118–119 + standalone prep pipeline). Migration Confidence Score: 91.9/100 (Grade A).
 
 ---
 
@@ -22,6 +22,7 @@ The migration engine is **feature-complete for core single-workbook scenarios**.
 | **v28.0.0** | Extensibility & Core Infrastructure | Sprints 108–111 | ✅ Shipped |
 | **v28.1.0** | Copilot Readiness & Semantic Descriptions | Sprints 118–119 | ✅ Shipped |
 | **v28.1.1** | M Quoting, Bracket Stripping, Bug Fixes | Hotfix | ✅ Shipped |
+| **v28.2.0** | Standalone Prep Flow Pipeline & Documentation | — | ✅ Shipped |
 | **v29.0.0** | Migration Completeness & Enterprise Operations | Sprints 112–117, 120–127 | Planned |
 
 ---
@@ -1081,6 +1082,36 @@ v29.0.0 closes these gaps across **5 phases**: Remaining v28 items (LLM, Web UI,
 | 119.4 | **M identifier quoting (`_quote_m_identifiers`)** | @generator | ✅ (v28.1.1) |
 | 119.5 | **Bracket stripping fix** | @converter | ✅ (v28.1.1) |
 | 119.6 | **Tests** | @tester | ✅ |
+
+---
+
+## v28.2.0 — Standalone Prep Flow Pipeline & Documentation ✅ SHIPPED
+
+### Motivation
+
+Standalone `.tfl`/`.tflx` Tableau Prep flow files in `--batch` mode were incorrectly routed through the full `.pbip` generation pipeline, producing empty projects with zero visuals. v28.2.0 redesigns the batch pipeline so standalone prep flows produce **Power Query M exports**, **source definitions**, and **cross-flow lineage analysis** — not empty `.pbip` projects.
+
+### Deliverables
+
+| # | Item | Owner | Status | Details |
+|---|------|-------|--------|---------|
+| 1 | **`_migrate_single_prep_flow()`** | @orchestrator | ✅ | New function in `migrate.py`: routes `.tfl`/`.tflx` through `prep_flow_analyzer.analyze_flow()` instead of `run_standalone_prep()` → `run_generation()`. Outputs: `PowerQuery/*.pq`, `Sources/*.json`, `assessment.json`. |
+| 2 | **`_run_batch_prep_lineage()`** | @orchestrator | ✅ | Post-batch cross-flow lineage when ≥2 prep flows succeed. Builds lineage graph, computes merge recommendations, generates HTML + JSON reports. |
+| 3 | **Updated batch routing** | @orchestrator | ✅ | `_migrate_single_workbook()` short-circuits `.tfl`/`.tflx` to new pipeline. |
+| 4 | **Separate batch summary** | @orchestrator | ✅ | `_print_batch_summary()` renders separate tables for workbooks (Fidelity/Tables/Visuals) vs prep flows (Grade/M Queries/Sources). |
+| 5 | **Documentation overhaul** | @orchestrator | ✅ | 8 files updated: README.md (Mermaid diagram + lineage screenshot), ARCHITECTURE.md (ASCII diagram), copilot-instructions.md, FAQ.md, ENTERPRISE_GUIDE.md, MIGRATION_CHECKLIST.md, CHANGELOG.md. |
+| 6 | **Tests** | @tester | ✅ | 16 standalone prep tests (5 new for `_migrate_single_prep_flow()`). |
+
+### v28.2.0 Success Criteria
+
+| Metric | v28.1.1 | v28.2.0 Actual |
+|--------|---------|----------------|
+| Standalone prep output | Empty `.pbip` projects | **Power Query M + sources + lineage** ✅ |
+| Cross-flow lineage | Manual `--prep-lineage` only | **Automatic in `--batch`** ✅ |
+| Mixed batch directories | `.tfl` files produce broken `.pbip` | **Correct routing** (workbooks→`.pbip`, prep→M+sources) ✅ |
+| Tests | 6,831 | **6,988** ✅ |
+| Prep portfolio batch | 14/14 flows | **14/14 OK** ✅ |
+| Tableau samples batch | 11/11 workbooks | **11/11 OK** ✅ |
 
 ---
 

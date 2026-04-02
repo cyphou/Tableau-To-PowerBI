@@ -1,11 +1,56 @@
 # Development Plan — Tableau to Power BI Migration Tool
 
-**Version:** v28.0.0  
-**Date:** 2026-03-23  
-**Current state:** v28.0.0 Phase 1 shipped — **6,714 tests** across 140 test files (+conftest.py), 0 failures  
-**Previous baseline:** v3.5.0 — 887 → v4.0.0 — 1,387 → v5.0.0 — 1,543 → v5.1.0 — 1,595 → v5.5.0 — 1,777 → v6.0.0 — 1,889 → v6.1.0 — 1,997 → v7.0.0 — 2,057 → Sprint 21 — 2,066 → v8.0.0 — 2,275 → Sprint 27 — 2,542 → Sprint 28 — 2,616 → Sprint 29 — 2,666 → v9.0.0 — 3,196 → v10.0.0 — 3,342 → v11.0.0 — 3,459 → v12.0.0 — 3,729 → v13.0.0 — 3,847 → v14.0.0 — 3,925 → v15.0.0 — 3,988 → v15.0.1 — 3,996 → v16.0.0 — 4,131 → v17.0.0 — 4,219 → Sprint 63 — 4,762 → Sprint 64 — 4,813 → v19.0.0 — 4,923 → v21.0.0 — 5,170 → v22.0.0 — 5,683 → v23.0.0 — 5,782 → v24.0.0 — 5,927 → v25.0.0 — 6,192 → Sprint 97 — 6,251 → Sprint 98 — 6,263 → v26.0.0 — 6,400 → v27.0.0 — 6,454 → v27.1.0 — 6,532 → **v28.0.0 Phase 1 — 6,714**
+**Version:** v28.2.0  
+**Date:** 2026-04-02  
+**Current state:** v28.2.0 shipped — **6,988 tests** across 141+ test files (+conftest.py), 0 failures  
+**Previous baseline:** v3.5.0 — 887 → v4.0.0 — 1,387 → v5.0.0 — 1,543 → v5.1.0 — 1,595 → v5.5.0 — 1,777 → v6.0.0 — 1,889 → v6.1.0 — 1,997 → v7.0.0 — 2,057 → Sprint 21 — 2,066 → v8.0.0 — 2,275 → Sprint 27 — 2,542 → Sprint 28 — 2,616 → Sprint 29 — 2,666 → v9.0.0 — 3,196 → v10.0.0 — 3,342 → v11.0.0 — 3,459 → v12.0.0 — 3,729 → v13.0.0 — 3,847 → v14.0.0 — 3,925 → v15.0.0 — 3,988 → v15.0.1 — 3,996 → v16.0.0 — 4,131 → v17.0.0 — 4,219 → Sprint 63 — 4,762 → Sprint 64 — 4,813 → v19.0.0 — 4,923 → v21.0.0 — 5,170 → v22.0.0 — 5,683 → v23.0.0 — 5,782 → v24.0.0 — 5,927 → v25.0.0 — 6,192 → Sprint 97 — 6,251 → Sprint 98 — 6,263 → v26.0.0 — 6,400 → v27.0.0 — 6,454 → v27.1.0 — 6,532 → v28.0.0 — 6,714 → v28.1.0 — 6,831 → v28.1.1 — 6,831 → **v28.2.0 — 6,988**
 
-**Next roadmap:** See [ROADMAP.md](ROADMAP.md) for v28.0.0 (Sprints 108–117) — Extensibility, Web UI & AI-Assisted Migration, and v29.0.0 (Sprints 118–127) — Copilot Readiness, Semantic Depth & Migration Completeness
+**Next roadmap:** See [ROADMAP.md](ROADMAP.md) for v29.0.0 (Sprints 112–117, 120–127) — Migration Completeness & Enterprise Operations
+
+---
+
+## v28.2.0 — Standalone Prep Flow Pipeline & Documentation ✅ SHIPPED
+
+Standalone `.tfl`/`.tflx` Tableau Prep flow files in `--batch` mode now produce **Power Query M exports**, **source definitions**, and **cross-flow lineage analysis** instead of empty `.pbip` projects.
+
+| Item | Owner | Status | Details |
+|------|-------|--------|---------|
+| `_migrate_single_prep_flow()` | @orchestrator | ✅ | Per-flow analysis via `prep_flow_analyzer.analyze_flow()` → PowerQuery/*.pq + Sources/*.json + assessment.json |
+| `_run_batch_prep_lineage()` | @orchestrator | ✅ | Automatic cross-flow lineage when ≥2 flows succeed in batch |
+| Updated batch routing | @orchestrator | ✅ | `.tfl`/`.tflx` short-circuits to new pipeline instead of full `.pbip` generation |
+| Separate batch summary | @orchestrator | ✅ | Workbook vs prep flow tables in `_print_batch_summary()` |
+| Documentation overhaul | @orchestrator | ✅ | 8 files: README, ARCHITECTURE, copilot-instructions, FAQ, ENTERPRISE_GUIDE, MIGRATION_CHECKLIST, CHANGELOG |
+| Tests | @tester | ✅ | 6,988 tests (16 standalone prep tests, 5 new for `_migrate_single_prep_flow()`) |
+
+---
+
+## v28.1.x — Copilot Readiness & Semantic Descriptions ✅ SHIPPED
+
+See [ROADMAP.md](ROADMAP.md) for full sprint details (Sprints 118–119).
+
+| Version | Key Deliverables | Tests |
+|---------|-----------------|-------|
+| **v28.1.0** | Auto-generated descriptions (tables, columns, measures), linguistic schema, Copilot annotations, lineage dashboard, validator auto-fix (17 patterns), QA suite | 6,831 |
+| **v28.1.1** | M identifier quoting (`_quote_m_identifiers`), bracket stripping fix, DataFolder paths, image embedding, TWB local Data folder | 6,831 |
+
+---
+
+## v28.0.0 — Extensibility & Core Infrastructure ✅ SHIPPED
+
+See [ROADMAP.md](ROADMAP.md) for full sprint details (Sprints 108–111).
+
+| Sprint | Title | Owner(s) | Status | Key Deliverables |
+|--------|-------|----------|--------|------------------|
+| **108** | TDS/TDSX Standalone Datasource | @extractor, @generator | ✅ SHIPPED | `.tds`/`.tdsx` → SemanticModel-only projects |
+| **109** | TDSX with Hyper Data Inlining | @extractor, @generator | ✅ SHIPPED | Hyper row data → M `#table()`/`Csv.Document()` partitions |
+| **110** | REST API Endpoint | @orchestrator, @deployer | ✅ SHIPPED | stdlib `http.server` API, Dockerfile, thread-safe job store |
+| **111** | Schema Drift Detection | @extractor, @assessor | ✅ SHIPPED | `schema_drift.py`, `--check-drift`, JSON + summary output |
+
+### v28.0.0 Success Criteria
+
+| Metric | Target | Actual |
+|--------|--------|--------|
+| Tests | 6,900+ | **6,714** (Phase 1) → **6,988** (v28.2.0) |
 
 ---
 
@@ -22,7 +67,7 @@ This project uses an **8-agent specialization model** with scoped domain knowled
 | **@assessor** | Readiness scoring, strategy, diff reports | `assessment.py`, `server_assessment.py`, `strategy_advisor.py` |
 | **@merger** | Shared semantic model, fingerprint matching | `shared_model.py`, `merge_config.py` |
 | **@deployer** | Fabric/PBI deployment, auth, gateway | `deploy/*.py`, `gateway_config.py`, `telemetry.py` |
-| **@tester** | Tests (6,714+), coverage, regression | `tests/*.py` |
+| **@tester** | Tests (6,988+), coverage, regression | `tests/*.py` |
 
 **Rules:** One owner per file. Read access is universal. @tester is cross-cutting (reads all source, writes only `tests/`).
 
@@ -38,6 +83,24 @@ This project uses an **8-agent specialization model** with scoped domain knowled
 | @merger | 54, 55, 57 | 62, 64 | — | — | — | — | 88, 89 | — | 98 |
 | @deployer | — | 63 | 68 | 73, 74 | — | 83 | 89, 90 | 94 | 97, 99, 100 |
 | @tester | 54–58 | 59–65 | 66–70 | 71–75 | 76–80 | 81–85 | 86–90 | 91–95 | 96–100 |
+
+---
+
+## v26.0.0 — Autonomous Migration & Production Hardening ✅ SHIPPED
+
+See [ROADMAP.md](ROADMAP.md) for full sprint details (Sprints 96–100).
+
+### Summary
+
+v26.0.0 targets **zero-touch autonomous migration** for standard workbooks: upload a .twbx, receive a production-ready .pbip with optimized DAX, proper governance, and deployed to Fabric — with no human intervention.
+
+| Sprint | Title | Owner(s) | Status | Key Deliverables |
+|--------|-------|----------|--------|------------------|
+| **96** | Self-Healing Migration Pipeline | @generator, @orchestrator | ✅ SHIPPED | TMDL self-repair, visual fallback cascade, M query self-repair, recovery report (76 tests) |
+| **97** | Security Hardening | @orchestrator, @deployer, @extractor | ✅ SHIPPED | security_validator.py, ZIP slip defense, XXE protection, credential redaction, multi-tenant defense, wizard hardening (64 tests) |
+| **98** | Merged Lakehouse / Fabric Output | @merger, @orchestrator | ✅ SHIPPED | `--shared-model --output-format fabric`, thin report Fabric branch, CLI wiring (12 tests) |
+| **99** | Governance & Advanced Formulas | @assessor, @converter, @deployer, @generator | ✅ SHIPPED | Naming conventions, PII detection, audit trail, sensitivity labels, LOOKUP/PREVIOUS_VALUE, Window PARTITIONBY, Azure Maps |
+| **100** | Production Hardening & Release | @orchestrator, @deployer, @tester | ✅ SHIPPED | Rolling deployment, SLA tracking, monitoring, endorsement, 1000-workbook stress test, v26.0.0 release |
 
 ---
 
