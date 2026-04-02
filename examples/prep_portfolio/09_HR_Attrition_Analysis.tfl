@@ -1,0 +1,251 @@
+{
+  "objectVersion": 4,
+  "nodes": {
+    "a9000001-0001-0001-0001-000000000001": {
+      "nodeType": ".v1.LoadExcel",
+      "name": "Employee_Survey.xlsx",
+      "id": "a9000001-0001-0001-0001-000000000001",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a9000001-0001-0001-0001-000000000004", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-hr-survey",
+      "connectionAttributes": {
+        "class": "excel-direct",
+        "filename": "Employee_Survey.xlsx",
+        "sheet": "Survey_Results"
+      },
+      "fields": [
+        {"name": "EmployeeID", "type": "string"},
+        {"name": "Q1_Satisfaction", "type": "integer"},
+        {"name": "Q2_WorkLifeBalance", "type": "integer"},
+        {"name": "Q3_Environment", "type": "integer"},
+        {"name": "Q4_Relationship", "type": "integer"},
+        {"name": "Q5_JobInvolvement", "type": "integer"},
+        {"name": "SurveyDate", "type": "date"}
+      ]
+    },
+    "a9000001-0001-0001-0001-000000000002": {
+      "nodeType": ".v1.LoadSql",
+      "name": "HR_Employees",
+      "id": "a9000001-0001-0001-0001-000000000002",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a9000001-0001-0001-0001-000000000005", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-hr-db",
+      "connectionAttributes": {
+        "class": "sqlserver",
+        "server": "hr-db.corp.local",
+        "dbname": "HumanResources",
+        "schema": "dbo",
+        "table": "Employees"
+      },
+      "fields": [
+        {"name": "EmployeeID", "type": "string"},
+        {"name": "FirstName", "type": "string"},
+        {"name": "LastName", "type": "string"},
+        {"name": "Department", "type": "string"},
+        {"name": "JobRole", "type": "string"},
+        {"name": "HireDate", "type": "date"},
+        {"name": "TerminationDate", "type": "date"},
+        {"name": "MonthlyIncome", "type": "real"},
+        {"name": "EducationLevel", "type": "integer"},
+        {"name": "Gender", "type": "string"},
+        {"name": "Age", "type": "integer"},
+        {"name": "OverTime", "type": "string"},
+        {"name": "DistanceFromHome", "type": "integer"},
+        {"name": "YearsAtCompany", "type": "integer"},
+        {"name": "NumCompaniesWorked", "type": "integer"},
+        {"name": "TrainingTimesLastYear", "type": "integer"}
+      ]
+    },
+    "a9000001-0001-0001-0001-000000000003": {
+      "nodeType": ".v1.LoadCsv",
+      "name": "Performance_Reviews.csv",
+      "id": "a9000001-0001-0001-0001-000000000003",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a9000001-0001-0001-0001-000000000005", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-perf-reviews",
+      "connectionAttributes": {
+        "class": "csv",
+        "filename": "Performance_Reviews.csv",
+        "separator": ","
+      },
+      "fields": [
+        {"name": "EmployeeID", "type": "string"},
+        {"name": "ReviewYear", "type": "integer"},
+        {"name": "PerformanceRating", "type": "integer"},
+        {"name": "ManagerRating", "type": "integer"},
+        {"name": "GoalsAchieved", "type": "real"},
+        {"name": "PromotionRecommendation", "type": "string"}
+      ]
+    },
+    "a9000001-0001-0001-0001-000000000004": {
+      "nodeType": ".v1.Pivot",
+      "name": "Unpivot Survey Scores",
+      "id": "a9000001-0001-0001-0001-000000000004",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a9000001-0001-0001-0001-000000000006", "nextNamespace": "Default"}
+      ],
+      "pivotType": "columnsToRows",
+      "columnsToRows": {
+        "pivotColumns": ["Q1_Satisfaction", "Q2_WorkLifeBalance", "Q3_Environment", "Q4_Relationship", "Q5_JobInvolvement"],
+        "pivotValueName": "Score",
+        "pivotKeyName": "SurveyQuestion"
+      }
+    },
+    "a9000001-0001-0001-0001-000000000005": {
+      "nodeType": ".v1.Join",
+      "name": "Employee + Performance",
+      "id": "a9000001-0001-0001-0001-000000000005",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a9000001-0001-0001-0001-000000000007", "nextNamespace": "Default"}
+      ],
+      "joinType": "left",
+      "joinConditions": [
+        {"leftColumn": "EmployeeID", "rightColumn": "EmployeeID", "operator": "="}
+      ]
+    },
+    "a9000001-0001-0001-0001-000000000006": {
+      "nodeType": ".v2018_3_3.SuperAggregate",
+      "name": "Avg Survey by Employee",
+      "id": "a9000001-0001-0001-0001-000000000006",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a9000001-0001-0001-0001-000000000007", "nextNamespace": "Default"}
+      ],
+      "groupByFields": [{"name": "EmployeeID"}],
+      "aggregateFields": [
+        {"name": "Score", "aggregation": "AVG", "newColumnName": "AvgSurveyScore"},
+        {"name": "Score", "aggregation": "MIN", "newColumnName": "MinSurveyScore"},
+        {"name": "Score", "aggregation": "MAX", "newColumnName": "MaxSurveyScore"}
+      ]
+    },
+    "a9000001-0001-0001-0001-000000000007": {
+      "nodeType": ".v1.Join",
+      "name": "Enrich with Survey",
+      "id": "a9000001-0001-0001-0001-000000000007",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a9000001-0001-0001-0001-000000000008", "nextNamespace": "Default"}
+      ],
+      "joinType": "left",
+      "joinConditions": [
+        {"leftColumn": "EmployeeID", "rightColumn": "EmployeeID", "operator": "="}
+      ]
+    },
+    "a9000001-0001-0001-0001-000000000008": {
+      "nodeType": ".v2018_3_3.SuperTransform",
+      "name": "Attrition Risk Score",
+      "id": "a9000001-0001-0001-0001-000000000008",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a9000001-0001-0001-0001-000000000009", "nextNamespace": "Default"},
+        {"namespace": "Default", "nextNodeId": "a9000001-0001-0001-0001-000000000010", "nextNamespace": "Default"}
+      ],
+      "beforeActionGroup": {
+        "actions": [
+          {"actionType": ".v1.AddColumn", "columnName": "IsTerminated", "expression": "IF ISNULL([TerminationDate]) THEN 0 ELSE 1 END", "columnType": "integer"},
+          {"actionType": ".v1.AddColumn", "columnName": "TenureBucket", "expression": "IF [YearsAtCompany] < 2 THEN 'New' ELSEIF [YearsAtCompany] < 5 THEN 'Mid' ELSEIF [YearsAtCompany] < 10 THEN 'Senior' ELSE 'Veteran' END", "columnType": "string"},
+          {"actionType": ".v1.AddColumn", "columnName": "AttritionRisk", "expression": "IF [OverTime] = 'Yes' AND [AvgSurveyScore] < 3 THEN 'High' ELSEIF [OverTime] = 'Yes' OR [AvgSurveyScore] < 3 THEN 'Medium' ELSE 'Low' END", "columnType": "string"},
+          {"actionType": ".v1.AddColumn", "columnName": "IncomeBracket", "expression": "IF [MonthlyIncome] < 3000 THEN 'Low' ELSEIF [MonthlyIncome] < 7000 THEN 'Mid' ELSE 'High' END", "columnType": "string"},
+          {"actionType": ".v1.ChangeType", "columnName": "EducationLevel", "newType": "string"},
+          {"actionType": ".v1.RenameColumn", "columnName": "EducationLevel", "newColumnName": "Education"}
+        ]
+      }
+    },
+    "a9000001-0001-0001-0001-000000000009": {
+      "nodeType": ".v1.PublishExtract",
+      "name": "HR_Attrition_Detail",
+      "id": "a9000001-0001-0001-0001-000000000009",
+      "baseType": "output",
+      "nextNodes": [],
+      "connectionAttributes": {
+        "class": "hyper",
+        "filename": "HR_Attrition_Detail.hyper"
+      },
+      "fields": [
+        {"name": "EmployeeID", "type": "string"},
+        {"name": "FirstName", "type": "string"},
+        {"name": "LastName", "type": "string"},
+        {"name": "Department", "type": "string"},
+        {"name": "JobRole", "type": "string"},
+        {"name": "HireDate", "type": "date"},
+        {"name": "MonthlyIncome", "type": "real"},
+        {"name": "Gender", "type": "string"},
+        {"name": "Age", "type": "integer"},
+        {"name": "OverTime", "type": "string"},
+        {"name": "YearsAtCompany", "type": "integer"},
+        {"name": "PerformanceRating", "type": "integer"},
+        {"name": "AvgSurveyScore", "type": "real"},
+        {"name": "IsTerminated", "type": "integer"},
+        {"name": "TenureBucket", "type": "string"},
+        {"name": "AttritionRisk", "type": "string"},
+        {"name": "IncomeBracket", "type": "string"},
+        {"name": "Education", "type": "string"}
+      ]
+    },
+    "a9000001-0001-0001-0001-000000000010": {
+      "nodeType": ".v2018_3_3.SuperAggregate",
+      "name": "Department Summary",
+      "id": "a9000001-0001-0001-0001-000000000010",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "a9000001-0001-0001-0001-000000000011", "nextNamespace": "Default"}
+      ],
+      "groupByFields": [{"name": "Department"}, {"name": "AttritionRisk"}],
+      "aggregateFields": [
+        {"name": "EmployeeID", "aggregation": "COUNT", "newColumnName": "EmployeeCount"},
+        {"name": "MonthlyIncome", "aggregation": "AVG", "newColumnName": "AvgIncome"},
+        {"name": "AvgSurveyScore", "aggregation": "AVG", "newColumnName": "AvgSatisfaction"},
+        {"name": "IsTerminated", "aggregation": "SUM", "newColumnName": "Terminations"}
+      ]
+    },
+    "a9000001-0001-0001-0001-000000000011": {
+      "nodeType": ".v1.PublishExtract",
+      "name": "HR_Department_Summary",
+      "id": "a9000001-0001-0001-0001-000000000011",
+      "baseType": "output",
+      "nextNodes": [],
+      "connectionAttributes": {
+        "class": "hyper",
+        "filename": "HR_Department_Summary.hyper"
+      },
+      "fields": [
+        {"name": "Department", "type": "string"},
+        {"name": "AttritionRisk", "type": "string"},
+        {"name": "EmployeeCount", "type": "integer"},
+        {"name": "AvgIncome", "type": "real"},
+        {"name": "AvgSatisfaction", "type": "real"},
+        {"name": "Terminations", "type": "integer"}
+      ]
+    }
+  },
+  "connections": {
+    "conn-hr-survey": {
+      "connectionAttributes": {
+        "class": "excel-direct",
+        "filename": "Employee_Survey.xlsx"
+      }
+    },
+    "conn-hr-db": {
+      "connectionAttributes": {
+        "class": "sqlserver",
+        "server": "hr-db.corp.local",
+        "dbname": "HumanResources"
+      }
+    },
+    "conn-perf-reviews": {
+      "connectionAttributes": {
+        "class": "csv",
+        "directory": "/data/hr/",
+        "filename": "Performance_Reviews.csv"
+      }
+    }
+  }
+}

@@ -1,0 +1,284 @@
+{
+  "objectVersion": 4,
+  "nodes": {
+    "aa000001-0001-0001-0001-000000000001": {
+      "nodeType": ".v1.LoadSql",
+      "name": "App_Orders",
+      "id": "aa000001-0001-0001-0001-000000000001",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "aa000001-0001-0001-0001-000000000004", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-app-db",
+      "connectionAttributes": {
+        "class": "postgres",
+        "server": "app-db.foodfast.io",
+        "port": "5432",
+        "dbname": "food_delivery",
+        "schema": "orders",
+        "table": "order_log"
+      },
+      "fields": [
+        {"name": "order_id", "type": "string"},
+        {"name": "customer_id", "type": "string"},
+        {"name": "restaurant_id", "type": "string"},
+        {"name": "driver_id", "type": "string"},
+        {"name": "order_timestamp", "type": "datetime"},
+        {"name": "delivery_timestamp", "type": "datetime"},
+        {"name": "order_total", "type": "real"},
+        {"name": "delivery_fee", "type": "real"},
+        {"name": "tip_amount", "type": "real"},
+        {"name": "payment_method", "type": "string"},
+        {"name": "promo_code", "type": "string"},
+        {"name": "discount_amount", "type": "real"},
+        {"name": "status", "type": "string"},
+        {"name": "platform", "type": "string"}
+      ]
+    },
+    "aa000001-0001-0001-0001-000000000002": {
+      "nodeType": ".v1.LoadCsv",
+      "name": "Restaurants_Jan.csv",
+      "id": "aa000001-0001-0001-0001-000000000002",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "aa000001-0001-0001-0001-000000000005", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-restaurants-jan",
+      "connectionAttributes": {
+        "class": "csv",
+        "filename": "Restaurants_Jan.csv",
+        "separator": ","
+      },
+      "fields": [
+        {"name": "restaurant_id", "type": "string"},
+        {"name": "restaurant_name", "type": "string"},
+        {"name": "cuisine_type", "type": "string"},
+        {"name": "city", "type": "string"},
+        {"name": "state", "type": "string"},
+        {"name": "avg_rating", "type": "real"},
+        {"name": "prep_time_min", "type": "integer"},
+        {"name": "active", "type": "boolean"},
+        {"name": "month", "type": "string"}
+      ]
+    },
+    "aa000001-0001-0001-0001-000000000003": {
+      "nodeType": ".v1.LoadCsv",
+      "name": "Restaurants_Feb.csv",
+      "id": "aa000001-0001-0001-0001-000000000003",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "aa000001-0001-0001-0001-000000000005", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-restaurants-feb",
+      "connectionAttributes": {
+        "class": "csv",
+        "filename": "Restaurants_Feb.csv",
+        "separator": ","
+      },
+      "fields": [
+        {"name": "restaurant_id", "type": "string"},
+        {"name": "restaurant_name", "type": "string"},
+        {"name": "cuisine_type", "type": "string"},
+        {"name": "city", "type": "string"},
+        {"name": "state", "type": "string"},
+        {"name": "avg_rating", "type": "real"},
+        {"name": "prep_time_min", "type": "integer"},
+        {"name": "active", "type": "boolean"},
+        {"name": "month", "type": "string"}
+      ]
+    },
+    "aa000001-0001-0001-0001-000000000004": {
+      "nodeType": ".v2018_3_3.SuperTransform",
+      "name": "Clean Orders",
+      "id": "aa000001-0001-0001-0001-000000000004",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "aa000001-0001-0001-0001-000000000007", "nextNamespace": "Default"}
+      ],
+      "beforeActionGroup": {
+        "actions": [
+          {"actionType": ".v1.FilterOperation", "filterExpression": "[status] = \"Delivered\" OR [status] = \"Completed\"", "filterType": "keep"},
+          {"actionType": ".v1.AddColumn", "columnName": "DeliveryMinutes", "expression": "DATEDIFF('minute', [order_timestamp], [delivery_timestamp])", "columnType": "integer"},
+          {"actionType": ".v1.AddColumn", "columnName": "NetRevenue", "expression": "[order_total] - [discount_amount] + [delivery_fee]", "columnType": "real"},
+          {"actionType": ".v1.AddColumn", "columnName": "HasPromo", "expression": "IF ISNULL([promo_code]) THEN 'No' ELSE 'Yes' END", "columnType": "string"},
+          {"actionType": ".v1.RenameColumn", "columnName": "order_id", "newColumnName": "OrderID"},
+          {"actionType": ".v1.RenameColumn", "columnName": "restaurant_id", "newColumnName": "RestaurantID"},
+          {"actionType": ".v1.RenameColumn", "columnName": "customer_id", "newColumnName": "CustomerID"},
+          {"actionType": ".v1.RemoveColumn", "columnName": "status"}
+        ]
+      }
+    },
+    "aa000001-0001-0001-0001-000000000005": {
+      "nodeType": ".v1.Union",
+      "name": "Union Restaurants",
+      "id": "aa000001-0001-0001-0001-000000000005",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "aa000001-0001-0001-0001-000000000006", "nextNamespace": "Default"}
+      ],
+      "unionType": "automatic"
+    },
+    "aa000001-0001-0001-0001-000000000006": {
+      "nodeType": ".v2018_3_3.SuperTransform",
+      "name": "Deduplicate Restaurants",
+      "id": "aa000001-0001-0001-0001-000000000006",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "aa000001-0001-0001-0001-000000000007", "nextNamespace": "Default"},
+        {"namespace": "Default", "nextNodeId": "aa000001-0001-0001-0001-000000000011", "nextNamespace": "Default"}
+      ],
+      "beforeActionGroup": {
+        "actions": [
+          {"actionType": ".v1.RenameColumn", "columnName": "restaurant_id", "newColumnName": "RestaurantID"},
+          {"actionType": ".v1.RenameColumn", "columnName": "restaurant_name", "newColumnName": "RestaurantName"},
+          {"actionType": ".v1.CleanOperation", "columnName": "RestaurantName", "operation": "trim"},
+          {"actionType": ".v1.CleanOperation", "columnName": "cuisine_type", "operation": "proper"},
+          {"actionType": ".v1.RemoveDuplicates", "columns": ["RestaurantID"]}
+        ]
+      }
+    },
+    "aa000001-0001-0001-0001-000000000007": {
+      "nodeType": ".v1.Join",
+      "name": "Orders + Restaurants",
+      "id": "aa000001-0001-0001-0001-000000000007",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "aa000001-0001-0001-0001-000000000008", "nextNamespace": "Default"}
+      ],
+      "joinType": "inner",
+      "joinConditions": [
+        {"leftColumn": "RestaurantID", "rightColumn": "RestaurantID", "operator": "="}
+      ]
+    },
+    "aa000001-0001-0001-0001-000000000008": {
+      "nodeType": ".v2018_3_3.SuperTransform",
+      "name": "Delivery Performance",
+      "id": "aa000001-0001-0001-0001-000000000008",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "aa000001-0001-0001-0001-000000000009", "nextNamespace": "Default"},
+        {"namespace": "Default", "nextNodeId": "aa000001-0001-0001-0001-000000000010", "nextNamespace": "Default"}
+      ],
+      "beforeActionGroup": {
+        "actions": [
+          {"actionType": ".v1.AddColumn", "columnName": "TotalWaitMinutes", "expression": "[prep_time_min] + [DeliveryMinutes]", "columnType": "integer"},
+          {"actionType": ".v1.AddColumn", "columnName": "SpeedTier", "expression": "IF [TotalWaitMinutes] <= 30 THEN 'Fast' ELSEIF [TotalWaitMinutes] <= 45 THEN 'Normal' ELSEIF [TotalWaitMinutes] <= 60 THEN 'Slow' ELSE 'Very Slow' END", "columnType": "string"},
+          {"actionType": ".v1.AddColumn", "columnName": "RevenuePerMinute", "expression": "[NetRevenue] / [TotalWaitMinutes]", "columnType": "real"}
+        ]
+      }
+    },
+    "aa000001-0001-0001-0001-000000000009": {
+      "nodeType": ".v1.PublishExtract",
+      "name": "Delivery_Fact",
+      "id": "aa000001-0001-0001-0001-000000000009",
+      "baseType": "output",
+      "nextNodes": [],
+      "connectionAttributes": {
+        "class": "hyper",
+        "filename": "Delivery_Fact.hyper"
+      },
+      "fields": [
+        {"name": "OrderID", "type": "string"},
+        {"name": "CustomerID", "type": "string"},
+        {"name": "RestaurantID", "type": "string"},
+        {"name": "RestaurantName", "type": "string"},
+        {"name": "cuisine_type", "type": "string"},
+        {"name": "city", "type": "string"},
+        {"name": "platform", "type": "string"},
+        {"name": "payment_method", "type": "string"},
+        {"name": "order_total", "type": "real"},
+        {"name": "NetRevenue", "type": "real"},
+        {"name": "tip_amount", "type": "real"},
+        {"name": "DeliveryMinutes", "type": "integer"},
+        {"name": "TotalWaitMinutes", "type": "integer"},
+        {"name": "SpeedTier", "type": "string"},
+        {"name": "RevenuePerMinute", "type": "real"},
+        {"name": "HasPromo", "type": "string"}
+      ]
+    },
+    "aa000001-0001-0001-0001-000000000010": {
+      "nodeType": ".v2018_3_3.SuperAggregate",
+      "name": "Restaurant KPIs",
+      "id": "aa000001-0001-0001-0001-000000000010",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "aa000001-0001-0001-0001-000000000012", "nextNamespace": "Default"}
+      ],
+      "groupByFields": [{"name": "RestaurantID"}, {"name": "RestaurantName"}, {"name": "cuisine_type"}, {"name": "city"}],
+      "aggregateFields": [
+        {"name": "OrderID", "aggregation": "COUNTD", "newColumnName": "TotalOrders"},
+        {"name": "NetRevenue", "aggregation": "SUM", "newColumnName": "TotalRevenue"},
+        {"name": "NetRevenue", "aggregation": "AVG", "newColumnName": "AvgOrderValue"},
+        {"name": "TotalWaitMinutes", "aggregation": "AVG", "newColumnName": "AvgWaitTime"},
+        {"name": "tip_amount", "aggregation": "AVG", "newColumnName": "AvgTip"}
+      ]
+    },
+    "aa000001-0001-0001-0001-000000000011": {
+      "nodeType": ".v1.PublishExtract",
+      "name": "Restaurant_Dim",
+      "id": "aa000001-0001-0001-0001-000000000011",
+      "baseType": "output",
+      "nextNodes": [],
+      "connectionAttributes": {
+        "class": "hyper",
+        "filename": "Restaurant_Dim.hyper"
+      },
+      "fields": [
+        {"name": "RestaurantID", "type": "string"},
+        {"name": "RestaurantName", "type": "string"},
+        {"name": "cuisine_type", "type": "string"},
+        {"name": "city", "type": "string"},
+        {"name": "state", "type": "string"},
+        {"name": "avg_rating", "type": "real"},
+        {"name": "prep_time_min", "type": "integer"},
+        {"name": "active", "type": "boolean"}
+      ]
+    },
+    "aa000001-0001-0001-0001-000000000012": {
+      "nodeType": ".v1.PublishExtract",
+      "name": "Restaurant_Performance",
+      "id": "aa000001-0001-0001-0001-000000000012",
+      "baseType": "output",
+      "nextNodes": [],
+      "connectionAttributes": {
+        "class": "hyper",
+        "filename": "Restaurant_Performance.hyper"
+      },
+      "fields": [
+        {"name": "RestaurantID", "type": "string"},
+        {"name": "RestaurantName", "type": "string"},
+        {"name": "cuisine_type", "type": "string"},
+        {"name": "city", "type": "string"},
+        {"name": "TotalOrders", "type": "integer"},
+        {"name": "TotalRevenue", "type": "real"},
+        {"name": "AvgOrderValue", "type": "real"},
+        {"name": "AvgWaitTime", "type": "real"},
+        {"name": "AvgTip", "type": "real"}
+      ]
+    }
+  },
+  "connections": {
+    "conn-app-db": {
+      "connectionAttributes": {
+        "class": "postgres",
+        "server": "app-db.foodfast.io",
+        "port": "5432",
+        "dbname": "food_delivery"
+      }
+    },
+    "conn-restaurants-jan": {
+      "connectionAttributes": {
+        "class": "csv",
+        "directory": "/data/restaurants/",
+        "filename": "Restaurants_Jan.csv"
+      }
+    },
+    "conn-restaurants-feb": {
+      "connectionAttributes": {
+        "class": "csv",
+        "directory": "/data/restaurants/",
+        "filename": "Restaurants_Feb.csv"
+      }
+    }
+  }
+}

@@ -1,0 +1,328 @@
+{
+  "objectVersion": 4,
+  "nodes": {
+    "ae000001-0001-0001-0001-000000000001": {
+      "nodeType": ".v1.LoadSql",
+      "name": "Admissions",
+      "id": "ae000001-0001-0001-0001-000000000001",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ae000001-0001-0001-0001-000000000005", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-ehr-admissions",
+      "connectionAttributes": {
+        "class": "postgres",
+        "server": "ehr-db.hospital.local",
+        "port": "5432",
+        "dbname": "ehr_system",
+        "schema": "clinical",
+        "table": "admissions"
+      },
+      "fields": [
+        {"name": "admission_id", "type": "string"},
+        {"name": "patient_id", "type": "string"},
+        {"name": "admit_date", "type": "datetime"},
+        {"name": "discharge_date", "type": "datetime"},
+        {"name": "department", "type": "string"},
+        {"name": "attending_physician", "type": "string"},
+        {"name": "primary_diagnosis_code", "type": "string"},
+        {"name": "admission_type", "type": "string"},
+        {"name": "insurance_type", "type": "string"},
+        {"name": "bed_type", "type": "string"},
+        {"name": "discharge_disposition", "type": "string"}
+      ]
+    },
+    "ae000001-0001-0001-0001-000000000002": {
+      "nodeType": ".v1.LoadSql",
+      "name": "Procedures",
+      "id": "ae000001-0001-0001-0001-000000000002",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ae000001-0001-0001-0001-000000000005", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-ehr-procedures",
+      "connectionAttributes": {
+        "class": "postgres",
+        "server": "ehr-db.hospital.local",
+        "port": "5432",
+        "dbname": "ehr_system",
+        "schema": "clinical",
+        "table": "procedures"
+      },
+      "fields": [
+        {"name": "procedure_id", "type": "string"},
+        {"name": "admission_id", "type": "string"},
+        {"name": "procedure_code", "type": "string"},
+        {"name": "procedure_name", "type": "string"},
+        {"name": "procedure_date", "type": "datetime"},
+        {"name": "duration_minutes", "type": "integer"},
+        {"name": "cost", "type": "real"},
+        {"name": "performing_physician", "type": "string"}
+      ]
+    },
+    "ae000001-0001-0001-0001-000000000003": {
+      "nodeType": ".v1.LoadCsv",
+      "name": "ICD10_Codes.csv",
+      "id": "ae000001-0001-0001-0001-000000000003",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ae000001-0001-0001-0001-000000000006", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-icd10",
+      "connectionAttributes": {
+        "class": "csv",
+        "filename": "ICD10_Codes.csv",
+        "separator": ","
+      },
+      "fields": [
+        {"name": "diagnosis_code", "type": "string"},
+        {"name": "diagnosis_description", "type": "string"},
+        {"name": "diagnosis_category", "type": "string"},
+        {"name": "drg_code", "type": "string"},
+        {"name": "drg_weight", "type": "real"},
+        {"name": "expected_los_days", "type": "real"},
+        {"name": "cms_reimbursement", "type": "real"}
+      ]
+    },
+    "ae000001-0001-0001-0001-000000000004": {
+      "nodeType": ".v1.LoadExcel",
+      "name": "Staff_Schedule.xlsx",
+      "id": "ae000001-0001-0001-0001-000000000004",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ae000001-0001-0001-0001-000000000009", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-staff",
+      "connectionAttributes": {
+        "class": "excel-direct",
+        "filename": "Staff_Schedule.xlsx",
+        "sheet": "Physicians"
+      },
+      "fields": [
+        {"name": "physician_id", "type": "string"},
+        {"name": "physician_name", "type": "string"},
+        {"name": "specialty", "type": "string"},
+        {"name": "department", "type": "string"},
+        {"name": "fte", "type": "real"},
+        {"name": "hire_date", "type": "date"},
+        {"name": "credential", "type": "string"}
+      ]
+    },
+    "ae000001-0001-0001-0001-000000000005": {
+      "nodeType": ".v1.Join",
+      "name": "Admissions + Procedures",
+      "id": "ae000001-0001-0001-0001-000000000005",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ae000001-0001-0001-0001-000000000006", "nextNamespace": "Default"}
+      ],
+      "joinType": "left",
+      "joinConditions": [
+        {"leftColumn": "admission_id", "rightColumn": "admission_id", "operator": "="}
+      ]
+    },
+    "ae000001-0001-0001-0001-000000000006": {
+      "nodeType": ".v1.Join",
+      "name": "Add Diagnosis Info",
+      "id": "ae000001-0001-0001-0001-000000000006",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ae000001-0001-0001-0001-000000000007", "nextNamespace": "Default"}
+      ],
+      "joinType": "left",
+      "joinConditions": [
+        {"leftColumn": "primary_diagnosis_code", "rightColumn": "diagnosis_code", "operator": "="}
+      ]
+    },
+    "ae000001-0001-0001-0001-000000000007": {
+      "nodeType": ".v2018_3_3.SuperTransform",
+      "name": "Patient Flow Metrics",
+      "id": "ae000001-0001-0001-0001-000000000007",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ae000001-0001-0001-0001-000000000008", "nextNamespace": "Default"},
+        {"namespace": "Default", "nextNodeId": "ae000001-0001-0001-0001-000000000009", "nextNamespace": "Default"},
+        {"namespace": "Default", "nextNodeId": "ae000001-0001-0001-0001-000000000011", "nextNamespace": "Default"}
+      ],
+      "beforeActionGroup": {
+        "actions": [
+          {"actionType": ".v1.AddColumn", "columnName": "LOS_Days", "expression": "DATEDIFF('day', [admit_date], [discharge_date])", "columnType": "real"},
+          {"actionType": ".v1.AddColumn", "columnName": "LOS_Variance", "expression": "[LOS_Days] - [expected_los_days]", "columnType": "real"},
+          {"actionType": ".v1.AddColumn", "columnName": "LOS_Status", "expression": "IF [LOS_Variance] <= -1 THEN 'Below Expected' ELSEIF [LOS_Variance] <= 1 THEN 'On Track' ELSE 'Extended' END", "columnType": "string"},
+          {"actionType": ".v1.AddColumn", "columnName": "TotalCost", "expression": "[cost] + ([LOS_Days] * 2500)", "columnType": "real"},
+          {"actionType": ".v1.AddColumn", "columnName": "CostVariance", "expression": "[TotalCost] - [cms_reimbursement]", "columnType": "real"},
+          {"actionType": ".v1.AddColumn", "columnName": "Profitable", "expression": "IF [CostVariance] <= 0 THEN 'Yes' ELSE 'No' END", "columnType": "string"},
+          {"actionType": ".v1.AddColumn", "columnName": "CaseMixIndex", "expression": "[drg_weight]", "columnType": "real"},
+          {"actionType": ".v1.AddColumn", "columnName": "Readmission30", "expression": "IF [discharge_disposition] = 'Readmitted' AND [LOS_Days] < 30 THEN 1 ELSE 0 END", "columnType": "integer"},
+          {"actionType": ".v1.AddColumn", "columnName": "AdmitHour", "expression": "DATEPART('hour', [admit_date])", "columnType": "integer"},
+          {"actionType": ".v1.AddColumn", "columnName": "AdmitDayOfWeek", "expression": "DATENAME('weekday', [admit_date])", "columnType": "string"},
+          {"actionType": ".v1.RenameColumn", "columnName": "admission_id", "newColumnName": "AdmissionID"},
+          {"actionType": ".v1.RenameColumn", "columnName": "patient_id", "newColumnName": "PatientID"}
+        ]
+      }
+    },
+    "ae000001-0001-0001-0001-000000000008": {
+      "nodeType": ".v1.PublishExtract",
+      "name": "Patient_Flow_Detail",
+      "id": "ae000001-0001-0001-0001-000000000008",
+      "baseType": "output",
+      "nextNodes": [],
+      "connectionAttributes": {
+        "class": "hyper",
+        "filename": "Patient_Flow_Detail.hyper"
+      },
+      "fields": [
+        {"name": "AdmissionID", "type": "string"},
+        {"name": "PatientID", "type": "string"},
+        {"name": "admit_date", "type": "datetime"},
+        {"name": "discharge_date", "type": "datetime"},
+        {"name": "department", "type": "string"},
+        {"name": "attending_physician", "type": "string"},
+        {"name": "admission_type", "type": "string"},
+        {"name": "insurance_type", "type": "string"},
+        {"name": "diagnosis_description", "type": "string"},
+        {"name": "diagnosis_category", "type": "string"},
+        {"name": "procedure_name", "type": "string"},
+        {"name": "LOS_Days", "type": "real"},
+        {"name": "expected_los_days", "type": "real"},
+        {"name": "LOS_Variance", "type": "real"},
+        {"name": "LOS_Status", "type": "string"},
+        {"name": "TotalCost", "type": "real"},
+        {"name": "cms_reimbursement", "type": "real"},
+        {"name": "CostVariance", "type": "real"},
+        {"name": "Profitable", "type": "string"},
+        {"name": "CaseMixIndex", "type": "real"},
+        {"name": "Readmission30", "type": "integer"},
+        {"name": "AdmitHour", "type": "integer"},
+        {"name": "AdmitDayOfWeek", "type": "string"}
+      ]
+    },
+    "ae000001-0001-0001-0001-000000000009": {
+      "nodeType": ".v2018_3_3.SuperAggregate",
+      "name": "Physician Workload",
+      "id": "ae000001-0001-0001-0001-000000000009",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ae000001-0001-0001-0001-000000000010", "nextNamespace": "Default"}
+      ],
+      "groupByFields": [{"name": "attending_physician"}, {"name": "department"}],
+      "aggregateFields": [
+        {"name": "AdmissionID", "aggregation": "COUNTD", "newColumnName": "TotalAdmissions"},
+        {"name": "LOS_Days", "aggregation": "AVG", "newColumnName": "AvgLOS"},
+        {"name": "TotalCost", "aggregation": "SUM", "newColumnName": "TotalCostManaged"},
+        {"name": "Readmission30", "aggregation": "SUM", "newColumnName": "Readmissions"},
+        {"name": "CaseMixIndex", "aggregation": "AVG", "newColumnName": "AvgCMI"},
+        {"name": "duration_minutes", "aggregation": "SUM", "newColumnName": "TotalProcedureMinutes"}
+      ]
+    },
+    "ae000001-0001-0001-0001-000000000010": {
+      "nodeType": ".v1.Join",
+      "name": "Add Staff Info",
+      "id": "ae000001-0001-0001-0001-000000000010",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ae000001-0001-0001-0001-000000000012", "nextNamespace": "Default"}
+      ],
+      "joinType": "left",
+      "joinConditions": [
+        {"leftColumn": "attending_physician", "rightColumn": "physician_name", "operator": "="}
+      ]
+    },
+    "ae000001-0001-0001-0001-000000000011": {
+      "nodeType": ".v2018_3_3.SuperAggregate",
+      "name": "Department KPIs",
+      "id": "ae000001-0001-0001-0001-000000000011",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ae000001-0001-0001-0001-000000000013", "nextNamespace": "Default"}
+      ],
+      "groupByFields": [{"name": "department"}, {"name": "diagnosis_category"}, {"name": "admission_type"}],
+      "aggregateFields": [
+        {"name": "AdmissionID", "aggregation": "COUNTD", "newColumnName": "Admissions"},
+        {"name": "LOS_Days", "aggregation": "AVG", "newColumnName": "AvgLOS"},
+        {"name": "LOS_Days", "aggregation": "MEDIAN", "newColumnName": "MedianLOS"},
+        {"name": "TotalCost", "aggregation": "SUM", "newColumnName": "TotalCost"},
+        {"name": "cms_reimbursement", "aggregation": "SUM", "newColumnName": "TotalReimbursement"},
+        {"name": "Readmission30", "aggregation": "SUM", "newColumnName": "ReadmissionCount"},
+        {"name": "CaseMixIndex", "aggregation": "AVG", "newColumnName": "AvgCMI"}
+      ]
+    },
+    "ae000001-0001-0001-0001-000000000012": {
+      "nodeType": ".v1.PublishExtract",
+      "name": "Physician_Performance",
+      "id": "ae000001-0001-0001-0001-000000000012",
+      "baseType": "output",
+      "nextNodes": [],
+      "connectionAttributes": {
+        "class": "hyper",
+        "filename": "Physician_Performance.hyper"
+      },
+      "fields": [
+        {"name": "attending_physician", "type": "string"},
+        {"name": "department", "type": "string"},
+        {"name": "specialty", "type": "string"},
+        {"name": "credential", "type": "string"},
+        {"name": "TotalAdmissions", "type": "integer"},
+        {"name": "AvgLOS", "type": "real"},
+        {"name": "TotalCostManaged", "type": "real"},
+        {"name": "Readmissions", "type": "integer"},
+        {"name": "AvgCMI", "type": "real"},
+        {"name": "TotalProcedureMinutes", "type": "integer"}
+      ]
+    },
+    "ae000001-0001-0001-0001-000000000013": {
+      "nodeType": ".v1.PublishExtract",
+      "name": "Department_KPI_Summary",
+      "id": "ae000001-0001-0001-0001-000000000013",
+      "baseType": "output",
+      "nextNodes": [],
+      "connectionAttributes": {
+        "class": "hyper",
+        "filename": "Department_KPI_Summary.hyper"
+      },
+      "fields": [
+        {"name": "department", "type": "string"},
+        {"name": "diagnosis_category", "type": "string"},
+        {"name": "admission_type", "type": "string"},
+        {"name": "Admissions", "type": "integer"},
+        {"name": "AvgLOS", "type": "real"},
+        {"name": "MedianLOS", "type": "real"},
+        {"name": "TotalCost", "type": "real"},
+        {"name": "TotalReimbursement", "type": "real"},
+        {"name": "ReadmissionCount", "type": "integer"},
+        {"name": "AvgCMI", "type": "real"}
+      ]
+    }
+  },
+  "connections": {
+    "conn-ehr-admissions": {
+      "connectionAttributes": {
+        "class": "postgres",
+        "server": "ehr-db.hospital.local",
+        "port": "5432",
+        "dbname": "ehr_system"
+      }
+    },
+    "conn-ehr-procedures": {
+      "connectionAttributes": {
+        "class": "postgres",
+        "server": "ehr-db.hospital.local",
+        "port": "5432",
+        "dbname": "ehr_system"
+      }
+    },
+    "conn-icd10": {
+      "connectionAttributes": {
+        "class": "csv",
+        "directory": "/data/reference/",
+        "filename": "ICD10_Codes.csv"
+      }
+    },
+    "conn-staff": {
+      "connectionAttributes": {
+        "class": "excel-direct",
+        "filename": "Staff_Schedule.xlsx"
+      }
+    }
+  }
+}

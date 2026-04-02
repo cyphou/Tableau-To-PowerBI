@@ -1,0 +1,279 @@
+{
+  "objectVersion": 4,
+  "nodes": {
+    "ab000001-0001-0001-0001-000000000001": {
+      "nodeType": ".v1.LoadCsv",
+      "name": "Electricity_2023.csv",
+      "id": "ab000001-0001-0001-0001-000000000001",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ab000001-0001-0001-0001-000000000004", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-elec-2023",
+      "connectionAttributes": {
+        "class": "csv",
+        "filename": "Electricity_2023.csv",
+        "separator": ","
+      },
+      "fields": [
+        {"name": "Country", "type": "string"},
+        {"name": "ISO_Code", "type": "string"},
+        {"name": "Coal_TWh", "type": "real"},
+        {"name": "Gas_TWh", "type": "real"},
+        {"name": "Nuclear_TWh", "type": "real"},
+        {"name": "Hydro_TWh", "type": "real"},
+        {"name": "Wind_TWh", "type": "real"},
+        {"name": "Solar_TWh", "type": "real"},
+        {"name": "Other_Renewables_TWh", "type": "real"},
+        {"name": "Year", "type": "integer"}
+      ]
+    },
+    "ab000001-0001-0001-0001-000000000002": {
+      "nodeType": ".v1.LoadCsv",
+      "name": "Electricity_2024.csv",
+      "id": "ab000001-0001-0001-0001-000000000002",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ab000001-0001-0001-0001-000000000004", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-elec-2024",
+      "connectionAttributes": {
+        "class": "csv",
+        "filename": "Electricity_2024.csv",
+        "separator": ","
+      },
+      "fields": [
+        {"name": "Country", "type": "string"},
+        {"name": "ISO_Code", "type": "string"},
+        {"name": "Coal_TWh", "type": "real"},
+        {"name": "Gas_TWh", "type": "real"},
+        {"name": "Nuclear_TWh", "type": "real"},
+        {"name": "Hydro_TWh", "type": "real"},
+        {"name": "Wind_TWh", "type": "real"},
+        {"name": "Solar_TWh", "type": "real"},
+        {"name": "Other_Renewables_TWh", "type": "real"},
+        {"name": "Year", "type": "integer"}
+      ]
+    },
+    "ab000001-0001-0001-0001-000000000003": {
+      "nodeType": ".v1.LoadExcel",
+      "name": "Population_GDP.xlsx",
+      "id": "ab000001-0001-0001-0001-000000000003",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ab000001-0001-0001-0001-000000000007", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-pop-gdp",
+      "connectionAttributes": {
+        "class": "excel-direct",
+        "filename": "Population_GDP.xlsx",
+        "sheet": "Data"
+      },
+      "fields": [
+        {"name": "ISO_Code", "type": "string"},
+        {"name": "Country_Name", "type": "string"},
+        {"name": "Population_M", "type": "real"},
+        {"name": "GDP_Billion_USD", "type": "real"},
+        {"name": "Region", "type": "string"},
+        {"name": "IncomeGroup", "type": "string"},
+        {"name": "Year", "type": "integer"}
+      ]
+    },
+    "ab000001-0001-0001-0001-000000000004": {
+      "nodeType": ".v1.Union",
+      "name": "Union All Years",
+      "id": "ab000001-0001-0001-0001-000000000004",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ab000001-0001-0001-0001-000000000005", "nextNamespace": "Default"}
+      ],
+      "unionType": "automatic"
+    },
+    "ab000001-0001-0001-0001-000000000005": {
+      "nodeType": ".v1.Pivot",
+      "name": "Unpivot Energy Sources",
+      "id": "ab000001-0001-0001-0001-000000000005",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ab000001-0001-0001-0001-000000000006", "nextNamespace": "Default"}
+      ],
+      "pivotType": "columnsToRows",
+      "columnsToRows": {
+        "pivotColumns": ["Coal_TWh", "Gas_TWh", "Nuclear_TWh", "Hydro_TWh", "Wind_TWh", "Solar_TWh", "Other_Renewables_TWh"],
+        "pivotValueName": "Generation_TWh",
+        "pivotKeyName": "EnergySource"
+      }
+    },
+    "ab000001-0001-0001-0001-000000000006": {
+      "nodeType": ".v2018_3_3.SuperTransform",
+      "name": "Classify Energy Type",
+      "id": "ab000001-0001-0001-0001-000000000006",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ab000001-0001-0001-0001-000000000007", "nextNamespace": "Default"}
+      ],
+      "beforeActionGroup": {
+        "actions": [
+          {"actionType": ".v1.ReplaceValue", "columnName": "EnergySource", "oldValue": "_TWh", "newValue": "", "matchType": "substring"},
+          {"actionType": ".v1.AddColumn", "columnName": "EnergyCategory", "expression": "IF [EnergySource] = 'Coal' OR [EnergySource] = 'Gas' THEN 'Fossil' ELSEIF [EnergySource] = 'Nuclear' THEN 'Nuclear' ELSE 'Renewable' END", "columnType": "string"},
+          {"actionType": ".v1.AddColumn", "columnName": "IsRenewable", "expression": "IF [EnergyCategory] = 'Renewable' THEN 1 ELSE 0 END", "columnType": "integer"},
+          {"actionType": ".v1.FilterOperation", "filterExpression": "[Generation_TWh] > 0", "filterType": "keep"}
+        ]
+      }
+    },
+    "ab000001-0001-0001-0001-000000000007": {
+      "nodeType": ".v1.Join",
+      "name": "Energy + Demographics",
+      "id": "ab000001-0001-0001-0001-000000000007",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ab000001-0001-0001-0001-000000000008", "nextNamespace": "Default"}
+      ],
+      "joinType": "left",
+      "joinConditions": [
+        {"leftColumn": "ISO_Code", "rightColumn": "ISO_Code", "operator": "="},
+        {"leftColumn": "Year", "rightColumn": "Year", "operator": "="}
+      ]
+    },
+    "ab000001-0001-0001-0001-000000000008": {
+      "nodeType": ".v2018_3_3.SuperTransform",
+      "name": "Per Capita Metrics",
+      "id": "ab000001-0001-0001-0001-000000000008",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ab000001-0001-0001-0001-000000000009", "nextNamespace": "Default"},
+        {"namespace": "Default", "nextNodeId": "ab000001-0001-0001-0001-000000000010", "nextNamespace": "Default"}
+      ],
+      "beforeActionGroup": {
+        "actions": [
+          {"actionType": ".v1.AddColumn", "columnName": "GenPerCapita_MWh", "expression": "([Generation_TWh] * 1000000) / ([Population_M] * 1000000)", "columnType": "real"},
+          {"actionType": ".v1.AddColumn", "columnName": "GenPerGDP", "expression": "[Generation_TWh] / [GDP_Billion_USD]", "columnType": "real"},
+          {"actionType": ".v1.RemoveColumn", "columnName": "Country_Name"}
+        ]
+      }
+    },
+    "ab000001-0001-0001-0001-000000000009": {
+      "nodeType": ".v1.PublishExtract",
+      "name": "Energy_Detail",
+      "id": "ab000001-0001-0001-0001-000000000009",
+      "baseType": "output",
+      "nextNodes": [],
+      "connectionAttributes": {
+        "class": "hyper",
+        "filename": "Energy_Detail.hyper"
+      },
+      "fields": [
+        {"name": "Country", "type": "string"},
+        {"name": "ISO_Code", "type": "string"},
+        {"name": "Year", "type": "integer"},
+        {"name": "EnergySource", "type": "string"},
+        {"name": "EnergyCategory", "type": "string"},
+        {"name": "IsRenewable", "type": "integer"},
+        {"name": "Generation_TWh", "type": "real"},
+        {"name": "Population_M", "type": "real"},
+        {"name": "GDP_Billion_USD", "type": "real"},
+        {"name": "Region", "type": "string"},
+        {"name": "IncomeGroup", "type": "string"},
+        {"name": "GenPerCapita_MWh", "type": "real"},
+        {"name": "GenPerGDP", "type": "real"}
+      ]
+    },
+    "ab000001-0001-0001-0001-000000000010": {
+      "nodeType": ".v2018_3_3.SuperAggregate",
+      "name": "Country Totals",
+      "id": "ab000001-0001-0001-0001-000000000010",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ab000001-0001-0001-0001-000000000012", "nextNamespace": "Default"}
+      ],
+      "groupByFields": [{"name": "Country"}, {"name": "ISO_Code"}, {"name": "Year"}, {"name": "Region"}, {"name": "EnergyCategory"}],
+      "aggregateFields": [
+        {"name": "Generation_TWh", "aggregation": "SUM", "newColumnName": "TotalGeneration_TWh"}
+      ]
+    },
+    "ab000001-0001-0001-0001-000000000011": {
+      "nodeType": "placeholder",
+      "name": "unused",
+      "id": "ab000001-0001-0001-0001-000000000011",
+      "baseType": "transform",
+      "nextNodes": []
+    },
+    "ab000001-0001-0001-0001-000000000012": {
+      "nodeType": ".v1.Pivot",
+      "name": "Pivot by Category",
+      "id": "ab000001-0001-0001-0001-000000000012",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ab000001-0001-0001-0001-000000000013", "nextNamespace": "Default"}
+      ],
+      "pivotType": "rowsToColumns",
+      "rowsToColumns": {
+        "pivotColumn": "EnergyCategory",
+        "valueColumn": "TotalGeneration_TWh",
+        "aggregation": "sum"
+      }
+    },
+    "ab000001-0001-0001-0001-000000000013": {
+      "nodeType": ".v2018_3_3.SuperTransform",
+      "name": "Renewable Share",
+      "id": "ab000001-0001-0001-0001-000000000013",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ab000001-0001-0001-0001-000000000014", "nextNamespace": "Default"}
+      ],
+      "beforeActionGroup": {
+        "actions": [
+          {"actionType": ".v1.ReplaceNulls", "columnName": "Fossil", "replacement": "0"},
+          {"actionType": ".v1.ReplaceNulls", "columnName": "Nuclear", "replacement": "0"},
+          {"actionType": ".v1.ReplaceNulls", "columnName": "Renewable", "replacement": "0"},
+          {"actionType": ".v1.AddColumn", "columnName": "TotalGeneration", "expression": "[Fossil] + [Nuclear] + [Renewable]", "columnType": "real"},
+          {"actionType": ".v1.AddColumn", "columnName": "RenewableShare", "expression": "[Renewable] / [TotalGeneration]", "columnType": "real"}
+        ]
+      }
+    },
+    "ab000001-0001-0001-0001-000000000014": {
+      "nodeType": ".v1.PublishExtract",
+      "name": "Energy_Country_Summary",
+      "id": "ab000001-0001-0001-0001-000000000014",
+      "baseType": "output",
+      "nextNodes": [],
+      "connectionAttributes": {
+        "class": "hyper",
+        "filename": "Energy_Country_Summary.hyper"
+      },
+      "fields": [
+        {"name": "Country", "type": "string"},
+        {"name": "ISO_Code", "type": "string"},
+        {"name": "Year", "type": "integer"},
+        {"name": "Region", "type": "string"},
+        {"name": "Fossil", "type": "real"},
+        {"name": "Nuclear", "type": "real"},
+        {"name": "Renewable", "type": "real"},
+        {"name": "TotalGeneration", "type": "real"},
+        {"name": "RenewableShare", "type": "real"}
+      ]
+    }
+  },
+  "connections": {
+    "conn-elec-2023": {
+      "connectionAttributes": {
+        "class": "csv",
+        "directory": "/data/energy/",
+        "filename": "Electricity_2023.csv"
+      }
+    },
+    "conn-elec-2024": {
+      "connectionAttributes": {
+        "class": "csv",
+        "directory": "/data/energy/",
+        "filename": "Electricity_2024.csv"
+      }
+    },
+    "conn-pop-gdp": {
+      "connectionAttributes": {
+        "class": "excel-direct",
+        "filename": "Population_GDP.xlsx"
+      }
+    }
+  }
+}

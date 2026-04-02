@@ -1,0 +1,286 @@
+{
+  "objectVersion": 4,
+  "nodes": {
+    "ac000001-0001-0001-0001-000000000001": {
+      "nodeType": ".v1.LoadSql",
+      "name": "Property_Listings",
+      "id": "ac000001-0001-0001-0001-000000000001",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ac000001-0001-0001-0001-000000000005", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-snowflake-listings",
+      "connectionAttributes": {
+        "class": "snowflake",
+        "server": "acme.us-west-2.snowflakecomputing.com",
+        "warehouse": "ANALYTICS_WH",
+        "dbname": "REAL_ESTATE",
+        "schema": "PUBLIC",
+        "table": "PROPERTY_LISTINGS"
+      },
+      "fields": [
+        {"name": "listing_id", "type": "string"},
+        {"name": "address", "type": "string"},
+        {"name": "city", "type": "string"},
+        {"name": "state", "type": "string"},
+        {"name": "zip_code", "type": "string"},
+        {"name": "latitude", "type": "real"},
+        {"name": "longitude", "type": "real"},
+        {"name": "property_type", "type": "string"},
+        {"name": "bedrooms", "type": "integer"},
+        {"name": "bathrooms", "type": "real"},
+        {"name": "sqft", "type": "integer"},
+        {"name": "lot_size_sqft", "type": "integer"},
+        {"name": "year_built", "type": "integer"},
+        {"name": "list_price", "type": "real"},
+        {"name": "list_date", "type": "date"},
+        {"name": "status", "type": "string"},
+        {"name": "agent_id", "type": "string"}
+      ]
+    },
+    "ac000001-0001-0001-0001-000000000002": {
+      "nodeType": ".v1.LoadSql",
+      "name": "Sales_Transactions",
+      "id": "ac000001-0001-0001-0001-000000000002",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ac000001-0001-0001-0001-000000000005", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-pg-transactions",
+      "connectionAttributes": {
+        "class": "postgres",
+        "server": "txn-db.realty.local",
+        "port": "5432",
+        "dbname": "transactions",
+        "schema": "sales",
+        "table": "closed_deals"
+      },
+      "fields": [
+        {"name": "transaction_id", "type": "string"},
+        {"name": "listing_id", "type": "string"},
+        {"name": "sale_price", "type": "real"},
+        {"name": "sale_date", "type": "date"},
+        {"name": "buyer_id", "type": "string"},
+        {"name": "financing_type", "type": "string"},
+        {"name": "closing_costs", "type": "real"},
+        {"name": "commission_pct", "type": "real"}
+      ]
+    },
+    "ac000001-0001-0001-0001-000000000003": {
+      "nodeType": ".v1.LoadCsv",
+      "name": "Census_Demographics.csv",
+      "id": "ac000001-0001-0001-0001-000000000003",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ac000001-0001-0001-0001-000000000006", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-census",
+      "connectionAttributes": {
+        "class": "csv",
+        "filename": "Census_Demographics.csv",
+        "separator": ","
+      },
+      "fields": [
+        {"name": "zip_code", "type": "string"},
+        {"name": "median_household_income", "type": "real"},
+        {"name": "population", "type": "integer"},
+        {"name": "poverty_rate", "type": "real"},
+        {"name": "education_bachelors_pct", "type": "real"},
+        {"name": "crime_index", "type": "real"},
+        {"name": "school_rating", "type": "real"}
+      ]
+    },
+    "ac000001-0001-0001-0001-000000000004": {
+      "nodeType": ".v1.LoadJson",
+      "name": "Zillow_Estimates.json",
+      "id": "ac000001-0001-0001-0001-000000000004",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ac000001-0001-0001-0001-000000000006", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-zillow",
+      "connectionAttributes": {
+        "class": "json",
+        "filename": "Zillow_Estimates.json"
+      },
+      "fields": [
+        {"name": "zip_code", "type": "string"},
+        {"name": "zestimate_median", "type": "real"},
+        {"name": "rent_zestimate", "type": "real"},
+        {"name": "price_change_yoy_pct", "type": "real"},
+        {"name": "days_on_market_median", "type": "integer"},
+        {"name": "month", "type": "string"}
+      ]
+    },
+    "ac000001-0001-0001-0001-000000000005": {
+      "nodeType": ".v1.Join",
+      "name": "Listings + Sales",
+      "id": "ac000001-0001-0001-0001-000000000005",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ac000001-0001-0001-0001-000000000007", "nextNamespace": "Default"}
+      ],
+      "joinType": "left",
+      "joinConditions": [
+        {"leftColumn": "listing_id", "rightColumn": "listing_id", "operator": "="}
+      ]
+    },
+    "ac000001-0001-0001-0001-000000000006": {
+      "nodeType": ".v1.Join",
+      "name": "Census + Zillow",
+      "id": "ac000001-0001-0001-0001-000000000006",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ac000001-0001-0001-0001-000000000007", "nextNamespace": "Default"}
+      ],
+      "joinType": "inner",
+      "joinConditions": [
+        {"leftColumn": "zip_code", "rightColumn": "zip_code", "operator": "="}
+      ]
+    },
+    "ac000001-0001-0001-0001-000000000007": {
+      "nodeType": ".v1.Join",
+      "name": "Property + Market Data",
+      "id": "ac000001-0001-0001-0001-000000000007",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ac000001-0001-0001-0001-000000000008", "nextNamespace": "Default"}
+      ],
+      "joinType": "left",
+      "joinConditions": [
+        {"leftColumn": "zip_code", "rightColumn": "zip_code", "operator": "="}
+      ]
+    },
+    "ac000001-0001-0001-0001-000000000008": {
+      "nodeType": ".v2018_3_3.SuperTransform",
+      "name": "Valuation Metrics",
+      "id": "ac000001-0001-0001-0001-000000000008",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ac000001-0001-0001-0001-000000000009", "nextNamespace": "Default"},
+        {"namespace": "Default", "nextNodeId": "ac000001-0001-0001-0001-000000000010", "nextNamespace": "Default"}
+      ],
+      "beforeActionGroup": {
+        "actions": [
+          {"actionType": ".v1.AddColumn", "columnName": "PricePerSqft", "expression": "[list_price] / [sqft]", "columnType": "real"},
+          {"actionType": ".v1.AddColumn", "columnName": "SaleToListRatio", "expression": "IF NOT ISNULL([sale_price]) THEN [sale_price] / [list_price] ELSE NULL END", "columnType": "real"},
+          {"actionType": ".v1.AddColumn", "columnName": "DaysOnMarket", "expression": "IF NOT ISNULL([sale_date]) THEN DATEDIFF('day', [list_date], [sale_date]) ELSE DATEDIFF('day', [list_date], TODAY()) END", "columnType": "integer"},
+          {"actionType": ".v1.AddColumn", "columnName": "PropertyAge", "expression": "YEAR(TODAY()) - [year_built]", "columnType": "integer"},
+          {"actionType": ".v1.AddColumn", "columnName": "PriceToIncome", "expression": "[list_price] / [median_household_income]", "columnType": "real"},
+          {"actionType": ".v1.AddColumn", "columnName": "ZestimateGap", "expression": "([list_price] - [zestimate_median]) / [zestimate_median]", "columnType": "real"},
+          {"actionType": ".v1.AddColumn", "columnName": "MarketSegment", "expression": "IF [list_price] < 200000 THEN 'Starter' ELSEIF [list_price] < 500000 THEN 'Mid-Market' ELSEIF [list_price] < 1000000 THEN 'Upscale' ELSE 'Luxury' END", "columnType": "string"},
+          {"actionType": ".v1.AddColumn", "columnName": "CapRate", "expression": "([rent_zestimate] * 12) / [list_price]", "columnType": "real"},
+          {"actionType": ".v1.RenameColumn", "columnName": "listing_id", "newColumnName": "ListingID"},
+          {"actionType": ".v1.RenameColumn", "columnName": "zip_code", "newColumnName": "ZipCode"}
+        ]
+      }
+    },
+    "ac000001-0001-0001-0001-000000000009": {
+      "nodeType": ".v1.PublishExtract",
+      "name": "Property_Valuation",
+      "id": "ac000001-0001-0001-0001-000000000009",
+      "baseType": "output",
+      "nextNodes": [],
+      "connectionAttributes": {
+        "class": "hyper",
+        "filename": "Property_Valuation.hyper"
+      },
+      "fields": [
+        {"name": "ListingID", "type": "string"},
+        {"name": "address", "type": "string"},
+        {"name": "city", "type": "string"},
+        {"name": "state", "type": "string"},
+        {"name": "ZipCode", "type": "string"},
+        {"name": "property_type", "type": "string"},
+        {"name": "bedrooms", "type": "integer"},
+        {"name": "bathrooms", "type": "real"},
+        {"name": "sqft", "type": "integer"},
+        {"name": "list_price", "type": "real"},
+        {"name": "sale_price", "type": "real"},
+        {"name": "PricePerSqft", "type": "real"},
+        {"name": "SaleToListRatio", "type": "real"},
+        {"name": "DaysOnMarket", "type": "integer"},
+        {"name": "PropertyAge", "type": "integer"},
+        {"name": "PriceToIncome", "type": "real"},
+        {"name": "ZestimateGap", "type": "real"},
+        {"name": "MarketSegment", "type": "string"},
+        {"name": "CapRate", "type": "real"},
+        {"name": "school_rating", "type": "real"},
+        {"name": "crime_index", "type": "real"}
+      ]
+    },
+    "ac000001-0001-0001-0001-000000000010": {
+      "nodeType": ".v2018_3_3.SuperAggregate",
+      "name": "Zip Market Summary",
+      "id": "ac000001-0001-0001-0001-000000000010",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ac000001-0001-0001-0001-000000000011", "nextNamespace": "Default"}
+      ],
+      "groupByFields": [{"name": "ZipCode"}, {"name": "city"}, {"name": "state"}, {"name": "MarketSegment"}],
+      "aggregateFields": [
+        {"name": "ListingID", "aggregation": "COUNTD", "newColumnName": "ListingCount"},
+        {"name": "list_price", "aggregation": "AVG", "newColumnName": "AvgListPrice"},
+        {"name": "list_price", "aggregation": "MEDIAN", "newColumnName": "MedianListPrice"},
+        {"name": "PricePerSqft", "aggregation": "AVG", "newColumnName": "AvgPricePerSqft"},
+        {"name": "DaysOnMarket", "aggregation": "AVG", "newColumnName": "AvgDOM"},
+        {"name": "CapRate", "aggregation": "AVG", "newColumnName": "AvgCapRate"}
+      ]
+    },
+    "ac000001-0001-0001-0001-000000000011": {
+      "nodeType": ".v1.PublishExtract",
+      "name": "Market_Summary",
+      "id": "ac000001-0001-0001-0001-000000000011",
+      "baseType": "output",
+      "nextNodes": [],
+      "connectionAttributes": {
+        "class": "hyper",
+        "filename": "Market_Summary.hyper"
+      },
+      "fields": [
+        {"name": "ZipCode", "type": "string"},
+        {"name": "city", "type": "string"},
+        {"name": "state", "type": "string"},
+        {"name": "MarketSegment", "type": "string"},
+        {"name": "ListingCount", "type": "integer"},
+        {"name": "AvgListPrice", "type": "real"},
+        {"name": "MedianListPrice", "type": "real"},
+        {"name": "AvgPricePerSqft", "type": "real"},
+        {"name": "AvgDOM", "type": "real"},
+        {"name": "AvgCapRate", "type": "real"}
+      ]
+    }
+  },
+  "connections": {
+    "conn-snowflake-listings": {
+      "connectionAttributes": {
+        "class": "snowflake",
+        "server": "acme.us-west-2.snowflakecomputing.com",
+        "warehouse": "ANALYTICS_WH",
+        "dbname": "REAL_ESTATE"
+      }
+    },
+    "conn-pg-transactions": {
+      "connectionAttributes": {
+        "class": "postgres",
+        "server": "txn-db.realty.local",
+        "port": "5432",
+        "dbname": "transactions"
+      }
+    },
+    "conn-census": {
+      "connectionAttributes": {
+        "class": "csv",
+        "directory": "/data/census/",
+        "filename": "Census_Demographics.csv"
+      }
+    },
+    "conn-zillow": {
+      "connectionAttributes": {
+        "class": "json",
+        "directory": "/data/market/",
+        "filename": "Zillow_Estimates.json"
+      }
+    }
+  }
+}

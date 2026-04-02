@@ -1,0 +1,255 @@
+{
+  "objectVersion": 4,
+  "nodes": {
+    "ad000001-0001-0001-0001-000000000001": {
+      "nodeType": ".v1.LoadExcel",
+      "name": "GL_Transactions.xlsx",
+      "id": "ad000001-0001-0001-0001-000000000001",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ad000001-0001-0001-0001-000000000004", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-gl-excel",
+      "connectionAttributes": {
+        "class": "excel-direct",
+        "filename": "GL_Transactions.xlsx",
+        "sheet": "Journal_Entries"
+      },
+      "fields": [
+        {"name": "JournalID", "type": "string"},
+        {"name": "PostingDate", "type": "date"},
+        {"name": "AccountCode", "type": "string"},
+        {"name": "Description", "type": "string"},
+        {"name": "DebitAmount", "type": "real"},
+        {"name": "CreditAmount", "type": "real"},
+        {"name": "CostCenter", "type": "string"},
+        {"name": "Currency", "type": "string"},
+        {"name": "Source", "type": "string"},
+        {"name": "ApprovedBy", "type": "string"}
+      ]
+    },
+    "ad000001-0001-0001-0001-000000000002": {
+      "nodeType": ".v1.LoadSql",
+      "name": "Bank_Statements",
+      "id": "ad000001-0001-0001-0001-000000000002",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ad000001-0001-0001-0001-000000000005", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-bank-db",
+      "connectionAttributes": {
+        "class": "sqlserver",
+        "server": "fin-db.corp.local",
+        "dbname": "Banking",
+        "schema": "dbo",
+        "table": "BankStatements"
+      },
+      "fields": [
+        {"name": "StatementID", "type": "string"},
+        {"name": "TransactionDate", "type": "date"},
+        {"name": "Reference", "type": "string"},
+        {"name": "PayeePayer", "type": "string"},
+        {"name": "Amount", "type": "real"},
+        {"name": "Balance", "type": "real"},
+        {"name": "BankAccount", "type": "string"},
+        {"name": "TransactionType", "type": "string"},
+        {"name": "CheckNumber", "type": "string"}
+      ]
+    },
+    "ad000001-0001-0001-0001-000000000003": {
+      "nodeType": ".v1.LoadCsv",
+      "name": "Chart_of_Accounts.csv",
+      "id": "ad000001-0001-0001-0001-000000000003",
+      "baseType": "input",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ad000001-0001-0001-0001-000000000006", "nextNamespace": "Default"}
+      ],
+      "connectionId": "conn-coa",
+      "connectionAttributes": {
+        "class": "csv",
+        "filename": "Chart_of_Accounts.csv",
+        "separator": ","
+      },
+      "fields": [
+        {"name": "AccountCode", "type": "string"},
+        {"name": "AccountName", "type": "string"},
+        {"name": "AccountType", "type": "string"},
+        {"name": "ParentAccount", "type": "string"},
+        {"name": "IsActive", "type": "boolean"}
+      ]
+    },
+    "ad000001-0001-0001-0001-000000000004": {
+      "nodeType": ".v2018_3_3.SuperTransform",
+      "name": "Parse GL Entries",
+      "id": "ad000001-0001-0001-0001-000000000004",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ad000001-0001-0001-0001-000000000006", "nextNamespace": "Default"}
+      ],
+      "beforeActionGroup": {
+        "actions": [
+          {"actionType": ".v1.SplitColumn", "columnName": "AccountCode", "separator": "-", "splitType": "fixed", "numParts": 3, "newColumnNames": ["AcctSegment1", "AcctSegment2", "AcctSegment3"]},
+          {"actionType": ".v1.AddColumn", "columnName": "NetAmount", "expression": "[DebitAmount] - [CreditAmount]", "columnType": "real"},
+          {"actionType": ".v1.AddColumn", "columnName": "TransDirection", "expression": "IF [NetAmount] > 0 THEN 'Debit' ELSEIF [NetAmount] < 0 THEN 'Credit' ELSE 'Zero' END", "columnType": "string"},
+          {"actionType": ".v1.ReplaceValue", "columnName": "Description", "oldValue": "  ", "newValue": " ", "matchType": "substring"},
+          {"actionType": ".v1.CleanOperation", "columnName": "Description", "operation": "trim"},
+          {"actionType": ".v1.CleanOperation", "columnName": "CostCenter", "operation": "upper"},
+          {"actionType": ".v1.ChangeType", "columnName": "AcctSegment1", "newType": "integer"},
+          {"actionType": ".v1.AddColumn", "columnName": "PostingMonth", "expression": "STR(YEAR([PostingDate])) + '-' + RIGHT('0' + STR(MONTH([PostingDate])), 2)", "columnType": "string"},
+          {"actionType": ".v1.AddColumn", "columnName": "FiscalQuarter", "expression": "IF MONTH([PostingDate]) <= 3 THEN 'Q1' ELSEIF MONTH([PostingDate]) <= 6 THEN 'Q2' ELSEIF MONTH([PostingDate]) <= 9 THEN 'Q3' ELSE 'Q4' END", "columnType": "string"}
+        ]
+      }
+    },
+    "ad000001-0001-0001-0001-000000000005": {
+      "nodeType": ".v2018_3_3.SuperTransform",
+      "name": "Parse Bank Entries",
+      "id": "ad000001-0001-0001-0001-000000000005",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ad000001-0001-0001-0001-000000000007", "nextNamespace": "Default"}
+      ],
+      "beforeActionGroup": {
+        "actions": [
+          {"actionType": ".v1.SplitColumn", "columnName": "Reference", "separator": "/", "splitType": "first", "numParts": 2, "newColumnNames": ["RefPrefix", "RefNumber"]},
+          {"actionType": ".v1.ReplaceValue", "columnName": "PayeePayer", "oldValue": "PAYMENT - ", "newValue": "", "matchType": "prefix"},
+          {"actionType": ".v1.ReplaceValue", "columnName": "PayeePayer", "oldValue": "DEPOSIT - ", "newValue": "", "matchType": "prefix"},
+          {"actionType": ".v1.CleanOperation", "columnName": "PayeePayer", "operation": "trim"},
+          {"actionType": ".v1.ReplaceNulls", "columnName": "CheckNumber", "replacement": "N/A"},
+          {"actionType": ".v1.AddColumn", "columnName": "AbsAmount", "expression": "ABS([Amount])", "columnType": "real"},
+          {"actionType": ".v1.AddColumn", "columnName": "BankDirection", "expression": "IF [Amount] > 0 THEN 'Inflow' ELSE 'Outflow' END", "columnType": "string"}
+        ]
+      }
+    },
+    "ad000001-0001-0001-0001-000000000006": {
+      "nodeType": ".v1.Join",
+      "name": "GL + Chart of Accounts",
+      "id": "ad000001-0001-0001-0001-000000000006",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ad000001-0001-0001-0001-000000000007", "nextNamespace": "Default"}
+      ],
+      "joinType": "left",
+      "joinConditions": [
+        {"leftColumn": "AccountCode", "rightColumn": "AccountCode", "operator": "="}
+      ]
+    },
+    "ad000001-0001-0001-0001-000000000007": {
+      "nodeType": ".v1.Join",
+      "name": "Reconcile GL vs Bank",
+      "id": "ad000001-0001-0001-0001-000000000007",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ad000001-0001-0001-0001-000000000008", "nextNamespace": "Default"}
+      ],
+      "joinType": "full",
+      "joinConditions": [
+        {"leftColumn": "PostingDate", "rightColumn": "TransactionDate", "operator": "="},
+        {"leftColumn": "NetAmount", "rightColumn": "Amount", "operator": "="}
+      ]
+    },
+    "ad000001-0001-0001-0001-000000000008": {
+      "nodeType": ".v2018_3_3.SuperTransform",
+      "name": "Reconciliation Status",
+      "id": "ad000001-0001-0001-0001-000000000008",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ad000001-0001-0001-0001-000000000009", "nextNamespace": "Default"},
+        {"namespace": "Default", "nextNodeId": "ad000001-0001-0001-0001-000000000010", "nextNamespace": "Default"}
+      ],
+      "beforeActionGroup": {
+        "actions": [
+          {"actionType": ".v1.AddColumn", "columnName": "MatchStatus", "expression": "IF NOT ISNULL([JournalID]) AND NOT ISNULL([StatementID]) THEN 'Matched' ELSEIF NOT ISNULL([JournalID]) THEN 'GL Only' ELSE 'Bank Only' END", "columnType": "string"},
+          {"actionType": ".v1.AddColumn", "columnName": "Variance", "expression": "IF NOT ISNULL([NetAmount]) AND NOT ISNULL([Amount]) THEN ABS([NetAmount] - [Amount]) ELSE 0 END", "columnType": "real"},
+          {"actionType": ".v1.AddColumn", "columnName": "NeedsReview", "expression": "IF [MatchStatus] != 'Matched' OR [Variance] > 0.01 THEN 'Yes' ELSE 'No' END", "columnType": "string"}
+        ]
+      }
+    },
+    "ad000001-0001-0001-0001-000000000009": {
+      "nodeType": ".v1.PublishExtract",
+      "name": "Reconciliation_Detail",
+      "id": "ad000001-0001-0001-0001-000000000009",
+      "baseType": "output",
+      "nextNodes": [],
+      "connectionAttributes": {
+        "class": "hyper",
+        "filename": "Reconciliation_Detail.hyper"
+      },
+      "fields": [
+        {"name": "JournalID", "type": "string"},
+        {"name": "StatementID", "type": "string"},
+        {"name": "PostingDate", "type": "date"},
+        {"name": "TransactionDate", "type": "date"},
+        {"name": "AccountCode", "type": "string"},
+        {"name": "AccountName", "type": "string"},
+        {"name": "AccountType", "type": "string"},
+        {"name": "Description", "type": "string"},
+        {"name": "PayeePayer", "type": "string"},
+        {"name": "NetAmount", "type": "real"},
+        {"name": "Amount", "type": "real"},
+        {"name": "CostCenter", "type": "string"},
+        {"name": "FiscalQuarter", "type": "string"},
+        {"name": "MatchStatus", "type": "string"},
+        {"name": "Variance", "type": "real"},
+        {"name": "NeedsReview", "type": "string"}
+      ]
+    },
+    "ad000001-0001-0001-0001-000000000010": {
+      "nodeType": ".v2018_3_3.SuperAggregate",
+      "name": "Monthly Reconciliation",
+      "id": "ad000001-0001-0001-0001-000000000010",
+      "baseType": "transform",
+      "nextNodes": [
+        {"namespace": "Default", "nextNodeId": "ad000001-0001-0001-0001-000000000011", "nextNamespace": "Default"}
+      ],
+      "groupByFields": [{"name": "PostingMonth"}, {"name": "FiscalQuarter"}, {"name": "MatchStatus"}],
+      "aggregateFields": [
+        {"name": "JournalID", "aggregation": "COUNT", "newColumnName": "TransactionCount"},
+        {"name": "NetAmount", "aggregation": "SUM", "newColumnName": "TotalGLAmount"},
+        {"name": "Amount", "aggregation": "SUM", "newColumnName": "TotalBankAmount"},
+        {"name": "Variance", "aggregation": "SUM", "newColumnName": "TotalVariance"}
+      ]
+    },
+    "ad000001-0001-0001-0001-000000000011": {
+      "nodeType": ".v1.PublishExtract",
+      "name": "Reconciliation_Summary",
+      "id": "ad000001-0001-0001-0001-000000000011",
+      "baseType": "output",
+      "nextNodes": [],
+      "connectionAttributes": {
+        "class": "hyper",
+        "filename": "Reconciliation_Summary.hyper"
+      },
+      "fields": [
+        {"name": "PostingMonth", "type": "string"},
+        {"name": "FiscalQuarter", "type": "string"},
+        {"name": "MatchStatus", "type": "string"},
+        {"name": "TransactionCount", "type": "integer"},
+        {"name": "TotalGLAmount", "type": "real"},
+        {"name": "TotalBankAmount", "type": "real"},
+        {"name": "TotalVariance", "type": "real"}
+      ]
+    }
+  },
+  "connections": {
+    "conn-gl-excel": {
+      "connectionAttributes": {
+        "class": "excel-direct",
+        "filename": "GL_Transactions.xlsx"
+      }
+    },
+    "conn-bank-db": {
+      "connectionAttributes": {
+        "class": "sqlserver",
+        "server": "fin-db.corp.local",
+        "dbname": "Banking"
+      }
+    },
+    "conn-coa": {
+      "connectionAttributes": {
+        "class": "csv",
+        "directory": "/data/finance/",
+        "filename": "Chart_of_Accounts.csv"
+      }
+    }
+  }
+}
