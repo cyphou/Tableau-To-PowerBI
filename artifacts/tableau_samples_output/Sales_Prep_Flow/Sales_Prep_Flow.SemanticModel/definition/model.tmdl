@@ -6,14 +6,15 @@ model Model
 		legacyRedirects
 		returnErrorValuesAsNull
 
-annotation PBI_QueryOrder = ["Customers","Regional_Sales_Summary","Calendar"]
+annotation PBI_QueryOrder = ["Customers","Regional_Sales_Summary","Calendar","Min Budget"]
 
 ref table Customers
 ref table Regional_Sales_Summary
 ref table Calendar
+ref table 'Min Budget'
 
-ref relationship a844fe85-e0f2-4705-a641-d0dc7c934757
-ref relationship 8149ca8d-8c29-4d83-881e-7801a4b69eca
+ref relationship 5d49a9ee-92dd-49b6-a3cc-2fe63eae3bec
+ref relationship 9cb5f2b2-9cdc-46fb-bba6-63c9c21e9e80
 
 ref expression DataFolder
 

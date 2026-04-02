@@ -1,9 +1,9 @@
 table Clients
-	lineageTag: 19910741-da81-45b2-ad1d-fb74ba68adff
+	lineageTag: d52afaf6-e222-4466-ad04-7bbd780834f6
 
 	column client_id
 		dataType: int64
-		lineageTag: f82f7bbd-1007-4092-8c74-72f0f088a990
+		lineageTag: c284b75c-64af-4035-8f9c-42d0377a3b67
 		summarizeBy: sum
 		sourceColumn: client_id
 		annotation Copilot_Hidden = true
@@ -12,7 +12,7 @@ table Clients
 
 	column nom_client
 		dataType: string
-		lineageTag: ade01c63-6b4b-4cb4-9eb3-93d40b080f7d
+		lineageTag: b5f87ff5-18ae-4ecf-b5b1-7d10b5914eca
 		summarizeBy: none
 		sourceColumn: nom_client
 
@@ -20,7 +20,7 @@ table Clients
 
 	column prenom_client
 		dataType: string
-		lineageTag: a9ed4a2b-c002-4151-bcb0-69edf75bad05
+		lineageTag: c63c13c2-13f9-4310-9391-68c3b9d343c2
 		summarizeBy: none
 		sourceColumn: prenom_client
 
@@ -28,7 +28,7 @@ table Clients
 
 	column email
 		dataType: string
-		lineageTag: a5d5f829-d894-43ac-b4fd-54ea94f885d2
+		lineageTag: af98e599-3c57-4553-8dff-f6b83abcf729
 		summarizeBy: none
 		sourceColumn: email
 
@@ -36,7 +36,7 @@ table Clients
 
 	column segment
 		dataType: string
-		lineageTag: cbb1701c-9e60-4798-b867-065db8b4f70b
+		lineageTag: 4c0f73b1-abb1-45b4-bbe8-7cb36fd8b6f1
 		summarizeBy: none
 		sourceColumn: segment
 
@@ -44,7 +44,7 @@ table Clients
 
 	column type_client
 		dataType: string
-		lineageTag: 66958b6c-1524-4554-ad87-30c2f3047534
+		lineageTag: 5fa770eb-a825-44e1-af30-ba1945b5b8a4
 		summarizeBy: none
 		sourceColumn: type_client
 
@@ -53,14 +53,14 @@ table Clients
 	column date_inscription
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 8d012d6e-688c-4f6b-97d0-85cf568bf98b
+		lineageTag: cb2792b7-1508-4d0f-8c5d-cd37decdc4f9
 		summarizeBy: none
 		sourceColumn: date_inscription
 		dataCategory: DateTime
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Clients-1d631c5b-dc06-4e14-8bb5-85526edeacdc' = m
+	partition 'Clients-abdfc1b4-83fd-4f6d-9c8a-c0f98b1a0b27' = m
 		mode: import
 		source =
 				let

@@ -1,9 +1,13 @@
 table Regional_Sales_Summary
-	lineageTag: 0722724a-c0e5-49d9-9a86-900aadfc9227
+	lineageTag: c11bd0a6-9fda-4c11-92e0-ffc448d1ad11
+
+	measure 'Target Channel' = "Email"
+		lineageTag: 9126e5a9-4a5c-45cf-af4d-91562ba465cb
+		annotation Copilot_Description = DAX: "Email"
 
 	column Order_ID
 		dataType: string
-		lineageTag: 2fc3e512-cd6b-4568-8bda-df77e04e67f6
+		lineageTag: 094e215e-8287-4376-9608-ef70ae9f48f1
 		summarizeBy: none
 		sourceColumn: Order_ID
 		annotation Copilot_Hidden = true
@@ -13,7 +17,7 @@ table Regional_Sales_Summary
 	column Order_Date
 		dataType: dateTime
 		formatString: General Date
-		lineageTag: 4ccd82c7-a0be-4839-aa41-b4e865049cf8
+		lineageTag: 20616fb4-fec6-4fcd-8d88-24b0219c1c88
 		summarizeBy: none
 		sourceColumn: Order_Date
 		dataCategory: DateTime
@@ -22,7 +26,7 @@ table Regional_Sales_Summary
 
 	column Customer_ID
 		dataType: string
-		lineageTag: 553b7551-0790-4280-918e-dd44e0975747
+		lineageTag: d3b55052-13e7-4cd5-8355-6c3c9c6b1cc0
 		summarizeBy: none
 		sourceColumn: Customer_ID
 		annotation Copilot_Hidden = true
@@ -31,7 +35,7 @@ table Regional_Sales_Summary
 
 	column Region
 		dataType: string
-		lineageTag: f4d61305-1397-494e-b02f-fd2a44255d9a
+		lineageTag: 5e27d6ad-3d7a-4a99-8ec0-a20f02806b2d
 		summarizeBy: none
 		sourceColumn: Region
 		dataCategory: StateOrProvince
@@ -40,7 +44,7 @@ table Regional_Sales_Summary
 
 	column Category
 		dataType: string
-		lineageTag: cbe26e3b-7194-4a1f-8037-aac5de9bdc89
+		lineageTag: d9df3d1c-72a4-4886-b0cc-7ec64894f5b8
 		summarizeBy: none
 		sourceColumn: Category
 
@@ -48,7 +52,7 @@ table Regional_Sales_Summary
 
 	column Product_Name
 		dataType: string
-		lineageTag: d2ac4a8a-1360-45fe-8c8a-f39898a2eaa1
+		lineageTag: 95c54ae7-5308-4fd3-8cea-d9f9c288457f
 		summarizeBy: none
 		sourceColumn: Product_Name
 
@@ -57,7 +61,7 @@ table Regional_Sales_Summary
 	column Sales
 		dataType: double
 		formatString: #,0.00
-		lineageTag: dcabde04-9df4-4c0a-a734-d76da7d59d0b
+		lineageTag: b4bd5154-e486-4e20-9666-421d914b7e52
 		summarizeBy: sum
 		sourceColumn: Sales
 
@@ -65,7 +69,7 @@ table Regional_Sales_Summary
 
 	column Quantity
 		dataType: int64
-		lineageTag: 19b0c274-cd0a-4f2a-bb1d-b434a338a42c
+		lineageTag: 655d4c42-40bb-47eb-96f3-803ea2836914
 		summarizeBy: sum
 		sourceColumn: Quantity
 
@@ -74,7 +78,7 @@ table Regional_Sales_Summary
 	column Discount
 		dataType: double
 		formatString: #,0.00
-		lineageTag: b4766113-296f-4dad-a7f9-7b6f52e45df0
+		lineageTag: a600e4cc-b6d1-40f5-a144-edd10cc1185d
 		summarizeBy: sum
 		sourceColumn: Discount
 
@@ -83,7 +87,7 @@ table Regional_Sales_Summary
 	column Profit
 		dataType: double
 		formatString: #,0.00
-		lineageTag: 3a08dbb5-8678-412f-9657-14786be739af
+		lineageTag: 90283890-cd91-4d76-8aba-b2a07ebf468b
 		summarizeBy: sum
 		sourceColumn: Profit
 
@@ -91,7 +95,7 @@ table Regional_Sales_Summary
 
 	column Status
 		dataType: string
-		lineageTag: d3335b4d-a928-4e04-80bc-f785b9f43d0b
+		lineageTag: 57ab492b-ee11-43a8-9a40-65452afb7a5a
 		summarizeBy: none
 		sourceColumn: Status
 
@@ -99,13 +103,13 @@ table Regional_Sales_Summary
 
 	column TempCol
 		dataType: string
-		lineageTag: 65dac51b-62a8-4166-93cd-1426cb87e2dd
+		lineageTag: 7370ca27-52fd-4517-b4fb-ffe1b7b1e301
 		summarizeBy: none
 		sourceColumn: TempCol
 
 		annotation SummarizationSetBy = Automatic
 
-	partition 'Regional_Sales_Summary-8dd8d6e6-fd69-43ac-9a8f-4f27cffd165c' = m
+	partition 'Regional_Sales_Summary-07a3c672-b5a7-453c-b519-c883d36dc9c0' = m
 		mode: import
 		source =
 				let
@@ -137,5 +141,5 @@ table Regional_Sales_Summary
 				    Result
 
 	annotation PBI_ResultType = Table
-	annotation Copilot_TableDescription = Contains 12 columns: Order_ID, Order_Date, Customer_ID, Region, Category, Product_Name, Sales, Quantity, ... (12 columns total).
+	annotation Copilot_TableDescription = Contains 12 columns and 1 measures: Order_ID, Order_Date, Customer_ID, Region, Category, Product_Name, Sales, Quantity, ... (12 columns total).
 

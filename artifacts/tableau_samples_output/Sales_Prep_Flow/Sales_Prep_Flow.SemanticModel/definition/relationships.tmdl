@@ -1,9 +1,9 @@
-relationship a844fe85-e0f2-4705-a641-d0dc7c934757
+relationship 5d49a9ee-92dd-49b6-a3cc-2fe63eae3bec
 	fromColumn: Regional_Sales_Summary.Order_Date
 	toColumn: Calendar.Date
 	crossFilteringBehavior: oneDirection
 
-relationship 8149ca8d-8c29-4d83-881e-7801a4b69eca
+relationship 9cb5f2b2-9cdc-46fb-bba6-63c9c21e9e80
 	fromColumn: Regional_Sales_Summary.Customer_ID
 	toColumn: Customers.Customer_ID
 	fromCardinality: many

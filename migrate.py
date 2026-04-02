@@ -2622,10 +2622,12 @@ def run_prep_lineage_mode(args):
         basename = os.path.basename(fpath)
         print(f'  [{i}/{len(flow_files)}] Analyzing: {basename}')
         try:
-            profile = analyze_flow(fpath)
+            profile = analyze_flow(fpath, include_m_queries=True)
             profiles.append(profile)
+            mq_count = len(profile.m_queries)
+            grade = profile.assessment.get('grade', '?')
             print(f'    → {len(profile.inputs)} inputs, {len(profile.outputs)} outputs, '
-                  f'{len(profile.transforms)} transforms')
+                  f'{len(profile.transforms)} transforms, {mq_count} M queries [{grade}]')
         except (ValueError, OSError, KeyError) as exc:
             print(f'    ⚠ Failed: {exc}')
             logger.warning('Failed to analyze %s: %s', fpath, exc)
@@ -2657,6 +2659,21 @@ def run_prep_lineage_mode(args):
     json_path = os.path.join(out, 'prep_lineage.json')
     save_lineage_json(graph, recommendations, json_path)
     print(f'  JSON report: {json_path}')
+
+    # Export Power Query M files
+    pq_dir = os.path.join(out, 'PowerQuery')
+    pq_count = 0
+    for profile in profiles:
+        if profile.m_queries:
+            flow_pq_dir = os.path.join(pq_dir, profile.name)
+            os.makedirs(flow_pq_dir, exist_ok=True)
+            for tbl_name, m_code in profile.m_queries.items():
+                pq_path = os.path.join(flow_pq_dir, f'{tbl_name}.pq')
+                with open(pq_path, 'w', encoding='utf-8') as f:
+                    f.write(m_code)
+                pq_count += 1
+    if pq_count:
+        print(f'  Power Query M: {pq_count} file(s) in {pq_dir}')
 
     return ExitCode.SUCCESS
 

@@ -91,6 +91,37 @@
           "a1000001-0001-0001-0001-000000000003"
         ],
         "a1000001-0001-0001-0001-000000000003": []
+      },
+      "m_queries": {
+        "Orders_Clean": "let\n    // TODO: Configure the data source for connector type: textscan\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"Order_ID\", \"Order_Date\", \"Customer_ID\", \"Product_ID\", \"Region\", \"Sales\", \"Quantity\", \"Discount\", \"Profit\", \"Ship_Mode\", \"Status\", \"_temp_col\"},\n            {\n                {\"Sample 1\", 2, \"Sample 3\", \"Sample 4\", \"Sample 5\", 6, 7, 8, 9, \"Sample 10\", \"Sample 11\", \"Sample 12\"},\n                {\"Sample 2\", 3, \"Sample 4\", \"Sample 5\", \"Sample 6\", 7, 8, 9, 10, \"Sample 11\", \"Sample 12\", \"Sample 13\"}\n            }\n        )\n    otherwise\n        #table({\"Order_ID\", \"Order_Date\", \"Customer_ID\", \"Product_ID\", \"Region\", \"Sales\", \"Quantity\", \"Discount\", \"Profit\", \"Ship_Mode\", \"Status\", \"_temp_col\"}, {}),\n    #\"Removed Columns\" = Table.RemoveColumns(Source, {\"_temp_col\"}),\n    #\"Renamed Columns\" = Table.RenameColumns(#\"Removed Columns\", {{\"Order_ID\", \"OrderID\"}, {\"Order_Date\", \"OrderDate\"}, {\"Customer_ID\", \"CustomerID\"}, {\"Product_ID\", \"ProductID\"}}),\n    #\"Trimmed Text\" = Table.TransformColumns(#\"Renamed Columns\", {{\"Region\", Text.Trim}}),\n    #\"Filtered Rows\" = Table.SelectRows(#\"Trimmed Text\", each [Status] <> \"Cancelled\"),\n    #\"Removed Columns 2\" = Table.RemoveColumns(#\"Filtered Rows\", {\"Status\"}),\n    #\"Replaced Nulls in Discount\" = Table.ReplaceValue(#\"Removed Columns 2\", null, \"0\", Replacer.ReplaceValue, {\"Discount\"}),\n    #\"Added Revenue\" = Table.AddColumn(#\"Replaced Nulls in Discount\", \"Revenue\", each [Sales] * (1 - [Discount])),\n    #\"Changed Type\" = Table.TransformColumnTypes(#\"Added Revenue\", {{\"OrderDate\", type date}}),\n    Result = #\"Changed Type\"\nin\n    Result"
+      },
+      "assessment": {
+        "grade": "GREEN",
+        "items": [
+          {
+            "category": "datasource",
+            "status": "pass",
+            "detail": "1 input(s) — all connectors supported"
+          },
+          {
+            "category": "script",
+            "status": "pass",
+            "detail": "No Script nodes"
+          },
+          {
+            "category": "join",
+            "status": "pass",
+            "detail": "No joins"
+          },
+          {
+            "category": "output",
+            "status": "pass",
+            "detail": "1 output(s)"
+          }
+        ],
+        "pass_count": 4,
+        "warn_count": 0,
+        "fail_count": 0
       }
     },
     {
@@ -172,6 +203,37 @@
           "a2000001-0001-0001-0001-000000000003"
         ],
         "a2000001-0001-0001-0001-000000000003": []
+      },
+      "m_queries": {
+        "Products_Master": "let\n    // TODO: Configure the data source for connector type: textscan\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"Product_ID\", \"Product_Name\", \"Category\", \"Sub_Category\", \"Unit_Cost\", \"Unit_Price\", \"Supplier\", \"Weight_kg\"},\n            {\n                {\"Sample 1\", \"Sample 2\", \"Sample 3\", \"Sample 4\", 5, 6, \"Sample 7\", 8},\n                {\"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", 6, 7, \"Sample 8\", 9}\n            }\n        )\n    otherwise\n        #table({\"Product_ID\", \"Product_Name\", \"Category\", \"Sub_Category\", \"Unit_Cost\", \"Unit_Price\", \"Supplier\", \"Weight_kg\"}, {}),\n    #\"Renamed Columns\" = Table.RenameColumns(Source, {{\"Product_ID\", \"ProductID\"}, {\"Product_Name\", \"ProductName\"}, {\"Sub_Category\", \"SubCategory\"}, {\"Unit_Cost\", \"UnitCost\"}, {\"Unit_Price\", \"UnitPrice\"}}),\n    #\"Proper Cased\" = Table.TransformColumns(#\"Renamed Columns\", {{\"ProductName\", Text.Proper}}),\n    #\"Trimmed Text\" = Table.TransformColumns(#\"Proper Cased\", {{\"Category\", Text.Trim}}),\n    #\"Replaced Nulls in Weight_kg\" = Table.ReplaceValue(#\"Trimmed Text\", null, \"0\", Replacer.ReplaceValue, {\"Weight_kg\"}),\n    #\"Added Margin\" = Table.AddColumn(#\"Replaced Nulls in Weight_kg\", \"Margin\", each ([UnitPrice] - [UnitCost]) / [UnitPrice]),\n    Result = #\"Added Margin\"\nin\n    Result"
+      },
+      "assessment": {
+        "grade": "GREEN",
+        "items": [
+          {
+            "category": "datasource",
+            "status": "pass",
+            "detail": "1 input(s) — all connectors supported"
+          },
+          {
+            "category": "script",
+            "status": "pass",
+            "detail": "No Script nodes"
+          },
+          {
+            "category": "join",
+            "status": "pass",
+            "detail": "No joins"
+          },
+          {
+            "category": "output",
+            "status": "pass",
+            "detail": "1 output(s)"
+          }
+        ],
+        "pass_count": 4,
+        "warn_count": 0,
+        "fail_count": 0
       }
     },
     {
@@ -252,6 +314,37 @@
           "a3000001-0001-0001-0001-000000000003"
         ],
         "a3000001-0001-0001-0001-000000000003": []
+      },
+      "m_queries": {
+        "Returns_Processed": "let\n    // TODO: Configure the data source for connector type: textscan\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"Return_ID\", \"Order_ID\", \"Return_Date\", \"Reason_Code\", \"Reason_Text\", \"Refund_Amount\", \"Restocking_Fee\", \"Return_Status\"},\n            {\n                {\"Sample 1\", \"Sample 2\", 3, \"Sample 4\", \"Sample 5\", 6, 7, \"Sample 8\"},\n                {\"Sample 2\", \"Sample 3\", 4, \"Sample 5\", \"Sample 6\", 7, 8, \"Sample 9\"}\n            }\n        )\n    otherwise\n        #table({\"Return_ID\", \"Order_ID\", \"Return_Date\", \"Reason_Code\", \"Reason_Text\", \"Refund_Amount\", \"Restocking_Fee\", \"Return_Status\"}, {}),\n    #\"Renamed Columns\" = Table.RenameColumns(Source, {{\"Return_ID\", \"ReturnID\"}, {\"Order_ID\", \"OrderID\"}, {\"Return_Date\", \"ReturnDate\"}, {\"Reason_Code\", \"ReasonCode\"}, {\"Refund_Amount\", \"RefundAmount\"}}),\n    #\"Filtered Rows\" = Table.SelectRows(#\"Renamed Columns\", each [Return_Status] <> \"Voided\"),\n    #\"Removed Columns\" = Table.RemoveColumns(#\"Filtered Rows\", {\"Return_Status\"}),\n    #\"Trimmed Text\" = Table.TransformColumns(#\"Removed Columns\", {{\"Reason_Text\", Text.Trim}}),\n    #\"Added NetRefund\" = Table.AddColumn(#\"Trimmed Text\", \"NetRefund\", each [RefundAmount] - [Restocking_Fee]),\n    Result = #\"Added NetRefund\"\nin\n    Result"
+      },
+      "assessment": {
+        "grade": "GREEN",
+        "items": [
+          {
+            "category": "datasource",
+            "status": "pass",
+            "detail": "1 input(s) — all connectors supported"
+          },
+          {
+            "category": "script",
+            "status": "pass",
+            "detail": "No Script nodes"
+          },
+          {
+            "category": "join",
+            "status": "pass",
+            "detail": "No joins"
+          },
+          {
+            "category": "output",
+            "status": "pass",
+            "detail": "1 output(s)"
+          }
+        ],
+        "pass_count": 4,
+        "warn_count": 0,
+        "fail_count": 0
       }
     },
     {
@@ -374,6 +467,38 @@
           "a4000001-0001-0001-0001-000000000005"
         ],
         "a4000001-0001-0001-0001-000000000005": []
+      },
+      "m_queries": {
+        "Demographics": "let\n    // TODO: Configure the data source for connector type: textscan\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"customer_id\", \"age_group\", \"income_bracket\", \"city\", \"state\", \"country\", \"postal_code\"},\n            {\n                {\"Sample 1\", \"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", \"Sample 6\", \"Sample 7\"},\n                {\"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", \"Sample 6\", \"Sample 7\", \"Sample 8\"}\n            }\n        )\n    otherwise\n        #table({\"customer_id\", \"age_group\", \"income_bracket\", \"city\", \"state\", \"country\", \"postal_code\"}, {})  // Empty table on error\nin\n    Source",
+        "Customer_360": "let\n    // TODO: Configure the data source for connector type: postgres\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"customer_id\", \"first_name\", \"last_name\", \"email\", \"phone\", \"created_at\", \"segment\", \"loyalty_tier\", \"lifetime_value\"},\n            {\n                {\"Sample 1\", \"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", 6, \"Sample 7\", \"Sample 8\", 9},\n                {\"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", \"Sample 6\", 7, \"Sample 8\", \"Sample 9\", 10}\n            }\n        )\n    otherwise\n        #table({\"customer_id\", \"first_name\", \"last_name\", \"email\", \"phone\", \"created_at\", \"segment\", \"loyalty_tier\", \"lifetime_value\"}, {}),\n    #\"Joined Joined\" = Table.NestedJoin(Source, \"customer_id\", Demographics, \"customer_id\", \"Joined\", JoinKind.LeftOuter),\n    #\"Expanded Joined\" = Table.ExpandTableColumn(#\"Joined Joined\", \"Joined\", {\"age_group\", \"income_bracket\", \"city\", \"state\", \"country\", \"postal_code\"}),\n    #\"Renamed Columns\" = Table.RenameColumns(#\"Expanded Joined\", {{\"customer_id\", \"CustomerID\"}}),\n    #\"Lowercased\" = Table.TransformColumns(#\"Renamed Columns\", {{\"email\", Text.Lower}}),\n    #\"Replaced Nulls in loyalty_tier\" = Table.ReplaceValue(#\"Lowercased\", null, \"Bronze\", Replacer.ReplaceValue, {\"loyalty_tier\"}),\n    #\"Added FullAddress\" = Table.AddColumn(#\"Replaced Nulls in loyalty_tier\", \"FullAddress\", each [city] + \", \" + [state] + \" \" + [postal_code]),\n    Result = #\"Added FullAddress\"\nin\n    Result"
+      },
+      "assessment": {
+        "grade": "GREEN",
+        "items": [
+          {
+            "category": "datasource",
+            "status": "pass",
+            "detail": "2 input(s) — all connectors supported"
+          },
+          {
+            "category": "script",
+            "status": "pass",
+            "detail": "No Script nodes"
+          },
+          {
+            "category": "join",
+            "status": "pass",
+            "detail": "1 join(s) → Power Query Table.NestedJoin"
+          },
+          {
+            "category": "output",
+            "status": "pass",
+            "detail": "1 output(s)"
+          }
+        ],
+        "pass_count": 4,
+        "warn_count": 0,
+        "fail_count": 0
       }
     },
     {
@@ -526,6 +651,39 @@
           "a5000001-0001-0001-0001-000000000007"
         ],
         "a5000001-0001-0001-0001-000000000007": []
+      },
+      "m_queries": {
+        "Products_Master": "let\n    // TODO: Configure the data source for connector type: sqlserver\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"ProductID\", \"ProductName\", \"Category\", \"SubCategory\", \"UnitCost\", \"UnitPrice\", \"Margin\"},\n            {\n                {\"Sample 1\", \"Sample 2\", \"Sample 3\", \"Sample 4\", 5, 6, 7},\n                {\"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", 6, 7, 8}\n            }\n        )\n    otherwise\n        #table({\"ProductID\", \"ProductName\", \"Category\", \"SubCategory\", \"UnitCost\", \"UnitPrice\", \"Margin\"}, {})  // Empty table on error\nin\n    Source",
+        "Orders_+_Products": "let\n    // TODO: Configure the data source for connector type: sqlserver\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"OrderID\", \"OrderDate\", \"CustomerID\", \"ProductID\", \"Region\", \"Sales\", \"Quantity\", \"Discount\", \"Profit\", \"Revenue\"},\n            {\n                {\"Sample 1\", 2, \"Sample 3\", \"Sample 4\", \"Sample 5\", 6, 7, 8, 9, 10},\n                {\"Sample 2\", 3, \"Sample 4\", \"Sample 5\", \"Sample 6\", 7, 8, 9, 10, 11}\n            }\n        )\n    otherwise\n        #table({\"OrderID\", \"OrderDate\", \"CustomerID\", \"ProductID\", \"Region\", \"Sales\", \"Quantity\", \"Discount\", \"Profit\", \"Revenue\"}, {}),\n    #\"Joined Joined\" = Table.NestedJoin(Source, \"ProductID\", Products_Master, \"ProductID\", \"Joined\", JoinKind.LeftOuter),\n    #\"Expanded Joined\" = Table.ExpandTableColumn(#\"Joined Joined\", \"Joined\", {\"ProductName\", \"Category\", \"SubCategory\", \"UnitCost\", \"UnitPrice\", \"Margin\"}),\n    Result = #\"Expanded Joined\"\nin\n    Result",
+        "Sales_Summary": "let\n    // TODO: Configure the data source for connector type: sqlserver\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"CustomerID\", \"CustomerName\", \"segment\", \"loyalty_tier\", \"city\", \"state\", \"country\"},\n            {\n                {\"Sample 1\", \"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", \"Sample 6\", \"Sample 7\"},\n                {\"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", \"Sample 6\", \"Sample 7\", \"Sample 8\"}\n            }\n        )\n    otherwise\n        #table({\"CustomerID\", \"CustomerName\", \"segment\", \"loyalty_tier\", \"city\", \"state\", \"country\"}, {}),\n    #\"Joined Joined\" = Table.NestedJoin(Source, \"CustomerID\", Orders_+_Products, \"CustomerID\", \"Joined\", JoinKind.LeftOuter),\n    #\"Expanded Joined\" = Table.ExpandTableColumn(#\"Joined Joined\", \"Joined\", {\"OrderID\", \"OrderDate\", \"ProductID\", \"Region\", \"Sales\", \"Quantity\", \"Discount\", \"Profit\", \"Revenue\"}),\n    #\"Grouped Rows\" = Table.Group(#\"Expanded Joined\", {\"Region\", \"Category\", \"segment\", \"loyalty_tier\"}, {{\"TotalRevenue\", each List.Sum([Revenue]), type number}, {\"TotalProfit\", each List.Sum([Profit]), type number}, {\"OrderCount\", each List.Count(List.Distinct([OrderID])), Int64.Type}, {\"TotalQuantity\", each List.Sum([Quantity]), type number}, {\"AvgDiscount\", each List.Average([Discount]), type number}}),\n    Result = #\"Grouped Rows\"\nin\n    Result"
+      },
+      "assessment": {
+        "grade": "GREEN",
+        "items": [
+          {
+            "category": "datasource",
+            "status": "pass",
+            "detail": "3 input(s) — all connectors supported"
+          },
+          {
+            "category": "script",
+            "status": "pass",
+            "detail": "No Script nodes"
+          },
+          {
+            "category": "join",
+            "status": "pass",
+            "detail": "2 join(s) → Power Query Table.NestedJoin"
+          },
+          {
+            "category": "output",
+            "status": "pass",
+            "detail": "1 output(s)"
+          }
+        ],
+        "pass_count": 4,
+        "warn_count": 0,
+        "fail_count": 0
       }
     },
     {
@@ -653,6 +811,38 @@
           "a6000001-0001-0001-0001-000000000006"
         ],
         "a6000001-0001-0001-0001-000000000006": []
+      },
+      "m_queries": {
+        "Orders_Clean": "let\n    // TODO: Configure the data source for connector type: sqlserver\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"OrderID\", \"OrderDate\", \"CustomerID\", \"ProductID\", \"Region\", \"Sales\", \"Revenue\"},\n            {\n                {\"Sample 1\", 2, \"Sample 3\", \"Sample 4\", \"Sample 5\", 6, 7},\n                {\"Sample 2\", 3, \"Sample 4\", \"Sample 5\", \"Sample 6\", 7, 8}\n            }\n        )\n    otherwise\n        #table({\"OrderID\", \"OrderDate\", \"CustomerID\", \"ProductID\", \"Region\", \"Sales\", \"Revenue\"}, {})  // Empty table on error\nin\n    Source",
+        "Returns_Analysis": "let\n    // TODO: Configure the data source for connector type: sqlserver\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"ReturnID\", \"OrderID\", \"ReturnDate\", \"ReasonCode\", \"Reason_Text\", \"RefundAmount\", \"NetRefund\"},\n            {\n                {\"Sample 1\", \"Sample 2\", 3, \"Sample 4\", \"Sample 5\", 6, 7},\n                {\"Sample 2\", \"Sample 3\", 4, \"Sample 5\", \"Sample 6\", 7, 8}\n            }\n        )\n    otherwise\n        #table({\"ReturnID\", \"OrderID\", \"ReturnDate\", \"ReasonCode\", \"Reason_Text\", \"RefundAmount\", \"NetRefund\"}, {}),\n    #\"Joined Joined\" = Table.NestedJoin(Source, \"OrderID\", Orders_Clean, \"OrderID\", \"Joined\", JoinKind.LeftOuter),\n    #\"Expanded Joined\" = Table.ExpandTableColumn(#\"Joined Joined\", \"Joined\", {\"OrderDate\", \"CustomerID\", \"ProductID\", \"Region\", \"Sales\", \"Revenue\"}),\n    #\"Added ReturnRate\" = Table.AddColumn(#\"Expanded Joined\", \"ReturnRate\", each [NetRefund] / [Revenue]),\n    #\"Added DaysToReturn\" = Table.AddColumn(#\"Added ReturnRate\", \"DaysToReturn\", each DATEDIFF('day', [OrderDate], [ReturnDate])),\n    #\"Script Warning\" = Table.AddColumn(#\"Added DaysToReturn\", \"__script_warning\", each \"/* Python script step not auto-converted — manual migration required */\", type text),\n    Result = #\"Script Warning\"\nin\n    Result"
+      },
+      "assessment": {
+        "grade": "YELLOW",
+        "items": [
+          {
+            "category": "datasource",
+            "status": "pass",
+            "detail": "2 input(s) — all connectors supported"
+          },
+          {
+            "category": "script",
+            "status": "warn",
+            "detail": "1 Script node(s) — manual review needed"
+          },
+          {
+            "category": "join",
+            "status": "pass",
+            "detail": "1 join(s) → Power Query Table.NestedJoin"
+          },
+          {
+            "category": "output",
+            "status": "pass",
+            "detail": "1 output(s)"
+          }
+        ],
+        "pass_count": 3,
+        "warn_count": 1,
+        "fail_count": 0
       }
     },
     {
@@ -775,6 +965,38 @@
           "a7000001-0001-0001-0001-000000000006"
         ],
         "a7000001-0001-0001-0001-000000000006": []
+      },
+      "m_queries": {
+        "Returns_Analysis": "let\n    // TODO: Configure the data source for connector type: sqlserver\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"Region\", \"ReasonCode\", \"NetRefund\", \"ReturnRate\", \"anomaly_score\"},\n            {\n                {\"Sample 1\", \"Sample 2\", 3, 4, 5},\n                {\"Sample 2\", \"Sample 3\", 4, 5, 6}\n            }\n        )\n    otherwise\n        #table({\"Region\", \"ReasonCode\", \"NetRefund\", \"ReturnRate\", \"anomaly_score\"}, {})  // Empty table on error\nin\n    Source",
+        "Executive_KPIs": "let\n    // TODO: Configure the data source for connector type: sqlserver\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"Region\", \"Category\", \"segment\", \"TotalRevenue\", \"TotalProfit\", \"OrderCount\"},\n            {\n                {\"Sample 1\", \"Sample 2\", \"Sample 3\", 4, 5, 6},\n                {\"Sample 2\", \"Sample 3\", \"Sample 4\", 5, 6, 7}\n            }\n        )\n    otherwise\n        #table({\"Region\", \"Category\", \"segment\", \"TotalRevenue\", \"TotalProfit\", \"OrderCount\"}, {}),\n    #\"Joined Joined\" = Table.NestedJoin(Source, \"Region\", Returns_Analysis, \"Region\", \"Joined\", JoinKind.LeftOuter),\n    #\"Expanded Joined\" = Table.ExpandTableColumn(#\"Joined Joined\", \"Joined\", {\"ReasonCode\", \"NetRefund\", \"ReturnRate\", \"anomaly_score\"}),\n    #\"Grouped Rows\" = Table.Group(#\"Expanded Joined\", {\"Region\"}, {{\"GrandRevenue\", each List.Sum([TotalRevenue]), type number}, {\"GrandProfit\", each List.Sum([TotalProfit]), type number}, {\"TotalOrders\", each List.Sum([OrderCount]), type number}, {\"TotalRefunds\", each List.Sum([NetRefund]), type number}, {\"AvgReturnRate\", each List.Average([ReturnRate]), type number}}),\n    #\"Added ProfitMargin\" = Table.AddColumn(#\"Grouped Rows\", \"ProfitMargin\", each [GrandProfit] / [GrandRevenue]),\n    #\"Added NetRevenue\" = Table.AddColumn(#\"Added ProfitMargin\", \"NetRevenue\", each [GrandRevenue] - [TotalRefunds]),\n    #\"Added AvgOrderValue\" = Table.AddColumn(#\"Added NetRevenue\", \"AvgOrderValue\", each [GrandRevenue] / [TotalOrders]),\n    Result = #\"Added AvgOrderValue\"\nin\n    Result"
+      },
+      "assessment": {
+        "grade": "GREEN",
+        "items": [
+          {
+            "category": "datasource",
+            "status": "pass",
+            "detail": "2 input(s) — all connectors supported"
+          },
+          {
+            "category": "script",
+            "status": "pass",
+            "detail": "No Script nodes"
+          },
+          {
+            "category": "join",
+            "status": "pass",
+            "detail": "1 join(s) → Power Query Table.NestedJoin"
+          },
+          {
+            "category": "output",
+            "status": "pass",
+            "detail": "1 output(s)"
+          }
+        ],
+        "pass_count": 4,
+        "warn_count": 0,
+        "fail_count": 0
       }
     },
     {
@@ -888,6 +1110,38 @@
           "a8000001-0001-0001-0001-000000000005"
         ],
         "a8000001-0001-0001-0001-000000000005": []
+      },
+      "m_queries": {
+        "Inventory_Levels": "let\n    // TODO: Configure the data source for connector type: snowflake\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"SKU\", \"WAREHOUSE_ID\", \"QTY_ON_HAND\", \"QTY_RESERVED\", \"REORDER_POINT\", \"LAST_RECEIPT_DATE\", \"UNIT_COST\"},\n            {\n                {\"Sample 1\", \"Sample 2\", 3, 4, 5, 6, 7},\n                {\"Sample 2\", \"Sample 3\", 4, 5, 6, 7, 8}\n            }\n        )\n    otherwise\n        #table({\"SKU\", \"WAREHOUSE_ID\", \"QTY_ON_HAND\", \"QTY_RESERVED\", \"REORDER_POINT\", \"LAST_RECEIPT_DATE\", \"UNIT_COST\"}, {})  // Empty table on error\nin\n    Source",
+        "Inventory_Status": "let\n    // TODO: Configure the data source for connector type: postgres\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"customer_id\", \"first_name\", \"last_name\", \"email\", \"segment\", \"lifetime_value\"},\n            {\n                {\"Sample 1\", \"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", 6},\n                {\"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", \"Sample 6\", 7}\n            }\n        )\n    otherwise\n        #table({\"customer_id\", \"first_name\", \"last_name\", \"email\", \"segment\", \"lifetime_value\"}, {}),\n    #\"Joined Joined\" = Table.NestedJoin(Source, \"customer_id\", Inventory_Levels, \"WAREHOUSE_ID\", \"Joined\", JoinKind.FullOuter),\n    #\"Expanded Joined\" = Table.ExpandTableColumn(#\"Joined Joined\", \"Joined\", {\"SKU\", \"QTY_ON_HAND\", \"QTY_RESERVED\", \"REORDER_POINT\", \"LAST_RECEIPT_DATE\", \"UNIT_COST\"}),\n    #\"Added AvailableQty\" = Table.AddColumn(#\"Expanded Joined\", \"AvailableQty\", each [QTY_ON_HAND] - [QTY_RESERVED]),\n    #\"Added NeedsReorder\" = Table.AddColumn(#\"Added AvailableQty\", \"NeedsReorder\", each if [AvailableQty] < [REORDER_POINT] then 'Yes' else 'No' ),\n    #\"Added InventoryValue\" = Table.AddColumn(#\"Added NeedsReorder\", \"InventoryValue\", each [QTY_ON_HAND] * [UNIT_COST]),\n    Result = #\"Added InventoryValue\"\nin\n    Result"
+      },
+      "assessment": {
+        "grade": "GREEN",
+        "items": [
+          {
+            "category": "datasource",
+            "status": "pass",
+            "detail": "2 input(s) — all connectors supported"
+          },
+          {
+            "category": "script",
+            "status": "pass",
+            "detail": "No Script nodes"
+          },
+          {
+            "category": "join",
+            "status": "pass",
+            "detail": "1 join(s) → Power Query Table.NestedJoin"
+          },
+          {
+            "category": "output",
+            "status": "pass",
+            "detail": "1 output(s)"
+          }
+        ],
+        "pass_count": 4,
+        "warn_count": 0,
+        "fail_count": 0
       }
     },
     {
@@ -1007,6 +1261,38 @@
           "55555555-5555-5555-5555-555555555555"
         ],
         "55555555-5555-5555-5555-555555555555": []
+      },
+      "m_queries": {
+        "Customers": "let\n    // TODO: Configure the data source for connector type: textscan\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"Customer_ID\", \"Customer_Name\", \"Segment\", \"City\", \"State\", \"Country\"},\n            {\n                {\"Sample 1\", \"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", \"Sample 6\"},\n                {\"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", \"Sample 6\", \"Sample 7\"}\n            }\n        )\n    otherwise\n        #table({\"Customer_ID\", \"Customer_Name\", \"Segment\", \"City\", \"State\", \"Country\"}, {})  // Empty table on error\nin\n    Source",
+        "Regional_Sales_Summary": "let\n    // TODO: Configure the data source for connector type: textscan\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"Order_ID\", \"Order_Date\", \"Customer_ID\", \"Region\", \"Category\", \"Product_Name\", \"Sales\", \"Quantity\", \"Discount\", \"Profit\", \"Status\", \"TempCol\"},\n            {\n                {\"Sample 1\", 2, \"Sample 3\", \"Sample 4\", \"Sample 5\", \"Sample 6\", 7, 8, 9, 10, \"Sample 11\", \"Sample 12\"},\n                {\"Sample 2\", 3, \"Sample 4\", \"Sample 5\", \"Sample 6\", \"Sample 7\", 8, 9, 10, 11, \"Sample 12\", \"Sample 13\"}\n            }\n        )\n    otherwise\n        #table({\"Order_ID\", \"Order_Date\", \"Customer_ID\", \"Region\", \"Category\", \"Product_Name\", \"Sales\", \"Quantity\", \"Discount\", \"Profit\", \"Status\", \"TempCol\"}, {}),\n    #\"Renamed Columns\" = Table.RenameColumns(Source, {{\"Order_ID\", \"Order ID\"}, {\"Order_Date\", \"Order Date\"}, {\"Customer_ID\", \"Customer ID\"}, {\"Product_Name\", \"Product Name\"}}),\n    #\"Removed Columns\" = Table.RemoveColumns(#\"Renamed Columns\", {\"TempCol\"}),\n    #\"Filtered Rows\" = Table.SelectRows(#\"Removed Columns\", each [Status] <> \"Cancelled\"),\n    #\"Trimmed Text\" = Table.TransformColumns(#\"Filtered Rows\", {{\"Region\", Text.Trim}}),\n    #\"Proper Cased\" = Table.TransformColumns(#\"Trimmed Text\", {{\"Category\", Text.Proper}}),\n    #\"Replaced Nulls in Discount\" = Table.ReplaceValue(#\"Proper Cased\", null, \"0\", Replacer.ReplaceValue, {\"Discount\"}),\n    #\"Added Revenue\" = Table.AddColumn(#\"Replaced Nulls in Discount\", \"Revenue\", each [Sales] * [Quantity] * (1 - [Discount])),\n    #\"Changed Type\" = Table.TransformColumnTypes(#\"Added Revenue\", {{\"Order Date\", type date}}),\n    #\"Joined Joined\" = Table.NestedJoin(#\"Changed Type\", \"Customer ID\", Customers, \"Customer_ID\", \"Joined\", JoinKind.LeftOuter),\n    #\"Expanded Joined\" = Table.ExpandTableColumn(#\"Joined Joined\", \"Joined\", {\"Customer_Name\", \"Segment\", \"City\", \"State\", \"Country\"}),\n    #\"Grouped Rows\" = Table.Group(#\"Expanded Joined\", {\"Region\", \"Category\", \"Segment\"}, {{\"Total Revenue\", each List.Sum([Revenue]), type number}, {\"Total Profit\", each List.Sum([Profit]), type number}, {\"Distinct Orders\", each List.Count(List.Distinct([Order ID])), Int64.Type}, {\"Avg Quantity\", each List.Average([Quantity]), type number}}),\n    Result = #\"Grouped Rows\"\nin\n    Result"
+      },
+      "assessment": {
+        "grade": "GREEN",
+        "items": [
+          {
+            "category": "datasource",
+            "status": "pass",
+            "detail": "2 input(s) — all connectors supported"
+          },
+          {
+            "category": "script",
+            "status": "pass",
+            "detail": "No Script nodes"
+          },
+          {
+            "category": "join",
+            "status": "pass",
+            "detail": "1 join(s) → Power Query Table.NestedJoin"
+          },
+          {
+            "category": "output",
+            "status": "pass",
+            "detail": "1 output(s)"
+          }
+        ],
+        "pass_count": 4,
+        "warn_count": 0,
+        "fail_count": 0
       }
     },
     {
@@ -1219,6 +1505,35 @@
         "4964e8db-6fbd-4592-8fd3-e1a997f70f93": [
           "34f8e4e2-360f-435c-b9d4-3a6dea94ad54"
         ]
+      },
+      "m_queries": {},
+      "assessment": {
+        "grade": "GREEN",
+        "items": [
+          {
+            "category": "datasource",
+            "status": "pass",
+            "detail": "4 input(s) — all connectors supported"
+          },
+          {
+            "category": "script",
+            "status": "pass",
+            "detail": "No Script nodes"
+          },
+          {
+            "category": "join",
+            "status": "pass",
+            "detail": "No joins"
+          },
+          {
+            "category": "output",
+            "status": "pass",
+            "detail": "1 output(s)"
+          }
+        ],
+        "pass_count": 4,
+        "warn_count": 0,
+        "fail_count": 0
       }
     },
     {
@@ -1236,7 +1551,36 @@
       "calc_count": 0,
       "complexity_score": 0,
       "complexity_label": "Low",
-      "node_graph": {}
+      "node_graph": {},
+      "m_queries": {},
+      "assessment": {
+        "grade": "RED",
+        "items": [
+          {
+            "category": "datasource",
+            "status": "pass",
+            "detail": "0 input(s) — all connectors supported"
+          },
+          {
+            "category": "script",
+            "status": "pass",
+            "detail": "No Script nodes"
+          },
+          {
+            "category": "join",
+            "status": "pass",
+            "detail": "No joins"
+          },
+          {
+            "category": "output",
+            "status": "fail",
+            "detail": "No outputs detected — flow may be incomplete"
+          }
+        ],
+        "pass_count": 3,
+        "warn_count": 0,
+        "fail_count": 1
+      }
     }
   ],
   "edges": [
@@ -1567,5 +1911,5 @@
       "label": "Keep separate"
     }
   ],
-  "timestamp": "2026-04-02T12:03:24.397845+00:00"
+  "timestamp": "2026-04-02T12:18:46.384204+00:00"
 }

@@ -630,6 +630,130 @@ def _render_transform_documentation(graph: PrepLineageGraph) -> str:
     return '\n'.join(html_parts)
 
 
+# ── Tableau → Power Query M equivalence mapping ──────────────────────────
+
+_TABLEAU_TO_PQ_MAP = {
+    'Clean': ('Table.TransformColumns / Table.RenameColumns / Table.SelectRows / '
+              'Table.RemoveColumns / Table.ReplaceValue'),
+    'Join': 'Table.NestedJoin + Table.ExpandTableColumn',
+    'Union': 'Table.Combine',
+    'Aggregate': 'Table.Group',
+    'Pivot': 'Table.Pivot / Table.Unpivot',
+    'Script': '⚠ Manual: Python/R visuals or custom function',
+    'Prediction': '⚠ Manual: ML model endpoint or custom function',
+    'PublishedDS': 'Power BI Dataflow or shared dataset reference',
+    'Other': 'Various Table.* functions',
+}
+
+_OPERATION_TO_PQ_MAP = {
+    'remove_columns': 'Table.RemoveColumns(Source, {"Col1", "Col2"})',
+    'rename_column': 'Table.RenameColumns(Source, {{"OldName", "NewName"}})',
+    'rename_columns': 'Table.RenameColumns(Source, {{"Old1", "New1"}, ...})',
+    'change_type': 'Table.TransformColumnTypes(Source, {{"Col", type text}})',
+    'filter': 'Table.SelectRows(Source, each [Col] = "value")',
+    'add_column': 'Table.AddColumn(Source, "NewCol", each [A] + [B])',
+    'conditional_column': 'Table.AddColumn(Source, "Col", each if [X] then "A" else "B")',
+    'calculated_field': 'Table.AddColumn(Source, "Calc", each expression)',
+    'group_replace': 'Table.ReplaceValue(Source, "old", "new", Replacer.ReplaceText, {"Col"})',
+    'split': 'Table.SplitColumn(Source, "Col", Splitter.SplitTextByDelimiter(","))',
+    'merge': 'Table.CombineColumns(Source, {"Col1", "Col2"}, Combiner.CombineTextByDelimiter(" "))',
+    'clean_text': 'Table.TransformColumns(Source, {{"Col", Text.Trim}})',
+    'replace_value': 'Table.ReplaceValue(Source, "old", "new", Replacer.ReplaceText, {"Col"})',
+    'sort': 'Table.Sort(Source, {{"Col", Order.Ascending}})',
+    'unknown': '(no direct equivalent — review manually)',
+}
+
+
+def _render_assessment(graph: PrepLineageGraph) -> str:
+    """Section 8 — per-flow readiness assessment."""
+    html_parts: List[str] = []
+    headers = ['Flow', 'Grade', 'Pass', 'Warn', 'Fail', 'Details']
+    rows = []
+    for flow in sorted(graph.flows, key=lambda x: x.name):
+        a = flow.assessment
+        if not a:
+            continue
+        grade = a.get('grade', 'GREEN')
+        grade_colors = {'GREEN': 'green', 'YELLOW': 'yellow', 'RED': 'red'}
+        detail_parts = []
+        for item in a.get('items', []):
+            icon = {'pass': '✅', 'warn': '⚠️', 'fail': '❌'}.get(item['status'], '•')
+            detail_parts.append(f'{icon} {item["detail"]}')
+        rows.append([
+            esc(flow.name),
+            badge(grade, grade_colors.get(grade, 'gray')),
+            str(a.get('pass_count', 0)),
+            str(a.get('warn_count', 0)),
+            str(a.get('fail_count', 0)),
+            '<br/>'.join(detail_parts),
+        ])
+    if not rows:
+        return card(content='<p>No assessment data available.</p>')
+    return data_table(headers, rows, table_id='assessment', sortable=True)
+
+
+def _render_power_query_equivalence(graph: PrepLineageGraph) -> str:
+    """Section 9 — Tableau Prep transform to Power Query M mapping + generated M code."""
+    html_parts: List[str] = []
+
+    # Part A: Reference mapping table
+    html_parts.append('<div class="card" style="margin-bottom:16px;">')
+    html_parts.append('<h3 style="margin:0 0 8px;">Tableau Prep → Power Query M Reference</h3>')
+    ref_headers = ['Tableau Prep Step', 'Power Query M Equivalent']
+    ref_rows = [[esc(k), f'<code>{esc(v)}</code>'] for k, v in _TABLEAU_TO_PQ_MAP.items()]
+    html_parts.append(data_table(ref_headers, ref_rows, table_id='pq-reference'))
+    html_parts.append('</div>')
+
+    # Part B: Per-flow generated M queries
+    has_queries = any(flow.m_queries for flow in graph.flows)
+    if has_queries:
+        for flow in sorted(graph.flows, key=lambda x: x.name):
+            if not flow.m_queries:
+                continue
+            html_parts.append(f'<div class="card" style="margin-bottom:16px;">')
+            html_parts.append(f'<h3 style="margin:0 0 8px;">{esc(flow.name)} — '
+                              f'Generated Power Query M</h3>')
+            for tbl_name, m_code in sorted(flow.m_queries.items()):
+                html_parts.append(f'<h4 style="margin:8px 0 4px;color:#0078d4;">'
+                                  f'{esc(tbl_name)}</h4>')
+                html_parts.append(f'<pre style="background:#f3f2f1;padding:12px;'
+                                  f'border-radius:4px;overflow-x:auto;font-size:13px;'
+                                  f'line-height:1.5;border:1px solid #edebe9;">'
+                                  f'{esc(m_code)}</pre>')
+            html_parts.append('</div>')
+    else:
+        html_parts.append(card(
+            content='<p>Run with <code>--prep-lineage</code> to generate Power Query M. '
+                    'M queries are included when flow migration is active.</p>',
+            title='No M Queries Generated'))
+
+    # Part C: Per-flow operation → M mapping
+    has_ops = any(
+        any((t.details or {}).get('operations') for t in flow.transforms)
+        for flow in graph.flows
+    )
+    if has_ops:
+        html_parts.append('<div class="card" style="margin-bottom:16px;">')
+        html_parts.append('<h3 style="margin:0 0 8px;">Operation-Level Equivalence</h3>')
+        op_headers = ['Tableau Operation', 'Power Query M Pattern']
+        op_rows = []
+        seen_ops: set = set()
+        for flow in graph.flows:
+            for t in flow.transforms:
+                for op in (t.details or {}).get('operations', []):
+                    otype = op.get('type', 'unknown')
+                    if otype not in seen_ops:
+                        seen_ops.add(otype)
+                        pq = _OPERATION_TO_PQ_MAP.get(otype, '(review manually)')
+                        op_rows.append([badge(esc(otype), 'blue'),
+                                        f'<code>{esc(pq)}</code>'])
+        if op_rows:
+            html_parts.append(data_table(op_headers, op_rows, table_id='op-equiv'))
+        html_parts.append('</div>')
+
+    return '\n'.join(html_parts)
+
+
 def generate_prep_lineage_report(
     graph: PrepLineageGraph,
     recommendations: List[MergeRecommendation],
@@ -690,6 +814,16 @@ def generate_prep_lineage_report(
     # Section 7: Transform Documentation
     html += section_open('sec-transforms', 'Transform Documentation', icon='🔧')
     html += _render_transform_documentation(graph)
+    html += section_close()
+
+    # Section 8: Assessment
+    html += section_open('sec-assessment', 'Migration Readiness Assessment', icon='📊')
+    html += _render_assessment(graph)
+    html += section_close()
+
+    # Section 9: Power Query M Equivalence
+    html += section_open('sec-powerquery', 'Power Query M Equivalence', icon='⚡')
+    html += _render_power_query_equivalence(graph)
     html += section_close()
 
     html += html_close(version=version, timestamp=ts)
@@ -792,4 +926,40 @@ def print_lineage_summary(graph: PrepLineageGraph,
     if isolated:
         names = ', '.join(r.flows[0] for r in isolated)
         print(f'  Isolated (standalone): {names}')
+
+    # Assessment summary
+    has_assessment = any(f.assessment for f in graph.flows)
+    if has_assessment:
+        print()
+        print('  MIGRATION READINESS:')
+        for flow in sorted(graph.flows, key=lambda x: x.name):
+            a = flow.assessment
+            if not a:
+                continue
+            grade = a.get('grade', '?')
+            icon = {'GREEN': '🟢', 'YELLOW': '🟡', 'RED': '🔴'}.get(grade, '⚪')
+            warns = a.get('warn_count', 0)
+            fails = a.get('fail_count', 0)
+            extra = ''
+            if warns:
+                extra += f', {warns} warning(s)'
+            if fails:
+                extra += f', {fails} blocker(s)'
+            print(f'    {icon} {flow.name}: {grade}{extra}')
+            for item in a.get('items', []):
+                if item['status'] != 'pass':
+                    si = {'warn': '⚠️', 'fail': '❌'}.get(item['status'], '•')
+                    print(f'       {si} {item["detail"]}')
+
+    # Power Query M summary
+    has_mq = any(f.m_queries for f in graph.flows)
+    if has_mq:
+        print()
+        print('  POWER QUERY M OUTPUT:')
+        for flow in sorted(graph.flows, key=lambda x: x.name):
+            if not flow.m_queries:
+                continue
+            tables = ', '.join(sorted(flow.m_queries.keys()))
+            print(f'    {flow.name}: {len(flow.m_queries)} table(s) → {tables}')
+
     print('=' * w)

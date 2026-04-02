@@ -2,3 +2,4 @@ perspective 'Full Model'
 	perspectiveTable Customers
 	perspectiveTable Regional_Sales_Summary
 	perspectiveTable Calendar
+	perspectiveTable 'Min Budget'

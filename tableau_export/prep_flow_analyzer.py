@@ -108,6 +108,8 @@ class FlowProfile:
     script_count: int = 0
     calc_count: int = 0
     node_graph: Dict[str, List[str]] = field(default_factory=dict)
+    m_queries: Dict[str, str] = field(default_factory=dict)
+    assessment: Dict[str, Any] = field(default_factory=dict)
 
     @property
     def complexity_score(self) -> int:
@@ -146,6 +148,8 @@ class FlowProfile:
             'complexity_score': self.complexity_score,
             'complexity_label': self.complexity_label,
             'node_graph': self.node_graph,
+            'm_queries': self.m_queries,
+            'assessment': self.assessment,
         }
 
 
@@ -437,15 +441,93 @@ def _count_calcs(nodes: dict) -> int:
     return count
 
 
+def _assess_flow(inputs, outputs, transforms, join_count, union_count,
+                 script_count, calc_count, dag_depth, node_count) -> Dict[str, Any]:
+    """Produce a readiness assessment for one prep flow.
+
+    Returns dict with grade (GREEN/YELLOW/RED), items list, and summary.
+    """
+    items = []  # list of {category, status, detail}
+    # Datasource readiness
+    unsupported_conns = [i for i in inputs if i.connection_type in ('unknown', '')]
+    if unsupported_conns:
+        items.append({'category': 'datasource', 'status': 'warn',
+                      'detail': f'{len(unsupported_conns)} input(s) with unknown connector'})
+    else:
+        items.append({'category': 'datasource', 'status': 'pass',
+                      'detail': f'{len(inputs)} input(s) — all connectors supported'})
+
+    # Transform complexity
+    if script_count > 0:
+        items.append({'category': 'script', 'status': 'warn',
+                      'detail': f'{script_count} Script node(s) — manual review needed'})
+    else:
+        items.append({'category': 'script', 'status': 'pass',
+                      'detail': 'No Script nodes'})
+
+    # Join complexity
+    if join_count > 3:
+        items.append({'category': 'join', 'status': 'warn',
+                      'detail': f'{join_count} joins — consider simplifying'})
+    elif join_count > 0:
+        items.append({'category': 'join', 'status': 'pass',
+                      'detail': f'{join_count} join(s) → Power Query Table.NestedJoin'})
+    else:
+        items.append({'category': 'join', 'status': 'pass', 'detail': 'No joins'})
+
+    # Calcs
+    if calc_count > 0:
+        items.append({'category': 'calculation', 'status': 'pass',
+                      'detail': f'{calc_count} calculated field(s) → Table.AddColumn'})
+
+    # Aggregates
+    agg_count = sum(1 for t in transforms if t.transform_type == 'Aggregate')
+    if agg_count > 0:
+        items.append({'category': 'aggregate', 'status': 'pass',
+                      'detail': f'{agg_count} aggregate(s) → Table.Group'})
+
+    # Unions
+    if union_count > 0:
+        items.append({'category': 'union', 'status': 'pass',
+                      'detail': f'{union_count} union(s) → Table.Combine'})
+
+    # Output count
+    if len(outputs) == 0:
+        items.append({'category': 'output', 'status': 'fail',
+                      'detail': 'No outputs detected — flow may be incomplete'})
+    else:
+        items.append({'category': 'output', 'status': 'pass',
+                      'detail': f'{len(outputs)} output(s)'})
+
+    # Grade
+    fail_count = sum(1 for it in items if it['status'] == 'fail')
+    warn_count = sum(1 for it in items if it['status'] == 'warn')
+    if fail_count > 0:
+        grade = 'RED'
+    elif warn_count > 0:
+        grade = 'YELLOW'
+    else:
+        grade = 'GREEN'
+
+    return {
+        'grade': grade,
+        'items': items,
+        'pass_count': sum(1 for it in items if it['status'] == 'pass'),
+        'warn_count': warn_count,
+        'fail_count': fail_count,
+    }
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 #  PUBLIC API
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def analyze_flow(filepath: str) -> FlowProfile:
+def analyze_flow(filepath: str, include_m_queries: bool = False) -> FlowProfile:
     """Parse one TFL/TFLX and extract full metadata.
 
     Args:
         filepath: Path to .tfl or .tflx file
+        include_m_queries: If True, also run parse_prep_flow to get Power Query M
 
     Returns:
         FlowProfile with inputs, outputs, transforms, DAG stats
@@ -468,6 +550,28 @@ def analyze_flow(filepath: str) -> FlowProfile:
 
     name = os.path.splitext(os.path.basename(filepath))[0]
 
+    # Power Query M conversion
+    m_queries: Dict[str, str] = {}
+    if include_m_queries:
+        try:
+            from prep_flow_parser import parse_prep_flow
+            datasources = parse_prep_flow(filepath)
+            for ds in datasources:
+                # M query can be at table level or datasource level (m_query_override)
+                ds_mq = ds.get('m_query_override', '')
+                for tbl in ds.get('tables', []):
+                    tbl_name = tbl.get('name', '')
+                    mq = tbl.get('m_query', '') or ds_mq
+                    if tbl_name and mq:
+                        m_queries[tbl_name] = mq
+        except (ImportError, OSError, ValueError) as exc:
+            logger.warning("Could not extract M queries from %s: %s", filepath, exc)
+
+    # Assessment
+    assessment = _assess_flow(inputs, outputs, transforms,
+                              join_count, union_count, script_count,
+                              calc_count, dag_depth, len(nodes))
+
     return FlowProfile(
         name=name,
         file_path=os.path.abspath(filepath),
@@ -482,6 +586,8 @@ def analyze_flow(filepath: str) -> FlowProfile:
         script_count=script_count,
         calc_count=calc_count,
         node_graph=node_graph,
+        m_queries=m_queries,
+        assessment=assessment,
     )
 
 
