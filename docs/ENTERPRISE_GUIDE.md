@@ -101,6 +101,23 @@ For large tables, use composite mode:
 python migrate.py workbook.twbx --mode composite --composite-threshold 10 --agg-tables auto
 ```
 
+### Tableau Prep Flow Migration
+
+If your organization has standalone Prep flows (.tfl/.tflx), migrate them separately — they produce Power Query M expressions, source definitions, and cross-flow lineage (not `.pbip` projects):
+
+```bash
+# Batch export all Prep flows — produces M queries, sources & lineage
+python migrate.py --batch /prep_flows/ --output-dir /output/prep/
+
+# Cross-flow lineage analysis
+python migrate.py --prep-lineage /prep_flows/
+
+# Pair a prep flow with a workbook for merged .pbip output
+python migrate.py workbook.twbx --prep flow.tfl
+```
+
+The cross-flow lineage report identifies chain dependencies, merge candidates, and data provenance across all flows in your portfolio.
+
 ## Phase 6: Validation
 
 ```bash

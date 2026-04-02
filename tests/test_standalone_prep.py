@@ -2,7 +2,8 @@
 Tests for standalone Tableau Prep flow (.tfl/.tflx) migration support.
 
 Covers:
-- run_standalone_prep() — single file extraction
+- run_standalone_prep() — single file extraction (legacy, still used by --prep flag)
+- _migrate_single_prep_flow() — lineage + M + sources output (used in batch)
 - TFL routing in _migrate_single_workbook (batch mode)
 - TFL routing in _run_single_migration (single mode)
 - File validation accepting .tfl/.tflx extensions
@@ -16,6 +17,7 @@ import tempfile
 import unittest
 import zipfile
 from unittest.mock import patch, MagicMock
+from types import SimpleNamespace
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
@@ -26,6 +28,7 @@ import prep_flow_parser  # ensure module is loaded so we can patch it
 from migrate import (
     run_standalone_prep,
     _migrate_single_workbook,
+    _migrate_single_prep_flow,
 )
 
 
@@ -128,15 +131,17 @@ class TestRunStandalonePrep(unittest.TestCase):
 # ── TFL routing in _migrate_single_workbook ──────────────────────────────────
 
 class TestMigrateSingleWorkbookTFL(unittest.TestCase):
-    """Test that _migrate_single_workbook routes .tfl/.tflx to run_standalone_prep."""
+    """Test that _migrate_single_workbook routes .tfl/.tflx to _migrate_single_prep_flow."""
 
-    def test_tfl_routes_to_standalone_prep(self):
-        """A .tfl file should call run_standalone_prep, not run_extraction."""
+    def test_tfl_routes_to_prep_flow_pipeline(self):
+        """A .tfl file should call _migrate_single_prep_flow, not run_extraction + run_generation."""
         with tempfile.TemporaryDirectory() as td:
-            with patch('migrate.run_standalone_prep', return_value=True) as mock_prep, \
+            fake_result = {'success': True, 'report_name': 'my_flow', 'output_dir': td,
+                           'prep_flow': True, 'm_query_count': 3, 'source_count': 2, 'grade': 'GREEN',
+                           'stats': {'inputs': 2, 'outputs': 1, 'transforms': 3, 'm_queries': 3}}
+            with patch('migrate._migrate_single_prep_flow', return_value=fake_result) as mock_prep, \
                  patch('migrate.run_extraction') as mock_extract, \
-                 patch('migrate.run_generation', return_value=True), \
-                 patch('migrate.run_migration_report', return_value={'fidelity_score': 90}):
+                 patch('migrate.run_generation') as mock_gen:
                 result = _migrate_single_workbook(
                     tableau_file='my_flow.tfl',
                     basename='my_flow',
@@ -148,17 +153,21 @@ class TestMigrateSingleWorkbookTFL(unittest.TestCase):
                     wb_cal_end=None,
                     wb_culture=None,
                 )
-                mock_prep.assert_called_once_with('my_flow.tfl')
+                mock_prep.assert_called_once_with('my_flow.tfl', 'my_flow', td, 'my_flow')
                 mock_extract.assert_not_called()
+                mock_gen.assert_not_called()
                 self.assertTrue(result['success'])
+                self.assertTrue(result.get('prep_flow'))
 
-    def test_tflx_routes_to_standalone_prep(self):
-        """A .tflx file should call run_standalone_prep, not run_extraction."""
+    def test_tflx_routes_to_prep_flow_pipeline(self):
+        """A .tflx file should call _migrate_single_prep_flow, not run_extraction + run_generation."""
         with tempfile.TemporaryDirectory() as td:
-            with patch('migrate.run_standalone_prep', return_value=True) as mock_prep, \
+            fake_result = {'success': True, 'report_name': 'archive', 'output_dir': td,
+                           'prep_flow': True, 'm_query_count': 2, 'source_count': 1, 'grade': 'GREEN',
+                           'stats': {'inputs': 1, 'outputs': 1, 'transforms': 2, 'm_queries': 2}}
+            with patch('migrate._migrate_single_prep_flow', return_value=fake_result) as mock_prep, \
                  patch('migrate.run_extraction') as mock_extract, \
-                 patch('migrate.run_generation', return_value=True), \
-                 patch('migrate.run_migration_report', return_value={'fidelity_score': 85}):
+                 patch('migrate.run_generation') as mock_gen:
                 result = _migrate_single_workbook(
                     tableau_file='archive.tflx',
                     basename='archive',
@@ -170,14 +179,15 @@ class TestMigrateSingleWorkbookTFL(unittest.TestCase):
                     wb_cal_end=None,
                     wb_culture=None,
                 )
-                mock_prep.assert_called_once_with('archive.tflx')
+                mock_prep.assert_called_once_with('archive.tflx', 'archive', td, 'archive')
                 mock_extract.assert_not_called()
+                mock_gen.assert_not_called()
                 self.assertTrue(result['success'])
 
     def test_twbx_still_routes_to_extraction(self):
-        """A .twbx file should still use run_extraction, not run_standalone_prep."""
+        """A .twbx file should still use run_extraction, not _migrate_single_prep_flow."""
         with tempfile.TemporaryDirectory() as td:
-            with patch('migrate.run_standalone_prep') as mock_prep, \
+            with patch('migrate._migrate_single_prep_flow') as mock_prep, \
                  patch('migrate.run_extraction', return_value=True) as mock_extract, \
                  patch('migrate.run_generation', return_value=True), \
                  patch('migrate.run_migration_report', return_value={'fidelity_score': 90}), \
@@ -197,10 +207,12 @@ class TestMigrateSingleWorkbookTFL(unittest.TestCase):
                 mock_prep.assert_not_called()
                 self.assertTrue(result['success'])
 
-    def test_tfl_standalone_prep_failure(self):
-        """When run_standalone_prep fails for .tfl, result should indicate failure."""
+    def test_tfl_prep_flow_failure(self):
+        """When _migrate_single_prep_flow fails for .tfl, result should indicate failure."""
         with tempfile.TemporaryDirectory() as td:
-            with patch('migrate.run_standalone_prep', return_value=False):
+            fake_result = {'success': False, 'error': 'analysis', 'report_name': 'bad_flow',
+                           'output_dir': td}
+            with patch('migrate._migrate_single_prep_flow', return_value=fake_result):
                 result = _migrate_single_workbook(
                     tableau_file='bad_flow.tfl',
                     basename='bad_flow',
@@ -213,15 +225,15 @@ class TestMigrateSingleWorkbookTFL(unittest.TestCase):
                     wb_culture=None,
                 )
                 self.assertFalse(result['success'])
-                self.assertEqual(result['error'], 'extraction')
 
-    def test_tfl_skips_prep_step(self):
-        """Standalone .tfl should skip the optional --prep step even if wb_prep is set."""
+    def test_tfl_ignores_skip_extraction(self):
+        """Standalone .tfl always routes to prep flow pipeline regardless of skip_extraction."""
         with tempfile.TemporaryDirectory() as td:
-            with patch('migrate.run_standalone_prep', return_value=True) as mock_prep, \
-                 patch('migrate.run_prep_flow') as mock_prep_flow, \
-                 patch('migrate.run_generation', return_value=True), \
-                 patch('migrate.run_migration_report', return_value={'fidelity_score': 80}):
+            fake_result = {'success': True, 'report_name': 'flow', 'output_dir': td,
+                           'prep_flow': True, 'm_query_count': 1, 'source_count': 1, 'grade': 'GREEN',
+                           'stats': {'inputs': 1, 'outputs': 1, 'transforms': 1, 'm_queries': 1}}
+            with patch('migrate._migrate_single_prep_flow', return_value=fake_result) as mock_prep, \
+                 patch('migrate.run_generation') as mock_gen:
                 result = _migrate_single_workbook(
                     tableau_file='flow.tfl',
                     basename='flow',
@@ -234,8 +246,121 @@ class TestMigrateSingleWorkbookTFL(unittest.TestCase):
                     wb_culture=None,
                 )
                 mock_prep.assert_called_once()
-                mock_prep_flow.assert_not_called()
+                mock_gen.assert_not_called()
                 self.assertTrue(result['success'])
+
+
+# ── _migrate_single_prep_flow tests ──────────────────────────────────────────
+
+class TestMigrateSinglePrepFlow(unittest.TestCase):
+    """Test _migrate_single_prep_flow produces lineage + M + sources output."""
+
+    def _make_fake_profile(self, name='TestFlow', num_inputs=2, num_outputs=1,
+                           num_transforms=3, m_queries=None):
+        """Create a fake FlowProfile-like object for testing."""
+        inputs = []
+        for i in range(num_inputs):
+            inp = SimpleNamespace(
+                name=f'Input_{i}', connection_type='csv', server='', database='',
+                schema='', table_name=f'table_{i}', filename=f'data_{i}.csv',
+                column_count=5, column_names=[f'col_{j}' for j in range(5)],
+                fingerprint=f'fp_{i}',
+            )
+            inputs.append(inp)
+        outputs = [SimpleNamespace(name=f'Output_{i}') for i in range(num_outputs)]
+        transforms = [SimpleNamespace(name=f'Transform_{i}') for i in range(num_transforms)]
+        if m_queries is None:
+            m_queries = {f'Output_{i}': f'let\n  Source = Csv.Document(...)\nin\n  Source' for i in range(num_outputs)}
+        return SimpleNamespace(
+            name=name, inputs=inputs, outputs=outputs, transforms=transforms,
+            m_queries=m_queries,
+            assessment={'grade': 'GREEN', 'score': 95},
+        )
+
+    def test_produces_m_queries_and_sources(self):
+        """Successful analysis should write M query files and source JSONs."""
+        with tempfile.TemporaryDirectory() as td:
+            tfl_path = _make_tfl_file(td)
+            profile = self._make_fake_profile()
+            with patch('prep_flow_analyzer.analyze_flow', return_value=profile):
+                result = _migrate_single_prep_flow(tfl_path, 'flow', td, 'flow')
+
+            self.assertTrue(result['success'])
+            self.assertTrue(result.get('prep_flow'))
+            self.assertEqual(result['m_query_count'], 1)
+            self.assertEqual(result['source_count'], 2)
+            self.assertEqual(result['grade'], 'GREEN')
+
+            # Check output files exist
+            pq_dir = os.path.join(td, 'flow', 'PowerQuery')
+            self.assertTrue(os.path.isdir(pq_dir))
+            pq_files = os.listdir(pq_dir)
+            self.assertEqual(len(pq_files), 1)
+
+            src_dir = os.path.join(td, 'flow', 'Sources')
+            self.assertTrue(os.path.isdir(src_dir))
+            src_files = os.listdir(src_dir)
+            self.assertEqual(len(src_files), 2)
+
+            # Check assessment.json
+            assess_path = os.path.join(td, 'flow', 'assessment.json')
+            self.assertTrue(os.path.exists(assess_path))
+            with open(assess_path, encoding='utf-8') as f:
+                assess = json.load(f)
+            self.assertEqual(assess['grade'], 'GREEN')
+            self.assertEqual(assess['inputs'], 2)
+            self.assertEqual(assess['outputs'], 1)
+
+    def test_no_pbip_generated(self):
+        """Prep flow should NOT generate .pbip project files."""
+        with tempfile.TemporaryDirectory() as td:
+            tfl_path = _make_tfl_file(td)
+            profile = self._make_fake_profile()
+            with patch('prep_flow_analyzer.analyze_flow', return_value=profile):
+                result = _migrate_single_prep_flow(tfl_path, 'flow', td, 'flow')
+
+            self.assertTrue(result['success'])
+            # Verify no .pbip file was created
+            flow_dir = os.path.join(td, 'flow')
+            for root, dirs, files in os.walk(flow_dir):
+                for f in files:
+                    self.assertFalse(f.endswith('.pbip'),
+                                     f"Unexpected .pbip file: {f}")
+                    self.assertFalse(f.endswith('.pbir'),
+                                     f"Unexpected .pbir file: {f}")
+                    self.assertFalse(f.endswith('.tmdl'),
+                                     f"Unexpected .tmdl file: {f}")
+
+    def test_analysis_failure(self):
+        """Return failure dict when analyze_flow raises."""
+        with tempfile.TemporaryDirectory() as td:
+            tfl_path = _make_tfl_file(td)
+            with patch('prep_flow_analyzer.analyze_flow', side_effect=ValueError("bad flow")):
+                result = _migrate_single_prep_flow(tfl_path, 'bad_flow', td, 'bad_flow')
+
+            self.assertFalse(result['success'])
+            self.assertEqual(result['error'], 'analysis')
+
+    def test_empty_m_queries(self):
+        """Flow with no M queries should still succeed."""
+        with tempfile.TemporaryDirectory() as td:
+            tfl_path = _make_tfl_file(td)
+            profile = self._make_fake_profile(m_queries={})
+            with patch('prep_flow_analyzer.analyze_flow', return_value=profile):
+                result = _migrate_single_prep_flow(tfl_path, 'flow', td, 'flow')
+
+            self.assertTrue(result['success'])
+            self.assertEqual(result['m_query_count'], 0)
+
+    def test_profile_returned_in_result(self):
+        """The prep_profile should be included in the result for cross-flow lineage."""
+        with tempfile.TemporaryDirectory() as td:
+            tfl_path = _make_tfl_file(td)
+            profile = self._make_fake_profile()
+            with patch('prep_flow_analyzer.analyze_flow', return_value=profile):
+                result = _migrate_single_prep_flow(tfl_path, 'flow', td, 'flow')
+
+            self.assertIs(result['prep_profile'], profile)
 
 
 # ── File validation tests ────────────────────────────────────────────────────

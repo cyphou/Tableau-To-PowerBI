@@ -149,6 +149,28 @@ python migrate.py --prep-lineage examples/prep_portfolio/ flow1.tfl flow2.tfl
 python migrate.py --batch examples/prep_portfolio/ --output-dir /tmp/prep_output
 ```
 
+## Standalone Prep Flow Batch Mode
+
+When `--batch` encounters standalone `.tfl`/`.tflx` files, they are **NOT** converted to `.pbip` projects. Instead, each prep flow produces:
+
+1. **Power Query M files** (`PowerQuery/*.pq`) — one per output table
+2. **Source definitions** (`Sources/*.json`) — connection metadata + column schema per input
+3. **Assessment** (`assessment.json`) — flow grade (GREEN/YELLOW/RED), input/output/transform counts
+
+When ≥2 prep flows succeed in a batch, **cross-flow lineage analysis** runs automatically:
+- Builds a lineage graph matching flow outputs to downstream inputs
+- Computes merge recommendations (chain collapse, source dedup, consolidation)
+- Generates `prep_lineage/prep_lineage_report.html` and `prep_lineage/prep_lineage.json`
+
+**Mixed directories** (`.twb` + `.tfl`) are handled correctly — workbooks produce `.pbip` projects, prep flows produce Power Query M + sources + lineage.
+
+Key functions:
+- `_migrate_single_prep_flow()` in `migrate.py` — per-flow analysis + export (replaces `run_standalone_prep()` + `run_generation()` for standalone flows)
+- `_run_batch_prep_lineage()` in `migrate.py` — post-batch cross-flow lineage from collected profiles
+- `prep_flow_analyzer.analyze_flow()` — flow profiling (FlowProfile with inputs, outputs, transforms, M queries, assessment)
+- `prep_lineage.build_lineage_graph()` — cross-flow lineage graph builder
+- `prep_lineage_report.compute_merge_recommendations()` — merge advisor
+
 ## Extracted Objects (17 types)
 
 | Type | JSON File | Description |

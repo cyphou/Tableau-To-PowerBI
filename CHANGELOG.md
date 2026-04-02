@@ -1,5 +1,29 @@
 # Changelog
 
+## v28.2.0 — Standalone Prep Flow Pipeline & Documentation
+
+### Standalone Prep Flow Pipeline (`migrate.py`) ✅
+- **New `_migrate_single_prep_flow()`**: Standalone `.tfl`/`.tflx` files in `--batch` mode now produce **Power Query M exports**, **source definitions**, and **cross-flow lineage** instead of empty `.pbip` projects.
+- **Per-flow output**: `PowerQuery/*.pq` (M expressions), `Sources/*.json` (connection metadata + column schema), `assessment.json` (grade, inputs, outputs, transforms).
+- **New `_run_batch_prep_lineage()`**: Automatic cross-flow lineage analysis when ≥2 prep flows succeed in a batch — builds lineage graph, computes merge recommendations, generates HTML + JSON reports.
+- **Updated `_print_batch_summary()`**: Separate summary tables for workbooks (Fidelity/Tables/Visuals) and prep flows (Grade/M Queries/Sources). Mixed directories handled correctly.
+- **Updated routing**: `.tfl`/`.tflx` files now short-circuit to `_migrate_single_prep_flow()` instead of `run_standalone_prep()` → `run_generation()`.
+
+### Documentation ✅
+- **README.md**: Dedicated "Tableau Prep Flow Migration" section with Mermaid pipeline diagram, output structure, batch summary example, and lineage screenshot.
+- **ARCHITECTURE.md**: New "Standalone Prep Flow Pipeline" section with ASCII flow diagram, module table updates (`prep_flow_analyzer.py`, `prep_lineage.py`, `prep_lineage_report.py`).
+- **copilot-instructions.md**: New "Standalone Prep Flow Batch Mode" section documenting the 3-output format and key functions.
+- **FAQ.md**: New FAQ entry explaining standalone prep flow handling vs workbook-paired mode.
+- **ENTERPRISE_GUIDE.md**: New "Tableau Prep Flow Migration" subsection in Phase 5 (Batch Migration).
+- **MIGRATION_CHECKLIST.md**: New Section 12 checklist for standalone prep flow validation.
+- **Lineage diagram screenshot**: `docs/images/prep_lineage_diagram.png` added.
+
+### Stats
+- 6,988 tests passing across 141+ test files.
+- 16 standalone prep tests (5 new for `_migrate_single_prep_flow()`).
+
+---
+
 ## v28.1.1 — M Identifier Quoting & Bracket Stripping Hot-fix
 
 ### M Identifier Quoting (`tmdl_generator.py`, `calc_column_utils.py`) ✅

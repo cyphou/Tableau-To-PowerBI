@@ -132,6 +132,7 @@ For environments without Mermaid rendering:
 | `dax_converter.py` | 180+ Tableau → DAX formula conversions (LOD, table calcs, security, etc.) |
 | `m_query_builder.py` | Power Query M generator (33 connector types + 43 transformation generators) |
 | `prep_flow_parser.py` | Tableau Prep flow parser (.tfl/.tflx → Power Query M) |
+| `prep_flow_analyzer.py` | Prep flow profiler — FlowProfile (inputs, outputs, transforms, M queries, assessment), 18 operation types |
 | `server_client.py` | Tableau Server/Cloud REST API client (PAT/password auth, download, batch) |
 
 ### `powerbi_import/` — Generation Layer
@@ -150,6 +151,8 @@ For environments without Mermaid rendering:
 | `thin_report_generator.py` | Thin report generator: PBIR `byPath` wiring, field remapping for namespaced measures |
 | `api_server.py` | REST API server: stdlib `http.server`, POST /migrate, GET /status, GET /download, GET /health, GET /jobs |
 | `schema_drift.py` | Schema drift detection: compare extraction snapshots, detect added/removed/changed objects |
+| `prep_lineage.py` | Cross-flow lineage graph engine: build PrepLineageGraph from FlowProfile objects, match outputs→inputs |
+| `prep_lineage_report.py` | Lineage HTML report & merge advisor: 7-section interactive HTML, Mermaid diagram, merge recommendations |
 
 ### `powerbi_import/deploy/` — Fabric Deployment
 
@@ -203,6 +206,41 @@ Tableau XML → ET.parse → 17 extract_*() methods → 17 JSON files
                   ├── cultures/*.tmdl           → locale config
                   ├── tables/*.tmdl             → tables, columns, measures
                   └── diagramLayout.json        → empty (PBI auto-fills)
+```
+
+### Standalone Prep Flow Pipeline
+
+When `--batch` encounters `.tfl`/`.tflx` files (no associated workbook), a dedicated pipeline runs instead of the standard extraction → generation path:
+
+```
+.tfl / .tflx → prep_flow_analyzer.analyze_flow()
+                          ↓
+               FlowProfile (inputs, outputs, transforms, M queries, assessment)
+                          ↓
+              ┌───────────┼───────────────────────┐
+              ↓           ↓                       ↓
+      PowerQuery/*.pq   Sources/*.json      assessment.json
+    (M expressions)   (connection meta)    (grade, stats)
+              └───────────┼───────────────────────┘
+                          ↓  (≥2 flows)
+              prep_lineage.build_lineage_graph()
+                          ↓
+              prep_lineage_report.compute_merge_recommendations()
+                          ↓
+              ┌───────────┴───────────┐
+              ↓                       ↓
+   prep_lineage_report.html     prep_lineage.json
+  (interactive Mermaid diagram)  (machine-readable)
+```
+
+Key differences from workbook migration:
+- **No `.pbip` project** — prep flows have no worksheets/dashboards to visualize
+- **Power Query M export** — each flow output becomes a `.pq` file
+- **Source metadata** — connection details + column schema per input
+- **Cross-flow lineage** — automatic when ≥2 flows in a batch, with merge recommendations
+- **Assessment grading** — GREEN/YELLOW/RED per flow based on complexity and script usage
+
+![Prep Flow Lineage Diagram](images/prep_lineage_diagram.png)
 ```
 
 ## TMDL Generation Phases

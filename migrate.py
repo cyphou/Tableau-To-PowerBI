@@ -1154,9 +1154,133 @@ def _run_batch_config(args):
     return ExitCode.SUCCESS if failed == 0 else ExitCode.BATCH_PARTIAL_FAIL
 
 
+def _migrate_single_prep_flow(tableau_file, basename, workbook_output_dir, display_name):
+    """Migrate a standalone .tfl/.tflx — produces lineage, Power Query M, and source exports.
+
+    Instead of generating a full .pbip project (which would be empty for prep flows),
+    this runs flow analysis and exports:
+    - Power Query M files (one per output table)
+    - Source definition JSONs (connection metadata + column schema)
+    - Flow profile for cross-flow lineage (returned in result dict)
+
+    Returns:
+        dict: Result dict with success, report_name, output_dir, prep_profile, m_query_count, source_count
+    """
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'tableau_export'))
+
+    try:
+        import prep_flow_analyzer as _pfa
+    except ImportError:
+        try:
+            from tableau_export import prep_flow_analyzer as _pfa
+        except ImportError:
+            logger.error("Cannot import prep_flow_analyzer for %s", display_name)
+            return {'success': False, 'error': 'import', 'report_name': basename,
+                    'output_dir': workbook_output_dir}
+
+    print_step("1", 2, "PREP FLOW ANALYSIS")
+    print(f"  Flow: {tableau_file}")
+
+    try:
+        profile = _pfa.analyze_flow(tableau_file, include_m_queries=True)
+    except (ValueError, OSError, KeyError) as exc:
+        logger.warning("Failed to analyze %s: %s", display_name, exc)
+        print(f"  ⚠ Analysis failed: {exc}")
+        return {'success': False, 'error': 'analysis', 'report_name': basename,
+                'output_dir': workbook_output_dir}
+
+    grade = profile.assessment.get('grade', '?')
+    print(f"  → {len(profile.inputs)} inputs, {len(profile.outputs)} outputs, "
+          f"{len(profile.transforms)} transforms, {len(profile.m_queries)} M queries [{grade}]")
+
+    # Output directory for this flow
+    flow_out = os.path.join(workbook_output_dir, basename)
+    os.makedirs(flow_out, exist_ok=True)
+
+    print_step("2", 2, "EXPORT POWER QUERY M & SOURCES")
+
+    # Export Power Query M files
+    pq_dir = os.path.join(flow_out, 'PowerQuery')
+    pq_count = 0
+    if profile.m_queries:
+        os.makedirs(pq_dir, exist_ok=True)
+        for tbl_name, m_code in profile.m_queries.items():
+            safe_name = tbl_name.replace('/', '_').replace('\\', '_')
+            pq_path = os.path.join(pq_dir, f'{safe_name}.pq')
+            with open(pq_path, 'w', encoding='utf-8') as f:
+                f.write(m_code)
+            pq_count += 1
+    if pq_count:
+        print(f"  Power Query M: {pq_count} file(s) in {pq_dir}")
+
+    # Export source definitions
+    src_dir = os.path.join(flow_out, 'Sources')
+    src_count = 0
+    if profile.inputs:
+        os.makedirs(src_dir, exist_ok=True)
+        for inp in profile.inputs:
+            safe_name = inp.name.replace('/', '_').replace('\\', '_')
+            src_path = os.path.join(src_dir, f'{safe_name}.json')
+            src_data = {
+                'name': inp.name,
+                'connection_type': inp.connection_type,
+                'server': inp.server,
+                'database': inp.database,
+                'schema': inp.schema,
+                'table_name': inp.table_name,
+                'filename': inp.filename,
+                'column_count': inp.column_count,
+                'columns': inp.column_names,
+                'fingerprint': inp.fingerprint,
+                'flow': profile.name,
+            }
+            with open(src_path, 'w', encoding='utf-8') as f:
+                json.dump(src_data, f, indent=2, ensure_ascii=False)
+            src_count += 1
+    if src_count:
+        print(f"  Sources: {src_count} file(s) in {src_dir}")
+
+    # Export flow assessment summary
+    assessment_path = os.path.join(flow_out, 'assessment.json')
+    with open(assessment_path, 'w', encoding='utf-8') as f:
+        json.dump({
+            'flow_name': profile.name,
+            'grade': grade,
+            'inputs': len(profile.inputs),
+            'outputs': len(profile.outputs),
+            'transforms': len(profile.transforms),
+            'm_queries': pq_count,
+            'sources': src_count,
+            'assessment': profile.assessment,
+        }, f, indent=2, ensure_ascii=False)
+
+    print(f"\n  [OK] Prep flow export completed → {flow_out}")
+
+    return {
+        'success': True,
+        'report_name': basename,
+        'output_dir': workbook_output_dir,
+        'prep_profile': profile,
+        'prep_flow': True,
+        'm_query_count': pq_count,
+        'source_count': src_count,
+        'grade': grade,
+        'stats': {
+            'inputs': len(profile.inputs),
+            'outputs': len(profile.outputs),
+            'transforms': len(profile.transforms),
+            'm_queries': pq_count,
+        },
+    }
+
+
 def _migrate_single_workbook(tableau_file, basename, workbook_output_dir, display_name,
                              skip_extraction, wb_prep, wb_cal_start, wb_cal_end, wb_culture):
     """Migrate a single workbook — used by both sequential and parallel batch modes.
+
+    For .tfl/.tflx files, delegates to _migrate_single_prep_flow() which produces
+    lineage analysis, Power Query M exports, and source definitions instead of a
+    full .pbip project.
 
     Returns:
         dict: Result dict with success, stats, fidelity, report_name, output_dir, metadata_path
@@ -1164,15 +1288,16 @@ def _migrate_single_workbook(tableau_file, basename, workbook_output_dir, displa
     global _stats
     _stats = MigrationStats()
 
+    # ── Standalone Prep flow: lineage + M + sources (no .pbip) ──
+    _is_prep_standalone = os.path.splitext(tableau_file)[1].lower() in ('.tfl', '.tflx')
+    if _is_prep_standalone:
+        return _migrate_single_prep_flow(tableau_file, basename, workbook_output_dir, display_name)
+
     file_results = {}
 
     # Step 1: Extract
-    _is_prep_standalone = os.path.splitext(tableau_file)[1].lower() in ('.tfl', '.tflx')
     if not skip_extraction:
-        if _is_prep_standalone:
-            file_results['extraction'] = run_standalone_prep(tableau_file)
-        else:
-            file_results['extraction'] = run_extraction(tableau_file)
+        file_results['extraction'] = run_extraction(tableau_file)
         if not file_results['extraction']:
             logger.warning("Extraction failed for %s, skipping", display_name)
             return {'success': False, 'error': 'extraction', 'report_name': basename,
@@ -1181,8 +1306,8 @@ def _migrate_single_workbook(tableau_file, basename, workbook_output_dir, displa
     else:
         file_results['extraction'] = True
 
-    # Step 1b: Prep flow (optional — skip if already standalone .tfl)
-    if wb_prep and not _is_prep_standalone:
+    # Step 1b: Prep flow (optional)
+    if wb_prep:
         file_results['prep'] = run_prep_flow(wb_prep)
 
     # Step 2: Generate
@@ -1223,6 +1348,63 @@ def _migrate_single_workbook(tableau_file, basename, workbook_output_dir, displa
     }
 
 
+def _run_batch_prep_lineage(batch_results, migrated_root):
+    """Run cross-flow lineage analysis on all successful prep flow results.
+
+    Collects prep_profile objects from batch results, builds a lineage graph,
+    computes merge recommendations, and outputs HTML + JSON reports.
+    """
+    profiles = [
+        r['prep_profile']
+        for r in batch_results.values()
+        if r.get('prep_flow') and r.get('success') and r.get('prep_profile')
+    ]
+    if len(profiles) < 2:
+        return  # Need at least 2 flows for cross-flow lineage
+
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'tableau_export'))
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'powerbi_import'))
+
+    try:
+        from powerbi_import.prep_lineage import build_lineage_graph
+        from powerbi_import.prep_lineage_report import (
+            compute_merge_recommendations,
+            generate_prep_lineage_report,
+            save_lineage_json,
+            print_lineage_summary,
+        )
+    except ImportError:
+        try:
+            from prep_lineage import build_lineage_graph
+            from prep_lineage_report import (
+                compute_merge_recommendations,
+                generate_prep_lineage_report,
+                save_lineage_json,
+                print_lineage_summary,
+            )
+        except ImportError:
+            logger.warning("Cannot import prep_lineage modules for cross-flow analysis")
+            return
+
+    print_header("CROSS-FLOW LINEAGE ANALYSIS")
+    print(f"  Flows: {len(profiles)}")
+
+    graph = build_lineage_graph(profiles)
+    recommendations = compute_merge_recommendations(graph)
+    print_lineage_summary(graph, recommendations)
+
+    lineage_dir = os.path.join(migrated_root, 'prep_lineage')
+    os.makedirs(lineage_dir, exist_ok=True)
+
+    html_path = os.path.join(lineage_dir, 'prep_lineage_report.html')
+    generate_prep_lineage_report(graph, recommendations, html_path)
+    print(f"  HTML report: {html_path}")
+
+    json_path = os.path.join(lineage_dir, 'prep_lineage.json')
+    save_lineage_json(graph, recommendations, json_path)
+    print(f"  JSON report: {json_path}")
+
+
 def _print_batch_summary(batch_results, batch_duration, migrated_root):
     """Print formatted batch summary and consolidated HTML dashboard.
 
@@ -1232,9 +1414,13 @@ def _print_batch_summary(batch_results, batch_duration, migrated_root):
     succeeded = sum(1 for r in batch_results.values() if r['success'])
     failed = len(batch_results) - succeeded
 
-    # Single consolidated HTML dashboard at root output level
+    # Separate workbook results from prep flow results
+    wb_results = {k: v for k, v in batch_results.items() if not v.get('prep_flow')}
+    prep_results = {k: v for k, v in batch_results.items() if v.get('prep_flow')}
+
+    # Single consolidated HTML dashboard at root output level (workbooks only)
     wb_paths = {}
-    for display_name, res in batch_results.items():
+    for display_name, res in wb_results.items():
         if res.get('success'):
             name = res.get('report_name', display_name)
             out = res.get('output_dir', migrated_root)
@@ -1249,35 +1435,59 @@ def _print_batch_summary(batch_results, batch_duration, migrated_root):
         run_batch_html_dashboard(migrated_root, wb_paths)
 
     print_header("BATCH MIGRATION SUMMARY")
-    print(f"  Total workbooks: {len(batch_results)}")
+    print(f"  Total items:     {len(batch_results)}")
+    if wb_results:
+        print(f"  Workbooks:       {len(wb_results)}")
+    if prep_results:
+        print(f"  Prep flows:      {len(prep_results)}")
     print(f"  Succeeded:       {succeeded}")
     print(f"  Failed:          {failed}")
     print(f"  Duration:        {batch_duration}")
     print()
 
-    # Formatted summary table
-    name_width = max((len(n) for n in batch_results), default=20)
-    name_width = max(name_width, 20)
-    header = f"  {'Workbook':<{name_width}}  {'Status':>8}  {'Fidelity':>9}  {'Tables':>7}  {'Visuals':>8}"
-    print(header)
-    print(f"  {'-' * name_width}  {'--------':>8}  {'---------':>9}  {'-------':>7}  {'--------':>8}")
-    for name, result in batch_results.items():
-        status = "OK" if result['success'] else "FAIL"
-        fidelity = result.get('fidelity')
-        fid_str = f"{fidelity}%" if fidelity is not None else "—"
-        stats = result.get('stats', {})
-        tables = stats.get('tmdl_tables', '—')
-        visuals = stats.get('visuals_generated', '—')
-        print(f"  {name:<{name_width}}  {status:>8}  {fid_str:>9}  {str(tables):>7}  {str(visuals):>8}")
-    print()
+    # Workbook summary table
+    if wb_results:
+        name_width = max((len(n) for n in wb_results), default=20)
+        name_width = max(name_width, 20)
+        header = f"  {'Workbook':<{name_width}}  {'Status':>8}  {'Fidelity':>9}  {'Tables':>7}  {'Visuals':>8}"
+        print(header)
+        print(f"  {'-' * name_width}  {'--------':>8}  {'---------':>9}  {'-------':>7}  {'--------':>8}")
+        for name, result in wb_results.items():
+            status = "OK" if result['success'] else "FAIL"
+            fidelity = result.get('fidelity')
+            fid_str = f"{fidelity}%" if fidelity is not None else "—"
+            stats = result.get('stats', {})
+            tables = stats.get('tmdl_tables', '—')
+            visuals = stats.get('visuals_generated', '—')
+            print(f"  {name:<{name_width}}  {status:>8}  {fid_str:>9}  {str(tables):>7}  {str(visuals):>8}")
+        print()
 
-    # Aggregate stats
-    fidelities = [r['fidelity'] for r in batch_results.values() if r.get('fidelity') is not None]
+    # Prep flow summary table
+    if prep_results:
+        name_width = max((len(n) for n in prep_results), default=20)
+        name_width = max(name_width, 20)
+        header = f"  {'Prep Flow':<{name_width}}  {'Status':>8}  {'Grade':>7}  {'M Queries':>10}  {'Sources':>8}"
+        print(header)
+        print(f"  {'-' * name_width}  {'--------':>8}  {'-------':>7}  {'----------':>10}  {'--------':>8}")
+        for name, result in prep_results.items():
+            status = "OK" if result['success'] else "FAIL"
+            grade = result.get('grade', '—')
+            stats = result.get('stats', {})
+            m_queries = stats.get('m_queries', result.get('m_query_count', '—'))
+            sources = result.get('source_count', stats.get('inputs', '—'))
+            print(f"  {name:<{name_width}}  {status:>8}  {grade:>7}  {str(m_queries):>10}  {str(sources):>8}")
+        print()
+
+    # Aggregate stats for workbooks
+    fidelities = [r['fidelity'] for r in wb_results.values() if r.get('fidelity') is not None]
     if fidelities:
         avg_fid = round(sum(fidelities) / len(fidelities), 1)
         min_fid = min(fidelities)
         max_fid = max(fidelities)
         print(f"  Fidelity: avg {avg_fid}% | min {min_fid}% | max {max_fid}%")
+
+    # Run cross-flow lineage if multiple prep flows succeeded
+    _run_batch_prep_lineage(batch_results, migrated_root)
 
     return succeeded, failed
 

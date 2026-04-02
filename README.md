@@ -8,7 +8,7 @@
   <img src="https://img.shields.io/badge/tests-6%2C818%20passed-brightgreen?style=flat-square" alt="Tests"/>
   <img src="https://img.shields.io/badge/python-3.12%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python"/>
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License"/>
-  <img src="https://img.shields.io/badge/version-28.1.1-blue?style=flat-square" alt="Version"/>
+  <img src="https://img.shields.io/badge/version-28.2.0-blue?style=flat-square" alt="Version"/>
   <img src="https://img.shields.io/badge/deps-zero-orange?style=flat-square" alt="Zero Dependencies"/>
 </p>
 
@@ -99,7 +99,7 @@ python migrate.py workbook.twbx --optimize-dax --time-intelligence auto
 # 🔗 Prep Flow Lineage — analyze cross-flow dependencies & merge candidates
 python migrate.py --prep-lineage examples/prep_portfolio/ flow1.tfl flow2.tfl
 
-# 📦 Bulk Prep Flow Migration — migrate all .tfl files in a folder
+# 📦 Bulk Prep Flow — export Power Query M, sources & lineage (no .pbip)
 python migrate.py --batch examples/prep_portfolio/ --output-dir /tmp/prep_output
 ```
 
@@ -322,7 +322,121 @@ python migrate.py --deploy-bundle WORKSPACE_ID --output-dir artifacts/shared/Sha
 The `--global-assess` flag generates an interactive HTML report with pairwise merge scores, merge clusters, and ready-to-run commands:
 
 ![Global Assessment — Cross-Workbook Merge Analysis](docs/images/share_assessment.png)
+### 📋 Tableau Prep Flow Migration
 
+Standalone `.tfl`/`.tflx` Prep flows are migrated **without generating a `.pbip` project** — instead, the tool produces **Power Query M expressions**, **source definitions**, **cross-flow lineage analysis**, and **merge recommendations**.
+
+```mermaid
+flowchart LR
+    subgraph "Prep Flows"
+        F1["📋 flow_1.tfl"]
+        F2["📋 flow_2.tfl"]
+        F3["📋 flow_N.tfl"]
+    end
+
+    subgraph "Per-Flow Analysis"
+        AN["🔍 ANALYZE\nFlow profile\n+ assessment"]
+    end
+
+    subgraph "Per-Flow Export"
+        PQ["⚡ Power Query M\n.pq files"]
+        SR["📁 Sources\nConnection metadata"]
+        AS["📊 Assessment\nGrade + stats"]
+    end
+
+    subgraph "Cross-Flow Lineage"
+        LG["🔗 Lineage Graph\nInput→Output matching"]
+        MR["🔀 Merge\nRecommendations"]
+        HR["📄 HTML Report\nInteractive diagram"]
+    end
+
+    F1 --> AN
+    F2 --> AN
+    F3 --> AN
+    AN --> PQ
+    AN --> SR
+    AN --> AS
+    AN --> LG
+    LG --> MR
+    LG --> HR
+
+    style F1 fill:#E97627,color:#fff,stroke:#E97627
+    style F2 fill:#E97627,color:#fff,stroke:#E97627
+    style F3 fill:#E97627,color:#fff,stroke:#E97627
+    style AN fill:#4B8BBE,color:#fff,stroke:#4B8BBE
+    style PQ fill:#22c55e,color:#fff
+    style SR fill:#22c55e,color:#fff
+    style AS fill:#22c55e,color:#fff
+    style LG fill:#0078D4,color:#fff,stroke:#0078D4
+    style MR fill:#0078D4,color:#fff,stroke:#0078D4
+    style HR fill:#0078D4,color:#fff,stroke:#0078D4
+```
+
+```bash
+# Batch — analyze & export all .tfl files in a folder
+python migrate.py --batch examples/prep_portfolio/ --output-dir /tmp/prep_output
+
+# Cross-flow lineage analysis (dedicated mode)
+python migrate.py --prep-lineage examples/prep_portfolio/ flow1.tfl flow2.tfl
+
+# Pair a prep flow with a workbook (merge M expressions into .pbip)
+python migrate.py workbook.twbx --prep flow.tflx
+```
+
+The lineage report shows cross-flow dependencies, merge candidates, and data provenance across your entire Prep portfolio:
+
+![Prep Flow Lineage Diagram — Cross-flow dependencies and output mapping](docs/images/prep_lineage_diagram.png)
+
+<details>
+<summary><b>📂 Prep flow batch output</b> (click to expand)</summary>
+
+When running `--batch` on a folder of `.tfl` files, each flow produces:
+
+```
+prep_output/
+├── 01_Raw_Orders_Clean/
+│   ├── PowerQuery/
+│   │   └── Orders_Clean.pq              ← Power Query M expression
+│   ├── Sources/
+│   │   └── Orders_2024.csv.json          ← Source connection metadata
+│   └── assessment.json                   ← Grade, inputs, outputs, stats
+├── 04_Customer_Enrichment/
+│   ├── PowerQuery/
+│   │   ├── Customer_360.pq
+│   │   └── Demographics.pq
+│   ├── Sources/
+│   │   ├── CRM Customers.json
+│   │   └── Demographics.csv.json
+│   └── assessment.json
+├── 14_Healthcare_Patient_Flow/
+│   ├── PowerQuery/
+│   │   ├── Department_KPI_Summary.pq
+│   │   ├── Patient_Flow_Detail.pq
+│   │   └── Physician_Performance.pq
+│   ├── Sources/
+│   │   ├── admissions.json
+│   │   ├── ICD10_Codes.csv.json
+│   │   ├── Procedures.json
+│   │   └── Staff_Schedule.xlsx.json
+│   └── assessment.json
+└── prep_lineage/                         ← Cross-flow lineage (auto-generated)
+    ├── prep_lineage_report.html          ← Interactive HTML with Mermaid diagram
+    └── prep_lineage.json                 ← Machine-readable lineage graph
+```
+
+**Batch summary for prep flows:**
+
+```
+  Prep Flow                      Status    Grade   M Queries   Sources
+  01_Raw_Orders_Clean                OK    GREEN           1         1
+  04_Customer_Enrichment             OK    GREEN           2         2
+  09_HR_Attrition_Analysis           OK    GREEN           4         3
+  14_Healthcare_Patient_Flow         OK    GREEN           5         4
+```
+
+**Mixed directories** (`.twb` + `.tfl`) produce separate summary tables — workbooks get `.pbip` projects with fidelity scores, prep flows get Power Query M + sources + lineage.
+
+</details>
 ### �📂 Generated Output
 
 ```
@@ -514,6 +628,7 @@ TableauToPowerBI/
 │   ├── dax_converter.py                       #   180+ DAX formula conversions
 │   ├── m_query_builder.py                     #   42 connectors + 43 transforms
 │   ├── prep_flow_parser.py                    #   Tableau Prep flow parser
+│   ├── prep_flow_analyzer.py                  #   Prep flow profiler & assessment
 │   ├── hyper_reader.py                        #   .hyper file data loader
 │   ├── pulse_extractor.py                     #   Tableau Pulse metric extractor
 │   └── server_client.py                       #   Tableau Server REST API client
@@ -534,6 +649,8 @@ TableauToPowerBI/
 │   ├── shared_model.py                        #   Multi-workbook merge engine
 │   ├── merge_assessment.py                    #   Merge assessment reporter
 │   ├── thin_report_generator.py               #   Thin report (byPath) generator
+│   ├── prep_lineage.py                        #   Cross-flow lineage graph engine
+│   ├── prep_lineage_report.py                 #   Lineage HTML report & merge advisor
 │   ├── plugins.py                             #   Plugin system
 │   ├── fabric_project_generator.py            #   Fabric-native output (v25)
 │   ├── api_server.py                          #   REST API server (v28)
@@ -556,7 +673,8 @@ TableauToPowerBI/
 
 | Flag | Description |
 |------|-------------|
-| `--prep FILE` | Tableau Prep flow (.tfl/.tflx) to merge |
+| `--prep FILE` | Tableau Prep flow (.tfl/.tflx) to merge with a workbook |
+| `--prep-lineage PATHS` | Cross-flow lineage analysis for .tfl/.tflx files |
 | `--output-dir DIR` | Custom output directory (default: `artifacts/powerbi_projects/`) |
 | `--output-format FORMAT` | Output format: `pbip` (default), `tmdl`, or `pbir` |
 | `--verbose` / `-v` | Enable verbose (DEBUG) console logging |
@@ -761,6 +879,7 @@ The report shows for each migrated workbook:
 | 🔢 [180+ DAX Functions](docs/TABLEAU_TO_DAX_REFERENCE.md) | Complete formula reference |
 | ⚡ [108 Power Query M](docs/TABLEAU_TO_POWERQUERY_REFERENCE.md) | Property reference |
 | 🔄 [165 Prep → M](docs/TABLEAU_PREP_TO_POWERQUERY_REFERENCE.md) | Prep transformation reference |
+| 📋 Prep Flow Lineage | Cross-flow lineage, Power Query M export, merge recommendations (`--batch` / `--prep-lineage`) |
 | 🏗️ [Architecture](docs/ARCHITECTURE.md) | System design overview |
 | 📊 [.pbip Guide](docs/POWERBI_PROJECT_GUIDE.md) | Output format explained |
 | 🚀 [Deployment Guide](docs/DEPLOYMENT_GUIDE.md) | PBI Service & Fabric deploy |

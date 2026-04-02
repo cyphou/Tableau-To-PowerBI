@@ -97,6 +97,18 @@ If you used `--shared-model` to merge multiple workbooks:
 - [ ] If measures were namespaced, update visuals to use the correct measure
 - [ ] Test cross-report consistency — same filter should produce same results in all thin reports
 
+## 12. Tableau Prep Flows (Standalone)
+
+If you used `--batch` on `.tfl`/`.tflx` files:
+
+- [ ] Review each flow's `assessment.json` for grade (GREEN/YELLOW/RED)
+- [ ] Import `.pq` Power Query M files into Power BI Desktop or Dataflow Gen2
+- [ ] Verify source connection metadata in `Sources/*.json` matches your environment
+- [ ] Review the cross-flow lineage report (`prep_lineage/prep_lineage_report.html`)
+- [ ] Follow merge recommendations (chain collapse, source dedup) where applicable
+- [ ] For YELLOW/RED flows: review script nodes and manual transformation steps
+- [ ] If pairing with a workbook: use `python migrate.py workbook.twbx --prep flow.tfl`
+
 ## Quick Reference
 
 | Tableau Feature | Where to Check in PBI |

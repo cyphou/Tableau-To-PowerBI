@@ -63,6 +63,12 @@ python migrate.py --batch examples/tableau_samples/ --output-dir /tmp/batch_outp
 # With Tableau Prep flow
 python migrate.py your_workbook.twbx --prep flow.tfl
 
+# Standalone Prep flow batch — export Power Query M, sources & lineage
+python migrate.py --batch examples/prep_portfolio/ --output-dir /tmp/prep_output
+
+# Prep flow lineage analysis
+python migrate.py --prep-lineage examples/prep_portfolio/
+
 # Log to file
 python migrate.py your_workbook.twbx --log-file migration.log
 ```
@@ -77,6 +83,20 @@ python powerbi_import/import_to_powerbi.py
 ### Where is the output?
 
 In `artifacts/powerbi_projects/[ReportName]/[ReportName].pbip`. Double-click to open in Power BI Desktop.
+
+### How are standalone Tableau Prep flows (.tfl/.tflx) handled?
+
+Standalone prep flows are **not** converted to `.pbip` projects (which would be empty with no visuals). Instead, `--batch` on prep flow directories produces:
+
+- **Power Query M** — `.pq` files for each flow output table
+- **Source definitions** — JSON files with connection metadata and column schema
+- **Assessment** — per-flow grade (GREEN/YELLOW/RED) and stats
+- **Cross-flow lineage** — automatic HTML + JSON report when ≥2 flows succeed, showing dependencies and merge recommendations
+
+To pair a prep flow with an existing workbook (merge M transforms into a `.pbip`), use:
+```bash
+python migrate.py workbook.twbx --prep flow.tfl
+```
 
 ### Why do some formulas not work?
 
