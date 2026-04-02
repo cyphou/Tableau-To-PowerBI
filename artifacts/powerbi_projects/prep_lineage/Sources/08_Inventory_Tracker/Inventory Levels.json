@@ -1,0 +1,21 @@
+{
+  "name": "Inventory Levels",
+  "connection_type": "snowflake",
+  "server": "acme.snowflakecomputing.com",
+  "database": "WAREHOUSE",
+  "schema": "SUPPLY_CHAIN",
+  "table_name": "INVENTORY_LEVELS",
+  "filename": "",
+  "column_count": 7,
+  "columns": [
+    "SKU",
+    "WAREHOUSE_ID",
+    "QTY_ON_HAND",
+    "QTY_RESERVED",
+    "REORDER_POINT",
+    "LAST_RECEIPT_DATE",
+    "UNIT_COST"
+  ],
+  "fingerprint": "957ca75eea0a8f15",
+  "flow": "08_Inventory_Tracker"
+}

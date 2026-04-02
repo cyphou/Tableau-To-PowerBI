@@ -1,0 +1,23 @@
+{
+  "name": "returns_new",
+  "connection_type": "excel-direct",
+  "server": "",
+  "database": "",
+  "schema": "",
+  "table_name": "returns_new",
+  "filename": "C:\\Program Files\\Tableau\\Tableau Prep 2018.3\\help\\Samples\\en_US\\Superstore Files\\return reasons_new.xlsx",
+  "column_count": 9,
+  "columns": [
+    "Row ID",
+    "Order Date",
+    "Order ID",
+    "Product ID",
+    "Sub-Category",
+    "Manufacturer",
+    "Product Name",
+    "Return Reason",
+    "Notes"
+  ],
+  "fingerprint": "eef9fa923301e032",
+  "flow": "tableau_prep_book"
+}

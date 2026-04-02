@@ -2660,6 +2660,36 @@ def run_prep_lineage_mode(args):
     save_lineage_json(graph, recommendations, json_path)
     print(f'  JSON report: {json_path}')
 
+    # Export source definitions (connection metadata + column schema)
+    src_dir = os.path.join(out, 'Sources')
+    src_count = 0
+    for profile in profiles:
+        if not profile.inputs:
+            continue
+        flow_src_dir = os.path.join(src_dir, profile.name)
+        os.makedirs(flow_src_dir, exist_ok=True)
+        for inp in profile.inputs:
+            safe_name = inp.name.replace('/', '_').replace('\\', '_')
+            src_path = os.path.join(flow_src_dir, f'{safe_name}.json')
+            src_data = {
+                'name': inp.name,
+                'connection_type': inp.connection_type,
+                'server': inp.server,
+                'database': inp.database,
+                'schema': inp.schema,
+                'table_name': inp.table_name,
+                'filename': inp.filename,
+                'column_count': inp.column_count,
+                'columns': inp.column_names,
+                'fingerprint': inp.fingerprint,
+                'flow': profile.name,
+            }
+            with open(src_path, 'w', encoding='utf-8') as f:
+                json.dump(src_data, f, indent=2, ensure_ascii=False)
+            src_count += 1
+    if src_count:
+        print(f'  Sources: {src_count} file(s) in {src_dir}')
+
     # Export Power Query M files
     pq_dir = os.path.join(out, 'PowerQuery')
     pq_count = 0

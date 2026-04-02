@@ -1,0 +1,21 @@
+{
+  "name": "Orders_Clean",
+  "connection_type": "sqlserver",
+  "server": "tableau-prod.corp.local",
+  "database": "PrepOutputs",
+  "schema": "",
+  "table_name": "Orders_Clean",
+  "filename": "",
+  "column_count": 7,
+  "columns": [
+    "OrderID",
+    "OrderDate",
+    "CustomerID",
+    "ProductID",
+    "Region",
+    "Sales",
+    "Revenue"
+  ],
+  "fingerprint": "6fdff1968fff4045",
+  "flow": "06_Returns_Analytics"
+}

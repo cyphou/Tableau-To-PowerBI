@@ -1,0 +1,21 @@
+{
+  "name": "Customer_360",
+  "connection_type": "sqlserver",
+  "server": "tableau-prod.corp.local",
+  "database": "PrepOutputs",
+  "schema": "",
+  "table_name": "Customer_360",
+  "filename": "",
+  "column_count": 7,
+  "columns": [
+    "CustomerID",
+    "CustomerName",
+    "segment",
+    "loyalty_tier",
+    "city",
+    "state",
+    "country"
+  ],
+  "fingerprint": "43e9dc63aae4b3c9",
+  "flow": "05_Sales_Analytics"
+}

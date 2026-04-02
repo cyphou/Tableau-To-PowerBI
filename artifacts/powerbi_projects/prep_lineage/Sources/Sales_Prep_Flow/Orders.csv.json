@@ -1,0 +1,26 @@
+{
+  "name": "Orders.csv",
+  "connection_type": "textscan",
+  "server": "",
+  "database": "",
+  "schema": "",
+  "table_name": "Orders.csv",
+  "filename": "Orders.csv",
+  "column_count": 12,
+  "columns": [
+    "Order_ID",
+    "Order_Date",
+    "Customer_ID",
+    "Region",
+    "Category",
+    "Product_Name",
+    "Sales",
+    "Quantity",
+    "Discount",
+    "Profit",
+    "Status",
+    "TempCol"
+  ],
+  "fingerprint": "431d4f3082d0f727",
+  "flow": "Sales_Prep_Flow"
+}

@@ -1,0 +1,23 @@
+{
+  "name": "CRM Customers",
+  "connection_type": "postgres",
+  "server": "crm-db.corp.local",
+  "database": "crm_production",
+  "schema": "public",
+  "table_name": "customers",
+  "filename": "",
+  "column_count": 9,
+  "columns": [
+    "customer_id",
+    "first_name",
+    "last_name",
+    "email",
+    "phone",
+    "created_at",
+    "segment",
+    "loyalty_tier",
+    "lifetime_value"
+  ],
+  "fingerprint": "8d96b90c648a5fa7",
+  "flow": "04_Customer_Enrichment"
+}

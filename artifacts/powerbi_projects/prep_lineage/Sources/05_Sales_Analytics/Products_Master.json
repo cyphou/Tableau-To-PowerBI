@@ -1,0 +1,21 @@
+{
+  "name": "Products_Master",
+  "connection_type": "sqlserver",
+  "server": "tableau-prod.corp.local",
+  "database": "PrepOutputs",
+  "schema": "",
+  "table_name": "Products_Master",
+  "filename": "",
+  "column_count": 7,
+  "columns": [
+    "ProductID",
+    "ProductName",
+    "Category",
+    "SubCategory",
+    "UnitCost",
+    "UnitPrice",
+    "Margin"
+  ],
+  "fingerprint": "45e38c456767e63e",
+  "flow": "05_Sales_Analytics"
+}

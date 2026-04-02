@@ -1,0 +1,20 @@
+{
+  "name": "Customers.csv",
+  "connection_type": "textscan",
+  "server": "",
+  "database": "",
+  "schema": "",
+  "table_name": "Customers.csv",
+  "filename": "Customers.csv",
+  "column_count": 6,
+  "columns": [
+    "Customer_ID",
+    "Customer_Name",
+    "Segment",
+    "City",
+    "State",
+    "Country"
+  ],
+  "fingerprint": "a1871dfd30514730",
+  "flow": "Sales_Prep_Flow"
+}

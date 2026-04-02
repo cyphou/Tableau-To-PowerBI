@@ -1,0 +1,22 @@
+{
+  "name": "Products_Master.csv",
+  "connection_type": "textscan",
+  "server": "",
+  "database": "",
+  "schema": "",
+  "table_name": "Products_Master.csv",
+  "filename": "Products_Master.csv",
+  "column_count": 8,
+  "columns": [
+    "Product_ID",
+    "Product_Name",
+    "Category",
+    "Sub_Category",
+    "Unit_Cost",
+    "Unit_Price",
+    "Supplier",
+    "Weight_kg"
+  ],
+  "fingerprint": "c3507562d4d3f179",
+  "flow": "02_Raw_Products_Clean"
+}

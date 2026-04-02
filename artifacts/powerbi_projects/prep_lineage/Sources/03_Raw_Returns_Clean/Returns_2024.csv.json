@@ -1,0 +1,22 @@
+{
+  "name": "Returns_2024.csv",
+  "connection_type": "textscan",
+  "server": "",
+  "database": "",
+  "schema": "",
+  "table_name": "Returns_2024.csv",
+  "filename": "Returns_2024.csv",
+  "column_count": 8,
+  "columns": [
+    "Return_ID",
+    "Order_ID",
+    "Return_Date",
+    "Reason_Code",
+    "Reason_Text",
+    "Refund_Amount",
+    "Restocking_Fee",
+    "Return_Status"
+  ],
+  "fingerprint": "76ed540e7e1829ed",
+  "flow": "03_Raw_Returns_Clean"
+}

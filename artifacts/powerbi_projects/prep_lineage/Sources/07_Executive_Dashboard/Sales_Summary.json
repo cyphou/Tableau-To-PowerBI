@@ -1,0 +1,20 @@
+{
+  "name": "Sales_Summary",
+  "connection_type": "sqlserver",
+  "server": "tableau-prod.corp.local",
+  "database": "PrepOutputs",
+  "schema": "",
+  "table_name": "Sales_Summary",
+  "filename": "",
+  "column_count": 6,
+  "columns": [
+    "Region",
+    "Category",
+    "segment",
+    "TotalRevenue",
+    "TotalProfit",
+    "OrderCount"
+  ],
+  "fingerprint": "76f221890a8213d6",
+  "flow": "07_Executive_Dashboard"
+}
