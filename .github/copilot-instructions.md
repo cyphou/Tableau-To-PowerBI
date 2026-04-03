@@ -108,7 +108,7 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
 - Python 3.12+ (standard library only — no external dependencies for core migration)
 - Optional dependencies: `azure-identity` (Fabric auth), `requests` (HTTP client with retry), `pydantic-settings` (typed config), `tableauhyperapi` (Hyper file data extraction)
 - Modules: xml.etree, json, os, uuid, re, zipfile, argparse, datetime, copy, logging, glob
-- Power BI Desktop (December 2024+ / CY24SU06)
+- Power BI Desktop (March 2025+ / CY25SU03)
 - Output format: PBIR v4.0 + TMDL (default), or Fabric-native (Lakehouse + Dataflow Gen2 + Notebook + DirectLake Semantic Model + Pipeline)
 
 ## Main Command
@@ -353,8 +353,8 @@ TWB-embedded transforms (column renames from captions) are auto-detected and inj
 
 ## Output Formats — PBIR Schemas
 
-Generated artifacts target **PBIR v4.0** compatible with **Power BI Desktop December 2024 (CY24SU06)** and later.
-Base theme: `CY24SU06`, report version at import: `5.55`.
+Generated artifacts target **PBIR v4.0** compatible with **Power BI Desktop March 2025 (CY25SU03)** and later.
+Base theme: `CY25SU03`, report version at import: `5.58`.
 All schema URLs and theme identifiers are defined as constants in `pbip_generator.py`.
 
 | Artifact | Schema URL | Version |

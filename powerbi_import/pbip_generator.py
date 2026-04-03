@@ -46,8 +46,8 @@ SCHEMA_PLATFORM = "https://developer.microsoft.com/json-schemas/fabric/gitIntegr
 SCHEMA_PBIP = "https://developer.microsoft.com/json-schemas/fabric/pbip/pbipProperties/1.0.0/schema.json"
 
 # Theme baseline — updated when PBI Desktop ships new monthly theme
-PBI_BASE_THEME_NAME = "CY24SU06"
-PBI_REPORT_VERSION_AT_IMPORT = "5.55"
+PBI_BASE_THEME_NAME = "CY25SU03"
+PBI_REPORT_VERSION_AT_IMPORT = "5.58"
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

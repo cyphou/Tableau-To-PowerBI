@@ -35,7 +35,7 @@ python migrate.py your_workbook.twbx
 ```
 
 > [!TIP]
-> The output is a `.pbip` project (PBIR v4.0) — just double-click to open in **Power BI Desktop** (December 2024 / CY24SU06 or later).
+> The output is a `.pbip` project (PBIR v4.0) — just double-click to open in **Power BI Desktop** (March 2025 / CY25SU03 or later).
 
 <details>
 <summary><b>📦 Installation</b></summary>

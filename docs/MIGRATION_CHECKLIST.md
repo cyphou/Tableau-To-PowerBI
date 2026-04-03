@@ -6,7 +6,7 @@ Use this checklist after running the migration tool to validate the generated Po
 
 ## 1. Open & Load
 
-- [ ] Open the `.pbip` file in Power BI Desktop (December 2025+)
+- [ ] Open the `.pbip` file in Power BI Desktop (March 2025+)
 - [ ] Confirm the project loads without errors
 - [ ] Check the notification bar for any warnings
 

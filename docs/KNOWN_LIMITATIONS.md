@@ -128,7 +128,7 @@ This document lists known limitations and approximations in the Tableau to Power
 For most limitations, the recommended workflow is:
 
 1. Run the migration to generate the .pbip project
-2. Open in Power BI Desktop (December 2025+)
+2. Open in Power BI Desktop (March 2025+)
 3. Review the migration metadata JSON for conversion notes
 4. Manually adjust unsupported features (spatial, custom shapes, advanced formatting)
 5. Re-authenticate data source connections

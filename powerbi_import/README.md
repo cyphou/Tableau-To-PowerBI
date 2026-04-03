@@ -69,8 +69,8 @@ Fabric deployment is in the `deploy/` subpackage:
 
 ## Output Format
 
-**PBIR v4.0** — compatible with **Power BI Desktop December 2024 (CY24SU06)** and later.
-Base theme: `CY24SU06`, report version at import: `5.55`.
+**PBIR v4.0** — compatible with **Power BI Desktop March 2025 (CY25SU03)** and later.
+Base theme: `CY25SU03`, report version at import: `5.58`.
 
 | Artifact | Schema | Version |
 |----------|--------|--------|

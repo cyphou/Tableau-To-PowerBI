@@ -698,7 +698,7 @@ class TestThinReportGenerator(unittest.TestCase):
 ## 9. Dependencies & Prerequisites
 
 - **No new external dependencies** — consistent with project philosophy (stdlib only)
-- **Power BI Desktop December 2025+** — required for PBIR v4.0 thin report support
+- **Power BI Desktop March 2025+** — required for PBIR v4.0 thin report support
 - **Python 3.12+** — minimum version (PEP 701 f-string nesting requires 3.12)
 
 ---

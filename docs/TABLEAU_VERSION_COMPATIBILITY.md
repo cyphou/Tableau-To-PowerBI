@@ -105,7 +105,7 @@ This document describes which Tableau Desktop versions and features are supporte
 
 ## Power BI Desktop Requirements
 
-- **Minimum version**: December 2025 (for PBIR v4.0 format support)
+- **Minimum version**: March 2025 (for PBIR v4.0 format support)
 - **Recommended**: Latest Power BI Desktop release
 - **PBIR format**: Must be enabled (default in recent versions)
 - **TMDL format**: Must be supported (default in Power BI Desktop)
