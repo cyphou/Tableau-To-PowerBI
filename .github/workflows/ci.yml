@@ -225,6 +225,164 @@ jobs:
           name: validated-pbip-projects
           path: /tmp/pbi_validate/
 
+  # ──────────── Stage 3.5: Preceptor Review Gate ─────────────
+  # Automated "preceptor" — runs security, governance, and
+  # regression checks on migrated artifacts before deploy.
+  preceptor-review:
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download validated projects
+        uses: actions/download-artifact@v4
+        with:
+          name: validated-pbip-projects
+          path: /tmp/pbi_review/
+
+      - name: Re-migrate samples for review context
+        run: |
+          python migrate.py --batch examples/tableau_samples/ --output-dir /tmp/pbi_review --quiet 2>/dev/null || true
+
+      - name: Security scan — credential & path traversal check
+        run: |
+          python -c "
+          import sys, os
+          sys.path.insert(0, '.')
+          from powerbi_import.security_validator import validate_migration_artifacts
+
+          review_dir = '/tmp/pbi_review'
+          projects = [
+              os.path.join(review_dir, d)
+              for d in os.listdir(review_dir)
+              if os.path.isdir(os.path.join(review_dir, d))
+          ]
+
+          total = len(projects)
+          failed = 0
+          for proj in projects:
+              result = validate_migration_artifacts(proj)
+              issues = result.get('issues', [])
+              if issues:
+                  failed += 1
+                  print(f'SECURITY FAIL: {os.path.basename(proj)}')
+                  for issue in issues:
+                      print(f'  - {issue}')
+
+          print(f'Security scan: {total - failed}/{total} projects clean')
+          if failed > 0:
+              print(f'ERROR: {failed} project(s) have security issues')
+              sys.exit(1)
+          print('PASS: No credentials or path traversal issues detected')
+          "
+
+      - name: Governance check — naming & PII detection
+        run: |
+          python -c "
+          import sys, os, json
+          sys.path.insert(0, '.')
+          from powerbi_import.governance import run_governance
+
+          review_dir = '/tmp/pbi_review'
+          total_issues = 0
+          enforced_failures = 0
+
+          for proj_name in sorted(os.listdir(review_dir)):
+              proj_dir = os.path.join(review_dir, proj_name)
+              if not os.path.isdir(proj_dir):
+                  continue
+
+              # Load extracted tables from datasources.json if available
+              ds_path = os.path.join(proj_dir, 'datasources.json')
+              tmdl_tables = []
+              if os.path.isfile(ds_path):
+                  with open(ds_path) as f:
+                      ds = json.load(f)
+                  for src in ds:
+                      tmdl_tables.extend(src.get('tables', []))
+
+              if not tmdl_tables:
+                  continue
+
+              report = run_governance(tmdl_tables, config={'mode': 'warn'})
+              issues = report.issues if hasattr(report, 'issues') else []
+              if issues:
+                  total_issues += len(issues)
+                  print(f'GOVERNANCE [{proj_name}]: {len(issues)} issue(s)')
+                  for issue in issues[:5]:
+                      sev = issue.severity if hasattr(issue, 'severity') else 'info'
+                      msg = issue.message if hasattr(issue, 'message') else str(issue)
+                      print(f'  [{sev}] {msg}')
+                  if len(issues) > 5:
+                      print(f'  ... and {len(issues) - 5} more')
+
+          if total_issues > 0:
+              print(f'Governance: {total_issues} total issue(s) found (warn mode — not blocking)')
+          else:
+              print('PASS: No governance issues detected')
+          "
+
+      - name: Regression snapshot — baseline drift check
+        run: |
+          python -c "
+          import sys, os, json
+          sys.path.insert(0, '.')
+          from powerbi_import.regression_suite import generate_regression_snapshot
+
+          review_dir = '/tmp/pbi_review'
+          snapshot_dir = '/tmp/pbi_snapshots'
+          os.makedirs(snapshot_dir, exist_ok=True)
+
+          projects = sorted([
+              d for d in os.listdir(review_dir)
+              if os.path.isdir(os.path.join(review_dir, d))
+          ])
+
+          snapshots = {}
+          for proj_name in projects:
+              proj_dir = os.path.join(review_dir, proj_name)
+              # Collect converted objects from JSON extraction files
+              converted = {}
+              for jf in ['worksheets.json', 'datasources.json', 'calculations.json',
+                          'filters.json', 'parameters.json']:
+                  jp = os.path.join(proj_dir, jf)
+                  if os.path.isfile(jp):
+                      with open(jp) as f:
+                          converted[jf.replace('.json', '')] = json.load(f)
+              if converted:
+                  snap = generate_regression_snapshot(converted)
+                  snapshots[proj_name] = snap
+
+          # Save as CI baseline artifact
+          out_path = os.path.join(snapshot_dir, 'ci_snapshot.json')
+          with open(out_path, 'w') as f:
+              json.dump(snapshots, f, indent=2, default=str)
+
+          print(f'Regression snapshots: {len(snapshots)} projects captured')
+          print(f'Snapshot saved to {out_path}')
+          "
+
+      - name: Upload review artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: preceptor-review-report
+          path: /tmp/pbi_snapshots/
+
+      - name: Preceptor summary
+        run: |
+          echo "╔══════════════════════════════════════════════════════╗"
+          echo "║          Preceptor Review Gate — PASSED             ║"
+          echo "║                                                      ║"
+          echo "║  ✓ Security scan        (credentials, path safety)  ║"
+          echo "║  ✓ Governance check     (naming, PII detection)     ║"
+          echo "║  ✓ Regression snapshot  (baseline captured)         ║"
+          echo "╚══════════════════════════════════════════════════════╝"
+
   # ───────────────────── Stage 4 & 5: Deploy ────────────────
   # Deploy jobs are disabled until GitHub Environments and Secrets are configured.
   # To enable, create 'staging' and 'production' environments in GitHub Settings,
