@@ -2231,6 +2231,92 @@ def _convert_agg_if_to_aggx(dax_text, table_name):
                 replacement = f"{aggx}('{iter_table}', {inner})"
                 dax_text = dax_text[:start] + replacement + dax_text[pos:]
             m = pattern.search(dax_text, start + len(aggx))
+
+    # DISTINCTCOUNT has no AGGX variant — convert to CALCULATE+FILTER.
+    dax_text = _convert_distinctcount_if(dax_text, table_name)
+
+    return dax_text
+
+
+def _split_if_args(if_content):
+    """Split a balanced IF argument string into (condition, value, else).
+
+    Returns ``(condition, value_col, else_expr)`` or ``None`` on failure.
+    The *else_expr* may be ``None`` if no third argument exists.
+    """
+    depth = 0
+    args = []
+    start = 0
+    for i, ch in enumerate(if_content):
+        if ch == '(':
+            depth += 1
+        elif ch == ')':
+            depth -= 1
+        elif ch == ',' and depth == 0:
+            args.append(if_content[start:i].strip())
+            start = i + 1
+    args.append(if_content[start:].strip())
+    if len(args) < 2:
+        return None
+    return (args[0], args[1], args[2] if len(args) > 2 else None)
+
+
+def _convert_distinctcount_if(dax_text, table_name):
+    """Convert DISTINCTCOUNT(IF(cond, [col], BLANK())) to CALCULATE pattern.
+
+    DISTINCTCOUNT only accepts a single column reference, so
+    ``DISTINCTCOUNT(IF(cond, [col], BLANK()))`` must become
+    ``CALCULATE(DISTINCTCOUNT([col]), FILTER('table', cond))``.
+    """
+    pattern = re.compile(
+        r'\bDISTINCTCOUNT\s*\(\s*IF\s*\(', re.IGNORECASE
+    )
+    m = pattern.search(dax_text)
+    while m:
+        # Find outer DISTINCTCOUNT( balanced paren
+        outer_start = m.start()
+        paren_pos = dax_text.index('(', outer_start)
+        depth = 1
+        pos = paren_pos + 1
+        while pos < len(dax_text) and depth > 0:
+            if dax_text[pos] == '(':
+                depth += 1
+            elif dax_text[pos] == ')':
+                depth -= 1
+            pos += 1
+        if depth != 0:
+            break
+        # inner = "IF(cond, col, BLANK())"
+        inner = dax_text[paren_pos + 1:pos - 1].strip()
+        # Extract IF arguments: strip outer IF(...)
+        if_match = re.match(r'IF\s*\(', inner, re.IGNORECASE)
+        if not if_match:
+            break
+        if_start = if_match.end()
+        # Find balanced close of IF(
+        if_depth = 1
+        if_pos = if_start
+        while if_pos < len(inner) and if_depth > 0:
+            if inner[if_pos] == '(':
+                if_depth += 1
+            elif inner[if_pos] == ')':
+                if_depth -= 1
+            if_pos += 1
+        if if_depth != 0:
+            break
+        if_content = inner[if_start:if_pos - 1]
+        parsed = _split_if_args(if_content)
+        if parsed is None:
+            break
+        condition, value_col, _ = parsed
+        iter_table = _infer_iteration_table(
+            if_content, table_name)
+        replacement = (
+            f"CALCULATE(DISTINCTCOUNT({value_col}), "
+            f"FILTER('{iter_table}', {condition}))"
+        )
+        dax_text = dax_text[:outer_start] + replacement + dax_text[pos:]
+        m = pattern.search(dax_text, outer_start + len(replacement))
     return dax_text
 
 

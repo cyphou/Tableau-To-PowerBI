@@ -1864,6 +1864,14 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
         if not formula:
             continue
 
+        # Skip pure string-literal formulas (e.g. Tableau KPI descriptions
+        # like "Count Distinct of IF...").  These are text metadata, not
+        # computable DAX expressions, and embedded double-quotes cause
+        # TMDL parsing errors.
+        _stripped = formula.strip()
+        if _stripped.startswith('"') and _stripped.endswith('"') and len(_stripped) > 2:
+            continue
+
         # Determine if it's a simple literal (parameter) -> measure
         is_literal = formula and '[' not in formula
 
@@ -3095,6 +3103,13 @@ def _create_parameter_tables(model, parameters, main_table_name):
             continue
 
         if domain_type == 'any' or not allowable_values:
+            # Skip pure string-literal values (e.g. Tableau KPI text
+            # descriptions like "Count Distinct of IF...").  These are
+            # metadata, not computable DAX, and embedded quotes break TMDL.
+            _raw_val = param.get('value', '').strip()
+            if (_raw_val.startswith('"') and _raw_val.endswith('"')
+                    and len(_raw_val) > 2):
+                continue
             for table in model["model"]["tables"]:
                 if table.get("name") == main_table_name:
                     if "measures" not in table:

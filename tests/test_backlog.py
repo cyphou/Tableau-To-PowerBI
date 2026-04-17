@@ -648,6 +648,80 @@ class TestValidateProjectRelationshipWarnings(unittest.TestCase):
         self.assertTrue(any('GhostCol' in w for w in result.get('warnings', [])))
 
 
+class TestDistinctcountIfConversion(unittest.TestCase):
+    """DISTINCTCOUNT(IF(...)) must use CALCULATE+FILTER, not AGGX."""
+
+    def test_simple_condition(self):
+        from tableau_export.dax_converter import convert_tableau_formula_to_dax
+        result = convert_tableau_formula_to_dax(
+            'COUNTD(IF [Won Flag]="Y" THEN [Opportunity Id] END)',
+            table_name='Opportunities',
+        )
+        self.assertNotIn('DISTINCTCOUNT(IF', result)
+        self.assertIn('CALCULATE(DISTINCTCOUNT(', result)
+        self.assertIn("FILTER('Opportunities'", result)
+
+    def test_not_condition(self):
+        from tableau_export.dax_converter import convert_tableau_formula_to_dax
+        result = convert_tableau_formula_to_dax(
+            'COUNTD(IF NOT [Is Open Opportunity?] THEN [Opportunity Id] END)',
+            table_name='Facts',
+        )
+        self.assertNotIn('DISTINCTCOUNT(IF', result)
+        self.assertIn('DISTINCTCOUNT(', result)
+        self.assertIn("FILTER('Facts'", result)
+
+    def test_complex_condition(self):
+        from tableau_export.dax_converter import convert_tableau_formula_to_dax
+        result = convert_tableau_formula_to_dax(
+            'COUNTD(IF STARTSWITH([Category], "Closed") AND [Won]="Y" THEN [Id] END)',
+            table_name='Data',
+        )
+        self.assertNotIn('DISTINCTCOUNT(IF', result)
+        self.assertIn('DISTINCTCOUNT(', result)
+        self.assertIn("FILTER('Data'", result)
+
+    def test_plain_distinctcount_unchanged(self):
+        """DISTINCTCOUNT([Column]) without IF should remain unchanged."""
+        from tableau_export.dax_converter import convert_tableau_formula_to_dax
+        result = convert_tableau_formula_to_dax(
+            'COUNTD([Opportunity Id])',
+            table_name='Data',
+        )
+        self.assertIn('DISTINCTCOUNT(', result)
+        self.assertNotIn('FILTER', result)
+        self.assertNotIn('CALCULATE', result)
+
+
+class TestStringLiteralMeasureSkip(unittest.TestCase):
+    """Formulas that are pure quoted strings should be skipped as measures."""
+
+    def test_string_formula_skipped(self):
+        from powerbi_import.tmdl_generator import _build_table
+        table = {
+            'name': 'T',
+            'columns': [{'name': 'Col1', 'datatype': 'string',
+                          'sourceColumn': 'Col1', 'role': 'dimension'}],
+        }
+        calcs = [
+            {'name': 'KPI_Calc', 'caption': 'KPI_Calc',
+             'formula': '"Count Distinct of IF [Flag]=""Y"" THEN [Id] END"',
+             'role': 'measure', 'datatype': 'string'},
+            {'name': 'RealMeasure', 'caption': 'Real Measure',
+             'formula': 'SUM([Col1])',
+             'role': 'measure', 'datatype': 'real'},
+        ]
+        ctx = {
+            'calc_map': {}, 'param_map': {}, 'column_table_map': {},
+            'measure_names': set(), 'param_values': {},
+            'col_metadata_map': {}, 'compute_using_map': {},
+        }
+        result = _build_table(table, {}, calcs, {}, ctx)
+        measure_names = [m.get('name') for m in result.get('measures', [])]
+        self.assertNotIn('KPI_Calc', measure_names)
+        self.assertIn('Real Measure', measure_names)
+
+
 class TestPublicCustomVisualsInReportJson(unittest.TestCase):
     """Verify that publicCustomVisuals is injected into report.json when custom visuals are used."""
 
@@ -739,6 +813,30 @@ class TestMutationConfig(unittest.TestCase):
         self.assertIn('[mutmut]', content)
         self.assertIn('dax_converter.py', content)
         self.assertIn('tmdl_generator.py', content)
+
+
+class TestStringLiteralParameterSkip(unittest.TestCase):
+    """KPI-style parameters with string-literal values should be skipped
+    by _create_parameter_tables (domain_type='any' path)."""
+
+    def test_kpi_string_param_skipped(self):
+        from powerbi_import.tmdl_generator import _create_parameter_tables
+        model = {'model': {'tables': [
+            {'name': 'Main', 'columns': [], 'measures': []}
+        ]}}
+        params = [
+            {'caption': 'KPI_Calc', 'datatype': 'string',
+             'value': '"Count Distinct of [Id]"',
+             'domain_type': 'any', 'allowable_values': []},
+            {'caption': 'Real Param', 'datatype': 'real',
+             'value': '42', 'domain_type': 'any', 'allowable_values': []},
+        ]
+        _create_parameter_tables(model, params, 'Main')
+        measure_names = [m['name'] for m in model['model']['tables'][0].get('measures', [])]
+        self.assertNotIn('KPI_Calc', measure_names,
+                         "String-literal KPI parameter should be skipped")
+        self.assertIn('Real Param', measure_names,
+                      "Real numeric parameter should be kept")
 
 
 if __name__ == '__main__':
