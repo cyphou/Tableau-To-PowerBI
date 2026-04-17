@@ -105,8 +105,53 @@ def extract_datasource(datasource_elem, twbx_path=None):
         'columns': extract_column_metadata(datasource_elem),
         'relationships': extract_relationships(datasource_elem)
     }
+
+    # Ensure join columns referenced by relationships exist in their tables.
+    # Connectors like Salesforce use internal primary keys (e.g. Id) for joins
+    # that Tableau doesn't expose as visible columns.
+    _ensure_relationship_columns(datasource)
     
     return datasource
+
+
+def _ensure_relationship_columns(datasource):
+    """Add missing join columns to tables so relationships can be validated."""
+    tables = datasource.get('tables', [])
+    rels = datasource.get('relationships', [])
+    if not tables or not rels:
+        return
+
+    table_map = {}
+    for t in tables:
+        tname = t.get('name', '')
+        col_names = {c.get('name', '') for c in t.get('columns', [])}
+        table_map[tname] = (t, col_names)
+
+    for rel in rels:
+        for side in ('left', 'right'):
+            info = rel.get(side, {})
+            tname = info.get('table', '')
+            col = info.get('column', '')
+            if not tname or not col or tname not in table_map:
+                continue
+            table_obj, col_names = table_map[tname]
+            if col in col_names:
+                continue
+            # Check with table suffix (Salesforce pattern: 'Id' → 'Id (TableName)')
+            suffixed = f"{col} ({tname})"
+            if suffixed in col_names:
+                # Update relationship to use the actual suffixed column name
+                info['column'] = suffixed
+                continue
+            # Column truly missing — add it as a hidden key column
+            table_obj.setdefault('columns', []).append({
+                'name': col,
+                'datatype': 'string',
+                'role': 'dimension',
+                'type': 'nominal',
+                'hidden': True,
+            })
+            table_map[tname] = (table_obj, col_names | {col})
 
 
 def enrich_datasource_from_hyper(datasource, hyper_tables):

@@ -423,6 +423,231 @@ class TestAPIDocGenerator(unittest.TestCase):
             cleanup_dir(tmp)
 
 
+class TestValidateDaxFormulaLineComments(unittest.TestCase):
+    """Tests for validate_dax_formula // line-comment detection."""
+
+    def test_comment_at_start(self):
+        """DAX with // comment at the start is detected."""
+        issues = ArtifactValidator.validate_dax_formula('// this is a comment')
+        self.assertTrue(any('line comment' in i for i in issues))
+
+    def test_comment_after_expression(self):
+        """DAX with // comment after an expression is detected."""
+        issues = ArtifactValidator.validate_dax_formula('SUM(Sales) // total')
+        self.assertTrue(any('line comment' in i for i in issues))
+
+    def test_url_protocol_not_flagged(self):
+        """URL with :// should NOT be flagged as a comment."""
+        issues = ArtifactValidator.validate_dax_formula(
+            'IF(1, "https://example.com", 0)')
+        comment_issues = [i for i in issues if 'line comment' in i]
+        self.assertEqual(comment_issues, [])
+
+    def test_double_slash_inside_string_literal(self):
+        """// inside a string literal should NOT be flagged."""
+        issues = ArtifactValidator.validate_dax_formula(
+            '"http://example.com" & [Col]')
+        comment_issues = [i for i in issues if 'line comment' in i]
+        self.assertEqual(comment_issues, [])
+
+    def test_clean_dax_no_issues(self):
+        """Clean DAX without comments produces no line-comment issues."""
+        issues = ArtifactValidator.validate_dax_formula(
+            'CALCULATE(SUM(Sales[Amount]), ALL(Sales))')
+        comment_issues = [i for i in issues if 'line comment' in i]
+        self.assertEqual(comment_issues, [])
+
+    def test_context_label_in_message(self):
+        """Context label appears in the issue message."""
+        issues = ArtifactValidator.validate_dax_formula(
+            '1 + 2 // bad', context='MyMeasure')
+        self.assertTrue(any('MyMeasure' in i for i in issues))
+
+
+class TestValidateRelationshipColumns(unittest.TestCase):
+    """Tests for validate_relationship_columns classmethod."""
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+    def _create_sm(self, relationships_content, tables, model_refs=None):
+        """Helper to build a minimal SemanticModel directory.
+
+        Args:
+            relationships_content: text for relationships.tmdl
+            tables: dict table_name -> list of (col_name, data_type)
+            model_refs: optional text for model.tmdl (auto-generated if None)
+        """
+        sm_dir = os.path.join(self.tmpdir, 'Test.SemanticModel')
+        def_dir = os.path.join(sm_dir, 'definition')
+        tables_dir = os.path.join(def_dir, 'tables')
+        os.makedirs(tables_dir, exist_ok=True)
+
+        # relationships.tmdl
+        with open(os.path.join(def_dir, 'relationships.tmdl'), 'w',
+                  encoding='utf-8') as f:
+            f.write(relationships_content)
+
+        # table TMDL files
+        for tname, cols in tables.items():
+            lines = [f'table {tname}']
+            for cname, dtype in cols:
+                lines.append(f'\tcolumn {cname}')
+                lines.append(f'\t\tdataType: {dtype}')
+            with open(os.path.join(tables_dir, f'{tname}.tmdl'), 'w',
+                      encoding='utf-8') as f:
+                f.write('\n'.join(lines) + '\n')
+
+        # model.tmdl
+        if model_refs is None:
+            model_refs = 'model Model\n'
+        with open(os.path.join(def_dir, 'model.tmdl'), 'w',
+                  encoding='utf-8') as f:
+            f.write(model_refs)
+
+        return sm_dir
+
+    def test_valid_relationship_no_issues(self):
+        """Valid relationships with existing columns produce no issues."""
+        rel = (
+            'relationship abc-123\n'
+            '\tfromColumn: Orders.ProductID\n'
+            '\ttoColumn: Products.ProductID\n'
+            '\tfromCardinality: many\n'
+            '\ttoCardinality: one\n'
+        )
+        tables = {
+            'Orders': [('ProductID', 'string'), ('Amount', 'double')],
+            'Products': [('ProductID', 'string'), ('Name', 'string')],
+        }
+        sm_dir = self._create_sm(rel, tables)
+        issues = ArtifactValidator.validate_relationship_columns(sm_dir)
+        self.assertEqual(issues, [])
+
+    def test_missing_column_detected(self):
+        """Relationship referencing a non-existent column is flagged."""
+        rel = (
+            'relationship rel-001\n'
+            '\tfromColumn: Orders.MissingCol\n'
+            '\ttoColumn: Products.ProductID\n'
+            '\tfromCardinality: many\n'
+            '\ttoCardinality: one\n'
+        )
+        tables = {
+            'Orders': [('ProductID', 'string'), ('Amount', 'double')],
+            'Products': [('ProductID', 'string'), ('Name', 'string')],
+        }
+        sm_dir = self._create_sm(rel, tables)
+        issues = ArtifactValidator.validate_relationship_columns(sm_dir)
+        self.assertTrue(len(issues) > 0)
+        self.assertTrue(any('MissingCol' in i for i in issues))
+
+    def test_related_on_many_to_many_detected(self):
+        """RELATED() referencing a manyToMany table is warned about."""
+        rel = (
+            'relationship rel-m2m\n'
+            '\tfromColumn: Orders.ProductID\n'
+            '\ttoColumn: Products.ProductID\n'
+            '\tfromCardinality: many\n'
+            '\ttoCardinality: many\n'
+        )
+        tables = {
+            'Orders': [('ProductID', 'string'), ('Amount', 'double')],
+            'Products': [('ProductID', 'string'), ('Name', 'string')],
+        }
+        sm_dir = self._create_sm(rel, tables)
+
+        # Inject a RELATED() call referencing the manyToMany table
+        orders_tmdl = os.path.join(
+            sm_dir, 'definition', 'tables', 'Orders.tmdl')
+        with open(orders_tmdl, 'a', encoding='utf-8') as f:
+            f.write("\tmeasure TotalName = RELATED('Products'[Name])\n")
+
+        issues = ArtifactValidator.validate_relationship_columns(sm_dir)
+        self.assertTrue(any('RELATED' in i and 'Products' in i for i in issues))
+        self.assertTrue(any('LOOKUPVALUE' in i for i in issues))
+
+    def test_no_relationships_file_returns_empty(self):
+        """Missing relationships.tmdl returns no issues (graceful)."""
+        sm_dir = os.path.join(self.tmpdir, 'Empty.SemanticModel')
+        def_dir = os.path.join(sm_dir, 'definition')
+        os.makedirs(def_dir, exist_ok=True)
+        with open(os.path.join(def_dir, 'model.tmdl'), 'w',
+                  encoding='utf-8') as f:
+            f.write('model Model\n')
+        issues = ArtifactValidator.validate_relationship_columns(sm_dir)
+        self.assertEqual(issues, [])
+
+
+class TestValidateProjectRelationshipWarnings(unittest.TestCase):
+    """Tests that validate_project surfaces relationship column warnings."""
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+    def test_validate_project_missing_rel_column_warning(self):
+        """validate_project includes relationship column warnings."""
+        proj_dir = os.path.join(self.tmpdir, 'MyReport')
+        sm_dir = os.path.join(proj_dir, 'MyReport.SemanticModel')
+        def_dir = os.path.join(sm_dir, 'definition')
+        tables_dir = os.path.join(def_dir, 'tables')
+        report_dir = os.path.join(proj_dir, 'MyReport.Report', 'definition')
+        os.makedirs(tables_dir, exist_ok=True)
+        os.makedirs(report_dir, exist_ok=True)
+
+        # .pbip file
+        with open(os.path.join(proj_dir, 'MyReport.pbip'), 'w',
+                  encoding='utf-8') as f:
+            json.dump({'version': '1.0'}, f)
+
+        # report.json
+        with open(os.path.join(report_dir, 'report.json'), 'w',
+                  encoding='utf-8') as f:
+            json.dump({'$schema': ArtifactValidator.VALID_REPORT_SCHEMAS[0]}, f)
+
+        # definition.pbir
+        with open(os.path.join(
+                proj_dir, 'MyReport.Report', 'definition.pbir'), 'w',
+                encoding='utf-8') as f:
+            json.dump({'version': '2.0'}, f)
+
+        # model.tmdl
+        with open(os.path.join(def_dir, 'model.tmdl'), 'w',
+                  encoding='utf-8') as f:
+            f.write('model Model\n\tref relationship rel-bad\n')
+
+        # relationships.tmdl with a bad column reference
+        with open(os.path.join(def_dir, 'relationships.tmdl'), 'w',
+                  encoding='utf-8') as f:
+            f.write(
+                'relationship rel-bad\n'
+                '\tfromColumn: Orders.GhostCol\n'
+                '\ttoColumn: Products.ProductID\n'
+                '\tfromCardinality: many\n'
+                '\ttoCardinality: one\n'
+            )
+
+        # table TMDL files
+        for tname, cols in [('Orders', [('OrderID', 'int64')]),
+                            ('Products', [('ProductID', 'string')])]:
+            lines = [f'table {tname}']
+            for c, d in cols:
+                lines.append(f'\tcolumn {c}')
+                lines.append(f'\t\tdataType: {d}')
+            with open(os.path.join(tables_dir, f'{tname}.tmdl'), 'w',
+                      encoding='utf-8') as f:
+                f.write('\n'.join(lines) + '\n')
+
+        result = ArtifactValidator.validate_project(proj_dir)
+        self.assertTrue(any('GhostCol' in w for w in result.get('warnings', [])))
+
+
 class TestMutationConfig(unittest.TestCase):
     """Tests for mutation testing configuration."""
 

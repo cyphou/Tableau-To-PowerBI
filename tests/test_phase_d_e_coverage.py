@@ -314,8 +314,8 @@ class TestReplaceRelatedWithLookupvalue(unittest.TestCase):
 
     def test_replaces_related_for_m2m_table(self):
         expr = "RELATED('Products'[Category])"
-        m2m = {"Products": ("ProductID", "Orders", "ProductID")}
-        result = self._replace(expr, m2m)
+        m2m = {("Orders", "Products"): ("ProductID", "ProductID")}
+        result = self._replace(expr, m2m, "Orders")
         self.assertIn("LOOKUPVALUE", result)
         self.assertIn("Products", result)
         self.assertIn("Category", result)
@@ -323,19 +323,19 @@ class TestReplaceRelatedWithLookupvalue(unittest.TestCase):
 
     def test_keeps_related_for_non_m2m_table(self):
         expr = "RELATED('Customers'[Name])"
-        m2m = {"Products": ("ProductID", "Orders", "ProductID")}
-        result = self._replace(expr, m2m)
+        m2m = {("Orders", "Products"): ("ProductID", "ProductID")}
+        result = self._replace(expr, m2m, "Orders")
         self.assertIn("RELATED", result)
 
     def test_multiple_related_calls(self):
         expr = "RELATED('Products'[Price]) + RELATED('Products'[Qty])"
-        m2m = {"Products": ("ProductID", "Orders", "ProductID")}
-        result = self._replace(expr, m2m)
+        m2m = {("Orders", "Products"): ("ProductID", "ProductID")}
+        result = self._replace(expr, m2m, "Orders")
         self.assertEqual(result.count("LOOKUPVALUE"), 2)
         self.assertNotIn("RELATED", result)
 
     def test_empty_expression(self):
-        result = self._replace("", {})
+        result = self._replace("", {}, "")
         self.assertEqual(result, "")
 
 

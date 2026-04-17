@@ -1335,30 +1335,79 @@ def _create_and_validate_relationships(model, datasources):
         tname = table.get("name", "")
         table_columns[tname] = {col.get("name", "") for col in table.get("columns", [])}
 
+    def _resolve_rel_column(col_name, table_name, available_cols):
+        """Try to resolve a relationship column name to an existing column.
+
+        Handles Tableau renaming patterns:
+        - Suffixed: 'Id' → 'Id (TableName)'
+        - CamelCase split: 'CreatedById' → 'Created By ID' or 'Created By Id'
+        - Case-insensitive match
+        """
+        if col_name in available_cols:
+            return col_name
+
+        # 1. Try with table suffix: col → 'col (table_name)'
+        suffixed = f"{col_name} ({table_name})"
+        if suffixed in available_cols:
+            return suffixed
+
+        # 2. CamelCase → space-separated: 'CreatedById' → 'Created By Id'
+        camel_split = re.sub(r'(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])',
+                             ' ', col_name)
+        if camel_split != col_name:
+            if camel_split in available_cols:
+                return camel_split
+            # Also try with uppercase last word: 'Created By Id' → 'Created By ID'
+            parts = camel_split.rsplit(' ', 1)
+            if len(parts) == 2 and len(parts[1]) <= 3:
+                upper_last = f"{parts[0]} {parts[1].upper()}"
+                if upper_last in available_cols:
+                    return upper_last
+
+        # 3. Case-insensitive match
+        col_lower = col_name.lower()
+        for ac in available_cols:
+            if ac.lower() == col_lower:
+                return ac
+
+        # 4. Case-insensitive CamelCase split
+        if camel_split != col_name:
+            cs_lower = camel_split.lower()
+            for ac in available_cols:
+                if ac.lower() == cs_lower:
+                    return ac
+
+        return None
+
     for rel in model["model"]["relationships"]:
         from_table = rel.get("fromTable", "")
         to_table = rel.get("toTable", "")
         from_col = rel.get("fromColumn", "")
         to_col = rel.get("toColumn", "")
 
-        if (from_table in table_columns and to_table in table_columns
-                and from_col in table_columns[from_table]
-                and to_col in table_columns[to_table]
-                and from_table != to_table):
-            valid_relationships.append(rel)
-        else:
-            reasons = []
-            if from_table not in table_columns:
-                reasons.append(f"fromTable '{from_table}' not found")
-            elif from_col not in table_columns.get(from_table, set()):
-                reasons.append(f"fromColumn '{from_col}' not in '{from_table}'")
-            if to_table not in table_columns:
-                reasons.append(f"toTable '{to_table}' not found")
-            elif to_col not in table_columns.get(to_table, set()):
-                reasons.append(f"toColumn '{to_col}' not in '{to_table}'")
-            if from_table == to_table:
-                reasons.append("self-join")
-            print(f"  ⚠ Dropped relationship: {from_table}.{from_col} → {to_table}.{to_col} ({'; '.join(reasons)})")
+        if from_table in table_columns and to_table in table_columns and from_table != to_table:
+            resolved_from = _resolve_rel_column(from_col, from_table, table_columns[from_table])
+            resolved_to = _resolve_rel_column(to_col, to_table, table_columns[to_table])
+            if resolved_from and resolved_to:
+                if resolved_from != from_col or resolved_to != to_col:
+                    print(f"  ✓ Resolved relationship columns: {from_table}.{from_col}→{resolved_from}, {to_table}.{to_col}→{resolved_to}")
+                rel["fromColumn"] = resolved_from
+                rel["toColumn"] = resolved_to
+                valid_relationships.append(rel)
+                continue
+
+        reasons = []
+        if from_table not in table_columns:
+            reasons.append(f"fromTable '{from_table}' not found")
+        elif not _resolve_rel_column(from_col, from_table, table_columns.get(from_table, set())):
+            reasons.append(f"fromColumn '{from_col}' not in '{from_table}'")
+        if to_table not in table_columns:
+            reasons.append(f"toTable '{to_table}' not found")
+        elif not _resolve_rel_column(to_col, to_table, table_columns.get(to_table, set())):
+            reasons.append(f"toColumn '{to_col}' not in '{to_table}'")
+        if from_table == to_table:
+            reasons.append("self-join")
+        print(f"  ⚠ Dropped relationship: {from_table}.{from_col} → {to_table}.{to_col} ({'; '.join(reasons)})")
 
     model["model"]["relationships"] = valid_relationships
 
@@ -2339,33 +2388,37 @@ def _fix_related_for_many_to_many(model):
     """
     Replace RELATED('table'[col]) with LOOKUPVALUE() for manyToMany relationships.
     """
-    m2m_tables = {}  # {to_table: [(to_col, from_table, from_col), ...]}
+    # Build lookup: (current_table, referenced_table) → (ref_join_col, current_join_col)
+    m2m_pairs = {}
     for rel in model['model']['relationships']:
         if rel.get('fromCardinality') == 'many' and rel.get('toCardinality') == 'many':
             to_table = rel.get('toTable', '')
             to_col = rel.get('toColumn', '')
             from_table = rel.get('fromTable', '')
             from_col = rel.get('fromColumn', '')
-            if to_table:
-                if to_table not in m2m_tables:
-                    m2m_tables[to_table] = (to_col, from_table, from_col)
-                # keep first match only (most specific) — avoid overwriting
+            # From from_table context, RELATED('to_table'[x]) uses to_col ↔ from_col
+            m2m_pairs.setdefault((from_table, to_table), (to_col, from_col))
+            # From to_table context, RELATED('from_table'[x]) uses from_col ↔ to_col
+            m2m_pairs.setdefault((to_table, from_table), (from_col, to_col))
 
-    if not m2m_tables:
+    if not m2m_pairs:
         return
 
     for table in model['model']['tables']:
+        current_table = table.get('name', '')
         for col in table.get('columns', []):
             expr = col.get('expression', '')
             if expr and 'RELATED(' in expr:
-                col['expression'] = _replace_related_with_lookupvalue(expr, m2m_tables)
+                col['expression'] = _replace_related_with_lookupvalue(
+                    expr, m2m_pairs, current_table)
         for measure in table.get('measures', []):
             expr = measure.get('expression', '')
             if expr and 'RELATED(' in expr:
-                measure['expression'] = _replace_related_with_lookupvalue(expr, m2m_tables)
+                measure['expression'] = _replace_related_with_lookupvalue(
+                    expr, m2m_pairs, current_table)
 
 
-def _replace_related_with_lookupvalue(expr, m2m_tables):
+def _replace_related_with_lookupvalue(expr, m2m_pairs, current_table=''):
     """Replace RELATED('table'[col]) with LOOKUPVALUE() for m2m tables."""
     pattern = r"RELATED\(('([^']+)'|([A-Za-z0-9_][A-Za-z0-9_ .-]*))\[([^\]]*(?:\]\][^\]]*)*)\]\)"
 
@@ -2373,15 +2426,16 @@ def _replace_related_with_lookupvalue(expr, m2m_tables):
         table_name = match.group(2) if match.group(2) else match.group(3)
         col_name = match.group(4)
 
-        if table_name not in m2m_tables:
+        pair_key = (current_table, table_name)
+        if pair_key not in m2m_pairs:
             return match.group(0)
 
-        join_to_col, from_table, from_col = m2m_tables[table_name]
+        ref_join_col, current_join_col = m2m_pairs[pair_key]
 
         t_ref = f"'{table_name}'" if not table_name.isidentifier() else table_name
-        ft_ref = f"'{from_table}'" if not from_table.isidentifier() else from_table
+        ct_ref = f"'{current_table}'" if not current_table.isidentifier() else current_table
 
-        return f"LOOKUPVALUE({t_ref}[{col_name}], {t_ref}[{join_to_col}], {ft_ref}[{from_col}])"
+        return f"LOOKUPVALUE({t_ref}[{col_name}], {t_ref}[{ref_join_col}], {ct_ref}[{current_join_col}])"
 
     return re.sub(pattern, replacer, expr)
 

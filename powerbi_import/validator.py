@@ -488,6 +488,11 @@ class ArtifactValidator:
         if re.search(r'\[Parameters\]\s*\.\s*\[', formula):
             issues.append(f'Unresolved parameter reference [Parameters].[...]{ctx}')
 
+        # 4. Line comment // in single-line DAX (would break M inlining)
+        stripped_formula = re.sub(r'"[^"]*"', '""', formula)
+        if re.search(r'(?<![:/])//(?!/)', stripped_formula):
+            issues.append(f'DAX contains // line comment (breaks M inlining){ctx}')
+
         return issues
 
     @classmethod
@@ -765,6 +770,159 @@ class ArtifactValidator:
 
         return warnings_list
 
+    # ── Relationship column validation ──────────────────────────────
+
+    # Regex to parse relationship definition lines in relationships.tmdl
+    _RE_REL_START = re.compile(r'^relationship\s+(\S+)')
+    _RE_REL_FROM_COL = re.compile(r"^\s*fromColumn:\s+(.*)")
+    _RE_REL_TO_COL = re.compile(r"^\s*toColumn:\s+(.*)")
+    _RE_REL_FROM_CARD = re.compile(r"^\s*fromCardinality:\s+(\w+)")
+    _RE_REL_TO_CARD = re.compile(r"^\s*toCardinality:\s+(\w+)")
+    _RE_REL_COL_REF = re.compile(r"'((?:[^']|'')+)'\.(.+)|(\w+)\.(.+)")
+
+    @classmethod
+    def _parse_rel_column_ref(cls, ref_str):
+        """Parse ``Table.Column`` or ``'Table Name'.Column`` from relationships.tmdl.
+
+        Returns (table_name, column_name) or (None, None).
+        """
+        ref_str = ref_str.strip()
+        m = cls._RE_REL_COL_REF.match(ref_str)
+        if not m:
+            return None, None
+        if m.group(1) is not None:
+            table = cls._unescape_tmdl_name(m.group(1))
+            col = m.group(2).strip().strip("'")
+        else:
+            table = m.group(3)
+            col = m.group(4).strip().strip("'")
+        return table, col
+
+    @classmethod
+    def validate_relationship_columns(cls, sm_dir):
+        """Validate that relationship join columns exist in their tables.
+
+        Also detects RELATED() used on manyToMany relationships in DAX
+        expressions (should be LOOKUPVALUE instead).
+
+        Args:
+            sm_dir: Path to ``{name}.SemanticModel`` directory.
+
+        Returns:
+            list of error/warning strings.
+        """
+        sm_path = Path(sm_dir)
+        def_dir = sm_path / 'definition'
+        issues = []
+
+        # Collect model symbols
+        symbols = cls._collect_model_symbols(sm_dir)
+        known_cols = symbols['columns']  # table -> {col names}
+
+        # Parse relationships from relationships.tmdl
+        rel_file = def_dir / 'relationships.tmdl'
+        if not rel_file.exists():
+            return issues
+
+        try:
+            content = rel_file.read_text(encoding='utf-8')
+        except OSError:
+            return issues
+
+        lines = content.split('\n')
+        relationships = []
+        current_rel = None
+
+        for line in lines:
+            m_start = cls._RE_REL_START.match(line)
+            if m_start:
+                if current_rel:
+                    relationships.append(current_rel)
+                current_rel = {'id': m_start.group(1)}
+                continue
+            if current_rel is None:
+                continue
+            m_from = cls._RE_REL_FROM_COL.match(line)
+            if m_from:
+                t, c = cls._parse_rel_column_ref(m_from.group(1))
+                current_rel['from_table'] = t
+                current_rel['from_col'] = c
+                continue
+            m_to = cls._RE_REL_TO_COL.match(line)
+            if m_to:
+                t, c = cls._parse_rel_column_ref(m_to.group(1))
+                current_rel['to_table'] = t
+                current_rel['to_col'] = c
+                continue
+            m_fc = cls._RE_REL_FROM_CARD.match(line)
+            if m_fc:
+                current_rel['from_card'] = m_fc.group(1)
+                continue
+            m_tc = cls._RE_REL_TO_CARD.match(line)
+            if m_tc:
+                current_rel['to_card'] = m_tc.group(1)
+        if current_rel:
+            relationships.append(current_rel)
+
+        # Validate each relationship's columns exist
+        m2m_tables = set()
+        for rel in relationships:
+            from_table = rel.get('from_table')
+            from_col = rel.get('from_col')
+            to_table = rel.get('to_table')
+            to_col = rel.get('to_col')
+
+            if from_table and from_col:
+                cols = known_cols.get(from_table, set())
+                if cols and from_col not in cols:
+                    issues.append(
+                        f'Relationship column [{from_col}] not found in '
+                        f'table \'{from_table}\' (relationship {rel.get("id", "?")})'
+                    )
+            if to_table and to_col:
+                cols = known_cols.get(to_table, set())
+                if cols and to_col not in cols:
+                    issues.append(
+                        f'Relationship column [{to_col}] not found in '
+                        f'table \'{to_table}\' (relationship {rel.get("id", "?")})'
+                    )
+
+            # Track manyToMany tables for RELATED check
+            if rel.get('from_card') == 'many' and rel.get('to_card') == 'many':
+                if from_table:
+                    m2m_tables.add(from_table)
+                if to_table:
+                    m2m_tables.add(to_table)
+
+        # Detect RELATED() referencing manyToMany tables in TMDL files
+        if m2m_tables:
+            re_related = re.compile(
+                r"RELATED\(\s*'((?:[^']|'')+)'\s*\[|RELATED\(\s*([A-Za-z0-9_]+)\s*\["
+            )
+            tables_dir = def_dir / 'tables'
+            tmdl_files = []
+            if tables_dir.exists():
+                tmdl_files.extend(tables_dir.glob('*.tmdl'))
+            model_tmdl = def_dir / 'model.tmdl'
+            if model_tmdl.exists():
+                tmdl_files.append(model_tmdl)
+
+            for tmdl_file in tmdl_files:
+                try:
+                    tc = tmdl_file.read_text(encoding='utf-8')
+                except OSError:
+                    continue
+                for m in re_related.finditer(tc):
+                    ref_table = cls._unescape_tmdl_name(m.group(1)) if m.group(1) else m.group(2)
+                    if ref_table in m2m_tables:
+                        issues.append(
+                            f'RELATED() references manyToMany table '
+                            f'\'{ref_table}\' in {tmdl_file.name} — '
+                            f'use LOOKUPVALUE() instead'
+                        )
+
+        return issues
+
     @classmethod
     def validate_project(cls, project_dir):
         """
@@ -936,6 +1094,11 @@ class ArtifactValidator:
             sem_warnings = cls.validate_semantic_references(str(sm_dir))
             if sem_warnings:
                 warnings.extend(sem_warnings)
+
+            # Relationship column existence + RELATED-on-manyToMany validation
+            rel_issues = cls.validate_relationship_columns(str(sm_dir))
+            if rel_issues:
+                warnings.extend(rel_issues)
 
             # Enhanced semantic validation (Sprint 46)
             cycles = cls.detect_circular_relationships(str(sm_dir))

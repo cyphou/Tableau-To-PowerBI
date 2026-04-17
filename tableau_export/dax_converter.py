@@ -395,6 +395,9 @@ def convert_tableau_formula_to_dax(formula, column_name='Measure', table_name='T
 
     # === Phase 6: Final cleanup ===
     dax = _normalize_spaces_outside_identifiers(dax).strip()
+    # Strip // line comments before collapsing newlines — otherwise
+    # the comment swallows the rest of the single-line DAX/M expression.
+    dax = re.sub(r'(?m)^\s*//[^\r\n]*', '', dax)
     dax = _RE_NEWLINES.sub(' ', dax)
 
     # === Phase 6b: Fix date literals ===
@@ -1569,8 +1572,9 @@ def _convert_single_quoted_strings(dax):
                 if after == '[' or content in table_names:
                     # Table reference — keep single quotes
                     result.append(dax[i:j + 1])
-                elif any(content in tn or tn.startswith(content) for tn in table_names):
+                elif len(content) > 2 and any(content in tn or tn.startswith(content) for tn in table_names):
                     # Partial match — likely a broken table ref with unescaped apostrophe
+                    # Require >2 chars to avoid matching trivial substrings like ' ' or ','
                     result.append(dax[i:j + 1])
                 else:
                     # String literal — convert to double quotes
