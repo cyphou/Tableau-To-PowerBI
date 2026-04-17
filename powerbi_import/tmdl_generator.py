@@ -2007,10 +2007,22 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
             # Dependency check: if the M expression references a calc column
             # that stayed as DAX (not converted to M), we must fall back to DAX
             if m_expr is not None:
-                m_step_names = {s[0] for s in m_calc_steps}  # names already in M
+                # Columns available in M: physical source columns + previously created M steps
+                m_available_cols = set(_this_table_columns)
+                for step_name, _ in m_calc_steps:
+                    # Step names are like '#"Added ColName"' — extract the column name
+                    sm = re.match(r'#"Added (.+)"', step_name)
+                    if sm:
+                        m_available_cols.add(sm.group(1))
                 col_refs = re.findall(r'\[#?"?([^\]"]+)"?\]', m_expr)
                 for ref in col_refs:
                     if ref in dax_only_calc_cols:
+                        m_expr = None
+                        break
+                    # M queries can only reference physical columns or prior M step columns.
+                    # If a ref doesn't exist in M-available columns, it's likely a
+                    # measure or DAX calc column — fall back to DAX.
+                    if ref not in m_available_cols:
                         m_expr = None
                         break
             if m_expr is not None:

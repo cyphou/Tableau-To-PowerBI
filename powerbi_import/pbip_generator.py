@@ -1091,6 +1091,13 @@ class PowerBIProjectGenerator:
         table_name = param_caption
         column_name = "Name" if has_aliases else "Value"
 
+        # Skip slicer if the parameter table doesn't exist in the semantic model
+        _bim_sym = getattr(self, '_actual_bim_symbols', None) or set()
+        if _bim_sym:
+            _bim_tables = {tbl for (tbl, _) in _bim_sym}
+            if table_name not in _bim_tables:
+                return
+
         vpos = self._make_visual_position(pos, scale_x, scale_y, visual_count)
         vx, vy, vw, vh = vpos['x'], vpos['y'], vpos['width'], vpos['height']
 
