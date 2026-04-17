@@ -1,0 +1,21 @@
+{
+  "name": "Staff_Schedule.xlsx",
+  "connection_type": "excel-direct",
+  "server": "",
+  "database": "",
+  "schema": "",
+  "table_name": "Staff_Schedule.xlsx",
+  "filename": "Staff_Schedule.xlsx",
+  "column_count": 7,
+  "columns": [
+    "physician_id",
+    "physician_name",
+    "specialty",
+    "department",
+    "fte",
+    "hire_date",
+    "credential"
+  ],
+  "fingerprint": "2be7801ac93faf6d",
+  "flow": "14_Healthcare_Patient_Flow"
+}

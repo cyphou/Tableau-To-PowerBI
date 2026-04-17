@@ -1,0 +1,20 @@
+{
+  "name": "Zillow_Estimates.json",
+  "connection_type": "json",
+  "server": "",
+  "database": "",
+  "schema": "",
+  "table_name": "Zillow_Estimates.json",
+  "filename": "Zillow_Estimates.json",
+  "column_count": 6,
+  "columns": [
+    "zip_code",
+    "zestimate_median",
+    "rent_zestimate",
+    "price_change_yoy_pct",
+    "days_on_market_median",
+    "month"
+  ],
+  "fingerprint": "a500b6fc6bc2a527",
+  "flow": "12_Real_Estate_Valuation"
+}

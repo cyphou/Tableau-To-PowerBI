@@ -1,0 +1,26 @@
+{
+  "name": "Orders_2024.csv",
+  "connection_type": "textscan",
+  "server": "",
+  "database": "",
+  "schema": "",
+  "table_name": "Orders_2024.csv",
+  "filename": "Orders_2024.csv",
+  "column_count": 12,
+  "columns": [
+    "Order_ID",
+    "Order_Date",
+    "Customer_ID",
+    "Product_ID",
+    "Region",
+    "Sales",
+    "Quantity",
+    "Discount",
+    "Profit",
+    "Ship_Mode",
+    "Status",
+    "_temp_col"
+  ],
+  "fingerprint": "dd72c5fb6c424ef5",
+  "flow": "01_Raw_Orders_Clean"
+}

@@ -1,0 +1,31 @@
+{
+  "name": "Property_Listings",
+  "connection_type": "snowflake",
+  "server": "acme.us-west-2.snowflakecomputing.com",
+  "database": "REAL_ESTATE",
+  "schema": "PUBLIC",
+  "table_name": "PROPERTY_LISTINGS",
+  "filename": "",
+  "column_count": 17,
+  "columns": [
+    "listing_id",
+    "address",
+    "city",
+    "state",
+    "zip_code",
+    "latitude",
+    "longitude",
+    "property_type",
+    "bedrooms",
+    "bathrooms",
+    "sqft",
+    "lot_size_sqft",
+    "year_built",
+    "list_price",
+    "list_date",
+    "status",
+    "agent_id"
+  ],
+  "fingerprint": "4994c9f53be5b5b9",
+  "flow": "12_Real_Estate_Valuation"
+}

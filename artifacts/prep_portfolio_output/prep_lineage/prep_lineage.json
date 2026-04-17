@@ -1,0 +1,3577 @@
+{
+  "total_flows": 14,
+  "total_sources": 21,
+  "total_outputs": 13,
+  "total_transforms": 54,
+  "total_cross_flow_edges": 13,
+  "max_chain_depth": 2,
+  "flows": [
+    {
+      "name": "01_Raw_Orders_Clean",
+      "file_path": "C:\\Users\\pidoudet\\OneDrive - Microsoft\\Boulot\\PBI SME\\OracleToPostgre\\TableauToPowerBI\\examples\\prep_portfolio\\01_Raw_Orders_Clean.tfl",
+      "inputs": [
+        {
+          "node_id": "a1000001-0001-0001-0001-000000000001",
+          "name": "Orders_2024.csv",
+          "connection_type": "textscan",
+          "server": "",
+          "database": "",
+          "schema": "",
+          "table_name": "Orders_2024.csv",
+          "filename": "Orders_2024.csv",
+          "column_count": 12,
+          "column_names": [
+            "Order_ID",
+            "Order_Date",
+            "Customer_ID",
+            "Product_ID",
+            "Region",
+            "Sales",
+            "Quantity",
+            "Discount",
+            "Profit",
+            "Ship_Mode",
+            "Status",
+            "_temp_col"
+          ],
+          "fingerprint": "dd72c5fb6c424ef5"
+        }
+      ],
+      "outputs": [
+        {
+          "node_id": "a1000001-0001-0001-0001-000000000003",
+          "name": "Orders_Clean",
+          "output_type": "PublishExtract",
+          "target_server": "tableau-prod.corp.local",
+          "target_database": "PrepOutputs",
+          "target_table": "Orders_Clean",
+          "target_filename": "",
+          "column_count": 11,
+          "column_names": [
+            "OrderID",
+            "OrderDate",
+            "CustomerID",
+            "ProductID",
+            "Region",
+            "Sales",
+            "Quantity",
+            "Discount",
+            "Profit",
+            "Ship_Mode",
+            "Revenue"
+          ],
+          "fingerprint": "23231a2adb5fb1a4"
+        }
+      ],
+      "transforms": [
+        {
+          "node_id": "a1000001-0001-0001-0001-000000000002",
+          "name": "Clean Orders",
+          "transform_type": "Clean",
+          "details": {
+            "action_count": 0,
+            "action_types": []
+          }
+        }
+      ],
+      "node_count": 3,
+      "edge_count": 2,
+      "dag_depth": 2,
+      "join_count": 0,
+      "union_count": 0,
+      "script_count": 0,
+      "calc_count": 0,
+      "complexity_score": 1,
+      "complexity_label": "Low",
+      "node_graph": {
+        "a1000001-0001-0001-0001-000000000001": [
+          "a1000001-0001-0001-0001-000000000002"
+        ],
+        "a1000001-0001-0001-0001-000000000002": [
+          "a1000001-0001-0001-0001-000000000003"
+        ],
+        "a1000001-0001-0001-0001-000000000003": []
+      },
+      "m_queries": {
+        "Orders_Clean": "let\n    // TODO: Configure the data source for connector type: textscan\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"Order_ID\", \"Order_Date\", \"Customer_ID\", \"Product_ID\", \"Region\", \"Sales\", \"Quantity\", \"Discount\", \"Profit\", \"Ship_Mode\", \"Status\", \"_temp_col\"},\n            {\n                {\"Sample 1\", 2, \"Sample 3\", \"Sample 4\", \"Sample 5\", 6, 7, 8, 9, \"Sample 10\", \"Sample 11\", \"Sample 12\"},\n                {\"Sample 2\", 3, \"Sample 4\", \"Sample 5\", \"Sample 6\", 7, 8, 9, 10, \"Sample 11\", \"Sample 12\", \"Sample 13\"}\n            }\n        )\n    otherwise\n        #table({\"Order_ID\", \"Order_Date\", \"Customer_ID\", \"Product_ID\", \"Region\", \"Sales\", \"Quantity\", \"Discount\", \"Profit\", \"Ship_Mode\", \"Status\", \"_temp_col\"}, {}),\n    #\"Removed Columns\" = Table.RemoveColumns(Source, {\"_temp_col\"}),\n    #\"Renamed Columns\" = Table.RenameColumns(#\"Removed Columns\", {{\"Order_ID\", \"OrderID\"}, {\"Order_Date\", \"OrderDate\"}, {\"Customer_ID\", \"CustomerID\"}, {\"Product_ID\", \"ProductID\"}}),\n    #\"Trimmed Text\" = Table.TransformColumns(#\"Renamed Columns\", {{\"Region\", Text.Trim}}),\n    #\"Filtered Rows\" = Table.SelectRows(#\"Trimmed Text\", each [Status] <> \"Cancelled\"),\n    #\"Removed Columns 2\" = Table.RemoveColumns(#\"Filtered Rows\", {\"Status\"}),\n    #\"Replaced Nulls in Discount\" = Table.ReplaceValue(#\"Removed Columns 2\", null, \"0\", Replacer.ReplaceValue, {\"Discount\"}),\n    #\"Added Revenue\" = Table.AddColumn(#\"Replaced Nulls in Discount\", \"Revenue\", each [Sales] * (1 - [Discount])),\n    #\"Changed Type\" = Table.TransformColumnTypes(#\"Added Revenue\", {{\"OrderDate\", type date}}),\n    Result = #\"Changed Type\"\nin\n    Result"
+      },
+      "assessment": {
+        "grade": "GREEN",
+        "items": [
+          {
+            "category": "datasource",
+            "status": "pass",
+            "detail": "1 input(s) — all connectors supported"
+          },
+          {
+            "category": "script",
+            "status": "pass",
+            "detail": "No Script nodes"
+          },
+          {
+            "category": "join",
+            "status": "pass",
+            "detail": "No joins"
+          },
+          {
+            "category": "output",
+            "status": "pass",
+            "detail": "1 output(s)"
+          }
+        ],
+        "pass_count": 4,
+        "warn_count": 0,
+        "fail_count": 0
+      }
+    },
+    {
+      "name": "02_Raw_Products_Clean",
+      "file_path": "C:\\Users\\pidoudet\\OneDrive - Microsoft\\Boulot\\PBI SME\\OracleToPostgre\\TableauToPowerBI\\examples\\prep_portfolio\\02_Raw_Products_Clean.tfl",
+      "inputs": [
+        {
+          "node_id": "a2000001-0001-0001-0001-000000000001",
+          "name": "Products_Master.csv",
+          "connection_type": "textscan",
+          "server": "",
+          "database": "",
+          "schema": "",
+          "table_name": "Products_Master.csv",
+          "filename": "Products_Master.csv",
+          "column_count": 8,
+          "column_names": [
+            "Product_ID",
+            "Product_Name",
+            "Category",
+            "Sub_Category",
+            "Unit_Cost",
+            "Unit_Price",
+            "Supplier",
+            "Weight_kg"
+          ],
+          "fingerprint": "c3507562d4d3f179"
+        }
+      ],
+      "outputs": [
+        {
+          "node_id": "a2000001-0001-0001-0001-000000000003",
+          "name": "Products_Master",
+          "output_type": "PublishExtract",
+          "target_server": "tableau-prod.corp.local",
+          "target_database": "PrepOutputs",
+          "target_table": "Products_Master",
+          "target_filename": "",
+          "column_count": 9,
+          "column_names": [
+            "ProductID",
+            "ProductName",
+            "Category",
+            "SubCategory",
+            "UnitCost",
+            "UnitPrice",
+            "Supplier",
+            "Weight_kg",
+            "Margin"
+          ],
+          "fingerprint": "e527534fabcb66cf"
+        }
+      ],
+      "transforms": [
+        {
+          "node_id": "a2000001-0001-0001-0001-000000000002",
+          "name": "Clean Products",
+          "transform_type": "Clean",
+          "details": {
+            "action_count": 0,
+            "action_types": []
+          }
+        }
+      ],
+      "node_count": 3,
+      "edge_count": 2,
+      "dag_depth": 2,
+      "join_count": 0,
+      "union_count": 0,
+      "script_count": 0,
+      "calc_count": 0,
+      "complexity_score": 1,
+      "complexity_label": "Low",
+      "node_graph": {
+        "a2000001-0001-0001-0001-000000000001": [
+          "a2000001-0001-0001-0001-000000000002"
+        ],
+        "a2000001-0001-0001-0001-000000000002": [
+          "a2000001-0001-0001-0001-000000000003"
+        ],
+        "a2000001-0001-0001-0001-000000000003": []
+      },
+      "m_queries": {
+        "Products_Master": "let\n    // TODO: Configure the data source for connector type: textscan\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"Product_ID\", \"Product_Name\", \"Category\", \"Sub_Category\", \"Unit_Cost\", \"Unit_Price\", \"Supplier\", \"Weight_kg\"},\n            {\n                {\"Sample 1\", \"Sample 2\", \"Sample 3\", \"Sample 4\", 5, 6, \"Sample 7\", 8},\n                {\"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", 6, 7, \"Sample 8\", 9}\n            }\n        )\n    otherwise\n        #table({\"Product_ID\", \"Product_Name\", \"Category\", \"Sub_Category\", \"Unit_Cost\", \"Unit_Price\", \"Supplier\", \"Weight_kg\"}, {}),\n    #\"Renamed Columns\" = Table.RenameColumns(Source, {{\"Product_ID\", \"ProductID\"}, {\"Product_Name\", \"ProductName\"}, {\"Sub_Category\", \"SubCategory\"}, {\"Unit_Cost\", \"UnitCost\"}, {\"Unit_Price\", \"UnitPrice\"}}),\n    #\"Proper Cased\" = Table.TransformColumns(#\"Renamed Columns\", {{\"ProductName\", Text.Proper}}),\n    #\"Trimmed Text\" = Table.TransformColumns(#\"Proper Cased\", {{\"Category\", Text.Trim}}),\n    #\"Replaced Nulls in Weight_kg\" = Table.ReplaceValue(#\"Trimmed Text\", null, \"0\", Replacer.ReplaceValue, {\"Weight_kg\"}),\n    #\"Added Margin\" = Table.AddColumn(#\"Replaced Nulls in Weight_kg\", \"Margin\", each ([UnitPrice] - [UnitCost]) / [UnitPrice]),\n    Result = #\"Added Margin\"\nin\n    Result"
+      },
+      "assessment": {
+        "grade": "GREEN",
+        "items": [
+          {
+            "category": "datasource",
+            "status": "pass",
+            "detail": "1 input(s) — all connectors supported"
+          },
+          {
+            "category": "script",
+            "status": "pass",
+            "detail": "No Script nodes"
+          },
+          {
+            "category": "join",
+            "status": "pass",
+            "detail": "No joins"
+          },
+          {
+            "category": "output",
+            "status": "pass",
+            "detail": "1 output(s)"
+          }
+        ],
+        "pass_count": 4,
+        "warn_count": 0,
+        "fail_count": 0
+      }
+    },
+    {
+      "name": "03_Raw_Returns_Clean",
+      "file_path": "C:\\Users\\pidoudet\\OneDrive - Microsoft\\Boulot\\PBI SME\\OracleToPostgre\\TableauToPowerBI\\examples\\prep_portfolio\\03_Raw_Returns_Clean.tfl",
+      "inputs": [
+        {
+          "node_id": "a3000001-0001-0001-0001-000000000001",
+          "name": "Returns_2024.csv",
+          "connection_type": "textscan",
+          "server": "",
+          "database": "",
+          "schema": "",
+          "table_name": "Returns_2024.csv",
+          "filename": "Returns_2024.csv",
+          "column_count": 8,
+          "column_names": [
+            "Return_ID",
+            "Order_ID",
+            "Return_Date",
+            "Reason_Code",
+            "Reason_Text",
+            "Refund_Amount",
+            "Restocking_Fee",
+            "Return_Status"
+          ],
+          "fingerprint": "76ed540e7e1829ed"
+        }
+      ],
+      "outputs": [
+        {
+          "node_id": "a3000001-0001-0001-0001-000000000003",
+          "name": "Returns_Processed",
+          "output_type": "PublishExtract",
+          "target_server": "tableau-prod.corp.local",
+          "target_database": "PrepOutputs",
+          "target_table": "Returns_Processed",
+          "target_filename": "",
+          "column_count": 8,
+          "column_names": [
+            "ReturnID",
+            "OrderID",
+            "ReturnDate",
+            "ReasonCode",
+            "Reason_Text",
+            "RefundAmount",
+            "Restocking_Fee",
+            "NetRefund"
+          ],
+          "fingerprint": "88b9bd394a1397bc"
+        }
+      ],
+      "transforms": [
+        {
+          "node_id": "a3000001-0001-0001-0001-000000000002",
+          "name": "Clean Returns",
+          "transform_type": "Clean",
+          "details": {
+            "action_count": 0,
+            "action_types": []
+          }
+        }
+      ],
+      "node_count": 3,
+      "edge_count": 2,
+      "dag_depth": 2,
+      "join_count": 0,
+      "union_count": 0,
+      "script_count": 0,
+      "calc_count": 0,
+      "complexity_score": 1,
+      "complexity_label": "Low",
+      "node_graph": {
+        "a3000001-0001-0001-0001-000000000001": [
+          "a3000001-0001-0001-0001-000000000002"
+        ],
+        "a3000001-0001-0001-0001-000000000002": [
+          "a3000001-0001-0001-0001-000000000003"
+        ],
+        "a3000001-0001-0001-0001-000000000003": []
+      },
+      "m_queries": {
+        "Returns_Processed": "let\n    // TODO: Configure the data source for connector type: textscan\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"Return_ID\", \"Order_ID\", \"Return_Date\", \"Reason_Code\", \"Reason_Text\", \"Refund_Amount\", \"Restocking_Fee\", \"Return_Status\"},\n            {\n                {\"Sample 1\", \"Sample 2\", 3, \"Sample 4\", \"Sample 5\", 6, 7, \"Sample 8\"},\n                {\"Sample 2\", \"Sample 3\", 4, \"Sample 5\", \"Sample 6\", 7, 8, \"Sample 9\"}\n            }\n        )\n    otherwise\n        #table({\"Return_ID\", \"Order_ID\", \"Return_Date\", \"Reason_Code\", \"Reason_Text\", \"Refund_Amount\", \"Restocking_Fee\", \"Return_Status\"}, {}),\n    #\"Renamed Columns\" = Table.RenameColumns(Source, {{\"Return_ID\", \"ReturnID\"}, {\"Order_ID\", \"OrderID\"}, {\"Return_Date\", \"ReturnDate\"}, {\"Reason_Code\", \"ReasonCode\"}, {\"Refund_Amount\", \"RefundAmount\"}}),\n    #\"Filtered Rows\" = Table.SelectRows(#\"Renamed Columns\", each [Return_Status] <> \"Voided\"),\n    #\"Removed Columns\" = Table.RemoveColumns(#\"Filtered Rows\", {\"Return_Status\"}),\n    #\"Trimmed Text\" = Table.TransformColumns(#\"Removed Columns\", {{\"Reason_Text\", Text.Trim}}),\n    #\"Added NetRefund\" = Table.AddColumn(#\"Trimmed Text\", \"NetRefund\", each [RefundAmount] - [Restocking_Fee]),\n    Result = #\"Added NetRefund\"\nin\n    Result"
+      },
+      "assessment": {
+        "grade": "GREEN",
+        "items": [
+          {
+            "category": "datasource",
+            "status": "pass",
+            "detail": "1 input(s) — all connectors supported"
+          },
+          {
+            "category": "script",
+            "status": "pass",
+            "detail": "No Script nodes"
+          },
+          {
+            "category": "join",
+            "status": "pass",
+            "detail": "No joins"
+          },
+          {
+            "category": "output",
+            "status": "pass",
+            "detail": "1 output(s)"
+          }
+        ],
+        "pass_count": 4,
+        "warn_count": 0,
+        "fail_count": 0
+      }
+    },
+    {
+      "name": "04_Customer_Enrichment",
+      "file_path": "C:\\Users\\pidoudet\\OneDrive - Microsoft\\Boulot\\PBI SME\\OracleToPostgre\\TableauToPowerBI\\examples\\prep_portfolio\\04_Customer_Enrichment.tfl",
+      "inputs": [
+        {
+          "node_id": "a4000001-0001-0001-0001-000000000001",
+          "name": "CRM Customers",
+          "connection_type": "postgres",
+          "server": "crm-db.corp.local",
+          "database": "crm_production",
+          "schema": "public",
+          "table_name": "customers",
+          "filename": "",
+          "column_count": 9,
+          "column_names": [
+            "customer_id",
+            "first_name",
+            "last_name",
+            "email",
+            "phone",
+            "created_at",
+            "segment",
+            "loyalty_tier",
+            "lifetime_value"
+          ],
+          "fingerprint": "8d96b90c648a5fa7"
+        },
+        {
+          "node_id": "a4000001-0001-0001-0001-000000000002",
+          "name": "Demographics.csv",
+          "connection_type": "textscan",
+          "server": "",
+          "database": "",
+          "schema": "",
+          "table_name": "Demographics.csv",
+          "filename": "Demographics.csv",
+          "column_count": 7,
+          "column_names": [
+            "customer_id",
+            "age_group",
+            "income_bracket",
+            "city",
+            "state",
+            "country",
+            "postal_code"
+          ],
+          "fingerprint": "60d1daa32bc4c74a"
+        }
+      ],
+      "outputs": [
+        {
+          "node_id": "a4000001-0001-0001-0001-000000000005",
+          "name": "Customer_360",
+          "output_type": "PublishExtract",
+          "target_server": "tableau-prod.corp.local",
+          "target_database": "PrepOutputs",
+          "target_table": "Customer_360",
+          "target_filename": "",
+          "column_count": 13,
+          "column_names": [
+            "CustomerID",
+            "CustomerName",
+            "email",
+            "phone",
+            "segment",
+            "loyalty_tier",
+            "lifetime_value",
+            "age_group",
+            "income_bracket",
+            "city",
+            "state",
+            "country",
+            "FullAddress"
+          ],
+          "fingerprint": "918dc61e975bb173"
+        }
+      ],
+      "transforms": [
+        {
+          "node_id": "a4000001-0001-0001-0001-000000000003",
+          "name": "Enrich Customers",
+          "transform_type": "Join",
+          "details": {
+            "join_type": "left",
+            "key_count": 1
+          }
+        },
+        {
+          "node_id": "a4000001-0001-0001-0001-000000000004",
+          "name": "Standardize Customer",
+          "transform_type": "Clean",
+          "details": {
+            "action_count": 0,
+            "action_types": []
+          }
+        }
+      ],
+      "node_count": 5,
+      "edge_count": 4,
+      "dag_depth": 3,
+      "join_count": 1,
+      "union_count": 0,
+      "script_count": 0,
+      "calc_count": 0,
+      "complexity_score": 5,
+      "complexity_label": "Low",
+      "node_graph": {
+        "a4000001-0001-0001-0001-000000000001": [
+          "a4000001-0001-0001-0001-000000000003"
+        ],
+        "a4000001-0001-0001-0001-000000000002": [
+          "a4000001-0001-0001-0001-000000000003"
+        ],
+        "a4000001-0001-0001-0001-000000000003": [
+          "a4000001-0001-0001-0001-000000000004"
+        ],
+        "a4000001-0001-0001-0001-000000000004": [
+          "a4000001-0001-0001-0001-000000000005"
+        ],
+        "a4000001-0001-0001-0001-000000000005": []
+      },
+      "m_queries": {
+        "Demographics": "let\n    // TODO: Configure the data source for connector type: textscan\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"customer_id\", \"age_group\", \"income_bracket\", \"city\", \"state\", \"country\", \"postal_code\"},\n            {\n                {\"Sample 1\", \"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", \"Sample 6\", \"Sample 7\"},\n                {\"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", \"Sample 6\", \"Sample 7\", \"Sample 8\"}\n            }\n        )\n    otherwise\n        #table({\"customer_id\", \"age_group\", \"income_bracket\", \"city\", \"state\", \"country\", \"postal_code\"}, {})  // Empty table on error\nin\n    Source",
+        "Customer_360": "let\n    // TODO: Configure the data source for connector type: postgres\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"customer_id\", \"first_name\", \"last_name\", \"email\", \"phone\", \"created_at\", \"segment\", \"loyalty_tier\", \"lifetime_value\"},\n            {\n                {\"Sample 1\", \"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", 6, \"Sample 7\", \"Sample 8\", 9},\n                {\"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", \"Sample 6\", 7, \"Sample 8\", \"Sample 9\", 10}\n            }\n        )\n    otherwise\n        #table({\"customer_id\", \"first_name\", \"last_name\", \"email\", \"phone\", \"created_at\", \"segment\", \"loyalty_tier\", \"lifetime_value\"}, {}),\n    #\"Joined Joined\" = Table.NestedJoin(Source, \"customer_id\", Demographics, \"customer_id\", \"Joined\", JoinKind.LeftOuter),\n    #\"Expanded Joined\" = Table.ExpandTableColumn(#\"Joined Joined\", \"Joined\", {\"age_group\", \"income_bracket\", \"city\", \"state\", \"country\", \"postal_code\"}),\n    #\"Renamed Columns\" = Table.RenameColumns(#\"Expanded Joined\", {{\"customer_id\", \"CustomerID\"}}),\n    #\"Lowercased\" = Table.TransformColumns(#\"Renamed Columns\", {{\"email\", Text.Lower}}),\n    #\"Replaced Nulls in loyalty_tier\" = Table.ReplaceValue(#\"Lowercased\", null, \"Bronze\", Replacer.ReplaceValue, {\"loyalty_tier\"}),\n    #\"Added FullAddress\" = Table.AddColumn(#\"Replaced Nulls in loyalty_tier\", \"FullAddress\", each [city] + \", \" + [state] + \" \" + [postal_code]),\n    Result = #\"Added FullAddress\"\nin\n    Result"
+      },
+      "assessment": {
+        "grade": "GREEN",
+        "items": [
+          {
+            "category": "datasource",
+            "status": "pass",
+            "detail": "2 input(s) — all connectors supported"
+          },
+          {
+            "category": "script",
+            "status": "pass",
+            "detail": "No Script nodes"
+          },
+          {
+            "category": "join",
+            "status": "pass",
+            "detail": "1 join(s) → Power Query Table.NestedJoin"
+          },
+          {
+            "category": "output",
+            "status": "pass",
+            "detail": "1 output(s)"
+          }
+        ],
+        "pass_count": 4,
+        "warn_count": 0,
+        "fail_count": 0
+      }
+    },
+    {
+      "name": "05_Sales_Analytics",
+      "file_path": "C:\\Users\\pidoudet\\OneDrive - Microsoft\\Boulot\\PBI SME\\OracleToPostgre\\TableauToPowerBI\\examples\\prep_portfolio\\05_Sales_Analytics.tfl",
+      "inputs": [
+        {
+          "node_id": "a5000001-0001-0001-0001-000000000001",
+          "name": "Orders_Clean",
+          "connection_type": "sqlserver",
+          "server": "tableau-prod.corp.local",
+          "database": "PrepOutputs",
+          "schema": "",
+          "table_name": "Orders_Clean",
+          "filename": "",
+          "column_count": 10,
+          "column_names": [
+            "OrderID",
+            "OrderDate",
+            "CustomerID",
+            "ProductID",
+            "Region",
+            "Sales",
+            "Quantity",
+            "Discount",
+            "Profit",
+            "Revenue"
+          ],
+          "fingerprint": "6fdff1968fff4045"
+        },
+        {
+          "node_id": "a5000001-0001-0001-0001-000000000002",
+          "name": "Products_Master",
+          "connection_type": "sqlserver",
+          "server": "tableau-prod.corp.local",
+          "database": "PrepOutputs",
+          "schema": "",
+          "table_name": "Products_Master",
+          "filename": "",
+          "column_count": 7,
+          "column_names": [
+            "ProductID",
+            "ProductName",
+            "Category",
+            "SubCategory",
+            "UnitCost",
+            "UnitPrice",
+            "Margin"
+          ],
+          "fingerprint": "45e38c456767e63e"
+        },
+        {
+          "node_id": "a5000001-0001-0001-0001-000000000003",
+          "name": "Customer_360",
+          "connection_type": "sqlserver",
+          "server": "tableau-prod.corp.local",
+          "database": "PrepOutputs",
+          "schema": "",
+          "table_name": "Customer_360",
+          "filename": "",
+          "column_count": 7,
+          "column_names": [
+            "CustomerID",
+            "CustomerName",
+            "segment",
+            "loyalty_tier",
+            "city",
+            "state",
+            "country"
+          ],
+          "fingerprint": "43e9dc63aae4b3c9"
+        }
+      ],
+      "outputs": [
+        {
+          "node_id": "a5000001-0001-0001-0001-000000000007",
+          "name": "Sales_Summary",
+          "output_type": "PublishExtract",
+          "target_server": "tableau-prod.corp.local",
+          "target_database": "PrepOutputs",
+          "target_table": "Sales_Summary",
+          "target_filename": "",
+          "column_count": 9,
+          "column_names": [
+            "Region",
+            "Category",
+            "segment",
+            "loyalty_tier",
+            "TotalRevenue",
+            "TotalProfit",
+            "OrderCount",
+            "TotalQuantity",
+            "AvgDiscount"
+          ],
+          "fingerprint": "ec7b85b290b40ebf"
+        }
+      ],
+      "transforms": [
+        {
+          "node_id": "a5000001-0001-0001-0001-000000000004",
+          "name": "Orders + Products",
+          "transform_type": "Join",
+          "details": {
+            "join_type": "left",
+            "key_count": 1
+          }
+        },
+        {
+          "node_id": "a5000001-0001-0001-0001-000000000005",
+          "name": "Add Customer Info",
+          "transform_type": "Join",
+          "details": {
+            "join_type": "left",
+            "key_count": 1
+          }
+        },
+        {
+          "node_id": "a5000001-0001-0001-0001-000000000006",
+          "name": "Sales Summary",
+          "transform_type": "Other",
+          "details": {}
+        }
+      ],
+      "node_count": 7,
+      "edge_count": 6,
+      "dag_depth": 4,
+      "join_count": 2,
+      "union_count": 0,
+      "script_count": 0,
+      "calc_count": 0,
+      "complexity_score": 9,
+      "complexity_label": "Low",
+      "node_graph": {
+        "a5000001-0001-0001-0001-000000000001": [
+          "a5000001-0001-0001-0001-000000000004"
+        ],
+        "a5000001-0001-0001-0001-000000000002": [
+          "a5000001-0001-0001-0001-000000000004"
+        ],
+        "a5000001-0001-0001-0001-000000000003": [
+          "a5000001-0001-0001-0001-000000000005"
+        ],
+        "a5000001-0001-0001-0001-000000000004": [
+          "a5000001-0001-0001-0001-000000000005"
+        ],
+        "a5000001-0001-0001-0001-000000000005": [
+          "a5000001-0001-0001-0001-000000000006"
+        ],
+        "a5000001-0001-0001-0001-000000000006": [
+          "a5000001-0001-0001-0001-000000000007"
+        ],
+        "a5000001-0001-0001-0001-000000000007": []
+      },
+      "m_queries": {
+        "Products_Master": "let\n    // TODO: Configure the data source for connector type: sqlserver\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"ProductID\", \"ProductName\", \"Category\", \"SubCategory\", \"UnitCost\", \"UnitPrice\", \"Margin\"},\n            {\n                {\"Sample 1\", \"Sample 2\", \"Sample 3\", \"Sample 4\", 5, 6, 7},\n                {\"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", 6, 7, 8}\n            }\n        )\n    otherwise\n        #table({\"ProductID\", \"ProductName\", \"Category\", \"SubCategory\", \"UnitCost\", \"UnitPrice\", \"Margin\"}, {})  // Empty table on error\nin\n    Source",
+        "Orders_+_Products": "let\n    // TODO: Configure the data source for connector type: sqlserver\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"OrderID\", \"OrderDate\", \"CustomerID\", \"ProductID\", \"Region\", \"Sales\", \"Quantity\", \"Discount\", \"Profit\", \"Revenue\"},\n            {\n                {\"Sample 1\", 2, \"Sample 3\", \"Sample 4\", \"Sample 5\", 6, 7, 8, 9, 10},\n                {\"Sample 2\", 3, \"Sample 4\", \"Sample 5\", \"Sample 6\", 7, 8, 9, 10, 11}\n            }\n        )\n    otherwise\n        #table({\"OrderID\", \"OrderDate\", \"CustomerID\", \"ProductID\", \"Region\", \"Sales\", \"Quantity\", \"Discount\", \"Profit\", \"Revenue\"}, {}),\n    #\"Joined Joined\" = Table.NestedJoin(Source, \"ProductID\", Products_Master, \"ProductID\", \"Joined\", JoinKind.LeftOuter),\n    #\"Expanded Joined\" = Table.ExpandTableColumn(#\"Joined Joined\", \"Joined\", {\"ProductName\", \"Category\", \"SubCategory\", \"UnitCost\", \"UnitPrice\", \"Margin\"}),\n    Result = #\"Expanded Joined\"\nin\n    Result",
+        "Sales_Summary": "let\n    // TODO: Configure the data source for connector type: sqlserver\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"CustomerID\", \"CustomerName\", \"segment\", \"loyalty_tier\", \"city\", \"state\", \"country\"},\n            {\n                {\"Sample 1\", \"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", \"Sample 6\", \"Sample 7\"},\n                {\"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", \"Sample 6\", \"Sample 7\", \"Sample 8\"}\n            }\n        )\n    otherwise\n        #table({\"CustomerID\", \"CustomerName\", \"segment\", \"loyalty_tier\", \"city\", \"state\", \"country\"}, {}),\n    #\"Joined Joined\" = Table.NestedJoin(Source, \"CustomerID\", Orders_+_Products, \"CustomerID\", \"Joined\", JoinKind.LeftOuter),\n    #\"Expanded Joined\" = Table.ExpandTableColumn(#\"Joined Joined\", \"Joined\", {\"OrderID\", \"OrderDate\", \"ProductID\", \"Region\", \"Sales\", \"Quantity\", \"Discount\", \"Profit\", \"Revenue\"}),\n    #\"Grouped Rows\" = Table.Group(#\"Expanded Joined\", {\"Region\", \"Category\", \"segment\", \"loyalty_tier\"}, {{\"TotalRevenue\", each List.Sum([Revenue]), type number}, {\"TotalProfit\", each List.Sum([Profit]), type number}, {\"OrderCount\", each List.Count(List.Distinct([OrderID])), Int64.Type}, {\"TotalQuantity\", each List.Sum([Quantity]), type number}, {\"AvgDiscount\", each List.Average([Discount]), type number}}),\n    Result = #\"Grouped Rows\"\nin\n    Result"
+      },
+      "assessment": {
+        "grade": "GREEN",
+        "items": [
+          {
+            "category": "datasource",
+            "status": "pass",
+            "detail": "3 input(s) — all connectors supported"
+          },
+          {
+            "category": "script",
+            "status": "pass",
+            "detail": "No Script nodes"
+          },
+          {
+            "category": "join",
+            "status": "pass",
+            "detail": "2 join(s) → Power Query Table.NestedJoin"
+          },
+          {
+            "category": "output",
+            "status": "pass",
+            "detail": "1 output(s)"
+          }
+        ],
+        "pass_count": 4,
+        "warn_count": 0,
+        "fail_count": 0
+      }
+    },
+    {
+      "name": "06_Returns_Analytics",
+      "file_path": "C:\\Users\\pidoudet\\OneDrive - Microsoft\\Boulot\\PBI SME\\OracleToPostgre\\TableauToPowerBI\\examples\\prep_portfolio\\06_Returns_Analytics.tfl",
+      "inputs": [
+        {
+          "node_id": "a6000001-0001-0001-0001-000000000001",
+          "name": "Returns_Processed",
+          "connection_type": "sqlserver",
+          "server": "tableau-prod.corp.local",
+          "database": "PrepOutputs",
+          "schema": "",
+          "table_name": "Returns_Processed",
+          "filename": "",
+          "column_count": 7,
+          "column_names": [
+            "ReturnID",
+            "OrderID",
+            "ReturnDate",
+            "ReasonCode",
+            "Reason_Text",
+            "RefundAmount",
+            "NetRefund"
+          ],
+          "fingerprint": "a4098c517543c7f9"
+        },
+        {
+          "node_id": "a6000001-0001-0001-0001-000000000002",
+          "name": "Orders_Clean",
+          "connection_type": "sqlserver",
+          "server": "tableau-prod.corp.local",
+          "database": "PrepOutputs",
+          "schema": "",
+          "table_name": "Orders_Clean",
+          "filename": "",
+          "column_count": 7,
+          "column_names": [
+            "OrderID",
+            "OrderDate",
+            "CustomerID",
+            "ProductID",
+            "Region",
+            "Sales",
+            "Revenue"
+          ],
+          "fingerprint": "6fdff1968fff4045"
+        }
+      ],
+      "outputs": [
+        {
+          "node_id": "a6000001-0001-0001-0001-000000000006",
+          "name": "Returns_Analysis",
+          "output_type": "PublishExtract",
+          "target_server": "tableau-prod.corp.local",
+          "target_database": "PrepOutputs",
+          "target_table": "Returns_Analysis",
+          "target_filename": "",
+          "column_count": 9,
+          "column_names": [
+            "ReturnID",
+            "OrderID",
+            "Region",
+            "ReasonCode",
+            "RefundAmount",
+            "NetRefund",
+            "ReturnRate",
+            "DaysToReturn",
+            "anomaly_score"
+          ],
+          "fingerprint": "b43c6effd6e43bf2"
+        }
+      ],
+      "transforms": [
+        {
+          "node_id": "a6000001-0001-0001-0001-000000000003",
+          "name": "Returns + Orders",
+          "transform_type": "Join",
+          "details": {
+            "join_type": "left",
+            "key_count": 1
+          }
+        },
+        {
+          "node_id": "a6000001-0001-0001-0001-000000000004",
+          "name": "Calc Return Metrics",
+          "transform_type": "Clean",
+          "details": {
+            "action_count": 0,
+            "action_types": []
+          }
+        },
+        {
+          "node_id": "a6000001-0001-0001-0001-000000000005",
+          "name": "Anomaly Detection",
+          "transform_type": "Script",
+          "details": {
+            "script_type": "unknown"
+          }
+        }
+      ],
+      "node_count": 6,
+      "edge_count": 5,
+      "dag_depth": 4,
+      "join_count": 1,
+      "union_count": 0,
+      "script_count": 1,
+      "calc_count": 0,
+      "complexity_score": 11,
+      "complexity_label": "Medium",
+      "node_graph": {
+        "a6000001-0001-0001-0001-000000000001": [
+          "a6000001-0001-0001-0001-000000000003"
+        ],
+        "a6000001-0001-0001-0001-000000000002": [
+          "a6000001-0001-0001-0001-000000000003"
+        ],
+        "a6000001-0001-0001-0001-000000000003": [
+          "a6000001-0001-0001-0001-000000000004"
+        ],
+        "a6000001-0001-0001-0001-000000000004": [
+          "a6000001-0001-0001-0001-000000000005"
+        ],
+        "a6000001-0001-0001-0001-000000000005": [
+          "a6000001-0001-0001-0001-000000000006"
+        ],
+        "a6000001-0001-0001-0001-000000000006": []
+      },
+      "m_queries": {
+        "Orders_Clean": "let\n    // TODO: Configure the data source for connector type: sqlserver\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"OrderID\", \"OrderDate\", \"CustomerID\", \"ProductID\", \"Region\", \"Sales\", \"Revenue\"},\n            {\n                {\"Sample 1\", 2, \"Sample 3\", \"Sample 4\", \"Sample 5\", 6, 7},\n                {\"Sample 2\", 3, \"Sample 4\", \"Sample 5\", \"Sample 6\", 7, 8}\n            }\n        )\n    otherwise\n        #table({\"OrderID\", \"OrderDate\", \"CustomerID\", \"ProductID\", \"Region\", \"Sales\", \"Revenue\"}, {})  // Empty table on error\nin\n    Source",
+        "Returns_Analysis": "let\n    // TODO: Configure the data source for connector type: sqlserver\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"ReturnID\", \"OrderID\", \"ReturnDate\", \"ReasonCode\", \"Reason_Text\", \"RefundAmount\", \"NetRefund\"},\n            {\n                {\"Sample 1\", \"Sample 2\", 3, \"Sample 4\", \"Sample 5\", 6, 7},\n                {\"Sample 2\", \"Sample 3\", 4, \"Sample 5\", \"Sample 6\", 7, 8}\n            }\n        )\n    otherwise\n        #table({\"ReturnID\", \"OrderID\", \"ReturnDate\", \"ReasonCode\", \"Reason_Text\", \"RefundAmount\", \"NetRefund\"}, {}),\n    #\"Joined Joined\" = Table.NestedJoin(Source, \"OrderID\", Orders_Clean, \"OrderID\", \"Joined\", JoinKind.LeftOuter),\n    #\"Expanded Joined\" = Table.ExpandTableColumn(#\"Joined Joined\", \"Joined\", {\"OrderDate\", \"CustomerID\", \"ProductID\", \"Region\", \"Sales\", \"Revenue\"}),\n    #\"Added ReturnRate\" = Table.AddColumn(#\"Expanded Joined\", \"ReturnRate\", each [NetRefund] / [Revenue]),\n    #\"Added DaysToReturn\" = Table.AddColumn(#\"Added ReturnRate\", \"DaysToReturn\", each DATEDIFF('day', [OrderDate], [ReturnDate])),\n    #\"Script Warning\" = Table.AddColumn(#\"Added DaysToReturn\", \"__script_warning\", each \"/* Python script step not auto-converted — manual migration required */\", type text),\n    Result = #\"Script Warning\"\nin\n    Result"
+      },
+      "assessment": {
+        "grade": "YELLOW",
+        "items": [
+          {
+            "category": "datasource",
+            "status": "pass",
+            "detail": "2 input(s) — all connectors supported"
+          },
+          {
+            "category": "script",
+            "status": "warn",
+            "detail": "1 Script node(s) — manual review needed"
+          },
+          {
+            "category": "join",
+            "status": "pass",
+            "detail": "1 join(s) → Power Query Table.NestedJoin"
+          },
+          {
+            "category": "output",
+            "status": "pass",
+            "detail": "1 output(s)"
+          }
+        ],
+        "pass_count": 3,
+        "warn_count": 1,
+        "fail_count": 0
+      }
+    },
+    {
+      "name": "07_Executive_Dashboard",
+      "file_path": "C:\\Users\\pidoudet\\OneDrive - Microsoft\\Boulot\\PBI SME\\OracleToPostgre\\TableauToPowerBI\\examples\\prep_portfolio\\07_Executive_Dashboard.tfl",
+      "inputs": [
+        {
+          "node_id": "a7000001-0001-0001-0001-000000000001",
+          "name": "Sales_Summary",
+          "connection_type": "sqlserver",
+          "server": "tableau-prod.corp.local",
+          "database": "PrepOutputs",
+          "schema": "",
+          "table_name": "Sales_Summary",
+          "filename": "",
+          "column_count": 6,
+          "column_names": [
+            "Region",
+            "Category",
+            "segment",
+            "TotalRevenue",
+            "TotalProfit",
+            "OrderCount"
+          ],
+          "fingerprint": "76f221890a8213d6"
+        },
+        {
+          "node_id": "a7000001-0001-0001-0001-000000000002",
+          "name": "Returns_Analysis",
+          "connection_type": "sqlserver",
+          "server": "tableau-prod.corp.local",
+          "database": "PrepOutputs",
+          "schema": "",
+          "table_name": "Returns_Analysis",
+          "filename": "",
+          "column_count": 5,
+          "column_names": [
+            "Region",
+            "ReasonCode",
+            "NetRefund",
+            "ReturnRate",
+            "anomaly_score"
+          ],
+          "fingerprint": "d5897ef174a5fa02"
+        }
+      ],
+      "outputs": [
+        {
+          "node_id": "a7000001-0001-0001-0001-000000000006",
+          "name": "Executive_KPIs",
+          "output_type": "PublishExtract",
+          "target_server": "tableau-prod.corp.local",
+          "target_database": "PrepOutputs",
+          "target_table": "Executive_KPIs",
+          "target_filename": "",
+          "column_count": 9,
+          "column_names": [
+            "Region",
+            "GrandRevenue",
+            "GrandProfit",
+            "TotalOrders",
+            "TotalRefunds",
+            "AvgReturnRate",
+            "ProfitMargin",
+            "NetRevenue",
+            "AvgOrderValue"
+          ],
+          "fingerprint": "8df4000bae2f196c"
+        }
+      ],
+      "transforms": [
+        {
+          "node_id": "a7000001-0001-0001-0001-000000000003",
+          "name": "Sales + Returns by Region",
+          "transform_type": "Join",
+          "details": {
+            "join_type": "left",
+            "key_count": 1
+          }
+        },
+        {
+          "node_id": "a7000001-0001-0001-0001-000000000004",
+          "name": "Executive KPIs",
+          "transform_type": "Other",
+          "details": {}
+        },
+        {
+          "node_id": "a7000001-0001-0001-0001-000000000005",
+          "name": "Final KPI Calcs",
+          "transform_type": "Clean",
+          "details": {
+            "action_count": 0,
+            "action_types": []
+          }
+        }
+      ],
+      "node_count": 6,
+      "edge_count": 5,
+      "dag_depth": 4,
+      "join_count": 1,
+      "union_count": 0,
+      "script_count": 0,
+      "calc_count": 0,
+      "complexity_score": 6,
+      "complexity_label": "Low",
+      "node_graph": {
+        "a7000001-0001-0001-0001-000000000001": [
+          "a7000001-0001-0001-0001-000000000003"
+        ],
+        "a7000001-0001-0001-0001-000000000002": [
+          "a7000001-0001-0001-0001-000000000003"
+        ],
+        "a7000001-0001-0001-0001-000000000003": [
+          "a7000001-0001-0001-0001-000000000004"
+        ],
+        "a7000001-0001-0001-0001-000000000004": [
+          "a7000001-0001-0001-0001-000000000005"
+        ],
+        "a7000001-0001-0001-0001-000000000005": [
+          "a7000001-0001-0001-0001-000000000006"
+        ],
+        "a7000001-0001-0001-0001-000000000006": []
+      },
+      "m_queries": {
+        "Returns_Analysis": "let\n    // TODO: Configure the data source for connector type: sqlserver\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"Region\", \"ReasonCode\", \"NetRefund\", \"ReturnRate\", \"anomaly_score\"},\n            {\n                {\"Sample 1\", \"Sample 2\", 3, 4, 5},\n                {\"Sample 2\", \"Sample 3\", 4, 5, 6}\n            }\n        )\n    otherwise\n        #table({\"Region\", \"ReasonCode\", \"NetRefund\", \"ReturnRate\", \"anomaly_score\"}, {})  // Empty table on error\nin\n    Source",
+        "Executive_KPIs": "let\n    // TODO: Configure the data source for connector type: sqlserver\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"Region\", \"Category\", \"segment\", \"TotalRevenue\", \"TotalProfit\", \"OrderCount\"},\n            {\n                {\"Sample 1\", \"Sample 2\", \"Sample 3\", 4, 5, 6},\n                {\"Sample 2\", \"Sample 3\", \"Sample 4\", 5, 6, 7}\n            }\n        )\n    otherwise\n        #table({\"Region\", \"Category\", \"segment\", \"TotalRevenue\", \"TotalProfit\", \"OrderCount\"}, {}),\n    #\"Joined Joined\" = Table.NestedJoin(Source, \"Region\", Returns_Analysis, \"Region\", \"Joined\", JoinKind.LeftOuter),\n    #\"Expanded Joined\" = Table.ExpandTableColumn(#\"Joined Joined\", \"Joined\", {\"ReasonCode\", \"NetRefund\", \"ReturnRate\", \"anomaly_score\"}),\n    #\"Grouped Rows\" = Table.Group(#\"Expanded Joined\", {\"Region\"}, {{\"GrandRevenue\", each List.Sum([TotalRevenue]), type number}, {\"GrandProfit\", each List.Sum([TotalProfit]), type number}, {\"TotalOrders\", each List.Sum([OrderCount]), type number}, {\"TotalRefunds\", each List.Sum([NetRefund]), type number}, {\"AvgReturnRate\", each List.Average([ReturnRate]), type number}}),\n    #\"Added ProfitMargin\" = Table.AddColumn(#\"Grouped Rows\", \"ProfitMargin\", each [GrandProfit] / [GrandRevenue]),\n    #\"Added NetRevenue\" = Table.AddColumn(#\"Added ProfitMargin\", \"NetRevenue\", each [GrandRevenue] - [TotalRefunds]),\n    #\"Added AvgOrderValue\" = Table.AddColumn(#\"Added NetRevenue\", \"AvgOrderValue\", each [GrandRevenue] / [TotalOrders]),\n    Result = #\"Added AvgOrderValue\"\nin\n    Result"
+      },
+      "assessment": {
+        "grade": "GREEN",
+        "items": [
+          {
+            "category": "datasource",
+            "status": "pass",
+            "detail": "2 input(s) — all connectors supported"
+          },
+          {
+            "category": "script",
+            "status": "pass",
+            "detail": "No Script nodes"
+          },
+          {
+            "category": "join",
+            "status": "pass",
+            "detail": "1 join(s) → Power Query Table.NestedJoin"
+          },
+          {
+            "category": "output",
+            "status": "pass",
+            "detail": "1 output(s)"
+          }
+        ],
+        "pass_count": 4,
+        "warn_count": 0,
+        "fail_count": 0
+      }
+    },
+    {
+      "name": "08_Inventory_Tracker",
+      "file_path": "C:\\Users\\pidoudet\\OneDrive - Microsoft\\Boulot\\PBI SME\\OracleToPostgre\\TableauToPowerBI\\examples\\prep_portfolio\\08_Inventory_Tracker.tfl",
+      "inputs": [
+        {
+          "node_id": "a8000001-0001-0001-0001-000000000001",
+          "name": "CRM Customers",
+          "connection_type": "postgres",
+          "server": "crm-db.corp.local",
+          "database": "crm_production",
+          "schema": "public",
+          "table_name": "customers",
+          "filename": "",
+          "column_count": 6,
+          "column_names": [
+            "customer_id",
+            "first_name",
+            "last_name",
+            "email",
+            "segment",
+            "lifetime_value"
+          ],
+          "fingerprint": "8d96b90c648a5fa7"
+        },
+        {
+          "node_id": "a8000001-0001-0001-0001-000000000002",
+          "name": "Inventory Levels",
+          "connection_type": "snowflake",
+          "server": "acme.snowflakecomputing.com",
+          "database": "WAREHOUSE",
+          "schema": "SUPPLY_CHAIN",
+          "table_name": "INVENTORY_LEVELS",
+          "filename": "",
+          "column_count": 7,
+          "column_names": [
+            "SKU",
+            "WAREHOUSE_ID",
+            "QTY_ON_HAND",
+            "QTY_RESERVED",
+            "REORDER_POINT",
+            "LAST_RECEIPT_DATE",
+            "UNIT_COST"
+          ],
+          "fingerprint": "957ca75eea0a8f15"
+        }
+      ],
+      "outputs": [
+        {
+          "node_id": "a8000001-0001-0001-0001-000000000005",
+          "name": "Inventory_Status",
+          "output_type": "PublishExtract",
+          "target_server": "acme.snowflakecomputing.com",
+          "target_database": "WAREHOUSE",
+          "target_table": "INVENTORY_STATUS",
+          "target_filename": "",
+          "column_count": 7,
+          "column_names": [
+            "SKU",
+            "WAREHOUSE_ID",
+            "QTY_ON_HAND",
+            "AvailableQty",
+            "NeedsReorder",
+            "InventoryValue",
+            "LAST_RECEIPT_DATE"
+          ],
+          "fingerprint": "66d39286c5f4ad3c"
+        }
+      ],
+      "transforms": [
+        {
+          "node_id": "a8000001-0001-0001-0001-000000000003",
+          "name": "Customer Inventory",
+          "transform_type": "Join",
+          "details": {
+            "join_type": "full",
+            "key_count": 1
+          }
+        },
+        {
+          "node_id": "a8000001-0001-0001-0001-000000000004",
+          "name": "Inventory Metrics",
+          "transform_type": "Clean",
+          "details": {
+            "action_count": 0,
+            "action_types": []
+          }
+        }
+      ],
+      "node_count": 5,
+      "edge_count": 4,
+      "dag_depth": 3,
+      "join_count": 1,
+      "union_count": 0,
+      "script_count": 0,
+      "calc_count": 0,
+      "complexity_score": 5,
+      "complexity_label": "Low",
+      "node_graph": {
+        "a8000001-0001-0001-0001-000000000001": [
+          "a8000001-0001-0001-0001-000000000003"
+        ],
+        "a8000001-0001-0001-0001-000000000002": [
+          "a8000001-0001-0001-0001-000000000003"
+        ],
+        "a8000001-0001-0001-0001-000000000003": [
+          "a8000001-0001-0001-0001-000000000004"
+        ],
+        "a8000001-0001-0001-0001-000000000004": [
+          "a8000001-0001-0001-0001-000000000005"
+        ],
+        "a8000001-0001-0001-0001-000000000005": []
+      },
+      "m_queries": {
+        "Inventory_Levels": "let\n    // TODO: Configure the data source for connector type: snowflake\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"SKU\", \"WAREHOUSE_ID\", \"QTY_ON_HAND\", \"QTY_RESERVED\", \"REORDER_POINT\", \"LAST_RECEIPT_DATE\", \"UNIT_COST\"},\n            {\n                {\"Sample 1\", \"Sample 2\", 3, 4, 5, 6, 7},\n                {\"Sample 2\", \"Sample 3\", 4, 5, 6, 7, 8}\n            }\n        )\n    otherwise\n        #table({\"SKU\", \"WAREHOUSE_ID\", \"QTY_ON_HAND\", \"QTY_RESERVED\", \"REORDER_POINT\", \"LAST_RECEIPT_DATE\", \"UNIT_COST\"}, {})  // Empty table on error\nin\n    Source",
+        "Inventory_Status": "let\n    // TODO: Configure the data source for connector type: postgres\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"customer_id\", \"first_name\", \"last_name\", \"email\", \"segment\", \"lifetime_value\"},\n            {\n                {\"Sample 1\", \"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", 6},\n                {\"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", \"Sample 6\", 7}\n            }\n        )\n    otherwise\n        #table({\"customer_id\", \"first_name\", \"last_name\", \"email\", \"segment\", \"lifetime_value\"}, {}),\n    #\"Joined Joined\" = Table.NestedJoin(Source, \"customer_id\", Inventory_Levels, \"WAREHOUSE_ID\", \"Joined\", JoinKind.FullOuter),\n    #\"Expanded Joined\" = Table.ExpandTableColumn(#\"Joined Joined\", \"Joined\", {\"SKU\", \"QTY_ON_HAND\", \"QTY_RESERVED\", \"REORDER_POINT\", \"LAST_RECEIPT_DATE\", \"UNIT_COST\"}),\n    #\"Added AvailableQty\" = Table.AddColumn(#\"Expanded Joined\", \"AvailableQty\", each [QTY_ON_HAND] - [QTY_RESERVED]),\n    #\"Added NeedsReorder\" = Table.AddColumn(#\"Added AvailableQty\", \"NeedsReorder\", each if [AvailableQty] < [REORDER_POINT] then 'Yes' else 'No' ),\n    #\"Added InventoryValue\" = Table.AddColumn(#\"Added NeedsReorder\", \"InventoryValue\", each [QTY_ON_HAND] * [UNIT_COST]),\n    Result = #\"Added InventoryValue\"\nin\n    Result"
+      },
+      "assessment": {
+        "grade": "GREEN",
+        "items": [
+          {
+            "category": "datasource",
+            "status": "pass",
+            "detail": "2 input(s) — all connectors supported"
+          },
+          {
+            "category": "script",
+            "status": "pass",
+            "detail": "No Script nodes"
+          },
+          {
+            "category": "join",
+            "status": "pass",
+            "detail": "1 join(s) → Power Query Table.NestedJoin"
+          },
+          {
+            "category": "output",
+            "status": "pass",
+            "detail": "1 output(s)"
+          }
+        ],
+        "pass_count": 4,
+        "warn_count": 0,
+        "fail_count": 0
+      }
+    },
+    {
+      "name": "09_HR_Attrition_Analysis",
+      "file_path": "C:\\Users\\pidoudet\\OneDrive - Microsoft\\Boulot\\PBI SME\\OracleToPostgre\\TableauToPowerBI\\examples\\prep_portfolio\\09_HR_Attrition_Analysis.tfl",
+      "inputs": [
+        {
+          "node_id": "a9000001-0001-0001-0001-000000000001",
+          "name": "Employee_Survey.xlsx",
+          "connection_type": "excel-direct",
+          "server": "",
+          "database": "",
+          "schema": "",
+          "table_name": "Employee_Survey.xlsx",
+          "filename": "Employee_Survey.xlsx",
+          "column_count": 7,
+          "column_names": [
+            "EmployeeID",
+            "Q1_Satisfaction",
+            "Q2_WorkLifeBalance",
+            "Q3_Environment",
+            "Q4_Relationship",
+            "Q5_JobInvolvement",
+            "SurveyDate"
+          ],
+          "fingerprint": "124a6dca3d61e96a"
+        },
+        {
+          "node_id": "a9000001-0001-0001-0001-000000000002",
+          "name": "HR_Employees",
+          "connection_type": "sqlserver",
+          "server": "hr-db.corp.local",
+          "database": "HumanResources",
+          "schema": "dbo",
+          "table_name": "Employees",
+          "filename": "",
+          "column_count": 16,
+          "column_names": [
+            "EmployeeID",
+            "FirstName",
+            "LastName",
+            "Department",
+            "JobRole",
+            "HireDate",
+            "TerminationDate",
+            "MonthlyIncome",
+            "EducationLevel",
+            "Gender",
+            "Age",
+            "OverTime",
+            "DistanceFromHome",
+            "YearsAtCompany",
+            "NumCompaniesWorked",
+            "TrainingTimesLastYear"
+          ],
+          "fingerprint": "89c4a4d22099c4e6"
+        },
+        {
+          "node_id": "a9000001-0001-0001-0001-000000000003",
+          "name": "Performance_Reviews.csv",
+          "connection_type": "textscan",
+          "server": "",
+          "database": "",
+          "schema": "",
+          "table_name": "Performance_Reviews.csv",
+          "filename": "Performance_Reviews.csv",
+          "column_count": 6,
+          "column_names": [
+            "EmployeeID",
+            "ReviewYear",
+            "PerformanceRating",
+            "ManagerRating",
+            "GoalsAchieved",
+            "PromotionRecommendation"
+          ],
+          "fingerprint": "1cd369926d8f78aa"
+        }
+      ],
+      "outputs": [
+        {
+          "node_id": "a9000001-0001-0001-0001-000000000009",
+          "name": "HR_Attrition_Detail",
+          "output_type": "PublishExtract",
+          "target_server": "",
+          "target_database": "",
+          "target_table": "HR_Attrition_Detail",
+          "target_filename": "HR_Attrition_Detail.hyper",
+          "column_count": 18,
+          "column_names": [
+            "EmployeeID",
+            "FirstName",
+            "LastName",
+            "Department",
+            "JobRole",
+            "HireDate",
+            "MonthlyIncome",
+            "Gender",
+            "Age",
+            "OverTime",
+            "YearsAtCompany",
+            "PerformanceRating",
+            "AvgSurveyScore",
+            "IsTerminated",
+            "TenureBucket",
+            "AttritionRisk",
+            "IncomeBracket",
+            "Education"
+          ],
+          "fingerprint": "98543a6508380a04"
+        },
+        {
+          "node_id": "a9000001-0001-0001-0001-000000000011",
+          "name": "HR_Department_Summary",
+          "output_type": "PublishExtract",
+          "target_server": "",
+          "target_database": "",
+          "target_table": "HR_Department_Summary",
+          "target_filename": "HR_Department_Summary.hyper",
+          "column_count": 6,
+          "column_names": [
+            "Department",
+            "AttritionRisk",
+            "EmployeeCount",
+            "AvgIncome",
+            "AvgSatisfaction",
+            "Terminations"
+          ],
+          "fingerprint": "940e7a52437f10f7"
+        }
+      ],
+      "transforms": [
+        {
+          "node_id": "a9000001-0001-0001-0001-000000000004",
+          "name": "Unpivot Survey Scores",
+          "transform_type": "Pivot",
+          "details": {
+            "pivot_type": "columnsToRows"
+          }
+        },
+        {
+          "node_id": "a9000001-0001-0001-0001-000000000005",
+          "name": "Employee + Performance",
+          "transform_type": "Join",
+          "details": {
+            "join_type": "left",
+            "key_count": 1
+          }
+        },
+        {
+          "node_id": "a9000001-0001-0001-0001-000000000006",
+          "name": "Avg Survey by Employee",
+          "transform_type": "Aggregate",
+          "details": {
+            "group_fields": 1,
+            "agg_fields": 3,
+            "group_by_columns": [
+              "EmployeeID"
+            ],
+            "aggregate_columns": [
+              "AVG(Score)",
+              "MIN(Score)",
+              "MAX(Score)"
+            ]
+          }
+        },
+        {
+          "node_id": "a9000001-0001-0001-0001-000000000007",
+          "name": "Enrich with Survey",
+          "transform_type": "Join",
+          "details": {
+            "join_type": "left",
+            "key_count": 1
+          }
+        },
+        {
+          "node_id": "a9000001-0001-0001-0001-000000000008",
+          "name": "Attrition Risk Score",
+          "transform_type": "Clean",
+          "details": {
+            "action_count": 0,
+            "action_types": []
+          }
+        },
+        {
+          "node_id": "a9000001-0001-0001-0001-000000000010",
+          "name": "Department Summary",
+          "transform_type": "Aggregate",
+          "details": {
+            "group_fields": 2,
+            "agg_fields": 4,
+            "group_by_columns": [
+              "Department",
+              "AttritionRisk"
+            ],
+            "aggregate_columns": [
+              "COUNT(EmployeeID)",
+              "AVG(MonthlyIncome)",
+              "AVG(AvgSurveyScore)",
+              "SUM(IsTerminated)"
+            ]
+          }
+        }
+      ],
+      "node_count": 11,
+      "edge_count": 10,
+      "dag_depth": 6,
+      "join_count": 2,
+      "union_count": 0,
+      "script_count": 0,
+      "calc_count": 0,
+      "complexity_score": 11,
+      "complexity_label": "Medium",
+      "node_graph": {
+        "a9000001-0001-0001-0001-000000000001": [
+          "a9000001-0001-0001-0001-000000000004"
+        ],
+        "a9000001-0001-0001-0001-000000000002": [
+          "a9000001-0001-0001-0001-000000000005"
+        ],
+        "a9000001-0001-0001-0001-000000000003": [
+          "a9000001-0001-0001-0001-000000000005"
+        ],
+        "a9000001-0001-0001-0001-000000000004": [
+          "a9000001-0001-0001-0001-000000000006"
+        ],
+        "a9000001-0001-0001-0001-000000000005": [
+          "a9000001-0001-0001-0001-000000000007"
+        ],
+        "a9000001-0001-0001-0001-000000000006": [
+          "a9000001-0001-0001-0001-000000000007"
+        ],
+        "a9000001-0001-0001-0001-000000000007": [
+          "a9000001-0001-0001-0001-000000000008"
+        ],
+        "a9000001-0001-0001-0001-000000000008": [
+          "a9000001-0001-0001-0001-000000000009",
+          "a9000001-0001-0001-0001-000000000010"
+        ],
+        "a9000001-0001-0001-0001-000000000009": [],
+        "a9000001-0001-0001-0001-000000000010": [
+          "a9000001-0001-0001-0001-000000000011"
+        ],
+        "a9000001-0001-0001-0001-000000000011": []
+      },
+      "m_queries": {
+        "Performance_Reviews": "let\n    // TODO: Configure the data source for connector type: textscan\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"EmployeeID\", \"ReviewYear\", \"PerformanceRating\", \"ManagerRating\", \"GoalsAchieved\", \"PromotionRecommendation\"},\n            {\n                {\"Sample 1\", 2, 3, 4, 5, \"Sample 6\"},\n                {\"Sample 2\", 3, 4, 5, 6, \"Sample 7\"}\n            }\n        )\n    otherwise\n        #table({\"EmployeeID\", \"ReviewYear\", \"PerformanceRating\", \"ManagerRating\", \"GoalsAchieved\", \"PromotionRecommendation\"}, {})  // Empty table on error\nin\n    Source",
+        "Avg_Survey_by_Employee": "let\n    // TODO: Configure the data source for connector type: excel-direct\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"EmployeeID\", \"Q1_Satisfaction\", \"Q2_WorkLifeBalance\", \"Q3_Environment\", \"Q4_Relationship\", \"Q5_JobInvolvement\", \"SurveyDate\"},\n            {\n                {\"Sample 1\", 2, 3, 4, 5, 6, 7},\n                {\"Sample 2\", 3, 4, 5, 6, 7, 8}\n            }\n        )\n    otherwise\n        #table({\"EmployeeID\", \"Q1_Satisfaction\", \"Q2_WorkLifeBalance\", \"Q3_Environment\", \"Q4_Relationship\", \"Q5_JobInvolvement\", \"SurveyDate\"}, {})  // Empty table on error\nin\n    Source",
+        "HR_Attrition_Detail": "let\n    // TODO: Configure the data source for connector type: sqlserver\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"EmployeeID\", \"FirstName\", \"LastName\", \"Department\", \"JobRole\", \"HireDate\", \"TerminationDate\", \"MonthlyIncome\", \"EducationLevel\", \"Gender\", \"Age\", \"OverTime\", \"DistanceFromHome\", \"YearsAtCompany\", \"NumCompaniesWorked\", \"TrainingTimesLastYear\"},\n            {\n                {\"Sample 1\", \"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", 6, 7, 8, 9, \"Sample 10\", 11, \"Sample 12\", 13, 14, 15, 16},\n                {\"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", \"Sample 6\", 7, 8, 9, 10, \"Sample 11\", 12, \"Sample 13\", 14, 15, 16, 17}\n            }\n        )\n    otherwise\n        #table({\"EmployeeID\", \"FirstName\", \"LastName\", \"Department\", \"JobRole\", \"HireDate\", \"TerminationDate\", \"MonthlyIncome\", \"EducationLevel\", \"Gender\", \"Age\", \"OverTime\", \"DistanceFromHome\", \"YearsAtCompany\", \"NumCompaniesWorked\", \"TrainingTimesLastYear\"}, {}),\n    #\"Joined Joined\" = Table.NestedJoin(Source, \"EmployeeID\", Performance_Reviews, \"EmployeeID\", \"Joined\", JoinKind.LeftOuter),\n    #\"Expanded Joined\" = Table.ExpandTableColumn(#\"Joined Joined\", \"Joined\", {\"ReviewYear\", \"PerformanceRating\", \"ManagerRating\", \"GoalsAchieved\", \"PromotionRecommendation\"}),\n    #\"Joined Joined 2\" = Table.NestedJoin(#\"Expanded Joined\", \"EmployeeID\", Avg_Survey_by_Employee, \"EmployeeID\", \"Joined\", JoinKind.LeftOuter),\n    #\"Expanded Joined 2\" = Table.ExpandTableColumn(#\"Joined Joined 2\", \"Joined\", {\"Q1_Satisfaction\", \"Q2_WorkLifeBalance\", \"Q3_Environment\", \"Q4_Relationship\", \"Q5_JobInvolvement\", \"SurveyDate\"}),\n    #\"Added IsTerminated\" = Table.AddColumn(#\"Expanded Joined 2\", \"IsTerminated\", each if (null = [TerminationDate]) then 0 else 1 ),\n    #\"Added TenureBucket\" = Table.AddColumn(#\"Added IsTerminated\", \"TenureBucket\", each if [YearsAtCompany] < 2 then 'New' else if [YearsAtCompany] < 5 then 'Mid' else if [YearsAtCompany] < 10 then 'Senior' else 'Veteran' ),\n    #\"Added AttritionRisk\" = Table.AddColumn(#\"Added TenureBucket\", \"AttritionRisk\", each if [OverTime] = 'Yes' and [AvgSurveyScore] < 3 then 'High' else if [OverTime] = 'Yes' or [AvgSurveyScore] < 3 then 'Medium' else 'Low' ),\n    #\"Added IncomeBracket\" = Table.AddColumn(#\"Added AttritionRisk\", \"IncomeBracket\", each if [MonthlyIncome] < 3000 then 'Low' else if [MonthlyIncome] < 7000 then 'Mid' else 'High' ),\n    #\"Renamed Columns\" = Table.RenameColumns(#\"Added IncomeBracket\", {{\"EducationLevel\", \"Education\"}}),\n    Result = #\"Renamed Columns\"\nin\n    Result",
+        "HR_Department_Summary": "let\n    // TODO: Configure the data source for connector type: sqlserver\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"EmployeeID\", \"FirstName\", \"LastName\", \"Department\", \"JobRole\", \"HireDate\", \"TerminationDate\", \"MonthlyIncome\", \"EducationLevel\", \"Gender\", \"Age\", \"OverTime\", \"DistanceFromHome\", \"YearsAtCompany\", \"NumCompaniesWorked\", \"TrainingTimesLastYear\"},\n            {\n                {\"Sample 1\", \"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", 6, 7, 8, 9, \"Sample 10\", 11, \"Sample 12\", 13, 14, 15, 16},\n                {\"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", \"Sample 6\", 7, 8, 9, 10, \"Sample 11\", 12, \"Sample 13\", 14, 15, 16, 17}\n            }\n        )\n    otherwise\n        #table({\"EmployeeID\", \"FirstName\", \"LastName\", \"Department\", \"JobRole\", \"HireDate\", \"TerminationDate\", \"MonthlyIncome\", \"EducationLevel\", \"Gender\", \"Age\", \"OverTime\", \"DistanceFromHome\", \"YearsAtCompany\", \"NumCompaniesWorked\", \"TrainingTimesLastYear\"}, {}),\n    #\"Joined Joined\" = Table.NestedJoin(Source, \"EmployeeID\", Performance_Reviews, \"EmployeeID\", \"Joined\", JoinKind.LeftOuter),\n    #\"Expanded Joined\" = Table.ExpandTableColumn(#\"Joined Joined\", \"Joined\", {\"ReviewYear\", \"PerformanceRating\", \"ManagerRating\", \"GoalsAchieved\", \"PromotionRecommendation\"}),\n    #\"Joined Joined 2\" = Table.NestedJoin(#\"Expanded Joined\", \"EmployeeID\", Avg_Survey_by_Employee, \"EmployeeID\", \"Joined\", JoinKind.LeftOuter),\n    #\"Expanded Joined 2\" = Table.ExpandTableColumn(#\"Joined Joined 2\", \"Joined\", {\"Q1_Satisfaction\", \"Q2_WorkLifeBalance\", \"Q3_Environment\", \"Q4_Relationship\", \"Q5_JobInvolvement\", \"SurveyDate\"}),\n    #\"Added IsTerminated\" = Table.AddColumn(#\"Expanded Joined 2\", \"IsTerminated\", each if (null = [TerminationDate]) then 0 else 1 ),\n    #\"Added TenureBucket\" = Table.AddColumn(#\"Added IsTerminated\", \"TenureBucket\", each if [YearsAtCompany] < 2 then 'New' else if [YearsAtCompany] < 5 then 'Mid' else if [YearsAtCompany] < 10 then 'Senior' else 'Veteran' ),\n    #\"Added AttritionRisk\" = Table.AddColumn(#\"Added TenureBucket\", \"AttritionRisk\", each if [OverTime] = 'Yes' and [AvgSurveyScore] < 3 then 'High' else if [OverTime] = 'Yes' or [AvgSurveyScore] < 3 then 'Medium' else 'Low' ),\n    #\"Added IncomeBracket\" = Table.AddColumn(#\"Added AttritionRisk\", \"IncomeBracket\", each if [MonthlyIncome] < 3000 then 'Low' else if [MonthlyIncome] < 7000 then 'Mid' else 'High' ),\n    #\"Renamed Columns\" = Table.RenameColumns(#\"Added IncomeBracket\", {{\"EducationLevel\", \"Education\"}}),\n    Result = #\"Renamed Columns\"\nin\n    Result"
+      },
+      "assessment": {
+        "grade": "GREEN",
+        "items": [
+          {
+            "category": "datasource",
+            "status": "pass",
+            "detail": "3 input(s) — all connectors supported"
+          },
+          {
+            "category": "script",
+            "status": "pass",
+            "detail": "No Script nodes"
+          },
+          {
+            "category": "join",
+            "status": "pass",
+            "detail": "2 join(s) → Power Query Table.NestedJoin"
+          },
+          {
+            "category": "aggregate",
+            "status": "pass",
+            "detail": "2 aggregate(s) → Table.Group"
+          },
+          {
+            "category": "output",
+            "status": "pass",
+            "detail": "2 output(s)"
+          }
+        ],
+        "pass_count": 5,
+        "warn_count": 0,
+        "fail_count": 0
+      }
+    },
+    {
+      "name": "10_Food_Delivery_ETL",
+      "file_path": "C:\\Users\\pidoudet\\OneDrive - Microsoft\\Boulot\\PBI SME\\OracleToPostgre\\TableauToPowerBI\\examples\\prep_portfolio\\10_Food_Delivery_ETL.tfl",
+      "inputs": [
+        {
+          "node_id": "aa000001-0001-0001-0001-000000000001",
+          "name": "App_Orders",
+          "connection_type": "postgres",
+          "server": "app-db.foodfast.io",
+          "database": "food_delivery",
+          "schema": "orders",
+          "table_name": "order_log",
+          "filename": "",
+          "column_count": 14,
+          "column_names": [
+            "order_id",
+            "customer_id",
+            "restaurant_id",
+            "driver_id",
+            "order_timestamp",
+            "delivery_timestamp",
+            "order_total",
+            "delivery_fee",
+            "tip_amount",
+            "payment_method",
+            "promo_code",
+            "discount_amount",
+            "status",
+            "platform"
+          ],
+          "fingerprint": "a9446b7b85121e10"
+        },
+        {
+          "node_id": "aa000001-0001-0001-0001-000000000002",
+          "name": "Restaurants_Jan.csv",
+          "connection_type": "textscan",
+          "server": "",
+          "database": "",
+          "schema": "",
+          "table_name": "Restaurants_Jan.csv",
+          "filename": "Restaurants_Jan.csv",
+          "column_count": 9,
+          "column_names": [
+            "restaurant_id",
+            "restaurant_name",
+            "cuisine_type",
+            "city",
+            "state",
+            "avg_rating",
+            "prep_time_min",
+            "active",
+            "month"
+          ],
+          "fingerprint": "2c3b290117dcc22b"
+        },
+        {
+          "node_id": "aa000001-0001-0001-0001-000000000003",
+          "name": "Restaurants_Feb.csv",
+          "connection_type": "textscan",
+          "server": "",
+          "database": "",
+          "schema": "",
+          "table_name": "Restaurants_Feb.csv",
+          "filename": "Restaurants_Feb.csv",
+          "column_count": 9,
+          "column_names": [
+            "restaurant_id",
+            "restaurant_name",
+            "cuisine_type",
+            "city",
+            "state",
+            "avg_rating",
+            "prep_time_min",
+            "active",
+            "month"
+          ],
+          "fingerprint": "226af34beffde74f"
+        }
+      ],
+      "outputs": [
+        {
+          "node_id": "aa000001-0001-0001-0001-000000000009",
+          "name": "Delivery_Fact",
+          "output_type": "PublishExtract",
+          "target_server": "",
+          "target_database": "",
+          "target_table": "Delivery_Fact",
+          "target_filename": "Delivery_Fact.hyper",
+          "column_count": 16,
+          "column_names": [
+            "OrderID",
+            "CustomerID",
+            "RestaurantID",
+            "RestaurantName",
+            "cuisine_type",
+            "city",
+            "platform",
+            "payment_method",
+            "order_total",
+            "NetRevenue",
+            "tip_amount",
+            "DeliveryMinutes",
+            "TotalWaitMinutes",
+            "SpeedTier",
+            "RevenuePerMinute",
+            "HasPromo"
+          ],
+          "fingerprint": "f19eac7135793ba1"
+        },
+        {
+          "node_id": "aa000001-0001-0001-0001-000000000011",
+          "name": "Restaurant_Dim",
+          "output_type": "PublishExtract",
+          "target_server": "",
+          "target_database": "",
+          "target_table": "Restaurant_Dim",
+          "target_filename": "Restaurant_Dim.hyper",
+          "column_count": 8,
+          "column_names": [
+            "RestaurantID",
+            "RestaurantName",
+            "cuisine_type",
+            "city",
+            "state",
+            "avg_rating",
+            "prep_time_min",
+            "active"
+          ],
+          "fingerprint": "73c8214af771a145"
+        },
+        {
+          "node_id": "aa000001-0001-0001-0001-000000000012",
+          "name": "Restaurant_Performance",
+          "output_type": "PublishExtract",
+          "target_server": "",
+          "target_database": "",
+          "target_table": "Restaurant_Performance",
+          "target_filename": "Restaurant_Performance.hyper",
+          "column_count": 9,
+          "column_names": [
+            "RestaurantID",
+            "RestaurantName",
+            "cuisine_type",
+            "city",
+            "TotalOrders",
+            "TotalRevenue",
+            "AvgOrderValue",
+            "AvgWaitTime",
+            "AvgTip"
+          ],
+          "fingerprint": "3d0e78a06d95b61e"
+        }
+      ],
+      "transforms": [
+        {
+          "node_id": "aa000001-0001-0001-0001-000000000004",
+          "name": "Clean Orders",
+          "transform_type": "Clean",
+          "details": {
+            "action_count": 0,
+            "action_types": []
+          }
+        },
+        {
+          "node_id": "aa000001-0001-0001-0001-000000000005",
+          "name": "Union Restaurants",
+          "transform_type": "Union",
+          "details": {}
+        },
+        {
+          "node_id": "aa000001-0001-0001-0001-000000000006",
+          "name": "Deduplicate Restaurants",
+          "transform_type": "Clean",
+          "details": {
+            "action_count": 0,
+            "action_types": []
+          }
+        },
+        {
+          "node_id": "aa000001-0001-0001-0001-000000000007",
+          "name": "Orders + Restaurants",
+          "transform_type": "Join",
+          "details": {
+            "join_type": "inner",
+            "key_count": 1
+          }
+        },
+        {
+          "node_id": "aa000001-0001-0001-0001-000000000008",
+          "name": "Delivery Performance",
+          "transform_type": "Clean",
+          "details": {
+            "action_count": 0,
+            "action_types": []
+          }
+        },
+        {
+          "node_id": "aa000001-0001-0001-0001-000000000010",
+          "name": "Restaurant KPIs",
+          "transform_type": "Aggregate",
+          "details": {
+            "group_fields": 4,
+            "agg_fields": 5,
+            "group_by_columns": [
+              "RestaurantID",
+              "RestaurantName",
+              "cuisine_type",
+              "city"
+            ],
+            "aggregate_columns": [
+              "COUNTD(OrderID)",
+              "SUM(NetRevenue)",
+              "AVG(NetRevenue)",
+              "AVG(TotalWaitMinutes)",
+              "AVG(tip_amount)"
+            ]
+          }
+        }
+      ],
+      "node_count": 12,
+      "edge_count": 11,
+      "dag_depth": 6,
+      "join_count": 1,
+      "union_count": 1,
+      "script_count": 0,
+      "calc_count": 0,
+      "complexity_score": 11,
+      "complexity_label": "Medium",
+      "node_graph": {
+        "aa000001-0001-0001-0001-000000000001": [
+          "aa000001-0001-0001-0001-000000000004"
+        ],
+        "aa000001-0001-0001-0001-000000000002": [
+          "aa000001-0001-0001-0001-000000000005"
+        ],
+        "aa000001-0001-0001-0001-000000000003": [
+          "aa000001-0001-0001-0001-000000000005"
+        ],
+        "aa000001-0001-0001-0001-000000000004": [
+          "aa000001-0001-0001-0001-000000000007"
+        ],
+        "aa000001-0001-0001-0001-000000000005": [
+          "aa000001-0001-0001-0001-000000000006"
+        ],
+        "aa000001-0001-0001-0001-000000000006": [
+          "aa000001-0001-0001-0001-000000000007",
+          "aa000001-0001-0001-0001-000000000011"
+        ],
+        "aa000001-0001-0001-0001-000000000007": [
+          "aa000001-0001-0001-0001-000000000008"
+        ],
+        "aa000001-0001-0001-0001-000000000008": [
+          "aa000001-0001-0001-0001-000000000009",
+          "aa000001-0001-0001-0001-000000000010"
+        ],
+        "aa000001-0001-0001-0001-000000000009": [],
+        "aa000001-0001-0001-0001-000000000010": [
+          "aa000001-0001-0001-0001-000000000012"
+        ],
+        "aa000001-0001-0001-0001-000000000011": [],
+        "aa000001-0001-0001-0001-000000000012": []
+      },
+      "m_queries": {
+        "Restaurants_Jan": "let\n    // TODO: Configure the data source for connector type: textscan\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"restaurant_id\", \"restaurant_name\", \"cuisine_type\", \"city\", \"state\", \"avg_rating\", \"prep_time_min\", \"active\", \"month\"},\n            {\n                {\"Sample 1\", \"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", 6, 7, 8, \"Sample 9\"},\n                {\"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", \"Sample 6\", 7, 8, 9, \"Sample 10\"}\n            }\n        )\n    otherwise\n        #table({\"restaurant_id\", \"restaurant_name\", \"cuisine_type\", \"city\", \"state\", \"avg_rating\", \"prep_time_min\", \"active\", \"month\"}, {})  // Empty table on error\nin\n    Source",
+        "Deduplicate_Restaurants": "let\n    // TODO: Configure the data source for connector type: textscan\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"restaurant_id\", \"restaurant_name\", \"cuisine_type\", \"city\", \"state\", \"avg_rating\", \"prep_time_min\", \"active\", \"month\"},\n            {\n                {\"Sample 1\", \"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", 6, 7, 8, \"Sample 9\"},\n                {\"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", \"Sample 6\", 7, 8, 9, \"Sample 10\"}\n            }\n        )\n    otherwise\n        #table({\"restaurant_id\", \"restaurant_name\", \"cuisine_type\", \"city\", \"state\", \"avg_rating\", \"prep_time_min\", \"active\", \"month\"}, {}),\n    #\"Combined Tables\" = Table.Combine({Restaurants_Jan, Restaurants_Feb}),\n    #\"Renamed Columns\" = Table.RenameColumns(#\"Combined Tables\", {{\"restaurant_id\", \"RestaurantID\"}, {\"restaurant_name\", \"RestaurantName\"}}),\n    #\"Trimmed Text\" = Table.TransformColumns(#\"Renamed Columns\", {{\"RestaurantName\", Text.Trim}}),\n    #\"Proper Cased\" = Table.TransformColumns(#\"Trimmed Text\", {{\"cuisine_type\", Text.Proper}}),\n    Result = #\"Proper Cased\"\nin\n    Result",
+        "Restaurants_Feb": "let\n    // TODO: Configure the data source for connector type: textscan\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"restaurant_id\", \"restaurant_name\", \"cuisine_type\", \"city\", \"state\", \"avg_rating\", \"prep_time_min\", \"active\", \"month\"},\n            {\n                {\"Sample 1\", \"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", 6, 7, 8, \"Sample 9\"},\n                {\"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", \"Sample 6\", 7, 8, 9, \"Sample 10\"}\n            }\n        )\n    otherwise\n        #table({\"restaurant_id\", \"restaurant_name\", \"cuisine_type\", \"city\", \"state\", \"avg_rating\", \"prep_time_min\", \"active\", \"month\"}, {})  // Empty table on error\nin\n    Source",
+        "Restaurant_Dim": "let\n    // TODO: Configure the data source for connector type: textscan\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"restaurant_id\", \"restaurant_name\", \"cuisine_type\", \"city\", \"state\", \"avg_rating\", \"prep_time_min\", \"active\", \"month\"},\n            {\n                {\"Sample 1\", \"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", 6, 7, 8, \"Sample 9\"},\n                {\"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", \"Sample 6\", 7, 8, 9, \"Sample 10\"}\n            }\n        )\n    otherwise\n        #table({\"restaurant_id\", \"restaurant_name\", \"cuisine_type\", \"city\", \"state\", \"avg_rating\", \"prep_time_min\", \"active\", \"month\"}, {}),\n    #\"Combined Tables\" = Table.Combine({Restaurants_Jan, Restaurants_Feb}),\n    #\"Renamed Columns\" = Table.RenameColumns(#\"Combined Tables\", {{\"restaurant_id\", \"RestaurantID\"}, {\"restaurant_name\", \"RestaurantName\"}}),\n    #\"Trimmed Text\" = Table.TransformColumns(#\"Renamed Columns\", {{\"RestaurantName\", Text.Trim}}),\n    #\"Proper Cased\" = Table.TransformColumns(#\"Trimmed Text\", {{\"cuisine_type\", Text.Proper}}),\n    Result = #\"Proper Cased\"\nin\n    Result",
+        "Delivery_Fact": "let\n    // TODO: Configure the data source for connector type: postgres\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"order_id\", \"customer_id\", \"restaurant_id\", \"driver_id\", \"order_timestamp\", \"delivery_timestamp\", \"order_total\", \"delivery_fee\", \"tip_amount\", \"payment_method\", \"promo_code\", \"discount_amount\", \"status\", \"platform\"},\n            {\n                {\"Sample 1\", \"Sample 2\", \"Sample 3\", \"Sample 4\", 5, 6, 7, 8, 9, \"Sample 10\", \"Sample 11\", 12, \"Sample 13\", \"Sample 14\"},\n                {\"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", 6, 7, 8, 9, 10, \"Sample 11\", \"Sample 12\", 13, \"Sample 14\", \"Sample 15\"}\n            }\n        )\n    otherwise\n        #table({\"order_id\", \"customer_id\", \"restaurant_id\", \"driver_id\", \"order_timestamp\", \"delivery_timestamp\", \"order_total\", \"delivery_fee\", \"tip_amount\", \"payment_method\", \"promo_code\", \"discount_amount\", \"status\", \"platform\"}, {}),\n    #\"Filtered Rows\" = Table.SelectRows(Source, each [status] = \"Delivered\" or [status] = \"Completed\"),\n    #\"Added DeliveryMinutes\" = Table.AddColumn(#\"Filtered Rows\", \"DeliveryMinutes\", each DATEDIFF('minute', [order_timestamp], [delivery_timestamp])),\n    #\"Added NetRevenue\" = Table.AddColumn(#\"Added DeliveryMinutes\", \"NetRevenue\", each [order_total] - [discount_amount] + [delivery_fee]),\n    #\"Added HasPromo\" = Table.AddColumn(#\"Added NetRevenue\", \"HasPromo\", each if (null = [promo_code]) then 'No' else 'Yes' ),\n    #\"Renamed Columns\" = Table.RenameColumns(#\"Added HasPromo\", {{\"order_id\", \"OrderID\"}, {\"restaurant_id\", \"RestaurantID\"}, {\"customer_id\", \"CustomerID\"}}),\n    #\"Removed Columns\" = Table.RemoveColumns(#\"Renamed Columns\", {\"status\"}),\n    #\"Joined Joined\" = Table.NestedJoin(#\"Removed Columns\", \"RestaurantID\", Deduplicate_Restaurants, \"RestaurantID\", \"Joined\", JoinKind.Inner),\n    #\"Expanded Joined\" = Table.ExpandTableColumn(#\"Joined Joined\", \"Joined\", {\"restaurant_id\", \"restaurant_name\", \"cuisine_type\", \"city\", \"state\", \"avg_rating\", \"prep_time_min\", \"active\", \"month\"}),\n    #\"Added TotalWaitMinutes\" = Table.AddColumn(#\"Expanded Joined\", \"TotalWaitMinutes\", each [prep_time_min] + [DeliveryMinutes]),\n    #\"Added SpeedTier\" = Table.AddColumn(#\"Added TotalWaitMinutes\", \"SpeedTier\", each if [TotalWaitMinutes] <= 30 then 'Fast' else if [TotalWaitMinutes] <= 45 then 'Normal' else if [TotalWaitMinutes] <= 60 then 'Slow' else 'Very Slow' ),\n    #\"Added RevenuePerMinute\" = Table.AddColumn(#\"Added SpeedTier\", \"RevenuePerMinute\", each [NetRevenue] / [TotalWaitMinutes]),\n    Result = #\"Added RevenuePerMinute\"\nin\n    Result",
+        "Restaurant_Performance": "let\n    // TODO: Configure the data source for connector type: postgres\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"order_id\", \"customer_id\", \"restaurant_id\", \"driver_id\", \"order_timestamp\", \"delivery_timestamp\", \"order_total\", \"delivery_fee\", \"tip_amount\", \"payment_method\", \"promo_code\", \"discount_amount\", \"status\", \"platform\"},\n            {\n                {\"Sample 1\", \"Sample 2\", \"Sample 3\", \"Sample 4\", 5, 6, 7, 8, 9, \"Sample 10\", \"Sample 11\", 12, \"Sample 13\", \"Sample 14\"},\n                {\"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", 6, 7, 8, 9, 10, \"Sample 11\", \"Sample 12\", 13, \"Sample 14\", \"Sample 15\"}\n            }\n        )\n    otherwise\n        #table({\"order_id\", \"customer_id\", \"restaurant_id\", \"driver_id\", \"order_timestamp\", \"delivery_timestamp\", \"order_total\", \"delivery_fee\", \"tip_amount\", \"payment_method\", \"promo_code\", \"discount_amount\", \"status\", \"platform\"}, {}),\n    #\"Filtered Rows\" = Table.SelectRows(Source, each [status] = \"Delivered\" or [status] = \"Completed\"),\n    #\"Added DeliveryMinutes\" = Table.AddColumn(#\"Filtered Rows\", \"DeliveryMinutes\", each DATEDIFF('minute', [order_timestamp], [delivery_timestamp])),\n    #\"Added NetRevenue\" = Table.AddColumn(#\"Added DeliveryMinutes\", \"NetRevenue\", each [order_total] - [discount_amount] + [delivery_fee]),\n    #\"Added HasPromo\" = Table.AddColumn(#\"Added NetRevenue\", \"HasPromo\", each if (null = [promo_code]) then 'No' else 'Yes' ),\n    #\"Renamed Columns\" = Table.RenameColumns(#\"Added HasPromo\", {{\"order_id\", \"OrderID\"}, {\"restaurant_id\", \"RestaurantID\"}, {\"customer_id\", \"CustomerID\"}}),\n    #\"Removed Columns\" = Table.RemoveColumns(#\"Renamed Columns\", {\"status\"}),\n    #\"Joined Joined\" = Table.NestedJoin(#\"Removed Columns\", \"RestaurantID\", Deduplicate_Restaurants, \"RestaurantID\", \"Joined\", JoinKind.Inner),\n    #\"Expanded Joined\" = Table.ExpandTableColumn(#\"Joined Joined\", \"Joined\", {\"restaurant_id\", \"restaurant_name\", \"cuisine_type\", \"city\", \"state\", \"avg_rating\", \"prep_time_min\", \"active\", \"month\"}),\n    #\"Added TotalWaitMinutes\" = Table.AddColumn(#\"Expanded Joined\", \"TotalWaitMinutes\", each [prep_time_min] + [DeliveryMinutes]),\n    #\"Added SpeedTier\" = Table.AddColumn(#\"Added TotalWaitMinutes\", \"SpeedTier\", each if [TotalWaitMinutes] <= 30 then 'Fast' else if [TotalWaitMinutes] <= 45 then 'Normal' else if [TotalWaitMinutes] <= 60 then 'Slow' else 'Very Slow' ),\n    #\"Added RevenuePerMinute\" = Table.AddColumn(#\"Added SpeedTier\", \"RevenuePerMinute\", each [NetRevenue] / [TotalWaitMinutes]),\n    Result = #\"Added RevenuePerMinute\"\nin\n    Result"
+      },
+      "assessment": {
+        "grade": "GREEN",
+        "items": [
+          {
+            "category": "datasource",
+            "status": "pass",
+            "detail": "3 input(s) — all connectors supported"
+          },
+          {
+            "category": "script",
+            "status": "pass",
+            "detail": "No Script nodes"
+          },
+          {
+            "category": "join",
+            "status": "pass",
+            "detail": "1 join(s) → Power Query Table.NestedJoin"
+          },
+          {
+            "category": "aggregate",
+            "status": "pass",
+            "detail": "1 aggregate(s) → Table.Group"
+          },
+          {
+            "category": "union",
+            "status": "pass",
+            "detail": "1 union(s) → Table.Combine"
+          },
+          {
+            "category": "output",
+            "status": "pass",
+            "detail": "3 output(s)"
+          }
+        ],
+        "pass_count": 6,
+        "warn_count": 0,
+        "fail_count": 0
+      }
+    },
+    {
+      "name": "11_Energy_Consumption",
+      "file_path": "C:\\Users\\pidoudet\\OneDrive - Microsoft\\Boulot\\PBI SME\\OracleToPostgre\\TableauToPowerBI\\examples\\prep_portfolio\\11_Energy_Consumption.tfl",
+      "inputs": [
+        {
+          "node_id": "ab000001-0001-0001-0001-000000000001",
+          "name": "Electricity_2023.csv",
+          "connection_type": "textscan",
+          "server": "",
+          "database": "",
+          "schema": "",
+          "table_name": "Electricity_2023.csv",
+          "filename": "Electricity_2023.csv",
+          "column_count": 10,
+          "column_names": [
+            "Country",
+            "ISO_Code",
+            "Coal_TWh",
+            "Gas_TWh",
+            "Nuclear_TWh",
+            "Hydro_TWh",
+            "Wind_TWh",
+            "Solar_TWh",
+            "Other_Renewables_TWh",
+            "Year"
+          ],
+          "fingerprint": "1ba15cac2950324c"
+        },
+        {
+          "node_id": "ab000001-0001-0001-0001-000000000002",
+          "name": "Electricity_2024.csv",
+          "connection_type": "textscan",
+          "server": "",
+          "database": "",
+          "schema": "",
+          "table_name": "Electricity_2024.csv",
+          "filename": "Electricity_2024.csv",
+          "column_count": 10,
+          "column_names": [
+            "Country",
+            "ISO_Code",
+            "Coal_TWh",
+            "Gas_TWh",
+            "Nuclear_TWh",
+            "Hydro_TWh",
+            "Wind_TWh",
+            "Solar_TWh",
+            "Other_Renewables_TWh",
+            "Year"
+          ],
+          "fingerprint": "e2af90303c003581"
+        },
+        {
+          "node_id": "ab000001-0001-0001-0001-000000000003",
+          "name": "Population_GDP.xlsx",
+          "connection_type": "excel-direct",
+          "server": "",
+          "database": "",
+          "schema": "",
+          "table_name": "Population_GDP.xlsx",
+          "filename": "Population_GDP.xlsx",
+          "column_count": 7,
+          "column_names": [
+            "ISO_Code",
+            "Country_Name",
+            "Population_M",
+            "GDP_Billion_USD",
+            "Region",
+            "IncomeGroup",
+            "Year"
+          ],
+          "fingerprint": "33a477fbb5516aa3"
+        }
+      ],
+      "outputs": [
+        {
+          "node_id": "ab000001-0001-0001-0001-000000000009",
+          "name": "Energy_Detail",
+          "output_type": "PublishExtract",
+          "target_server": "",
+          "target_database": "",
+          "target_table": "Energy_Detail",
+          "target_filename": "Energy_Detail.hyper",
+          "column_count": 13,
+          "column_names": [
+            "Country",
+            "ISO_Code",
+            "Year",
+            "EnergySource",
+            "EnergyCategory",
+            "IsRenewable",
+            "Generation_TWh",
+            "Population_M",
+            "GDP_Billion_USD",
+            "Region",
+            "IncomeGroup",
+            "GenPerCapita_MWh",
+            "GenPerGDP"
+          ],
+          "fingerprint": "185e6904604729d3"
+        },
+        {
+          "node_id": "ab000001-0001-0001-0001-000000000014",
+          "name": "Energy_Country_Summary",
+          "output_type": "PublishExtract",
+          "target_server": "",
+          "target_database": "",
+          "target_table": "Energy_Country_Summary",
+          "target_filename": "Energy_Country_Summary.hyper",
+          "column_count": 9,
+          "column_names": [
+            "Country",
+            "ISO_Code",
+            "Year",
+            "Region",
+            "Fossil",
+            "Nuclear",
+            "Renewable",
+            "TotalGeneration",
+            "RenewableShare"
+          ],
+          "fingerprint": "c32808bee6746204"
+        }
+      ],
+      "transforms": [
+        {
+          "node_id": "ab000001-0001-0001-0001-000000000011",
+          "name": "unused",
+          "transform_type": "Other",
+          "details": {}
+        },
+        {
+          "node_id": "ab000001-0001-0001-0001-000000000004",
+          "name": "Union All Years",
+          "transform_type": "Union",
+          "details": {}
+        },
+        {
+          "node_id": "ab000001-0001-0001-0001-000000000005",
+          "name": "Unpivot Energy Sources",
+          "transform_type": "Pivot",
+          "details": {
+            "pivot_type": "columnsToRows"
+          }
+        },
+        {
+          "node_id": "ab000001-0001-0001-0001-000000000006",
+          "name": "Classify Energy Type",
+          "transform_type": "Clean",
+          "details": {
+            "action_count": 0,
+            "action_types": []
+          }
+        },
+        {
+          "node_id": "ab000001-0001-0001-0001-000000000007",
+          "name": "Energy + Demographics",
+          "transform_type": "Join",
+          "details": {
+            "join_type": "left",
+            "key_count": 2
+          }
+        },
+        {
+          "node_id": "ab000001-0001-0001-0001-000000000008",
+          "name": "Per Capita Metrics",
+          "transform_type": "Clean",
+          "details": {
+            "action_count": 0,
+            "action_types": []
+          }
+        },
+        {
+          "node_id": "ab000001-0001-0001-0001-000000000010",
+          "name": "Country Totals",
+          "transform_type": "Aggregate",
+          "details": {
+            "group_fields": 5,
+            "agg_fields": 1,
+            "group_by_columns": [
+              "Country",
+              "ISO_Code",
+              "Year",
+              "Region",
+              "EnergyCategory"
+            ],
+            "aggregate_columns": [
+              "SUM(Generation_TWh)"
+            ]
+          }
+        },
+        {
+          "node_id": "ab000001-0001-0001-0001-000000000012",
+          "name": "Pivot by Category",
+          "transform_type": "Pivot",
+          "details": {
+            "pivot_type": "rowsToColumns"
+          }
+        },
+        {
+          "node_id": "ab000001-0001-0001-0001-000000000013",
+          "name": "Renewable Share",
+          "transform_type": "Clean",
+          "details": {
+            "action_count": 0,
+            "action_types": []
+          }
+        }
+      ],
+      "node_count": 14,
+      "edge_count": 12,
+      "dag_depth": 9,
+      "join_count": 1,
+      "union_count": 1,
+      "script_count": 0,
+      "calc_count": 0,
+      "complexity_score": 12,
+      "complexity_label": "Medium",
+      "node_graph": {
+        "ab000001-0001-0001-0001-000000000001": [
+          "ab000001-0001-0001-0001-000000000004"
+        ],
+        "ab000001-0001-0001-0001-000000000002": [
+          "ab000001-0001-0001-0001-000000000004"
+        ],
+        "ab000001-0001-0001-0001-000000000003": [
+          "ab000001-0001-0001-0001-000000000007"
+        ],
+        "ab000001-0001-0001-0001-000000000004": [
+          "ab000001-0001-0001-0001-000000000005"
+        ],
+        "ab000001-0001-0001-0001-000000000005": [
+          "ab000001-0001-0001-0001-000000000006"
+        ],
+        "ab000001-0001-0001-0001-000000000006": [
+          "ab000001-0001-0001-0001-000000000007"
+        ],
+        "ab000001-0001-0001-0001-000000000007": [
+          "ab000001-0001-0001-0001-000000000008"
+        ],
+        "ab000001-0001-0001-0001-000000000008": [
+          "ab000001-0001-0001-0001-000000000009",
+          "ab000001-0001-0001-0001-000000000010"
+        ],
+        "ab000001-0001-0001-0001-000000000009": [],
+        "ab000001-0001-0001-0001-000000000010": [
+          "ab000001-0001-0001-0001-000000000012"
+        ],
+        "ab000001-0001-0001-0001-000000000011": [],
+        "ab000001-0001-0001-0001-000000000012": [
+          "ab000001-0001-0001-0001-000000000013"
+        ],
+        "ab000001-0001-0001-0001-000000000013": [
+          "ab000001-0001-0001-0001-000000000014"
+        ],
+        "ab000001-0001-0001-0001-000000000014": []
+      },
+      "m_queries": {
+        "Electricity_2024": "let\n    // TODO: Configure the data source for connector type: textscan\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"Country\", \"ISO_Code\", \"Coal_TWh\", \"Gas_TWh\", \"Nuclear_TWh\", \"Hydro_TWh\", \"Wind_TWh\", \"Solar_TWh\", \"Other_Renewables_TWh\", \"Year\"},\n            {\n                {\"Sample 1\", \"Sample 2\", 3, 4, 5, 6, 7, 8, 9, 10},\n                {\"Sample 2\", \"Sample 3\", 4, 5, 6, 7, 8, 9, 10, 11}\n            }\n        )\n    otherwise\n        #table({\"Country\", \"ISO_Code\", \"Coal_TWh\", \"Gas_TWh\", \"Nuclear_TWh\", \"Hydro_TWh\", \"Wind_TWh\", \"Solar_TWh\", \"Other_Renewables_TWh\", \"Year\"}, {})  // Empty table on error\nin\n    Source",
+        "Classify_Energy_Type": "let\n    // TODO: Configure the data source for connector type: textscan\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"Country\", \"ISO_Code\", \"Coal_TWh\", \"Gas_TWh\", \"Nuclear_TWh\", \"Hydro_TWh\", \"Wind_TWh\", \"Solar_TWh\", \"Other_Renewables_TWh\", \"Year\"},\n            {\n                {\"Sample 1\", \"Sample 2\", 3, 4, 5, 6, 7, 8, 9, 10},\n                {\"Sample 2\", \"Sample 3\", 4, 5, 6, 7, 8, 9, 10, 11}\n            }\n        )\n    otherwise\n        #table({\"Country\", \"ISO_Code\", \"Coal_TWh\", \"Gas_TWh\", \"Nuclear_TWh\", \"Hydro_TWh\", \"Wind_TWh\", \"Solar_TWh\", \"Other_Renewables_TWh\", \"Year\"}, {}),\n    #\"Combined Tables\" = Table.Combine({Electricity_2023, Electricity_2024}),\n    #\"Added EnergyCategory\" = Table.AddColumn(#\"Combined Tables\", \"EnergyCategory\", each if [EnergySource] = 'Coal' or [EnergySource] = 'Gas' then 'Fossil' else if [EnergySource] = 'Nuclear' then 'Nuclear' else 'Renewable' ),\n    #\"Added IsRenewable\" = Table.AddColumn(#\"Added EnergyCategory\", \"IsRenewable\", each if [EnergyCategory] = 'Renewable' then 1 else 0 ),\n    #\"Filtered Rows\" = Table.SelectRows(#\"Added IsRenewable\", each [Generation_TWh] > 0),\n    Result = #\"Filtered Rows\"\nin\n    Result",
+        "Electricity_2023": "let\n    // TODO: Configure the data source for connector type: textscan\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"Country\", \"ISO_Code\", \"Coal_TWh\", \"Gas_TWh\", \"Nuclear_TWh\", \"Hydro_TWh\", \"Wind_TWh\", \"Solar_TWh\", \"Other_Renewables_TWh\", \"Year\"},\n            {\n                {\"Sample 1\", \"Sample 2\", 3, 4, 5, 6, 7, 8, 9, 10},\n                {\"Sample 2\", \"Sample 3\", 4, 5, 6, 7, 8, 9, 10, 11}\n            }\n        )\n    otherwise\n        #table({\"Country\", \"ISO_Code\", \"Coal_TWh\", \"Gas_TWh\", \"Nuclear_TWh\", \"Hydro_TWh\", \"Wind_TWh\", \"Solar_TWh\", \"Other_Renewables_TWh\", \"Year\"}, {})  // Empty table on error\nin\n    Source",
+        "Energy_Detail": "let\n    // TODO: Configure the data source for connector type: excel-direct\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"ISO_Code\", \"Country_Name\", \"Population_M\", \"GDP_Billion_USD\", \"Region\", \"IncomeGroup\", \"Year\"},\n            {\n                {\"Sample 1\", \"Sample 2\", 3, 4, \"Sample 5\", \"Sample 6\", 7},\n                {\"Sample 2\", \"Sample 3\", 4, 5, \"Sample 6\", \"Sample 7\", 8}\n            }\n        )\n    otherwise\n        #table({\"ISO_Code\", \"Country_Name\", \"Population_M\", \"GDP_Billion_USD\", \"Region\", \"IncomeGroup\", \"Year\"}, {}),\n    #\"Joined Joined\" = Table.NestedJoin(Source, {\"ISO_Code\", \"Year\"}, Classify_Energy_Type, {\"ISO_Code\", \"Year\"}, \"Joined\", JoinKind.LeftOuter),\n    #\"Expanded Joined\" = Table.ExpandTableColumn(#\"Joined Joined\", \"Joined\", {\"Country\", \"Coal_TWh\", \"Gas_TWh\", \"Nuclear_TWh\", \"Hydro_TWh\", \"Wind_TWh\", \"Solar_TWh\", \"Other_Renewables_TWh\"}),\n    #\"Added GenPerCapita_MWh\" = Table.AddColumn(#\"Expanded Joined\", \"GenPerCapita_MWh\", each ([Generation_TWh] * 1000000) / ([Population_M] * 1000000)),\n    #\"Added GenPerGDP\" = Table.AddColumn(#\"Added GenPerCapita_MWh\", \"GenPerGDP\", each [Generation_TWh] / [GDP_Billion_USD]),\n    #\"Removed Columns\" = Table.RemoveColumns(#\"Added GenPerGDP\", {\"Country_Name\"}),\n    Result = #\"Removed Columns\"\nin\n    Result",
+        "Energy_Country_Summary": "let\n    // TODO: Configure the data source for connector type: excel-direct\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"ISO_Code\", \"Country_Name\", \"Population_M\", \"GDP_Billion_USD\", \"Region\", \"IncomeGroup\", \"Year\"},\n            {\n                {\"Sample 1\", \"Sample 2\", 3, 4, \"Sample 5\", \"Sample 6\", 7},\n                {\"Sample 2\", \"Sample 3\", 4, 5, \"Sample 6\", \"Sample 7\", 8}\n            }\n        )\n    otherwise\n        #table({\"ISO_Code\", \"Country_Name\", \"Population_M\", \"GDP_Billion_USD\", \"Region\", \"IncomeGroup\", \"Year\"}, {}),\n    #\"Joined Joined\" = Table.NestedJoin(Source, {\"ISO_Code\", \"Year\"}, Classify_Energy_Type, {\"ISO_Code\", \"Year\"}, \"Joined\", JoinKind.LeftOuter),\n    #\"Expanded Joined\" = Table.ExpandTableColumn(#\"Joined Joined\", \"Joined\", {\"Country\", \"Coal_TWh\", \"Gas_TWh\", \"Nuclear_TWh\", \"Hydro_TWh\", \"Wind_TWh\", \"Solar_TWh\", \"Other_Renewables_TWh\"}),\n    #\"Added GenPerCapita_MWh\" = Table.AddColumn(#\"Expanded Joined\", \"GenPerCapita_MWh\", each ([Generation_TWh] * 1000000) / ([Population_M] * 1000000)),\n    #\"Added GenPerGDP\" = Table.AddColumn(#\"Added GenPerCapita_MWh\", \"GenPerGDP\", each [Generation_TWh] / [GDP_Billion_USD]),\n    #\"Removed Columns\" = Table.RemoveColumns(#\"Added GenPerGDP\", {\"Country_Name\"}),\n    #\"Replaced Nulls in Fossil\" = Table.ReplaceValue(#\"Removed Columns\", null, \"0\", Replacer.ReplaceValue, {\"Fossil\"}),\n    #\"Replaced Nulls in Nuclear\" = Table.ReplaceValue(#\"Replaced Nulls in Fossil\", null, \"0\", Replacer.ReplaceValue, {\"Nuclear\"}),\n    #\"Replaced Nulls in Renewable\" = Table.ReplaceValue(#\"Replaced Nulls in Nuclear\", null, \"0\", Replacer.ReplaceValue, {\"Renewable\"}),\n    #\"Added TotalGeneration\" = Table.AddColumn(#\"Replaced Nulls in Renewable\", \"TotalGeneration\", each [Fossil] + [Nuclear] + [Renewable]),\n    #\"Added RenewableShare\" = Table.AddColumn(#\"Added TotalGeneration\", \"RenewableShare\", each [Renewable] / [TotalGeneration]),\n    Result = #\"Added RenewableShare\"\nin\n    Result"
+      },
+      "assessment": {
+        "grade": "GREEN",
+        "items": [
+          {
+            "category": "datasource",
+            "status": "pass",
+            "detail": "3 input(s) — all connectors supported"
+          },
+          {
+            "category": "script",
+            "status": "pass",
+            "detail": "No Script nodes"
+          },
+          {
+            "category": "join",
+            "status": "pass",
+            "detail": "1 join(s) → Power Query Table.NestedJoin"
+          },
+          {
+            "category": "aggregate",
+            "status": "pass",
+            "detail": "1 aggregate(s) → Table.Group"
+          },
+          {
+            "category": "union",
+            "status": "pass",
+            "detail": "1 union(s) → Table.Combine"
+          },
+          {
+            "category": "output",
+            "status": "pass",
+            "detail": "2 output(s)"
+          }
+        ],
+        "pass_count": 6,
+        "warn_count": 0,
+        "fail_count": 0
+      }
+    },
+    {
+      "name": "12_Real_Estate_Valuation",
+      "file_path": "C:\\Users\\pidoudet\\OneDrive - Microsoft\\Boulot\\PBI SME\\OracleToPostgre\\TableauToPowerBI\\examples\\prep_portfolio\\12_Real_Estate_Valuation.tfl",
+      "inputs": [
+        {
+          "node_id": "ac000001-0001-0001-0001-000000000001",
+          "name": "Property_Listings",
+          "connection_type": "snowflake",
+          "server": "acme.us-west-2.snowflakecomputing.com",
+          "database": "REAL_ESTATE",
+          "schema": "PUBLIC",
+          "table_name": "PROPERTY_LISTINGS",
+          "filename": "",
+          "column_count": 17,
+          "column_names": [
+            "listing_id",
+            "address",
+            "city",
+            "state",
+            "zip_code",
+            "latitude",
+            "longitude",
+            "property_type",
+            "bedrooms",
+            "bathrooms",
+            "sqft",
+            "lot_size_sqft",
+            "year_built",
+            "list_price",
+            "list_date",
+            "status",
+            "agent_id"
+          ],
+          "fingerprint": "4994c9f53be5b5b9"
+        },
+        {
+          "node_id": "ac000001-0001-0001-0001-000000000002",
+          "name": "Sales_Transactions",
+          "connection_type": "postgres",
+          "server": "txn-db.realty.local",
+          "database": "transactions",
+          "schema": "sales",
+          "table_name": "closed_deals",
+          "filename": "",
+          "column_count": 8,
+          "column_names": [
+            "transaction_id",
+            "listing_id",
+            "sale_price",
+            "sale_date",
+            "buyer_id",
+            "financing_type",
+            "closing_costs",
+            "commission_pct"
+          ],
+          "fingerprint": "0d8102ae2a0e8550"
+        },
+        {
+          "node_id": "ac000001-0001-0001-0001-000000000003",
+          "name": "Census_Demographics.csv",
+          "connection_type": "textscan",
+          "server": "",
+          "database": "",
+          "schema": "",
+          "table_name": "Census_Demographics.csv",
+          "filename": "Census_Demographics.csv",
+          "column_count": 7,
+          "column_names": [
+            "zip_code",
+            "median_household_income",
+            "population",
+            "poverty_rate",
+            "education_bachelors_pct",
+            "crime_index",
+            "school_rating"
+          ],
+          "fingerprint": "71db195c2a96e4a4"
+        },
+        {
+          "node_id": "ac000001-0001-0001-0001-000000000004",
+          "name": "Zillow_Estimates.json",
+          "connection_type": "json",
+          "server": "",
+          "database": "",
+          "schema": "",
+          "table_name": "Zillow_Estimates.json",
+          "filename": "Zillow_Estimates.json",
+          "column_count": 6,
+          "column_names": [
+            "zip_code",
+            "zestimate_median",
+            "rent_zestimate",
+            "price_change_yoy_pct",
+            "days_on_market_median",
+            "month"
+          ],
+          "fingerprint": "a500b6fc6bc2a527"
+        }
+      ],
+      "outputs": [
+        {
+          "node_id": "ac000001-0001-0001-0001-000000000009",
+          "name": "Property_Valuation",
+          "output_type": "PublishExtract",
+          "target_server": "",
+          "target_database": "",
+          "target_table": "Property_Valuation",
+          "target_filename": "Property_Valuation.hyper",
+          "column_count": 21,
+          "column_names": [
+            "ListingID",
+            "address",
+            "city",
+            "state",
+            "ZipCode",
+            "property_type",
+            "bedrooms",
+            "bathrooms",
+            "sqft",
+            "list_price",
+            "sale_price",
+            "PricePerSqft",
+            "SaleToListRatio",
+            "DaysOnMarket",
+            "PropertyAge",
+            "PriceToIncome",
+            "ZestimateGap",
+            "MarketSegment",
+            "CapRate",
+            "school_rating",
+            "crime_index"
+          ],
+          "fingerprint": "d2846e31b2df7b87"
+        },
+        {
+          "node_id": "ac000001-0001-0001-0001-000000000011",
+          "name": "Market_Summary",
+          "output_type": "PublishExtract",
+          "target_server": "",
+          "target_database": "",
+          "target_table": "Market_Summary",
+          "target_filename": "Market_Summary.hyper",
+          "column_count": 10,
+          "column_names": [
+            "ZipCode",
+            "city",
+            "state",
+            "MarketSegment",
+            "ListingCount",
+            "AvgListPrice",
+            "MedianListPrice",
+            "AvgPricePerSqft",
+            "AvgDOM",
+            "AvgCapRate"
+          ],
+          "fingerprint": "a44fd04841b8ff4e"
+        }
+      ],
+      "transforms": [
+        {
+          "node_id": "ac000001-0001-0001-0001-000000000005",
+          "name": "Listings + Sales",
+          "transform_type": "Join",
+          "details": {
+            "join_type": "left",
+            "key_count": 1
+          }
+        },
+        {
+          "node_id": "ac000001-0001-0001-0001-000000000006",
+          "name": "Census + Zillow",
+          "transform_type": "Join",
+          "details": {
+            "join_type": "inner",
+            "key_count": 1
+          }
+        },
+        {
+          "node_id": "ac000001-0001-0001-0001-000000000007",
+          "name": "Property + Market Data",
+          "transform_type": "Join",
+          "details": {
+            "join_type": "left",
+            "key_count": 1
+          }
+        },
+        {
+          "node_id": "ac000001-0001-0001-0001-000000000008",
+          "name": "Valuation Metrics",
+          "transform_type": "Clean",
+          "details": {
+            "action_count": 0,
+            "action_types": []
+          }
+        },
+        {
+          "node_id": "ac000001-0001-0001-0001-000000000010",
+          "name": "Zip Market Summary",
+          "transform_type": "Aggregate",
+          "details": {
+            "group_fields": 4,
+            "agg_fields": 6,
+            "group_by_columns": [
+              "ZipCode",
+              "city",
+              "state",
+              "MarketSegment"
+            ],
+            "aggregate_columns": [
+              "COUNTD(ListingID)",
+              "AVG(list_price)",
+              "MEDIAN(list_price)",
+              "AVG(PricePerSqft)",
+              "AVG(DaysOnMarket)",
+              "AVG(CapRate)"
+            ]
+          }
+        }
+      ],
+      "node_count": 11,
+      "edge_count": 10,
+      "dag_depth": 5,
+      "join_count": 3,
+      "union_count": 0,
+      "script_count": 0,
+      "calc_count": 0,
+      "complexity_score": 14,
+      "complexity_label": "Medium",
+      "node_graph": {
+        "ac000001-0001-0001-0001-000000000001": [
+          "ac000001-0001-0001-0001-000000000005"
+        ],
+        "ac000001-0001-0001-0001-000000000002": [
+          "ac000001-0001-0001-0001-000000000005"
+        ],
+        "ac000001-0001-0001-0001-000000000003": [
+          "ac000001-0001-0001-0001-000000000006"
+        ],
+        "ac000001-0001-0001-0001-000000000004": [
+          "ac000001-0001-0001-0001-000000000006"
+        ],
+        "ac000001-0001-0001-0001-000000000005": [
+          "ac000001-0001-0001-0001-000000000007"
+        ],
+        "ac000001-0001-0001-0001-000000000006": [
+          "ac000001-0001-0001-0001-000000000007"
+        ],
+        "ac000001-0001-0001-0001-000000000007": [
+          "ac000001-0001-0001-0001-000000000008"
+        ],
+        "ac000001-0001-0001-0001-000000000008": [
+          "ac000001-0001-0001-0001-000000000009",
+          "ac000001-0001-0001-0001-000000000010"
+        ],
+        "ac000001-0001-0001-0001-000000000009": [],
+        "ac000001-0001-0001-0001-000000000010": [
+          "ac000001-0001-0001-0001-000000000011"
+        ],
+        "ac000001-0001-0001-0001-000000000011": []
+      },
+      "m_queries": {
+        "Sales_Transactions": "let\n    // TODO: Configure the data source for connector type: postgres\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"transaction_id\", \"listing_id\", \"sale_price\", \"sale_date\", \"buyer_id\", \"financing_type\", \"closing_costs\", \"commission_pct\"},\n            {\n                {\"Sample 1\", \"Sample 2\", 3, 4, \"Sample 5\", \"Sample 6\", 7, 8},\n                {\"Sample 2\", \"Sample 3\", 4, 5, \"Sample 6\", \"Sample 7\", 8, 9}\n            }\n        )\n    otherwise\n        #table({\"transaction_id\", \"listing_id\", \"sale_price\", \"sale_date\", \"buyer_id\", \"financing_type\", \"closing_costs\", \"commission_pct\"}, {})  // Empty table on error\nin\n    Source",
+        "Census_+_Zillow": "let\n    // TODO: Configure the data source for connector type: textscan\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"zip_code\", \"median_household_income\", \"population\", \"poverty_rate\", \"education_bachelors_pct\", \"crime_index\", \"school_rating\"},\n            {\n                {\"Sample 1\", 2, 3, 4, 5, 6, 7},\n                {\"Sample 2\", 3, 4, 5, 6, 7, 8}\n            }\n        )\n    otherwise\n        #table({\"zip_code\", \"median_household_income\", \"population\", \"poverty_rate\", \"education_bachelors_pct\", \"crime_index\", \"school_rating\"}, {}),\n    #\"Joined Joined\" = Table.NestedJoin(Source, \"zip_code\", Zillow_Estimates, \"zip_code\", \"Joined\", JoinKind.Inner),\n    #\"Expanded Joined\" = Table.ExpandTableColumn(#\"Joined Joined\", \"Joined\", {\"zestimate_median\", \"rent_zestimate\", \"price_change_yoy_pct\", \"days_on_market_median\", \"month\"}),\n    Result = #\"Expanded Joined\"\nin\n    Result",
+        "Zillow_Estimates": "let\n    // TODO: Configure the data source for connector type: json\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"zip_code\", \"zestimate_median\", \"rent_zestimate\", \"price_change_yoy_pct\", \"days_on_market_median\", \"month\"},\n            {\n                {\"Sample 1\", 2, 3, 4, 5, \"Sample 6\"},\n                {\"Sample 2\", 3, 4, 5, 6, \"Sample 7\"}\n            }\n        )\n    otherwise\n        #table({\"zip_code\", \"zestimate_median\", \"rent_zestimate\", \"price_change_yoy_pct\", \"days_on_market_median\", \"month\"}, {})  // Empty table on error\nin\n    Source",
+        "Property_Valuation": "let\n    // TODO: Configure the data source for connector type: snowflake\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"listing_id\", \"address\", \"city\", \"state\", \"zip_code\", \"latitude\", \"longitude\", \"property_type\", \"bedrooms\", \"bathrooms\", \"sqft\", \"lot_size_sqft\", \"year_built\", \"list_price\", \"list_date\", \"status\", \"agent_id\"},\n            {\n                {\"Sample 1\", \"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", 6, 7, \"Sample 8\", 9, 10, 11, 12, 13, 14, 15, \"Sample 16\", \"Sample 17\"},\n                {\"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", \"Sample 6\", 7, 8, \"Sample 9\", 10, 11, 12, 13, 14, 15, 16, \"Sample 17\", \"Sample 18\"}\n            }\n        )\n    otherwise\n        #table({\"listing_id\", \"address\", \"city\", \"state\", \"zip_code\", \"latitude\", \"longitude\", \"property_type\", \"bedrooms\", \"bathrooms\", \"sqft\", \"lot_size_sqft\", \"year_built\", \"list_price\", \"list_date\", \"status\", \"agent_id\"}, {}),\n    #\"Joined Joined\" = Table.NestedJoin(Source, \"listing_id\", Sales_Transactions, \"listing_id\", \"Joined\", JoinKind.LeftOuter),\n    #\"Expanded Joined\" = Table.ExpandTableColumn(#\"Joined Joined\", \"Joined\", {\"transaction_id\", \"sale_price\", \"sale_date\", \"buyer_id\", \"financing_type\", \"closing_costs\", \"commission_pct\"}),\n    #\"Joined Joined 2\" = Table.NestedJoin(#\"Expanded Joined\", \"zip_code\", Census_+_Zillow, \"zip_code\", \"Joined\", JoinKind.LeftOuter),\n    #\"Expanded Joined 2\" = Table.ExpandTableColumn(#\"Joined Joined 2\", \"Joined\", {\"median_household_income\", \"population\", \"poverty_rate\", \"education_bachelors_pct\", \"crime_index\", \"school_rating\"}),\n    #\"Added PricePerSqft\" = Table.AddColumn(#\"Expanded Joined 2\", \"PricePerSqft\", each [list_price] / [sqft]),\n    #\"Added SaleToListRatio\" = Table.AddColumn(#\"Added PricePerSqft\", \"SaleToListRatio\", each if not (null = [sale_price]) then [sale_price] / [list_price] else NULL ),\n    #\"Added DaysOnMarket\" = Table.AddColumn(#\"Added SaleToListRatio\", \"DaysOnMarket\", each if not (null = [sale_date]) then DATEDIFF('day', [list_date], [sale_date]) else DATEDIFF('day', [list_date], TODAY()) ),\n    #\"Added PropertyAge\" = Table.AddColumn(#\"Added DaysOnMarket\", \"PropertyAge\", each YEAR(TODAY()) - [year_built]),\n    #\"Added PriceToIncome\" = Table.AddColumn(#\"Added PropertyAge\", \"PriceToIncome\", each [list_price] / [median_household_income]),\n    #\"Added ZestimateGap\" = Table.AddColumn(#\"Added PriceToIncome\", \"ZestimateGap\", each ([list_price] - [zestimate_median]) / [zestimate_median]),\n    #\"Added MarketSegment\" = Table.AddColumn(#\"Added ZestimateGap\", \"MarketSegment\", each if [list_price] < 200000 then 'Starter' else if [list_price] < 500000 then 'Mid-Market' else if [list_price] < 1000000 then 'Upscale' else 'Luxury' ),\n    #\"Added CapRate\" = Table.AddColumn(#\"Added MarketSegment\", \"CapRate\", each ([rent_zestimate] * 12) / [list_price]),\n    #\"Renamed Columns\" = Table.RenameColumns(#\"Added CapRate\", {{\"listing_id\", \"ListingID\"}, {\"zip_code\", \"ZipCode\"}}),\n    Result = #\"Renamed Columns\"\nin\n    Result",
+        "Market_Summary": "let\n    // TODO: Configure the data source for connector type: snowflake\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"listing_id\", \"address\", \"city\", \"state\", \"zip_code\", \"latitude\", \"longitude\", \"property_type\", \"bedrooms\", \"bathrooms\", \"sqft\", \"lot_size_sqft\", \"year_built\", \"list_price\", \"list_date\", \"status\", \"agent_id\"},\n            {\n                {\"Sample 1\", \"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", 6, 7, \"Sample 8\", 9, 10, 11, 12, 13, 14, 15, \"Sample 16\", \"Sample 17\"},\n                {\"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", \"Sample 6\", 7, 8, \"Sample 9\", 10, 11, 12, 13, 14, 15, 16, \"Sample 17\", \"Sample 18\"}\n            }\n        )\n    otherwise\n        #table({\"listing_id\", \"address\", \"city\", \"state\", \"zip_code\", \"latitude\", \"longitude\", \"property_type\", \"bedrooms\", \"bathrooms\", \"sqft\", \"lot_size_sqft\", \"year_built\", \"list_price\", \"list_date\", \"status\", \"agent_id\"}, {}),\n    #\"Joined Joined\" = Table.NestedJoin(Source, \"listing_id\", Sales_Transactions, \"listing_id\", \"Joined\", JoinKind.LeftOuter),\n    #\"Expanded Joined\" = Table.ExpandTableColumn(#\"Joined Joined\", \"Joined\", {\"transaction_id\", \"sale_price\", \"sale_date\", \"buyer_id\", \"financing_type\", \"closing_costs\", \"commission_pct\"}),\n    #\"Joined Joined 2\" = Table.NestedJoin(#\"Expanded Joined\", \"zip_code\", Census_+_Zillow, \"zip_code\", \"Joined\", JoinKind.LeftOuter),\n    #\"Expanded Joined 2\" = Table.ExpandTableColumn(#\"Joined Joined 2\", \"Joined\", {\"median_household_income\", \"population\", \"poverty_rate\", \"education_bachelors_pct\", \"crime_index\", \"school_rating\"}),\n    #\"Added PricePerSqft\" = Table.AddColumn(#\"Expanded Joined 2\", \"PricePerSqft\", each [list_price] / [sqft]),\n    #\"Added SaleToListRatio\" = Table.AddColumn(#\"Added PricePerSqft\", \"SaleToListRatio\", each if not (null = [sale_price]) then [sale_price] / [list_price] else NULL ),\n    #\"Added DaysOnMarket\" = Table.AddColumn(#\"Added SaleToListRatio\", \"DaysOnMarket\", each if not (null = [sale_date]) then DATEDIFF('day', [list_date], [sale_date]) else DATEDIFF('day', [list_date], TODAY()) ),\n    #\"Added PropertyAge\" = Table.AddColumn(#\"Added DaysOnMarket\", \"PropertyAge\", each YEAR(TODAY()) - [year_built]),\n    #\"Added PriceToIncome\" = Table.AddColumn(#\"Added PropertyAge\", \"PriceToIncome\", each [list_price] / [median_household_income]),\n    #\"Added ZestimateGap\" = Table.AddColumn(#\"Added PriceToIncome\", \"ZestimateGap\", each ([list_price] - [zestimate_median]) / [zestimate_median]),\n    #\"Added MarketSegment\" = Table.AddColumn(#\"Added ZestimateGap\", \"MarketSegment\", each if [list_price] < 200000 then 'Starter' else if [list_price] < 500000 then 'Mid-Market' else if [list_price] < 1000000 then 'Upscale' else 'Luxury' ),\n    #\"Added CapRate\" = Table.AddColumn(#\"Added MarketSegment\", \"CapRate\", each ([rent_zestimate] * 12) / [list_price]),\n    #\"Renamed Columns\" = Table.RenameColumns(#\"Added CapRate\", {{\"listing_id\", \"ListingID\"}, {\"zip_code\", \"ZipCode\"}}),\n    Result = #\"Renamed Columns\"\nin\n    Result"
+      },
+      "assessment": {
+        "grade": "GREEN",
+        "items": [
+          {
+            "category": "datasource",
+            "status": "pass",
+            "detail": "4 input(s) — all connectors supported"
+          },
+          {
+            "category": "script",
+            "status": "pass",
+            "detail": "No Script nodes"
+          },
+          {
+            "category": "join",
+            "status": "pass",
+            "detail": "3 join(s) → Power Query Table.NestedJoin"
+          },
+          {
+            "category": "aggregate",
+            "status": "pass",
+            "detail": "1 aggregate(s) → Table.Group"
+          },
+          {
+            "category": "output",
+            "status": "pass",
+            "detail": "2 output(s)"
+          }
+        ],
+        "pass_count": 5,
+        "warn_count": 0,
+        "fail_count": 0
+      }
+    },
+    {
+      "name": "13_Financial_Reconciliation",
+      "file_path": "C:\\Users\\pidoudet\\OneDrive - Microsoft\\Boulot\\PBI SME\\OracleToPostgre\\TableauToPowerBI\\examples\\prep_portfolio\\13_Financial_Reconciliation.tfl",
+      "inputs": [
+        {
+          "node_id": "ad000001-0001-0001-0001-000000000001",
+          "name": "GL_Transactions.xlsx",
+          "connection_type": "excel-direct",
+          "server": "",
+          "database": "",
+          "schema": "",
+          "table_name": "GL_Transactions.xlsx",
+          "filename": "GL_Transactions.xlsx",
+          "column_count": 10,
+          "column_names": [
+            "JournalID",
+            "PostingDate",
+            "AccountCode",
+            "Description",
+            "DebitAmount",
+            "CreditAmount",
+            "CostCenter",
+            "Currency",
+            "Source",
+            "ApprovedBy"
+          ],
+          "fingerprint": "4878918501235a8d"
+        },
+        {
+          "node_id": "ad000001-0001-0001-0001-000000000002",
+          "name": "Bank_Statements",
+          "connection_type": "sqlserver",
+          "server": "fin-db.corp.local",
+          "database": "Banking",
+          "schema": "dbo",
+          "table_name": "BankStatements",
+          "filename": "",
+          "column_count": 9,
+          "column_names": [
+            "StatementID",
+            "TransactionDate",
+            "Reference",
+            "PayeePayer",
+            "Amount",
+            "Balance",
+            "BankAccount",
+            "TransactionType",
+            "CheckNumber"
+          ],
+          "fingerprint": "d09b50ccd862f3ae"
+        },
+        {
+          "node_id": "ad000001-0001-0001-0001-000000000003",
+          "name": "Chart_of_Accounts.csv",
+          "connection_type": "textscan",
+          "server": "",
+          "database": "",
+          "schema": "",
+          "table_name": "Chart_of_Accounts.csv",
+          "filename": "Chart_of_Accounts.csv",
+          "column_count": 5,
+          "column_names": [
+            "AccountCode",
+            "AccountName",
+            "AccountType",
+            "ParentAccount",
+            "IsActive"
+          ],
+          "fingerprint": "548db54b9a1af23a"
+        }
+      ],
+      "outputs": [
+        {
+          "node_id": "ad000001-0001-0001-0001-000000000009",
+          "name": "Reconciliation_Detail",
+          "output_type": "PublishExtract",
+          "target_server": "",
+          "target_database": "",
+          "target_table": "Reconciliation_Detail",
+          "target_filename": "Reconciliation_Detail.hyper",
+          "column_count": 16,
+          "column_names": [
+            "JournalID",
+            "StatementID",
+            "PostingDate",
+            "TransactionDate",
+            "AccountCode",
+            "AccountName",
+            "AccountType",
+            "Description",
+            "PayeePayer",
+            "NetAmount",
+            "Amount",
+            "CostCenter",
+            "FiscalQuarter",
+            "MatchStatus",
+            "Variance",
+            "NeedsReview"
+          ],
+          "fingerprint": "1b3dc85076f2ecb8"
+        },
+        {
+          "node_id": "ad000001-0001-0001-0001-000000000011",
+          "name": "Reconciliation_Summary",
+          "output_type": "PublishExtract",
+          "target_server": "",
+          "target_database": "",
+          "target_table": "Reconciliation_Summary",
+          "target_filename": "Reconciliation_Summary.hyper",
+          "column_count": 7,
+          "column_names": [
+            "PostingMonth",
+            "FiscalQuarter",
+            "MatchStatus",
+            "TransactionCount",
+            "TotalGLAmount",
+            "TotalBankAmount",
+            "TotalVariance"
+          ],
+          "fingerprint": "8d5b67e7c31f44be"
+        }
+      ],
+      "transforms": [
+        {
+          "node_id": "ad000001-0001-0001-0001-000000000004",
+          "name": "Parse GL Entries",
+          "transform_type": "Clean",
+          "details": {
+            "action_count": 0,
+            "action_types": []
+          }
+        },
+        {
+          "node_id": "ad000001-0001-0001-0001-000000000005",
+          "name": "Parse Bank Entries",
+          "transform_type": "Clean",
+          "details": {
+            "action_count": 0,
+            "action_types": []
+          }
+        },
+        {
+          "node_id": "ad000001-0001-0001-0001-000000000006",
+          "name": "GL + Chart of Accounts",
+          "transform_type": "Join",
+          "details": {
+            "join_type": "left",
+            "key_count": 1
+          }
+        },
+        {
+          "node_id": "ad000001-0001-0001-0001-000000000007",
+          "name": "Reconcile GL vs Bank",
+          "transform_type": "Join",
+          "details": {
+            "join_type": "full",
+            "key_count": 2
+          }
+        },
+        {
+          "node_id": "ad000001-0001-0001-0001-000000000008",
+          "name": "Reconciliation Status",
+          "transform_type": "Clean",
+          "details": {
+            "action_count": 0,
+            "action_types": []
+          }
+        },
+        {
+          "node_id": "ad000001-0001-0001-0001-000000000010",
+          "name": "Monthly Reconciliation",
+          "transform_type": "Aggregate",
+          "details": {
+            "group_fields": 3,
+            "agg_fields": 4,
+            "group_by_columns": [
+              "PostingMonth",
+              "FiscalQuarter",
+              "MatchStatus"
+            ],
+            "aggregate_columns": [
+              "COUNT(JournalID)",
+              "SUM(NetAmount)",
+              "SUM(Amount)",
+              "SUM(Variance)"
+            ]
+          }
+        }
+      ],
+      "node_count": 11,
+      "edge_count": 10,
+      "dag_depth": 6,
+      "join_count": 2,
+      "union_count": 0,
+      "script_count": 0,
+      "calc_count": 0,
+      "complexity_score": 11,
+      "complexity_label": "Medium",
+      "node_graph": {
+        "ad000001-0001-0001-0001-000000000001": [
+          "ad000001-0001-0001-0001-000000000004"
+        ],
+        "ad000001-0001-0001-0001-000000000002": [
+          "ad000001-0001-0001-0001-000000000005"
+        ],
+        "ad000001-0001-0001-0001-000000000003": [
+          "ad000001-0001-0001-0001-000000000006"
+        ],
+        "ad000001-0001-0001-0001-000000000004": [
+          "ad000001-0001-0001-0001-000000000006"
+        ],
+        "ad000001-0001-0001-0001-000000000005": [
+          "ad000001-0001-0001-0001-000000000007"
+        ],
+        "ad000001-0001-0001-0001-000000000006": [
+          "ad000001-0001-0001-0001-000000000007"
+        ],
+        "ad000001-0001-0001-0001-000000000007": [
+          "ad000001-0001-0001-0001-000000000008"
+        ],
+        "ad000001-0001-0001-0001-000000000008": [
+          "ad000001-0001-0001-0001-000000000009",
+          "ad000001-0001-0001-0001-000000000010"
+        ],
+        "ad000001-0001-0001-0001-000000000009": [],
+        "ad000001-0001-0001-0001-000000000010": [
+          "ad000001-0001-0001-0001-000000000011"
+        ],
+        "ad000001-0001-0001-0001-000000000011": []
+      },
+      "m_queries": {
+        "Parse_GL_Entries": "let\n    // TODO: Configure the data source for connector type: excel-direct\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"JournalID\", \"PostingDate\", \"AccountCode\", \"Description\", \"DebitAmount\", \"CreditAmount\", \"CostCenter\", \"Currency\", \"Source\", \"ApprovedBy\"},\n            {\n                {\"Sample 1\", 2, \"Sample 3\", \"Sample 4\", 5, 6, \"Sample 7\", \"Sample 8\", \"Sample 9\", \"Sample 10\"},\n                {\"Sample 2\", 3, \"Sample 4\", \"Sample 5\", 6, 7, \"Sample 8\", \"Sample 9\", \"Sample 10\", \"Sample 11\"}\n            }\n        )\n    otherwise\n        #table({\"JournalID\", \"PostingDate\", \"AccountCode\", \"Description\", \"DebitAmount\", \"CreditAmount\", \"CostCenter\", \"Currency\", \"Source\", \"ApprovedBy\"}, {}),\n    #\"Split AccountCode\" = Table.SplitColumn(Source, \"AccountCode\", Splitter.SplitTextByDelimiter(\",\", QuoteStyle.None)),\n    #\"Added NetAmount\" = Table.AddColumn(#\"Split AccountCode\", \"NetAmount\", each [DebitAmount] - [CreditAmount]),\n    #\"Added TransDirection\" = Table.AddColumn(#\"Added NetAmount\", \"TransDirection\", each if [NetAmount] > 0 then 'Debit' else if [NetAmount] < 0 then 'Credit' else 'Zero' ),\n    #\"Trimmed Text\" = Table.TransformColumns(#\"Added TransDirection\", {{\"Description\", Text.Trim}}),\n    #\"Uppercased\" = Table.TransformColumns(#\"Trimmed Text\", {{\"CostCenter\", Text.Upper}}),\n    #\"Added PostingMonth\" = Table.AddColumn(#\"Uppercased\", \"PostingMonth\", each STR(YEAR([PostingDate])) + '-' + Text.End('0' + STR(MONTH([PostingDate])), 2)),\n    #\"Added FiscalQuarter\" = Table.AddColumn(#\"Added PostingMonth\", \"FiscalQuarter\", each if MONTH([PostingDate]) <= 3 then 'Q1' else if MONTH([PostingDate]) <= 6 then 'Q2' else if MONTH([PostingDate]) <= 9 then 'Q3' else 'Q4' ),\n    Result = #\"Added FiscalQuarter\"\nin\n    Result",
+        "GL_+_Chart_of_Accounts": "let\n    // TODO: Configure the data source for connector type: textscan\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"AccountCode\", \"AccountName\", \"AccountType\", \"ParentAccount\", \"IsActive\"},\n            {\n                {\"Sample 1\", \"Sample 2\", \"Sample 3\", \"Sample 4\", 5},\n                {\"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", 6}\n            }\n        )\n    otherwise\n        #table({\"AccountCode\", \"AccountName\", \"AccountType\", \"ParentAccount\", \"IsActive\"}, {}),\n    #\"Joined Joined\" = Table.NestedJoin(Source, \"AccountCode\", Parse_GL_Entries, \"AccountCode\", \"Joined\", JoinKind.LeftOuter),\n    #\"Expanded Joined\" = Table.ExpandTableColumn(#\"Joined Joined\", \"Joined\", {\"JournalID\", \"PostingDate\", \"Description\", \"DebitAmount\", \"CreditAmount\", \"CostCenter\", \"Currency\", \"Source\", \"ApprovedBy\"}),\n    Result = #\"Expanded Joined\"\nin\n    Result",
+        "Reconciliation_Detail": "let\n    // TODO: Configure the data source for connector type: sqlserver\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"StatementID\", \"TransactionDate\", \"Reference\", \"PayeePayer\", \"Amount\", \"Balance\", \"BankAccount\", \"TransactionType\", \"CheckNumber\"},\n            {\n                {\"Sample 1\", 2, \"Sample 3\", \"Sample 4\", 5, 6, \"Sample 7\", \"Sample 8\", \"Sample 9\"},\n                {\"Sample 2\", 3, \"Sample 4\", \"Sample 5\", 6, 7, \"Sample 8\", \"Sample 9\", \"Sample 10\"}\n            }\n        )\n    otherwise\n        #table({\"StatementID\", \"TransactionDate\", \"Reference\", \"PayeePayer\", \"Amount\", \"Balance\", \"BankAccount\", \"TransactionType\", \"CheckNumber\"}, {}),\n    #\"Split Reference\" = Table.SplitColumn(Source, \"Reference\", Splitter.SplitTextByDelimiter(\",\", QuoteStyle.None)),\n    #\"Trimmed Text\" = Table.TransformColumns(#\"Split Reference\", {{\"PayeePayer\", Text.Trim}}),\n    #\"Replaced Nulls in CheckNumber\" = Table.ReplaceValue(#\"Trimmed Text\", null, \"N/A\", Replacer.ReplaceValue, {\"CheckNumber\"}),\n    #\"Added AbsAmount\" = Table.AddColumn(#\"Replaced Nulls in CheckNumber\", \"AbsAmount\", each ABS([Amount])),\n    #\"Added BankDirection\" = Table.AddColumn(#\"Added AbsAmount\", \"BankDirection\", each if [Amount] > 0 then 'Inflow' else 'Outflow' ),\n    #\"Joined Joined\" = Table.NestedJoin(#\"Added BankDirection\", {\"PostingDate\", \"NetAmount\"}, GL_+_Chart_of_Accounts, {\"TransactionDate\", \"Amount\"}, \"Joined\", JoinKind.FullOuter),\n    #\"Expanded Joined\" = Table.ExpandTableColumn(#\"Joined Joined\", \"Joined\", {\"AccountCode\", \"AccountName\", \"AccountType\", \"ParentAccount\", \"IsActive\"}),\n    #\"Added MatchStatus\" = Table.AddColumn(#\"Expanded Joined\", \"MatchStatus\", each if not (null = [JournalID]) and not (null = [StatementID]) then 'Matched' else if not (null = [JournalID]) then 'GL Only' else 'Bank Only' ),\n    #\"Added Variance\" = Table.AddColumn(#\"Added MatchStatus\", \"Variance\", each if not (null = [NetAmount]) and not (null = [Amount]) then ABS([NetAmount] - [Amount]) else 0 ),\n    #\"Added NeedsReview\" = Table.AddColumn(#\"Added Variance\", \"NeedsReview\", each if [MatchStatus] <> 'Matched' or [Variance] > 0.01 then 'Yes' else 'No' ),\n    Result = #\"Added NeedsReview\"\nin\n    Result",
+        "Reconciliation_Summary": "let\n    // TODO: Configure the data source for connector type: sqlserver\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"StatementID\", \"TransactionDate\", \"Reference\", \"PayeePayer\", \"Amount\", \"Balance\", \"BankAccount\", \"TransactionType\", \"CheckNumber\"},\n            {\n                {\"Sample 1\", 2, \"Sample 3\", \"Sample 4\", 5, 6, \"Sample 7\", \"Sample 8\", \"Sample 9\"},\n                {\"Sample 2\", 3, \"Sample 4\", \"Sample 5\", 6, 7, \"Sample 8\", \"Sample 9\", \"Sample 10\"}\n            }\n        )\n    otherwise\n        #table({\"StatementID\", \"TransactionDate\", \"Reference\", \"PayeePayer\", \"Amount\", \"Balance\", \"BankAccount\", \"TransactionType\", \"CheckNumber\"}, {}),\n    #\"Split Reference\" = Table.SplitColumn(Source, \"Reference\", Splitter.SplitTextByDelimiter(\",\", QuoteStyle.None)),\n    #\"Trimmed Text\" = Table.TransformColumns(#\"Split Reference\", {{\"PayeePayer\", Text.Trim}}),\n    #\"Replaced Nulls in CheckNumber\" = Table.ReplaceValue(#\"Trimmed Text\", null, \"N/A\", Replacer.ReplaceValue, {\"CheckNumber\"}),\n    #\"Added AbsAmount\" = Table.AddColumn(#\"Replaced Nulls in CheckNumber\", \"AbsAmount\", each ABS([Amount])),\n    #\"Added BankDirection\" = Table.AddColumn(#\"Added AbsAmount\", \"BankDirection\", each if [Amount] > 0 then 'Inflow' else 'Outflow' ),\n    #\"Joined Joined\" = Table.NestedJoin(#\"Added BankDirection\", {\"PostingDate\", \"NetAmount\"}, GL_+_Chart_of_Accounts, {\"TransactionDate\", \"Amount\"}, \"Joined\", JoinKind.FullOuter),\n    #\"Expanded Joined\" = Table.ExpandTableColumn(#\"Joined Joined\", \"Joined\", {\"AccountCode\", \"AccountName\", \"AccountType\", \"ParentAccount\", \"IsActive\"}),\n    #\"Added MatchStatus\" = Table.AddColumn(#\"Expanded Joined\", \"MatchStatus\", each if not (null = [JournalID]) and not (null = [StatementID]) then 'Matched' else if not (null = [JournalID]) then 'GL Only' else 'Bank Only' ),\n    #\"Added Variance\" = Table.AddColumn(#\"Added MatchStatus\", \"Variance\", each if not (null = [NetAmount]) and not (null = [Amount]) then ABS([NetAmount] - [Amount]) else 0 ),\n    #\"Added NeedsReview\" = Table.AddColumn(#\"Added Variance\", \"NeedsReview\", each if [MatchStatus] <> 'Matched' or [Variance] > 0.01 then 'Yes' else 'No' ),\n    Result = #\"Added NeedsReview\"\nin\n    Result"
+      },
+      "assessment": {
+        "grade": "GREEN",
+        "items": [
+          {
+            "category": "datasource",
+            "status": "pass",
+            "detail": "3 input(s) — all connectors supported"
+          },
+          {
+            "category": "script",
+            "status": "pass",
+            "detail": "No Script nodes"
+          },
+          {
+            "category": "join",
+            "status": "pass",
+            "detail": "2 join(s) → Power Query Table.NestedJoin"
+          },
+          {
+            "category": "aggregate",
+            "status": "pass",
+            "detail": "1 aggregate(s) → Table.Group"
+          },
+          {
+            "category": "output",
+            "status": "pass",
+            "detail": "2 output(s)"
+          }
+        ],
+        "pass_count": 5,
+        "warn_count": 0,
+        "fail_count": 0
+      }
+    },
+    {
+      "name": "14_Healthcare_Patient_Flow",
+      "file_path": "C:\\Users\\pidoudet\\OneDrive - Microsoft\\Boulot\\PBI SME\\OracleToPostgre\\TableauToPowerBI\\examples\\prep_portfolio\\14_Healthcare_Patient_Flow.tfl",
+      "inputs": [
+        {
+          "node_id": "ae000001-0001-0001-0001-000000000001",
+          "name": "Admissions",
+          "connection_type": "postgres",
+          "server": "ehr-db.hospital.local",
+          "database": "ehr_system",
+          "schema": "clinical",
+          "table_name": "admissions",
+          "filename": "",
+          "column_count": 11,
+          "column_names": [
+            "admission_id",
+            "patient_id",
+            "admit_date",
+            "discharge_date",
+            "department",
+            "attending_physician",
+            "primary_diagnosis_code",
+            "admission_type",
+            "insurance_type",
+            "bed_type",
+            "discharge_disposition"
+          ],
+          "fingerprint": "8352432e0a256ac8"
+        },
+        {
+          "node_id": "ae000001-0001-0001-0001-000000000002",
+          "name": "Procedures",
+          "connection_type": "postgres",
+          "server": "ehr-db.hospital.local",
+          "database": "ehr_system",
+          "schema": "clinical",
+          "table_name": "procedures",
+          "filename": "",
+          "column_count": 8,
+          "column_names": [
+            "procedure_id",
+            "admission_id",
+            "procedure_code",
+            "procedure_name",
+            "procedure_date",
+            "duration_minutes",
+            "cost",
+            "performing_physician"
+          ],
+          "fingerprint": "ab96cf663cd386fc"
+        },
+        {
+          "node_id": "ae000001-0001-0001-0001-000000000003",
+          "name": "ICD10_Codes.csv",
+          "connection_type": "textscan",
+          "server": "",
+          "database": "",
+          "schema": "",
+          "table_name": "ICD10_Codes.csv",
+          "filename": "ICD10_Codes.csv",
+          "column_count": 7,
+          "column_names": [
+            "diagnosis_code",
+            "diagnosis_description",
+            "diagnosis_category",
+            "drg_code",
+            "drg_weight",
+            "expected_los_days",
+            "cms_reimbursement"
+          ],
+          "fingerprint": "a404a5b5841f318d"
+        },
+        {
+          "node_id": "ae000001-0001-0001-0001-000000000004",
+          "name": "Staff_Schedule.xlsx",
+          "connection_type": "excel-direct",
+          "server": "",
+          "database": "",
+          "schema": "",
+          "table_name": "Staff_Schedule.xlsx",
+          "filename": "Staff_Schedule.xlsx",
+          "column_count": 7,
+          "column_names": [
+            "physician_id",
+            "physician_name",
+            "specialty",
+            "department",
+            "fte",
+            "hire_date",
+            "credential"
+          ],
+          "fingerprint": "2be7801ac93faf6d"
+        }
+      ],
+      "outputs": [
+        {
+          "node_id": "ae000001-0001-0001-0001-000000000008",
+          "name": "Patient_Flow_Detail",
+          "output_type": "PublishExtract",
+          "target_server": "",
+          "target_database": "",
+          "target_table": "Patient_Flow_Detail",
+          "target_filename": "Patient_Flow_Detail.hyper",
+          "column_count": 23,
+          "column_names": [
+            "AdmissionID",
+            "PatientID",
+            "admit_date",
+            "discharge_date",
+            "department",
+            "attending_physician",
+            "admission_type",
+            "insurance_type",
+            "diagnosis_description",
+            "diagnosis_category",
+            "procedure_name",
+            "LOS_Days",
+            "expected_los_days",
+            "LOS_Variance",
+            "LOS_Status",
+            "TotalCost",
+            "cms_reimbursement",
+            "CostVariance",
+            "Profitable",
+            "CaseMixIndex",
+            "Readmission30",
+            "AdmitHour",
+            "AdmitDayOfWeek"
+          ],
+          "fingerprint": "e7679712ca150753"
+        },
+        {
+          "node_id": "ae000001-0001-0001-0001-000000000012",
+          "name": "Physician_Performance",
+          "output_type": "PublishExtract",
+          "target_server": "",
+          "target_database": "",
+          "target_table": "Physician_Performance",
+          "target_filename": "Physician_Performance.hyper",
+          "column_count": 10,
+          "column_names": [
+            "attending_physician",
+            "department",
+            "specialty",
+            "credential",
+            "TotalAdmissions",
+            "AvgLOS",
+            "TotalCostManaged",
+            "Readmissions",
+            "AvgCMI",
+            "TotalProcedureMinutes"
+          ],
+          "fingerprint": "22e40f4a56bb079b"
+        },
+        {
+          "node_id": "ae000001-0001-0001-0001-000000000013",
+          "name": "Department_KPI_Summary",
+          "output_type": "PublishExtract",
+          "target_server": "",
+          "target_database": "",
+          "target_table": "Department_KPI_Summary",
+          "target_filename": "Department_KPI_Summary.hyper",
+          "column_count": 10,
+          "column_names": [
+            "department",
+            "diagnosis_category",
+            "admission_type",
+            "Admissions",
+            "AvgLOS",
+            "MedianLOS",
+            "TotalCost",
+            "TotalReimbursement",
+            "ReadmissionCount",
+            "AvgCMI"
+          ],
+          "fingerprint": "3b4d659cd9ce1c05"
+        }
+      ],
+      "transforms": [
+        {
+          "node_id": "ae000001-0001-0001-0001-000000000005",
+          "name": "Admissions + Procedures",
+          "transform_type": "Join",
+          "details": {
+            "join_type": "left",
+            "key_count": 1
+          }
+        },
+        {
+          "node_id": "ae000001-0001-0001-0001-000000000006",
+          "name": "Add Diagnosis Info",
+          "transform_type": "Join",
+          "details": {
+            "join_type": "left",
+            "key_count": 1
+          }
+        },
+        {
+          "node_id": "ae000001-0001-0001-0001-000000000007",
+          "name": "Patient Flow Metrics",
+          "transform_type": "Clean",
+          "details": {
+            "action_count": 0,
+            "action_types": []
+          }
+        },
+        {
+          "node_id": "ae000001-0001-0001-0001-000000000009",
+          "name": "Physician Workload",
+          "transform_type": "Aggregate",
+          "details": {
+            "group_fields": 2,
+            "agg_fields": 6,
+            "group_by_columns": [
+              "attending_physician",
+              "department"
+            ],
+            "aggregate_columns": [
+              "COUNTD(AdmissionID)",
+              "AVG(LOS_Days)",
+              "SUM(TotalCost)",
+              "SUM(Readmission30)",
+              "AVG(CaseMixIndex)",
+              "SUM(duration_minutes)"
+            ]
+          }
+        },
+        {
+          "node_id": "ae000001-0001-0001-0001-000000000011",
+          "name": "Department KPIs",
+          "transform_type": "Aggregate",
+          "details": {
+            "group_fields": 3,
+            "agg_fields": 7,
+            "group_by_columns": [
+              "department",
+              "diagnosis_category",
+              "admission_type"
+            ],
+            "aggregate_columns": [
+              "COUNTD(AdmissionID)",
+              "AVG(LOS_Days)",
+              "MEDIAN(LOS_Days)",
+              "SUM(TotalCost)",
+              "SUM(cms_reimbursement)",
+              "SUM(Readmission30)",
+              "AVG(CaseMixIndex)"
+            ]
+          }
+        },
+        {
+          "node_id": "ae000001-0001-0001-0001-000000000010",
+          "name": "Add Staff Info",
+          "transform_type": "Join",
+          "details": {
+            "join_type": "left",
+            "key_count": 1
+          }
+        }
+      ],
+      "node_count": 13,
+      "edge_count": 12,
+      "dag_depth": 6,
+      "join_count": 3,
+      "union_count": 0,
+      "script_count": 0,
+      "calc_count": 0,
+      "complexity_score": 15,
+      "complexity_label": "Medium",
+      "node_graph": {
+        "ae000001-0001-0001-0001-000000000001": [
+          "ae000001-0001-0001-0001-000000000005"
+        ],
+        "ae000001-0001-0001-0001-000000000002": [
+          "ae000001-0001-0001-0001-000000000005"
+        ],
+        "ae000001-0001-0001-0001-000000000003": [
+          "ae000001-0001-0001-0001-000000000006"
+        ],
+        "ae000001-0001-0001-0001-000000000004": [
+          "ae000001-0001-0001-0001-000000000009"
+        ],
+        "ae000001-0001-0001-0001-000000000005": [
+          "ae000001-0001-0001-0001-000000000006"
+        ],
+        "ae000001-0001-0001-0001-000000000006": [
+          "ae000001-0001-0001-0001-000000000007"
+        ],
+        "ae000001-0001-0001-0001-000000000007": [
+          "ae000001-0001-0001-0001-000000000008",
+          "ae000001-0001-0001-0001-000000000009",
+          "ae000001-0001-0001-0001-000000000011"
+        ],
+        "ae000001-0001-0001-0001-000000000008": [],
+        "ae000001-0001-0001-0001-000000000009": [
+          "ae000001-0001-0001-0001-000000000010"
+        ],
+        "ae000001-0001-0001-0001-000000000010": [
+          "ae000001-0001-0001-0001-000000000012"
+        ],
+        "ae000001-0001-0001-0001-000000000011": [
+          "ae000001-0001-0001-0001-000000000013"
+        ],
+        "ae000001-0001-0001-0001-000000000012": [],
+        "ae000001-0001-0001-0001-000000000013": []
+      },
+      "m_queries": {
+        "Procedures": "let\n    // TODO: Configure the data source for connector type: postgres\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"procedure_id\", \"admission_id\", \"procedure_code\", \"procedure_name\", \"procedure_date\", \"duration_minutes\", \"cost\", \"performing_physician\"},\n            {\n                {\"Sample 1\", \"Sample 2\", \"Sample 3\", \"Sample 4\", 5, 6, 7, \"Sample 8\"},\n                {\"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", 6, 7, 8, \"Sample 9\"}\n            }\n        )\n    otherwise\n        #table({\"procedure_id\", \"admission_id\", \"procedure_code\", \"procedure_name\", \"procedure_date\", \"duration_minutes\", \"cost\", \"performing_physician\"}, {})  // Empty table on error\nin\n    Source",
+        "Admissions_+_Procedures": "let\n    // TODO: Configure the data source for connector type: postgres\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"admission_id\", \"patient_id\", \"admit_date\", \"discharge_date\", \"department\", \"attending_physician\", \"primary_diagnosis_code\", \"admission_type\", \"insurance_type\", \"bed_type\", \"discharge_disposition\"},\n            {\n                {\"Sample 1\", \"Sample 2\", 3, 4, \"Sample 5\", \"Sample 6\", \"Sample 7\", \"Sample 8\", \"Sample 9\", \"Sample 10\", \"Sample 11\"},\n                {\"Sample 2\", \"Sample 3\", 4, 5, \"Sample 6\", \"Sample 7\", \"Sample 8\", \"Sample 9\", \"Sample 10\", \"Sample 11\", \"Sample 12\"}\n            }\n        )\n    otherwise\n        #table({\"admission_id\", \"patient_id\", \"admit_date\", \"discharge_date\", \"department\", \"attending_physician\", \"primary_diagnosis_code\", \"admission_type\", \"insurance_type\", \"bed_type\", \"discharge_disposition\"}, {}),\n    #\"Joined Joined\" = Table.NestedJoin(Source, \"admission_id\", Procedures, \"admission_id\", \"Joined\", JoinKind.LeftOuter),\n    #\"Expanded Joined\" = Table.ExpandTableColumn(#\"Joined Joined\", \"Joined\", {\"procedure_id\", \"procedure_code\", \"procedure_name\", \"procedure_date\", \"duration_minutes\", \"cost\", \"performing_physician\"}),\n    Result = #\"Expanded Joined\"\nin\n    Result",
+        "Patient_Flow_Detail": "let\n    // TODO: Configure the data source for connector type: textscan\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"diagnosis_code\", \"diagnosis_description\", \"diagnosis_category\", \"drg_code\", \"drg_weight\", \"expected_los_days\", \"cms_reimbursement\"},\n            {\n                {\"Sample 1\", \"Sample 2\", \"Sample 3\", \"Sample 4\", 5, 6, 7},\n                {\"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", 6, 7, 8}\n            }\n        )\n    otherwise\n        #table({\"diagnosis_code\", \"diagnosis_description\", \"diagnosis_category\", \"drg_code\", \"drg_weight\", \"expected_los_days\", \"cms_reimbursement\"}, {}),\n    #\"Joined Joined\" = Table.NestedJoin(Source, \"primary_diagnosis_code\", Admissions_+_Procedures, \"diagnosis_code\", \"Joined\", JoinKind.LeftOuter),\n    #\"Expanded Joined\" = Table.ExpandTableColumn(#\"Joined Joined\", \"Joined\", {\"admission_id\", \"patient_id\", \"admit_date\", \"discharge_date\", \"department\", \"attending_physician\", \"primary_diagnosis_code\", \"admission_type\", \"insurance_type\", \"bed_type\", \"discharge_disposition\"}),\n    #\"Added LOS_Days\" = Table.AddColumn(#\"Expanded Joined\", \"LOS_Days\", each DATEDIFF('day', [admit_date], [discharge_date])),\n    #\"Added LOS_Variance\" = Table.AddColumn(#\"Added LOS_Days\", \"LOS_Variance\", each [LOS_Days] - [expected_los_days]),\n    #\"Added LOS_Status\" = Table.AddColumn(#\"Added LOS_Variance\", \"LOS_Status\", each if [LOS_Variance] <= -1 then 'Below Expected' else if [LOS_Variance] <= 1 then 'On Track' else 'Extended' ),\n    #\"Added TotalCost\" = Table.AddColumn(#\"Added LOS_Status\", \"TotalCost\", each [cost] + ([LOS_Days] * 2500)),\n    #\"Added CostVariance\" = Table.AddColumn(#\"Added TotalCost\", \"CostVariance\", each [TotalCost] - [cms_reimbursement]),\n    #\"Added Profitable\" = Table.AddColumn(#\"Added CostVariance\", \"Profitable\", each if [CostVariance] <= 0 then 'Yes' else 'No' ),\n    #\"Added CaseMixIndex\" = Table.AddColumn(#\"Added Profitable\", \"CaseMixIndex\", each [drg_weight]),\n    #\"Added Readmission30\" = Table.AddColumn(#\"Added CaseMixIndex\", \"Readmission30\", each if [discharge_disposition] = 'Readmitted' and [LOS_Days] < 30 then 1 else 0 ),\n    #\"Added AdmitHour\" = Table.AddColumn(#\"Added Readmission30\", \"AdmitHour\", each DATEPART('hour', [admit_date])),\n    #\"Added AdmitDayOfWeek\" = Table.AddColumn(#\"Added AdmitHour\", \"AdmitDayOfWeek\", each DATENAME('weekday', [admit_date])),\n    #\"Renamed Columns\" = Table.RenameColumns(#\"Added AdmitDayOfWeek\", {{\"admission_id\", \"AdmissionID\"}, {\"patient_id\", \"PatientID\"}}),\n    Result = #\"Renamed Columns\"\nin\n    Result",
+        "Department_KPI_Summary": "let\n    // TODO: Configure the data source for connector type: textscan\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"diagnosis_code\", \"diagnosis_description\", \"diagnosis_category\", \"drg_code\", \"drg_weight\", \"expected_los_days\", \"cms_reimbursement\"},\n            {\n                {\"Sample 1\", \"Sample 2\", \"Sample 3\", \"Sample 4\", 5, 6, 7},\n                {\"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", 6, 7, 8}\n            }\n        )\n    otherwise\n        #table({\"diagnosis_code\", \"diagnosis_description\", \"diagnosis_category\", \"drg_code\", \"drg_weight\", \"expected_los_days\", \"cms_reimbursement\"}, {}),\n    #\"Joined Joined\" = Table.NestedJoin(Source, \"primary_diagnosis_code\", Admissions_+_Procedures, \"diagnosis_code\", \"Joined\", JoinKind.LeftOuter),\n    #\"Expanded Joined\" = Table.ExpandTableColumn(#\"Joined Joined\", \"Joined\", {\"admission_id\", \"patient_id\", \"admit_date\", \"discharge_date\", \"department\", \"attending_physician\", \"primary_diagnosis_code\", \"admission_type\", \"insurance_type\", \"bed_type\", \"discharge_disposition\"}),\n    #\"Added LOS_Days\" = Table.AddColumn(#\"Expanded Joined\", \"LOS_Days\", each DATEDIFF('day', [admit_date], [discharge_date])),\n    #\"Added LOS_Variance\" = Table.AddColumn(#\"Added LOS_Days\", \"LOS_Variance\", each [LOS_Days] - [expected_los_days]),\n    #\"Added LOS_Status\" = Table.AddColumn(#\"Added LOS_Variance\", \"LOS_Status\", each if [LOS_Variance] <= -1 then 'Below Expected' else if [LOS_Variance] <= 1 then 'On Track' else 'Extended' ),\n    #\"Added TotalCost\" = Table.AddColumn(#\"Added LOS_Status\", \"TotalCost\", each [cost] + ([LOS_Days] * 2500)),\n    #\"Added CostVariance\" = Table.AddColumn(#\"Added TotalCost\", \"CostVariance\", each [TotalCost] - [cms_reimbursement]),\n    #\"Added Profitable\" = Table.AddColumn(#\"Added CostVariance\", \"Profitable\", each if [CostVariance] <= 0 then 'Yes' else 'No' ),\n    #\"Added CaseMixIndex\" = Table.AddColumn(#\"Added Profitable\", \"CaseMixIndex\", each [drg_weight]),\n    #\"Added Readmission30\" = Table.AddColumn(#\"Added CaseMixIndex\", \"Readmission30\", each if [discharge_disposition] = 'Readmitted' and [LOS_Days] < 30 then 1 else 0 ),\n    #\"Added AdmitHour\" = Table.AddColumn(#\"Added Readmission30\", \"AdmitHour\", each DATEPART('hour', [admit_date])),\n    #\"Added AdmitDayOfWeek\" = Table.AddColumn(#\"Added AdmitHour\", \"AdmitDayOfWeek\", each DATENAME('weekday', [admit_date])),\n    #\"Renamed Columns\" = Table.RenameColumns(#\"Added AdmitDayOfWeek\", {{\"admission_id\", \"AdmissionID\"}, {\"patient_id\", \"PatientID\"}}),\n    Result = #\"Renamed Columns\"\nin\n    Result",
+        "Physician_Performance": "let\n    // TODO: Configure the data source for connector type: excel-direct\n    // Replace the sample table below with the actual source expression.\n    Source = try\n        #table(\n            {\"physician_id\", \"physician_name\", \"specialty\", \"department\", \"fte\", \"hire_date\", \"credential\"},\n            {\n                {\"Sample 1\", \"Sample 2\", \"Sample 3\", \"Sample 4\", 5, 6, \"Sample 7\"},\n                {\"Sample 2\", \"Sample 3\", \"Sample 4\", \"Sample 5\", 6, 7, \"Sample 8\"}\n            }\n        )\n    otherwise\n        #table({\"physician_id\", \"physician_name\", \"specialty\", \"department\", \"fte\", \"hire_date\", \"credential\"}, {}),\n    #\"Joined Joined\" = Table.NestedJoin(Source, \"attending_physician\", RightTable, \"physician_name\", \"Joined\", JoinKind.LeftOuter),\n    Result = #\"Joined Joined\"\nin\n    Result"
+      },
+      "assessment": {
+        "grade": "GREEN",
+        "items": [
+          {
+            "category": "datasource",
+            "status": "pass",
+            "detail": "4 input(s) — all connectors supported"
+          },
+          {
+            "category": "script",
+            "status": "pass",
+            "detail": "No Script nodes"
+          },
+          {
+            "category": "join",
+            "status": "pass",
+            "detail": "3 join(s) → Power Query Table.NestedJoin"
+          },
+          {
+            "category": "aggregate",
+            "status": "pass",
+            "detail": "2 aggregate(s) → Table.Group"
+          },
+          {
+            "category": "output",
+            "status": "pass",
+            "detail": "3 output(s)"
+          }
+        ],
+        "pass_count": 5,
+        "warn_count": 0,
+        "fail_count": 0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source_flow": "02_Raw_Products_Clean",
+      "source_output": "Products_Master",
+      "target_flow": "04_Customer_Enrichment",
+      "target_input": "CRM Customers",
+      "match_type": "fuzzy",
+      "confidence": 0.75
+    },
+    {
+      "source_flow": "01_Raw_Orders_Clean",
+      "source_output": "Orders_Clean",
+      "target_flow": "05_Sales_Analytics",
+      "target_input": "Orders_Clean",
+      "match_type": "table_name",
+      "confidence": 0.8
+    },
+    {
+      "source_flow": "02_Raw_Products_Clean",
+      "source_output": "Products_Master",
+      "target_flow": "05_Sales_Analytics",
+      "target_input": "Products_Master",
+      "match_type": "table_name",
+      "confidence": 0.8
+    },
+    {
+      "source_flow": "04_Customer_Enrichment",
+      "source_output": "Customer_360",
+      "target_flow": "05_Sales_Analytics",
+      "target_input": "Customer_360",
+      "match_type": "table_name",
+      "confidence": 0.8
+    },
+    {
+      "source_flow": "03_Raw_Returns_Clean",
+      "source_output": "Returns_Processed",
+      "target_flow": "06_Returns_Analytics",
+      "target_input": "Returns_Processed",
+      "match_type": "table_name",
+      "confidence": 0.8
+    },
+    {
+      "source_flow": "01_Raw_Orders_Clean",
+      "source_output": "Orders_Clean",
+      "target_flow": "06_Returns_Analytics",
+      "target_input": "Orders_Clean",
+      "match_type": "table_name",
+      "confidence": 0.8
+    },
+    {
+      "source_flow": "05_Sales_Analytics",
+      "source_output": "Sales_Summary",
+      "target_flow": "07_Executive_Dashboard",
+      "target_input": "Sales_Summary",
+      "match_type": "table_name",
+      "confidence": 0.8
+    },
+    {
+      "source_flow": "06_Returns_Analytics",
+      "source_output": "Returns_Analysis",
+      "target_flow": "07_Executive_Dashboard",
+      "target_input": "Returns_Analysis",
+      "match_type": "table_name",
+      "confidence": 0.8
+    },
+    {
+      "source_flow": "02_Raw_Products_Clean",
+      "source_output": "Products_Master",
+      "target_flow": "08_Inventory_Tracker",
+      "target_input": "CRM Customers",
+      "match_type": "fuzzy",
+      "confidence": 0.75
+    },
+    {
+      "source_flow": "12_Real_Estate_Valuation",
+      "source_output": "Property_Valuation",
+      "target_flow": "08_Inventory_Tracker",
+      "target_input": "Inventory Levels",
+      "match_type": "fuzzy",
+      "confidence": 0.71
+    },
+    {
+      "source_flow": "14_Healthcare_Patient_Flow",
+      "source_output": "Physician_Performance",
+      "target_flow": "09_HR_Attrition_Analysis",
+      "target_input": "Performance_Reviews.csv",
+      "match_type": "fuzzy",
+      "confidence": 0.71
+    },
+    {
+      "source_flow": "13_Financial_Reconciliation",
+      "source_output": "Reconciliation_Detail",
+      "target_flow": "12_Real_Estate_Valuation",
+      "target_input": "Sales_Transactions",
+      "match_type": "fuzzy",
+      "confidence": 0.83
+    },
+    {
+      "source_flow": "03_Raw_Returns_Clean",
+      "source_output": "Returns_Processed",
+      "target_flow": "14_Healthcare_Patient_Flow",
+      "target_input": "Procedures",
+      "match_type": "fuzzy",
+      "confidence": 0.73
+    }
+  ],
+  "external_sources": [
+    {
+      "fingerprint": "dd72c5fb6c424ef5",
+      "connection_type": "textscan",
+      "server": "",
+      "database": "",
+      "table_name": "Orders_2024.csv",
+      "filename": "Orders_2024.csv",
+      "consumed_by": [
+        {
+          "flow": "01_Raw_Orders_Clean",
+          "input": "Orders_2024.csv"
+        }
+      ]
+    },
+    {
+      "fingerprint": "c3507562d4d3f179",
+      "connection_type": "textscan",
+      "server": "",
+      "database": "",
+      "table_name": "Products_Master.csv",
+      "filename": "Products_Master.csv",
+      "consumed_by": [
+        {
+          "flow": "02_Raw_Products_Clean",
+          "input": "Products_Master.csv"
+        }
+      ]
+    },
+    {
+      "fingerprint": "76ed540e7e1829ed",
+      "connection_type": "textscan",
+      "server": "",
+      "database": "",
+      "table_name": "Returns_2024.csv",
+      "filename": "Returns_2024.csv",
+      "consumed_by": [
+        {
+          "flow": "03_Raw_Returns_Clean",
+          "input": "Returns_2024.csv"
+        }
+      ]
+    },
+    {
+      "fingerprint": "60d1daa32bc4c74a",
+      "connection_type": "textscan",
+      "server": "",
+      "database": "",
+      "table_name": "Demographics.csv",
+      "filename": "Demographics.csv",
+      "consumed_by": [
+        {
+          "flow": "04_Customer_Enrichment",
+          "input": "Demographics.csv"
+        }
+      ]
+    },
+    {
+      "fingerprint": "124a6dca3d61e96a",
+      "connection_type": "excel-direct",
+      "server": "",
+      "database": "",
+      "table_name": "Employee_Survey.xlsx",
+      "filename": "Employee_Survey.xlsx",
+      "consumed_by": [
+        {
+          "flow": "09_HR_Attrition_Analysis",
+          "input": "Employee_Survey.xlsx"
+        }
+      ]
+    },
+    {
+      "fingerprint": "89c4a4d22099c4e6",
+      "connection_type": "sqlserver",
+      "server": "hr-db.corp.local",
+      "database": "HumanResources",
+      "table_name": "Employees",
+      "filename": "",
+      "consumed_by": [
+        {
+          "flow": "09_HR_Attrition_Analysis",
+          "input": "HR_Employees"
+        }
+      ]
+    },
+    {
+      "fingerprint": "a9446b7b85121e10",
+      "connection_type": "postgres",
+      "server": "app-db.foodfast.io",
+      "database": "food_delivery",
+      "table_name": "order_log",
+      "filename": "",
+      "consumed_by": [
+        {
+          "flow": "10_Food_Delivery_ETL",
+          "input": "App_Orders"
+        }
+      ]
+    },
+    {
+      "fingerprint": "2c3b290117dcc22b",
+      "connection_type": "textscan",
+      "server": "",
+      "database": "",
+      "table_name": "Restaurants_Jan.csv",
+      "filename": "Restaurants_Jan.csv",
+      "consumed_by": [
+        {
+          "flow": "10_Food_Delivery_ETL",
+          "input": "Restaurants_Jan.csv"
+        }
+      ]
+    },
+    {
+      "fingerprint": "226af34beffde74f",
+      "connection_type": "textscan",
+      "server": "",
+      "database": "",
+      "table_name": "Restaurants_Feb.csv",
+      "filename": "Restaurants_Feb.csv",
+      "consumed_by": [
+        {
+          "flow": "10_Food_Delivery_ETL",
+          "input": "Restaurants_Feb.csv"
+        }
+      ]
+    },
+    {
+      "fingerprint": "1ba15cac2950324c",
+      "connection_type": "textscan",
+      "server": "",
+      "database": "",
+      "table_name": "Electricity_2023.csv",
+      "filename": "Electricity_2023.csv",
+      "consumed_by": [
+        {
+          "flow": "11_Energy_Consumption",
+          "input": "Electricity_2023.csv"
+        }
+      ]
+    },
+    {
+      "fingerprint": "e2af90303c003581",
+      "connection_type": "textscan",
+      "server": "",
+      "database": "",
+      "table_name": "Electricity_2024.csv",
+      "filename": "Electricity_2024.csv",
+      "consumed_by": [
+        {
+          "flow": "11_Energy_Consumption",
+          "input": "Electricity_2024.csv"
+        }
+      ]
+    },
+    {
+      "fingerprint": "33a477fbb5516aa3",
+      "connection_type": "excel-direct",
+      "server": "",
+      "database": "",
+      "table_name": "Population_GDP.xlsx",
+      "filename": "Population_GDP.xlsx",
+      "consumed_by": [
+        {
+          "flow": "11_Energy_Consumption",
+          "input": "Population_GDP.xlsx"
+        }
+      ]
+    },
+    {
+      "fingerprint": "4994c9f53be5b5b9",
+      "connection_type": "snowflake",
+      "server": "acme.us-west-2.snowflakecomputing.com",
+      "database": "REAL_ESTATE",
+      "table_name": "PROPERTY_LISTINGS",
+      "filename": "",
+      "consumed_by": [
+        {
+          "flow": "12_Real_Estate_Valuation",
+          "input": "Property_Listings"
+        }
+      ]
+    },
+    {
+      "fingerprint": "71db195c2a96e4a4",
+      "connection_type": "textscan",
+      "server": "",
+      "database": "",
+      "table_name": "Census_Demographics.csv",
+      "filename": "Census_Demographics.csv",
+      "consumed_by": [
+        {
+          "flow": "12_Real_Estate_Valuation",
+          "input": "Census_Demographics.csv"
+        }
+      ]
+    },
+    {
+      "fingerprint": "a500b6fc6bc2a527",
+      "connection_type": "json",
+      "server": "",
+      "database": "",
+      "table_name": "Zillow_Estimates.json",
+      "filename": "Zillow_Estimates.json",
+      "consumed_by": [
+        {
+          "flow": "12_Real_Estate_Valuation",
+          "input": "Zillow_Estimates.json"
+        }
+      ]
+    },
+    {
+      "fingerprint": "4878918501235a8d",
+      "connection_type": "excel-direct",
+      "server": "",
+      "database": "",
+      "table_name": "GL_Transactions.xlsx",
+      "filename": "GL_Transactions.xlsx",
+      "consumed_by": [
+        {
+          "flow": "13_Financial_Reconciliation",
+          "input": "GL_Transactions.xlsx"
+        }
+      ]
+    },
+    {
+      "fingerprint": "d09b50ccd862f3ae",
+      "connection_type": "sqlserver",
+      "server": "fin-db.corp.local",
+      "database": "Banking",
+      "table_name": "BankStatements",
+      "filename": "",
+      "consumed_by": [
+        {
+          "flow": "13_Financial_Reconciliation",
+          "input": "Bank_Statements"
+        }
+      ]
+    },
+    {
+      "fingerprint": "548db54b9a1af23a",
+      "connection_type": "textscan",
+      "server": "",
+      "database": "",
+      "table_name": "Chart_of_Accounts.csv",
+      "filename": "Chart_of_Accounts.csv",
+      "consumed_by": [
+        {
+          "flow": "13_Financial_Reconciliation",
+          "input": "Chart_of_Accounts.csv"
+        }
+      ]
+    },
+    {
+      "fingerprint": "8352432e0a256ac8",
+      "connection_type": "postgres",
+      "server": "ehr-db.hospital.local",
+      "database": "ehr_system",
+      "table_name": "admissions",
+      "filename": "",
+      "consumed_by": [
+        {
+          "flow": "14_Healthcare_Patient_Flow",
+          "input": "Admissions"
+        }
+      ]
+    },
+    {
+      "fingerprint": "a404a5b5841f318d",
+      "connection_type": "textscan",
+      "server": "",
+      "database": "",
+      "table_name": "ICD10_Codes.csv",
+      "filename": "ICD10_Codes.csv",
+      "consumed_by": [
+        {
+          "flow": "14_Healthcare_Patient_Flow",
+          "input": "ICD10_Codes.csv"
+        }
+      ]
+    },
+    {
+      "fingerprint": "2be7801ac93faf6d",
+      "connection_type": "excel-direct",
+      "server": "",
+      "database": "",
+      "table_name": "Staff_Schedule.xlsx",
+      "filename": "Staff_Schedule.xlsx",
+      "consumed_by": [
+        {
+          "flow": "14_Healthcare_Patient_Flow",
+          "input": "Staff_Schedule.xlsx"
+        }
+      ]
+    }
+  ],
+  "final_sinks": [
+    {
+      "fingerprint": "8df4000bae2f196c",
+      "output_type": "PublishExtract",
+      "target_table": "Executive_KPIs",
+      "target_filename": "",
+      "produced_by": {
+        "flow": "07_Executive_Dashboard",
+        "output": "Executive_KPIs"
+      }
+    },
+    {
+      "fingerprint": "66d39286c5f4ad3c",
+      "output_type": "PublishExtract",
+      "target_table": "INVENTORY_STATUS",
+      "target_filename": "",
+      "produced_by": {
+        "flow": "08_Inventory_Tracker",
+        "output": "Inventory_Status"
+      }
+    },
+    {
+      "fingerprint": "98543a6508380a04",
+      "output_type": "PublishExtract",
+      "target_table": "HR_Attrition_Detail",
+      "target_filename": "HR_Attrition_Detail.hyper",
+      "produced_by": {
+        "flow": "09_HR_Attrition_Analysis",
+        "output": "HR_Attrition_Detail"
+      }
+    },
+    {
+      "fingerprint": "940e7a52437f10f7",
+      "output_type": "PublishExtract",
+      "target_table": "HR_Department_Summary",
+      "target_filename": "HR_Department_Summary.hyper",
+      "produced_by": {
+        "flow": "09_HR_Attrition_Analysis",
+        "output": "HR_Department_Summary"
+      }
+    },
+    {
+      "fingerprint": "f19eac7135793ba1",
+      "output_type": "PublishExtract",
+      "target_table": "Delivery_Fact",
+      "target_filename": "Delivery_Fact.hyper",
+      "produced_by": {
+        "flow": "10_Food_Delivery_ETL",
+        "output": "Delivery_Fact"
+      }
+    },
+    {
+      "fingerprint": "73c8214af771a145",
+      "output_type": "PublishExtract",
+      "target_table": "Restaurant_Dim",
+      "target_filename": "Restaurant_Dim.hyper",
+      "produced_by": {
+        "flow": "10_Food_Delivery_ETL",
+        "output": "Restaurant_Dim"
+      }
+    },
+    {
+      "fingerprint": "3d0e78a06d95b61e",
+      "output_type": "PublishExtract",
+      "target_table": "Restaurant_Performance",
+      "target_filename": "Restaurant_Performance.hyper",
+      "produced_by": {
+        "flow": "10_Food_Delivery_ETL",
+        "output": "Restaurant_Performance"
+      }
+    },
+    {
+      "fingerprint": "185e6904604729d3",
+      "output_type": "PublishExtract",
+      "target_table": "Energy_Detail",
+      "target_filename": "Energy_Detail.hyper",
+      "produced_by": {
+        "flow": "11_Energy_Consumption",
+        "output": "Energy_Detail"
+      }
+    },
+    {
+      "fingerprint": "c32808bee6746204",
+      "output_type": "PublishExtract",
+      "target_table": "Energy_Country_Summary",
+      "target_filename": "Energy_Country_Summary.hyper",
+      "produced_by": {
+        "flow": "11_Energy_Consumption",
+        "output": "Energy_Country_Summary"
+      }
+    },
+    {
+      "fingerprint": "a44fd04841b8ff4e",
+      "output_type": "PublishExtract",
+      "target_table": "Market_Summary",
+      "target_filename": "Market_Summary.hyper",
+      "produced_by": {
+        "flow": "12_Real_Estate_Valuation",
+        "output": "Market_Summary"
+      }
+    },
+    {
+      "fingerprint": "8d5b67e7c31f44be",
+      "output_type": "PublishExtract",
+      "target_table": "Reconciliation_Summary",
+      "target_filename": "Reconciliation_Summary.hyper",
+      "produced_by": {
+        "flow": "13_Financial_Reconciliation",
+        "output": "Reconciliation_Summary"
+      }
+    },
+    {
+      "fingerprint": "e7679712ca150753",
+      "output_type": "PublishExtract",
+      "target_table": "Patient_Flow_Detail",
+      "target_filename": "Patient_Flow_Detail.hyper",
+      "produced_by": {
+        "flow": "14_Healthcare_Patient_Flow",
+        "output": "Patient_Flow_Detail"
+      }
+    },
+    {
+      "fingerprint": "3b4d659cd9ce1c05",
+      "output_type": "PublishExtract",
+      "target_table": "Department_KPI_Summary",
+      "target_filename": "Department_KPI_Summary.hyper",
+      "produced_by": {
+        "flow": "14_Healthcare_Patient_Flow",
+        "output": "Department_KPI_Summary"
+      }
+    }
+  ],
+  "layers": [
+    [
+      "01_Raw_Orders_Clean",
+      "02_Raw_Products_Clean",
+      "03_Raw_Returns_Clean",
+      "10_Food_Delivery_ETL",
+      "11_Energy_Consumption",
+      "13_Financial_Reconciliation"
+    ],
+    [
+      "04_Customer_Enrichment",
+      "06_Returns_Analytics",
+      "12_Real_Estate_Valuation",
+      "14_Healthcare_Patient_Flow"
+    ],
+    [
+      "05_Sales_Analytics",
+      "08_Inventory_Tracker",
+      "09_HR_Attrition_Analysis"
+    ],
+    [
+      "07_Executive_Dashboard"
+    ]
+  ],
+  "isolated_flows": [
+    "10_Food_Delivery_ETL",
+    "11_Energy_Consumption"
+  ],
+  "chains": [
+    [
+      "13_Financial_Reconciliation",
+      "12_Real_Estate_Valuation"
+    ]
+  ],
+  "recommendations": [
+    {
+      "type": "chain_collapse",
+      "flows": [
+        "13_Financial_Reconciliation",
+        "12_Real_Estate_Valuation"
+      ],
+      "description": "Linear chain of 2 flows with no fan-out",
+      "impact": "Merge into 1 flow (22 total nodes)",
+      "score": 70,
+      "level": "green",
+      "label": "Strong merge"
+    },
+    {
+      "type": "source_consolidation",
+      "flows": [
+        "04_Customer_Enrichment",
+        "08_Inventory_Tracker"
+      ],
+      "description": "Both read 1 common source(s), 60% transform similarity",
+      "impact": "Eliminate 1 flow, reduce 1 duplicate source connections",
+      "score": 36,
+      "level": "gray",
+      "label": "Keep separate"
+    },
+    {
+      "type": "isolated",
+      "flows": [
+        "10_Food_Delivery_ETL"
+      ],
+      "description": "No cross-flow connections detected",
+      "impact": "Standalone migration — no merge needed",
+      "score": 0,
+      "level": "gray",
+      "label": "Keep separate"
+    },
+    {
+      "type": "isolated",
+      "flows": [
+        "11_Energy_Consumption"
+      ],
+      "description": "No cross-flow connections detected",
+      "impact": "Standalone migration — no merge needed",
+      "score": 0,
+      "level": "gray",
+      "label": "Keep separate"
+    }
+  ],
+  "timestamp": "2026-04-02T16:27:45.860736+00:00"
+}

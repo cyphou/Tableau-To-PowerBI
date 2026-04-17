@@ -1,0 +1,42 @@
+{
+  "flow_name": "09_HR_Attrition_Analysis",
+  "grade": "GREEN",
+  "inputs": 3,
+  "outputs": 2,
+  "transforms": 6,
+  "m_queries": 4,
+  "sources": 3,
+  "assessment": {
+    "grade": "GREEN",
+    "items": [
+      {
+        "category": "datasource",
+        "status": "pass",
+        "detail": "3 input(s) — all connectors supported"
+      },
+      {
+        "category": "script",
+        "status": "pass",
+        "detail": "No Script nodes"
+      },
+      {
+        "category": "join",
+        "status": "pass",
+        "detail": "2 join(s) → Power Query Table.NestedJoin"
+      },
+      {
+        "category": "aggregate",
+        "status": "pass",
+        "detail": "2 aggregate(s) → Table.Group"
+      },
+      {
+        "category": "output",
+        "status": "pass",
+        "detail": "2 output(s)"
+      }
+    ],
+    "pass_count": 5,
+    "warn_count": 0,
+    "fail_count": 0
+  }
+}

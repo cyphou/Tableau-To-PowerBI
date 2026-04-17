@@ -1,0 +1,21 @@
+{
+  "name": "Returns_Processed",
+  "connection_type": "sqlserver",
+  "server": "tableau-prod.corp.local",
+  "database": "PrepOutputs",
+  "schema": "",
+  "table_name": "Returns_Processed",
+  "filename": "",
+  "column_count": 7,
+  "columns": [
+    "ReturnID",
+    "OrderID",
+    "ReturnDate",
+    "ReasonCode",
+    "Reason_Text",
+    "RefundAmount",
+    "NetRefund"
+  ],
+  "fingerprint": "a4098c517543c7f9",
+  "flow": "06_Returns_Analytics"
+}

@@ -1,0 +1,24 @@
+{
+  "name": "Electricity_2024.csv",
+  "connection_type": "textscan",
+  "server": "",
+  "database": "",
+  "schema": "",
+  "table_name": "Electricity_2024.csv",
+  "filename": "Electricity_2024.csv",
+  "column_count": 10,
+  "columns": [
+    "Country",
+    "ISO_Code",
+    "Coal_TWh",
+    "Gas_TWh",
+    "Nuclear_TWh",
+    "Hydro_TWh",
+    "Wind_TWh",
+    "Solar_TWh",
+    "Other_Renewables_TWh",
+    "Year"
+  ],
+  "fingerprint": "e2af90303c003581",
+  "flow": "11_Energy_Consumption"
+}

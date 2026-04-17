@@ -1,0 +1,20 @@
+{
+  "name": "Performance_Reviews.csv",
+  "connection_type": "textscan",
+  "server": "",
+  "database": "",
+  "schema": "",
+  "table_name": "Performance_Reviews.csv",
+  "filename": "Performance_Reviews.csv",
+  "column_count": 6,
+  "columns": [
+    "EmployeeID",
+    "ReviewYear",
+    "PerformanceRating",
+    "ManagerRating",
+    "GoalsAchieved",
+    "PromotionRecommendation"
+  ],
+  "fingerprint": "1cd369926d8f78aa",
+  "flow": "09_HR_Attrition_Analysis"
+}

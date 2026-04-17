@@ -1416,6 +1416,11 @@ class PowerBIProjectGenerator:
                 "(OneDrive lock or permission issue)", stale_count
             )
             print(f"  ⚠ {stale_count} stale page directories could not be removed (OneDrive lock)")
+
+        # Inject publicCustomVisuals for any AppSource custom visuals used
+        if self._used_custom_guids:
+            cv_classes = sorted({info.get('class', k) for k, info in self._used_custom_guids.items()})
+            report_json["publicCustomVisuals"] = cv_classes
         
         _write_json(os.path.join(def_dir, 'report.json'), report_json)
         
@@ -1541,6 +1546,11 @@ class PowerBIProjectGenerator:
             "activePageName": page_names[0] if page_names else "",
         }
         _write_json(os.path.join(pages_dir, 'pages.json'), pages_metadata)
+
+        # Inject publicCustomVisuals for any AppSource custom visuals used
+        if self._used_custom_guids:
+            cv_classes = sorted({info.get('class', k) for k, info in self._used_custom_guids.items()})
+            report_json["publicCustomVisuals"] = cv_classes
 
         _write_json(os.path.join(def_dir, 'report.json'), report_json)
 

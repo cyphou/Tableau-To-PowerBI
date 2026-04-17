@@ -1,0 +1,21 @@
+{
+  "name": "Demographics.csv",
+  "connection_type": "textscan",
+  "server": "",
+  "database": "",
+  "schema": "",
+  "table_name": "Demographics.csv",
+  "filename": "Demographics.csv",
+  "column_count": 7,
+  "columns": [
+    "customer_id",
+    "age_group",
+    "income_bracket",
+    "city",
+    "state",
+    "country",
+    "postal_code"
+  ],
+  "fingerprint": "60d1daa32bc4c74a",
+  "flow": "04_Customer_Enrichment"
+}

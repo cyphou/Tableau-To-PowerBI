@@ -1,0 +1,42 @@
+{
+  "flow_name": "14_Healthcare_Patient_Flow",
+  "grade": "GREEN",
+  "inputs": 4,
+  "outputs": 3,
+  "transforms": 6,
+  "m_queries": 5,
+  "sources": 4,
+  "assessment": {
+    "grade": "GREEN",
+    "items": [
+      {
+        "category": "datasource",
+        "status": "pass",
+        "detail": "4 input(s) — all connectors supported"
+      },
+      {
+        "category": "script",
+        "status": "pass",
+        "detail": "No Script nodes"
+      },
+      {
+        "category": "join",
+        "status": "pass",
+        "detail": "3 join(s) → Power Query Table.NestedJoin"
+      },
+      {
+        "category": "aggregate",
+        "status": "pass",
+        "detail": "2 aggregate(s) → Table.Group"
+      },
+      {
+        "category": "output",
+        "status": "pass",
+        "detail": "3 output(s)"
+      }
+    ],
+    "pass_count": 5,
+    "warn_count": 0,
+    "fail_count": 0
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "HR_Employees",
+  "connection_type": "sqlserver",
+  "server": "hr-db.corp.local",
+  "database": "HumanResources",
+  "schema": "dbo",
+  "table_name": "Employees",
+  "filename": "",
+  "column_count": 16,
+  "columns": [
+    "EmployeeID",
+    "FirstName",
+    "LastName",
+    "Department",
+    "JobRole",
+    "HireDate",
+    "TerminationDate",
+    "MonthlyIncome",
+    "EducationLevel",
+    "Gender",
+    "Age",
+    "OverTime",
+    "DistanceFromHome",
+    "YearsAtCompany",
+    "NumCompaniesWorked",
+    "TrainingTimesLastYear"
+  ],
+  "fingerprint": "89c4a4d22099c4e6",
+  "flow": "09_HR_Attrition_Analysis"
+}

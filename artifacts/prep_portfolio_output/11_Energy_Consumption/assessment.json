@@ -1,0 +1,47 @@
+{
+  "flow_name": "11_Energy_Consumption",
+  "grade": "GREEN",
+  "inputs": 3,
+  "outputs": 2,
+  "transforms": 9,
+  "m_queries": 5,
+  "sources": 3,
+  "assessment": {
+    "grade": "GREEN",
+    "items": [
+      {
+        "category": "datasource",
+        "status": "pass",
+        "detail": "3 input(s) — all connectors supported"
+      },
+      {
+        "category": "script",
+        "status": "pass",
+        "detail": "No Script nodes"
+      },
+      {
+        "category": "join",
+        "status": "pass",
+        "detail": "1 join(s) → Power Query Table.NestedJoin"
+      },
+      {
+        "category": "aggregate",
+        "status": "pass",
+        "detail": "1 aggregate(s) → Table.Group"
+      },
+      {
+        "category": "union",
+        "status": "pass",
+        "detail": "1 union(s) → Table.Combine"
+      },
+      {
+        "category": "output",
+        "status": "pass",
+        "detail": "2 output(s)"
+      }
+    ],
+    "pass_count": 6,
+    "warn_count": 0,
+    "fail_count": 0
+  }
+}

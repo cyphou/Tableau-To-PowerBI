@@ -1,0 +1,19 @@
+{
+  "name": "Chart_of_Accounts.csv",
+  "connection_type": "textscan",
+  "server": "",
+  "database": "",
+  "schema": "",
+  "table_name": "Chart_of_Accounts.csv",
+  "filename": "Chart_of_Accounts.csv",
+  "column_count": 5,
+  "columns": [
+    "AccountCode",
+    "AccountName",
+    "AccountType",
+    "ParentAccount",
+    "IsActive"
+  ],
+  "fingerprint": "548db54b9a1af23a",
+  "flow": "13_Financial_Reconciliation"
+}

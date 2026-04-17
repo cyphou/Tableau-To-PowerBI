@@ -1,0 +1,25 @@
+{
+  "name": "Admissions",
+  "connection_type": "postgres",
+  "server": "ehr-db.hospital.local",
+  "database": "ehr_system",
+  "schema": "clinical",
+  "table_name": "admissions",
+  "filename": "",
+  "column_count": 11,
+  "columns": [
+    "admission_id",
+    "patient_id",
+    "admit_date",
+    "discharge_date",
+    "department",
+    "attending_physician",
+    "primary_diagnosis_code",
+    "admission_type",
+    "insurance_type",
+    "bed_type",
+    "discharge_disposition"
+  ],
+  "fingerprint": "8352432e0a256ac8",
+  "flow": "14_Healthcare_Patient_Flow"
+}

@@ -1,0 +1,21 @@
+{
+  "name": "Population_GDP.xlsx",
+  "connection_type": "excel-direct",
+  "server": "",
+  "database": "",
+  "schema": "",
+  "table_name": "Population_GDP.xlsx",
+  "filename": "Population_GDP.xlsx",
+  "column_count": 7,
+  "columns": [
+    "ISO_Code",
+    "Country_Name",
+    "Population_M",
+    "GDP_Billion_USD",
+    "Region",
+    "IncomeGroup",
+    "Year"
+  ],
+  "fingerprint": "33a477fbb5516aa3",
+  "flow": "11_Energy_Consumption"
+}

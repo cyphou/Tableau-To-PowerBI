@@ -1,0 +1,24 @@
+{
+  "name": "GL_Transactions.xlsx",
+  "connection_type": "excel-direct",
+  "server": "",
+  "database": "",
+  "schema": "",
+  "table_name": "GL_Transactions.xlsx",
+  "filename": "GL_Transactions.xlsx",
+  "column_count": 10,
+  "columns": [
+    "JournalID",
+    "PostingDate",
+    "AccountCode",
+    "Description",
+    "DebitAmount",
+    "CreditAmount",
+    "CostCenter",
+    "Currency",
+    "Source",
+    "ApprovedBy"
+  ],
+  "fingerprint": "4878918501235a8d",
+  "flow": "13_Financial_Reconciliation"
+}

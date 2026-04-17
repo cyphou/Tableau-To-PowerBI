@@ -1,0 +1,37 @@
+{
+  "flow_name": "06_Returns_Analytics",
+  "grade": "YELLOW",
+  "inputs": 2,
+  "outputs": 1,
+  "transforms": 3,
+  "m_queries": 2,
+  "sources": 2,
+  "assessment": {
+    "grade": "YELLOW",
+    "items": [
+      {
+        "category": "datasource",
+        "status": "pass",
+        "detail": "2 input(s) — all connectors supported"
+      },
+      {
+        "category": "script",
+        "status": "warn",
+        "detail": "1 Script node(s) — manual review needed"
+      },
+      {
+        "category": "join",
+        "status": "pass",
+        "detail": "1 join(s) → Power Query Table.NestedJoin"
+      },
+      {
+        "category": "output",
+        "status": "pass",
+        "detail": "1 output(s)"
+      }
+    ],
+    "pass_count": 3,
+    "warn_count": 1,
+    "fail_count": 0
+  }
+}

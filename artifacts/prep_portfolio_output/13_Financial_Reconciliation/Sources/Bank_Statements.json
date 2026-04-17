@@ -1,0 +1,23 @@
+{
+  "name": "Bank_Statements",
+  "connection_type": "sqlserver",
+  "server": "fin-db.corp.local",
+  "database": "Banking",
+  "schema": "dbo",
+  "table_name": "BankStatements",
+  "filename": "",
+  "column_count": 9,
+  "columns": [
+    "StatementID",
+    "TransactionDate",
+    "Reference",
+    "PayeePayer",
+    "Amount",
+    "Balance",
+    "BankAccount",
+    "TransactionType",
+    "CheckNumber"
+  ],
+  "fingerprint": "d09b50ccd862f3ae",
+  "flow": "13_Financial_Reconciliation"
+}

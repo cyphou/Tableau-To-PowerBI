@@ -1,0 +1,21 @@
+{
+  "name": "Census_Demographics.csv",
+  "connection_type": "textscan",
+  "server": "",
+  "database": "",
+  "schema": "",
+  "table_name": "Census_Demographics.csv",
+  "filename": "Census_Demographics.csv",
+  "column_count": 7,
+  "columns": [
+    "zip_code",
+    "median_household_income",
+    "population",
+    "poverty_rate",
+    "education_bachelors_pct",
+    "crime_index",
+    "school_rating"
+  ],
+  "fingerprint": "71db195c2a96e4a4",
+  "flow": "12_Real_Estate_Valuation"
+}

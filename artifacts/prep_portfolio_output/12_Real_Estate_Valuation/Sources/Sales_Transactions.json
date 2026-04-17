@@ -1,0 +1,22 @@
+{
+  "name": "Sales_Transactions",
+  "connection_type": "postgres",
+  "server": "txn-db.realty.local",
+  "database": "transactions",
+  "schema": "sales",
+  "table_name": "closed_deals",
+  "filename": "",
+  "column_count": 8,
+  "columns": [
+    "transaction_id",
+    "listing_id",
+    "sale_price",
+    "sale_date",
+    "buyer_id",
+    "financing_type",
+    "closing_costs",
+    "commission_pct"
+  ],
+  "fingerprint": "0d8102ae2a0e8550",
+  "flow": "12_Real_Estate_Valuation"
+}

@@ -1,0 +1,19 @@
+{
+  "name": "Returns_Analysis",
+  "connection_type": "sqlserver",
+  "server": "tableau-prod.corp.local",
+  "database": "PrepOutputs",
+  "schema": "",
+  "table_name": "Returns_Analysis",
+  "filename": "",
+  "column_count": 5,
+  "columns": [
+    "Region",
+    "ReasonCode",
+    "NetRefund",
+    "ReturnRate",
+    "anomaly_score"
+  ],
+  "fingerprint": "d5897ef174a5fa02",
+  "flow": "07_Executive_Dashboard"
+}

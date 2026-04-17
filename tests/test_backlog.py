@@ -648,6 +648,84 @@ class TestValidateProjectRelationshipWarnings(unittest.TestCase):
         self.assertTrue(any('GhostCol' in w for w in result.get('warnings', [])))
 
 
+class TestPublicCustomVisualsInReportJson(unittest.TestCase):
+    """Verify that publicCustomVisuals is injected into report.json when custom visuals are used."""
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+    def _make_generator(self):
+        from powerbi_import.pbip_generator import PowerBIProjectGenerator
+        return PowerBIProjectGenerator()
+
+    def test_gantt_custom_visual_registered(self):
+        """When a worksheet uses a Gantt bar mark, publicCustomVisuals should
+        include 'ganttChart' in the generated report.json."""
+        gen = self._make_generator()
+        converted = {
+            'worksheets': [{
+                'name': 'Gantt Sheet',
+                'fields': [{'name': 'Task', 'role': 'dimension'},
+                           {'name': 'Duration', 'role': 'measure'}],
+                'original_mark_class': 'ganttbar',
+                'chart_type': 'ganttChart',
+            }],
+            'dashboards': [],
+            'datasources': [{'name': 'Sample', 'tables': [
+                {'name': 'Tasks', 'columns': [
+                    {'name': 'Task', 'datatype': 'string', 'role': 'dimension'},
+                    {'name': 'Duration', 'datatype': 'int64', 'role': 'measure'},
+                ]}
+            ]}],
+            'calculations': [], 'parameters': [], 'filters': [],
+            'stories': [], 'actions': [], 'sets': [], 'groups': [],
+            'bins': [], 'hierarchies': [], 'sort_orders': [], 'aliases': [],
+            'custom_sql': [], 'user_filters': [],
+        }
+        report_dir = gen.create_report_structure(
+            self.tmpdir, 'TestGantt', converted)
+        report_json_path = os.path.join(
+            report_dir, 'definition', 'report.json')
+        self.assertTrue(os.path.exists(report_json_path))
+        with open(report_json_path, 'r', encoding='utf-8') as f:
+            rj = json.load(f)
+        self.assertIn('publicCustomVisuals', rj)
+        self.assertIn('ganttChart', rj['publicCustomVisuals'])
+
+    def test_no_custom_visuals_no_key(self):
+        """When no custom visuals are used, publicCustomVisuals should not appear."""
+        gen = self._make_generator()
+        converted = {
+            'worksheets': [{
+                'name': 'Bar Sheet',
+                'fields': [{'name': 'Category', 'role': 'dimension'},
+                           {'name': 'Sales', 'role': 'measure'}],
+                'chart_type': 'clusteredBarChart',
+            }],
+            'dashboards': [],
+            'datasources': [{'name': 'Sample', 'tables': [
+                {'name': 'Data', 'columns': [
+                    {'name': 'Category', 'datatype': 'string', 'role': 'dimension'},
+                    {'name': 'Sales', 'datatype': 'int64', 'role': 'measure'},
+                ]}
+            ]}],
+            'calculations': [], 'parameters': [], 'filters': [],
+            'stories': [], 'actions': [], 'sets': [], 'groups': [],
+            'bins': [], 'hierarchies': [], 'sort_orders': [], 'aliases': [],
+            'custom_sql': [], 'user_filters': [],
+        }
+        report_dir = gen.create_report_structure(
+            self.tmpdir, 'TestBar', converted)
+        report_json_path = os.path.join(
+            report_dir, 'definition', 'report.json')
+        with open(report_json_path, 'r', encoding='utf-8') as f:
+            rj = json.load(f)
+        self.assertNotIn('publicCustomVisuals', rj)
+
+
 class TestMutationConfig(unittest.TestCase):
     """Tests for mutation testing configuration."""
 

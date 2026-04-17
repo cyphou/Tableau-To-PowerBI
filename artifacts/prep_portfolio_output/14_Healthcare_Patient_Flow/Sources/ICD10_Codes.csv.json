@@ -1,0 +1,21 @@
+{
+  "name": "ICD10_Codes.csv",
+  "connection_type": "textscan",
+  "server": "",
+  "database": "",
+  "schema": "",
+  "table_name": "ICD10_Codes.csv",
+  "filename": "ICD10_Codes.csv",
+  "column_count": 7,
+  "columns": [
+    "diagnosis_code",
+    "diagnosis_description",
+    "diagnosis_category",
+    "drg_code",
+    "drg_weight",
+    "expected_los_days",
+    "cms_reimbursement"
+  ],
+  "fingerprint": "a404a5b5841f318d",
+  "flow": "14_Healthcare_Patient_Flow"
+}

@@ -1,0 +1,28 @@
+{
+  "name": "App_Orders",
+  "connection_type": "postgres",
+  "server": "app-db.foodfast.io",
+  "database": "food_delivery",
+  "schema": "orders",
+  "table_name": "order_log",
+  "filename": "",
+  "column_count": 14,
+  "columns": [
+    "order_id",
+    "customer_id",
+    "restaurant_id",
+    "driver_id",
+    "order_timestamp",
+    "delivery_timestamp",
+    "order_total",
+    "delivery_fee",
+    "tip_amount",
+    "payment_method",
+    "promo_code",
+    "discount_amount",
+    "status",
+    "platform"
+  ],
+  "fingerprint": "a9446b7b85121e10",
+  "flow": "10_Food_Delivery_ETL"
+}

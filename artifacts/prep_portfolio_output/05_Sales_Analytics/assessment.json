@@ -1,0 +1,37 @@
+{
+  "flow_name": "05_Sales_Analytics",
+  "grade": "GREEN",
+  "inputs": 3,
+  "outputs": 1,
+  "transforms": 3,
+  "m_queries": 3,
+  "sources": 3,
+  "assessment": {
+    "grade": "GREEN",
+    "items": [
+      {
+        "category": "datasource",
+        "status": "pass",
+        "detail": "3 input(s) — all connectors supported"
+      },
+      {
+        "category": "script",
+        "status": "pass",
+        "detail": "No Script nodes"
+      },
+      {
+        "category": "join",
+        "status": "pass",
+        "detail": "2 join(s) → Power Query Table.NestedJoin"
+      },
+      {
+        "category": "output",
+        "status": "pass",
+        "detail": "1 output(s)"
+      }
+    ],
+    "pass_count": 4,
+    "warn_count": 0,
+    "fail_count": 0
+  }
+}

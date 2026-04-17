@@ -1,0 +1,22 @@
+{
+  "name": "Procedures",
+  "connection_type": "postgres",
+  "server": "ehr-db.hospital.local",
+  "database": "ehr_system",
+  "schema": "clinical",
+  "table_name": "procedures",
+  "filename": "",
+  "column_count": 8,
+  "columns": [
+    "procedure_id",
+    "admission_id",
+    "procedure_code",
+    "procedure_name",
+    "procedure_date",
+    "duration_minutes",
+    "cost",
+    "performing_physician"
+  ],
+  "fingerprint": "ab96cf663cd386fc",
+  "flow": "14_Healthcare_Patient_Flow"
+}

@@ -1,0 +1,37 @@
+{
+  "flow_name": "02_Raw_Products_Clean",
+  "grade": "GREEN",
+  "inputs": 1,
+  "outputs": 1,
+  "transforms": 1,
+  "m_queries": 1,
+  "sources": 1,
+  "assessment": {
+    "grade": "GREEN",
+    "items": [
+      {
+        "category": "datasource",
+        "status": "pass",
+        "detail": "1 input(s) — all connectors supported"
+      },
+      {
+        "category": "script",
+        "status": "pass",
+        "detail": "No Script nodes"
+      },
+      {
+        "category": "join",
+        "status": "pass",
+        "detail": "No joins"
+      },
+      {
+        "category": "output",
+        "status": "pass",
+        "detail": "1 output(s)"
+      }
+    ],
+    "pass_count": 4,
+    "warn_count": 0,
+    "fail_count": 0
+  }
+}

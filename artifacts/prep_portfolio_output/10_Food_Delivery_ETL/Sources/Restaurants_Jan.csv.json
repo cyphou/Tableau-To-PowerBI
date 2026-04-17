@@ -1,0 +1,23 @@
+{
+  "name": "Restaurants_Jan.csv",
+  "connection_type": "textscan",
+  "server": "",
+  "database": "",
+  "schema": "",
+  "table_name": "Restaurants_Jan.csv",
+  "filename": "Restaurants_Jan.csv",
+  "column_count": 9,
+  "columns": [
+    "restaurant_id",
+    "restaurant_name",
+    "cuisine_type",
+    "city",
+    "state",
+    "avg_rating",
+    "prep_time_min",
+    "active",
+    "month"
+  ],
+  "fingerprint": "2c3b290117dcc22b",
+  "flow": "10_Food_Delivery_ETL"
+}
