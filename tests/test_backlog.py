@@ -1116,5 +1116,107 @@ class TestRoundSingleArgFix(unittest.TestCase):
         self.assertIn("ROUND([B], 1)", result)
 
 
+class TestFilterControlParamResolution(unittest.TestCase):
+    """Filter controls should resolve field names from `param` when
+    `calc_column_id` is empty, instead of falling back to the worksheet name."""
+
+    def _make_generator(self, bim_symbols=None, bim_measures=None):
+        from powerbi_import.pbip_generator import PowerBIProjectGenerator
+        gen = PowerBIProjectGenerator.__new__(PowerBIProjectGenerator)
+        gen._actual_bim_symbols = bim_symbols or set()
+        gen._actual_bim_measure_names = bim_measures or set()
+        gen._field_map = {}
+        return gen
+
+    def test_param_field_resolved_from_param_ref(self):
+        """When calc_column_id is empty, the calc ID should be extracted from
+        the `param` field and resolved via calc_id_to_caption."""
+        import tempfile, shutil
+        gen = self._make_generator(
+            bim_symbols={('T', 'Probability %')},
+            bim_measures=set(),
+        )
+        tmpdir = tempfile.mkdtemp()
+        try:
+            obj = {
+                'type': 'filter_control',
+                'name': 'Pipeline Detail Table',
+                'field': 'Pipeline Detail Table',
+                'param': '[ds].[usr:Calc_123:qk]',
+                'calc_column_id': '',
+                'position': {'x': 0, 'y': 0, 'w': 100, 'h': 40},
+            }
+            calc_map = {'Calc_123': 'Probability %'}
+            converted = {'datasources': [{'tables': [{'name': 'T', 'columns': [{'name': 'Probability %'}]}], 'calculations': []}]}
+            gen._create_visual_filter_control(
+                tmpdir, obj, 1.0, 1.0, 0, calc_map, converted)
+            # Slicer should be created with resolved column name
+            import glob, json
+            visuals = glob.glob(os.path.join(tmpdir, '*', 'visual.json'))
+            self.assertEqual(len(visuals), 1)
+            data = json.loads(open(visuals[0]).read())
+            query_prop = data['visual']['query']['queryState']['Values']['projections'][0]['field']['Column']['Property']
+            self.assertEqual(query_prop, 'Probability %')
+        finally:
+            shutil.rmtree(tmpdir)
+
+    def test_measure_slicer_skipped(self):
+        """Slicers referencing measures should be skipped — measures cannot
+        be slicer fields in Power BI."""
+        import tempfile, shutil
+        gen = self._make_generator(
+            bim_symbols={('T', 'Pipeline Value')},
+            bim_measures={'Pipeline Value'},
+        )
+        tmpdir = tempfile.mkdtemp()
+        try:
+            obj = {
+                'type': 'filter_control',
+                'name': 'Pipeline Detail Table',
+                'field': 'Pipeline Detail Table',
+                'param': '[ds].[usr:LinPack_123:qk]',
+                'calc_column_id': '',
+                'position': {'x': 0, 'y': 0, 'w': 100, 'h': 40},
+            }
+            calc_map = {'LinPack_123': 'Pipeline Value'}
+            converted = {'datasources': []}
+            gen._create_visual_filter_control(
+                tmpdir, obj, 1.0, 1.0, 0, calc_map, converted)
+            # No slicer should be created
+            import glob
+            visuals = glob.glob(os.path.join(tmpdir, '*', 'visual.json'))
+            self.assertEqual(len(visuals), 0, "Measure-based slicer should be skipped")
+        finally:
+            shutil.rmtree(tmpdir)
+
+    def test_unknown_field_slicer_skipped(self):
+        """Slicers referencing fields not in the semantic model should be
+        skipped to avoid 'missing field' errors in PBI Desktop."""
+        import tempfile, shutil
+        gen = self._make_generator(
+            bim_symbols={('T', 'RealColumn')},
+            bim_measures=set(),
+        )
+        tmpdir = tempfile.mkdtemp()
+        try:
+            obj = {
+                'type': 'filter_control',
+                'name': 'SomeWorksheet',
+                'field': 'SomeWorksheet',
+                'param': '',
+                'calc_column_id': '',
+                'position': {'x': 0, 'y': 0, 'w': 100, 'h': 40},
+            }
+            calc_map = {}
+            converted = {'datasources': []}
+            gen._create_visual_filter_control(
+                tmpdir, obj, 1.0, 1.0, 0, calc_map, converted)
+            import glob
+            visuals = glob.glob(os.path.join(tmpdir, '*', 'visual.json'))
+            self.assertEqual(len(visuals), 0, "Unknown-field slicer should be skipped")
+        finally:
+            shutil.rmtree(tmpdir)
+
+
 if __name__ == '__main__':
     unittest.main()

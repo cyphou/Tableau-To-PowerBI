@@ -1014,6 +1014,15 @@ class PowerBIProjectGenerator:
         calc_col_id = obj.get('calc_column_id', '')
         column_name = calc_id_to_caption.get(calc_col_id, '')
         if not column_name:
+            # Try extracting calc ID from the 'param' field which has the form
+            # [datasource].[usr:CalcId:qk] or [datasource].[none:CalcId:nk]
+            param_ref = obj.get('param', '')
+            if param_ref:
+                import re
+                pm = re.search(r'\.\[(?:usr|none):([^:]+):', param_ref)
+                if pm:
+                    column_name = calc_id_to_caption.get(pm.group(1), '')
+        if not column_name:
             # Try the raw calc_column_id as a physical column name
             column_name = calc_col_id if calc_col_id else obj.get('field', obj.get('name', ''))
 
@@ -1023,6 +1032,18 @@ class PowerBIProjectGenerator:
             table_name, column_name = self._field_map[column_name]
         if not table_name:
             table_name = self._find_column_table(column_name, converted_objects)
+
+        # Skip slicer if the resolved field doesn't exist in the semantic model
+        # (e.g. worksheet names that leaked through as field names) or if it
+        # resolved to a measure (measures cannot be used as slicer fields).
+        _bim_sym = getattr(self, '_actual_bim_symbols', None) or set()
+        if _bim_sym:
+            _bim_props = {prop for (_, prop) in _bim_sym}
+            if column_name not in _bim_props:
+                return
+        _bim_measures = getattr(self, '_actual_bim_measure_names', None) or set()
+        if column_name in _bim_measures:
+            return
 
         vpos = self._make_visual_position(pos, scale_x, scale_y, visual_count)
         vx, vy, vw, vh = vpos['x'], vpos['y'], vpos['width'], vpos['height']
