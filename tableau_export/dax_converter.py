@@ -1655,7 +1655,38 @@ def _infer_iteration_table(inner_expr, default_table):
     counts = {}
     for t in tables:
         counts[t] = counts.get(t, 0) + 1
+    # When exactly 2 tables appear and one is the measure's own table,
+    # prefer the OTHER table.  Measures typically aggregate rows from a
+    # related fact table while referencing their own (dimension) table's
+    # columns as conditions.  Iterating over the fact table and using
+    # RELATED() for the dimension columns produces correct DAX.
+    if len(counts) == 2 and default_table in counts:
+        non_default = [t for t in counts if t != default_table]
+        if non_default:
+            return non_default[0]
     return max(counts, key=lambda k: counts[k])
+
+
+def _wrap_cross_table_related(inner_expr, iter_table):
+    """Wrap cross-table column references inside an AGGX body with RELATED().
+
+    Inside ``SUMX('T', ...)``, references to ``'Other'[col]`` need
+    ``RELATED('Other'[col])`` to navigate via the relationship.
+    Already-wrapped references (``RELATED('Other'[col])``) are skipped.
+    """
+    def _replacer(m):
+        full = m.group(0)
+        tbl = m.group(1)
+        if tbl == iter_table:
+            return full
+        # Check if already wrapped in RELATED
+        prefix_start = max(0, m.start() - 8)
+        prefix = inner_expr[prefix_start:m.start()].rstrip()
+        if prefix.upper().endswith('RELATED('):
+            return full
+        return f"RELATED({full})"
+
+    return re.sub(r"'([^']+)'\[([^\]]*(?:\]\][^\]]*)*)\]", _replacer, inner_expr)
 
 
 def _convert_lod_expressions(dax, table_name, column_table_map):
@@ -2175,9 +2206,11 @@ def _resolve_columns(dax, table_name, column_table_map, measure_names,
     def resolve_column(m):
         raw_col = m.group(1)
         col = _resolve_col_name(raw_col)
+        # Inline literal-only calc values in calc column expressions first,
+        # before measure_names or column_table_map checks.
+        if is_calc_column and col in param_values:
+            return param_values[col]
         if col in measure_names:
-            if is_calc_column and col in param_values:
-                return param_values[col]
             return f'[{_dax_escape_col(col)}]'
         if col in column_table_map:
             col_table = column_table_map[col]
@@ -2228,6 +2261,7 @@ def _convert_agg_if_to_aggx(dax_text, table_name):
             if depth == 0:
                 inner = dax_text[paren_pos + 1:pos - 1]
                 iter_table = _infer_iteration_table(inner, table_name)
+                inner = _wrap_cross_table_related(inner, iter_table)
                 replacement = f"{aggx}('{iter_table}', {inner})"
                 dax_text = dax_text[:start] + replacement + dax_text[pos:]
             m = pattern.search(dax_text, start + len(aggx))
@@ -2405,6 +2439,7 @@ def _convert_agg_expr_to_aggx(dax_text, table_name):
                         inner = unwrapped
 
                 iter_table = _infer_iteration_table(inner, table_name)
+                inner = _wrap_cross_table_related(inner, iter_table)
                 replacement = f"{aggx}('{iter_table}', {inner})"
                 dax = dax[:m.start()] + replacement + dax[pos:]
         return dax

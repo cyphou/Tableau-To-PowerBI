@@ -1113,20 +1113,44 @@ def _collect_semantic_context(datasources, extra_objects):
             if cname and cname not in column_table_map:
                 column_table_map[cname] = tname
 
-    # measure_names: set of all measure names (captions)
+    # measure_names: set of all measure names (captions).
+    # Exclude calculated columns (dimension-role calcs with column refs but no
+    # aggregation) so that _resolve_columns qualifies them via column_table_map
+    # instead of leaving them as bare [col] measure references.
     measure_names = set()
+    _agg_pat_mn = re.compile(
+        r'\b(SUM|AVG|AVERAGE|MIN|MAX|COUNT|COUNTD|MEDIAN|STDEV|STDEVP|'
+        r'VAR|VARP|PERCENTILE|ATTR|CORR|COVAR|COVARP|COLLECT)\s*\(',
+        re.IGNORECASE)
     for calc in all_calculations:
         caption = calc.get('caption', calc.get('name', '').replace('[', '').replace(']', ''))
-        if caption:
+        if not caption:
+            continue
+        role = calc.get('role', 'measure')
+        formula = calc.get('formula', '').strip()
+        has_agg = bool(_agg_pat_mn.search(formula)) if formula else False
+        has_col_refs = bool(re.search(r'\[', formula)) if formula else False
+        is_calc_col = (role == 'dimension') or (role == 'measure' and not has_agg and has_col_refs)
+        if not is_calc_col:
             measure_names.add(caption)
     measure_names.update(param_map.values())
 
     # param_values: {caption: literal_value} for inlining in calculated columns
     param_values = {}
+    # Simple Tableau→DAX function replacements applied to inlined literals
+    _inline_replacements = [
+        (re.compile(r'\bMAKEDATE\s*\(', re.IGNORECASE), 'DATE('),
+        (re.compile(r'\bMAKEDATETIME\s*\(', re.IGNORECASE), 'DATE('),
+        (re.compile(r'\bMAKETIME\s*\(', re.IGNORECASE), 'TIME('),
+    ]
     for calc in all_calculations:
         caption = calc.get('caption', calc.get('name', '').replace('[', '').replace(']', ''))
         formula = calc.get('formula', '').strip()
         if caption and formula and '[' not in formula:
+            # Apply basic Tableau→DAX replacements so inlined values
+            # don't contain unconverted function names (e.g. MAKEDATE→DATE).
+            for pattern, repl in _inline_replacements:
+                formula = pattern.sub(repl, formula)
             param_values[caption] = formula
     for param in extra_objects.get('parameters', []):
         caption = param.get('caption', '')
@@ -1209,6 +1233,31 @@ def _collect_semantic_context(datasources, extra_objects):
                 current_cols = len(best_tables.get(tname, ({}, {}))[0].get('columns', []))
                 if current_cols > existing_cols:
                     ds_main_table[ds_name] = tname
+
+    # Register dimension-role calculations (calculated columns) in the
+    # column_table_map so that cross-table references resolve correctly.
+    # Without this, SUMX('OtherTable', IF([CalcCol], ...)) leaves [CalcCol]
+    # unqualified, causing "column not found" errors in DAX.
+    _agg_pat = re.compile(
+        r'\b(SUM|AVG|AVERAGE|MIN|MAX|COUNT|COUNTD|MEDIAN|STDEV|STDEVP|'
+        r'VAR|VARP|PERCENTILE|ATTR|CORR|COVAR|COVARP|COLLECT)\s*\(',
+        re.IGNORECASE)
+    for calc in all_calculations:
+        role = calc.get('role', 'measure')
+        formula = calc.get('formula', '').strip()
+        if not formula:
+            continue
+        caption = calc.get('caption', calc.get('name', '').replace('[', '').replace(']', ''))
+        if not caption or caption in column_table_map:
+            continue
+        has_agg = bool(_agg_pat.search(formula))
+        has_col_refs = bool(re.search(r'\[', formula))
+        is_calc_col = (role == 'dimension') or (role == 'measure' and not has_agg and has_col_refs)
+        if is_calc_col:
+            # Route to the datasource's main table
+            dsn = calc.get('datasource_name', '')
+            target_table = ds_main_table.get(dsn, main_table_name)
+            column_table_map[caption] = target_table
 
     return {
         'best_tables': best_tables,
@@ -2422,8 +2471,13 @@ def _fix_related_for_many_to_many(model):
         for measure in table.get('measures', []):
             expr = measure.get('expression', '')
             if expr and 'RELATED(' in expr:
-                measure['expression'] = _replace_related_with_lookupvalue(
+                # First pass: replace RELATED using the measure's own table
+                expr = _replace_related_with_lookupvalue(
                     expr, m2m_pairs, current_table)
+                # Second pass: replace RELATED inside SUMX/AVERAGEX/etc.
+                # where the iteration table is the context, not the measure table
+                expr = _replace_related_in_aggx_context(expr, m2m_pairs)
+                measure['expression'] = expr
 
 
 def _replace_related_with_lookupvalue(expr, m2m_pairs, current_table=''):
@@ -2446,6 +2500,48 @@ def _replace_related_with_lookupvalue(expr, m2m_pairs, current_table=''):
         return f"LOOKUPVALUE({t_ref}[{col_name}], {t_ref}[{ref_join_col}], {ct_ref}[{current_join_col}])"
 
     return re.sub(pattern, replacer, expr)
+
+
+def _replace_related_in_aggx_context(expr, m2m_pairs):
+    """Replace RELATED() inside SUMX/AVERAGEX/etc. using the iteration table.
+
+    Inside ``SUMX('Opportunities', ...RELATED('Created By'[col])...)``,
+    the RELATED navigates from ``Opportunities`` (iteration context) to
+    ``Created By``.  The standard ``_replace_related_with_lookupvalue``
+    uses the measure's own table, which is wrong for iterator context.
+    """
+    if 'RELATED(' not in expr:
+        return expr
+
+    aggx_pattern = re.compile(
+        r'\b(SUMX|AVERAGEX|MINX|MAXX|COUNTX|STDEVX\.S|STDEVX\.P|MEDIANX)\s*\(\s*'
+        r"'([^']+)'\s*,\s*",
+        re.IGNORECASE)
+
+    result = expr
+    for m in aggx_pattern.finditer(expr):
+        iter_table = m.group(2)
+        body_start = m.end()
+        # Find the matching closing paren for the AGGX call
+        depth = 1
+        pos = body_start
+        while pos < len(result) and depth > 0:
+            if result[pos] == '(':
+                depth += 1
+            elif result[pos] == ')':
+                depth -= 1
+            pos += 1
+        if depth != 0:
+            continue
+        body = result[body_start:pos - 1]
+        if 'RELATED(' not in body:
+            continue
+        new_body = _replace_related_with_lookupvalue(
+            body, m2m_pairs, iter_table)
+        if new_body != body:
+            result = result[:body_start] + new_body + result[pos - 1:]
+
+    return result
 
 
 def _fix_relationship_type_mismatches(model):

@@ -881,5 +881,211 @@ class TestOrphanFieldsFilteredFromVisuals(unittest.TestCase):
                          "Orphan field should be excluded from visual query")
 
 
+class TestMakedateParamValuesConversion(unittest.TestCase):
+    """MAKEDATE/MAKEDATETIME in param_values should be converted to DATE."""
+
+    def test_makedate_inlined_as_date(self):
+        """When a calc column inlines a literal MAKEDATE() value, the result
+        should use DAX DATE() instead of the unconverted Tableau function."""
+        from tableau_export.dax_converter import convert_tableau_formula_to_dax
+
+        # Simulate: __MyToday calc has formula 'MAKEDATE(2022,04,18)'
+        # Days to Close references __MyToday which gets inlined via param_values
+        dax = convert_tableau_formula_to_dax(
+            'DATEDIFF("day", [__MyToday], [CloseDate])',
+            column_name='Days to Close',
+            table_name='Main',
+            calc_map={},
+            param_map={},
+            column_table_map={'CloseDate': 'Main'},
+            measure_names=set(),
+            is_calc_column=True,
+            param_values={'__MyToday': 'DATE(2022,04,18)'},
+        )
+        self.assertIn('DATE(2022,04,18)', dax)
+        self.assertNotIn('MAKEDATE', dax)
+
+    def test_makedatetime_inlined_as_date(self):
+        from tableau_export.dax_converter import convert_tableau_formula_to_dax
+
+        dax = convert_tableau_formula_to_dax(
+            '[__Cutoff]',
+            column_name='Cutoff',
+            table_name='Main',
+            calc_map={},
+            param_map={},
+            column_table_map={},
+            measure_names=set(),
+            is_calc_column=True,
+            param_values={'__Cutoff': 'DATE(2023,01,01)'},
+        )
+        self.assertIn('DATE(2023,01,01)', dax)
+
+
+class TestCalcColumnInColumnTableMap(unittest.TestCase):
+    """Dimension-role calculations (calc columns) should appear in
+    column_table_map so cross-table references resolve correctly."""
+
+    def test_calc_columns_registered(self):
+        from powerbi_import.tmdl_generator import _collect_semantic_context
+
+        datasources = [{
+            'name': 'ds1',
+            'connection': {'type': 'sqlserver'},
+            'tables': [
+                {
+                    'name': 'Orders',
+                    'columns': [
+                        {'name': 'Amount', 'datatype': 'real'},
+                        {'name': 'ProductId', 'datatype': 'integer'},
+                    ],
+                },
+                {
+                    'name': 'Products',
+                    'columns': [
+                        {'name': 'Id', 'datatype': 'integer'},
+                        {'name': 'Name', 'datatype': 'string'},
+                    ],
+                },
+            ],
+            'calculations': [
+                {
+                    'name': '[IsExpensive]',
+                    'caption': 'IsExpensive',
+                    'formula': 'IF [Amount] > 1000 THEN "Y" ELSE "N" END',
+                    'role': 'dimension',
+                    'datasource_name': 'ds1',
+                },
+            ],
+            'relationships': [],
+        }]
+        ctx = _collect_semantic_context(datasources, {
+            'parameters': [], 'sets': [], 'groups': [], 'bins': [],
+            'hierarchies': [], 'user_filters': [], 'datasource_filters': [],
+            'hyper_files': [], 'table_extensions': [], 'data_blending': [],
+            'linguistic_synonyms': [],
+        })
+        ctm = ctx['column_table_map']
+        # Physical columns
+        self.assertIn('Amount', ctm)
+        # Calc column should also be registered
+        self.assertIn('IsExpensive', ctm)
+
+
+class TestCalcColumnsExcludedFromMeasureNames(unittest.TestCase):
+    """Dimension-role calculations should not be in measure_names so
+    _resolve_columns qualifies them via column_table_map."""
+
+    def test_dimension_role_not_in_measure_names(self):
+        from powerbi_import.tmdl_generator import _collect_semantic_context
+
+        datasources = [{
+            'name': 'ds1',
+            'connection': {'type': 'sqlserver'},
+            'tables': [
+                {
+                    'name': 'Facts',
+                    'columns': [{'name': 'Value', 'datatype': 'real'}],
+                },
+            ],
+            'calculations': [
+                {
+                    'name': '[IsActive]',
+                    'caption': 'IsActive',
+                    'formula': '[Status] = "Active"',
+                    'role': 'dimension',
+                    'datasource_name': 'ds1',
+                },
+                {
+                    'name': '[TotalValue]',
+                    'caption': 'TotalValue',
+                    'formula': 'SUM([Value])',
+                    'role': 'measure',
+                    'datasource_name': 'ds1',
+                },
+            ],
+            'relationships': [],
+        }]
+        ctx = _collect_semantic_context(datasources, {
+            'parameters': [], 'sets': [], 'groups': [], 'bins': [],
+            'hierarchies': [], 'user_filters': [], 'datasource_filters': [],
+            'hyper_files': [], 'table_extensions': [], 'data_blending': [],
+            'linguistic_synonyms': [],
+        })
+        mn = ctx['dax_context']['measure_names']
+        self.assertNotIn('IsActive', mn, "Calc column should not be in measure_names")
+        self.assertIn('TotalValue', mn, "Measure should be in measure_names")
+
+
+class TestSumxCrossTableRelated(unittest.TestCase):
+    """SUMX with cross-table refs should use RELATED for the non-iteration
+    table, and _infer_iteration_table should prefer non-default table."""
+
+    def test_infer_prefers_non_default(self):
+        from tableau_export.dax_converter import _infer_iteration_table
+
+        # Two tables, one is the default → prefer the other
+        inner = "IF('DimTable'[Flag], 'FactTable'[Amount], BLANK())"
+        result = _infer_iteration_table(inner, 'DimTable')
+        self.assertEqual(result, 'FactTable')
+
+    def test_wrap_cross_table_related(self):
+        from tableau_export.dax_converter import _wrap_cross_table_related
+
+        inner = "'Dim'[Flag]*'Fact'[Amount]"
+        result = _wrap_cross_table_related(inner, 'Fact')
+        self.assertIn("RELATED('Dim'[Flag])", result)
+        self.assertIn("'Fact'[Amount]", result)
+        self.assertNotIn("RELATED('Fact'[Amount])", result)
+
+    def test_sumx_cross_table_full_conversion(self):
+        from tableau_export.dax_converter import convert_tableau_formula_to_dax
+
+        # SUM(IF [DimCalc] THEN [FactAmount] END)
+        # with DimCalc on DimTable and FactAmount on FactTable
+        dax = convert_tableau_formula_to_dax(
+            'SUM(FLOAT(IF [IsOpen] THEN [Revenue] END))',
+            column_name='Pipeline',
+            table_name='DimTable',
+            calc_map={},
+            param_map={},
+            column_table_map={'IsOpen': 'DimTable', 'Revenue': 'FactTable'},
+            measure_names=set(),
+            is_calc_column=False,
+            param_values={},
+        )
+        # SUMX should iterate over FactTable (non-default)
+        self.assertIn("SUMX('FactTable'", dax)
+        # DimTable refs should be wrapped in RELATED
+        self.assertIn("RELATED('DimTable'[IsOpen])", dax)
+        # FactTable refs should NOT be wrapped
+        self.assertNotIn("RELATED('FactTable'", dax)
+
+
+class TestReplaceRelatedInAggxContext(unittest.TestCase):
+    """_replace_related_in_aggx_context should convert RELATED to LOOKUPVALUE
+    inside SUMX/AVERAGEX when the m2m pair matches the iteration table."""
+
+    def test_related_in_sumx_converted(self):
+        from powerbi_import.tmdl_generator import _replace_related_in_aggx_context
+
+        m2m_pairs = {
+            ('Opportunities', 'Created By'): ('Id', 'CreatedById'),
+            ('Created By', 'Opportunities'): ('CreatedById', 'Id'),
+        }
+        expr = "SUMX('Opportunities', IF(RELATED('Created By'[Flag]), 'Opportunities'[Amount], BLANK()))"
+        result = _replace_related_in_aggx_context(expr, m2m_pairs)
+        self.assertIn("LOOKUPVALUE('Created By'[Flag]", result)
+        self.assertNotIn("RELATED('Created By'[Flag])", result)
+
+    def test_no_aggx_unchanged(self):
+        from powerbi_import.tmdl_generator import _replace_related_in_aggx_context
+
+        m2m_pairs = {('A', 'B'): ('id', 'fk')}
+        expr = "IF(RELATED('B'[col]), 1, 0)"
+        result = _replace_related_in_aggx_context(expr, m2m_pairs)
+        self.assertEqual(result, expr, "Non-AGGX expression should not be modified")
+
+
 if __name__ == '__main__':
     unittest.main()
