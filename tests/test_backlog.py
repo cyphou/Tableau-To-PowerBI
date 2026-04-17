@@ -1087,5 +1087,34 @@ class TestReplaceRelatedInAggxContext(unittest.TestCase):
         self.assertEqual(result, expr, "Non-AGGX expression should not be modified")
 
 
+class TestRoundSingleArgFix(unittest.TestCase):
+    """Tableau ROUND(x) with 1 arg should become DAX ROUND(x, 0)."""
+
+    def test_single_arg_round(self):
+        from tableau_export.dax_converter import _fix_round_single_arg
+
+        self.assertEqual(_fix_round_single_arg("ROUND([X])"), "ROUND([X], 0)")
+
+    def test_two_arg_round_unchanged(self):
+        from tableau_export.dax_converter import _fix_round_single_arg
+
+        expr = "ROUND([X], 2)"
+        self.assertEqual(_fix_round_single_arg(expr), expr)
+
+    def test_nested_round(self):
+        from tableau_export.dax_converter import _fix_round_single_arg
+
+        result = _fix_round_single_arg("FORMAT(ROUND([V]), \"0\") & \" d\"")
+        self.assertIn("ROUND([V], 0)", result)
+
+    def test_mixed_rounds(self):
+        from tableau_export.dax_converter import _fix_round_single_arg
+
+        expr = "ROUND([A]) + ROUND([B], 1)"
+        result = _fix_round_single_arg(expr)
+        self.assertIn("ROUND([A], 0)", result)
+        self.assertIn("ROUND([B], 1)", result)
+
+
 if __name__ == '__main__':
     unittest.main()

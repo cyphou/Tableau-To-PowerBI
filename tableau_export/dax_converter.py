@@ -393,6 +393,9 @@ def convert_tableau_formula_to_dax(formula, column_name='Measure', table_name='T
     # === Phase 5e: Tableau single-quoted string literals → DAX double-quoted ===
     dax = _convert_single_quoted_strings(dax)
 
+    # === Phase 5f: Fix ROUND with single argument → ROUND(x, 0) ===
+    dax = _fix_round_single_arg(dax)
+
     # === Phase 6: Final cleanup ===
     dax = _normalize_spaces_outside_identifiers(dax).strip()
     # Strip // line comments before collapsing newlines — otherwise
@@ -1500,6 +1503,38 @@ def _fix_date_literals(dax):
         y, mo, d = int(m.group(1)), int(m.group(2)), int(m.group(3))
         return f'DATE({y}, {mo}, {d})'
     return _RE_DATE_LITERAL.sub(_date_repl, dax)
+
+
+def _fix_round_single_arg(dax):
+    """Add missing second argument to ROUND() calls.
+
+    Tableau ``ROUND(x)`` rounds to 0 decimal places by default.
+    DAX ``ROUND`` requires two arguments: ``ROUND(x, 0)``.
+    """
+    pattern = re.compile(r'\bROUND\s*\(', re.IGNORECASE)
+    result = []
+    last = 0
+    for m in pattern.finditer(dax):
+        paren_start = m.end() - 1  # position of '('
+        depth = 1
+        pos = paren_start + 1
+        has_comma = False
+        while pos < len(dax) and depth > 0:
+            if dax[pos] == '(':
+                depth += 1
+            elif dax[pos] == ')':
+                depth -= 1
+            elif dax[pos] == ',' and depth == 1:
+                has_comma = True
+            pos += 1
+        if depth == 0 and not has_comma:
+            # Single-arg ROUND — insert ', 0' before closing paren
+            close_pos = pos - 1
+            result.append(dax[last:close_pos])
+            result.append(', 0)')
+            last = pos
+    result.append(dax[last:])
+    return ''.join(result)
 
 
 def _convert_single_quoted_strings(dax):
