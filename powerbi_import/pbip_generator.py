@@ -2273,6 +2273,9 @@ class PowerBIProjectGenerator:
                       'Longitude (generated)', 'Latitude (generated)'}
         cleaned_fields = []
         seen_names = set()
+        # Pre-compute set of valid model symbols for orphan field filtering
+        _bim_sym = getattr(self, '_actual_bim_symbols', None) or set()
+        _bim_props = {prop for (_, prop) in _bim_sym} if _bim_sym else set()
         for f in fields:
             raw_name = f.get('name', '')
             clean = self._clean_field_name(raw_name)
@@ -2284,6 +2287,14 @@ class PowerBIProjectGenerator:
             # Deduplicate: same field from different shelves
             if clean in seen_names:
                 continue
+            # Skip fields that don't exist in the semantic model (e.g.
+            # string-literal KPI params skipped by the TMDL generator).
+            if _bim_props:
+                resolved_prop = clean
+                if hasattr(self, '_field_map') and clean in self._field_map:
+                    resolved_prop = self._field_map[clean][1]
+                if resolved_prop not in _bim_props:
+                    continue
             seen_names.add(clean)
             cleaned_fields.append({**f, 'name': clean})
 

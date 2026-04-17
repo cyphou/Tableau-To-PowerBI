@@ -839,5 +839,47 @@ class TestStringLiteralParameterSkip(unittest.TestCase):
                       "Real numeric parameter should be kept")
 
 
+class TestOrphanFieldsFilteredFromVisuals(unittest.TestCase):
+    """Fields that don't exist in the semantic model should be excluded
+    from visual queryState to avoid 'Fields that need to be fixed' errors."""
+
+    def test_orphan_field_excluded(self):
+        from powerbi_import.pbip_generator import PowerBIProjectGenerator
+        gen = PowerBIProjectGenerator()
+        # Simulate _build_field_mapping output
+        gen._field_map = {
+            'Sales': ('Main', 'Sales'),
+            'KPI_Desc': ('Main', 'KPI_Desc'),
+            'Region': ('Main', 'Region'),
+        }
+        gen._main_table = 'Main'
+        gen._measure_names = {'Sales', 'KPI_Desc'}
+        gen._bim_measure_names = {'Sales'}  # KPI_Desc is NOT in BIM
+        gen._datasources_ref = []
+        # Actual symbols in the model — KPI_Desc was skipped
+        gen._actual_bim_symbols = {('Main', 'Sales'), ('Main', 'Region')}
+
+        ws = {
+            'name': 'Sheet1',
+            'fields': [
+                {'name': 'Region', 'shelf': 'rows', 'role': 'dimension'},
+                {'name': 'Sales', 'shelf': 'columns', 'role': 'measure'},
+                {'name': 'KPI_Desc', 'shelf': 'columns', 'role': 'measure'},
+            ],
+            'chart_type': 'clusteredBarChart',
+        }
+        query = gen._build_visual_query(ws)
+        # Collect all queryRef values from the query state
+        refs = set()
+        if query:
+            for role_data in query.get('queryState', {}).values():
+                for proj in role_data.get('projections', []):
+                    refs.add(proj.get('queryRef', ''))
+        self.assertIn('Main.Sales', refs)
+        self.assertIn('Main.Region', refs)
+        self.assertNotIn('Main.KPI_Desc', refs,
+                         "Orphan field should be excluded from visual query")
+
+
 if __name__ == '__main__':
     unittest.main()
