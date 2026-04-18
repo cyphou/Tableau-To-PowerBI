@@ -816,17 +816,18 @@ class TestMutationConfig(unittest.TestCase):
 
 
 class TestStringLiteralParameterSkip(unittest.TestCase):
-    """KPI-style parameters with string-literal values should be skipped
-    by _create_parameter_tables (domain_type='any' path)."""
+    """KPI-style parameters with embedded quotes in values should be skipped
+    by _create_parameter_tables; simple string params should create measures."""
 
-    def test_kpi_string_param_skipped(self):
+    def test_kpi_string_param_with_embedded_quotes_skipped(self):
         from powerbi_import.tmdl_generator import _create_parameter_tables
         model = {'model': {'tables': [
             {'name': 'Main', 'columns': [], 'measures': []}
         ]}}
         params = [
+            # Value has embedded quotes (e.g. IF [Col]="Y") — skip
             {'caption': 'KPI_Calc', 'datatype': 'string',
-             'value': '"Count Distinct of [Id]"',
+             'value': '"Average of IF [Won Flag]="Y" THEN [Amount] END"',
              'domain_type': 'any', 'allowable_values': []},
             {'caption': 'Real Param', 'datatype': 'real',
              'value': '42', 'domain_type': 'any', 'allowable_values': []},
@@ -834,9 +835,35 @@ class TestStringLiteralParameterSkip(unittest.TestCase):
         _create_parameter_tables(model, params, 'Main')
         measure_names = [m['name'] for m in model['model']['tables'][0].get('measures', [])]
         self.assertNotIn('KPI_Calc', measure_names,
-                         "String-literal KPI parameter should be skipped")
+                         "String param with embedded quotes should be skipped")
         self.assertIn('Real Param', measure_names,
                       "Real numeric parameter should be kept")
+
+    def test_simple_string_param_creates_measure(self):
+        """Simple string params like pOpportunityOwner_Champions='CHAMPIONS'
+        should create measures so DAX referencing [caption] resolves."""
+        from powerbi_import.tmdl_generator import _create_parameter_tables
+        model = {'model': {'tables': [
+            {'name': 'Main', 'columns': [], 'measures': []}
+        ]}}
+        params = [
+            {'caption': 'pOpportunityOwner_Champions', 'datatype': 'string',
+             'value': '"CHAMPIONS"',
+             'domain_type': 'any', 'allowable_values': []},
+            {'caption': 'pOpportunityOwner_Required', 'datatype': 'string',
+             'value': '"REQUIRED IMPROVEMENTS"',
+             'domain_type': 'any', 'allowable_values': []},
+        ]
+        _create_parameter_tables(model, params, 'Main')
+        measure_names = [m['name'] for m in model['model']['tables'][0].get('measures', [])]
+        self.assertIn('pOpportunityOwner_Champions', measure_names,
+                      "Simple string param should produce a measure")
+        self.assertIn('pOpportunityOwner_Required', measure_names,
+                      "Simple string param should produce a measure")
+        # Verify the DAX expression is correct
+        for m in model['model']['tables'][0]['measures']:
+            if m['name'] == 'pOpportunityOwner_Champions':
+                self.assertEqual(m['expression'], '"CHAMPIONS"')
 
 
 class TestOrphanFieldsFilteredFromVisuals(unittest.TestCase):

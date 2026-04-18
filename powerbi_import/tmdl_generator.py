@@ -3251,13 +3251,16 @@ def _create_parameter_tables(model, parameters, main_table_name):
             continue
 
         if domain_type == 'any' or not allowable_values:
-            # Skip pure string-literal values (e.g. Tableau KPI text
-            # descriptions like "Count Distinct of IF...").  These are
-            # metadata, not computable DAX, and embedded quotes break TMDL.
+            # Skip string-literal values only when the inner text contains
+            # embedded quotes (which would break DAX/TMDL string syntax).
+            # Simple quoted values like "CHAMPIONS" must still produce a
+            # measure so that DAX formulas referencing [ParamCaption] work.
             _raw_val = param.get('value', '').strip()
             if (_raw_val.startswith('"') and _raw_val.endswith('"')
                     and len(_raw_val) > 2):
-                continue
+                _inner = _raw_val[1:-1]
+                if '"' in _inner:
+                    continue
             for table in model["model"]["tables"]:
                 if table.get("name") == main_table_name:
                     if "measures" not in table:

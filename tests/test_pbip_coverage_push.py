@@ -227,7 +227,7 @@ class TestSwapBookmarks(unittest.TestCase):
             with open(bm_path) as f:
                 bm = json.load(f)
             self.assertIn('$schema', bm)
-            self.assertIn('bookmark/1.1.0', bm['$schema'])
+            self.assertIn('bookmark/', bm['$schema'])
             self.assertIn('name', bm)
             self.assertIn('displayName', bm)
             self.assertIn('explorationState', bm)

@@ -1287,8 +1287,9 @@ def create_visual_container(worksheet, visual_id=None, x=10, y=10,
     _apply_visual_decorations(worksheet, visual_type, pbi_type, visual_name, ctm, visual_obj)
 
     # ── Assemble container ────────────────────────────────────
+    from powerbi_import.pbip_generator import SCHEMA_VISUAL
     container = {
-        "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
+        "$schema": SCHEMA_VISUAL,
         "name": vid,
         "position": {
             "x": x,
@@ -2154,8 +2155,9 @@ def generate_script_visual(visual_name, script_info, fields=None,
         ],
     }
 
+    from powerbi_import.pbip_generator import SCHEMA_VISUAL as _SV
     container = {
-        "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
+        "$schema": _SV,
         "name": vid,
         "position": {
             "x": x,

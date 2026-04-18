@@ -1,4 +1,4 @@
-"""
+﻿"""
 Power BI Project (.pbip) generator from converted Tableau objects
 
 This module automatically creates the complete structure of a Power BI Project,
@@ -26,7 +26,7 @@ _RE_TABLE_CALC_PREFIX = re.compile(
 )
 _RE_TYPE_SUFFIX = re.compile(r':(nk|qk|ok|fn|tn)$')
 
-# Tableau shelf aggregation prefix → PBI Aggregation Function ID
+# Tableau shelf aggregation prefix â†’ PBI Aggregation Function ID
 # 0=Sum, 1=Avg, 2=Count, 3=Min, 4=Max, 5=CountNonNull, 6=DistinctCount
 _TABLEAU_AGG_TO_PBI_FUNC = {
     'sum': 0, 'avg': 1, 'cnt': 2, 'count': 2,
@@ -34,19 +34,19 @@ _TABLEAU_AGG_TO_PBI_FUNC = {
     'median': 0, 'attr': 0,
 }
 
-# ── PBIR schema constants ──────────────────────────────────────────────
+# â”€â”€ PBIR schema constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 SCHEMA_REPORT = "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/2.0.0/schema.json"
-SCHEMA_PAGE = "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.0.0/schema.json"
-SCHEMA_VISUAL = "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json"
-SCHEMA_BOOKMARK = "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/bookmark/1.1.0/schema.json"
+SCHEMA_PAGE = "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json"
+SCHEMA_VISUAL = "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.7.0/schema.json"
+SCHEMA_BOOKMARK = "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/bookmark/2.1.0/schema.json"
 SCHEMA_PAGES_METADATA = "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/pagesMetadata/1.0.0/schema.json"
 SCHEMA_VERSION = "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/versionMetadata/1.0.0/schema.json"
 SCHEMA_DEFINITION_PBIR = "https://developer.microsoft.com/json-schemas/fabric/item/report/definitionProperties/2.0.0/schema.json"
 SCHEMA_PLATFORM = "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json"
 SCHEMA_PBIP = "https://developer.microsoft.com/json-schemas/fabric/pbip/pbipProperties/1.0.0/schema.json"
 
-# Theme baseline — updated when PBI Desktop ships new monthly theme
-PBI_BASE_THEME_NAME = "CY25SU03"
+# Theme baseline â€” updated when PBI Desktop ships new monthly theme
+PBI_BASE_THEME_NAME = "CY26SU04"
 PBI_REPORT_VERSION_AT_IMPORT = "5.58"
 
 # Add parent directory to path for imports
@@ -153,7 +153,7 @@ class PowerBIProjectGenerator:
             str: Path to the generated project
         """
         
-        print(f"\n🔨 Generating Power BI Project: {report_name}")
+        print(f"\nðŸ”¨ Generating Power BI Project: {report_name}")
         
         # Store options for downstream use
         self._calendar_start = calendar_start
@@ -166,7 +166,7 @@ class PowerBIProjectGenerator:
         self._composite_threshold = composite_threshold
         self._agg_tables = agg_tables
         
-        # Detect datasource-only mode (.tds — no worksheets/dashboards)
+        # Detect datasource-only mode (.tds â€” no worksheets/dashboards)
         self._datasource_only = not bool(
             converted_objects.get('worksheets') or converted_objects.get('dashboards')
         )
@@ -177,40 +177,40 @@ class PowerBIProjectGenerator:
         
         # 1. Create the .pbip file
         pbip_file = self.create_pbip_file(project_dir, report_name)
-        print(f"  ✓ .pbip file created: {pbip_file}")
+        print(f"  âœ“ .pbip file created: {pbip_file}")
         
         # 2. Create the SemanticModel structure
         if self._output_format in ('pbip', 'tmdl'):
             sm_dir = self.create_semantic_model_structure(project_dir, report_name, converted_objects)
-            print(f"  ✓ SemanticModel created: {sm_dir}")
+            print(f"  âœ“ SemanticModel created: {sm_dir}")
         
         # 3. Create the Report structure (skip for datasource-only .tds migrations)
         has_visuals = bool(converted_objects.get('worksheets') or converted_objects.get('dashboards'))
         if self._output_format in ('pbip', 'pbir') and has_visuals:
             report_dir = self.create_report_structure(project_dir, report_name, converted_objects)
-            print(f"  ✓ Report created: {report_dir}")
+            print(f"  âœ“ Report created: {report_dir}")
         elif not has_visuals:
-            print(f"  ℹ Datasource-only mode: SemanticModel generated (no Report)")
+            print(f"  â„¹ Datasource-only mode: SemanticModel generated (no Report)")
         
         # 4. Create metadata
         self.create_metadata(project_dir, report_name, converted_objects)
-        print(f"  ✓ Metadata created")
+        print(f"  âœ“ Metadata created")
         
         # 5. Create paginated report layout (if requested)
         if self._paginated:
             pag_dir = self._create_paginated_report(project_dir, report_name, converted_objects)
-            print(f"  ✓ Paginated report layout created: {pag_dir}")
+            print(f"  âœ“ Paginated report layout created: {pag_dir}")
         
         # 6. Generate post-migration automation artifacts
         self._generate_automation_artifacts(project_dir, report_name, converted_objects)
         
-        print(f"\n✅ Power BI Project generated: {project_dir}")
-        print(f"   📂 Open in Power BI Desktop: {pbip_file}")
+        print(f"\nâœ… Power BI Project generated: {project_dir}")
+        print(f"   ðŸ“‚ Open in Power BI Desktop: {pbip_file}")
         
         return project_dir
     
     def create_pbip_file(self, project_dir, report_name):
-        """Creates the main .pbip file — format identical to PBI Hero reference"""
+        """Creates the main .pbip file â€” format identical to PBI Hero reference"""
         
         pbip_content = {
             "$schema": "https://developer.microsoft.com/json-schemas/fabric/pbip/pbipProperties/1.0.0/schema.json",
@@ -336,7 +336,7 @@ class PowerBIProjectGenerator:
             # Store actual BIM measure names for report visual generation.
             # This set reflects the TMDL generator's 3-factor classification
             # (aggregation, column refs, role) and may differ from Tableau's
-            # role='measure' metadata — a calculated column like DATEDIFF()
+            # role='measure' metadata â€” a calculated column like DATEDIFF()
             # has role='measure' in Tableau but is a column in the BIM model.
             self._actual_bim_measure_names = stats.get('actual_bim_measures', set())
             self._actual_bim_symbols = stats.get('actual_bim_symbols', set())
@@ -387,7 +387,7 @@ class PowerBIProjectGenerator:
             }
         }
     
-    # ── Visual creation helpers (extracted from create_report_structure) ─────
+    # â”€â”€ Visual creation helpers (extracted from create_report_structure) â”€â”€â”€â”€â”€
 
     # Layout constants
     MIN_VISUAL_WIDTH = 60
@@ -427,10 +427,10 @@ class PowerBIProjectGenerator:
             "tabOrder": z_index * 1000
         }
 
-    # ── Grid-snapping layout engine (Sprint 76) ────────────────────────────
+    # â”€â”€ Grid-snapping layout engine (Sprint 76) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     def _build_zone_layout_map(self, zone_hierarchy, page_width, page_height):
-        """Build a flat map of zone-name/zone-id → PBI pixel rect from zone hierarchy.
+        """Build a flat map of zone-name/zone-id â†’ PBI pixel rect from zone hierarchy.
 
         Recursively subdivides the page according to container orientation
         (horizontal splits width, vertical splits height) and proportional
@@ -469,7 +469,7 @@ class PowerBIProjectGenerator:
         children = zone.get('children', [])
 
         if not children:
-            # Leaf zone — record its pixel rectangle.
+            # Leaf zone â€” record its pixel rectangle.
             # Skip filter/paramctrl zones: their name is the filtered worksheet,
             # not a unique identifier, so they'd overwrite the worksheet entry.
             zone_type = zone.get('zone_type', '')
@@ -507,7 +507,7 @@ class PowerBIProjectGenerator:
                                       coord_w, coord_h, layout_map)
                     cursor += alloc_h
             else:
-                # No explicit orientation — use proportional coordinate mapping
+                # No explicit orientation â€” use proportional coordinate mapping
                 # to preserve 2-D grid layouts (e.g. side-by-side + stacked).
                 child_max_x = max((c.get('position', {}).get('x', 0)
                                    + c.get('position', {}).get('w', 1)
@@ -611,7 +611,7 @@ class PowerBIProjectGenerator:
         pos = obj.get('position', {})
         ws_name = obj.get('worksheetName', '')
 
-        # ── SCRIPT_* detection ────────────────────────────────
+        # â”€â”€ SCRIPT_* detection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         script_info = self._detect_script_visual(ws_data, converted_objects)
         if script_info:
             from visual_generator import generate_script_visual
@@ -661,7 +661,7 @@ class PowerBIProjectGenerator:
                 visual_type = 'table'
             else:
                 # Detect :Measure Names + Multiple Values pattern (strip/dot plot)
-                # → clusteredBarChart shows multiple measures per category better
+                # â†’ clusteredBarChart shows multiple measures per category better
                 has_measure_names = any(
                     f.get('name', '') in (':Measure Names', 'Measure Names')
                     for f in fields
@@ -691,7 +691,7 @@ class PowerBIProjectGenerator:
                     ):
                         visual_type = 'multiRowCard'
 
-        # Spatial detection: map visuals with lat/lon fields → azureMap
+        # Spatial detection: map visuals with lat/lon fields â†’ azureMap
         if visual_type in ('map', 'scatterChart') and ws_data:
             fields = ws_data.get('fields', [])
             has_lat = any(
@@ -814,7 +814,7 @@ class PowerBIProjectGenerator:
         if title_fmt.get('underline'):
             title_props["underline"] = _L("true")
         if title_fmt.get('alignment'):
-            # Tableau: 0=left, 1=center, 2=right → PBI: 'left', 'center', 'right'
+            # Tableau: 0=left, 1=center, 2=right â†’ PBI: 'left', 'center', 'right'
             align_map = {'0': 'left', '1': 'center', '2': 'right'}
             pbi_align = align_map.get(str(title_fmt['alignment']), 'left')
             title_props["alignment"] = _L(f"'{pbi_align}'")
@@ -832,7 +832,7 @@ class PowerBIProjectGenerator:
             if visual_filters:
                 visual_json["filterConfig"] = {"filters": visual_filters}
 
-        # Tooltip page binding (viz-in-tooltip → Power BI Report Page tooltip)
+        # Tooltip page binding (viz-in-tooltip â†’ Power BI Report Page tooltip)
         if tooltip_page_map and ws_data:
             # Check if this worksheet has a viz-in-tooltip reference
             tooltips = ws_data.get('tooltips', [])
@@ -929,7 +929,7 @@ class PowerBIProjectGenerator:
                             logger.debug("Could not parse font_size: %s", run.get('font_size'))
                     if style:
                         pbi_run['textStyle'] = style
-                    # URL → hyperlink
+                    # URL â†’ hyperlink
                     if run.get('url'):
                         pbi_run['url'] = run['url']
                     current_runs.append(pbi_run)
@@ -1112,8 +1112,8 @@ class PowerBIProjectGenerator:
         """Create action button visuals from Tableau actions.
         
         Generates:
-        - URL actions → actionButton visuals with WebUrl type
-        - sheet-navigate actions → actionButton visuals with PageNavigation type
+        - URL actions â†’ actionButton visuals with WebUrl type
+        - sheet-navigate actions â†’ actionButton visuals with PageNavigation type
         
         Returns the number of visuals created.
         """
@@ -1279,7 +1279,7 @@ class PowerBIProjectGenerator:
         }
         _write_json(os.path.join(def_dir, 'version.json'), version_json)
         
-        # 3b. report.json — generate custom theme from extracted Tableau dashboard colors
+        # 3b. report.json â€” generate custom theme from extracted Tableau dashboard colors
         theme_data = None
         dashboards = converted_objects.get('dashboards', [])
         for db in dashboards:
@@ -1349,10 +1349,10 @@ class PowerBIProjectGenerator:
             if report_level_filters:
                 report_json["filterConfig"] = {"filters": report_level_filters}
         
-        # Defer writing report.json until after pages — custom visual
+        # Defer writing report.json until after pages â€” custom visual
         # GUIDs are discovered during visual creation and must be added
         # to report.json before it is persisted.
-        self._used_custom_guids = {}  # key → guid_info dict
+        self._used_custom_guids = {}  # key â†’ guid_info dict
         
         # Write custom theme file if theme data was found
         if theme_data:
@@ -1371,7 +1371,7 @@ class PowerBIProjectGenerator:
         page_names = []
         
         # Pre-build tooltip page mapping for viz-in-tooltip binding
-        # tooltip_page_map: worksheet_name → tooltip_page_name
+        # tooltip_page_map: worksheet_name â†’ tooltip_page_name
         tooltip_page_map = {}
         
         if dashboards:
@@ -1383,7 +1383,7 @@ class PowerBIProjectGenerator:
         stories = converted_objects.get('stories', [])
         if stories:
             all_bookmarks.extend(self._create_bookmarks(stories))
-        # Dynamic zone visibility → swap bookmarks (per dashboard)
+        # Dynamic zone visibility â†’ swap bookmarks (per dashboard)
         if dashboards:
             for db_idx, db in enumerate(dashboards):
                 dz_vis = db.get('dynamic_zone_visibility', [])
@@ -1404,7 +1404,7 @@ class PowerBIProjectGenerator:
         if dashboards:
             self._create_mobile_pages(pages_dir, page_names, dashboards, worksheets, converted_objects)
 
-        # 5d. Drill-through pages — from filter actions targeting specific worksheets
+        # 5d. Drill-through pages â€” from filter actions targeting specific worksheets
         self._create_drillthrough_pages(pages_dir, page_names, worksheets,
                                         converted_objects)
         pages_metadata = {
@@ -1443,7 +1443,7 @@ class PowerBIProjectGenerator:
                 "%d stale page directories could not be removed "
                 "(OneDrive lock or permission issue)", stale_count
             )
-            print(f"  ⚠ {stale_count} stale page directories could not be removed (OneDrive lock)")
+            print(f"  âš  {stale_count} stale page directories could not be removed (OneDrive lock)")
 
         # Inject publicCustomVisuals for any AppSource custom visuals used
         if self._used_custom_guids:
@@ -1459,7 +1459,7 @@ class PowerBIProjectGenerator:
         """Generate report definition content (pages, visuals, theme) inside an
         existing report directory.
 
-        This is the content-only portion of ``create_report_structure`` — it does
+        This is the content-only portion of ``create_report_structure`` â€” it does
         **not** write ``.platform`` or ``definition.pbir``, making it suitable for
         thin reports that already have those files pointing to a shared semantic model.
         """
@@ -1582,7 +1582,7 @@ class PowerBIProjectGenerator:
 
         _write_json(os.path.join(def_dir, 'report.json'), report_json)
 
-    # ── Report page sub-methods (extracted from create_report_structure) ──
+    # â”€â”€ Report page sub-methods (extracted from create_report_structure) â”€â”€
 
     def _create_dashboard_pages(self, pages_dir, dashboards, worksheets, converted_objects,
                                 tooltip_page_map):
@@ -1607,7 +1607,7 @@ class PowerBIProjectGenerator:
             self._current_page_height = page_height
 
             page_json = {
-                "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.0.0/schema.json",
+                "$schema": SCHEMA_PAGE,
                 "name": page_name,
                 "displayName": page_display_name,
                 "displayOption": "FitToPage",
@@ -1636,7 +1636,7 @@ class PowerBIProjectGenerator:
                 for viz in phone_layout.get('zones', []):
                     vname = viz.get('name', '')
                     vpos = viz.get('position', {})
-                    # Scale phone layout to PBI mobile dimensions (320×568)
+                    # Scale phone layout to PBI mobile dimensions (320Ã—568)
                     mob_w = 320
                     mob_h = 568
                     dl_max_w = max((z.get('position', {}).get('x', 0)
@@ -1670,7 +1670,7 @@ class PowerBIProjectGenerator:
             db_objects = db.get('objects', [])
             visual_count = 0
 
-            # Build a calc_id → caption lookup for slicers
+            # Build a calc_id â†’ caption lookup for slicers
             calcs = converted_objects.get('calculations', [])
             calc_id_to_caption = {}
             for c in calcs:
@@ -1760,22 +1760,22 @@ class PowerBIProjectGenerator:
                 self._create_page_navigator(visuals_dir, page_width, page_height, visual_count)
                 visual_count += 1
 
-            print(f"  📊 Page '{page_display_name}': {visual_count} visuals created")
+            print(f"  ðŸ“Š Page '{page_display_name}': {visual_count} visuals created")
 
         return page_names
 
     def _create_fallback_page(self, pages_dir, worksheets, converted_objects):
-        """Creates pages when no dashboards exist — one page per worksheet. Returns page_names list."""
+        """Creates pages when no dashboards exist â€” one page per worksheet. Returns page_names list."""
         page_names = []
 
         if not worksheets:
-            # No worksheets either — create a single empty page
+            # No worksheets either â€” create a single empty page
             page_name = "ReportSection"
             page_names.append(page_name)
             page_dir = os.path.join(pages_dir, page_name)
             os.makedirs(page_dir, exist_ok=True)
             page_json = {
-                "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.0.0/schema.json",
+                "$schema": SCHEMA_PAGE,
                 "name": page_name,
                 "displayName": "Tableau Migration",
                 "displayOption": "FitToPage",
@@ -1784,7 +1784,7 @@ class PowerBIProjectGenerator:
             }
             _write_json(os.path.join(page_dir, 'page.json'), page_json)
             os.makedirs(os.path.join(page_dir, 'visuals'), exist_ok=True)
-            print(f"  📊 Default page: 0 visuals created")
+            print(f"  ðŸ“Š Default page: 0 visuals created")
             return page_names
 
         for idx, ws in enumerate(worksheets):
@@ -1796,7 +1796,7 @@ class PowerBIProjectGenerator:
             os.makedirs(page_dir, exist_ok=True)
 
             page_json = {
-                "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.0.0/schema.json",
+                "$schema": SCHEMA_PAGE,
                 "name": page_name,
                 "displayName": ws_name,
                 "displayOption": "FitToPage",
@@ -1890,7 +1890,7 @@ class PowerBIProjectGenerator:
 
             _write_json(os.path.join(visual_dir, 'visual.json'), visual_json, ensure_ascii=False)
 
-        print(f"  📊 {len(worksheets)} worksheet pages created (1 visual each)")
+        print(f"  ðŸ“Š {len(worksheets)} worksheet pages created (1 visual each)")
         return page_names
 
     def _create_tooltip_pages(self, pages_dir, page_names, worksheets, converted_objects):
@@ -1925,7 +1925,7 @@ class PowerBIProjectGenerator:
             os.makedirs(tip_dir, exist_ok=True)
 
             tip_page = {
-                "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.0.0/schema.json",
+                "$schema": SCHEMA_PAGE,
                 "name": tip_name,
                 "displayName": tip_display,
                 "displayOption": "FitToPage",
@@ -1944,7 +1944,7 @@ class PowerBIProjectGenerator:
                  'position': {'x': 0, 'y': 0, 'w': 480, 'h': 320}},
                 1.0, 1.0, 0, worksheets, converted_objects
             )
-            print(f"  💡 Tooltip page '{tip_display}' created")
+            print(f"  ðŸ’¡ Tooltip page '{tip_display}' created")
 
     def _create_mobile_pages(self, pages_dir, page_names, dashboards, worksheets, converted_objects):
         """Creates mobile layout pages from phone device layouts."""
@@ -1961,7 +1961,7 @@ class PowerBIProjectGenerator:
                     os.makedirs(mobile_dir, exist_ok=True)
 
                     mobile_page = {
-                        "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.0.0/schema.json",
+                        "$schema": SCHEMA_PAGE,
                         "name": mobile_page_name,
                         "displayName": mobile_display,
                         "displayOption": "FitToPage",
@@ -1987,7 +1987,7 @@ class PowerBIProjectGenerator:
                             )
                             vis_count += 1
 
-                    print(f"  📱 Mobile layout page '{mobile_display}': {vis_count} visuals")
+                    print(f"  ðŸ“± Mobile layout page '{mobile_display}': {vis_count} visuals")
 
     def _build_field_mapping(self, converted_objects):
         """Builds the mapping from Tableau fields to the Power BI model.
@@ -2064,7 +2064,7 @@ class PowerBIProjectGenerator:
         # Phase 4: Map Tableau calculations (rawID -> caption/friendly name)
         # Measures are on the main table
         measures_table = main_table or 'Table'
-        self._measure_names = set()  # Track which fields are measures (not dimensions) — for bucket assignment
+        self._measure_names = set()  # Track which fields are measures (not dimensions) â€” for bucket assignment
 
         # _bim_measure_names: authoritative set of DAX measures in the BIM
         # model.  If the TMDL generator populated _actual_bim_measure_names
@@ -2085,7 +2085,7 @@ class PowerBIProjectGenerator:
                     cname = col.get('name', '?')
                     self._measure_names.add(cname)
 
-        # Phase 4b: Calculated measures — index in _field_map and _measure_names
+        # Phase 4b: Calculated measures â€” index in _field_map and _measure_names
         for ds in datasources:
             for calc in ds.get('calculations', []):
                 raw_name = calc.get('name', '').replace('[', '').replace(']', '')
@@ -2186,8 +2186,8 @@ class PowerBIProjectGenerator:
             return param_caption_map.get(pname, pname)
         return self._RE_PARAM_REF.sub(_repl, title)
 
-    # ── PBIR data-role names per visual type ─────────────────────
-    # (dimension_roles, measure_roles) — must match PBI Desktop expectations
+    # â”€â”€ PBIR data-role names per visual type â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # (dimension_roles, measure_roles) â€” must match PBI Desktop expectations
     _VISUAL_DATA_ROLES = {
         "card":                              ([], ["Fields"]),
         "multiRowCard":                      ([], ["Values"]),
@@ -2230,7 +2230,7 @@ class PowerBIProjectGenerator:
     _DATE_WORDS = frozenset({
         'date', 'time', 'datetime', 'timestamp',
         'year', 'month', 'quarter', 'week', 'day',
-        'heure', 'année', 'mois', 'trimestre', 'semaine', 'jour',
+        'heure', 'annÃ©e', 'mois', 'trimestre', 'semaine', 'jour',
     })
 
     def _is_date_field(self, name):
@@ -2283,19 +2283,19 @@ class PowerBIProjectGenerator:
         binds fields to the right data wells.
 
         Shelf mapping logic:
-        - rows/columns dims  → primary axis (Category/Group/Location/Rows)
-        - rows/columns meas  → value axis (Y/Values/Size)
-        - color dims         → Series / Legend (secondary grouping)
-        - color meas         → Tooltips (data for conditional formatting)
-        - tooltip fields     → Tooltips
-        - size fields        → Size
-        - measure_value      → expanded measures (from :Measure Names)
+        - rows/columns dims  â†’ primary axis (Category/Group/Location/Rows)
+        - rows/columns meas  â†’ value axis (Y/Values/Size)
+        - color dims         â†’ Series / Legend (secondary grouping)
+        - color meas         â†’ Tooltips (data for conditional formatting)
+        - tooltip fields     â†’ Tooltips
+        - size fields        â†’ Size
+        - measure_value      â†’ expanded measures (from :Measure Names)
         """
         fields = ws_data.get('fields', [])
         if not fields:
             return None
 
-        # ── Clean & de-duplicate field names ─────────────────────
+        # â”€â”€ Clean & de-duplicate field names â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         skip_names = {'Measure Names', 'Measure Values', 'Multiple Values',
                       ':Measure Names', ':Measure Values',
                       'Longitude (generated)', 'Latitude (generated)'}
@@ -2329,7 +2329,7 @@ class PowerBIProjectGenerator:
         if not cleaned_fields:
             return None
 
-        # ── Shelf-aware field classification ──────────────────────
+        # â”€â”€ Shelf-aware field classification â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         classified = self._classify_shelf_fields(cleaned_fields)
         rows_dims = classified['rows_dims']
         rows_meas = classified['rows_meas']
@@ -2370,11 +2370,11 @@ class PowerBIProjectGenerator:
         visual_type = ws_data.get('chart_type', 'clusteredBarChart')
         query_state = {}
 
-        # ── Per-visual-type role assignment ───────────────────────
+        # â”€â”€ Per-visual-type role assignment â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         if visual_type == 'scatterChart':
-            # Scatter: all dims → Category (detail grouping)
-            #          cols measures → X, rows measures → Y, 3rd → Size
+            # Scatter: all dims â†’ Category (detail grouping)
+            #          cols measures â†’ X, rows measures â†’ Y, 3rd â†’ Size
             scatter_dims = axis_dims + color_dims
             if scatter_dims:
                 query_state["Category"] = {
@@ -2401,7 +2401,7 @@ class PowerBIProjectGenerator:
                 }
 
         elif visual_type in ('tableEx', 'table'):
-            # Table: all fields (dims + measures) → Values
+            # Table: all fields (dims + measures) â†’ Values
             table_fields = all_dims + all_meas
             if table_fields:
                 query_state["Values"] = {
@@ -2410,8 +2410,8 @@ class PowerBIProjectGenerator:
                 }
 
         elif visual_type == 'matrix':
-            # Matrix: first dim → Rows, second dim or color dim → Columns,
-            #         measures → Values
+            # Matrix: first dim â†’ Rows, second dim or color dim â†’ Columns,
+            #         measures â†’ Values
             matrix_dims = axis_dims + color_dims
             if matrix_dims:
                 query_state["Rows"] = self._make_projection(matrix_dims[0])
@@ -2449,7 +2449,7 @@ class PowerBIProjectGenerator:
                 query_state["Category"] = self._make_projection(axis_dims[0])
 
         elif visual_type in ('treemap', 'sunburst'):
-            # Treemap: dims → Group (multiple levels, non-date first)
+            # Treemap: dims â†’ Group (multiple levels, non-date first)
             tree_dims = hier_dims + color_dims
             non_date = [d for d in tree_dims
                         if not self._is_date_field(d['name'])]
@@ -2476,9 +2476,9 @@ class PowerBIProjectGenerator:
                 }
 
         elif visual_type in ('filledMap', 'shapeMap'):
-            # Filled/shape map: dims → Category (Location well),
-            #                   color dim → Series, measure → Size/Color.
-            # PBI Desktop (2025+) auto-converts filledMap → map;
+            # Filled/shape map: dims â†’ Category (Location well),
+            #                   color dim â†’ Series, measure â†’ Size/Color.
+            # PBI Desktop (2025+) auto-converts filledMap â†’ map;
             # the map visual uses PBIR role "Category" for its Location well.
             # Tableau maps often use generated Lat/Lon (which we skip)
             # and put the real geo field on the tooltip shelf.
@@ -2498,7 +2498,7 @@ class PowerBIProjectGenerator:
             if color_dims:
                 query_state["Series"] = self._make_projection(color_dims[0])
             value_role = "Color" if visual_type == 'shapeMap' else "Size"
-            # For maps, Tableau's color measure → PBI Size (data magnitude).
+            # For maps, Tableau's color measure â†’ PBI Size (data magnitude).
             val_src = axis_meas or color_meas
             if val_src:
                 query_state[value_role] = self._make_projection(val_src[0])
@@ -2512,8 +2512,8 @@ class PowerBIProjectGenerator:
                 }
 
         elif visual_type == 'map':
-            # Bubble map: dims → Category (Location well),
-            #             color dim → Series, measure → Size.
+            # Bubble map: dims â†’ Category (Location well),
+            #             color dim â†’ Series, measure â†’ Size.
             # The map visual uses PBIR role "Category" for its Location well.
             # Same fallback as filledMap for generated Lat/Lon.
             loc_dims = axis_dims
@@ -2528,7 +2528,7 @@ class PowerBIProjectGenerator:
                 }
             if color_dims:
                 query_state["Series"] = self._make_projection(color_dims[0])
-            # For maps, Tableau's color measure → PBI Size (data magnitude).
+            # For maps, Tableau's color measure â†’ PBI Size (data magnitude).
             sz = axis_meas or size_fields or color_meas
             if sz:
                 query_state["Size"] = self._make_projection(sz[0])
@@ -2581,12 +2581,12 @@ class PowerBIProjectGenerator:
                 query_state["Values"] = self._make_projection(axis_meas[0])
 
         else:
-            # ── Standard charts (bar, column, line, area, pie, donut,
-            #    funnel, ribbon, stacked variants) ────────────────
+            # â”€â”€ Standard charts (bar, column, line, area, pie, donut,
+            #    funnel, ribbon, stacked variants) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             if axis_dims:
                 query_state["Category"] = self._make_projection(axis_dims[0])
             elif color_dims:
-                # No axis dims — promote first color dim to Category
+                # No axis dims â€” promote first color dim to Category
                 query_state["Category"] = self._make_projection(color_dims[0])
                 color_dims = color_dims[1:]  # consume it
 
@@ -2608,7 +2608,7 @@ class PowerBIProjectGenerator:
                                     for m in axis_meas]
                 }
             elif size_fields:
-                # Tableau size-shelf measures (e.g. line chart thickness) → Y
+                # Tableau size-shelf measures (e.g. line chart thickness) â†’ Y
                 query_state["Y"] = {
                     "projections": [self._make_projection_entry(m)
                                     for m in size_fields]
@@ -2624,7 +2624,7 @@ class PowerBIProjectGenerator:
                                     for f in tip_fields[:5]]
                 }
 
-        # ── Fallback: only measures, no dimensions at all ────────────────
+        # â”€â”€ Fallback: only measures, no dimensions at all â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         # Convert to card (1-2 measures) or multiRowCard (3+).
         # Note: if color_dims were promoted to Category in the standard
         # charts branch above, query_state already has "Category";
@@ -2669,8 +2669,8 @@ class PowerBIProjectGenerator:
 
     def _make_scatter_axis_entry(self, field):
         """Creates projection entry for scatter chart axes.
-        Named DAX measures → Measure wrapper.
-        Physical columns → Aggregation wrapper with shelf-aware Function ID."""
+        Named DAX measures â†’ Measure wrapper.
+        Physical columns â†’ Aggregation wrapper with shelf-aware Function ID."""
         raw_name = field.get('name', 'Field')
         clean_name = self._clean_field_name(raw_name)
 
@@ -2725,13 +2725,13 @@ class PowerBIProjectGenerator:
         """Creates a projection entry for a field, resolved to the Power BI model.
 
         Wrapper selection:
-        - Named DAX measures (in _bim_measure_names) → ``Measure`` wrapper
+        - Named DAX measures (in _bim_measure_names) â†’ ``Measure`` wrapper
         - Physical columns with explicit Tableau aggregation (cnt, avg, etc.)
-          → ``Aggregation`` wrapper with the corresponding PBI Function ID
+          â†’ ``Aggregation`` wrapper with the corresponding PBI Function ID
         - Physical numeric columns treated as measures by Tableau
-          (in _measure_names but NOT in _bim_measure_names) → ``Aggregation``
+          (in _measure_names but NOT in _bim_measure_names) â†’ ``Aggregation``
           wrapper with Function 0 (Sum) so PBI shows explicit aggregation
-        - Everything else (dimension columns) → ``Column`` wrapper
+        - Everything else (dimension columns) â†’ ``Column`` wrapper
         """
         raw_name = field.get('name', 'Field')
 
@@ -2768,7 +2768,7 @@ class PowerBIProjectGenerator:
         )
 
         if is_bim_measure:
-            # Named DAX measure → Measure wrapper
+            # Named DAX measure â†’ Measure wrapper
             field_ref = {
                 "Measure": {
                     "Expression": {"SourceRef": {"Entity": entity}},
@@ -2776,7 +2776,7 @@ class PowerBIProjectGenerator:
                 }
             }
         elif is_physical_measure or explicit_agg_func is not None:
-            # Physical column with aggregation — use shelf aggregation if present
+            # Physical column with aggregation â€” use shelf aggregation if present
             agg_func = explicit_agg_func if explicit_agg_func is not None else 0
             field_ref = {
                 "Aggregation": {
@@ -2790,7 +2790,7 @@ class PowerBIProjectGenerator:
                 }
             }
         else:
-            # Dimension column → Column wrapper
+            # Dimension column â†’ Column wrapper
             field_ref = {
                 "Column": {
                     "Expression": {"SourceRef": {"Entity": entity}},
@@ -2910,7 +2910,7 @@ class PowerBIProjectGenerator:
         if not shapes:
             return
 
-        # Determine source shapes directory — typically tableau_export/shapes/
+        # Determine source shapes directory â€” typically tableau_export/shapes/
         # Search common extraction output locations
         search_dirs = [
             os.path.join('tableau_export', 'shapes'),
@@ -2943,7 +2943,7 @@ class PowerBIProjectGenerator:
                     logger.debug("Could not copy shape %s: %s", filename, exc)
 
         if copied:
-            print(f"  🖼️  Copied {copied} custom shape(s) to RegisteredResources/")
+            print(f"  ðŸ–¼ï¸  Copied {copied} custom shape(s) to RegisteredResources/")
 
     def _create_report_filters(self, converted_objects):
         """Creates report-level filters from parameters"""
@@ -3033,7 +3033,7 @@ class PowerBIProjectGenerator:
             if clean_field in skip_fields or field.replace('[', '').replace(']', '') in skip_fields:
                 continue
 
-            # Skip date-part filters (yr:, qr:, etc.) — PBI cannot filter
+            # Skip date-part filters (yr:, qr:, etc.) â€” PBI cannot filter
             # a DateTime column with categorical date-part string values
             if f.get('date_part'):
                 continue
@@ -3090,8 +3090,8 @@ class PowerBIProjectGenerator:
                 visual_filters.append(pbi_filter)
                 continue
 
-            # Sprint 77: Context filter → report-level (emit as normal filter
-            # with annotation — PBI evaluates all filters simultaneously)
+            # Sprint 77: Context filter â†’ report-level (emit as normal filter
+            # with annotation â€” PBI evaluates all filters simultaneously)
             if filter_mode == 'context' and f.get('values'):
                 pass  # fall through to categorical handling below
 
@@ -3193,11 +3193,11 @@ class PowerBIProjectGenerator:
 
         return objects
 
-    # ── Visual-object sub-methods (extracted from _build_visual_objects) ──
+    # â”€â”€ Visual-object sub-methods (extracted from _build_visual_objects) â”€â”€
 
     def _build_label_objects(self, objects, formatting, mark_encoding):
         """Data labels, label color, and font formatting."""
-        # Data labels — from formatting.mark.mark-labels-show OR mark_encoding.label
+        # Data labels â€” from formatting.mark.mark-labels-show OR mark_encoding.label
         show_labels = False
         mark_fmt = formatting.get('mark', {})
         if isinstance(mark_fmt, dict):
@@ -3217,7 +3217,7 @@ class PowerBIProjectGenerator:
                 label_props["color"] = {
                     "solid": {"color": _L(f"'{label_info['font_color']}'")}
                 }
-            # Map label position (Tableau → PBI)
+            # Map label position (Tableau â†’ PBI)
             pos_map = {'top': "'OutsideEnd'", 'center': "'InsideCenter'",
                        'bottom': "'InsideBase'", 'left': "'Left'", 'right': "'Right'"}
             if label_info.get('position') and label_info['position'] in pos_map:
@@ -3505,7 +3505,7 @@ class PowerBIProjectGenerator:
     def _build_color_encoding_objects(self, objects, ws_data, visual_type, mark_encoding):
         """Conditional formatting gradient, per-value colors, stepped thresholds."""
         color_enc = mark_encoding.get('color', {})
-        color_mode = color_enc.get('type', '')  # 'quantitative' → gradient, 'categorical' → distinct
+        color_mode = color_enc.get('type', '')  # 'quantitative' â†’ gradient, 'categorical' â†’ distinct
         if color_mode == 'quantitative' or color_enc.get('palette', ''):
             # Data-driven color scale
             palette_colors = color_enc.get('palette_colors', [])
@@ -3606,7 +3606,7 @@ class PowerBIProjectGenerator:
         """Reference lines, trend lines, annotations, forecast, map, analytics stats, small multiples."""
         main_table = getattr(self, '_main_table', 'Table')
 
-        # Reference lines (Tableau reference lines/bands → PBI constant + dynamic lines)
+        # Reference lines (Tableau reference lines/bands â†’ PBI constant + dynamic lines)
         ref_lines = ws_data.get('reference_lines', [])
         if ref_lines:
             y_ref_lines = []
@@ -3649,7 +3649,7 @@ class PowerBIProjectGenerator:
                 all_lines = y_ref_lines + dynamic_ref_lines
                 objects["valueAxis"][0]["properties"]["referenceLine"] = all_lines
 
-        # Trend lines (analytics pane) — Sprint 123: full regression type config
+        # Trend lines (analytics pane) â€” Sprint 123: full regression type config
         trend_lines = ws_data.get('trend_lines', [])
         if trend_lines:
             trend_objs = []
@@ -3675,7 +3675,7 @@ class PowerBIProjectGenerator:
                 trend_objs.append({"properties": trend_obj})
             objects["trend"] = trend_objs
 
-        # Clustering → MigrationNote (no native PBI clustering in PBIR)
+        # Clustering â†’ MigrationNote (no native PBI clustering in PBIR)
         clustering = ws_data.get('clustering', [])
         if clustering:
             cl = clustering[0]
@@ -3692,7 +3692,7 @@ class PowerBIProjectGenerator:
                 hint = existing.get("expr", {}).get("Literal", {}).get("Value", "''").strip("'") + " | " + hint
             objects["subTitle"][0]["properties"]["text"] = _L(json.dumps(hint))
 
-        # Annotations → subtitle text
+        # Annotations â†’ subtitle text
         annotations = ws_data.get('annotations', [])
         if annotations and not clustering:
             anno_texts = [a.get('text', '') for a in annotations if a.get('text')]
@@ -3702,7 +3702,7 @@ class PowerBIProjectGenerator:
                 objects["subTitle"][0]["properties"]["show"] = _L("true")
                 objects["subTitle"][0]["properties"]["text"] = _L(json.dumps(subtitle_text))
 
-        # Forecast config (analytics pane) — Sprint 123: seasonality + model
+        # Forecast config (analytics pane) â€” Sprint 123: seasonality + model
         forecasts = ws_data.get('forecasting', [])
         if forecasts:
             fc = forecasts[0]
@@ -3746,7 +3746,7 @@ class PowerBIProjectGenerator:
             if map_props:
                 objects["mapControl"] = [{"properties": map_props}]
 
-        # Reference bands, statistical lines, confidence intervals (analytics_stats) — Sprint 123
+        # Reference bands, statistical lines, confidence intervals (analytics_stats) â€” Sprint 123
         analytics_stats = ws_data.get('analytics_stats', [])
         for stat in analytics_stats:
             if stat.get('type') == 'distribution_band':
@@ -3757,7 +3757,7 @@ class PowerBIProjectGenerator:
                     objects["valueAxis"] = [{"properties": {"show": _L("true")}}]
                 objects["valueAxis"][0]["properties"].setdefault("referenceLine", [])
                 if computation in ('standard deviation', 'std_dev', 'stddev'):
-                    # Standard deviation band → percentile line pair
+                    # Standard deviation band â†’ percentile line pair
                     objects["valueAxis"][0]["properties"]["referenceLine"].append({
                         "type": "Band",
                         "lowerBound": str(band_from) if band_from else "-1",
@@ -3768,7 +3768,7 @@ class PowerBIProjectGenerator:
                         "style": _L("'dashed'"),
                     })
                 elif computation in ('percentile', 'quantile', 'iqr'):
-                    # Percentile band (e.g. IQR: 25th–75th)
+                    # Percentile band (e.g. IQR: 25thâ€“75th)
                     objects["valueAxis"][0]["properties"]["referenceLine"].append({
                         "type": "Band",
                         "lowerBound": str(band_from) if band_from else "25",
@@ -3835,7 +3835,7 @@ class PowerBIProjectGenerator:
         """Creates a slicer visual for a filter/parameter control with field binding.
 
         Args:
-            slicer_mode: PBI slicer mode string — ``'Dropdown'``, ``'List'``,
+            slicer_mode: PBI slicer mode string â€” ``'Dropdown'``, ``'List'``,
                 ``'Between'`` (range/slider), ``'Basic'`` (relative date),
                 ``'Date'`` (date picker), or ``'Search'`` (wildcard text).
             title: Display title for the slicer. Defaults to field_name.
@@ -3955,7 +3955,7 @@ class PowerBIProjectGenerator:
         if filter_mode == 'range':
             return 'Between'
 
-        # Check if this is a range parameter → slider (Between)
+        # Check if this is a range parameter â†’ slider (Between)
         for param in converted_objects.get('parameters', []):
             p_name = param.get('name', '').replace('[', '').replace(']', '')
             if p_name and (p_name in param_ref or p_name == column_name):
@@ -3982,7 +3982,7 @@ class PowerBIProjectGenerator:
                         if card:
                             value_count = card
 
-        # High cardinality (>20) → Dropdown, low → List
+        # High cardinality (>20) â†’ Dropdown, low â†’ List
         if value_count and value_count <= 20:
             return 'List'
 
@@ -4056,10 +4056,10 @@ class PowerBIProjectGenerator:
 
         Common Tableau patterns::
 
-            ###,###    → #,0
-            $#,#00.00  → $#,0.00
-            0.0%       → 0.0%
-            0.00       → 0.00
+            ###,###    â†’ #,0
+            $#,#00.00  â†’ $#,0.00
+            0.0%       â†’ 0.0%
+            0.00       â†’ 0.00
         """
         if not tableau_format or not isinstance(tableau_format, str):
             return ''
@@ -4093,7 +4093,7 @@ class PowerBIProjectGenerator:
             return
 
         # Collect unique target worksheets from filter/set actions
-        drillthrough_targets = {}  # target_ws_name → source_field
+        drillthrough_targets = {}  # target_ws_name â†’ source_field
         for action in actions:
             a_type = action.get('type', '')
             if a_type not in ('filter', 'set-value'):
@@ -4126,7 +4126,7 @@ class PowerBIProjectGenerator:
             os.makedirs(dt_dir, exist_ok=True)
 
             dt_page = {
-                "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.0.0/schema.json",
+                "$schema": SCHEMA_PAGE,
                 "name": dt_page_name,
                 "displayName": dt_display,
                 "displayOption": "FitToPage",
@@ -4250,7 +4250,7 @@ class PowerBIProjectGenerator:
         except ImportError:
             return
 
-        # RLS PowerShell script — only if user_filters / RLS roles exist
+        # RLS PowerShell script â€” only if user_filters / RLS roles exist
         user_filters = converted_objects.get('user_filters', [])
         if user_filters:
             rls_path = os.path.join(project_dir, 'assign_rls_roles.ps1')
@@ -4262,15 +4262,15 @@ class PowerBIProjectGenerator:
                 })
             result = generate_rls_powershell(roles, rls_path, dataset_name=report_name)
             if result:
-                print(f"  ✓ RLS PowerShell script: {rls_path}")
+                print(f"  âœ“ RLS PowerShell script: {rls_path}")
 
-        # Credential template — always generate if datasources have connections
+        # Credential template â€” always generate if datasources have connections
         datasources = converted_objects.get('datasources', [])
         if datasources:
             cred_path = os.path.join(project_dir, 'credentials_template.json')
             result = generate_credential_template(datasources, cred_path)
             if result:
-                print(f"  ✓ Credential template: {cred_path}")
+                print(f"  âœ“ Credential template: {cred_path}")
 
     def create_metadata(self, project_dir, report_name, converted_objects):
         """Creates migration metadata file for documentation."""
@@ -4333,7 +4333,7 @@ class PowerBIProjectGenerator:
                 logger.warning("Could not read relationships.tmdl for stats: %s", exc)
         tmdl_stats['relationships'] = relationships_count
 
-        # Collect visual type mappings used (Tableau mark → PBI visual)
+        # Collect visual type mappings used (Tableau mark â†’ PBI visual)
         visual_types_used = {}
         visual_details = []  # per-worksheet detail for HTML report
         for ws in converted_objects.get('worksheets', []):
@@ -4424,9 +4424,9 @@ class PowerBIProjectGenerator:
         metadata_file = os.path.join(project_dir, 'migration_metadata.json')
         _write_json(metadata_file, metadata)
 
-    # ═══════════════════════════════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     # Paginated Report Generation
-    # ═══════════════════════════════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _create_paginated_report(self, project_dir, report_name, converted_objects):
         """Generate a paginated report layout (RDL-style) for print-oriented output.
