@@ -4255,13 +4255,44 @@ def _convert_hyper_to_csv_in_data(data_dir, source_basename, project_dir):
                 )
                 if rename_pairs:
                     rename_list = ', '.join(rename_pairs)
-                    csv_replacement = (
-                        f'Source = Table.RenameColumns('
+                    base_expr = (
+                        f'Table.RenameColumns('
                         f'{csv_expr}, '
                         f'{{{rename_list}}})'
                     )
                 else:
-                    csv_replacement = f'Source = {csv_expr}'
+                    base_expr = csv_expr
+
+                # Determine which #table columns are NOT in the CSV
+                # (after rename). The original #table had ALL Tableau
+                # metadata columns (most null); the CSV only has the
+                # physical Hyper columns. Use Table.SelectColumns with
+                # MissingField.UseNull to pad missing columns as null.
+                effective_csv = set()
+                if csv_headers and tmdl_cols:
+                    tmdl_set = set(tmdl_cols)
+                    for csv_h in csv_headers:
+                        if csv_h + suffix in tmdl_set:
+                            effective_csv.add(csv_h + suffix)
+                        else:
+                            effective_csv.add(csv_h)
+                has_missing = tmdl_cols and any(
+                    c not in effective_csv for c in tmdl_cols
+                )
+                if has_missing:
+                    # Escape double-quotes inside column names for M
+                    col_list = ', '.join(
+                        f'"{c.replace(chr(34), chr(34)+chr(34))}"'
+                        for c in tmdl_cols
+                    )
+                    csv_replacement = (
+                        f'Source = Table.SelectColumns('
+                        f'{base_expr}, '
+                        f'{{{col_list}}}, '
+                        f'MissingField.UseNull)'
+                    )
+                else:
+                    csv_replacement = f'Source = {base_expr}'
 
                 new_content = _re.sub(
                     htable_pattern,
