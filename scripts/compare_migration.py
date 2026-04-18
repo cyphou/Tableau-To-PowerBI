@@ -192,29 +192,30 @@ def load_pbi(pbip_dir):
                 with open(tmdl_file, encoding="utf-8") as f:
                     content = f.read()
 
-                # Measures
+                # Measures (quoted: measure 'Name' = ... or unquoted: measure Name = ...)
                 for m in re.finditer(
-                    r"\tmeasure\s+'([^']+(?:''[^']*)*)'[\t ]*=[\t ]*(.+?)(?=\n\t(?:measure|column|partition|annotation|hierarchy)\b|\n\n|\Z)",
+                    r"\tmeasure\s+(?:'([^']+(?:''[^']*)*)'|([A-Za-z_]\w*))[\t ]*=[\t ]*(.+?)(?=\n\t(?:measure|column|partition|annotation|hierarchy)\b|\n\n|\Z)",
                     content, re.DOTALL
                 ):
-                    mname = m.group(1).replace("''", "'")
-                    mexpr = m.group(2).strip().split("\n")[0][:200]
+                    mname = (m.group(1) or m.group(2) or "").replace("''", "'")
+                    mexpr = m.group(3).strip().split("\n")[0][:200]
                     pbi["measures"].append({"table": tname, "name": mname, "expr": mexpr})
 
-                # Columns
+                # Columns (quoted: column 'Name' or unquoted: column Name)
                 cols = []
-                for c in re.finditer(r"\tcolumn\s+'([^']+(?:''[^']*)*)'", content):
-                    cname = c.group(1).replace("''", "'")
+                for c in re.finditer(r"\tcolumn\s+(?:'([^']+(?:''[^']*)*)'|([A-Za-z_]\w*))", content):
+                    cname = (c.group(1) or c.group(2) or "").replace("''", "'")
                     cols.append(cname)
                 pbi["columns_by_table"][tname] = cols
                 pbi["tables"].append(tname)
 
-                # Calculated columns
+                # Calculated columns (quoted or unquoted)
                 for c in re.finditer(
-                    r"\tcolumn\s+'([^']+(?:''[^']*)*)'\s*=\s*(.+?)(?=\n\t(?:measure|column|partition|annotation)\b|\n\n|\Z)",
+                    r"\tcolumn\s+(?:'([^']+(?:''[^']*)*)'|([A-Za-z_]\w*))\s*=\s*(.+?)(?=\n\t(?:measure|column|partition|annotation)\b|\n\n|\Z)",
                     content, re.DOTALL
                 ):
-                    pbi["calc_cols"].append({"table": tname, "name": c.group(1).replace("''", "'")})
+                    ccname = (c.group(1) or c.group(2) or "").replace("''", "'")
+                    pbi["calc_cols"].append({"table": tname, "name": ccname})
 
         # Relationships
         model_tmdl = os.path.join(sm_dir, "definition", "model.tmdl")
@@ -420,6 +421,11 @@ def compare_calculations(src, pbi):
     measure_lower = {m["name"].lower(): m["name"] for m in measures}
     calc_col_names = {c["name"] for c in calc_cols}
     calc_col_lower = {c["name"].lower(): c["name"] for c in calc_cols}
+    # Also include regular source columns (Tableau calcs converted to M transforms)
+    all_columns = set()
+    for cols in pbi.get("columns_by_table", {}).values():
+        all_columns.update(cols)
+    all_columns_lower = {c.lower(): c for c in all_columns}
 
     matched = []
     missing = []
@@ -445,10 +451,14 @@ def compare_calculations(src, pbi):
             pbi_type = "measure"
         elif caption in calc_col_names:
             pbi_type = "calc_column"
+        elif caption in all_columns:
+            pbi_type = "column"
         elif caption.lower() in measure_lower:
             pbi_type = "measure"
         elif caption.lower() in calc_col_lower:
             pbi_type = "calc_column"
+        elif caption.lower() in all_columns_lower:
+            pbi_type = "column"
 
         if pbi_type:
             matched.append({"name": caption, "role": role, "pbi_type": pbi_type})
@@ -472,12 +482,18 @@ def compare_calculations(src, pbi):
         cat = m["category"]
         missing_by_cat[cat] = missing_by_cat.get(cat, 0) + 1
 
+    # Non-functional calcs (descriptions, literals) are intentionally not
+    # migrated as separate DAX objects — they are metadata, not logic.
+    non_functional = sum(v for k, v in missing_by_cat.items()
+                         if k in ("description", "literal"))
+
     return {
         "tableau_calcs": len(seen_captions),
         "pbi_measures": len(measures),
         "pbi_calc_cols": len(calc_cols),
         "matched": len(matched),
         "missing": len(missing),
+        "non_functional_missing": non_functional,
         "missing_by_category": missing_by_cat,
         "missing_details": missing,
         "matched_details": matched,
@@ -585,7 +601,10 @@ def run_comparison(pbip_dir, extract_dir, verbose=False):
         ratio = min(1.0, (vis["total_pbi_charts"] + vis["total_pbi_slicers"]) / vis["total_ws_refs_in_dashboards"])
         scores.append(ratio)
     if calc["tableau_calcs"]:
-        scores.append(calc["matched"] / calc["tableau_calcs"])
+        # Non-functional calcs (descriptions, literals) are intentionally not
+        # migrated — count them as accounted-for in the score.
+        effective = calc["matched"] + calc.get("non_functional_missing", 0)
+        scores.append(min(1.0, effective / calc["tableau_calcs"]))
 
     results["overall_score"] = round(sum(scores) / len(scores) * 100, 1) if scores else 0
 
@@ -664,7 +683,11 @@ def print_results(results, verbose=False):
     print(f"     PBI measures:       {calc['pbi_measures']}")
     print(f"     PBI calc columns:   {calc['pbi_calc_cols']}")
     print(f"     Matched:            {_status(calc['matched'], calc['tableau_calcs'])}")
-    print(f"     Missing:            {calc['missing']}")
+    nf = calc.get("non_functional_missing", 0)
+    formula_missing = calc.get("missing", 0) - nf
+    print(f"     Missing formulas:   {formula_missing}")
+    if nf:
+        print(f"     Non-functional:     {nf} (descriptions/literals — excluded from score)")
     cats = calc.get("missing_by_category", {})
     if cats:
         parts = []
