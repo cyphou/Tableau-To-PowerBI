@@ -4196,14 +4196,73 @@ def _convert_hyper_to_csv_in_data(data_dir, source_basename, project_dir):
                     r'#table\(\s*\{[^}]*\}\s*,\s*\{\s*\}\s*\)'
                     r'(?:\s*//[^\n]*)?'  # optional trailing comment
                 )
-                csv_replacement = (
-                    f'Source = Table.PromoteHeaders('
+                # Extract column names from the #table() to compare
+                # with CSV headers — Tableau may rename columns with
+                # captions like "FirstName (Created By)" while the
+                # CSV has raw Hyper names like "FirstName".
+                col_pattern = (
+                    r'#table\(\s*\{([^}]*)\}'
+                )
+                col_match = _re.search(col_pattern, content)
+                tmdl_cols = []
+                if col_match:
+                    raw = col_match.group(1)
+                    tmdl_cols = [
+                        c.strip().strip('"')
+                        for c in raw.split(',')
+                        if c.strip().strip('"')
+                    ]
+
+                # Read CSV headers to build rename mapping
+                csv_path = os.path.join(data_dir, matched_csv)
+                csv_headers = []
+                try:
+                    with open(csv_path, 'r', newline='', encoding='utf-8') as cf:
+                        reader = _csv.reader(cf)
+                        csv_headers = next(reader, [])
+                except OSError:
+                    pass
+
+                # Build rename pairs by matching each CSV header to
+                # the corresponding #table() column. Tableau renames
+                # columns with a " (TableAlias)" suffix when multiple
+                # tables share the same base table (e.g., "FirstName"
+                # becomes "FirstName (Created By)"). Match by:
+                #   1. Exact match (CSV header == #table col)
+                #   2. Suffixed match: CSV header + " (TableAlias)"
+                rename_pairs = []
+                if csv_headers and tmdl_cols:
+                    tmdl_set = set(tmdl_cols)
+                    suffix = f' ({tmdl_table_name})'
+                    for csv_h in csv_headers:
+                        if csv_h in tmdl_set:
+                            # CSV header matches a #table column exactly
+                            pass
+                        elif csv_h + suffix in tmdl_set:
+                            # CSV "FirstName" → #table "FirstName (Created By)"
+                            rename_pairs.append(
+                                '{' + f'"{csv_h}", "{csv_h}{suffix}"' + '}'
+                            )
+
+                # Build the replacement Source expression
+                csv_expr = (
+                    f'Table.PromoteHeaders('
                     f'Csv.Document('
                     f'File.Contents(DataFolder & "\\\\{matched_csv}"), '
                     f'[Delimiter=",", Encoding=65001, '
                     f'QuoteStyle=QuoteStyle.Csv]),'
                     f' [PromoteAllScalars=true])'
                 )
+                if rename_pairs:
+                    rename_list = ', '.join(rename_pairs)
+                    csv_replacement = (
+                        f'Source = Table.RenameColumns('
+                        f'{csv_expr}, '
+                        f'{{{rename_list}}})'
+                    )
+                else:
+                    csv_replacement = f'Source = {csv_expr}'
+
                 new_content = _re.sub(
                     htable_pattern,
                     csv_replacement,
