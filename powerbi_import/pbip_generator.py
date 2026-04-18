@@ -470,10 +470,12 @@ class PowerBIProjectGenerator:
 
         if not children:
             # Leaf zone â€” record its pixel rectangle.
-            # Skip filter/paramctrl zones: their name is the filtered worksheet,
-            # not a unique identifier, so they'd overwrite the worksheet entry.
+            # Only record zones that correspond to actual content objects.
+            # Filter, paramctrl, color (legend), title, and size zones share
+            # the parent worksheet's name and would overwrite its position.
             zone_type = zone.get('zone_type', '')
-            if key and zone_type not in ('filter', 'paramctrl'):
+            if key and zone_type not in ('filter', 'paramctrl', 'color',
+                                         'title', 'size'):
                 layout_map[key] = {
                     'x': round(px_x), 'y': round(px_y),
                     'w': max(round(px_w), self.MIN_VISUAL_WIDTH),
@@ -536,8 +538,10 @@ class PowerBIProjectGenerator:
             self._layout_zone(child, fx, fy, fw, fh,
                               coord_w, coord_h, layout_map)
 
-        # Record the container itself (useful for padding propagation)
-        if key:
+        # Record the container itself (useful for padding propagation).
+        # Only if the key is NOT already in the map — child worksheet
+        # entries take priority over their parent container position.
+        if key and key not in layout_map:
             layout_map[key] = {
                 'x': round(px_x), 'y': round(px_y),
                 'w': max(round(px_w), self.MIN_VISUAL_WIDTH),
@@ -1679,15 +1683,19 @@ class PowerBIProjectGenerator:
                 if cname and ccaption:
                     calc_id_to_caption[cname] = ccaption
 
-            # Build grid layout map from zone hierarchy when available
+            # Build grid layout map from zone hierarchy when available.
+            # Reserve space for the page navigator bar when multiple
+            # dashboards exist so content visuals don't overlap it.
+            nav_height = 40 if len(dashboards) > 1 else 0
+            layout_height = page_height - nav_height
             zone_hierarchy = db.get('zone_hierarchy', {})
-            layout_map = self._build_zone_layout_map(zone_hierarchy, page_width, page_height)
+            layout_map = self._build_zone_layout_map(zone_hierarchy, page_width, layout_height)
 
             # Compute scale factor from Tableau to Power BI pixels (fallback)
             max_x = max((o.get('position', {}).get('x', 0) + o.get('position', {}).get('w', 0) for o in db_objects), default=page_width)
-            max_y = max((o.get('position', {}).get('y', 0) + o.get('position', {}).get('h', 0) for o in db_objects), default=page_height)
+            max_y = max((o.get('position', {}).get('y', 0) + o.get('position', {}).get('h', 0) for o in db_objects), default=layout_height)
             scale_x = page_width / max(max_x, 1)
-            scale_y = page_height / max(max_y, 1)
+            scale_y = layout_height / max(max_y, 1)
 
             for obj in db_objects:
                 # Resolve position: grid layout map (preferred) or proportional (fallback)
