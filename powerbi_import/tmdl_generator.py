@@ -1113,6 +1113,17 @@ def _collect_semantic_context(datasources, extra_objects):
             if cname and cname not in column_table_map:
                 column_table_map[cname] = tname
 
+    # Supplement with Tableau local-name → table mappings from metadata
+    # records.  Connectors like Salesforce have columns (e.g. Id →
+    # "Opportunity ID", Probability → "Probability (%)") that exist in
+    # <metadata-record> elements but have no <column> element at the
+    # datasource level.  Without this, DAX resolution defaults to the
+    # current table and produces invalid references.
+    for ds in datasources:
+        for col_name, parent_table in ds.get('col_local_name_map', {}).items():
+            if col_name not in column_table_map and parent_table in best_tables:
+                column_table_map[col_name] = parent_table
+
     # measure_names: set of all measure names (captions).
     # Exclude calculated columns (dimension-role calcs with column refs but no
     # aggregation) so that _resolve_columns qualifies them via column_table_map

@@ -1646,5 +1646,120 @@ class TestParameterControlSlicerSkip(unittest.TestCase):
             shutil.rmtree(tmpdir)
 
 
+class TestMetadataColLocalNameMap(unittest.TestCase):
+    """Bug 14: Salesforce columns only in <metadata-record> (not <column>)
+    should be mapped to their parent tables and added when referenced."""
+
+    def _make_xml(self):
+        """Build minimal datasource XML with metadata records."""
+        import xml.etree.ElementTree as ET
+        xml_str = '''<datasource name="ds1">
+          <connection class="salesforce">
+            <metadata-records>
+              <metadata-record class="column">
+                <local-name>[Opportunity ID]</local-name>
+                <remote-name>Id</remote-name>
+                <parent-name>[Opportunities]</parent-name>
+                <local-type>string</local-type>
+                <ordinal>0</ordinal>
+                <contains-null>false</contains-null>
+              </metadata-record>
+              <metadata-record class="column">
+                <local-name>[Probability (%)]</local-name>
+                <remote-name>Probability</remote-name>
+                <parent-name>[Opportunities]</parent-name>
+                <local-type>real</local-type>
+                <ordinal>1</ordinal>
+                <contains-null>true</contains-null>
+              </metadata-record>
+              <metadata-record class="column">
+                <local-name>[Name (Created By)]</local-name>
+                <remote-name>Name</remote-name>
+                <parent-name>[Created By]</parent-name>
+                <local-type>string</local-type>
+                <ordinal>0</ordinal>
+                <contains-null>false</contains-null>
+              </metadata-record>
+            </metadata-records>
+          </connection>
+        </datasource>'''
+        return ET.fromstring(xml_str)
+
+    def test_extract_col_local_name_map(self):
+        """_extract_col_local_name_map returns local-name → parent-table."""
+        from tableau_export.datasource_extractor import _extract_col_local_name_map
+        elem = self._make_xml()
+        result = _extract_col_local_name_map(elem)
+        self.assertEqual(result.get('Opportunity ID'), 'Opportunities')
+        self.assertEqual(result.get('Probability (%)'), 'Opportunities')
+        self.assertEqual(result.get('Name (Created By)'), 'Created By')
+
+    def test_ensure_calc_referenced_columns_adds_missing(self):
+        """_ensure_calc_referenced_columns adds columns to parent tables."""
+        from tableau_export.datasource_extractor import _ensure_calc_referenced_columns
+        datasource = {
+            'tables': [
+                {'name': 'Opportunities', 'columns': [
+                    {'name': 'Amount', 'datatype': 'real'},
+                ]},
+                {'name': 'Created By', 'columns': [
+                    {'name': 'Id', 'datatype': 'string'},
+                ]},
+            ],
+            'calculations': [
+                {'formula': '[Opportunity ID]', 'name': 'calc1'},
+                {'formula': '[Probability (%)]/100', 'name': 'calc2'},
+            ],
+            'col_local_name_map': {
+                'Opportunity ID': 'Opportunities',
+                'Probability (%)': 'Opportunities',
+            },
+        }
+        _ensure_calc_referenced_columns(datasource)
+        opp_cols = {c['name'] for c in datasource['tables'][0]['columns']}
+        self.assertIn('Opportunity ID', opp_cols)
+        self.assertIn('Probability (%)', opp_cols)
+        # Existing column should not be duplicated
+        self.assertEqual(sum(1 for c in datasource['tables'][0]['columns']
+                            if c['name'] == 'Amount'), 1)
+
+    def test_ensure_calc_referenced_columns_skips_existing(self):
+        """Columns already present in the table should not be re-added."""
+        from tableau_export.datasource_extractor import _ensure_calc_referenced_columns
+        datasource = {
+            'tables': [
+                {'name': 'Opportunities', 'columns': [
+                    {'name': 'Opportunity ID', 'datatype': 'string'},
+                ]},
+            ],
+            'calculations': [
+                {'formula': '[Opportunity ID]', 'name': 'calc1'},
+            ],
+            'col_local_name_map': {
+                'Opportunity ID': 'Opportunities',
+            },
+        }
+        _ensure_calc_referenced_columns(datasource)
+        self.assertEqual(
+            sum(1 for c in datasource['tables'][0]['columns']
+                if c['name'] == 'Opportunity ID'), 1)
+
+    def test_column_table_map_supplement_enables_lookupvalue(self):
+        """col_local_name_map entries enable cross-table LOOKUPVALUE in DAX."""
+        from tableau_export.datasource_extractor import convert_tableau_formula_to_dax
+        dax = convert_tableau_formula_to_dax(
+            '[Opportunity ID]',
+            column_name='calc1',
+            table_name='Created By',
+            column_table_map={'Opportunity ID': 'Opportunities'},
+            measure_names=set(),
+            is_calc_column=True,
+        )
+        # Should use cross-table reference, not 'Created By'[Opportunity ID]
+        self.assertNotIn("'Created By'[Opportunity ID]", dax)
+        self.assertIn("Opportunities", dax)
+        self.assertIn("Opportunity ID", dax)
+
+
 if __name__ == '__main__':
     unittest.main()

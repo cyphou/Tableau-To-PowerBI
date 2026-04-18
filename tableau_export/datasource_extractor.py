@@ -74,6 +74,28 @@ def _read_csv_header_from_twbx(twbx_path, directory, filename):
     return None
 
 
+def _extract_col_local_name_map(datasource_elem):
+    """Build mapping of Tableau local-names to their parent table names.
+
+    Uses ``<metadata-record class="column">`` elements which contain the
+    authoritative local-name → parent-name association.  This captures
+    columns that may not have a ``<column>`` element at the datasource
+    level (e.g. Salesforce Id, Probability fields) but are referenced by
+    calculations.
+
+    Returns:
+        dict mapping column local-name (without brackets) to parent table
+        name, e.g. ``{'Opportunity ID': 'Opportunities'}``.
+    """
+    result = {}
+    for mr in datasource_elem.findall('.//metadata-record[@class="column"]'):
+        local_name = (mr.findtext('local-name') or '').strip().strip('[]')
+        parent_name = (mr.findtext('parent-name') or '').strip().strip('[]')
+        if local_name and parent_name and local_name not in result:
+            result[local_name] = parent_name
+    return result
+
+
 def extract_datasource(datasource_elem, twbx_path=None):
     """
     Extracts the full details of a Tableau datasource
@@ -103,13 +125,20 @@ def extract_datasource(datasource_elem, twbx_path=None):
         'tables': extract_tables_with_columns(datasource_elem, connection_map),
         'calculations': calcs,
         'columns': extract_column_metadata(datasource_elem),
-        'relationships': extract_relationships(datasource_elem)
+        'relationships': extract_relationships(datasource_elem),
+        'col_local_name_map': _extract_col_local_name_map(datasource_elem),
     }
 
     # Ensure join columns referenced by relationships exist in their tables.
     # Connectors like Salesforce use internal primary keys (e.g. Id) for joins
     # that Tableau doesn't expose as visible columns.
     _ensure_relationship_columns(datasource)
+
+    # Ensure columns referenced by calculations exist in their parent tables.
+    # Salesforce connectors may have renamed columns (e.g. Id → "Opportunity ID")
+    # that appear in <metadata-record> elements and <cols><map> but have no
+    # <column> element, so they are not extracted by Phase 2.
+    _ensure_calc_referenced_columns(datasource)
     
     return datasource
 
@@ -152,6 +181,60 @@ def _ensure_relationship_columns(datasource):
                 'hidden': True,
             })
             table_map[tname] = (table_obj, col_names | {col})
+
+
+def _ensure_calc_referenced_columns(datasource):
+    """Add missing columns to tables when calculations reference them.
+
+    Salesforce and similar connectors rename physical columns via
+    ``<metadata-record>`` (e.g. ``Id`` → ``Opportunity ID``).  These
+    renamed columns often have no ``<column>`` element at the datasource
+    level, so they are skipped during Phase 2 extraction.  When a
+    calculation formula references such a column and
+    ``col_local_name_map`` maps it to a specific table, this function
+    adds the column to that table so the downstream TMDL generator can
+    emit valid DAX (LOOKUPVALUE / RELATED).
+    """
+    tables = datasource.get('tables', [])
+    calcs = datasource.get('calculations', [])
+    col_map = datasource.get('col_local_name_map', {})
+    if not tables or not calcs or not col_map:
+        return
+
+    # Build table lookup
+    table_lookup = {}
+    for t in tables:
+        tname = t.get('name', '')
+        col_names = {c.get('name', '') for c in t.get('columns', [])}
+        table_lookup[tname] = (t, col_names)
+
+    # Collect all column names referenced in calc formulas
+    referenced_cols = set()
+    for calc in calcs:
+        formula = calc.get('formula', '')
+        if formula:
+            referenced_cols.update(re.findall(r'\[([^\]]+)\]', formula))
+
+    # Add missing columns to their parent table
+    for col_name in referenced_cols:
+        parent_table = col_map.get(col_name)
+        if not parent_table or parent_table not in table_lookup:
+            continue
+        table_obj, col_names = table_lookup[parent_table]
+        if col_name in col_names:
+            continue
+        # Check with table suffix
+        suffixed = f"{col_name} ({parent_table})"
+        if suffixed in col_names:
+            continue
+        table_obj.setdefault('columns', []).append({
+            'name': col_name,
+            'datatype': 'string',
+            'role': 'dimension',
+            'type': 'nominal',
+            'hidden': True,
+        })
+        table_lookup[parent_table] = (table_obj, col_names | {col_name})
 
 
 def enrich_datasource_from_hyper(datasource, hyper_tables):
