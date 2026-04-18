@@ -4184,9 +4184,6 @@ def _convert_hyper_to_csv_in_data(data_dir, source_basename, project_dir):
             matched_csv = tmdl_to_csv.get(tmdl_table_name)
             if matched_csv:
                 # Replace only the Source assignment (try/otherwise block).
-                # Use Table.PromoteHeaders wrapping Csv.Document so that
-                # Source retains the same column names and subsequent M
-                # steps (Table.AddColumn, etc.) keep working unchanged.
                 htable_pattern = (
                     r'Source\s*=\s*try\s+'
                     r'#table\(\s*\{[^}]*\}\s*,\s*\{'
@@ -4196,13 +4193,9 @@ def _convert_hyper_to_csv_in_data(data_dir, source_basename, project_dir):
                     r'#table\(\s*\{[^}]*\}\s*,\s*\{\s*\}\s*\)'
                     r'(?:\s*//[^\n]*)?'  # optional trailing comment
                 )
-                # Extract column names from the #table() to compare
-                # with CSV headers — Tableau may rename columns with
-                # captions like "FirstName (Created By)" while the
-                # CSV has raw Hyper names like "FirstName".
-                col_pattern = (
-                    r'#table\(\s*\{([^}]*)\}'
-                )
+                # Extract ALL column names from the #table() — these are
+                # the Tableau caption names the M steps expect.
+                col_pattern = r'#table\(\s*\{([^}]*)\}'
                 col_match = _re.search(col_pattern, content)
                 tmdl_cols = []
                 if col_match:
@@ -4213,95 +4206,79 @@ def _convert_hyper_to_csv_in_data(data_dir, source_basename, project_dir):
                         if c.strip().strip('"')
                     ]
 
-                # Read CSV headers to build rename mapping
+                # Read original CSV (raw Hyper column names)
                 csv_path = os.path.join(data_dir, matched_csv)
                 csv_headers = []
+                csv_rows = []
                 try:
                     with open(csv_path, 'r', newline='', encoding='utf-8') as cf:
                         reader = _csv.reader(cf)
                         csv_headers = next(reader, [])
+                        csv_rows = list(reader)
                 except OSError:
                     pass
 
-                # Build rename pairs by matching each CSV header to
-                # the corresponding #table() column. Tableau renames
-                # columns with a " (TableAlias)" suffix when multiple
-                # tables share the same base table (e.g., "FirstName"
-                # becomes "FirstName (Created By)"). Match by:
-                #   1. Exact match (CSV header == #table col)
-                #   2. Suffixed match: CSV header + " (TableAlias)"
-                rename_pairs = []
                 if csv_headers and tmdl_cols:
+                    # Build mapping: raw CSV header → TMDL caption name.
+                    # Tableau renames with " (TableAlias)" suffix when
+                    # multiple tables share the same Hyper source table.
                     tmdl_set = set(tmdl_cols)
                     suffix = f' ({tmdl_table_name})'
+                    csv_to_tmdl = {}  # raw_csv_header → tmdl_col_name
                     for csv_h in csv_headers:
                         if csv_h in tmdl_set:
-                            # CSV header matches a #table column exactly
-                            pass
+                            csv_to_tmdl[csv_h] = csv_h
                         elif csv_h + suffix in tmdl_set:
-                            # CSV "FirstName" → #table "FirstName (Created By)"
-                            rename_pairs.append(
-                                '{' + f'"{csv_h}", "{csv_h}{suffix}"' + '}'
-                            )
+                            csv_to_tmdl[csv_h] = csv_h + suffix
 
-                # Build the replacement Source expression
-                csv_expr = (
-                    f'Table.PromoteHeaders('
-                    f'Csv.Document('
-                    f'File.Contents(DataFolder & "\\\\{matched_csv}"), '
-                    f'[Delimiter=",", Encoding=65001, '
-                    f'QuoteStyle=QuoteStyle.Csv]),'
-                    f' [PromoteAllScalars=true])'
-                )
-                if rename_pairs:
-                    rename_list = ', '.join(rename_pairs)
-                    base_expr = (
-                        f'Table.RenameColumns('
-                        f'{csv_expr}, '
-                        f'{{{rename_list}}})'
-                    )
-                else:
-                    base_expr = csv_expr
+                    # Rewrite CSV with ALL TMDL columns: physical data
+                    # for matched columns, empty string for the rest.
+                    # Write to a table-specific CSV so multiple TMDL tables
+                    # sharing the same Hyper table get their own file.
+                    table_csv_name = f'{tmdl_table_name}.csv'
+                    table_csv_path = os.path.join(data_dir, table_csv_name)
+                    # Build column index: tmdl_col → csv_col_idx (or None)
+                    col_idx = {}
+                    for i, csv_h in enumerate(csv_headers):
+                        mapped = csv_to_tmdl.get(csv_h)
+                        if mapped:
+                            col_idx[mapped] = i
 
-                # Determine which #table columns are NOT in the CSV
-                # (after rename). The original #table had ALL Tableau
-                # metadata columns (most null); the CSV only has the
-                # physical Hyper columns. Use Table.SelectColumns with
-                # MissingField.UseNull to pad missing columns as null.
-                effective_csv = set()
-                if csv_headers and tmdl_cols:
-                    tmdl_set = set(tmdl_cols)
-                    for csv_h in csv_headers:
-                        if csv_h + suffix in tmdl_set:
-                            effective_csv.add(csv_h + suffix)
-                        else:
-                            effective_csv.add(csv_h)
-                has_missing = tmdl_cols and any(
-                    c not in effective_csv for c in tmdl_cols
-                )
-                if has_missing:
-                    # Escape double-quotes inside column names for M
-                    col_list = ', '.join(
-                        f'"{c.replace(chr(34), chr(34)+chr(34))}"'
-                        for c in tmdl_cols
-                    )
+                    try:
+                        with open(table_csv_path, 'w', newline='',
+                                  encoding='utf-8') as wf:
+                            writer = _csv.writer(wf)
+                            writer.writerow(tmdl_cols)
+                            for row in csv_rows:
+                                new_row = []
+                                for tc in tmdl_cols:
+                                    idx = col_idx.get(tc)
+                                    if idx is not None and idx < len(row):
+                                        new_row.append(row[idx])
+                                    else:
+                                        new_row.append('')
+                                writer.writerow(new_row)
+                    except OSError:
+                        pass
+
+                    # Simple M expression — CSV already has correct headers
                     csv_replacement = (
-                        f'Source = Table.SelectColumns('
-                        f'{base_expr}, '
-                        f'{{{col_list}}}, '
-                        f'MissingField.UseNull)'
+                        f'Source = Table.PromoteHeaders('
+                        f'Csv.Document('
+                        f'File.Contents(DataFolder & '
+                        f'"\\\\{table_csv_name}"), '
+                        f'[Delimiter=",", Encoding=65001, '
+                        f'QuoteStyle=QuoteStyle.Csv]),'
+                        f' [PromoteAllScalars=true])'
                     )
-                else:
-                    csv_replacement = f'Source = {base_expr}'
-
-                new_content = _re.sub(
-                    htable_pattern,
-                    csv_replacement,
-                    content,
-                    flags=_re.DOTALL,
-                )
-                if new_content != content:
-                    content = new_content
+                    new_content = _re.sub(
+                        htable_pattern,
+                        csv_replacement,
+                        content,
+                        flags=_re.DOTALL,
+                    )
+                    if new_content != content:
+                        content = new_content
 
         if content != original:
             try:
