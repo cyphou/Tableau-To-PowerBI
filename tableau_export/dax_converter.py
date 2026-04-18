@@ -396,6 +396,12 @@ def convert_tableau_formula_to_dax(formula, column_name='Measure', table_name='T
     # === Phase 5f: Fix ROUND with single argument → ROUND(x, 0) ===
     dax = _fix_round_single_arg(dax)
 
+    # === Phase 5g: Fix double-quoted table names → single-quoted ===
+    # _convert_single_quoted_strings may incorrectly convert table names
+    # in complex DAX (e.g. FILTER("Table",...) or "Table"[Col]).
+    # Fix "Table"[Col] → 'Table'[Col] and FUNC("Table", → FUNC('Table',
+    dax = _fix_double_quoted_table_refs(dax)
+
     # === Phase 6: Final cleanup ===
     dax = _normalize_spaces_outside_identifiers(dax).strip()
     # Strip // line comments before collapsing newlines — otherwise
@@ -1535,6 +1541,46 @@ def _fix_round_single_arg(dax):
             last = pos
     result.append(dax[last:])
     return ''.join(result)
+
+
+# Regex to fix double-quoted table name followed by column ref: "Table"[Col]
+_RE_DOUBLE_QUOTED_TABLE_COL = re.compile(r'"([^"]+)"\s*\[')
+# DAX functions that take a table name as first argument
+_TABLE_ARG_FUNCTIONS = (
+    'ALL', 'ALLEXCEPT', 'ALLNOBLANKROW', 'ALLSELECTED', 'VALUES', 'DISTINCT',
+    'FILTER', 'CALCULATETABLE', 'RELATEDTABLE', 'RELATED',
+    'SUMX', 'AVERAGEX', 'MINX', 'MAXX', 'COUNTX', 'COUNTAX', 'RANKX',
+    'TOPN', 'ADDCOLUMNS', 'SELECTCOLUMNS', 'SUMMARIZE', 'SUMMARIZECOLUMNS',
+    'GENERATE', 'GENERATEALL', 'NATURALINNERJOIN', 'NATURALLEFTOUTERJOIN',
+    'UNION', 'INTERSECT', 'EXCEPT', 'SAMPLE', 'DATATABLE',
+)
+_RE_FUNC_DOUBLE_QUOTED_TABLE = re.compile(
+    r'\b(' + '|'.join(_TABLE_ARG_FUNCTIONS) + r')\s*\(\s*"([^"]+)"',
+    re.IGNORECASE,
+)
+
+
+def _fix_double_quoted_table_refs(dax):
+    """Fix double-quoted table names that should use single quotes in DAX.
+
+    The ``_convert_single_quoted_strings`` function may incorrectly convert
+    table name quotes from ``'Table Name'`` to ``"Table Name"`` in complex
+    DAX (e.g. LOD-generated CALCULATE/FILTER patterns). This post-processing
+    step restores the correct single-quote syntax for:
+
+    - ``"Table"[Column]`` → ``'Table'[Column]``
+    - ``FILTER("Table", ...)`` → ``FILTER('Table', ...)``
+    """
+    if '"' not in dax:
+        return dax
+    # Fix "Table"[Column] patterns
+    dax = _RE_DOUBLE_QUOTED_TABLE_COL.sub(lambda m: "'" + m.group(1) + "'[", dax)
+    # Fix FUNC("Table", ...) patterns
+    dax = _RE_FUNC_DOUBLE_QUOTED_TABLE.sub(
+        lambda m: m.group(1) + "('" + m.group(2) + "'", dax
+    )
+    return dax
+
 
 
 def _convert_single_quoted_strings(dax):

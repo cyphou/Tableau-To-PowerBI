@@ -750,10 +750,22 @@ class ArtifactValidator:
 
         for tmdl_file in tmdl_files:
             try:
-                content = tmdl_file.read_text(encoding='utf-8')
+                raw_content = tmdl_file.read_text(encoding='utf-8')
             except OSError:
                 continue
             basename = tmdl_file.name
+
+            # Strip annotation lines — they contain original Tableau
+            # formulas and truncated DAX previews that cause false
+            # positives (unclosed brackets from truncation).
+            content_lines = []
+            for ln in raw_content.splitlines():
+                stripped_ln = ln.strip()
+                if stripped_ln.startswith('annotation '):
+                    continue
+                content_lines.append(ln)
+            content = '\n'.join(content_lines)
+
             for match in cls._RE_DAX_REF.finditer(content):
                 table_ref = cls._unescape_tmdl_name(match.group(1))
                 col_ref = match.group(2)

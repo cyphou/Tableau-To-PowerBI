@@ -5459,9 +5459,14 @@ def _generate_measure_description(measure):
     if original_formula:
         parts.append(f"Migrated from Tableau: {original_formula}")
     if expression and expression != '0':
-        dax_preview = expression[:120]
-        if len(expression) > 120:
-            dax_preview += '...'
+        dax_preview = expression[:200]
+        if len(expression) > 200:
+            # Ensure truncation doesn't leave unclosed brackets
+            # which would cause validator false positives
+            open_brackets = dax_preview.count('[') - dax_preview.count(']')
+            open_parens = dax_preview.count('(') - dax_preview.count(')')
+            suffix = ']' * max(0, open_brackets) + ')' * max(0, open_parens)
+            dax_preview += suffix + '...'
         parts.append(f"DAX: {dax_preview}")
 
     if not parts:
