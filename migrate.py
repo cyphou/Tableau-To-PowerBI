@@ -2002,6 +2002,21 @@ def _add_report_args(parser):
     )
 
     parser.add_argument(
+        '--autoplay',
+        action='store_true',
+        default=False,
+        help='Run post-migration autoplay: validate data sources, DAX, relationships, '
+             'fidelity comparison, and optionally open in PBI Desktop.'
+    )
+
+    parser.add_argument(
+        '--autoplay-open',
+        action='store_true',
+        default=False,
+        help='With --autoplay, also open the .pbip file in Power BI Desktop.'
+    )
+
+    parser.add_argument(
         '--telemetry',
         action='store_true',
         default=False,
@@ -4625,6 +4640,28 @@ def _run_post_generation_reports(args, source_basename, results):
             print(f"  Fidelity JSON: {fidelity_path}")
         except (ImportError, OSError, ValueError) as exc:
             logger.warning(f"Fidelity comparison failed: {exc}")
+
+    if getattr(args, 'autoplay', False) and results.get('generation') and not args.dry_run:
+        try:
+            from scripts.autoplay import run_autoplay, print_autoplay
+            extract_dir = os.path.join(os.path.dirname(__file__), 'tableau_export')
+            out_base = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
+            pbip_dir = os.path.join(out_base, source_basename)
+            autoplay_results = run_autoplay(
+                pbip_dir,
+                extract_dir=extract_dir,
+                open_pbi=getattr(args, 'autoplay_open', False),
+                verbose=getattr(args, 'verbose', False),
+            )
+            print_autoplay(autoplay_results, verbose=getattr(args, 'verbose', False))
+            # Save JSON report
+            autoplay_path = os.path.join(out_base, f'autoplay_{source_basename}.json')
+            import json as _json2
+            with open(autoplay_path, 'w', encoding='utf-8') as _f2:
+                _json2.dump(autoplay_results, _f2, indent=2, ensure_ascii=False)
+            print(f"  Autoplay JSON: {autoplay_path}")
+        except (ImportError, OSError, ValueError) as exc:
+            logger.warning(f"Autoplay validation failed: {exc}")
 
 
 def _run_deploy_to_pbi_service(args, source_basename):
