@@ -85,9 +85,10 @@ def _fidelity_bar(pct):
     return fidelity_bar(pct)
 
 
-def generate_html(assessments, reports, metadata, lineage=None):
+def generate_html(assessments, reports, metadata, lineage=None, pbi_validation=None):
     """Generate consolidated HTML report."""
     lineage = lineage or {}
+    pbi_validation = pbi_validation or {}
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 
     # Import version
@@ -692,6 +693,51 @@ def generate_html(assessments, reports, metadata, lineage=None):
 
     html += section_close()
 
+    # ── PBI Desktop Validation ─────────────────────────────────────
+    if pbi_validation:
+        total_errors = sum(len(v.get('errors', [])) for v in pbi_validation.values())
+        total_warnings = sum(len(v.get('warnings', [])) for v in pbi_validation.values())
+        all_passed = all(v.get('passed', True) for v in pbi_validation.values())
+
+        if total_errors > 0 or total_warnings > 0:
+            html += section_open('pbi-validation', 'PBI Desktop Validation', '&#128270;')
+
+            status_accent = 'fail' if total_errors > 0 else ('warn' if total_warnings > 0 else 'success')
+            status_label = 'Failed' if total_errors > 0 else ('Warnings' if total_warnings > 0 else 'Passed')
+            html += stat_grid([
+                stat_card(status_label, 'Status', accent=status_accent),
+                stat_card(total_errors, 'Errors', accent='fail' if total_errors > 0 else 'success'),
+                stat_card(total_warnings, 'Warnings', accent='warn' if total_warnings > 0 else 'success'),
+            ])
+
+            for wb_name, result in pbi_validation.items():
+                wb_errors = result.get('errors', [])
+                wb_warnings = result.get('warnings', [])
+                if not wb_errors and not wb_warnings:
+                    continue
+
+                wb_passed = result.get('passed', True)
+                wb_badge = badge('GREEN') if wb_passed and not wb_warnings else (badge('RED') if not wb_passed else badge('YELLOW'))
+                html += f'<div class="card"><h4>{esc(wb_name)} &nbsp; {wb_badge}</h4>'
+
+                if wb_errors:
+                    html += '<h5 class="text-fail">&#10060; Errors &mdash; will cause failures in PBI Desktop</h5>'
+                    html += '<ul class="fs-sm">'
+                    for e in wb_errors:
+                        html += f'<li class="text-fail">{esc(e)}</li>'
+                    html += '</ul>'
+
+                if wb_warnings:
+                    html += '<h5 class="text-warn">&#9888; Warnings &mdash; may cause issues at runtime</h5>'
+                    html += '<ul class="fs-sm">'
+                    for w in wb_warnings:
+                        html += f'<li class="text-warn">{esc(w)}</li>'
+                    html += '</ul>'
+
+                html += '</div>'
+
+            html += section_close()
+
     # ── Close HTML ─────────────────────────────────────────────────
     html += html_close(version=tool_version, timestamp=now)
 
@@ -769,7 +815,17 @@ def generate_dashboard(report_name, output_dir, migration_report_path=None, meta
     if not reports and not metadata:
         return None
 
-    html = generate_html({}, reports, metadata, lineage)
+    # ── Run PBI Desktop validation ────────────────────────────────
+    pbi_validation = {}
+    pbip_dir = os.path.join(output_dir, report_name)
+    if os.path.isdir(pbip_dir):
+        try:
+            from powerbi_import.validator import ArtifactValidator
+            pbi_validation[report_name] = ArtifactValidator.run_pbi_validation(pbip_dir)
+        except Exception:
+            pass
+
+    html = generate_html({}, reports, metadata, lineage, pbi_validation=pbi_validation)
 
     html_path = os.path.join(output_dir, f"MIGRATION_DASHBOARD_{report_name}.html")
     with open(html_path, "w", encoding="utf-8") as f:
@@ -824,7 +880,18 @@ def generate_batch_dashboard(output_dir, workbook_results):
     if not reports and not metadata:
         return None
 
-    html = generate_html({}, reports, metadata, lineage)
+    # ── Run PBI Desktop validation per workbook ───────────────────
+    pbi_validation = {}
+    for name in workbook_results:
+        pbip_dir = os.path.join(output_dir, name)
+        if os.path.isdir(pbip_dir):
+            try:
+                from powerbi_import.validator import ArtifactValidator
+                pbi_validation[name] = ArtifactValidator.run_pbi_validation(pbip_dir)
+            except Exception:
+                pass
+
+    html = generate_html({}, reports, metadata, lineage, pbi_validation=pbi_validation)
 
     html_path = os.path.join(output_dir, "MIGRATION_DASHBOARD.html")
     with open(html_path, "w", encoding="utf-8") as f:
