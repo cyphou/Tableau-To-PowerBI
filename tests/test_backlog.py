@@ -1458,6 +1458,90 @@ class TestMCalcColumnMeasureRefFallback(unittest.TestCase):
                          "Double Qty should NOT be a DAX calc column")
 
 
+class TestCamelCaseSplitColumnResolution(unittest.TestCase):
+    """Salesforce-style CamelCase-split column names must resolve to actual
+    suffixed column names (e.g. 'First Name' → 'FirstName (Created By)')."""
+
+    def test_camelcase_split_resolves_to_suffixed_column(self):
+        """A formula referencing [First Name] should resolve to
+        'Table'[FirstName (Table)] when the physical column uses the
+        Salesforce naming convention."""
+        from powerbi_import.tmdl_generator import _build_semantic_model
+
+        calculations = [
+            {
+                'name': 'Full Name',
+                'caption': 'Full Name',
+                'formula': "[First Name]+' '+[Last Name]",
+                'role': 'dimension',
+                'datatype': 'string',
+                'datasource_name': 'ds1',
+            },
+        ]
+        datasources = [{
+            'name': 'ds1',
+            'tables': [{
+                'name': 'Created By',
+                'type': 'table',
+                'columns': [
+                    {'name': 'FirstName (Created By)', 'datatype': 'string'},
+                    {'name': 'LastName (Created By)', 'datatype': 'string'},
+                    {'name': 'Id', 'datatype': 'string'},
+                ]
+            }],
+            'calculations': calculations,
+            'relationships': [],
+            'connection': {'type': 'salesforce', 'server': 'salesforce.com'}
+        }]
+        extra = {
+            'parameters': [],
+            'hierarchies': [],
+            'sets': [],
+            'groups': [],
+            'bins': [],
+        }
+        model = _build_semantic_model(datasources, 'TestSF', extra)
+
+        cb_table = None
+        for t in model['model']['tables']:
+            if t['name'] == 'Created By':
+                cb_table = t
+                break
+        self.assertIsNotNone(cb_table)
+
+        # Full Name should exist and reference the correct suffixed columns
+        full_name = None
+        for c in cb_table.get('columns', []):
+            if c.get('name') == 'Full Name':
+                full_name = c
+                break
+        # May be M-based or DAX — either way, the column name references
+        # should use the actual suffixed names, not bare 'First Name'
+        if full_name is None:
+            # Check measures in case it was classified as a measure
+            for m in cb_table.get('measures', []):
+                if m.get('name') == 'Full Name':
+                    full_name = m
+                    break
+        self.assertIsNotNone(full_name, "Full Name should exist")
+
+        # Check partition M expression or DAX expression for correct column refs
+        has_correct_ref = False
+        # Check M partition
+        for p in cb_table.get('partitions', []):
+            expr = p.get('source', {}).get('expression', '')
+            if 'FirstName (Created By)' in expr:
+                has_correct_ref = True
+        # Check DAX expression
+        dax_expr = full_name.get('expression', '')
+        if 'FirstName (Created By)' in dax_expr:
+            has_correct_ref = True
+
+        self.assertTrue(has_correct_ref,
+                        "Column ref should use 'FirstName (Created By)', "
+                        f"not bare 'First Name'. Got: {dax_expr}")
+
+
 class TestParameterControlSlicerSkip(unittest.TestCase):
     """Parameter control slicers referencing non-existent parameter tables
     should be silently skipped."""

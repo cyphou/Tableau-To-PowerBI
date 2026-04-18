@@ -2236,6 +2236,20 @@ def _resolve_columns(dax, table_name, column_table_map, measure_names,
         reversed_name = _reverse_tableau_bracket_escape(col)
         if reversed_name != col and reversed_name in column_table_map:
             return reversed_name
+        # Salesforce connector pattern: Tableau uses CamelCase-split display
+        # names like "First Name" but actual columns are "FirstName (Table)".
+        # Try matching col without spaces, with table suffix preferred.
+        no_space = col.replace(' ', '')
+        if no_space != col:
+            # Prefer current table's suffixed column
+            suffixed = f'{no_space} ({table_name})'
+            if suffixed in column_table_map:
+                return suffixed
+            # Fall back to any table's matching column
+            for candidate in column_table_map:
+                base = candidate.split(' (')[0] if ' (' in candidate else candidate
+                if base == no_space:
+                    return candidate
         return col
     
     def resolve_column(m):
