@@ -1,0 +1,2192 @@
+{
+  "report_name": "Salesforce",
+  "created_at": "2026-04-18T19:48:41.602770",
+  "summary": {
+    "total_items": 319,
+    "exact": 107,
+    "approximate": 0,
+    "placeholder": 0,
+    "unsupported": 0,
+    "skipped": 212,
+    "fidelity_score": 100.0,
+    "by_category": {
+      "datasource": {
+        "total": 2,
+        "exact": 2
+      },
+      "calculation": {
+        "total": 212,
+        "skipped": 212
+      },
+      "visual": {
+        "total": 53,
+        "exact": 53
+      },
+      "parameter": {
+        "total": 52,
+        "exact": 52
+      }
+    }
+  },
+  "completeness": {
+    "categories": {
+      "datasource": {
+        "total": 2,
+        "exact": 2,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "calculation": {
+        "total": 212,
+        "exact": 0,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 212,
+        "fidelity_pct": 100.0
+      },
+      "visual": {
+        "total": 53,
+        "exact": 53,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      },
+      "parameter": {
+        "total": 52,
+        "exact": 52,
+        "approximate": 0,
+        "placeholder": 0,
+        "unsupported": 0,
+        "skipped": 0,
+        "fidelity_pct": 100.0
+      }
+    },
+    "overall_score": 100.0,
+    "grade": "A"
+  },
+  "table_mapping": [
+    {
+      "source_datasource": "Opportunity",
+      "source_table": "Opportunities",
+      "target_table": "Opportunities",
+      "connection_type": "SALESFORCE",
+      "columns": 113
+    },
+    {
+      "source_datasource": "Opportunity",
+      "source_table": "Owned By",
+      "target_table": "Owned By",
+      "connection_type": "SALESFORCE",
+      "columns": 238
+    },
+    {
+      "source_datasource": "Opportunity",
+      "source_table": "Created By",
+      "target_table": "Created By",
+      "connection_type": "SALESFORCE",
+      "columns": 239
+    },
+    {
+      "source_datasource": "Opportunity",
+      "source_table": "Account",
+      "target_table": "Account",
+      "connection_type": "SALESFORCE",
+      "columns": 214
+    },
+    {
+      "source_datasource": "Opportunity",
+      "source_table": "Account Owned By",
+      "target_table": "Account Owned By",
+      "connection_type": "SALESFORCE",
+      "columns": 239
+    },
+    {
+      "source_datasource": "Opportunity",
+      "source_table": "Account Created By",
+      "target_table": "Account Created By",
+      "connection_type": "SALESFORCE",
+      "columns": 239
+    }
+  ],
+  "items": [
+    {
+      "category": "datasource",
+      "name": "Parameters",
+      "status": "exact",
+      "note": "Unknown, 0 table(s)"
+    },
+    {
+      "category": "datasource",
+      "name": "federated.0yaj0rm1ld7uq01glrp1l1po69cl",
+      "status": "exact",
+      "note": "SALESFORCE, 6 table(s)"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_AvgOpportunitySize_Calculation",
+      "status": "skipped",
+      "source_formula": "\"Average of [Opportunity Amount]\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_AvgOpportunitySize_Description",
+      "status": "skipped",
+      "source_formula": "\"Average amount of opportunities, whether they are open or closed (expressed in currency)\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_SalesVelocity_Calculation",
+      "status": "skipped",
+      "source_formula": "\"(\"\"Nb of Open Opp.\"\"  *  \"\"Avg Deal Size\"\"  *  \"\"Won/Lost Rate\"\")  Divided by \"\"Sales Cycle\"\"\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_AvgDealSizeWon_Calculation",
+      "status": "skipped",
+      "source_formula": "\"Average of IF [Won Flag]=\"\"Y\"\" THEN [Opportunity Amount] END\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_SalesVelocity_Description",
+      "status": "skipped",
+      "source_formula": "\"Determines how fast you are making money (you bring back about that much every day) (expressed in currency)\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_AvgDealSizeWon_Description",
+      "status": "skipped",
+      "source_formula": "\"Average amount of won opportunities (expressed in currency)\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_TotalClosedOpportunitiesAmount_Calculation",
+      "status": "skipped",
+      "source_formula": "\"Sum of IF [Open Flag]=\"\"N\"\" THEN [Amount] END\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_TotalClosedOpportunitiesAmount_Description",
+      "status": "skipped",
+      "source_formula": "\"Total amount of opportunities that are closed (expressed in currency)\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_NbClosedOpportunities_Calculation",
+      "status": "skipped",
+      "source_formula": "\"Count Distinct of IF [Open Flag]=\"\"N\"\" THEN [Opportunity Id] END\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_NbOpportunities_Calculation",
+      "status": "skipped",
+      "source_formula": "\"Count Distinct of [Opportunity Id]\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_PipelineValue_Calculation",
+      "status": "skipped",
+      "source_formula": "\"Sum of IF [Open Flag]=\"\"Y\"\" THEN [Opportunity Amount] END\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_NbWonOpportunities_Calculation",
+      "status": "skipped",
+      "source_formula": "\"Count Distinct of IF [Won Flag]=\"\"Y\"\" THEN [Opportunity Id] END\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_NbClosedOpportunities_Description",
+      "status": "skipped",
+      "source_formula": "\"Number of opportunities that are closed\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_NbOpportunities_Description",
+      "status": "skipped",
+      "source_formula": "\"Total number of opportunities (open or closed)\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_NbOpenOpportunities_Calculation",
+      "status": "skipped",
+      "source_formula": "\"Count Distinct of IF [Open Flag]=\"\"Y\"\" THEN [Opportunity Id] END\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_PipelineValue_Description",
+      "status": "skipped",
+      "source_formula": "\"Total amount of open opportunities (expressed in currency)\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_NbWonOpportunities_Description",
+      "status": "skipped",
+      "source_formula": "\"Number of opportunities that were won\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_NbLostOpportunities_Calculation",
+      "status": "skipped",
+      "source_formula": "\"Count Distinct of IF [Won Flag]=\"\"N\"\" THEN [Opportunity Id] END\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_NbLostOpportunities_Description",
+      "status": "skipped",
+      "source_formula": "\"Number of opportunities that were lost\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_WeigthedPipelineValue_Calculation",
+      "status": "skipped",
+      "source_formula": "\"Sum of IF [Open Flag]=\"\"Y\"\" THEN [Probability %]*[Opportunity Amount] END\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_WonLostRate_Calculation",
+      "status": "skipped",
+      "source_formula": "\"\"\"Nb of Won Opportunities\"\" Divided by \"\"Nb of Closed Opportunities\"\"\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_SalesCycle_Calculation",
+      "status": "skipped",
+      "source_formula": "\"Average of TimeDifference([Opportunity Created Date], [Opportunity Closed Date])   (for closed opportunities only)\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_WeigthedPipelineValue_Description",
+      "status": "skipped",
+      "source_formula": "\"Total amount of open opportunities, weighted by probability of closing (expressed in currency)\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_WonLostRate_Description",
+      "status": "skipped",
+      "source_formula": "\"Share of the number of opportunities won in relation to the number of all closed opportunities (expressed in %)\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_SalesCycle_Description",
+      "status": "skipped",
+      "source_formula": "\"Average time it takes to close an opportunity (only considering won opportunities)\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_SalesCycleLost_Calculation",
+      "status": "skipped",
+      "source_formula": "\"Average of TimeDifference([Opportunity Created Date], [Opportunity Closed Date])   (for lost opportunities only)\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_SalesCycleLost_Description",
+      "status": "skipped",
+      "source_formula": "\"Average time it takes to close an opportunity (only considering lost opportunities)\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_SalesCycleWon_Calculation",
+      "status": "skipped",
+      "source_formula": "\"Average of TimeDifference([Opportunity Created Date], [Opportunity Closed Date])   (for won opportunities only)\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_TotalSales_Calculation",
+      "status": "skipped",
+      "source_formula": "\"Sum of IF [Won Flag]=\"\"Y\"\" THEN [Opportunity Amount] END\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_SalesCycleWon_Description",
+      "status": "skipped",
+      "source_formula": "\"Average time it takes to win an opportunity\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_TotalSales_Description",
+      "status": "skipped",
+      "source_formula": "\"Total amount of opportunities won (expressed in amount)\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_TotalPipelineGeneration_Calculation",
+      "status": "skipped",
+      "source_formula": "\"Sum of [Opportunity Amount]\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_TotalPipelineGeneration_Description",
+      "status": "skipped",
+      "source_formula": "\"Total amount of opportunities created (expressed in amount)\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_ConversionRate_Calculation",
+      "status": "skipped",
+      "source_formula": "\"\"\"Total Sales\"\" Divided by \"\"Total Closed Opportunities Amount\"\"\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_ConversionRate_Description",
+      "status": "skipped",
+      "source_formula": "\"Share of the amount of opportunities won in relation to the amount of all closed opportunities (expressed in %)\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Last N Months",
+      "status": "skipped",
+      "source_formula": "36",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "KPI_NbOpenOpportunities_Description",
+      "status": "skipped",
+      "source_formula": "\"Number of opportunities that are currently open\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Select Dimension",
+      "status": "skipped",
+      "source_formula": "\"Account\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Select Indicator",
+      "status": "skipped",
+      "source_formula": "\"Avg Deal Size (won)\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Currency",
+      "status": "skipped",
+      "source_formula": "\"$\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Organization Name",
+      "status": "skipped",
+      "source_formula": "\"Salesforce\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Accelerator Title",
+      "status": "skipped",
+      "source_formula": "\"Sales Pipeline\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Accelerator Log",
+      "status": "skipped",
+      "source_formula": "\"LinPack messages (view comment for details)\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "pSelectOpportunityOwner",
+      "status": "skipped",
+      "source_formula": "\"Bellina Catmull\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "pPlaceholder",
+      "status": "skipped",
+      "source_formula": "0",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "pPlaceholder_1",
+      "status": "skipped",
+      "source_formula": "1.",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Last x Days",
+      "status": "skipped",
+      "source_formula": "\"90\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Next x Days",
+      "status": "skipped",
+      "source_formula": "\"90\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "pOpportunityOwner_Champions",
+      "status": "skipped",
+      "source_formula": "\"CHAMPIONS\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "pOpportunityOwner_GrowthPlanPipelineGeneration",
+      "status": "skipped",
+      "source_formula": "\"GROWTH PLAN Pipeline Generation\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "pOpportunityOwner_GrowthPlanClosing",
+      "status": "skipped",
+      "source_formula": "\"GROWTH PLAN Closing\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "pOpportunityOwner_RequiredImprovements",
+      "status": "skipped",
+      "source_formula": "\"REQUIRED IMPROVEMENTS\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Avg Probability (Open Opp.)",
+      "status": "skipped",
+      "source_formula": "AVG(if [Calculation_1142225515624624133] then [LinPack_574638457904073940] end)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Is Open Opportunity?",
+      "status": "skipped",
+      "source_formula": "[Calculation_711568759572205574]=\"Y\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Is Last N months filter - Closed or Created Date?",
+      "status": "skipped",
+      "source_formula": "[Closed in Last x Days (copy)_1142225515614175234] OR [Last N months filter - Closed Date (copy)_1142225515621388292]",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Sales Cycle Won (Display)",
+      "status": "skipped",
+      "source_formula": "IF      [LinPack_858688450507045362]<=30  then str(ROUND([LinPack_858688450507045362])) + ' d'\r\nELSEIF  [LinPack_858688450507045362]<=365 then str(ROUND([LinPack_858688450507045362]/30.25,1)) + ' mo'\r\nELSE                                 str(ROUND([LinPack_858688450507045362]/30.25,0)) + ' mo'\r\nEND",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Days to Close (avg)",
+      "status": "skipped",
+      "source_formula": "avg([Calculation_680325065948213248])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "One",
+      "status": "skipped",
+      "source_formula": "max(1)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Profile - Average Deal Size (Star)",
+      "status": "skipped",
+      "source_formula": "REPLACE(SPACE([Pipeline Profile - Average Deal Size (description) (copy)_995858528069312525]),\" \",\"★\")\r\n+\r\nREPLACE(SPACE(5-[Pipeline Profile - Average Deal Size (description) (copy)_995858528069312525]),\" \",\"☆\")",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Type",
+      "status": "skipped",
+      "source_formula": "IF ISNULL([Opportunity Type]) THEN 'Other' ELSE [Opportunity Type] END",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "First Time Closed Won by Account",
+      "status": "skipped",
+      "source_formula": "{fixed [Calculation_711568759570489345]: min (IF [Calculation_711568759572299783]=\"Y\" THEN [Calculation_822751375422500864]  END)}",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Is First Time Client?",
+      "status": "skipped",
+      "source_formula": "IFNULL([Calculation_711568759572205574]=\"N\" and [Calculation_711568759572299783]=\"Y\" and [Calculation_822751375422500864]=[Calculation_614178463385309184], False)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Client/Prospect by Opportunity",
+      "status": "skipped",
+      "source_formula": "if [Calculation_822751375422500864]>[Calculation_614178463385309184] then \"Existing Clients\" else \"Prospects\" end",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Label DONE - Closed WON - Nb of Clients (Existing)",
+      "status": "skipped",
+      "source_formula": "[Label DONE - Closed WON - Nb of Opp (copy)_614178463390113796] - [Label DONE - Closed WON - Nb of Clients (copy)_614178463392415753]",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Client/Prospect by Account",
+      "status": "skipped",
+      "source_formula": "if {fixed [Calculation_711568759570489345]: [LinPack_345685562057570044]}>=1 then \"Existing Clients\" else \"Prospects\" end",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Days to Close",
+      "status": "skipped",
+      "source_formula": "DATEDIFF(\"day\", [__MyToday], [Calculation_822751375422500864])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Days to Close (bucket)",
+      "status": "skipped",
+      "source_formula": "IF [Calculation_680325065948213248]<0 then \"Overdue\"\r\nELSEIF [Calculation_680325065948213248]<30 then \"0-30 days\"\r\nELSEIF [Calculation_680325065948213248]<90 then \"1-3 months\"\r\nELSEIF [Calculation_680325065948213248]<180 then \"3-6 months\"\r\nELSE \"> 6 months\"\r\nEND",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Probability (bucket)",
+      "status": "skipped",
+      "source_formula": "IF [LinPack_574638457904073940]<0.25 THEN \"0-25%\"\r\nELSEIF [LinPack_574638457904073940]<0.50 THEN \"25-50%\"\r\nELSEIF [LinPack_574638457904073940]<0.75 THEN \"50-75%\"\r\nELSE \"75-100%\"\r\nEND",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Rank Sales Value (for selected Opp Owner)",
+      "status": "skipped",
+      "source_formula": "// Count the distinct number of Opportunity Owner\r\n// where Opportunity Owner's [Sales Value] > Selected Opportunity Owner [Sales Value]\r\nCOUNTD(if {INCLUDE [Calculation_711568759570620418] : [LinPack_235739231649065059]} > {MAX((IF [Is Selected Opportunity Stage Flag (copy)_813744216047374336] THEN {INCLUDE [Calculation_711568759570620418] : ZN([LinPack_235739231649065059])} ELSE 0 END))}\r\n       and Not [Is Selected Opportunity Stage Flag (copy)_813744216047374336]\r\n       then [Calculation_711568759570620418]  end)+1",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Opportunity Id",
+      "status": "skipped",
+      "source_formula": "[Opportunity ID]",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Account",
+      "status": "skipped",
+      "source_formula": "[Account Name]",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Opportunity Owner",
+      "status": "skipped",
+      "source_formula": "[First Name]+' '+[Last Name]",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Opportunity Description",
+      "status": "skipped",
+      "source_formula": "[Name]",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Opportunity Stage",
+      "status": "skipped",
+      "source_formula": "[Stage]",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Open Flag",
+      "status": "skipped",
+      "source_formula": "IIF([Closed],\"N\",\"Y\",\"Unknown\")",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Won Flag",
+      "status": "skipped",
+      "source_formula": "IIF([Closed] AND [Won],\"Y\",\"N\",\"Unknown\" )",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Probability %",
+      "status": "skipped",
+      "source_formula": "[Probability (%)]/100",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Opportunity Created Date",
+      "status": "skipped",
+      "source_formula": "DATE([Created Date])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Opportunity Amount",
+      "status": "skipped",
+      "source_formula": "[Amount]",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Is Closed in Last x Days?",
+      "status": "skipped",
+      "source_formula": "[Calculation_680325065948213248]>=-1*int([Parameters].[pLastxDays]) and [Calculation_680325065948213248]<0 and [Calculation_711568759572205574]=\"N\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Open/Won/Lost",
+      "status": "skipped",
+      "source_formula": "if [Calculation_711568759572205574]=\"Y\" then \"Open\"\r\nELSEIF  [Calculation_711568759572299783]=\"Y\" then \"Won\" \r\nELSE \"Lost\"\r\nend",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Opportunity Close Date",
+      "status": "skipped",
+      "source_formula": "[Close Date]\r\n//DATE(DATEADD('month',5,[Close Date]))",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Deal Size Bucket",
+      "status": "skipped",
+      "source_formula": "split([Deal Size Bucket (sort) (copy)_6178375792275554304], \"|\",2)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Open/Won/Lost Icon",
+      "status": "skipped",
+      "source_formula": "case [Calculation_747316110822866944]\r\nwhen \"Open\" then \"\"\r\nWhen \"Won\" then \"✔\"\r\nwhen \"Lost\" then \"✘\"\r\nend",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Today",
+      "status": "skipped",
+      "source_formula": "__MyToday",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Review - DONE - Key",
+      "status": "skipped",
+      "source_formula": "//Achievements\r\nif      [Calculation_746190227234947072]  then \"Last \" + [Parameters].[pLastxDays] + \" days|Closed Last \"+ [Parameters].[pLastxDays] + \" days\"\r\nELSEIF  [Closed in Last 7 Days (copy)_746190227235745795] then \"Last \" + [Parameters].[pLastxDays] + \" days|New Opportunities last \"+ [Parameters].[pLastxDays] + \" days\"\r\nelse \"Other\"\r\nend",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Conversion Rate Average (for trends)",
+      "status": "skipped",
+      "source_formula": "RUNNING_SUM([LinPack_235739231649065059])/RUNNING_SUM([LinPack_707557147340278467])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Label FOCUS - Closing Overdue - Nb of Opp",
+      "status": "skipped",
+      "source_formula": "COUNTD(if STARTSWITH([Pipeline Review - DONE - Cat 2 (copy)_746190227239038988], \"Closing Overdue\") then [Calculation_711568759570227200] end)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "_Per Customer: Pipeline Generation",
+      "status": "skipped",
+      "source_formula": "ZN({fixed [Calculation_711568759570620418]: [Pipeline Generation for Existing Clients (copy)_1243275034711019521]})",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Total Sales for Existing Clients",
+      "status": "skipped",
+      "source_formula": "SUM(IF [Calculation_614178463385964547]=\"Existing Clients\" AND [Closed in Last x Days (copy)_1142225515614175234] then [LinPack_961643984189344200] END)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Profile - Pipeline Generation",
+      "status": "skipped",
+      "source_formula": "IF      [Calculation_995858528061263872] <= {fixed: max([Calculation_995858528061263872])}/5 then \"1\" \r\nELSEIF  [Calculation_995858528061263872] <= {fixed: max([Calculation_995858528061263872])}/5*2 then \"2\" \r\nELSEIF  [Calculation_995858528061263872] <= {fixed: max([Calculation_995858528061263872])}/5*3 then \"3\" \r\nELSEIF  [Calculation_995858528061263872] <= {fixed: max([Calculation_995858528061263872])}/5*4 then \"4\" \r\nELSE \"5\"                                    \r\nEND",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Is Created in Last x Days?",
+      "status": "skipped",
+      "source_formula": "[Days to Close (copy)_928304533158825988]>=0 and [Days to Close (copy)_928304533158825988]<=int([Parameters].[pLastxDays]) and [Calculation_711568759572205574]=\"Y\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Is Last N months filter - Closed Date?",
+      "status": "skipped",
+      "source_formula": "[Calculation_822751375422500864]>DATEADD('month',-[Parameters].[Last x Days (copy)_1142225515621146627],__MyToday) AND [Calculation_822751375422500864] <= __MyToday",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Is Closing Overdue?",
+      "status": "skipped",
+      "source_formula": "[Calculation_680325065948213248]<0 and [Calculation_711568759572205574]=\"Y\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Is Closing in Next x Days?",
+      "status": "skipped",
+      "source_formula": "[Calculation_680325065948213248]<=int([Parameters].[pNextxDays]) and [Calculation_711568759572205574]=\"Y\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Days to Close (bucket) (sort)",
+      "status": "skipped",
+      "source_formula": "IF [Calculation_680325065948213248]<0 then 0\r\nELSEIF [Calculation_680325065948213248]<30 then 10\r\nELSEIF [Calculation_680325065948213248]<90 then 20\r\nELSEIF [Calculation_680325065948213248]<180 then 30\r\nELSE 100\r\nEND",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Opportunity Type (filter)",
+      "status": "skipped",
+      "source_formula": "[Opportunity Type]",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Days from Open",
+      "status": "skipped",
+      "source_formula": "DATEDIFF(\"day\", [Created Date], [__MyToday])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Deal Size Bucket (sort)",
+      "status": "skipped",
+      "source_formula": "int(split([Deal Size Bucket (sort) (copy)_6178375792275554304], \"|\",1))",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Deal Size Bucket (key)",
+      "status": "skipped",
+      "source_formula": "IF  [LinPack_523892480737294295]<  50000 then \"20|< 50k\"\r\nELSEIF  [LinPack_523892480737294295]< 100000 then \"30|50k - 100k\"\r\nELSEIF  [LinPack_523892480737294295]< 200000 then \"40|100k - 200k\"\r\nELSEIF  [LinPack_523892480737294295]< 500000 then \"50|200k - 500k\"\r\nELSEIF  [LinPack_523892480737294295]<1000000 then \"60|500k - 1M\"\r\nELSE                                                  \"99|>1M\"\r\nend",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Is Won Opportunity?",
+      "status": "skipped",
+      "source_formula": "[Calculation_711568759572299783]=\"Y\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Is Selected Opportunity Owner Flag?",
+      "status": "skipped",
+      "source_formula": "[Parameters].[Opportunity Owner Parameter]=[Calculation_711568759570620418]",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Label DONE - Closed WON - Nb of Opp",
+      "status": "skipped",
+      "source_formula": "COUNTD(if STARTSWITH([Pipeline Review - DONE - Cat 1 (copy)_746190227238907913], \"Closed\") and [Calculation_711568759572299783]=\"Y\" then [Calculation_711568759570227200] end)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Label DONE - Closed LOST - Nb of Accounts",
+      "status": "skipped",
+      "source_formula": "COUNTD(if STARTSWITH([Pipeline Review - DONE - Cat 1 (copy)_746190227238907913], \"Closed\") and [Calculation_711568759572299783]<>\"Y\" then [Calculation_711568759570489345] end)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Label DONE - Closed LOST - Opp Amount",
+      "status": "skipped",
+      "source_formula": "sum(if STARTSWITH([Pipeline Review - DONE - Cat 1 (copy)_746190227238907913], \"Closed\") and [Calculation_711568759572299783]<>\"Y\" then [LinPack_523892480737294295] end)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Label DONE - New - Nb of Opp",
+      "status": "skipped",
+      "source_formula": "COUNTD(if STARTSWITH([Pipeline Review - DONE - Cat 1 (copy)_746190227238907913], \"New\") then [Calculation_711568759570227200] end)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Label DONE - Closed WON - Nb of Clients (New)",
+      "status": "skipped",
+      "source_formula": "COUNTD(if STARTSWITH([Pipeline Review - DONE - Cat 1 (copy)_746190227238907913], \"Closed\") and [Calculation_711568759572299783]=\"Y\" and [Calculation_614178463385661442] then [Calculation_711568759570489345] end)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Label DONE - Closed WON - Nb of Clients",
+      "status": "skipped",
+      "source_formula": "COUNTD(if STARTSWITH([Pipeline Review - DONE - Cat 1 (copy)_746190227238907913], \"Closed\") and [Calculation_711568759572299783]=\"Y\" then [Calculation_711568759570489345] end)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Label DONE - Closed LOST - Nb of Opp",
+      "status": "skipped",
+      "source_formula": "COUNTD(if STARTSWITH([Pipeline Review - DONE - Cat 1 (copy)_746190227238907913], \"Closed\") and [Calculation_711568759572299783]<>\"Y\" then [Calculation_711568759570227200] end)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Label DONE - Closed WON - Opp Amount",
+      "status": "skipped",
+      "source_formula": "SUM(if STARTSWITH([Pipeline Review - DONE - Cat 1 (copy)_746190227238907913], \"Closed\") and [Calculation_711568759572299783]=\"Y\" then [LinPack_523892480737294295] end)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Label DONE - New - Nb of Accounts (Prospect)",
+      "status": "skipped",
+      "source_formula": "COUNTD(if STARTSWITH([Pipeline Review - DONE - Cat 1 (copy)_746190227238907913], \"New\") and [Calculation_614178463393964044]=\"Prospects\" then [Calculation_711568759570489345] end)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Label DONE - New - Nb of Accounts",
+      "status": "skipped",
+      "source_formula": "COUNTD(if STARTSWITH([Pipeline Review - DONE - Cat 1 (copy)_746190227238907913], \"New\") then [Calculation_711568759570489345] end)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Label DONE - New - Opp Amount",
+      "status": "skipped",
+      "source_formula": "SUM(if STARTSWITH([Pipeline Review - DONE - Cat 1 (copy)_746190227238907913], \"New\") then [LinPack_523892480737294295] end)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Label DONE - New - Nb of Accounts (Client)",
+      "status": "skipped",
+      "source_formula": "COUNTD(if STARTSWITH([Pipeline Review - DONE - Cat 1 (copy)_746190227238907913], \"New\") and [Calculation_614178463393964044]=\"Existing Clients\" then [Calculation_711568759570489345] end)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Label FOCUS - Closing Next x days  - Nb of Accounts (Prospect)",
+      "status": "skipped",
+      "source_formula": "COUNTD(if STARTSWITH([Pipeline Review - DONE - Cat 2 (copy)_746190227239038988], \"Closing Next\") and [Calculation_614178463393964044]=\"Prospects\" then [Calculation_711568759570489345] end)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Label FOCUS - Closing Next x days  - Nb of Accounts (Client)",
+      "status": "skipped",
+      "source_formula": "COUNTD(if STARTSWITH([Pipeline Review - DONE - Cat 2 (copy)_746190227239038988], \"Closing Next\") and [Calculation_614178463393964044]=\"Existing Clients\" then [Calculation_711568759570489345] end)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Label FOCUS - Closing Next x days  - Nb of Accounts",
+      "status": "skipped",
+      "source_formula": "COUNTD(if STARTSWITH([Pipeline Review - DONE - Cat 2 (copy)_746190227239038988], \"Closing Next\") then [Calculation_711568759570489345] end)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Label FOCUS - Closing Overdue - Nb of Accounts (Client)",
+      "status": "skipped",
+      "source_formula": "COUNTD(if STARTSWITH([Pipeline Review - DONE - Cat 2 (copy)_746190227239038988], \"Closing Overdue\") and [Calculation_614178463393964044]=\"Existing Clients\" then [Calculation_711568759570489345] end)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Label FOCUS - Closing Overdue - Nb of Accounts (Prospect)",
+      "status": "skipped",
+      "source_formula": "COUNTD(if STARTSWITH([Pipeline Review - DONE - Cat 2 (copy)_746190227239038988], \"Closing Overdue\") and [Calculation_614178463393964044]=\"Prospects\" then [Calculation_711568759570489345] end)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Label FOCUS - Closing Overdue - Nb of Accounts",
+      "status": "skipped",
+      "source_formula": "COUNTD(if STARTSWITH([Pipeline Review - DONE - Cat 2 (copy)_746190227239038988], \"Closing Overdue\") then [Calculation_711568759570489345] end)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Label FOCUS - Closing Next x days  - Nb of Opp",
+      "status": "skipped",
+      "source_formula": "COUNTD(if STARTSWITH([Pipeline Review - DONE - Cat 2 (copy)_746190227239038988], \"Closing Next\") then [Calculation_711568759570227200] end)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Label FOCUS - Closing Next x days - Opp Amount",
+      "status": "skipped",
+      "source_formula": "SUM(if STARTSWITH([Pipeline Review - DONE - Cat 2 (copy)_746190227239038988], \"Closing Next\") then [LinPack_523892480737294295] end)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Label FOCUS - Closing Overdue - Opp Amount",
+      "status": "skipped",
+      "source_formula": "SUM(if STARTSWITH([Pipeline Review - DONE - Cat 2 (copy)_746190227239038988], \"Closing Overdue\") then [LinPack_523892480737294295] end)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Is Last N months filter - Created Date?",
+      "status": "skipped",
+      "source_formula": "[Created Date]>DATEADD('month',-[Parameters].[Last x Days (copy)_1142225515621146627],__MyToday) AND [Created Date] <= __MyToday",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Generated",
+      "status": "skipped",
+      "source_formula": "SUM([LinPack_523892480737294295])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Nb of Owners",
+      "status": "skipped",
+      "source_formula": "COUNTD([Calculation_711568759570620418])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Won/Lost Rate",
+      "status": "skipped",
+      "source_formula": "ZN([LinPack_345685562057570044]) / ZN([LinPack_945051434441023635])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Dimension",
+      "status": "skipped",
+      "source_formula": "CASE [Parameters].[LinPack_093258324044640973] \r\nWHEN \"Account\" THEN [Calculation_711568759570489345] \r\nWHEN \"Open Flag\" THEN [Calculation_711568759572205574] \r\nWHEN \"Opportunity Owner\" THEN [Calculation_711568759570620418] \r\nWHEN \"Opportunity Stage\" THEN [Calculation_711568759572115461] \r\nWHEN \"Opportunity Type\" THEN [Opportunity Type] \r\nWHEN \"Won Flag\" THEN [Calculation_711568759572299783] \r\nEND",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Total Sales",
+      "status": "skipped",
+      "source_formula": "SUM([LinPack_961643984189344200])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Nb of Open Opportunities",
+      "status": "skipped",
+      "source_formula": "COUNTD(IF [Calculation_1142225515624624133] THEN [Calculation_711568759570227200] END)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Nb of Won Opportunities",
+      "status": "skipped",
+      "source_formula": "COUNTD(IF [Is Open Opportunity? (copy)_17451502251433984] THEN [Calculation_711568759570227200] END)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Avg Deal Size (won)",
+      "status": "skipped",
+      "source_formula": "AVG([LinPack_760893960995960019])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Sales Velocity",
+      "status": "skipped",
+      "source_formula": "(ZN([LinPack_260602485593130101]) * ZN([LinPack_416672484957473515]) * ZN([LinPack_037187737916244637])) / ZN([LinPack_451823525181570600])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Sales Cycle",
+      "status": "skipped",
+      "source_formula": "AVG(FLOAT(IF NOT [Calculation_1142225515624624133] THEN datediff(\"minute\", [Created Date], [Calculation_822751375422500864]) / (24*60) END))",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Avg Probability",
+      "status": "skipped",
+      "source_formula": "AVG([LinPack_574638457904073940])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Weighted Pipeline Value",
+      "status": "skipped",
+      "source_formula": "SUM(FLOAT(IF [Calculation_1142225515624624133] THEN [Calculation_711568759573139467]*[Amount] END))",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "_Pipeline Generated (Expression)",
+      "status": "skipped",
+      "source_formula": "[Amount]",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "_Avg Probability (Expression)",
+      "status": "skipped",
+      "source_formula": "[Calculation_711568759573139467]",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Nb of Opportunities",
+      "status": "skipped",
+      "source_formula": "COUNTD([Calculation_711568759570227200])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Total Closed Opportunities Amount",
+      "status": "skipped",
+      "source_formula": "SUM([LinPack_808645294632541416])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Conversion Rate",
+      "status": "skipped",
+      "source_formula": "ZN([LinPack_235739231649065059]) / ZN([LinPack_707557147340278467])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "_Avg Deal Size (won) (Expression)",
+      "status": "skipped",
+      "source_formula": "FLOAT(IF [Is Open Opportunity? (copy)_17451502251433984] THEN [Amount] END)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Value",
+      "status": "skipped",
+      "source_formula": "SUM(FLOAT(IF [Calculation_1142225515624624133] THEN [Amount] END))",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "_Total Closed Opportunities Amount (Expression)",
+      "status": "skipped",
+      "source_formula": "FLOAT(IF NOT [Calculation_1142225515624624133] THEN [Amount] END)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Sales Cycle (won)",
+      "status": "skipped",
+      "source_formula": "AVG(FLOAT(IF [Is Open Opportunity? (copy)_17451502251433984] THEN datediff(\"minute\", [Created Date], [Calculation_822751375422500864]) / (24*60) END))",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Nb of Closed Opportunities",
+      "status": "skipped",
+      "source_formula": "COUNTD(IF NOT [Calculation_1142225515624624133] THEN [Calculation_711568759570227200] END)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "_Total Sales (Expression)",
+      "status": "skipped",
+      "source_formula": "FLOAT(IF [Is Open Opportunity? (copy)_17451502251433984] THEN [Amount] END)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Opportunity Owner Class - Title",
+      "status": "skipped",
+      "source_formula": "IF [Opportunity Owner Class Deal Size (copy)_995858528092102683]=[Parameters].[pOpportunityOwner_BigDeals (copy)_995858528093823004] THEN \"CHAMPIONS\"\r\nELSEIF [Opportunity Owner Class Deal Size (copy)_995858528092102683]=[Parameters].[pOpportunityOwner_Champions (copy)_995858528093941789] THEN \"CLOSERS\r\nGrowth Plan: Pipeline Generation\"\r\nELSEIF [Opportunity Owner Class Deal Size (copy)_995858528092102683]=[Parameters].[pOpportunityOwner_ImprovePipelineGen (copy)_995858528094035998] THEN \"HUNTERS/FARMERS\r\nGrowth Plan: Closing\"\r\nELSE \"REQUIRED IMPROVEMENTS\"\r\nEND",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Opportunity Owner Class (sort)",
+      "status": "skipped",
+      "source_formula": "IF [Opportunity Owner Class Deal Size (copy)_995858528092102683]=[Parameters].[pOpportunityOwner_BigDeals (copy)_995858528093823004] THEN 1\r\nELSEIF [Opportunity Owner Class Deal Size (copy)_995858528092102683]=[Parameters].[pOpportunityOwner_Champions (copy)_995858528093941789] THEN 2\r\nELSEIF [Opportunity Owner Class Deal Size (copy)_995858528092102683]=[Parameters].[pOpportunityOwner_ImprovePipelineGen (copy)_995858528094035998] THEN 3\r\nELSE 4\r\nEND",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Opportunity Owner Class",
+      "status": "skipped",
+      "source_formula": "IF [Pipeline Profile - Conversion Rate (description) (copy)_995858528072065042] >3 AND [Pipeline Profile - Pipeline Generation (description) (copy)_995858528072167443] >3 THEN [Parameters].[pOpportunityOwner_BigDeals (copy)_995858528093823004]\r\nELSEIF [Pipeline Profile - Conversion Rate (description) (copy)_995858528072065042] >3 AND [Pipeline Profile - Pipeline Generation (description) (copy)_995858528072167443] <=3 THEN [Parameters].[pOpportunityOwner_Champions (copy)_995858528093941789]\r\nELSEIF [Pipeline Profile - Conversion Rate (description) (copy)_995858528072065042] <=3 AND [Pipeline Profile - Pipeline Generation (description) (copy)_995858528072167443] >3 THEN [Parameters].[pOpportunityOwner_ImprovePipelineGen (copy)_995858528094035998]\r\nELSE [Parameters].[pOpportunityOwner_ImprovePipelineGen (copy)_995858528094134303]\r\nEND",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Opportunity Owner Class - Action",
+      "status": "skipped",
+      "source_formula": "CASE [Opportunity Owner Class Deal Size (copy)_995858528092102683]\r\nWHEN [Parameters].[pOpportunityOwner_BigDeals (copy)_995858528093823004]                      THEN \"Reward these elements, they can be a model for the other owners. Leverage their best-practices.\"\r\nWHEN [Parameters].[pOpportunityOwner_Champions (copy)_995858528093941789]   THEN \"Guide them on how to generate pipeline.\"\r\nWHEN [Parameters].[pOpportunityOwner_ImprovePipelineGen (copy)_995858528094035998]              THEN \"Provide these elements additional trainings to improve their ability to convince clients.\"\r\nWHEN [Parameters].[pOpportunityOwner_ImprovePipelineGen (copy)_995858528094134303]           THEN \"These opportunity owners need to improve their skills in both areas, to get more business and to win over clients. Train them quickly.\" \r\nEND",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Opportunity Owner Class - Description",
+      "status": "skipped",
+      "source_formula": "CASE [Opportunity Owner Class Deal Size (copy)_995858528092102683]\r\nWHEN [Parameters].[pOpportunityOwner_BigDeals (copy)_995858528093823004]                      THEN \"Top performers in the team. They perform well in all areas and pull the team up.\"\r\nWHEN [Parameters].[pOpportunityOwner_Champions (copy)_995858528093941789]   THEN \"Effective at closing and winning deals, they can develop in Pipeline Generation (farming or hunting).\"\r\nWHEN [Parameters].[pOpportunityOwner_ImprovePipelineGen (copy)_995858528094035998]              THEN \"Good at developing pipeline, they will improve their performance by developing their ability to close and win the deals.\"\r\nWHEN [Parameters].[pOpportunityOwner_ImprovePipelineGen (copy)_995858528094134303]           THEN \"Underperforming in pipeline generation and deal closing.\r\n\"   \r\nEND",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Conversion Rate (Last N Months - Closed Date)",
+      "status": "skipped",
+      "source_formula": "[Pipeline Generation (Last N Months) (copy)_1243275034721849348]/[Total Sales (Last N Months) (copy)_1243275034722263045]",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Total Sales (Last N Months - Closed Date)",
+      "status": "skipped",
+      "source_formula": "SUM(IF [Closed in Last x Days (copy)_1142225515614175234] then [LinPack_961643984189344200] END)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Generation (Last N Months - Created Date)",
+      "status": "skipped",
+      "source_formula": "SUM(IF [Last N months filter - Closed Date (copy)_1142225515621388292] then [LinPack_523892480737294295] END)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Profile - Conversion Rate (Star)",
+      "status": "skipped",
+      "source_formula": "REPLACE(SPACE([Pipeline Profile - Conversion Rate (description) (copy)_995858528072065042]),\" \",\"★\")\r\n+\r\nREPLACE(SPACE(5-[Pipeline Profile - Conversion Rate (description) (copy)_995858528072065042]),\" \",\"☆\")",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Profile - Conversion Rate",
+      "status": "skipped",
+      "source_formula": "IF      [_Per Customer: Pipeline Generation (copy)_995858528061906945] <= {fixed: max([_Per Customer: Pipeline Generation (copy)_995858528061906945])}/5 then \"1\" \r\nELSEIF  [_Per Customer: Pipeline Generation (copy)_995858528061906945] <= {fixed: max([_Per Customer: Pipeline Generation (copy)_995858528061906945])}/5*2 then \"2\" \r\nELSEIF  [_Per Customer: Pipeline Generation (copy)_995858528061906945] <= {fixed: max([_Per Customer: Pipeline Generation (copy)_995858528061906945])}/5*3 then \"3\" \r\nELSEIF  [_Per Customer: Pipeline Generation (copy)_995858528061906945] <= {fixed: max([_Per Customer: Pipeline Generation (copy)_995858528061906945])}/5*4 then \"4\" \r\nELSE \"5\"                                    \r\nEND",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Profile - Average Deal Size (description)",
+      "status": "skipped",
+      "source_formula": "CASE [Pipeline Profile - Pipeline Generation (copy)_995858528067575816]\r\nWHEN \"1\" THEN \"VERY LOW\"\r\nWHEN \"2\" THEN \"LOW\"\r\nWHEN \"3\" THEN \"MEDIUM\"\r\nWHEN \"4\" THEN \"HIGH\"\r\nWHEN \"5\" THEN \"VERY HIGH\"\r\nEND\r\n+ \" Average Deal Size\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Axis",
+      "status": "skipped",
+      "source_formula": "100",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Profile - Average Deal Size (num)",
+      "status": "skipped",
+      "source_formula": "int([Pipeline Profile - Pipeline Generation (copy)_995858528067575816])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Profile - Pipeline Generation (Star)",
+      "status": "skipped",
+      "source_formula": "REPLACE(SPACE([Pipeline Profile - Pipeline Generation (description) (copy)_995858528072167443]),\" \",\"★\")\r\n+\r\nREPLACE(SPACE(5-[Pipeline Profile - Pipeline Generation (description) (copy)_995858528072167443]),\" \",\"☆\")",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Profile - Total Sales to Existing Clients",
+      "status": "skipped",
+      "source_formula": "IF      [_Per Customer: Average Deal Size (copy)_995858528062611459] <= {fixed: max([_Per Customer: Average Deal Size (copy)_995858528062611459])}/5 then \"1\" \r\nELSEIF  [_Per Customer: Average Deal Size (copy)_995858528062611459] <= {fixed: max([_Per Customer: Average Deal Size (copy)_995858528062611459])}/5*2 then \"2\" \r\nELSEIF  [_Per Customer: Average Deal Size (copy)_995858528062611459] <= {fixed: max([_Per Customer: Average Deal Size (copy)_995858528062611459])}/5*3 then \"3\" \r\nELSEIF  [_Per Customer: Average Deal Size (copy)_995858528062611459] <= {fixed: max([_Per Customer: Average Deal Size (copy)_995858528062611459])}/5*4 then \"4\" \r\nELSE \"5\"                                    \r\nEND",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Profile - Conversion Rate (description)",
+      "status": "skipped",
+      "source_formula": "CASE [Pipeline Profile - Average Deal Size (copy)_995858528067751945]\r\nWHEN \"1\" THEN \"VERY LOW\"\r\nWHEN \"2\" THEN \"LOW\"\r\nWHEN \"3\" THEN \"MEDIUM\"\r\nWHEN \"4\" THEN \"HIGH\"\r\nWHEN \"5\" THEN \"VERY HIGH\"\r\nEND\r\n+ \" Conversion Rate\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Profile - Conversion Rate (num)",
+      "status": "skipped",
+      "source_formula": "int([Pipeline Profile - Average Deal Size (copy)_995858528067751945])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Profile - Pipeline Generation to Existing Clients (Star)",
+      "status": "skipped",
+      "source_formula": "REPLACE(SPACE([Pipeline Profile - Total Sales to Existing Clients (num) (copy)_1849572132723974155]),\" \",\"★\")\r\n+\r\nREPLACE(SPACE(5-[Pipeline Profile - Total Sales to Existing Clients (num) (copy)_1849572132723974155]),\" \",\"☆\")",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Profile - Average Deal Size",
+      "status": "skipped",
+      "source_formula": "IF      [_Per Customer: Pipeline Generation (copy)_995858528062124034] <= {fixed: max([_Per Customer: Pipeline Generation (copy)_995858528062124034])}/5 then \"1\" \r\nELSEIF  [_Per Customer: Pipeline Generation (copy)_995858528062124034] <= {fixed: max([_Per Customer: Pipeline Generation (copy)_995858528062124034])}/5*2 then \"2\" \r\nELSEIF  [_Per Customer: Pipeline Generation (copy)_995858528062124034] <= {fixed: max([_Per Customer: Pipeline Generation (copy)_995858528062124034])}/5*3 then \"3\" \r\nELSEIF  [_Per Customer: Pipeline Generation (copy)_995858528062124034] <= {fixed: max([_Per Customer: Pipeline Generation (copy)_995858528062124034])}/5*4 then \"4\" \r\nELSE \"5\"                                    \r\nEND",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Profile - Pipeline Generation (description)",
+      "status": "skipped",
+      "source_formula": "CASE [Calculation_995858528066854919]\r\nWHEN \"1\" THEN \"VERY LOW\"\r\nWHEN \"2\" THEN \"LOW\"\r\nWHEN \"3\" THEN \"MEDIUM\"\r\nWHEN \"4\" THEN \"HIGH\"\r\nWHEN \"5\" THEN \"VERY HIGH\"\r\nEND\r\n+ \" Ability to generate pipeline\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Profile - Pipeline Generation (num)",
+      "status": "skipped",
+      "source_formula": "int([Calculation_995858528066854919])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Profile - Pipeline Generation to Prospects (Star)",
+      "status": "skipped",
+      "source_formula": "REPLACE(SPACE([Pipeline Profile - Total Sales to Prospects (num) (copy)_1849572132723974157]),\" \",\"★\")\r\n+\r\nREPLACE(SPACE(5-[Pipeline Profile - Total Sales to Prospects (num) (copy)_1849572132723974157]),\" \",\"☆\")",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Profile - Total Sales (Star)",
+      "status": "skipped",
+      "source_formula": "REPLACE(SPACE([Pipeline Profile - Total Sales to Prospects (num) (copy)_1849572132716658690]),\" \",\"★\")\r\n+\r\nREPLACE(SPACE(5-[Pipeline Profile - Total Sales to Prospects (num) (copy)_1849572132716658690]),\" \",\"☆\")",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Profile - Total Sales to Existing Clients (Star)",
+      "status": "skipped",
+      "source_formula": "REPLACE(SPACE([Pipeline Profile - Total Sales for Existing Clients (description) (copy)_995858528072245268]),\" \",\"★\")\r\n+\r\nREPLACE(SPACE(5-[Pipeline Profile - Total Sales for Existing Clients (description) (copy)_995858528072245268]),\" \",\"☆\")",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Profile - Total Sales to Prospects",
+      "status": "skipped",
+      "source_formula": "IF      [_Per Customer: Total Sales on Client (copy)_995858528065740806] <= {fixed: max([_Per Customer: Total Sales on Client (copy)_995858528065740806])}/5 then \"1\" \r\nELSEIF  [_Per Customer: Total Sales on Client (copy)_995858528065740806] <= {fixed: max([_Per Customer: Total Sales on Client (copy)_995858528065740806])}/5*2 then \"2\" \r\nELSEIF  [_Per Customer: Total Sales on Client (copy)_995858528065740806] <= {fixed: max([_Per Customer: Total Sales on Client (copy)_995858528065740806])}/5*3 then \"3\" \r\nELSEIF  [_Per Customer: Total Sales on Client (copy)_995858528065740806] <= {fixed: max([_Per Customer: Total Sales on Client (copy)_995858528065740806])}/5*4 then \"4\" \r\nELSE \"5\"                                    \r\nEND",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Profile - Total Sales to Existing Clients (description)",
+      "status": "skipped",
+      "source_formula": "CASE [Pipeline Profile - Conversion Rate (copy)_995858528068132874]\r\nWHEN \"1\" THEN \"VERY LOW\"\r\nWHEN \"2\" THEN \"LOW\"\r\nWHEN \"3\" THEN \"MEDIUM\"\r\nWHEN \"4\" THEN \"HIGH\"\r\nWHEN \"5\" THEN \"VERY HIGH\"\r\nEND\r\n+ \" Ability to sell to existing clients\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Profile - Total Sales to Existing Clients (num)",
+      "status": "skipped",
+      "source_formula": "int([Pipeline Profile - Conversion Rate (copy)_995858528068132874])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Profile - Total Sales to Prospects (description)",
+      "status": "skipped",
+      "source_formula": "CASE [Pipeline Profile - Total Sales for Existing Clients (copy)_995858528068710411]\r\nWHEN \"1\" THEN \"VERY LOW\"\r\nWHEN \"2\" THEN \"LOW\"\r\nWHEN \"3\" THEN \"MEDIUM\"\r\nWHEN \"4\" THEN \"HIGH\"\r\nWHEN \"5\" THEN \"VERY HIGH\"\r\nEND\r\n+ \" Ability to sell to prospects\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Profile - Total Sales to Prospects (num)",
+      "status": "skipped",
+      "source_formula": "int([Pipeline Profile - Total Sales for Existing Clients (copy)_995858528068710411])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Profile - Total Sales to Prospects (Star)",
+      "status": "skipped",
+      "source_formula": "REPLACE(SPACE([Pipeline Profile - Total Sales for Prospects (description) (copy)_995858528072331285]),\" \",\"★\")\r\n+\r\nREPLACE(SPACE(5-[Pipeline Profile - Total Sales for Prospects (description) (copy)_995858528072331285]),\" \",\"☆\")",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Profile - Pipeline Generation to Existing Clients",
+      "status": "skipped",
+      "source_formula": "IF      [_Per Customer: Pipeline Generation (copy)_1849572132719239174] <= {fixed: max([_Per Customer: Pipeline Generation (copy)_1849572132719239174])}/5 then \"1\" \r\nELSEIF  [_Per Customer: Pipeline Generation (copy)_1849572132719239174] <= {fixed: max([_Per Customer: Pipeline Generation (copy)_1849572132719239174])}/5*2 then \"2\" \r\nELSEIF  [_Per Customer: Pipeline Generation (copy)_1849572132719239174] <= {fixed: max([_Per Customer: Pipeline Generation (copy)_1849572132719239174])}/5*3 then \"3\" \r\nELSEIF  [_Per Customer: Pipeline Generation (copy)_1849572132719239174] <= {fixed: max([_Per Customer: Pipeline Generation (copy)_1849572132719239174])}/5*4 then \"4\" \r\nELSE \"5\"                                    \r\nEND",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Profile - Pipeline Generation to Existing Clients (description)",
+      "status": "skipped",
+      "source_formula": "CASE [Pipeline Profile - Total Sales to Existing Clients (copy)_1849572132723974152]\r\nWHEN \"1\" THEN \"VERY LOW\"\r\nWHEN \"2\" THEN \"LOW\"\r\nWHEN \"3\" THEN \"MEDIUM\"\r\nWHEN \"4\" THEN \"HIGH\"\r\nWHEN \"5\" THEN \"VERY HIGH\"\r\nEND\r\n+ \" Ability to generate pipeline with existing clients\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Profile - Pipeline Generation to Existing Clients (num)",
+      "status": "skipped",
+      "source_formula": "int([Pipeline Profile - Total Sales to Existing Clients (copy)_1849572132723974152])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Profile - Total Sales",
+      "status": "skipped",
+      "source_formula": "IF      [_Per Customer: Total Sales for Prospects (copy)_1849572132717031427] <= {fixed: max([_Per Customer: Total Sales for Prospects (copy)_1849572132717031427])}/5 then \"1\" \r\nELSEIF  [_Per Customer: Total Sales for Prospects (copy)_1849572132717031427] <= {fixed: max([_Per Customer: Total Sales for Prospects (copy)_1849572132717031427])}/5*2 then \"2\" \r\nELSEIF  [_Per Customer: Total Sales for Prospects (copy)_1849572132717031427] <= {fixed: max([_Per Customer: Total Sales for Prospects (copy)_1849572132717031427])}/5*3 then \"3\" \r\nELSEIF  [_Per Customer: Total Sales for Prospects (copy)_1849572132717031427] <= {fixed: max([_Per Customer: Total Sales for Prospects (copy)_1849572132717031427])}/5*4 then \"4\" \r\nELSE \"5\"                                    \r\nEND",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Profile - Pipeline Generation to Prospects",
+      "status": "skipped",
+      "source_formula": "IF      [_Per Customer: Pipeline Generation (copy) (copy)_1849572132719255559] <= {fixed: max([_Per Customer: Pipeline Generation (copy) (copy)_1849572132719255559])}/5 then \"1\" \r\nELSEIF  [_Per Customer: Pipeline Generation (copy) (copy)_1849572132719255559] <= {fixed: max([_Per Customer: Pipeline Generation (copy) (copy)_1849572132719255559])}/5*2 then \"2\" \r\nELSEIF  [_Per Customer: Pipeline Generation (copy) (copy)_1849572132719255559] <= {fixed: max([_Per Customer: Pipeline Generation (copy) (copy)_1849572132719255559])}/5*3 then \"3\" \r\nELSEIF  [_Per Customer: Pipeline Generation (copy) (copy)_1849572132719255559] <= {fixed: max([_Per Customer: Pipeline Generation (copy) (copy)_1849572132719255559])}/5*4 then \"4\" \r\nELSE \"5\"                                    \r\nEND",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Profile - Total Sales (description)",
+      "status": "skipped",
+      "source_formula": "CASE [Pipeline Profile - Total Sales to Prospects (copy)_1849572132716658688]\r\nWHEN \"1\" THEN \"VERY LOW\"\r\nWHEN \"2\" THEN \"LOW\"\r\nWHEN \"3\" THEN \"MEDIUM\"\r\nWHEN \"4\" THEN \"HIGH\"\r\nWHEN \"5\" THEN \"VERY HIGH\"\r\nEND\r\n+ \" Ability to sell\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Profile - Pipeline Generation to Prospects (description)",
+      "status": "skipped",
+      "source_formula": "CASE [Pipeline Profile - Total Sales to Prospects (copy)_1849572132723974153]\r\nWHEN \"1\" THEN \"VERY LOW\"\r\nWHEN \"2\" THEN \"LOW\"\r\nWHEN \"3\" THEN \"MEDIUM\"\r\nWHEN \"4\" THEN \"HIGH\"\r\nWHEN \"5\" THEN \"VERY HIGH\"\r\nEND\r\n+ \" Ability to generate pipeline with prospects\"",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Profile - Total Sales (num)",
+      "status": "skipped",
+      "source_formula": "int([Pipeline Profile - Total Sales to Prospects (copy)_1849572132716658688])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Profile - Pipeline Generation to Prospects (num)",
+      "status": "skipped",
+      "source_formula": "int([Pipeline Profile - Total Sales to Prospects (copy)_1849572132723974153])",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Review - DONE - Cat 1",
+      "status": "skipped",
+      "source_formula": "SPLIT([Calculation_928304533153746946], \"|\", 1)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Review - DONE - Cat 2",
+      "status": "skipped",
+      "source_formula": "SPLIT([Calculation_928304533153746946], \"|\", 2)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Review - FOCUS - Cat 1",
+      "status": "skipped",
+      "source_formula": "SPLIT([Pipeline Review - DONE - Key (copy)_746190227239038986], \"|\", 1)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Review - FOCUS - Cat 2",
+      "status": "skipped",
+      "source_formula": "SPLIT([Pipeline Review - DONE - Key (copy)_746190227239038986], \"|\", 2)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Review - FOCUS - Key",
+      "status": "skipped",
+      "source_formula": "IF      [Closed in Last x Days (copy)_746190227237216263]        then \"Overdue|Closing Overdue\"\r\nELSEIF  [Closed in Last x Days (copy)_746190227237490696] then \"Next \" + [Parameters].[pNextxDays] + \" days|Closing Next \"+ [Parameters].[pNextxDays] + \" days\"\r\nelse \"Other\"\r\nend",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Probability (bucket) (sort)",
+      "status": "skipped",
+      "source_formula": "IF [LinPack_574638457904073940]<0.25 THEN 10\r\nELSEIF [LinPack_574638457904073940]<0.50 THEN 20\r\nELSEIF [LinPack_574638457904073940]<0.75 THEN 30\r\nELSE 40\r\nEND",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Sales Value (for selected Opp Owner)",
+      "status": "skipped",
+      "source_formula": "MAX(IF [Is Selected Opportunity Stage Flag (copy)_813744216047374336] THEN {INCLUDE [Calculation_711568759570620418] : [LinPack_235739231649065059]} END)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Rank Conversion Rate (for selected Opp Owner)",
+      "status": "skipped",
+      "source_formula": "// Count the distinct number of Opportunity Owner\r\n// where Opportunity Owner's [Conversion Rate] > Selected Opportunity Owner [Conversion Rate]\r\nCOUNTD(if {INCLUDE [Calculation_711568759570620418] : [LinPack_713531991123124037]} > {MAX((IF [Is Selected Opportunity Stage Flag (copy)_813744216047374336] THEN {INCLUDE [Calculation_711568759570620418] : ZN([LinPack_713531991123124037])} ELSE 0 END))}\r\n       and Not [Is Selected Opportunity Stage Flag (copy)_813744216047374336]\r\n       then [Calculation_711568759570620418]  end)+1",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Rank Total Opp Amount (for selected Opp Owner)",
+      "status": "skipped",
+      "source_formula": "// Count the distinct number of Opportunity Owner\r\n// where Opportunity Owner's [Total Opp Amount] > Selected Opportunity Owner [Total Opp Amount]\r\nCOUNTD(if {INCLUDE [Calculation_711568759570620418] : [LinPack_017255839264062096]} > {MAX((IF [Is Selected Opportunity Stage Flag (copy)_813744216047374336] THEN {INCLUDE [Calculation_711568759570620418] : ZN([LinPack_017255839264062096])} ELSE 0 END))}\r\n       and Not [Is Selected Opportunity Stage Flag (copy)_813744216047374336]\r\n       then [Calculation_711568759570620418]  end)+1",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Conversion Rate (for selected Opp Owner)",
+      "status": "skipped",
+      "source_formula": "MAX(IF [Is Selected Opportunity Stage Flag (copy)_813744216047374336] THEN {INCLUDE [Calculation_711568759570620418] : [LinPack_713531991123124037]} END)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Total Opp Amount (for selected Opp Owner)",
+      "status": "skipped",
+      "source_formula": "MAX(IF [Is Selected Opportunity Stage Flag (copy)_813744216047374336] THEN {INCLUDE [Calculation_711568759570620418] : [LinPack_017255839264062096]} END)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Total Closed Opportunities Amount (Last N Months - Closed Date)",
+      "status": "skipped",
+      "source_formula": "SUM(IF [Closed in Last x Days (copy)_1142225515614175234] then [LinPack_808645294632541416] END)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Average Deal Size (Last N Months - Closed Date)",
+      "status": "skipped",
+      "source_formula": "SUM(IF [Closed in Last x Days (copy)_1142225515614175234] then [LinPack_760893960995960019] END)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Generation for Existing Clients",
+      "status": "skipped",
+      "source_formula": "SUM(IF [Calculation_614178463385964547]=\"Existing Clients\" and [Last N months filter - Closed Date (copy)_1142225515621388292] THEN [LinPack_523892480737294295] END)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Total Sales for Prospects",
+      "status": "skipped",
+      "source_formula": "SUM(IF [Calculation_614178463385964547]=\"Prospects\" AND [Closed in Last x Days (copy)_1142225515614175234] then [LinPack_961643984189344200] END)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Pipeline Generation for Prospects",
+      "status": "skipped",
+      "source_formula": "SUM(IF [Calculation_614178463385964547]=\"Prospects\" and [Last N months filter - Closed Date (copy)_1142225515621388292] then [LinPack_523892480737294295] END)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "URL Drill-back to Source Application on Opportunity",
+      "status": "skipped",
+      "source_formula": "// This Accelerator is configured to allow you yo drill back to your Source Application to see the detail of each \"Opportunity Id\"\r\n// The Drill Back is activated when clicking on a Project in the Accelerator \r\n//  using a URL with the following format: \r\n//              [URL Prefix] + [Opportunity Id] + [URL Suffix]\r\n//\r\n// For example when drilling back to an Opportunity on Salesforce Sales Cloud, \r\n// [URL Prefix] must be: \"https://<YOUR_SALESFORCE_ORG>.lightning.force.com/lightning/r/Opportunity/\" and [URL Sufix] must be \"/view\"\r\n\r\n\"https://tableauaccelerators.github.io/drill-back/?Opportunity=\"+[Calculation_711568759570227200]",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "_Per Customer: Total Sales for Existing Clients",
+      "status": "skipped",
+      "source_formula": "ZN({fixed [Calculation_711568759570620418]: [Calculation_995858528063909892]})",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "_Per Customer: Pipeline Generation for Prospects",
+      "status": "skipped",
+      "source_formula": "ZN({fixed [Calculation_711568759570620418]: [Total Sales for Prospects (copy)_1849572132718514181]})",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "_Per Customer: Pipeline Generation for Existing Clients",
+      "status": "skipped",
+      "source_formula": "ZN({fixed [Calculation_711568759570620418]: [Total Sales for Existing Clients (copy)_1849572132718333956]})",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "_Per Customer: Conversion Rate",
+      "status": "skipped",
+      "source_formula": "ZN({fixed [Calculation_711568759570620418]: [Pipeline Generation (Last N Months) (copy)_1243275034714406914]})",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "_Per Customer: Average Deal Size",
+      "status": "skipped",
+      "source_formula": "ZN({fixed [Calculation_711568759570620418]: [Total Sales (Last N Months) (copy)_1243275034742312966]})",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "_Per Customer: Total Sales",
+      "status": "skipped",
+      "source_formula": "ZN({fixed [Calculation_711568759570620418]: [Pipeline Generation (Last N Months) (copy)_1243275034721849348]})",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "_Per Customer: Total Sales for Prospects",
+      "status": "skipped",
+      "source_formula": "ZN({fixed [Calculation_711568759570620418]: [Total Sales for Existing Clients (copy)_995858528065511429]})",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "Days from Open to Close",
+      "status": "skipped",
+      "source_formula": "avg(FLOAT(datediff(\"minute\", [Created Date], [Calculation_822751375422500864]) / (24*60)))",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "calculation",
+      "name": "__MyToday",
+      "status": "skipped",
+      "source_formula": "MAKEDATE(2022,04,18)",
+      "note": "No DAX output generated"
+    },
+    {
+      "category": "visual",
+      "name": "Avg Deal Size (won)",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Closed Opp - LOST",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Closed Opp - NEW",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Closed Opp - Pipeline Review Achievements",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Closed Opp - WON",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Conversion - Breakdown by Dimension",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Conversion KPIs",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Conversion Rate",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Conversion Rate - Benchmark (for Selected Opp Owner)",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Conversion Rate - KPI Card (for Selected Opp Owner)",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Conversion Rate - Last N Months (for Selected Opp Owner)",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Conversion Rate - Ranking (for Selected Opp Owner)",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Conversion Rate - Top Opp Types (for Selected Opp Owner)",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Conversion Rate - by Client/Prospect",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Conversion by Deal Size",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Open Opp - CLOSING",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Open Opp - Detail Table (for Selected Opp Owner)",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Open Opp - OVERDUE",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Open Opp - Pipeline Review Focus",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Open Opp - Top Opp Types Value (for Selected Opp Owner)",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Open Opp - Value KPI Card (for Selected Opp Owner)",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Open Opp - Value by Client/Prospect",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Opp Owner Performance",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Opp Owner Performance Detail",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Opportunity Owner Card (for Selected Opp Owner)",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Owner Profile",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Pipeline Bar Chart",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Pipeline Detail Table",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Pipeline Funnel",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Pipeline Generated - Benchmark (for Selected Opp Owner)",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Pipeline Generated - KPI Card (for Selected Opp Owner)",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Pipeline Generated - Last N Months (for Selected Opp Owner)",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Pipeline Generated - Ranking (for Selected Opp Owner)",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Pipeline Generated - Top Opp Types (for Selected Opp Owner)",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Pipeline Generated - by Client/Prospect",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Pipeline Open Opportunities",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Pipeline Review Achievements (for Selected Opp Owner)",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Pipeline Value",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Pipeline Weighted Value",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Pipeline Weighted Value 2",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Pipeline by Bucket",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Pipeline by Bucket - Opp detail",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Pipeline by Bucket and Dimension",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Pipeline by Bucket and Probability",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Pipeline by Opportunity Size",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Sales Cycle",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Total Sales - Benchmark (for Selected Opp Owner)",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Total Sales - KPI Card (for Selected Opp Owner)",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Total Sales - Last N Months (for Selected Opp Owner)",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Total Sales - Ranking (for Selected Opp Owner)",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Total Sales - Top Opp Types (for Selected Opp Owner)",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Total Sales - by Client/Prospect",
+      "status": "exact"
+    },
+    {
+      "category": "visual",
+      "name": "Won/Lost Rate",
+      "status": "exact"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_AvgDealSizeWon_Calculation (copy)_1307169844765896712]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_AvgDealSizeWon_Description (copy)_1307169844765896713]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_ConversionRate_Calculation (copy)_1307169844772745226]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_ConversionRate_Calculation (copy)_1452692401317089292]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_ConversionRate_Description (copy)_1307169844772745227]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_ConversionRate_Description (copy)_1452692401317089293]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_NbClosedOpportunities_Calculation (copy)_1358679765460369410]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_NbClosedOpportunities_Description (copy)_1358679765460369411]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_NbOpenOpportunities_Calculation (copy)_1358679765455953920]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_NbOpenOpportunities_Calculation (copy)_1358679765464379396]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_NbOpenOpportunities_Calculation (copy)_1452692401309917186]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_NbOpenOpportunities_Calculation (copy)_1452692401358135315]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_NbOpenOpportunities_Description (copy)_1358679765455953921]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_NbOpenOpportunities_Description (copy)_1358679765464379397]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_NbOpenOpportunities_Description (copy)_1452692401309741057]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_NbOpenOpportunities_Description (copy)_1452692401309917187]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_NbOpenOpportunities_Description (copy)_1452692401358135316]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_NbWonOpportunities_Calculation (copy)_1307169844763209728]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_NbWonOpportunities_Description (copy)_1307169844763209729]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_PipelineValue_Calculation (copy)_1452692401310101508]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_PipelineValue_Calculation (copy)_1452692401310478342]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_PipelineValue_Calculation (copy)_1452692401316077578]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_PipelineValue_Description (copy)_1452692401310101509]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_PipelineValue_Description (copy)_1452692401310478343]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_PipelineValue_Description (copy)_1452692401316077579]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_SalesCycleWon_Calculation (copy)_1307169844764229636]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_SalesCycleWon_Description (copy)_1307169844764229637]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_SalesCycle_Calculation (copy)_1307169844763766786]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_SalesCycle_Calculation (copy)_1452692401318907918]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_SalesCycle_Description (copy)_1307169844763766787]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_SalesCycle_Description (copy)_1452692401318907919]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_TotalSales_Calculation (copy)_1452692401320579088]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_TotalSales_Description (copy)_1452692401320579089]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_WonLostRate_Calculation (copy)_1452692401310605320]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[KPI_WonLostRate_Description (copy)_1452692401310605321]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[Last x Days (copy)_1142225515621146627]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[Last x Days (copy)_1452692401309581312]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[LinPack_093258324044640973]",
+      "status": "exact",
+      "note": "domain=list"
+    },
+    {
+      "category": "parameter",
+      "name": "[LinPack_262271697159954844]",
+      "status": "exact",
+      "note": "domain=list"
+    },
+    {
+      "category": "parameter",
+      "name": "[LinPack_437656825848927055]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[LinPack_629783440225818023]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[LinPack_763983446793242599]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[LinPack_813737300992546764]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[Opportunity Owner Parameter]",
+      "status": "exact",
+      "note": "domain=list"
+    },
+    {
+      "category": "parameter",
+      "name": "[Parameter 1]",
+      "status": "exact",
+      "note": "domain=list"
+    },
+    {
+      "category": "parameter",
+      "name": "[Parameter 2]",
+      "status": "exact",
+      "note": "domain=list"
+    },
+    {
+      "category": "parameter",
+      "name": "[pLastxDays]",
+      "status": "exact",
+      "note": "domain=list"
+    },
+    {
+      "category": "parameter",
+      "name": "[pNextxDays]",
+      "status": "exact",
+      "note": "domain=list"
+    },
+    {
+      "category": "parameter",
+      "name": "[pOpportunityOwner_BigDeals (copy)_995858528093823004]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[pOpportunityOwner_Champions (copy)_995858528093941789]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[pOpportunityOwner_ImprovePipelineGen (copy)_995858528094035998]",
+      "status": "exact",
+      "note": "domain=any"
+    },
+    {
+      "category": "parameter",
+      "name": "[pOpportunityOwner_ImprovePipelineGen (copy)_995858528094134303]",
+      "status": "exact",
+      "note": "domain=any"
+    }
+  ]
+}

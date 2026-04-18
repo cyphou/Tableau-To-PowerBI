@@ -2238,6 +2238,15 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
             # bare column refs at conversion time (Phase 5h).
             _this_table_columns.add(caption)
         else:
+            # DAX measures cannot be bare column references — they need an
+            # aggregation.  If the converted DAX is just 'Table'[Col] or
+            # [Col], wrap it in SUM() so PBI Desktop accepts it.
+            _bare_col_re = re.compile(
+                r"^(?:'[^']*')?\[[^\]]+\]$"
+            )
+            if _bare_col_re.match(dax_formula.strip()):
+                dax_formula = f"SUM({dax_formula.strip()})"
+
             # DAX Measure
             bim_measure = {
                 "name": caption,
@@ -2290,6 +2299,44 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
                     "Unwrapped %s([%s]) → [%s] (measure reference, not column)",
                     agg_fn, ref_name, ref_name,
                 )
+        if new_expr != expr:
+            meas["expression"] = new_expr
+
+    # ── Post-processing: wrap bare cross-table column refs in SUM ──
+    # A DAX measure cannot reference a column from another table without
+    # aggregation.  Pattern: 'Table'[Column] where Column is NOT a measure.
+    # Only wrap refs that are not already inside an aggregation function.
+    _all_columns = set()
+    for col in result_table.get("columns", []):
+        _all_columns.add(col.get("name", ""))
+    _XTABLE_COL_RE = re.compile(
+        r"'([^']+(?:''[^']*)*)'(\[[^\]]+\])"
+    )
+    _AGG_PREFIX_RE = re.compile(
+        r'\b(?:SUM|AVERAGE|COUNT|COUNTROWS|MIN|MAX|SUMX|AVERAGEX|COUNTX|MINX|MAXX|DISTINCTCOUNT|CALCULATE|CONVERT|RELATED|LOOKUPVALUE|LEFT|RIGHT|MID|LEN|IF|SWITCH|FORMAT|COALESCE|ISBLANK|STDEV|VAR|MEDIAN|PERCENTILE|CORREL|COVARIANCE|RANK|RANKX|POWER|SELECTEDVALUE|VALUES|ALL|ALLEXCEPT|FILTER|ADDCOLUMNS|KEEPFILTERS|TOPN)\s*\($',
+        re.IGNORECASE,
+    )
+    for meas in result_table["measures"]:
+        expr = meas.get("expression", "")
+        if not expr:
+            continue
+        new_expr = expr
+        for m_col in reversed(list(_XTABLE_COL_RE.finditer(expr))):
+            col_name = m_col.group(2).strip('[]')
+            if col_name in _all_measure_names:
+                continue  # measure ref — leave as-is
+            # Check if this ref is already inside a function call
+            prefix = expr[:m_col.start()]
+            if _AGG_PREFIX_RE.search(prefix):
+                continue
+            # Bare cross-table column ref → wrap in SUM
+            old_ref = m_col.group(0)
+            new_ref = f"SUM({old_ref})"
+            new_expr = new_expr[:m_col.start()] + new_ref + new_expr[m_col.end():]
+            logger.debug(
+                "Wrapped bare column ref %s → SUM(%s) in measure '%s'",
+                old_ref, old_ref, meas.get("name", ""),
+            )
         if new_expr != expr:
             meas["expression"] = new_expr
 
