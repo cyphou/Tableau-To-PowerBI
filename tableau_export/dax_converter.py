@@ -402,6 +402,14 @@ def convert_tableau_formula_to_dax(formula, column_name='Measure', table_name='T
     # Fix "Table"[Col] → 'Table'[Col] and FUNC("Table", → FUNC('Table',
     dax = _fix_double_quoted_table_refs(dax)
 
+    # === Phase 5h: Wrap bare column refs in measures with MAX() ===
+    # In measure context, bare 'Table'[Col] references (not inside an
+    # aggregation/iterator) cause PBI "single value cannot be determined".
+    # Wrap them in MAX() — safe for LOD-derived calc columns.
+    if not is_calc_column and table_columns:
+        dax = _wrap_bare_column_refs_in_measure(dax, table_name,
+                                                 table_columns, measure_names)
+
     # === Phase 6: Final cleanup ===
     dax = _normalize_spaces_outside_identifiers(dax).strip()
     # Strip // line comments before collapsing newlines — otherwise
@@ -2329,6 +2337,88 @@ def _resolve_columns(dax, table_name, column_table_map, measure_names,
         else:
             resolved.append(_RE_COLUMN_RESOLVE.sub(resolve_column, part))
     return ''.join(resolved)
+
+
+# ── Phase 5h: Wrap bare column refs in measures ──────────────────────────────
+
+# Functions that provide row context or accept bare column arguments.
+# A bare 'Table'[Col] inside any of these is valid — do NOT wrap.
+_MEASURE_AGG_RE = re.compile(
+    r'\b(?:SUM|AVERAGE|MIN|MAX|COUNT|COUNTA|COUNTBLANK|DISTINCTCOUNT|'
+    r'SUMX|AVERAGEX|MINX|MAXX|COUNTX|COUNTAX|CALCULATE|FILTER|'
+    r'LOOKUPVALUE|RELATED|RANKX|PERCENTILE|MEDIAN|STDEV|VAR|'
+    r'ALLEXCEPT|REMOVEFILTERS|ALL|VALUES|HASONEVALUE|SELECTEDVALUE|'
+    r'EARLIER|EARLIEST|CONCATENATEX|TOPN|ADDCOLUMNS|SUMMARIZE|'
+    r'GENERATE|GENERATEALL|TREATAS|USERELATIONSHIP|CROSSFILTER|'
+    r'TOTALYTD|TOTALQTD|TOTALMTD|DATESYTD|DATESMTD|DATESQTD|'
+    r'DATEADD|DATESBETWEEN|DATESINPERIOD|SAMEPERIODLASTYEAR|'
+    r'PREVIOUSDAY|PREVIOUSMONTH|PREVIOUSQUARTER|PREVIOUSYEAR|'
+    r'NEXTDAY|NEXTMONTH|NEXTQUARTER|NEXTYEAR|PARALLELPERIOD|'
+    r'STARTOFMONTH|STARTOFQUARTER|STARTOFYEAR|'
+    r'ENDOFMONTH|ENDOFQUARTER|ENDOFYEAR|'
+    r'FIRSTDATE|LASTDATE|FIRSTNONBLANK|LASTNONBLANK|'
+    r'CLOSINGBALANCEMONTH|CLOSINGBALANCEQUARTER|CLOSINGBALANCEYEAR|'
+    r'OPENINGBALANCEMONTH|OPENINGBALANCEQUARTER|OPENINGBALANCEYEAR|'
+    r'COUNTROWS|DIVIDE|DISTINCTCOUNTNOBLANK|COMBINEVALUES|CONTAINS|'
+    r'PATH|PATHITEM|SELECTCOLUMNS)\s*\(',
+    re.IGNORECASE
+)
+_MEASURE_TABLE_COL_RE = re.compile(r"'((?:[^']|'')+)'\[([^\]]+)\]")
+
+
+def _wrap_bare_column_refs_in_measure(dax, table_name, table_columns, measure_names):
+    """Wrap bare same-table column refs in MAX() for measure context.
+
+    In a measure, a bare 'Table'[Col] that is not inside an aggregation or
+    iterator function causes PBI to error with 'single value cannot be
+    determined'.  This wraps such refs in MAX(), which is safe for
+    LOD-derived calculated columns (they have one value per filter context).
+
+    Only wraps refs that:
+    - Point to the current table
+    - Refer to a known column (not a measure)
+    - Are NOT already inside an aggregation/iterator/time-intel function
+    """
+    refs = list(_MEASURE_TABLE_COL_RE.finditer(dax))
+    if not refs:
+        return dax
+
+    result = dax
+    for ref_match in reversed(refs):
+        ref_table = ref_match.group(1).replace("''", "'")
+        ref_col = ref_match.group(2)
+
+        if ref_table != table_name:
+            continue
+        if ref_col in measure_names:
+            continue
+        if ref_col not in table_columns:
+            continue
+
+        # Backward paren walk to check if inside any aggregation function
+        prefix = result[:ref_match.start()]
+        inside_agg = False
+        depth = 0
+        for i in range(len(prefix) - 1, -1, -1):
+            if prefix[i] == ')':
+                depth += 1
+            elif prefix[i] == '(':
+                if depth > 0:
+                    depth -= 1
+                else:
+                    func_prefix = prefix[:i].rstrip()
+                    if _MEASURE_AGG_RE.search(func_prefix + '('):
+                        inside_agg = True
+                        break
+        if inside_agg:
+            continue
+
+        ref_text = ref_match.group(0)
+        result = (result[:ref_match.start()] +
+                  f'MAX({ref_text})' +
+                  result[ref_match.end():])
+
+    return result
 
 
 # ── Phase 5b: AGG(IF) → AGGX ─────────────────────────────────────────────────

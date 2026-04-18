@@ -2219,6 +2219,9 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
                 result_table["columns"][existing_idx] = bim_calc_col
             else:
                 result_table["columns"].append(bim_calc_col)
+            # Track the calc column name so subsequent measures can detect
+            # bare column refs at conversion time (Phase 5h).
+            _this_table_columns.add(caption)
         else:
             # DAX Measure
             bim_measure = {
