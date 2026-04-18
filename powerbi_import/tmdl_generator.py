@@ -2181,8 +2181,18 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
             if m_expr is not None:
                 m_type = _DAX_TO_M_TYPE.get(
                     map_tableau_to_powerbi_type(datatype), 'type text')
-                m_calc_steps.append(
-                    m_transform_add_column(caption, f'each {m_expr}', m_type))
+                new_step = m_transform_add_column(caption, f'each {m_expr}', m_type)
+                # Dedup: replace existing M step for the same column name
+                existing_m_idx = None
+                for mi, (sn, _) in enumerate(m_calc_steps):
+                    sm2 = re.match(r'#"Added (.+)"', sn)
+                    if sm2 and sm2.group(1).lower() == caption.lower():
+                        existing_m_idx = mi
+                        break
+                if existing_m_idx is not None:
+                    m_calc_steps[existing_m_idx] = new_step
+                else:
+                    m_calc_steps.append(new_step)
                 bim_calc_col = {
                     "name": caption,
                     "dataType": map_tableau_to_powerbi_type(datatype),
