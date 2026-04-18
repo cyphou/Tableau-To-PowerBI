@@ -1244,8 +1244,10 @@ def _collect_semantic_context(datasources, extra_objects):
         role = calc.get('role', 'measure')
         formula = calc.get('formula', '').strip()
         has_agg = bool(_agg_pat_mn.search(formula)) if formula else False
-        has_col_refs = bool(re.search(r'\[', formula)) if formula else False
-        is_calc_col = (role == 'dimension' and not has_agg) or (role == 'measure' and not has_agg and has_col_refs)
+        # Tableau role='measure' means the formula is aggregated in view context
+        # (implicit SUM/COUNT).  Only dimension-role calcs without aggregation
+        # are calculated columns; measure-role calcs are always measures.
+        is_calc_col = (role == 'dimension' and not has_agg)
         if not is_calc_col:
             measure_names.add(caption)
     measure_names.update(param_map.values())
@@ -1997,11 +1999,10 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
                 _pc_has_col = True
                 break
         # Dimension-role calcs without aggregation → pre-classify as calc columns.
-        # The "references only measures" fixup is applied in the loop below
-        # to propagate reclassifications through dependency chains.
+        # Measure-role calcs are always measures (Tableau's role='measure'
+        # means the formula is aggregated in view context — implicit SUM).
         _pc_is_cc = (not _pc_is_literal) and (
-            (_pc_role == 'dimension' and not _pc_has_agg) or
-            (_pc_role == 'measure' and not _pc_has_agg and _pc_has_col)
+            _pc_role == 'dimension' and not _pc_has_agg
         )
         if _pc_is_cc:
             prelim_calc_col_captions.add(_pc_caption)
@@ -2098,8 +2099,7 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
                 break
 
         is_calc_col = (not is_literal) and (
-            (role == 'dimension' and not has_aggregation) or
-            (role == 'measure' and not has_aggregation and has_column_refs)
+            role == 'dimension' and not has_aggregation
         )
 
         # If a dimension-role calc references ONLY other measures/calcs
