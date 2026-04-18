@@ -2266,6 +2266,33 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
             if not existing_measure:
                 result_table["measures"].append(bim_measure)
 
+    # ── Post-processing: fix SUM/AVG/COUNT/MIN/MAX of measure references ──
+    # In DAX, SUM([X]) only accepts a column reference.  If [X] resolves to
+    # a measure name, the aggregation wrapper must be removed because the
+    # measure already aggregates internally.
+    _all_measure_names = {m["name"] for m in result_table["measures"]}
+    _AGG_OF_MEASURE_RE = re.compile(
+        r'\b(SUM|AVERAGE|COUNT|MIN|MAX)\(\s*\[([^\]]+)\]\s*\)',
+        re.IGNORECASE,
+    )
+    for meas in result_table["measures"]:
+        expr = meas.get("expression", "")
+        if not expr:
+            continue
+        new_expr = expr
+        for m_agg in _AGG_OF_MEASURE_RE.finditer(expr):
+            agg_fn = m_agg.group(1)
+            ref_name = m_agg.group(2)
+            if ref_name in _all_measure_names:
+                # Replace SUM([measure]) with just [measure]
+                new_expr = new_expr.replace(m_agg.group(0), f'[{ref_name}]')
+                logger.debug(
+                    "Unwrapped %s([%s]) → [%s] (measure reference, not column)",
+                    agg_fn, ref_name, ref_name,
+                )
+        if new_expr != expr:
+            meas["expression"] = new_expr
+
     # Inject accumulated M steps into the partition (replaces DAX calc cols)
     if m_calc_steps:
         _inject_m_steps_into_partition(result_table, m_calc_steps)
