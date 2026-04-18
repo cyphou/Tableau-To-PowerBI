@@ -685,9 +685,12 @@ def _self_heal_model(model, recovery=None):
                         if depth > 0:
                             depth -= 1
                         else:
-                            # Found an unclosed paren — check function name
+                            # Found an unclosed paren — extract the
+                            # function name immediately before '(' and
+                            # check ONLY that name (not the entire prefix).
                             func_prefix = prefix[:i].rstrip()
-                            if _HEAL_AGG_RE.search(func_prefix + '('):
+                            fname_m = re.search(r'(\w+)\s*$', func_prefix)
+                            if fname_m and _HEAL_AGG_RE.search(fname_m.group(1) + '('):
                                 inside_agg = True
                                 break
                 if inside_agg:

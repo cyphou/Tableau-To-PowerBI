@@ -1179,9 +1179,12 @@ class ArtifactValidator:
                             if depth > 0:
                                 depth -= 1
                             else:
-                                # Found an unclosed paren — check function name
+                                # Found an unclosed paren — extract the
+                                # function name immediately before '(' and
+                                # check ONLY that name (not the entire prefix).
                                 func_prefix = prefix[:i].rstrip()
-                                if cls._RE_AGGREGATION_FUNCS.search(func_prefix + '('):
+                                fname_m = re.search(r'(\w+)\s*$', func_prefix)
+                                if fname_m and cls._RE_AGGREGATION_FUNCS.search(fname_m.group(1) + '('):
                                     inside_agg = True
                                     break
                                 # Not an aggregation — keep walking upward

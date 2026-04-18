@@ -2406,8 +2406,11 @@ def _wrap_bare_column_refs_in_measure(dax, table_name, table_columns, measure_na
                 if depth > 0:
                     depth -= 1
                 else:
+                    # Extract function name immediately before '(' —
+                    # check ONLY that name, not the entire prefix.
                     func_prefix = prefix[:i].rstrip()
-                    if _MEASURE_AGG_RE.search(func_prefix + '('):
+                    fname_m = re.search(r'(\w+)\s*$', func_prefix)
+                    if fname_m and _MEASURE_AGG_RE.search(fname_m.group(1) + '('):
                         inside_agg = True
                         break
         if inside_agg:
