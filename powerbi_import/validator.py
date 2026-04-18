@@ -947,7 +947,10 @@ class ArtifactValidator:
         re.IGNORECASE
     )
 
-    # Regex to detect bare column references in measures (not inside aggregation)
+    # Regex to detect aggregation/iterator functions that provide row context
+    # for bare column references.  Scalar functions (IF, SWITCH, LEFT, etc.)
+    # are intentionally excluded — they do NOT aggregate and a bare column
+    # reference inside them still causes "single value cannot be determined".
     _RE_AGGREGATION_FUNCS = re.compile(
         r'\b(?:SUM|AVERAGE|MIN|MAX|COUNT|COUNTA|COUNTBLANK|DISTINCTCOUNT|'
         r'SUMX|AVERAGEX|MINX|MAXX|COUNTX|COUNTAX|CALCULATE|FILTER|'
@@ -955,10 +958,17 @@ class ArtifactValidator:
         r'ALLEXCEPT|REMOVEFILTERS|ALL|VALUES|HASONEVALUE|SELECTEDVALUE|'
         r'EARLIER|EARLIEST|CONCATENATEX|TOPN|ADDCOLUMNS|SUMMARIZE|'
         r'GENERATE|GENERATEALL|TREATAS|USERELATIONSHIP|CROSSFILTER|'
-        r'MAXX|SWITCH|IF|LEFT|RIGHT|MID|LEN|UPPER|LOWER|FORMAT|'
-        r'DATE|YEAR|MONTH|DAY|DATEDIFF|DATEADD|TODAY|NOW|'
-        r'INT|VALUE|ISBLANK|IFERROR|NOT|AND|OR|IN|'
-        r'CONTAINSSTRING|SEARCH|FIND)\s*\(',
+        r'TOTALYTD|TOTALQTD|TOTALMTD|DATESYTD|DATESMTD|DATESQTD|'
+        r'DATEADD|DATESBETWEEN|DATESINPERIOD|SAMEPERIODLASTYEAR|'
+        r'PREVIOUSDAY|PREVIOUSMONTH|PREVIOUSQUARTER|PREVIOUSYEAR|'
+        r'NEXTDAY|NEXTMONTH|NEXTQUARTER|NEXTYEAR|PARALLELPERIOD|'
+        r'STARTOFMONTH|STARTOFQUARTER|STARTOFYEAR|'
+        r'ENDOFMONTH|ENDOFQUARTER|ENDOFYEAR|'
+        r'FIRSTDATE|LASTDATE|FIRSTNONBLANK|LASTNONBLANK|'
+        r'CLOSINGBALANCEMONTH|CLOSINGBALANCEQUARTER|CLOSINGBALANCEYEAR|'
+        r'OPENINGBALANCEMONTH|OPENINGBALANCEQUARTER|OPENINGBALANCEYEAR|'
+        r'COUNTROWS|DIVIDE|DISTINCTCOUNTNOBLANK|COMBINEVALUES|CONTAINS|'
+        r'PATH|PATHITEM|SELECTCOLUMNS)\s*\(',
         re.IGNORECASE
     )
 
@@ -1156,10 +1166,11 @@ class ArtifactValidator:
                     ref_start = ref_match.start()
                     prefix = formula[:ref_start]
 
-                    # Count unclosed function calls before this reference
-                    # If the column is inside an aggregation function, it's OK
+                    # Walk backwards through ALL unclosed parentheses
+                    # to check if ANY enclosing function is an aggregation.
+                    # E.g. SUMX('T', IF('T'[Col] > 0, ...)) — IF is nearest
+                    # but SUMX provides the row context.
                     inside_agg = False
-                    # Walk backwards to find the nearest function call
                     depth = 0
                     for i in range(len(prefix) - 1, -1, -1):
                         if prefix[i] == ')':
@@ -1168,11 +1179,12 @@ class ArtifactValidator:
                             if depth > 0:
                                 depth -= 1
                             else:
-                                # Found the opening paren — check function name
+                                # Found an unclosed paren — check function name
                                 func_prefix = prefix[:i].rstrip()
                                 if cls._RE_AGGREGATION_FUNCS.search(func_prefix + '('):
                                     inside_agg = True
-                                break
+                                    break
+                                # Not an aggregation — keep walking upward
 
                     if not inside_agg:
                         issues.append(

@@ -614,7 +614,106 @@ def _self_heal_model(model, recovery=None):
                             action="Deactivated to break cycle",
                             severity='info')
 
-    # 6. M query self-repair — ensure all M partitions have try/otherwise wrapping
+    # 6. Wrap bare column references in measures with MAX()
+    #    When a measure references a calculated column from the same table
+    #    without aggregation (e.g. inside IF, SWITCH), PBI errors with
+    #    "single value cannot be determined".  Wrapping in MAX() is safe
+    #    because LOD-derived calc columns have one value per filter context.
+    _HEAL_AGG_RE = re.compile(
+        r'\b(?:SUM|AVERAGE|MIN|MAX|COUNT|COUNTA|COUNTBLANK|DISTINCTCOUNT|'
+        r'SUMX|AVERAGEX|MINX|MAXX|COUNTX|COUNTAX|CALCULATE|FILTER|'
+        r'LOOKUPVALUE|RELATED|RANKX|PERCENTILE|MEDIAN|STDEV|VAR|'
+        r'ALLEXCEPT|REMOVEFILTERS|ALL|VALUES|HASONEVALUE|SELECTEDVALUE|'
+        r'EARLIER|EARLIEST|CONCATENATEX|TOPN|ADDCOLUMNS|SUMMARIZE|'
+        r'GENERATE|GENERATEALL|TREATAS|USERELATIONSHIP|CROSSFILTER|'
+        r'TOTALYTD|TOTALQTD|TOTALMTD|DATESYTD|DATESMTD|DATESQTD|'
+        r'DATEADD|DATESBETWEEN|DATESINPERIOD|SAMEPERIODLASTYEAR|'
+        r'PREVIOUSDAY|PREVIOUSMONTH|PREVIOUSQUARTER|PREVIOUSYEAR|'
+        r'NEXTDAY|NEXTMONTH|NEXTQUARTER|NEXTYEAR|PARALLELPERIOD|'
+        r'STARTOFMONTH|STARTOFQUARTER|STARTOFYEAR|'
+        r'ENDOFMONTH|ENDOFQUARTER|ENDOFYEAR|'
+        r'FIRSTDATE|LASTDATE|FIRSTNONBLANK|LASTNONBLANK|'
+        r'CLOSINGBALANCEMONTH|CLOSINGBALANCEQUARTER|CLOSINGBALANCEYEAR|'
+        r'OPENINGBALANCEMONTH|OPENINGBALANCEQUARTER|OPENINGBALANCEYEAR|'
+        r'COUNTROWS|DIVIDE|DISTINCTCOUNTNOBLANK|COMBINEVALUES|CONTAINS|'
+        r'PATH|PATHITEM|SELECTCOLUMNS)\s*\(',
+        re.IGNORECASE
+    )
+    _TABLE_COL_RE = re.compile(r"'((?:[^']|'')+)'\[([^\]]+)\]")
+
+    for t in model.get('model', {}).get('tables', []):
+        tname = t.get('name', '')
+        col_names = {c.get('name', '') for c in t.get('columns', []) if c.get('name')}
+        local_measures = {m.get('name', '') for m in t.get('measures', []) if m.get('name')}
+
+        for measure in t.get('measures', []):
+            expr = measure.get('expression', '')
+            if not expr:
+                continue
+            # Find all 'Table'[Column] references in the expression
+            refs = list(_TABLE_COL_RE.finditer(expr))
+            if not refs:
+                continue
+
+            # Process refs in reverse order to preserve positions
+            new_expr = expr
+            wrapped_any = False
+            for ref_match in reversed(refs):
+                ref_table = ref_match.group(1).replace("''", "'")
+                ref_col = ref_match.group(2)
+
+                # Only wrap refs to columns (not measures) in same table
+                if ref_table != tname:
+                    continue
+                if ref_col in local_measures:
+                    continue
+                if ref_col not in col_names:
+                    continue
+
+                # Backward paren walk: check if ANY enclosing function is an
+                # aggregation/iterator/time-intelligence function.
+                # Tracks paren depth to correctly skip sibling clauses.
+                # E.g. SUMX('T', IF('T'[Col]>0, ...)) — IF is nearest paren
+                # but SUMX provides row context at a higher nesting level.
+                prefix = new_expr[:ref_match.start()]
+                inside_agg = False
+                depth = 0
+                for i in range(len(prefix) - 1, -1, -1):
+                    if prefix[i] == ')':
+                        depth += 1
+                    elif prefix[i] == '(':
+                        if depth > 0:
+                            depth -= 1
+                        else:
+                            # Found an unclosed paren — check function name
+                            func_prefix = prefix[:i].rstrip()
+                            if _HEAL_AGG_RE.search(func_prefix + '('):
+                                inside_agg = True
+                                break
+                if inside_agg:
+                    continue
+
+                # Wrap: 'Table'[Col] → MAX('Table'[Col])
+                ref_text = ref_match.group(0)
+                new_expr = (new_expr[:ref_match.start()] +
+                            f'MAX({ref_text})' +
+                            new_expr[ref_match.end():])
+                wrapped_any = True
+
+            if wrapped_any:
+                measure['expression'] = new_expr
+                repairs += 1
+                mname = measure.get('name', '?')
+                print(f"  ⚕ Self-heal: Wrapped bare column refs in measure '{mname}' with MAX()")
+                if recovery:
+                    recovery.record('tmdl', 'bare_column_ref_in_measure',
+                                    item_name=mname,
+                                    description=f"Measure references column without aggregation",
+                                    action="Wrapped bare column references in MAX()",
+                                    severity='info',
+                                    follow_up=f"Review measure '{mname}' — MAX() may not be the best aggregation")
+
+    # 7. M query self-repair — ensure all M partitions have try/otherwise wrapping
     for t in model.get('model', {}).get('tables', []):
         tname = t.get('name', '')
         for part in t.get('partitions', []):

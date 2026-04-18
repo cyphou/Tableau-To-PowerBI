@@ -1728,6 +1728,37 @@ class TestPBIDesktopValidation(unittest.TestCase):
         self.assertTrue(result['passed'])
         self.assertEqual(len(result['errors']), 0)
 
+    def test_validate_measure_column_context_bare_ref_inside_if(self):
+        """Bare column ref inside IF() is flagged (IF is not an aggregation)."""
+        proj = self._create_model({
+            'Sales': (
+                "table Sales\n"
+                "\tcolumn Id\n"
+                "\tcolumn Score\n"
+                "\tmeasure 'Rating' = IF('Sales'[Score] > 3, \"High\", \"Low\")\n"
+            ),
+        })
+        sm_dir = os.path.join(proj, 'Test.SemanticModel')
+        issues = ArtifactValidator.validate_measure_column_context(sm_dir)
+        self.assertTrue(any('without aggregation' in i for i in issues),
+                        f"Expected bare ref warning inside IF, got: {issues}")
+
+    def test_validate_measure_column_context_ref_inside_sumx_if(self):
+        """Column ref inside SUMX(T, IF(T[Col]...)) is NOT flagged."""
+        proj = self._create_model({
+            'Sales': (
+                "table Sales\n"
+                "\tcolumn Id\n"
+                "\tcolumn Amount\n"
+                "\tcolumn Flag\n"
+                "\tmeasure 'Conditional Sum' = SUMX('Sales', IF('Sales'[Flag], 'Sales'[Amount], 0))\n"
+            ),
+        })
+        sm_dir = os.path.join(proj, 'Test.SemanticModel')
+        issues = ArtifactValidator.validate_measure_column_context(sm_dir)
+        self.assertEqual(len(issues), 0,
+                         f"Expected no warnings (SUMX provides row context), got: {issues}")
+
 
 class TestParameterControlSlicerSkip(unittest.TestCase):
     """Parameter control slicers referencing non-existent parameter tables
