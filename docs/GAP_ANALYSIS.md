@@ -448,7 +448,7 @@
 | **Test Coverage** | **6,831 tests across 141 files** (+conftest.py), **27 workbooks at 100% fidelity** (10 samples + 17 real-world), **layout regression**, **performance regression**, **Fabric-native**, **DAX optimizer**, **cross-platform validation** | 55 conditional skips (sample availability) | — | Low |
 | **CI/CD** | **5-stage pipeline** (lint+ruff, test, **strict validate+twbx**, **staging deploy**, production deploy), **pip caching**, **PyPI auto-publish workflow**, **plugin system**, **REST API server** | Windows CI, PR diff preview | — | Medium |
 | **Deployment** | **Fabric REST API**, **PBI Service REST API**, **bundle deployer**, **multi-tenant**, **gateway config**, **rolling deployment** (canary + rollback), **.pbix packager** | — | — | Low |
-| **Documentation** | **19 docs** + copilot instructions + PPTX presentation, **auto-generated API docs** (54 modules), **8-agent specialization model** | — | — | Low |
+| **Documentation** | **19 docs** + copilot instructions + PPTX presentation, **auto-generated API docs** (54 modules), **12-agent specialization model** | — | — | Low |
 | **Config** | 11 env vars, 3 environments, **settings validation**, **dry-run**, **calendar/culture CLI**, **.env.example**, **config.json** | — | — | Low |
 | **Security** | **Path validation** (null byte, traversal, extension whitelist), **ZIP slip defense**, **XXE protection**, **credential detection/redaction** (10 patterns), **M query credential scrubbing**, **template substitution sanitization**, **rate limiting** (API server), **concurrent job cap**, **job TTL cleanup** | — | — | Low |
 

@@ -13,7 +13,7 @@ You are the **DAX** agent for the Tableau to Power BI migration project. You are
 - `tableau_export/dax_converter.py` — 180+ Tableau → DAX formula conversions (the raw translation engine)
 - `powerbi_import/dax_optimizer.py` — DAX optimizer engine (AST-based rewriter: nested IF→SWITCH, ISBLANK→COALESCE, constant folding, SUMX simplification, measure dependency DAG, Time Intelligence auto-injection)
 
-### DAX Post-Processing in `tmdl_generator.py` (Shared Ownership with @generator)
+### DAX Post-Processing in `tmdl_generator.py` (Shared Ownership with @semantic)
 You co-own the following **DAX-specific post-processing blocks** in `powerbi_import/tmdl_generator.py`:
 - **SUM-of-measure unwrapping** — detects `SUM([MeasureName])` and unwraps to `[MeasureName]` when the argument is a measure (not a column)
 - **Bare cross-table column ref wrapping** — detects `'Table'[Column]` in measures at parenthesis depth 0 and wraps in `SUM()` (columns inside iterators at depth>0 are left as row-level refs)

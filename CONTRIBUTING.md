@@ -42,7 +42,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for a detailed architecture ove
 ```
 tableau_export/   → Extraction layer (Tableau XML → JSON)
 powerbi_import/   → Generation layer (JSON → .pbip project)
-tests/            → Unit and integration tests (6,831 tests across 141 files)
+tests/            → Unit and integration tests (7,072 tests across 141+ files)
 docs/             → Documentation
 examples/         → Sample Tableau workbooks
 artifacts/        → Migration output

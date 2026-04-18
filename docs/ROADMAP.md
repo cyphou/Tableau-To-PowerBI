@@ -1,8 +1,8 @@
 # Development Roadmap — v22.0.0 → v29.0.0
 
 **Date:** 2026-04-02
-**Baseline:** v28.2.0 — 6,988 tests across 141+ test files, 0 failures
-**Current state:** v28.2.0 shipped (Sprints 108–111 + 118–119 + standalone prep pipeline). Migration Confidence Score: 91.9/100 (Grade A).
+**Baseline:** v28.4.0 — 7,072 tests across 141+ test files, 0 failures
+**Current state:** v28.4.0 shipped (Sprints 108–111 + 118–119 + standalone prep pipeline + 12-agent model + aggregation-aware SUM wrapping). Migration Confidence Score: 91.9/100 (Grade A).
 
 ---
 
@@ -23,6 +23,8 @@ The migration engine is **feature-complete for core single-workbook scenarios**.
 | **v28.1.0** | Copilot Readiness & Semantic Descriptions | Sprints 118–119 | ✅ Shipped |
 | **v28.1.1** | M Quoting, Bracket Stripping, Bug Fixes | Hotfix | ✅ Shipped |
 | **v28.2.0** | Standalone Prep Flow Pipeline & Documentation | — | ✅ Shipped |
+| **v28.3.0** | 12-Agent Specialization Model | — | ✅ Shipped |
+| **v28.4.0** | Aggregation-Aware Cross-Table SUM Wrapping | — | ✅ Shipped |
 | **v29.0.0** | Migration Completeness & Enterprise Operations | Sprints 112–117, 120–127 | Planned |
 
 ---

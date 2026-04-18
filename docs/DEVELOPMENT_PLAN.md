@@ -1,11 +1,31 @@
 # Development Plan — Tableau to Power BI Migration Tool
 
-**Version:** v28.2.0  
-**Date:** 2026-04-02  
-**Current state:** v28.2.0 shipped — **6,988 tests** across 141+ test files (+conftest.py), 0 failures  
-**Previous baseline:** v3.5.0 — 887 → v4.0.0 — 1,387 → v5.0.0 — 1,543 → v5.1.0 — 1,595 → v5.5.0 — 1,777 → v6.0.0 — 1,889 → v6.1.0 — 1,997 → v7.0.0 — 2,057 → Sprint 21 — 2,066 → v8.0.0 — 2,275 → Sprint 27 — 2,542 → Sprint 28 — 2,616 → Sprint 29 — 2,666 → v9.0.0 — 3,196 → v10.0.0 — 3,342 → v11.0.0 — 3,459 → v12.0.0 — 3,729 → v13.0.0 — 3,847 → v14.0.0 — 3,925 → v15.0.0 — 3,988 → v15.0.1 — 3,996 → v16.0.0 — 4,131 → v17.0.0 — 4,219 → Sprint 63 — 4,762 → Sprint 64 — 4,813 → v19.0.0 — 4,923 → v21.0.0 — 5,170 → v22.0.0 — 5,683 → v23.0.0 — 5,782 → v24.0.0 — 5,927 → v25.0.0 — 6,192 → Sprint 97 — 6,251 → Sprint 98 — 6,263 → v26.0.0 — 6,400 → v27.0.0 — 6,454 → v27.1.0 — 6,532 → v28.0.0 — 6,714 → v28.1.0 — 6,831 → v28.1.1 — 6,831 → **v28.2.0 — 6,988**
+**Version:** v28.4.0  
+**Date:** 2026-04-18  
+**Current state:** v28.4.0 shipped — **7,072 tests** across 141+ test files (+conftest.py), 0 failures  
+**Previous baseline:** v3.5.0 — 887 → v4.0.0 — 1,387 → v5.0.0 — 1,543 → v5.1.0 — 1,595 → v5.5.0 — 1,777 → v6.0.0 — 1,889 → v6.1.0 — 1,997 → v7.0.0 — 2,057 → Sprint 21 — 2,066 → v8.0.0 — 2,275 → Sprint 27 — 2,542 → Sprint 28 — 2,616 → Sprint 29 — 2,666 → v9.0.0 — 3,196 → v10.0.0 — 3,342 → v11.0.0 — 3,459 → v12.0.0 — 3,729 → v13.0.0 — 3,847 → v14.0.0 — 3,925 → v15.0.0 — 3,988 → v15.0.1 — 3,996 → v16.0.0 — 4,131 → v17.0.0 — 4,219 → Sprint 63 — 4,762 → Sprint 64 — 4,813 → v19.0.0 — 4,923 → v21.0.0 — 5,170 → v22.0.0 — 5,683 → v23.0.0 — 5,782 → v24.0.0 — 5,927 → v25.0.0 — 6,192 → Sprint 97 — 6,251 → Sprint 98 — 6,263 → v26.0.0 — 6,400 → v27.0.0 — 6,454 → v27.1.0 — 6,532 → v28.0.0 — 6,714 → v28.1.0 — 6,831 → v28.1.1 — 6,831 → v28.2.0 — 6,988 → v28.3.0 — 7,072 → **v28.4.0 — 7,072**
 
 **Next roadmap:** See [ROADMAP.md](ROADMAP.md) for v29.0.0 (Sprints 112–117, 120–127) — Migration Completeness & Enterprise Operations
+
+---
+
+## v28.4.0 — Aggregation-Aware Cross-Table SUM Wrapping ✅ SHIPPED
+
+Fixes cascading DAX errors in PBI Desktop caused by bare column references inside scalar functions (IF, CONVERT, NOT, SWITCH). Introduces `_COLUMN_CONTEXT_FUNCS` frozenset (40+ functions) and `func_stack` tracking to only suppress SUM-wrapping inside known column-context functions like FILTER, SUMX, RELATED — while still wrapping refs inside scalar functions that don't provide row context.
+
+| Metric | Target | Actual |
+|--------|--------|--------|
+| Tests | 7,072 | **7,072** |
+
+---
+
+## v28.3.0 — 12-Agent Specialization Model ✅ SHIPPED
+
+Splits @converter into @dax (DAX formula correctness, 180+ conversions, optimization) and @wiring (DAX↔M bridge, classification, M generation). Splits @generator into @semantic (TMDL model, relationships, Calendar, RLS, hierarchies) and @visual (PBIR v4.0 report, 118+ visuals, slicers, filters, bookmarks). @converter and @generator demoted to coordination layers. Full agent architecture documented in `docs/AGENTS.md`.
+
+| Metric | Target | Actual |
+|--------|--------|--------|
+| Tests | 7,072 | **7,072** |
 
 ---
 
@@ -50,26 +70,30 @@ See [ROADMAP.md](ROADMAP.md) for full sprint details (Sprints 108–111).
 
 | Metric | Target | Actual |
 |--------|--------|--------|
-| Tests | 6,900+ | **6,714** (Phase 1) → **6,988** (v28.2.0) |
+| Tests | 6,900+ | **6,714** (Phase 1) → **6,988** (v28.2.0) → **7,072** (v28.4.0) |
 
 ---
 
-## 8-Agent Architecture
+## 12-Agent Architecture
 
-This project uses an **8-agent specialization model** with scoped domain knowledge and file ownership. See [AGENTS.md](AGENTS.md) for the full architecture diagram, data flow, and handoff protocol.
+This project uses a **12-agent specialization model** with scoped domain knowledge and file ownership. See [AGENTS.md](AGENTS.md) for the full architecture diagram, data flow, and handoff protocol.
 
 | Agent | Scope | Key Files |
 |-------|-------|-----------|
-| **@orchestrator** | Pipeline, CLI, batch, wizard | `migrate.py`, `import_to_powerbi.py`, `wizard.py`, `progress.py` |
+| **@orchestrator** | Pipeline, CLI, batch, wizard | `migrate.py`, `import_to_powerbi.py`, `wizard.py`, `progress.py`, `api_server.py` |
 | **@extractor** | Tableau XML parsing, Hyper, Prep, Server API | `tableau_export/*.py` |
-| **@converter** | Tableau→DAX (180+), Power Query M (43 transforms) | `dax_converter.py`, `m_query_builder.py` |
-| **@generator** | TMDL, PBIR v4.0, visuals, Calendar, RLS | `tmdl_generator.py`, `pbip_generator.py`, `visual_generator.py` |
-| **@assessor** | Readiness scoring, strategy, diff reports | `assessment.py`, `server_assessment.py`, `strategy_advisor.py` |
+| **@dax** | DAX formula correctness, conversion (180+), optimization | `dax_converter.py`, `dax_optimizer.py` + DAX blocks in `tmdl_generator.py` |
+| **@wiring** | DAX↔M bridge, classification, M generation (43 transforms) | `m_query_builder.py`, `calc_column_utils.py` + M functions in `tmdl_generator.py` |
+| **@semantic** | TMDL model, relationships, Calendar, RLS, hierarchies, parameters | `tmdl_generator.py` (structural), `fabric_semantic_model_generator.py` |
+| **@visual** | PBIR v4.0, visual containers, slicers, filters, bookmarks, themes | `pbip_generator.py`, `visual_generator.py` |
+| **@converter** | _(Coordination)_ Cross-cutting DAX+M tasks | Delegates to @dax and @wiring |
+| **@generator** | _(Coordination)_ Fabric-native generation | Delegates to @semantic and @visual; owns `fabric_project_generator.py` |
+| **@assessor** | Readiness scoring, strategy, diff reports, prep lineage | `assessment.py`, `server_assessment.py`, `strategy_advisor.py`, `schema_drift.py` |
 | **@merger** | Shared semantic model, fingerprint matching | `shared_model.py`, `merge_config.py` |
 | **@deployer** | Fabric/PBI deployment, auth, gateway | `deploy/*.py`, `gateway_config.py`, `telemetry.py` |
-| **@tester** | Tests (6,988+), coverage, regression | `tests/*.py` |
+| **@tester** | Tests (7,072+), coverage, regression | `tests/*.py` |
 
-**Rules:** One owner per file. Read access is universal. @tester is cross-cutting (reads all source, writes only `tests/`).
+**Rules:** One owner per file. Read access is universal. @tester is cross-cutting (reads all source, writes only `tests/`). @dax, @wiring, @semantic co-own `tmdl_generator.py` functions.
 
 ### Agent Ownership Matrix (Sprints 54–100)
 
