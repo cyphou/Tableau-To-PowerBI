@@ -1684,18 +1684,14 @@ class PowerBIProjectGenerator:
                     calc_id_to_caption[cname] = ccaption
 
             # Build grid layout map from zone hierarchy when available.
-            # Reserve space for the page navigator bar when multiple
-            # dashboards exist so content visuals don't overlap it.
-            nav_height = 40 if len(dashboards) > 1 else 0
-            layout_height = page_height - nav_height
             zone_hierarchy = db.get('zone_hierarchy', {})
-            layout_map = self._build_zone_layout_map(zone_hierarchy, page_width, layout_height)
+            layout_map = self._build_zone_layout_map(zone_hierarchy, page_width, page_height)
 
             # Compute scale factor from Tableau to Power BI pixels (fallback)
             max_x = max((o.get('position', {}).get('x', 0) + o.get('position', {}).get('w', 0) for o in db_objects), default=page_width)
-            max_y = max((o.get('position', {}).get('y', 0) + o.get('position', {}).get('h', 0) for o in db_objects), default=layout_height)
+            max_y = max((o.get('position', {}).get('y', 0) + o.get('position', {}).get('h', 0) for o in db_objects), default=page_height)
             scale_x = page_width / max(max_x, 1)
-            scale_y = layout_height / max(max_y, 1)
+            scale_y = page_height / max(max_y, 1)
 
             for obj in db_objects:
                 # Resolve position: grid layout map (preferred) or proportional (fallback)
@@ -1763,10 +1759,7 @@ class PowerBIProjectGenerator:
                     visual_count, converted_objects)
                 visual_count += 1
 
-            # Add page navigator when multiple dashboards exist (Tableau tab strip)
-            if len(dashboards) > 1:
-                self._create_page_navigator(visuals_dir, page_width, page_height, visual_count)
-                visual_count += 1
+            # Power BI shows page tabs natively -- no explicit navigator needed
 
             print(f"  ðŸ“Š Page '{page_display_name}': {visual_count} visuals created")
 
