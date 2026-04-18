@@ -1,5 +1,34 @@
 # Changelog
 
+## v28.3.0 — Slicer Dual-Label Fix, Post-Migration Autoplay & Fidelity Improvements
+
+### Slicer Dual-Label Fix (`pbip_generator.py`) ✅
+- **Fixed duplicate slicer labels**: Slicers previously showed both the visual title (container header) and the slicer's built-in header, both displaying the field name. Now `objects.header.show` is set to `false` — the visual container title alone provides the label.
+- Affects all slicer creation: filter controls, parameter controls, and pages shelf slicers.
+
+### Post-Migration Autoplay (`scripts/autoplay.py`, `migrate.py`) ✅
+- **New `--autoplay` CLI flag**: Runs 5 automated post-migration validation steps after generation:
+  1. Open `.pbip` in Power BI Desktop (or print path)
+  2. Scan M partitions for placeholder connection strings
+  3. Validate DAX measures (syntax, LOOKUPVALUE ambiguity, measure context)
+  4. Check relationships (circular, orphan, missing columns)
+  5. Fidelity comparison (Tableau vs PBI field coverage)
+- **New `--autoplay-open` flag**: Auto-opens the `.pbip` file in PBI Desktop.
+- **JSON output**: `autoplay_{workbook}.json` with structured pass/warn/fail results.
+
+### Fidelity Score Improvements (`scripts/compare_migration.py`) ✅
+- **Non-functional exclusion**: Descriptions and literal-only calculations no longer penalize the fidelity score.
+- **All-columns matching**: Regular PBI columns from M transforms now count toward fidelity.
+- **TMDL regex fix**: Parses both quoted (`'Table Name'`) and unquoted identifiers for measures, columns, and calculated columns.
+
+### SUM-of-Measure DAX Fix (`tmdl_generator.py`) ✅
+- **Post-processing in `_build_table()`**: Detects `SUM([MeasureName])` (and AVG/COUNT/MIN/MAX) patterns where the argument is another measure, and unwraps to `[MeasureName]` — fixing "SUM function only accepts a column reference" errors in PBI Desktop.
+
+### Stats
+- 7,072 tests passing across 141+ test files.
+
+---
+
 ## v28.2.0 — Standalone Prep Flow Pipeline & Documentation
 
 ### Standalone Prep Flow Pipeline (`migrate.py`) ✅

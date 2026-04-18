@@ -3858,9 +3858,11 @@ class PowerBIProjectGenerator:
                     "mode": _L(f"'{pbi_mode}'")
                 }
             }],
+            # Hide the slicer's built-in header — the visual title already
+            # shows the field name, so having both creates a duplicate label.
             "header": [{
                 "properties": {
-                    "show": _L("true")
+                    "show": _L("false")
                 }
             }]
         }

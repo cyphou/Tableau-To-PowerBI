@@ -95,13 +95,16 @@ Automated migration of Tableau workbooks (.twb/.twbx) to Power BI projects (.pbi
     - `pbi_deployer.py`: PBI Service deployment orchestrator — package, upload, poll, refresh, validate, `deploy_refresh_schedule()` for PBI REST API refresh config, `deploy_rolling()` for blue/green deployment with canary validation and auto-rollback
     - `bundle_deployer.py`: Fabric bundle deployer — deploy shared model + thin reports as atomic bundle, artifact discovery, per-report error isolation, rebind, refresh, `BundleDeploymentResult`
     - `multi_tenant.py`: Multi-tenant deployment — `TenantConfig`/`MultiTenantConfig` (validate/load/save JSON), `_apply_connection_overrides()` (template substitution: `${TENANT_SERVER}`, `${TENANT_DATABASE}`, context-aware escaping, null byte blocking, placeholder validation), `deploy_multi_tenant()` orchestrator with per-tenant results
-- **tests/**: Unit and integration tests (6,988 tests across 141+ test files + conftest.py shared fixtures)
+- **tests/**: Unit and integration tests (7,072 tests across 141+ test files + conftest.py shared fixtures)
 - **docs/**: FAQ, PBI project guide, mapping reference, **ROADMAP.md** (v22–v28 development roadmap per agent)
 - **.github/workflows/ci.yml**: CI/CD pipeline (lint → test → validate → deploy)
 - **.github/workflows/publish.yml**: PyPI auto-publish workflow (tag-triggered, OIDC trusted publisher)
 - **Dockerfile**: Production-ready container image for the REST API migration server
 - **examples/plugins/**: Plugin examples (custom visual mapper, DAX post-processor, naming convention)
 - **artifacts/**: Migration output (generated .pbip projects)
+- **scripts/**: Utility scripts
+  - `autoplay.py`: Post-migration autoplay validation — 5 automated checks (open .pbip, datasource scan, DAX validation, relationship checks, fidelity comparison). `run_autoplay()`, `print_autoplay()`, JSON export
+  - `compare_migration.py`: Migration fidelity comparison — Tableau extraction vs PBI output field coverage scoring
 
 ## Technologies
 
@@ -147,6 +150,8 @@ python migrate.py path/to/workbook.twbx --qa
 python migrate.py path/to/workbook.twbx --no-optimize-dax --no-compare
 python migrate.py --prep-lineage examples/prep_portfolio/ flow1.tfl flow2.tfl
 python migrate.py --batch examples/prep_portfolio/ --output-dir /tmp/prep_output
+python migrate.py path/to/workbook.twbx --autoplay
+python migrate.py path/to/workbook.twbx --autoplay --autoplay-open
 ```
 
 ## Standalone Prep Flow Batch Mode
@@ -251,7 +256,7 @@ TWB-embedded transforms (column renames from captions) are auto-detected and inj
 - **Visuals**: worksheetReference → visual.json with query, title, labels, legend, axes
 - **Textbox**: dashboard text objects → visualType "textbox"
 - **Image**: image objects → visualType "image"
-- **Slicers**: filter_control --> visualType "slicer" (dropdown, list, between, relative date modes)
+- **Slicers**: filter_control --> visualType "slicer" (dropdown, list, between, relative date modes). Slicer header hidden (title provides the label) to avoid duplicate field names.
 - **Filters**: 3 levels (report, page, visual) with categorical and range conditions
 - **Bookmarks**: Tableau stories --> PBI bookmarks
 - **Formatting**: labels on/off, label color, legend, axes, background
