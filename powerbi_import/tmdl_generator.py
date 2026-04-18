@@ -1130,7 +1130,7 @@ def _collect_semantic_context(datasources, extra_objects):
         formula = calc.get('formula', '').strip()
         has_agg = bool(_agg_pat_mn.search(formula)) if formula else False
         has_col_refs = bool(re.search(r'\[', formula)) if formula else False
-        is_calc_col = (role == 'dimension') or (role == 'measure' and not has_agg and has_col_refs)
+        is_calc_col = (role == 'dimension' and not has_agg) or (role == 'measure' and not has_agg and has_col_refs)
         if not is_calc_col:
             measure_names.add(caption)
     measure_names.update(param_map.values())
@@ -1882,16 +1882,51 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
                 _pc_has_col = True
                 break
         # Dimension-role calcs without aggregation → pre-classify as calc columns.
-        # The "references only measures" override is NOT applied here; it will
-        # be applied in the main pass with the knowledge of which calcs are
-        # truly calc-columns.
+        # The "references only measures" fixup is applied in the loop below
+        # to propagate reclassifications through dependency chains.
         _pc_is_cc = (not _pc_is_literal) and (
-            _pc_role == 'dimension' or
+            (_pc_role == 'dimension' and not _pc_has_agg) or
             (_pc_role == 'measure' and not _pc_has_agg and _pc_has_col)
         )
         if _pc_is_cc:
             prelim_calc_col_captions.add(_pc_caption)
             prelim_calc_col_raws.add(_pc_name)
+
+    # --- Pre-classification fixup ---
+    # Iteratively remove calcs from the prelim-calc-col sets when they
+    # reference ONLY known calcs/measures that are NOT themselves in the
+    # prelim set.  This handles chains like:
+    #   Base(has_agg→measure) ← (num)(no_agg→dim) ← OOC(no_agg→dim)
+    # where (num) and OOC should cascade to measures.
+    _fixup_changed = True
+    while _fixup_changed:
+        _fixup_changed = False
+        for _pc in calculations:
+            _pc_name = _pc.get('name', '').replace('[', '').replace(']', '')
+            _pc_caption = _pc.get('caption', _pc_name)
+            if _pc_name not in prelim_calc_col_raws:
+                continue
+            _pc_formula = _pc.get('formula', '').strip()
+            _pc_refs = re.findall(r'\[([^\]]+)\]', _pc_formula)
+            _pc_only_measures = True
+            _pc_has_refs = False
+            for _r in _pc_refs:
+                if _r == _pc_caption or _r.startswith('Parameters'):
+                    continue
+                _pc_has_refs = True
+                _r_known = (_r in measure_names_ctx or
+                            _r in calc_map_ctx.values() or
+                            _r in calc_map_ctx)
+                _r_is_cc = (_r in prelim_calc_col_captions or
+                            _r in prelim_calc_col_raws)
+                if not (_r_known and not _r_is_cc):
+                    _pc_only_measures = False
+                    break
+            if _pc_only_measures and _pc_has_refs:
+                prelim_calc_col_captions.discard(_pc_caption)
+                prelim_calc_col_raws.discard(_pc_name)
+                measure_names_ctx.add(_pc_caption)
+                _fixup_changed = True
 
     m_calc_steps = []  # Accumulated M Table.AddColumn steps (replaces DAX calc cols)
     dax_only_calc_cols = set()  # Names of calc columns that stayed as DAX (not converted to M)
@@ -1948,7 +1983,7 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
                 break
 
         is_calc_col = (not is_literal) and (
-            role == 'dimension' or
+            (role == 'dimension' and not has_aggregation) or
             (role == 'measure' and not has_aggregation and has_column_refs)
         )
 
@@ -1957,6 +1992,11 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
         # cannot reference measures in DAX.
         if is_calc_col and not has_column_refs and references_only_measures:
             is_calc_col = False
+            # Update prelim sets and measure_names so downstream calcs see
+            # correct classification
+            prelim_calc_col_captions.discard(caption)
+            prelim_calc_col_raws.discard(calc_name)
+            measure_names_ctx.add(caption)
 
         # Security functions must be measures, never calculated columns
         has_security_func = bool(re.search(

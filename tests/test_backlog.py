@@ -1219,20 +1219,67 @@ class TestFilterControlParamResolution(unittest.TestCase):
 
 
 class TestMCalcColumnMeasureRefFallback(unittest.TestCase):
-    """M-based calc columns that reference DAX measures or non-physical columns
-    must fall back to DAX calculated columns, because M queries can only
-    reference physical source columns or prior M step columns."""
+    """Calcs that reference measures must be measures themselves, not
+    calc columns — DAX calc columns cannot reference measures."""
 
-    def test_calc_col_referencing_measure_stays_dax(self):
-        """A calc column whose M expression references a measure (not a
-        physical column) should stay as a DAX calculated column, not an M step."""
+    def test_dimension_calc_with_aggregation_becomes_measure(self):
+        """A dimension-role calc with aggregation (SUM/MAX/etc) must be
+        a measure — aggregation requires filter context."""
         from powerbi_import.tmdl_generator import _build_semantic_model
 
-        # "Profile Score" is role=dimension with aggregation — gets classified
-        # as a calc column initially but can't convert to M (has SUM), so stays
-        # as DAX calc column. "Score (num)" is role=dimension referencing
-        # Profile Score via INT([Profile Score]). Since Profile Score is not a
-        # physical column, the M step can't reference it — must fall back to DAX.
+        calculations = [
+            {
+                'name': 'Profile Score',
+                'caption': 'Profile Score',
+                'formula': 'IF SUM([Amount]) <= 100 then "1" ELSE "2" END',
+                'role': 'dimension',
+                'datatype': 'string',
+                'datasource_name': 'ds1',
+            },
+        ]
+        datasources = [{
+            'name': 'ds1',
+            'tables': [{
+                'name': 'Sales',
+                'type': 'table',
+                'columns': [
+                    {'name': 'Amount', 'datatype': 'real'},
+                    {'name': 'Region', 'datatype': 'string'},
+                ]
+            }],
+            'calculations': calculations,
+            'relationships': [],
+            'connection': {'type': 'sqlserver', 'server': 'localhost', 'database': 'db'}
+        }]
+        extra = {
+            'parameters': [],
+            'hierarchies': [],
+            'sets': [],
+            'groups': [],
+            'bins': [],
+        }
+        model = _build_semantic_model(datasources, 'TestAgg', extra)
+
+        sales_table = None
+        for t in model['model']['tables']:
+            if t['name'] == 'Sales':
+                sales_table = t
+                break
+        self.assertIsNotNone(sales_table)
+
+        # Profile Score has aggregation → must be a measure, not a calc column
+        measure_names = {m['name'] for m in sales_table.get('measures', [])}
+        col_names = {c['name'] for c in sales_table.get('columns', [])}
+        self.assertIn('Profile Score', measure_names,
+                      "Dimension calc with aggregation should be a measure")
+        self.assertNotIn('Profile Score', col_names,
+                         "Dimension calc with aggregation should NOT be a column")
+
+    def test_calc_referencing_measure_becomes_measure(self):
+        """A dimension-role calc that references only measures (via INT())
+        must also become a measure — calc columns cannot reference measures."""
+        from powerbi_import.tmdl_generator import _build_semantic_model
+
         calculations = [
             {
                 'name': 'Profile Score',
@@ -1274,7 +1321,6 @@ class TestMCalcColumnMeasureRefFallback(unittest.TestCase):
         }
         model = _build_semantic_model(datasources, 'TestMRef', extra)
 
-        # Find the Sales table
         sales_table = None
         for t in model['model']['tables']:
             if t['name'] == 'Sales':
@@ -1282,24 +1328,79 @@ class TestMCalcColumnMeasureRefFallback(unittest.TestCase):
                 break
         self.assertIsNotNone(sales_table)
 
-        # "Score (num)" should be a DAX calculated column (expression=, isCalculated=True)
-        # NOT a sourceColumn (M-based)
-        score_col = None
-        for c in sales_table.get('columns', []):
-            if c.get('name') == 'Score (num)':
-                score_col = c
-                break
-        self.assertIsNotNone(score_col, "Score (num) column should exist")
-        self.assertIn('expression', score_col, "Score (num) should be a DAX calc column")
-        self.assertNotIn('sourceColumn', score_col,
-                         "Score (num) should NOT be an M-based source column")
+        # Score (num) references a measure → must be a measure too
+        measure_names = {m['name'] for m in sales_table.get('measures', [])}
+        col_names = {c['name'] for c in sales_table.get('columns', [])}
+        self.assertIn('Score (num)', measure_names,
+                      "Calc referencing a measure should be a measure")
+        self.assertNotIn('Score (num)', col_names,
+                         "Calc referencing a measure should NOT be a column")
 
-        # Also verify the M partition does NOT contain 'Score (num)' M step
-        partition_expr = ''
-        for p in sales_table.get('partitions', []):
-            partition_expr = p.get('source', {}).get('expression', '')
-        self.assertNotIn('Score (num)', partition_expr,
-                         "M partition should NOT contain Score (num) step")
+    def test_cascading_reclassification(self):
+        """Calcs forming a chain (base→num→class) should all cascade to
+        measures when the base has aggregation."""
+        from powerbi_import.tmdl_generator import _build_semantic_model
+
+        calculations = [
+            {
+                'name': 'Rating',
+                'caption': 'Rating',
+                'formula': 'IF MAX([Score]) > 80 THEN "High" ELSE "Low" END',
+                'role': 'dimension',
+                'datatype': 'string',
+                'datasource_name': 'ds1',
+            },
+            {
+                'name': 'Rating (num)',
+                'caption': 'Rating (num)',
+                'formula': 'INT([Rating])',
+                'role': 'dimension',
+                'datatype': 'integer',
+                'datasource_name': 'ds1',
+            },
+            {
+                'name': 'Rating Class',
+                'caption': 'Rating Class',
+                'formula': 'IF [Rating (num)] > 3 THEN "Excellent" ELSE "Average" END',
+                'role': 'dimension',
+                'datatype': 'string',
+                'datasource_name': 'ds1',
+            },
+        ]
+        datasources = [{
+            'name': 'ds1',
+            'tables': [{
+                'name': 'Sales',
+                'type': 'table',
+                'columns': [
+                    {'name': 'Score', 'datatype': 'integer'},
+                ]
+            }],
+            'calculations': calculations,
+            'relationships': [],
+            'connection': {'type': 'sqlserver', 'server': 'localhost', 'database': 'db'}
+        }]
+        extra = {
+            'parameters': [],
+            'hierarchies': [],
+            'sets': [],
+            'groups': [],
+            'bins': [],
+        }
+        model = _build_semantic_model(datasources, 'TestCascade', extra)
+
+        sales_table = None
+        for t in model['model']['tables']:
+            if t['name'] == 'Sales':
+                sales_table = t
+                break
+        self.assertIsNotNone(sales_table)
+
+        measure_names = {m['name'] for m in sales_table.get('measures', [])}
+        # All three should be measures (cascading from Rating's aggregation)
+        self.assertIn('Rating', measure_names)
+        self.assertIn('Rating (num)', measure_names)
+        self.assertIn('Rating Class', measure_names)
 
     def test_calc_col_referencing_physical_column_stays_m(self):
         """A calc column referencing a physical source column should stay as M."""
