@@ -699,6 +699,7 @@ def extract_tables_with_columns(datasource_elem, connection_map=None):
                 'connection': conn_ref,
                 'connection_details': table_connection,
                 'caption': relation.get('caption', ''),
+                'source_table': relation.get('table', '').strip('[]'),
             }
     
     # Phase 2: For tables with no nested columns (SQL Server, etc.),

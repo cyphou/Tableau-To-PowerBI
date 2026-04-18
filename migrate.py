@@ -4062,7 +4062,8 @@ def _convert_hyper_to_csv_in_data(data_dir, source_basename, project_dir):
     """Convert .hyper files in *data_dir* to CSV and patch TMDL M expressions.
 
     When a TWBX contains only Hyper extracts (no Excel files), the generated M
-    queries reference ``Excel.Workbook(...)`` for files that don't exist.  This
+    queries use inline ``#table()`` data or ``Excel.Workbook(...)`` references
+    for files that don't exist.  This
     function converts the Hyper data to flat CSV files and rewrites the TMDL
     partition expressions to use ``Csv.Document(...)`` so Power BI can load the
     data directly.
@@ -4124,6 +4125,30 @@ def _convert_hyper_to_csv_in_data(data_dir, source_basename, project_dir):
         return
 
     import re as _re
+
+    # Build TMDL table name → CSV filename mapping using source_table
+    # from extraction metadata (datasources.json).
+    # e.g. "Opportunities" → source_table="Opportunity" → "Opportunity.csv"
+    tmdl_to_csv = {}  # tmdl_table_name → csv_filename
+    _ds_json_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), 'tableau_export', 'datasources.json'
+    )
+    try:
+        with open(_ds_json_path, 'r', encoding='utf-8') as f:
+            _ds_data = json.load(f)
+        for ds in _ds_data:
+            for tbl in ds.get('tables', []):
+                tbl_name = tbl.get('name', '')
+                src_table = tbl.get('source_table', '')
+                if tbl_name and src_table:
+                    # Match source_table to a CSV filename (case-insensitive)
+                    for csv_table_name, csv_fname in csv_map.items():
+                        if csv_table_name.lower() == src_table.lower():
+                            tmdl_to_csv[tbl_name] = csv_fname
+                            break
+    except (OSError, ValueError):
+        pass
+
     for tmdl_path in _glob.glob(os.path.join(tables_dir, '*.tmdl')):
         try:
             with open(tmdl_path, 'r', encoding='utf-8') as f:
@@ -4150,6 +4175,43 @@ def _convert_hyper_to_csv_in_data(data_dir, source_basename, project_dir):
                 f'[Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv])'
             )
             content = _re.sub(pattern, replacement, content, flags=_re.DOTALL)
+
+        # Also replace #table() inline/fallback partitions with Csv.Document
+        # when a matching CSV exists (matched via source_table metadata).
+        if '#table(' in content and tmdl_to_csv:
+            # Derive TMDL table name from filename
+            tmdl_table_name = os.path.splitext(os.path.basename(tmdl_path))[0]
+            matched_csv = tmdl_to_csv.get(tmdl_table_name)
+            if matched_csv:
+                # Replace only the Source assignment (try/otherwise block).
+                # Use Table.PromoteHeaders wrapping Csv.Document so that
+                # Source retains the same column names and subsequent M
+                # steps (Table.AddColumn, etc.) keep working unchanged.
+                htable_pattern = (
+                    r'Source\s*=\s*try\s+'
+                    r'#table\(\s*\{[^}]*\}\s*,\s*\{'
+                    r'.*?'  # row data or empty (lazy)
+                    r'\}\s*\)\s+'
+                    r'otherwise\s+'
+                    r'#table\(\s*\{[^}]*\}\s*,\s*\{\s*\}\s*\)'
+                    r'(?:\s*//[^\n]*)?'  # optional trailing comment
+                )
+                csv_replacement = (
+                    f'Source = Table.PromoteHeaders('
+                    f'Csv.Document('
+                    f'File.Contents(DataFolder & "\\\\{matched_csv}"), '
+                    f'[Delimiter=",", Encoding=65001, '
+                    f'QuoteStyle=QuoteStyle.Csv]),'
+                    f' [PromoteAllScalars=true])'
+                )
+                new_content = _re.sub(
+                    htable_pattern,
+                    csv_replacement,
+                    content,
+                    flags=_re.DOTALL,
+                )
+                if new_content != content:
+                    content = new_content
 
         if content != original:
             try:
