@@ -148,9 +148,11 @@ def _extract_function_body(expr, func_name):
 
 
 # Characters that are NOT valid in M generalized identifiers inside [...].
-# Letters (incl. accented), digits, spaces, underscores, and dots are OK;
-# everything else (/ ( ) ' " + @ # $ % ^ & * ! ~ ` < > ? ; : { } | \ - ,) needs quoting.
-_M_SPECIAL_CHARS = set('/()\'"+@#$%^&*!~`<>?;:{}|\\,-')
+# Letters (incl. accented), digits, spaces, and underscores are OK;
+# dots and everything else (. / ( ) ' " + @ # $ % ^ & * ! ~ ` < > ? ; : { } | \ - ,) needs quoting.
+# Dots are the record-field-access operator in M, so [Stat.util.] is parsed as
+# nested access — must be quoted as [#"Stat.util."].
+_M_SPECIAL_CHARS = set('./()\'"+@#$%^&*!~`<>?;:{}|\\,-')
 
 
 def _quote_m_identifiers(m_expr):

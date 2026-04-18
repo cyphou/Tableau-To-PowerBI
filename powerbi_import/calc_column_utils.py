@@ -107,7 +107,7 @@ def tableau_formula_to_m(formula):
 
 
 # Characters invalid in M generalized identifiers (must use [#"name"] quoting).
-_M_SPECIAL = set('/()\'"+@#$%^&*!~`<>?;:{}|\\,-')
+_M_SPECIAL = set('./()\'"+@#$%^&*!~`<>?;:{}|\\,-')
 
 
 def _quote_m_ids(m_expr):

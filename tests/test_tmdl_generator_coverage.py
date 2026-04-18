@@ -133,6 +133,16 @@ class TestQuoteMIdentifiers(unittest.TestCase):
         result = _quote_m_identifiers('[A+B]')
         self.assertEqual(result, '[#"A+B"]')
 
+    def test_dot_in_column_name(self):
+        """Dots are record-field-access operators in M — must be quoted."""
+        result = _quote_m_identifiers('[Stat.util.]')
+        self.assertEqual(result, '[#"Stat.util."]')
+
+    def test_dot_in_expression(self):
+        result = _quote_m_identifiers('if [Stat.util.] = "OTOK" then [Ordre] else null')
+        self.assertIn('[#"Stat.util."]', result)
+        self.assertIn('[Ordre]', result)
+
 
 # ═══════════════════════════════════════════════════════════════════════
 # _dax_to_m_expression  (L195-318)
