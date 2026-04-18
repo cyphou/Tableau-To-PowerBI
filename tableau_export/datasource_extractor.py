@@ -708,7 +708,7 @@ def extract_tables_with_columns(datasource_elem, connection_map=None):
     if tables_needing_columns:
         # Build mapping: table_name -> [column_name, ...] from <cols><map> entries
         # e.g. <map key='[OrderID]' value='[Orders].[OrderID]' />
-        table_col_names = {}  # table_name -> [col_key, ...]
+        table_col_names = {}  # table_name -> [(col_key, remote_name), ...]
         cols_elem = datasource_elem.find('.//connection/cols')
         if cols_elem is not None:
             for map_elem in cols_elem.findall('map'):
@@ -717,8 +717,9 @@ def extract_tables_with_columns(datasource_elem, connection_map=None):
                 if '.' in value:
                     parts = value.split('.', 1)
                     tbl = parts[0].strip('[]')
+                    remote = parts[1].strip('[]')
                     if tbl in raw_tables:
-                        table_col_names.setdefault(tbl, []).append(key)
+                        table_col_names.setdefault(tbl, []).append((key, remote))
         
         # Build mapping: column_name -> column attributes from datasource-level <column> elements
         ds_columns = {}  # "[ColName]" -> {datatype, role, type, ...}
@@ -755,10 +756,11 @@ def extract_tables_with_columns(datasource_elem, connection_map=None):
             tname = table['name']
             col_keys = table_col_names.get(tname, [])
             ordinal = 0
-            for key in col_keys:
+            for key, remote in col_keys:
                 if key in ds_columns:
                     col = dict(ds_columns[key])
                     col['ordinal'] = ordinal
+                    col['remote_name'] = remote
                     ordinal += 1
                     table['columns'].append(col)
     
@@ -856,6 +858,27 @@ def extract_tables_with_columns(datasource_elem, connection_map=None):
     has_populated = any(t['columns'] for t in tables)
     if has_populated:
         tables = [t for t in tables if t['columns']]
+
+    # Build per-table physical→display column name mapping from <cols><map>.
+    # This captures ALL mappings regardless of which phase added the column,
+    # enabling CSV Hyper data rewrite to rename physical column headers.
+    cols_elem = datasource_elem.find('.//connection/cols')
+    if cols_elem is not None:
+        physical_maps = {}  # table_name → {physical_name: display_name}
+        for map_elem in cols_elem.findall('map'):
+            key = map_elem.get('key', '').strip('[]')
+            value = map_elem.get('value', '')
+            if '.' in value:
+                parts = value.split('.', 1)
+                tbl = parts[0].strip('[]')
+                remote = parts[1].strip('[]')
+                if key and remote and key != remote:
+                    physical_maps.setdefault(tbl, {})[remote] = key
+        for t in tables:
+            pm = physical_maps.get(t['name'])
+            if pm:
+                t['cols_physical_map'] = pm
+
     return tables
 
 

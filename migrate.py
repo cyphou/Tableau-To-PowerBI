@@ -4130,6 +4130,9 @@ def _convert_hyper_to_csv_in_data(data_dir, source_basename, project_dir):
     # from extraction metadata (datasources.json).
     # e.g. "Opportunities" → source_table="Opportunity" → "Opportunity.csv"
     tmdl_to_csv = {}  # tmdl_table_name → csv_filename
+    # Also build per-table physical→display column name mapping from
+    # the cols_physical_map field stored during extraction (<cols><map> entries).
+    tmdl_col_remote = {}  # tmdl_table_name → {physical_name: display_name}
     _ds_json_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), 'tableau_export', 'datasources.json'
     )
@@ -4146,6 +4149,10 @@ def _convert_hyper_to_csv_in_data(data_dir, source_basename, project_dir):
                         if csv_table_name.lower() == src_table.lower():
                             tmdl_to_csv[tbl_name] = csv_fname
                             break
+                # Use cols_physical_map for complete mapping
+                pm = tbl.get('cols_physical_map')
+                if pm and tbl_name:
+                    tmdl_col_remote[tbl_name] = pm
     except (OSError, ValueError):
         pass
 
@@ -4220,13 +4227,20 @@ def _convert_hyper_to_csv_in_data(data_dir, source_basename, project_dir):
 
                 if csv_headers and tmdl_cols:
                     # Build mapping: raw CSV header → TMDL caption name.
-                    # Tableau renames with " (TableAlias)" suffix when
-                    # multiple tables share the same Hyper source table.
+                    # Priority order:
+                    # 1. remote_name mapping from <cols><map> entries
+                    #    (e.g. CloseDate → Close Date, AccountId → Account ID)
+                    # 2. Exact match (column name unchanged)
+                    # 3. Suffix match for aliased tables
+                    #    (e.g. FirstName → FirstName (Created By))
                     tmdl_set = set(tmdl_cols)
                     suffix = f' ({tmdl_table_name})'
+                    remote_map = tmdl_col_remote.get(tmdl_table_name, {})
                     csv_to_tmdl = {}  # raw_csv_header → tmdl_col_name
                     for csv_h in csv_headers:
-                        if csv_h in tmdl_set:
+                        if csv_h in remote_map and remote_map[csv_h] in tmdl_set:
+                            csv_to_tmdl[csv_h] = remote_map[csv_h]
+                        elif csv_h in tmdl_set:
                             csv_to_tmdl[csv_h] = csv_h
                         elif csv_h + suffix in tmdl_set:
                             csv_to_tmdl[csv_h] = csv_h + suffix
