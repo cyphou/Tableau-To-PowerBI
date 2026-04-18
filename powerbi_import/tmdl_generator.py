@@ -2305,16 +2305,11 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
     # ── Post-processing: wrap bare cross-table column refs in SUM ──
     # A DAX measure cannot reference a column from another table without
     # aggregation.  Pattern: 'Table'[Column] where Column is NOT a measure.
-    # Only wrap refs that are not already inside an aggregation function.
-    _all_columns = set()
-    for col in result_table.get("columns", []):
-        _all_columns.add(col.get("name", ""))
+    # Only wrap refs that are at nesting depth 0 (not inside any function
+    # call parentheses) — refs inside SUMX/FILTER/IF iterators must remain
+    # as row-level references.
     _XTABLE_COL_RE = re.compile(
         r"'([^']+(?:''[^']*)*)'(\[[^\]]+\])"
-    )
-    _AGG_PREFIX_RE = re.compile(
-        r'\b(?:SUM|AVERAGE|COUNT|COUNTROWS|MIN|MAX|SUMX|AVERAGEX|COUNTX|MINX|MAXX|DISTINCTCOUNT|CALCULATE|CONVERT|RELATED|LOOKUPVALUE|LEFT|RIGHT|MID|LEN|IF|SWITCH|FORMAT|COALESCE|ISBLANK|STDEV|VAR|MEDIAN|PERCENTILE|CORREL|COVARIANCE|RANK|RANKX|POWER|SELECTEDVALUE|VALUES|ALL|ALLEXCEPT|FILTER|ADDCOLUMNS|KEEPFILTERS|TOPN)\s*\($',
-        re.IGNORECASE,
     )
     for meas in result_table["measures"]:
         expr = meas.get("expression", "")
@@ -2325,11 +2320,18 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
             col_name = m_col.group(2).strip('[]')
             if col_name in _all_measure_names:
                 continue  # measure ref — leave as-is
-            # Check if this ref is already inside a function call
-            prefix = expr[:m_col.start()]
-            if _AGG_PREFIX_RE.search(prefix):
+            # Compute parenthesis nesting depth at match position.
+            # Depth 0 = top level of the expression → needs SUM wrapping.
+            # Depth ≥ 1 = inside a function (SUMX, FILTER, IF, etc.) → skip.
+            depth = 0
+            for ch in expr[:m_col.start()]:
+                if ch == '(':
+                    depth += 1
+                elif ch == ')':
+                    depth -= 1
+            if depth > 0:
                 continue
-            # Bare cross-table column ref → wrap in SUM
+            # Bare cross-table column ref at top level → wrap in SUM
             old_ref = m_col.group(0)
             new_ref = f"SUM({old_ref})"
             new_expr = new_expr[:m_col.start()] + new_ref + new_expr[m_col.end():]
