@@ -2305,12 +2305,36 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
     # ── Post-processing: wrap bare cross-table column refs in SUM ──
     # A DAX measure cannot reference a column from another table without
     # aggregation.  Pattern: 'Table'[Column] where Column is NOT a measure.
-    # Only wrap refs that are at nesting depth 0 (not inside any function
-    # call parentheses) — refs inside SUMX/FILTER/IF iterators must remain
-    # as row-level references.
+    # Only skip wrapping when the ref is inside an aggregation function
+    # (SUM, MAX, etc. — already aggregated) or an iterator function
+    # (SUMX, FILTER, etc. — provides row context).  Scalar functions
+    # like IF, CONVERT, NOT, SWITCH do NOT provide aggregation or row
+    # context, so column refs inside them still need wrapping.
     _XTABLE_COL_RE = re.compile(
         r"'([^']+(?:''[^']*)*)'(\[[^\]]+\])"
     )
+    # Functions that provide column context (aggregation, iteration, or
+    # column-reference semantics).  Column refs inside these do NOT need
+    # SUM wrapping.
+    _COLUMN_CONTEXT_FUNCS = frozenset({
+        # Aggregation functions (column is their direct input)
+        'SUM', 'AVERAGE', 'COUNT', 'COUNTA', 'COUNTBLANK', 'COUNTROWS',
+        'MIN', 'MAX', 'DISTINCTCOUNT', 'DISTINCTCOUNTNOBLANK',
+        'MEDIAN', 'PERCENTILE',
+        # Iterator functions (provide row context in their body)
+        'SUMX', 'AVERAGEX', 'COUNTX', 'MINX', 'MAXX', 'PRODUCTX',
+        'CONCATENATEX', 'MEDIANX', 'PERCENTILEX',
+        'FILTER', 'ADDCOLUMNS', 'SELECTCOLUMNS',
+        'GENERATE', 'GENERATEALL', 'RANKX', 'TOPN',
+        'SUMMARIZE', 'SUMMARIZECOLUMNS', 'GROUPBY',
+        # Lookup / column-reference functions
+        'RELATED', 'RELATEDTABLE', 'LOOKUPVALUE', 'TREATAS',
+        'VALUES', 'DISTINCT', 'ALL', 'ALLEXCEPT', 'ALLNOBLANKROW',
+        'ALLSELECTED', 'REMOVEFILTERS',
+        'EARLIER', 'EARLIEST', 'SELECTEDVALUE',
+        'HASONEVALUE', 'HASONEFILTER', 'ISINSCOPE',
+        'USERELATIONSHIP', 'CROSSFILTER', 'CALCULATETABLE',
+    })
     for meas in result_table["measures"]:
         expr = meas.get("expression", "")
         if not expr:
@@ -2320,18 +2344,54 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
             col_name = m_col.group(2).strip('[]')
             if col_name in _all_measure_names:
                 continue  # measure ref — leave as-is
-            # Compute parenthesis nesting depth at match position.
-            # Depth 0 = top level of the expression → needs SUM wrapping.
-            # Depth ≥ 1 = inside a function (SUMX, FILTER, IF, etc.) → skip.
-            depth = 0
-            for ch in expr[:m_col.start()]:
-                if ch == '(':
-                    depth += 1
+            # Walk expression up to match position tracking whether we
+            # are inside an aggregation/iterator function.  Only those
+            # functions provide contexts where bare column refs are valid.
+            # Scalar functions (IF, CONVERT, NOT, SWITCH …) do NOT
+            # provide aggregation or row context.
+            agg_depth = 0
+            func_stack = []   # True/False per paren level
+            text_before = expr[:m_col.start()]
+            i = 0
+            while i < len(text_before):
+                ch = text_before[i]
+                if ch == '"':
+                    # Skip DAX string literal ("" = escaped double-quote)
+                    i += 1
+                    while i < len(text_before):
+                        if text_before[i] == '"':
+                            if (i + 1 < len(text_before)
+                                    and text_before[i + 1] == '"'):
+                                i += 2  # escaped double-quote
+                            else:
+                                break
+                        i += 1
+                    i += 1  # skip closing quote
+                elif ch == '(':
+                    # Look backwards past spaces to find the function name
+                    j = i - 1
+                    while j >= 0 and text_before[j] == ' ':
+                        j -= 1
+                    func_end = j + 1
+                    while j >= 0 and (text_before[j].isalnum()
+                                      or text_before[j] == '_'):
+                        j -= 1
+                    func_name = text_before[j + 1:func_end].upper()
+                    is_ctx = func_name in _COLUMN_CONTEXT_FUNCS
+                    func_stack.append(is_ctx)
+                    if is_ctx:
+                        agg_depth += 1
+                    i += 1
                 elif ch == ')':
-                    depth -= 1
-            if depth > 0:
-                continue
-            # Bare cross-table column ref at top level → wrap in SUM
+                    if func_stack:
+                        if func_stack.pop():
+                            agg_depth -= 1
+                    i += 1
+                else:
+                    i += 1
+            if agg_depth > 0:
+                continue  # Inside aggregation/iterator — row-level ref
+            # Bare column ref not inside any aggregation → wrap in SUM
             old_ref = m_col.group(0)
             new_ref = f"SUM({old_ref})"
             new_expr = new_expr[:m_col.start()] + new_ref + new_expr[m_col.end():]

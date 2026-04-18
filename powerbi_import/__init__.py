@@ -6,4 +6,4 @@
 #
 # Deployment subpackage (powerbi_import.deploy):
 #   auth, client, deployer, utils, config/
-__version__ = '28.3.0'
+__version__ = '28.4.0'

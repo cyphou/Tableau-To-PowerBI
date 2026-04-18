@@ -403,9 +403,9 @@ All schema URLs and theme identifiers are defined as constants in `pbip_generato
 - Compare Tableau visuals vs Power BI
 - Refer to `docs/FAQ.md` for frequently asked questions
 
-## Agent Architecture — 8-Agent Specialization Model
+## Agent Architecture — 12-Agent Specialization Model
 
-This project uses an **8-agent specialization model** with scoped domain knowledge and file ownership.
+This project uses a **12-agent specialization model** with scoped domain knowledge and file ownership. Four specialist agents (@dax, @wiring, @semantic, @visual) provide deep expertise, while @converter and @generator remain as coordination layers.
 
 See `docs/AGENTS.md` for the full architecture diagram, data flow, and handoff protocol.
 
@@ -415,17 +415,22 @@ See `docs/AGENTS.md` for the full architecture diagram, data flow, and handoff p
 |-------|-------|-----------|
 | **@orchestrator** | Pipeline, CLI, batch, wizard | `migrate.py`, `import_to_powerbi.py`, `wizard.py`, `progress.py`, `api_server.py` |
 | **@extractor** | Tableau XML parsing, Hyper, Prep, Server API | `tableau_export/*.py` |
-| **@converter** | Tableau→DAX (180+), Power Query M (43 transforms) | `dax_converter.py`, `m_query_builder.py` |
-| **@generator** | TMDL, PBIR v4.0, visuals, Calendar, RLS | `tmdl_generator.py`, `pbip_generator.py`, `visual_generator.py` |
+| **@dax** | DAX formula correctness, conversion (180+), optimization, aggregation context | `dax_converter.py`, `dax_optimizer.py` + DAX blocks in `tmdl_generator.py` |
+| **@wiring** | DAX↔M bridge, classification, M generation (43 transforms), M step injection | `m_query_builder.py`, `calc_column_utils.py` + M functions in `tmdl_generator.py` |
+| **@semantic** | TMDL model, relationships, Calendar, RLS, hierarchies, parameters | `tmdl_generator.py` (structural), `fabric_semantic_model_generator.py` |
+| **@visual** | PBIR v4.0, visual containers, slicers, filters, bookmarks, themes | `pbip_generator.py`, `visual_generator.py` |
+| **@converter** | _(Coordination)_ Cross-cutting DAX+M tasks | Delegates to @dax and @wiring |
+| **@generator** | _(Coordination)_ Fabric-native generation | `fabric_project_generator.py`, `lakehouse_generator.py`, `dataflow_generator.py`, `notebook_generator.py`, `pipeline_generator.py` |
 | **@assessor** | Readiness scoring, strategy, diff reports, prep lineage | `assessment.py`, `server_assessment.py`, `strategy_advisor.py`, `schema_drift.py`, `prep_lineage.py`, `prep_lineage_report.py` |
 | **@merger** | Shared semantic model, fingerprint matching | `shared_model.py`, `merge_config.py` |
 | **@deployer** | Fabric/PBI deployment, auth, gateway | `deploy/*.py`, `gateway_config.py`, `telemetry.py` |
-| **@tester** | Tests (6,988), coverage, regression | `tests/*.py` |
+| **@tester** | Tests (7,072), coverage, regression | `tests/*.py` |
 
 ### Rules
 
 - **One owner per file** — only the owning agent modifies each source file
 - **Read access is universal** — any agent can read any file for context
+- **Co-owned functions** — `tmdl_generator.py` has shared ownership: @semantic (structural), @dax (DAX post-processing), @wiring (M functions)
 - **Tester is cross-cutting** — reads all source, writes only to `tests/`
 - **Default agent** handles multi-domain tasks, docs, git, sprint planning
 - **Roadmap**: See `docs/ROADMAP.md` for v22–v28 per-agent sprint assignments (Sprints 76–117)
@@ -434,4 +439,4 @@ See `docs/AGENTS.md` for the full architecture diagram, data flow, and handoff p
 
 All agent files live in `.github/agents/`:
 - `shared.instructions.md` — base rules all agents inherit
-- `{name}.agent.md` — per-agent specialization (8 files)
+- `{name}.agent.md` — per-agent specialization (12 files: orchestrator, extractor, dax, wiring, semantic, visual, converter, generator, assessor, merger, deployer, tester)

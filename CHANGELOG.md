@@ -1,5 +1,41 @@
 # Changelog
 
+## v28.4.0 — Aggregation-Aware SUM Wrapping & 12-Agent Architecture
+
+### Aggregation-Aware Cross-Table Column Ref Wrapping (`tmdl_generator.py`) ✅
+- **Root cause fix**: Cross-table column refs like `'Opportunities'[Amount]` inside scalar
+  functions (IF, CONVERT, NOT, SWITCH) were NOT being wrapped in `SUM()` because the previous
+  parenthesis-depth approach treated ALL `(...)` as "iterator context". Scalar functions do NOT
+  provide row context or aggregation — only aggregation functions (SUM, MAX, DISTINCTCOUNT) and
+  iterator functions (SUMX, FILTER, ADDCOLUMNS) do.
+- **New approach**: Replaced raw parenthesis depth with **aggregation/iterator-aware depth** that
+  only counts parens belonging to 40+ known column-context functions (`_COLUMN_CONTEXT_FUNCS`).
+  Refs inside scalar functions (IF, CONVERT, NOT) are now correctly wrapped in `SUM()`.
+- **Preserves iterator correctness**: Column refs inside SUMX, FILTER, DISTINCTCOUNT, MAX, etc.
+  are still correctly left as bare row-level references.
+- **String-safe**: DAX string literals (`"..."`) with parens are skipped during depth tracking.
+- Fixes cascading errors: `_Total Sales (Expression)`, `_Avg Deal Size (won) (Expression)`,
+  `_Total Closed Opportunities Amount (Expression)` → all downstream measures now valid.
+
+### 12-Agent Specialization Model ✅
+- **4 new specialist agents**: Split @converter → @dax + @wiring, split @generator → @semantic + @visual.
+- **@dax** (`dax.agent.md`): DAX formula correctness, 180+ conversions, aggregation context,
+  cross-table semantics, optimization (IF→SWITCH, ISBLANK→COALESCE).
+- **@wiring** (`wiring.agent.md`): DAX↔M bridge, calc column vs measure classification,
+  Power Query M generation (33 connectors + 43 transforms), M step injection.
+- **@semantic** (`semantic.agent.md`): TMDL semantic model, relationships, Calendar table,
+  RLS roles, hierarchies, parameters, sets/groups/bins, self-healing.
+- **@visual** (`visual.agent.md`): PBIR v4.0 report, 118+ visual types, slicers, filters,
+  bookmarks, themes, drill-through/tooltip pages, layout.
+- **@converter and @generator** demoted to coordination layers that delegate to specialists.
+- Updated `docs/AGENTS.md` with new architecture diagram and data flow.
+- Updated `copilot-instructions.md` agent table (8→12 agents).
+
+### Stats
+- 7,072 tests passing across 141+ test files.
+
+---
+
 ## v28.3.0 — Slicer Dual-Label Fix, Post-Migration Autoplay & Fidelity Improvements
 
 ### Slicer Dual-Label Fix (`pbip_generator.py`) ✅
