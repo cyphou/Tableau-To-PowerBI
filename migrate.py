@@ -1993,6 +1993,15 @@ def _add_report_args(parser):
     )
 
     parser.add_argument(
+        '--fidelity',
+        action='store_true',
+        default=False,
+        help='Run automated fidelity comparison after migration: dashboards vs pages, '
+             'worksheets vs visuals, calculations vs DAX, filters, parameters, data model. '
+             'Outputs structured results to console and JSON.'
+    )
+
+    parser.add_argument(
         '--telemetry',
         action='store_true',
         default=False,
@@ -4599,6 +4608,23 @@ def _run_post_generation_reports(args, source_basename, results):
                 print(f"\n📊 Telemetry dashboard: {dash_path}")
         except (ImportError, OSError, ValueError) as exc:
             logger.warning(f"Telemetry dashboard generation failed: {exc}")
+
+    if getattr(args, 'fidelity', False) and results.get('generation') and not args.dry_run:
+        try:
+            from scripts.compare_migration import run_comparison, print_results as print_fidelity
+            extract_dir = os.path.join(os.path.dirname(__file__), 'tableau_export')
+            out_base = args.output_dir or os.path.join('artifacts', 'powerbi_projects', 'migrated')
+            pbip_dir = os.path.join(out_base, source_basename)
+            fidelity = run_comparison(pbip_dir, extract_dir)
+            print_fidelity(fidelity, verbose=getattr(args, 'verbose', False))
+            # Save JSON report
+            fidelity_path = os.path.join(out_base, f'fidelity_{source_basename}.json')
+            import json as _json
+            with open(fidelity_path, 'w', encoding='utf-8') as _f:
+                _json.dump(fidelity, _f, indent=2, ensure_ascii=False)
+            print(f"  Fidelity JSON: {fidelity_path}")
+        except (ImportError, OSError, ValueError) as exc:
+            logger.warning(f"Fidelity comparison failed: {exc}")
 
 
 def _run_deploy_to_pbi_service(args, source_basename):
