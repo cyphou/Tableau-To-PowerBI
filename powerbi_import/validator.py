@@ -923,6 +923,310 @@ class ArtifactValidator:
 
         return issues
 
+    # ── PBI Desktop error simulation ────────────────────────────────
+
+    # Regex to extract LOOKUPVALUE calls from DAX expressions
+    _RE_LOOKUPVALUE = re.compile(
+        r'LOOKUPVALUE\s*\(\s*'
+        r"(?:'((?:[^']|'')+)'\[([^\]]+)\]|([A-Za-z_]\w*)\[([^\]]+)\])"  # result col
+        r'\s*,\s*'
+        r"(?:'((?:[^']|'')+)'\[([^\]]+)\]|([A-Za-z_]\w*)\[([^\]]+)\])"  # search col
+        r'\s*,',
+        re.IGNORECASE
+    )
+
+    # Regex to detect bare column references in measures (not inside aggregation)
+    _RE_AGGREGATION_FUNCS = re.compile(
+        r'\b(?:SUM|AVERAGE|MIN|MAX|COUNT|COUNTA|COUNTBLANK|DISTINCTCOUNT|'
+        r'SUMX|AVERAGEX|MINX|MAXX|COUNTX|COUNTAX|CALCULATE|FILTER|'
+        r'LOOKUPVALUE|RELATED|RANKX|PERCENTILE|MEDIAN|STDEV|VAR|'
+        r'ALLEXCEPT|REMOVEFILTERS|ALL|VALUES|HASONEVALUE|SELECTEDVALUE|'
+        r'EARLIER|EARLIEST|CONCATENATEX|TOPN|ADDCOLUMNS|SUMMARIZE|'
+        r'GENERATE|GENERATEALL|TREATAS|USERELATIONSHIP|CROSSFILTER|'
+        r'MAXX|SWITCH|IF|LEFT|RIGHT|MID|LEN|UPPER|LOWER|FORMAT|'
+        r'DATE|YEAR|MONTH|DAY|DATEDIFF|DATEADD|TODAY|NOW|'
+        r'INT|VALUE|ISBLANK|IFERROR|NOT|AND|OR|IN|'
+        r'CONTAINSSTRING|SEARCH|FIND)\s*\(',
+        re.IGNORECASE
+    )
+
+    # Regex to extract inline calc column expressions
+    _RE_CALC_COL_EXPR = re.compile(
+        r"^\s*column\s+'(?:[^']|'')+'\s*=\s*(.+)$"
+    )
+
+    @classmethod
+    def validate_lookupvalue_ambiguity(cls, sm_dir):
+        """Detect LOOKUPVALUE calc columns that may fail with 'single value'
+        errors because the search column is not a unique key.
+
+        Checks if the LOOKUPVALUE search column participates in a
+        manyToOne relationship (meaning it IS a key) or if it could
+        have duplicates (manyToMany or no relationship).
+
+        Args:
+            sm_dir: Path to ``{name}.SemanticModel`` directory.
+
+        Returns:
+            list of warning strings for potential ambiguity.
+        """
+        sm_path = Path(sm_dir)
+        def_dir = sm_path / 'definition'
+        issues = []
+
+        # Collect model symbols
+        symbols = cls._collect_model_symbols(sm_dir)
+        known_cols = symbols['columns']
+
+        # Parse relationships to find key columns (toColumn in manyToOne)
+        key_columns = set()  # (table, column) pairs that are unique keys
+        rel_file = def_dir / 'relationships.tmdl'
+        if rel_file.exists():
+            try:
+                content = rel_file.read_text(encoding='utf-8')
+                lines = content.split('\n')
+                current_rel = {}
+                for line in lines:
+                    stripped = line.strip()
+                    m_start = cls._RE_REL_START.match(stripped)
+                    if m_start:
+                        if current_rel.get('to_card') == 'one':
+                            t, c = cls._parse_rel_column_ref(
+                                current_rel.get('to_col_raw', ''))
+                            if t and c:
+                                key_columns.add((t, c))
+                        current_rel = {}
+                        continue
+                    m_to = cls._RE_REL_TO_COL.match(stripped)
+                    if m_to:
+                        current_rel['to_col_raw'] = m_to.group(1)
+                    m_tc = cls._RE_REL_TO_CARD.match(stripped)
+                    if m_tc:
+                        current_rel['to_card'] = m_tc.group(1)
+                # Last relationship
+                if current_rel.get('to_card') == 'one':
+                    t, c = cls._parse_rel_column_ref(
+                        current_rel.get('to_col_raw', ''))
+                    if t and c:
+                        key_columns.add((t, c))
+            except OSError:
+                pass
+
+        # Scan table TMDL files for LOOKUPVALUE calc columns
+        tables_dir = def_dir / 'tables'
+        if not tables_dir or not tables_dir.exists():
+            return issues
+
+        for tmdl_file in tables_dir.glob('*.tmdl'):
+            try:
+                content = tmdl_file.read_text(encoding='utf-8')
+            except OSError:
+                continue
+            basename = tmdl_file.name
+
+            # Find current table name
+            current_table = basename.replace('.tmdl', '')
+            for line in content.splitlines():
+                tm = cls._RE_TABLE_DEF.match(line.strip())
+                if tm:
+                    raw = tm.group(1) if tm.group(1) is not None else tm.group(2)
+                    current_table = cls._unescape_tmdl_name(raw)
+                    break
+
+            # Find calc column expressions with LOOKUPVALUE
+            for line in content.splitlines():
+                m_col = cls._RE_CALC_COL_EXPR.match(line)
+                if not m_col:
+                    continue
+                expr = m_col.group(1)
+                # Extract column name from the definition
+                col_name_match = re.match(
+                    r"^\s*column\s+'((?:[^']|'')+)'\s*=", line)
+                col_name = cls._unescape_tmdl_name(
+                    col_name_match.group(1)) if col_name_match else '?'
+
+                for lv_match in cls._RE_LOOKUPVALUE.finditer(expr):
+                    # Search column (the one that must be unique)
+                    search_table = (
+                        cls._unescape_tmdl_name(lv_match.group(5))
+                        if lv_match.group(5) else lv_match.group(7)
+                    )
+                    search_col = (
+                        lv_match.group(6) if lv_match.group(6)
+                        else lv_match.group(8)
+                    )
+                    if not search_table or not search_col:
+                        continue
+
+                    # Check if search column is a known key
+                    if (search_table, search_col) not in key_columns:
+                        issues.append(
+                            f"LOOKUPVALUE ambiguity: '{current_table}'[{col_name}] "
+                            f"searches '{search_table}'[{search_col}] which is not "
+                            f"a unique key — PBI may error with 'single value "
+                            f"cannot be determined' ({basename})"
+                        )
+
+        return issues
+
+    @classmethod
+    def validate_measure_column_context(cls, sm_dir):
+        """Detect measures that reference physical columns without aggregation.
+
+        In DAX, a measure executes in a filter context where column
+        references must be aggregated (SUM, COUNT, etc.) or used
+        inside iterators (SUMX, FILTER, etc.).  A bare ``'Table'[Column]``
+        in a measure causes PBI error: 'A single value cannot be
+        determined'.
+
+        Args:
+            sm_dir: Path to ``{name}.SemanticModel`` directory.
+
+        Returns:
+            list of warning strings for bare column references in measures.
+        """
+        symbols = cls._collect_model_symbols(sm_dir)
+        known_cols = symbols['columns']    # table -> {col names}
+        known_measures = symbols['measures']  # table -> {measure names}
+        issues = []
+
+        sm_path = Path(sm_dir)
+        def_dir = sm_path / 'definition'
+        tables_dir = def_dir / 'tables'
+        if not tables_dir or not tables_dir.exists():
+            return issues
+
+        for tmdl_file in tables_dir.glob('*.tmdl'):
+            try:
+                content = tmdl_file.read_text(encoding='utf-8')
+            except OSError:
+                continue
+            basename = tmdl_file.name
+
+            # Find current table
+            current_table = basename.replace('.tmdl', '')
+            for line in content.splitlines():
+                tm = cls._RE_TABLE_DEF.match(line.strip())
+                if tm:
+                    raw = tm.group(1) if tm.group(1) is not None else tm.group(2)
+                    current_table = cls._unescape_tmdl_name(raw)
+                    break
+
+            # Scan measures for bare column references
+            for line in content.splitlines():
+                m_measure = cls._RE_TMDL_INLINE_MEASURE.match(line)
+                if not m_measure:
+                    continue
+                formula = m_measure.group(1).strip()
+                if not formula or formula.endswith('```'):
+                    continue
+
+                # Extract measure name
+                mname_match = re.match(
+                    r"^\s*measure\s+'((?:[^']|'')+)'", line)
+                measure_name = cls._unescape_tmdl_name(
+                    mname_match.group(1)) if mname_match else '?'
+
+                # Find all 'Table'[Column] references
+                for ref_match in cls._RE_DAX_REF.finditer(formula):
+                    ref_table = cls._unescape_tmdl_name(ref_match.group(1))
+                    ref_col = ref_match.group(2)
+
+                    # Skip if it's a measure reference (not a column)
+                    if ref_col in known_measures.get(ref_table, set()):
+                        continue
+                    # Skip if column is not known (caught by semantic ref check)
+                    if ref_col not in known_cols.get(ref_table, set()):
+                        continue
+
+                    # Check if this column ref is inside an aggregation/iterator
+                    # Find the position of this reference in the formula
+                    ref_start = ref_match.start()
+                    prefix = formula[:ref_start]
+
+                    # Count unclosed function calls before this reference
+                    # If the column is inside an aggregation function, it's OK
+                    inside_agg = False
+                    # Walk backwards to find the nearest function call
+                    depth = 0
+                    for i in range(len(prefix) - 1, -1, -1):
+                        if prefix[i] == ')':
+                            depth += 1
+                        elif prefix[i] == '(':
+                            if depth > 0:
+                                depth -= 1
+                            else:
+                                # Found the opening paren — check function name
+                                func_prefix = prefix[:i].rstrip()
+                                if cls._RE_AGGREGATION_FUNCS.search(func_prefix + '('):
+                                    inside_agg = True
+                                break
+
+                    if not inside_agg:
+                        issues.append(
+                            f"Measure '{measure_name}' references column "
+                            f"'{ref_table}'[{ref_col}] without aggregation — "
+                            f"PBI may error with 'single value cannot be "
+                            f"determined' ({basename})"
+                        )
+
+        return issues
+
+    @classmethod
+    def run_pbi_validation(cls, project_dir):
+        """Run all PBI Desktop-equivalent validations on a generated project.
+
+        Combines semantic reference checks, relationship validation,
+        LOOKUPVALUE ambiguity detection, and measure context validation
+        to catch errors that PBI Desktop would report.
+
+        Args:
+            project_dir: Path to the .pbip project directory.
+
+        Returns:
+            dict with keys:
+                ``errors``: list of error strings (would be PBI errors)
+                ``warnings``: list of warning strings
+                ``passed``: bool (True if no errors)
+        """
+        project_dir = Path(project_dir)
+        report_name = project_dir.name
+        sm_dir = project_dir / f'{report_name}.SemanticModel'
+
+        errors = []
+        warnings = []
+
+        if not sm_dir.exists():
+            return {'errors': ['SemanticModel directory not found'],
+                    'warnings': [], 'passed': False}
+
+        # 1. Column/measure existence check
+        sem_refs = cls.validate_semantic_references(str(sm_dir))
+        for ref in sem_refs:
+            if 'Unknown column/measure' in ref:
+                errors.append(ref)
+            else:
+                warnings.append(ref)
+
+        # 2. Relationship column existence
+        rel_issues = cls.validate_relationship_columns(str(sm_dir))
+        for issue in rel_issues:
+            if 'not found in table' in issue:
+                errors.append(issue)
+            else:
+                warnings.append(issue)
+
+        # 3. LOOKUPVALUE ambiguity
+        lv_issues = cls.validate_lookupvalue_ambiguity(str(sm_dir))
+        warnings.extend(lv_issues)
+
+        # 4. Measure column context
+        ctx_issues = cls.validate_measure_column_context(str(sm_dir))
+        warnings.extend(ctx_issues)
+
+        passed = len(errors) == 0
+        return {'errors': errors, 'warnings': warnings, 'passed': passed}
+
     @classmethod
     def validate_project(cls, project_dir):
         """

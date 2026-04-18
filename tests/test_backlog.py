@@ -1563,10 +1563,170 @@ class TestCamelCaseSplitColumnResolution(unittest.TestCase):
         dax_expr = full_name.get('expression', '')
         if 'FirstName (Created By)' in dax_expr:
             has_correct_ref = True
-
         self.assertTrue(has_correct_ref,
                         "Column ref should use 'FirstName (Created By)', "
                         f"not bare 'First Name'. Got: {dax_expr}")
+
+
+class TestPBIDesktopValidation(unittest.TestCase):
+    """Tests for automated PBI Desktop error detection (Bug 15)."""
+
+    def _create_model(self, tables_tmdl, relationships_tmdl=None, model_tmdl=None):
+        """Create a temporary SemanticModel directory with TMDL files."""
+        tmpdir = tempfile.mkdtemp()
+        proj_dir = os.path.join(tmpdir, 'Test')
+        sm_dir = os.path.join(proj_dir, 'Test.SemanticModel', 'definition')
+        tables_dir = os.path.join(sm_dir, 'tables')
+        os.makedirs(tables_dir)
+        # model.tmdl
+        model_content = model_tmdl or "model Model\n\tculture: en-US\n"
+        with open(os.path.join(sm_dir, 'model.tmdl'), 'w', encoding='utf-8') as f:
+            f.write(model_content)
+        # table files
+        for name, content in tables_tmdl.items():
+            with open(os.path.join(tables_dir, f'{name}.tmdl'), 'w', encoding='utf-8') as f:
+                f.write(content)
+        # relationships.tmdl
+        if relationships_tmdl:
+            with open(os.path.join(sm_dir, 'relationships.tmdl'), 'w', encoding='utf-8') as f:
+                f.write(relationships_tmdl)
+        self._tmpdir = tmpdir
+        return proj_dir
+
+    def tearDown(self):
+        if hasattr(self, '_tmpdir') and os.path.exists(self._tmpdir):
+            shutil.rmtree(self._tmpdir, ignore_errors=True)
+
+    def test_validate_semantic_references_detects_missing_column(self):
+        """validate_semantic_references catches 'Table'[NonExistent]."""
+        proj = self._create_model({
+            'Orders': (
+                "table Orders\n"
+                "\tcolumn Id\n"
+                "\tcolumn Amount\n"
+                "\tmeasure 'Total' = SUM('Orders'[Amount])\n"
+                "\tmeasure 'Bad' = SUM('Orders'[NonExistent])\n"
+            ),
+        })
+        sm_dir = os.path.join(proj, 'Test.SemanticModel')
+        issues = ArtifactValidator.validate_semantic_references(sm_dir)
+        self.assertTrue(any('NonExistent' in i and 'Orders' in i for i in issues))
+
+    def test_validate_lookupvalue_ambiguity_flags_non_key(self):
+        """LOOKUPVALUE on non-unique column is flagged."""
+        proj = self._create_model(
+            {
+                'Users': (
+                    "table Users\n"
+                    "\tcolumn Id\n"
+                    "\tcolumn 'Order Amount' = LOOKUPVALUE("
+                    "Orders[Amount], Orders[UserId], Users[Id])\n"
+                ),
+                'Orders': (
+                    "table Orders\n"
+                    "\tcolumn Id\n"
+                    "\tcolumn UserId\n"
+                    "\tcolumn Amount\n"
+                ),
+            },
+            relationships_tmdl=(
+                "relationship r1\n"
+                "\tfromColumn: Orders.UserId\n"
+                "\ttoColumn: Users.Id\n"
+                "\tfromCardinality: many\n"
+                "\ttoCardinality: many\n"
+            ),
+        )
+        sm_dir = os.path.join(proj, 'Test.SemanticModel')
+        issues = ArtifactValidator.validate_lookupvalue_ambiguity(sm_dir)
+        self.assertTrue(any('LOOKUPVALUE ambiguity' in i for i in issues),
+                        f"Expected ambiguity warning, got: {issues}")
+
+    def test_validate_lookupvalue_no_warning_on_key(self):
+        """LOOKUPVALUE on a unique key column should not warn."""
+        proj = self._create_model(
+            {
+                'Users': (
+                    "table Users\n"
+                    "\tcolumn Id\n"
+                    "\tcolumn 'Order Amount' = LOOKUPVALUE("
+                    "Orders[Amount], Orders[Id], Users[Id])\n"
+                ),
+                'Orders': (
+                    "table Orders\n"
+                    "\tcolumn Id\n"
+                    "\tcolumn Amount\n"
+                ),
+            },
+            relationships_tmdl=(
+                "relationship r1\n"
+                "\tfromColumn: Users.Id\n"
+                "\ttoColumn: Orders.Id\n"
+                "\tfromCardinality: many\n"
+                "\ttoCardinality: one\n"
+            ),
+        )
+        sm_dir = os.path.join(proj, 'Test.SemanticModel')
+        issues = ArtifactValidator.validate_lookupvalue_ambiguity(sm_dir)
+        self.assertEqual(len(issues), 0, f"Expected no warnings, got: {issues}")
+
+    def test_validate_measure_column_context_bare_ref(self):
+        """Measure with bare column ref (no aggregation) is flagged."""
+        proj = self._create_model({
+            'Sales': (
+                "table Sales\n"
+                "\tcolumn Id\n"
+                "\tcolumn Region\n"
+                "\tmeasure 'Bad Measure' = 'Sales'[Region]\n"
+            ),
+        })
+        sm_dir = os.path.join(proj, 'Test.SemanticModel')
+        issues = ArtifactValidator.validate_measure_column_context(sm_dir)
+        self.assertTrue(any('without aggregation' in i for i in issues),
+                        f"Expected bare ref warning, got: {issues}")
+
+    def test_validate_measure_column_context_aggregated_ok(self):
+        """Measure with aggregated column ref is not flagged."""
+        proj = self._create_model({
+            'Sales': (
+                "table Sales\n"
+                "\tcolumn Id\n"
+                "\tcolumn Amount\n"
+                "\tmeasure 'Total Sales' = SUM('Sales'[Amount])\n"
+            ),
+        })
+        sm_dir = os.path.join(proj, 'Test.SemanticModel')
+        issues = ArtifactValidator.validate_measure_column_context(sm_dir)
+        self.assertEqual(len(issues), 0, f"Expected no warnings, got: {issues}")
+
+    def test_run_pbi_validation_combined(self):
+        """run_pbi_validation combines all checks."""
+        proj = self._create_model({
+            'Sales': (
+                "table Sales\n"
+                "\tcolumn Id\n"
+                "\tcolumn Amount\n"
+                "\tmeasure 'Total' = SUM('Sales'[Amount])\n"
+                "\tmeasure 'Bad' = SUM('Sales'[Missing])\n"
+            ),
+        })
+        result = ArtifactValidator.run_pbi_validation(proj)
+        self.assertFalse(result['passed'])
+        self.assertTrue(any('Missing' in e for e in result['errors']))
+
+    def test_run_pbi_validation_clean_model(self):
+        """run_pbi_validation passes on a clean model."""
+        proj = self._create_model({
+            'Sales': (
+                "table Sales\n"
+                "\tcolumn Id\n"
+                "\tcolumn Amount\n"
+                "\tmeasure 'Total' = SUM('Sales'[Amount])\n"
+            ),
+        })
+        result = ArtifactValidator.run_pbi_validation(proj)
+        self.assertTrue(result['passed'])
+        self.assertEqual(len(result['errors']), 0)
 
 
 class TestParameterControlSlicerSkip(unittest.TestCase):

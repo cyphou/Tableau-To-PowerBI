@@ -2707,16 +2707,49 @@ def _print_migration_summary(results, report_summary, start_time):
 
     all_success = all(v for v in results.values() if v is not None)
 
+    # ── Automatic PBI Desktop validation ──────────────────────────
+    pbi_validation_passed = True
+    if all_success and _stats.pbip_path:
+        try:
+            from powerbi_import.validator import ArtifactValidator
+            pbi_result = ArtifactValidator.run_pbi_validation(_stats.pbip_path)
+            pbi_errors = pbi_result.get('errors', [])
+            pbi_warnings = pbi_result.get('warnings', [])
+            pbi_validation_passed = pbi_result.get('passed', True)
+
+            if pbi_errors or pbi_warnings:
+                print(f"\n  PBI Desktop Validation:")
+                if pbi_errors:
+                    print(f"    ✗ {len(pbi_errors)} error(s) — these will cause errors in PBI Desktop:")
+                    for e in pbi_errors[:20]:
+                        print(f"      ERROR: {e}")
+                    if len(pbi_errors) > 20:
+                        print(f"      ... and {len(pbi_errors) - 20} more")
+                if pbi_warnings:
+                    print(f"    ⚠ {len(pbi_warnings)} warning(s):")
+                    for w in pbi_warnings[:10]:
+                        print(f"      WARN: {w}")
+                    if len(pbi_warnings) > 10:
+                        print(f"      ... and {len(pbi_warnings) - 10} more")
+            else:
+                print(f"\n  PBI Desktop Validation: ✓ No issues detected")
+        except Exception as exc:
+            logger.debug("PBI validation skipped: %s", exc)
+
     if all_success:
         print("\n✓ Migration completed successfully!")
         if _stats.pbip_path:
             print(f"\n  Output: {_stats.pbip_path}")
-        print("\n  Next steps:")
-        print("    1. Open the .pbip file in Power BI Desktop (Developer Mode)")
-        print("    2. Configure data sources in Power Query Editor")
-        print("    3. Verify DAX measures and calculated columns")
-        print("    4. Check relationships in the Model view")
-        print("    5. Compare visuals with the original Tableau workbook")
+        if pbi_validation_passed:
+            print("\n  Next steps:")
+            print("    1. Open the .pbip file in Power BI Desktop (Developer Mode)")
+            print("    2. Configure data sources in Power Query Editor")
+            print("    3. Verify DAX measures and calculated columns")
+            print("    4. Check relationships in the Model view")
+            print("    5. Compare visuals with the original Tableau workbook")
+        else:
+            print("\n  ⚠ PBI Desktop may report errors — review the validation output above")
+            print("    Fix the reported issues before opening in PBI Desktop")
     else:
         print("\n✗ Migration completed with errors")
 
