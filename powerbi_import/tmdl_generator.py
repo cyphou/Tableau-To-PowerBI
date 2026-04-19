@@ -2841,8 +2841,11 @@ def _fix_related_for_many_to_many(model):
         for col in table.get('columns', []):
             expr = col.get('expression', '')
             if expr and 'RELATED(' in expr:
+                # Use CALCULATE(MIN(...)) for calc columns — LOOKUPVALUE
+                # errors when the search column is not unique (one-to-many).
                 col['expression'] = _replace_related_with_lookupvalue(
-                    expr, m2m_pairs, current_table)
+                    expr, m2m_pairs, current_table,
+                    use_calculate_min=True)
         for measure in table.get('measures', []):
             expr = measure.get('expression', '')
             if expr and 'RELATED(' in expr:
@@ -2855,8 +2858,16 @@ def _fix_related_for_many_to_many(model):
                 measure['expression'] = expr
 
 
-def _replace_related_with_lookupvalue(expr, m2m_pairs, current_table=''):
-    """Replace RELATED('table'[col]) with LOOKUPVALUE() for m2m tables."""
+def _replace_related_with_lookupvalue(expr, m2m_pairs, current_table='',
+                                      use_calculate_min=False):
+    """Replace RELATED('table'[col]) with LOOKUPVALUE() for m2m tables.
+
+    When *use_calculate_min* is True (calculated columns), generates
+    ``CALCULATE(MIN('table'[col]))`` instead of ``LOOKUPVALUE()``.
+    LOOKUPVALUE errors at runtime when the search column is not unique
+    (e.g. one user creates many opportunities), while CALCULATE(MIN(...))
+    safely aggregates across matching rows via the model relationship.
+    """
     pattern = r"RELATED\(('([^']+)'|([A-Za-z0-9_][A-Za-z0-9_ .-]*))\[([^\]]*(?:\]\][^\]]*)*)\]\)"
 
     def replacer(match):
@@ -2874,6 +2885,11 @@ def _replace_related_with_lookupvalue(expr, m2m_pairs, current_table=''):
         ct_esc = current_table.replace("'", "''")
         t_ref = f"'{t_esc}'" if not table_name.isidentifier() else table_name
         ct_ref = f"'{ct_esc}'" if not current_table.isidentifier() else current_table
+
+        if use_calculate_min:
+            # CALCULATE(MIN(...)) aggregates across matching rows via the
+            # relationship — safe when the search column has duplicates.
+            return f"CALCULATE(MIN({t_ref}[{col_name}]))"
 
         return f"LOOKUPVALUE({t_ref}[{col_name}], {t_ref}[{ref_join_col}], {ct_ref}[{current_join_col}])"
 

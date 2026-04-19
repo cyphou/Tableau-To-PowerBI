@@ -1,5 +1,10 @@
 # Changelog
 
+## v28.5.1 — LOOKUPVALUE Ambiguity Fix for Calc Columns
+
+- **Fix LOOKUPVALUE ambiguity in manyToMany calc columns**: Calculated columns that reference other tables via manyToMany relationships now use `CALCULATE(MIN(...))` instead of `LOOKUPVALUE(...)`. LOOKUPVALUE errors at runtime with "single value cannot be determined" when the search column has duplicates (e.g. one user creates many opportunities). `CALCULATE(MIN(...))` safely aggregates across matching rows via the model relationship.
+- Measures inside iterators (SUMX, AVERAGEX, etc.) continue to use LOOKUPVALUE — the iterator provides row context where the search column is unique.
+
 ## v28.5.0 — Comprehensive Bug Fix & Security Hardening
 
 ### MAXX Boolean Wrapping Fix
