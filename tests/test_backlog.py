@@ -1885,6 +1885,14 @@ class TestMetadataColLocalNameMap(unittest.TestCase):
         self.assertEqual(result.get('Probability (%)'), 'Opportunities')
         self.assertEqual(result.get('Name (Created By)'), 'Created By')
 
+    def test_extract_col_type_map(self):
+        """_extract_col_type_map returns local-name → datatype from metadata-records."""
+        from tableau_export.datasource_extractor import _extract_col_type_map
+        elem = self._make_xml()
+        result = _extract_col_type_map(elem)
+        self.assertEqual(result.get('Probability (%)'), 'real')
+        self.assertEqual(result.get('Opportunity ID'), 'string')
+
     def test_ensure_calc_referenced_columns_adds_missing(self):
         """_ensure_calc_referenced_columns adds columns to parent tables."""
         from tableau_export.datasource_extractor import _ensure_calc_referenced_columns
@@ -1905,6 +1913,9 @@ class TestMetadataColLocalNameMap(unittest.TestCase):
                 'Opportunity ID': 'Opportunities',
                 'Probability (%)': 'Opportunities',
             },
+            'col_type_map': {
+                'Probability (%)': 'real',
+            },
         }
         _ensure_calc_referenced_columns(datasource)
         opp_cols = {c['name'] for c in datasource['tables'][0]['columns']}
@@ -1913,6 +1924,15 @@ class TestMetadataColLocalNameMap(unittest.TestCase):
         # Existing column should not be duplicated
         self.assertEqual(sum(1 for c in datasource['tables'][0]['columns']
                             if c['name'] == 'Amount'), 1)
+        # Probability (%) should inherit type from col_type_map
+        prob_col = [c for c in datasource['tables'][0]['columns']
+                    if c['name'] == 'Probability (%)'][0]
+        self.assertEqual(prob_col['datatype'], 'real')
+        self.assertEqual(prob_col['role'], 'measure')
+        # Opportunity ID has no type map entry → defaults to string
+        oid_col = [c for c in datasource['tables'][0]['columns']
+                   if c['name'] == 'Opportunity ID'][0]
+        self.assertEqual(oid_col['datatype'], 'string')
 
     def test_ensure_calc_referenced_columns_skips_existing(self):
         """Columns already present in the table should not be re-added."""

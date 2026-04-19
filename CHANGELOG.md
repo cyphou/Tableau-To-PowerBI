@@ -1,5 +1,13 @@
 # Changelog
 
+## v28.5.4 — Metadata-Record Type Resolution for Physical Columns
+
+- **Fix column type inference from metadata-records**: Physical columns that have no `<column>` element at the datasource level (common with Salesforce, ServiceNow, and similar cloud connectors) were defaulting to `dataType: string`. Now uses `<metadata-record class="column">` `local-type` as the authoritative type source.
+- **Phase 2 metadata fallback**: When `<cols>/<map>` references a column that exists in `<metadata-record>` but not in `<column>` elements, the column is now added with the correct type from the metadata-record (e.g. `Probability (%)` → `real` → `Double`).
+- **`_extract_col_type_map()`**: New function builds column-name → datatype mapping from metadata-records for use by `_ensure_calc_referenced_columns()`.
+- **`_ensure_calc_referenced_columns()`**: Uses `col_type_map` to assign correct types (instead of hardcoded `'string'`) when adding missing columns referenced by calculations.
+- Resolves `SUM cannot work with values of type String` error for `Probability (%)` in Salesforce migration — column was `dataType: string` in TMDL but should be `double`.
+
 ## v28.5.3 — DATEADD Scalar Conversion (EDATE)
 
 - **Fix Tableau DATEADD → DAX EDATE**: Tableau `DATEADD('month', -36, date)` is a scalar function. DAX `DATEADD` is a Time Intelligence TABLE function (requires a date column from a date table). Generated `DATEADD(__MyToday, -36, MONTH)` failed in calculated columns because `__MyToday` is a scalar measure, not a date column.

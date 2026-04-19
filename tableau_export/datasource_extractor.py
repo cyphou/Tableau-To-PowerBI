@@ -96,6 +96,26 @@ def _extract_col_local_name_map(datasource_elem):
     return result
 
 
+def _extract_col_type_map(datasource_elem):
+    """Build mapping of column local-names to their data types.
+
+    Uses ``<metadata-record class="column">`` ``local-type`` which is the
+    authoritative type for physical columns that may lack a ``<column>``
+    element (e.g. Salesforce ``Probability``).
+
+    Returns:
+        dict mapping column local-name (without brackets) to Tableau
+        datatype string, e.g. ``{'Probability (%)': 'real'}``.
+    """
+    result = {}
+    for mr in datasource_elem.findall('.//metadata-record[@class="column"]'):
+        local_name = (mr.findtext('local-name') or '').strip().strip('[]')
+        local_type = (mr.findtext('local-type') or '').strip()
+        if local_name and local_type and local_name not in result:
+            result[local_name] = local_type
+    return result
+
+
 def extract_datasource(datasource_elem, twbx_path=None):
     """
     Extracts the full details of a Tableau datasource
@@ -127,6 +147,7 @@ def extract_datasource(datasource_elem, twbx_path=None):
         'columns': extract_column_metadata(datasource_elem),
         'relationships': extract_relationships(datasource_elem),
         'col_local_name_map': _extract_col_local_name_map(datasource_elem),
+        'col_type_map': _extract_col_type_map(datasource_elem),
     }
 
     # Ensure join columns referenced by relationships exist in their tables.
@@ -198,6 +219,7 @@ def _ensure_calc_referenced_columns(datasource):
     tables = datasource.get('tables', [])
     calcs = datasource.get('calculations', [])
     col_map = datasource.get('col_local_name_map', {})
+    col_type_map = datasource.get('col_type_map', {})
     if not tables or not calcs or not col_map:
         return
 
@@ -227,11 +249,14 @@ def _ensure_calc_referenced_columns(datasource):
         suffixed = f"{col_name} ({parent_table})"
         if suffixed in col_names:
             continue
+        # Use authoritative type from metadata-records when available
+        dtype = col_type_map.get(col_name, 'string')
+        role = 'measure' if dtype in ('real', 'integer') else 'dimension'
         table_obj.setdefault('columns', []).append({
             'name': col_name,
-            'datatype': 'string',
-            'role': 'dimension',
-            'type': 'nominal',
+            'datatype': dtype,
+            'role': role,
+            'type': 'quantitative' if dtype in ('real', 'integer') else 'nominal',
             'hidden': True,
         })
         table_lookup[parent_table] = (table_obj, col_names | {col_name})
@@ -751,6 +776,15 @@ def extract_tables_with_columns(datasource_elem, connection_map=None):
                 'default_format': col_elem.get('default-format', ''),
             }
         
+        # Build metadata-record type lookup for columns missing from
+        # datasource-level <column> elements (e.g. Salesforce Probability).
+        metadata_type_map = {}  # "[ColName]" -> local-type
+        for mr in datasource_elem.findall('.//metadata-record[@class="column"]'):
+            local_name = (mr.findtext('local-name') or '').strip()
+            local_type = (mr.findtext('local-type') or '').strip()
+            if local_name and local_type:
+                metadata_type_map[local_name] = local_type
+
         # Populate columns for each table that needs them
         for table in tables_needing_columns:
             tname = table['name']
@@ -761,6 +795,22 @@ def extract_tables_with_columns(datasource_elem, connection_map=None):
                     col = dict(ds_columns[key])
                     col['ordinal'] = ordinal
                     col['remote_name'] = remote
+                    ordinal += 1
+                    table['columns'].append(col)
+                elif key in metadata_type_map:
+                    # Column exists in <cols>/<map> and metadata-records
+                    # but has no <column> element (e.g. Salesforce fields
+                    # like Probability that are physical but not declared).
+                    dtype = metadata_type_map[key]
+                    col = {
+                        'name': key.strip('[]'),
+                        'datatype': dtype,
+                        'role': 'measure' if dtype in ('real', 'integer') else 'dimension',
+                        'ordinal': ordinal,
+                        'length': None,
+                        'nullable': True,
+                        'remote_name': remote,
+                    }
                     ordinal += 1
                     table['columns'].append(col)
     
