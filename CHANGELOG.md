@@ -2,6 +2,15 @@
 
 ## v28.5.0 — Comprehensive Bug Fix & Security Hardening
 
+### MAXX Boolean Wrapping Fix
+
+- **Fix `MAX cannot work with values of type Boolean` PBI error**: All 4 boolean column wrapping sites changed from `MAX(IF(col, 1, 0))` to `MAXX('Table', IF(col, 1, 0))`. DAX's `MAX()` with a single argument requires a column reference — `IF(col, 1, 0)` is an expression, not a column reference. `MAXX` is an iterator function that correctly evaluates the IF expression per row.
+- **4 wrapping sites fixed**:
+  - `dax_converter.py` `_wrap_bare_column_refs_in_measure()` — primary wrapping during DAX conversion
+  - `tmdl_generator.py` self-heal loop — fallback wrapping for bare column refs
+  - `tmdl_generator.py` bare-ref type-aware wrapping — calc column → measure promotion
+  - `tmdl_generator.py` cross-table SUM wrapping — same-table boolean columns
+
 ### DAX Conversion Fixes (7 bugs)
 
 - **Bug 1 — DATEADD argument reorder**: Tableau's `DATEADD('month', 3, [Date])` was passing through unchanged. DAX expects `DATEADD([Date], 3, MONTH)` — dedicated `_convert_dateadd()` now reorders arguments correctly.

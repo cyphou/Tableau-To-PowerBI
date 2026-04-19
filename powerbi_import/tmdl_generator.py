@@ -708,12 +708,14 @@ def _self_heal_model(model, recovery=None):
                     continue
 
                 # Wrap: 'Table'[Col] → MAX('Table'[Col])
-                # For Boolean columns, MAX() is invalid — use MAX(IF(col, 1, 0))
-                # which converts TRUE/FALSE → 1/0 before aggregation.
+                # For Boolean columns, MAX(IF(col, 1, 0)) is invalid because
+                # MAX with a single arg needs a column reference, not an
+                # expression.  Use MAXX('Table', IF(col, 1, 0)) instead.
                 ref_text = ref_match.group(0)
+                tbl_esc = tname.replace("'", "''")
                 if ref_col in bool_cols:
                     new_expr = (new_expr[:ref_match.start()] +
-                                f'MAX(IF({ref_text}, 1, 0))' +
+                                f"MAXX('{tbl_esc}', IF({ref_text}, 1, 0))" +
                                 new_expr[ref_match.end():])
                 else:
                     new_expr = (new_expr[:ref_match.start()] +
@@ -2067,7 +2069,7 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
     # _resolve_columns prefers same-table refs over cross-table RELATED().
     _this_table_columns = {c.get('name', '') for c in columns if c.get('name', '')}
     # Track boolean columns — MAX()/SUM() don't support Boolean type;
-    # these need MAX(IF(col, 1, 0)) wrapping instead.
+    # these need MAXX('Table', IF(col, 1, 0)) wrapping instead.
     _bool_table_columns = {c.get('name', '') for c in columns
                            if c.get('name', '')
                            and (c.get('datatype', '') or '').lower() == 'boolean'}
@@ -2265,14 +2267,17 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
             # DAX measures cannot be bare column references — they need an
             # aggregation.  If the converted DAX is just 'Table'[Col] or
             # [Col], wrap it in SUM() so PBI Desktop accepts it.
-            # Type-aware: SUM for numeric, MAX for string/date, MAX(IF(col,1,0)) for boolean.
+            # Type-aware: SUM for numeric, MAX for string/date, MAXX(IF(col,1,0)) for boolean.
             _bare_col_re = re.compile(
                 r"^(?:'[^']*')?\[[^\]]+\]$"
             )
             if _bare_col_re.match(dax_formula.strip()):
                 dt_lower = (datatype or '').lower()
                 if dt_lower == 'boolean':
-                    dax_formula = f"MAX(IF({dax_formula.strip()}, 1, 0))"
+                    # MAX(IF(col,1,0)) is invalid — MAX needs a column ref.
+                    # Use MAXX('Table', IF(col,1,0)) iterator instead.
+                    tbl_esc = result_table.get('name', '').replace("'", "''")
+                    dax_formula = f"MAXX('{tbl_esc}', IF({dax_formula.strip()}, 1, 0))"
                 elif dt_lower in ('string', 'date', 'datetime'):
                     dax_formula = f"MAX({dax_formula.strip()})"
                 else:
@@ -2437,12 +2442,13 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
                 continue  # Inside aggregation/iterator — row-level ref
             # Bare column ref not inside any aggregation → wrap.
             # Type-aware: SUM for numeric, MAX for string/date,
-            # MAX(IF(col, 1, 0)) for Boolean.
+            # MAXX('Table', IF(col, 1, 0)) for Boolean.
             old_ref = m_col.group(0)
             tbl_name = m_col.group(1).replace("''", "'")
             is_same_table = tbl_name == result_table.get("name", "")
             if is_same_table and col_name in _bool_cols_for_xtable:
-                new_ref = f"MAX(IF({old_ref}, 1, 0))"
+                tbl_esc = tbl_name.replace("'", "''")
+                new_ref = f"MAXX('{tbl_esc}', IF({old_ref}, 1, 0))"
             elif is_same_table and col_name in _text_date_cols_for_xtable:
                 new_ref = f"MAX({old_ref})"
             else:

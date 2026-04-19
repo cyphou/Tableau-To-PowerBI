@@ -2419,7 +2419,7 @@ def _wrap_bare_column_refs_in_measure(dax, table_name, table_columns, measure_na
     LOD-derived calculated columns (they have one value per filter context).
 
     For Boolean columns, MAX() is invalid in DAX — wrap with
-    MAX(IF(col, 1, 0)) instead, converting TRUE/FALSE to 1/0.
+    MAXX('Table', IF(col, 1, 0)) instead, converting TRUE/FALSE to 1/0.
 
     Only wraps refs that:
     - Point to the current table
@@ -2465,8 +2465,9 @@ def _wrap_bare_column_refs_in_measure(dax, table_name, table_columns, measure_na
             continue
 
         ref_text = ref_match.group(0)
+        tbl_esc = table_name.replace("'", "''")
         if ref_col in _bool_cols:
-            wrap = f'MAX(IF({ref_text}, 1, 0))'
+            wrap = f"MAXX('{tbl_esc}', IF({ref_text}, 1, 0))"
         else:
             wrap = f'MAX({ref_text})'
         result = (result[:ref_match.start()] +
