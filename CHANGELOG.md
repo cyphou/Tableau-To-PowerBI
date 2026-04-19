@@ -1,5 +1,33 @@
 # Changelog
 
+## v28.5.8 — Code Optimization & Documentation Update
+
+- **Performance: early-exit in `_ensure_comparison_spacing()`**: Skip the regex split entirely when the formula contains no `<` or `>` characters — saves ~0.5ms per measure for the majority of formulas that have no comparison operators.
+- **Performance: single-pass column set construction in `_build_table()`**: Merged two separate comprehensions (`_this_table_columns` and `_bool_table_columns`) into one loop over `columns`, reducing iteration overhead for large tables.
+- **Performance: remove redundant `list()` wrappers in `pbip_generator.py`**: `converted_objects.get('filters', [])` already returns a list — eliminated unnecessary `list()` conversions at two filter aggregation sites.
+- **Documentation**: Updated README badges (version 28.5.8, 7,099 tests). Updated KNOWN_LIMITATIONS.md to v28.5.8 with notes on v28.5.x fixes (metadata-record type resolution, DATEADD scalar conversion, comparison operator spacing, bare calc reference inlining).
+- 7,099 tests passing across 141+ test files.
+
+## v28.5.7 — Comparison Operator Spacing in DAX
+
+- **Fix `]>EDATE` and `]<0` spacing in calc columns**: Comparison operators (`>`, `<`, `>=`, `<=`, `<>`) immediately adjacent to bracket-delimited identifiers were not spaced, causing some DAX parsers to misparse expressions like `[Days to Close]>-1*INT("90")`.
+- **`_ensure_comparison_spacing(dax)`**: New Phase 6 post-processing step that splits on delimited tokens (strings, brackets, quoted names) and adds spaces around comparison operators in non-delimited segments only.
+- **Preserves delimited content**: String literals (`"a>b"`), bracket identifiers (`[Col>Name]`), and quoted table names (`'Table>1'`) are not modified.
+- 6 new tests in `TestComparisonOperatorSpacing`.
+- 7,099 tests passing (+6 from v28.5.6).
+
+## v28.5.6 — Bracket Protection for Bare Calc Reference Inlining
+
+- **Fix bracket-wrapped references during inline substitution**: When `_resolve_references()` inlined a bare calculation reference like `[My Calc]` with its DAX expression, the regex replacement could corrupt nearby bracket-delimited identifiers. Now protects all `[...]` tokens before substitution and restores them after.
+- 1 new test in `TestBareCalcReferenceInlining`.
+- 7,093 tests passing.
+
+## v28.5.5 — Bare Calculation Reference Inlining
+
+- **Fix unresolved `[Calculation_xxx]` references in DAX measures**: When a calculation referenced another calculation by its raw name (e.g. `[Calculation_123]`) and that calculation had a known caption and formula, the reference was left unresolved. Now `_resolve_references()` inlines the formula for bare calculation references that match known `calc_map` entries.
+- 3 new tests in `TestBareCalcReferenceInlining`.
+- 7,092 tests passing.
+
 ## v28.5.4 — Metadata-Record Type Resolution for Physical Columns
 
 - **Fix column type inference from metadata-records**: Physical columns that have no `<column>` element at the datasource level (common with Salesforce, ServiceNow, and similar cloud connectors) were defaulting to `dataType: string`. Now uses `<metadata-record class="column">` `local-type` as the authoritative type source.

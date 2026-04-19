@@ -2759,6 +2759,9 @@ def _ensure_comparison_spacing(dax):
     misparse.  Multi-character operators (>=, <=, <>) are handled before
     single-character ones (>, <) to avoid partial matches.
     """
+    # Fast path: skip regex split when no comparison operators present
+    if '<' not in dax and '>' not in dax:
+        return dax
     # Split into delimited tokens (strings, brackets, quoted names) and the rest
     parts = re.split(r'("(?:[^"\\]|\\.)*"|\[[^\]]*\]|\'(?:[^\']|\'\')*\')', dax)
     result = []

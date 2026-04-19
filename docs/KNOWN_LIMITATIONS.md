@@ -2,7 +2,9 @@
 
 This document lists known limitations and approximations in the Tableau to Power BI migration tool.
 
-> **Last updated:** v28.4.0 — Aggregation-Aware Cross-Table SUM Wrapping — many previous limitations have been addressed in Sprints 27-111. See below for current status.
+> **Last updated:** v28.5.8 — Code Optimization & Documentation Update — many previous limitations have been addressed in Sprints 27-111. See below for current status.
+>
+> **v28.5.x notes (bug fixes):** Metadata-record type resolution for cloud connector columns (Salesforce, ServiceNow) that lack `<column>` elements (v28.5.4). DATEADD scalar conversion — Tableau scalar DATEADD → DAX EDATE/arithmetic instead of table-function DATEADD (v28.5.3). Universal manyToMany calc column fix using CALCULATE(SELECTEDVALUE()) (v28.5.2). Bare calculation reference inlining — unresolved `[Calculation_xxx]` references now inline their DAX formulas (v28.5.5–v28.5.6). Comparison operator spacing — `]>EDATE` → `] > EDATE` prevents DAX misparse (v28.5.7). Performance optimizations in DAX converter, TMDL generator, and PBIR generator (v28.5.8). 7,099 tests across 141+ files.
 >
 > **v28.0.0 Phase 1 notes (Sprints 108–111):** TDS/TDSX standalone datasource migration — `.tds`/`.tdsx` files produce SemanticModel-only `.pbip` projects (S108). TDSX Hyper data inlining — `hyper_files.json` as 17th extracted JSON, `generate_m_from_hyper()` for M partition inlining (S109). REST API endpoint — stdlib `http.server` with POST /migrate, GET /status, GET /download, GET /health, GET /jobs; Dockerfile for container deployment (S110). Schema drift detection — `schema_drift.py` with `detect_schema_drift()`, `load_snapshot()`, `save_snapshot()`, `--check-drift` CLI (S111). 7,072 tests across 141+ files.
 >

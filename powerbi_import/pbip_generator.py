@@ -1346,8 +1346,7 @@ class PowerBIProjectGenerator:
             }
         
         # Promote global filters and datasource-level filters to report level
-        all_report_filters = list(converted_objects.get('filters', []))
-        all_report_filters += list(converted_objects.get('datasource_filters', []))
+        all_report_filters = converted_objects.get('filters', []) + converted_objects.get('datasource_filters', [])
         if all_report_filters:
             report_level_filters = self._create_visual_filters(all_report_filters)
             if report_level_filters:
@@ -1530,8 +1529,7 @@ class PowerBIProjectGenerator:
             _write_json(os.path.join(res_dir, 'TableauMigrationTheme.json'), custom_theme)
 
         # Report-level filters
-        all_report_filters = list(converted_objects.get('filters', []))
-        all_report_filters += list(converted_objects.get('datasource_filters', []))
+        all_report_filters = converted_objects.get('filters', []) + converted_objects.get('datasource_filters', [])
         if all_report_filters:
             report_level_filters = self._create_visual_filters(all_report_filters)
             if report_level_filters:

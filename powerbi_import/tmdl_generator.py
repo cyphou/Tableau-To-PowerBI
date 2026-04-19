@@ -2065,14 +2065,17 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
     m_calc_steps = []  # Accumulated M Table.AddColumn steps (replaces DAX calc cols)
     dax_only_calc_cols = set()  # Names of calc columns that stayed as DAX (not converted to M)
 
-    # Build set of column names belonging to *this* table so that
-    # _resolve_columns prefers same-table refs over cross-table RELATED().
-    _this_table_columns = {c.get('name', '') for c in columns if c.get('name', '')}
-    # Track boolean columns — MAX()/SUM() don't support Boolean type;
-    # these need MAXX('Table', IF(col, 1, 0)) wrapping instead.
-    _bool_table_columns = {c.get('name', '') for c in columns
-                           if c.get('name', '')
-                           and (c.get('datatype', '') or '').lower() == 'boolean'}
+    # Build column name sets in a single pass — _this_table_columns for
+    # same-table ref resolution, _bool_table_columns for type-aware wrapping
+    # (MAX/SUM don't support Boolean; need MAXX('T', IF(col, 1, 0))).
+    _this_table_columns = set()
+    _bool_table_columns = set()
+    for _c in columns:
+        _cn = _c.get('name', '')
+        if _cn:
+            _this_table_columns.add(_cn)
+            if (_c.get('datatype', '') or '').lower() == 'boolean':
+                _bool_table_columns.add(_cn)
 
     for calc in calculations:
         calc_name = calc.get('name', '').replace('[', '').replace(']', '')
