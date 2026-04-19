@@ -447,7 +447,28 @@ def _resolve_references(dax, calc_map, param_map, is_calc_column, param_values):
             return f'[{calc_map[ref]}]'
         return m.group(0)
     dax = _RE_CALC_REF.sub(resolve_calc, dax)
-    
+
+    # Bare (unbracketed) references to literal-value calculations.
+    # Tableau occasionally uses calc names without brackets
+    # (e.g. __MyToday instead of [__MyToday]).  DAX requires brackets
+    # for identifiers.  Since param_values entries are literal constants
+    # (numbers, DATE(), strings), inlining is always safe and avoids
+    # classification mismatches (e.g. dimension-role calcs not in
+    # measure_names).
+    if param_values:
+        for pname in sorted(param_values, key=len, reverse=True):
+            if pname not in dax:
+                continue
+            repl = param_values[pname]
+            # Process outside string literals to avoid false matches
+            parts = re.split(r'("(?:[^"\\]|\\.)*")', dax)
+            for i in range(0, len(parts), 2):
+                parts[i] = re.sub(
+                    r'(?<!\[)\b' + re.escape(pname) + r'\b(?!\])',
+                    repl, parts[i]
+                )
+            dax = ''.join(parts)
+
     return dax
 
 

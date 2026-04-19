@@ -2174,7 +2174,7 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
             for ms in result_table.get("measures", []):
                 ms_name = ms.get("name", "")
                 ms_expr = ms.get("expression", "").strip()
-                if ms_expr and re.match(r'^[\d.]+$|^"[^"]*"$|^true$|^false$', ms_expr, re.IGNORECASE):
+                if ms_expr and re.match(r'^[\d.]+$|^"[^"]*"$|^true$|^false$|^DATE\(\d+\s*,\s*\d+\s*,\s*\d+\)$|^TIME\(\d+\s*,\s*\d+\s*,\s*\d+\)$', ms_expr, re.IGNORECASE):
                     dax_formula = re.sub(
                         r'\[' + re.escape(ms_name) + r'\]',
                         ms_expr,

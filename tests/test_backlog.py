@@ -1972,5 +1972,65 @@ class TestMetadataColLocalNameMap(unittest.TestCase):
         self.assertIn("Opportunity ID", dax)
 
 
+class TestBareCalcReferenceInlining(unittest.TestCase):
+    """Bare (unbracketed) calc references should be inlined in calc columns."""
+
+    def test_bare_param_value_inlined_in_calc_column(self):
+        """__MyToday bare ref → DATE(2022,04,18) when is_calc_column=True."""
+        from tableau_export.dax_converter import convert_tableau_formula_to_dax as convert_to_dax
+        formula = '[Close Date]>DATEADD(\'month\',-36,__MyToday) AND [Close Date] <= __MyToday'
+        dax = convert_to_dax(
+            formula,
+            column_name='Is Last N months',
+            table_name='Owned By',
+            calc_map={},
+            param_map={},
+            column_table_map={'Close Date': 'Owned By'},
+            measure_names=set(),
+            is_calc_column=True,
+            param_values={'__MyToday': 'DATE(2022,04,18)'},
+        )
+        # Should NOT contain bare __MyToday — it should be inlined
+        self.assertNotIn('__MyToday', dax)
+        self.assertIn('DATE(2022,04,18)', dax)
+
+    def test_bare_param_value_inlined_in_measure(self):
+        """__MyToday bare ref → DATE(2022,04,18) even in measures."""
+        from tableau_export.dax_converter import convert_tableau_formula_to_dax as convert_to_dax
+        formula = '__MyToday'
+        dax = convert_to_dax(
+            formula,
+            column_name='Today',
+            table_name='Owned By',
+            calc_map={},
+            param_map={},
+            column_table_map={},
+            measure_names={'__MyToday'},
+            is_calc_column=False,
+            param_values={'__MyToday': 'DATE(2022,04,18)'},
+        )
+        # Should be inlined (literal values are always safe to inline)
+        self.assertIn('DATE(2022,04,18)', dax)
+        self.assertNotIn('MAX(', dax)
+
+    def test_bare_ref_not_replaced_inside_string(self):
+        """Bare ref inside a string literal should NOT be replaced."""
+        from tableau_export.dax_converter import convert_tableau_formula_to_dax as convert_to_dax
+        formula = 'IF [X]="__MyToday" THEN 1 ELSE 0 END'
+        dax = convert_to_dax(
+            formula,
+            column_name='Check',
+            table_name='T',
+            calc_map={},
+            param_map={},
+            column_table_map={'X': 'T'},
+            measure_names=set(),
+            is_calc_column=True,
+            param_values={'__MyToday': 'DATE(2022,04,18)'},
+        )
+        # The string literal should remain unchanged
+        self.assertIn('"__MyToday"', dax)
+
+
 if __name__ == '__main__':
     unittest.main()
