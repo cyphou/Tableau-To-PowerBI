@@ -460,11 +460,12 @@ def _resolve_references(dax, calc_map, param_map, is_calc_column, param_values):
             if pname not in dax:
                 continue
             repl = param_values[pname]
-            # Process outside string literals to avoid false matches
-            parts = re.split(r'("(?:[^"\\]|\\.)*")', dax)
+            # Process outside string literals AND bracket expressions
+            # to avoid replacing inside "strings" or [column names].
+            parts = re.split(r'("(?:[^"\\]|\\.)*"|\[[^\]]*\])', dax)
             for i in range(0, len(parts), 2):
                 parts[i] = re.sub(
-                    r'(?<!\[)\b' + re.escape(pname) + r'\b(?!\])',
+                    r'\b' + re.escape(pname) + r'\b',
                     repl, parts[i]
                 )
             dax = ''.join(parts)

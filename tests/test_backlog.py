@@ -2031,6 +2031,26 @@ class TestBareCalcReferenceInlining(unittest.TestCase):
         # The string literal should remain unchanged
         self.assertIn('"__MyToday"', dax)
 
+    def test_bare_ref_not_replaced_inside_brackets(self):
+        """Bare ref inside a [column name] should NOT be replaced."""
+        from tableau_export.dax_converter import convert_tableau_formula_to_dax as convert_to_dax
+        formula = 'if [Is Closed in Last x Days?] then "Last " + [Parameters].[pDays] + " days" else "Other" end'
+        dax = convert_to_dax(
+            formula,
+            column_name='Review Key',
+            table_name='T',
+            calc_map={},
+            param_map={'pDays': 'Last x Days'},
+            column_table_map={'Is Closed in Last x Days?': 'T'},
+            measure_names=set(),
+            is_calc_column=True,
+            param_values={'Last x Days': '"90"'},
+        )
+        # Column name must NOT have "90" substituted inside brackets
+        self.assertIn('[Is Closed in Last x Days?]', dax)
+        # But the parameter reference should be inlined
+        self.assertIn('"90"', dax)
+
 
 if __name__ == '__main__':
     unittest.main()
