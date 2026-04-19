@@ -601,15 +601,15 @@ class TestBuildVisualQuery(unittest.TestCase):
         fields = [{'name': 'Revenue'}, {'name': 'Revenue'}]
         result = self._query('clusteredBarChart', fields)
         qs = result['queryState']
-        # Only one projection for Revenue; no dims → fallback to card with Fields
-        self.assertIn('Fields', qs)
+        # Only one projection for Revenue; no dims → fallback to tableEx with Values
+        self.assertIn('Values', qs)
 
     def test_skip_tableau_internal_fields(self):
         fields = [{'name': '__tableau_internal_object_id__'}, {'name': 'Revenue'}]
         result = self._query('clusteredBarChart', fields)
         qs = result['queryState']
-        # Only Revenue remains (measure, no dims) → fallback to card with Fields
-        self.assertIn('Fields', qs)
+        # Only Revenue remains (measure, no dims) → fallback to tableEx with Values
+        self.assertIn('Values', qs)
 
     def test_measure_value_shelf_treated_as_measure(self):
         """Fields with shelf='measure_value' (from Measure Names expansion) → measure role."""
@@ -625,24 +625,24 @@ class TestBuildVisualQuery(unittest.TestCase):
         # Both measures should be in Y projections
         self.assertEqual(len(qs['Y']['projections']), 2)
 
-    def test_all_measures_fallback_to_card(self):
-        """Only measures (no dims) in a bar chart → fallback to card/multiRowCard."""
+    def test_all_measures_fallback_to_tableEx(self):
+        """Only measures (no dims) in a bar chart → fallback to tableEx."""
         fields = [{'name': 'Revenue'}, {'name': 'Profit'}]
         ws = {'chart_type': 'clusteredBarChart', 'fields': fields}
         result = self.gen._build_visual_query(ws)
         qs = result['queryState']
-        self.assertIn('Fields', qs)  # card uses 'Fields' role
+        self.assertIn('Values', qs)  # tableEx uses 'Values' role
         # Should set override visual type
-        self.assertEqual(ws.get('_override_visual_type'), 'card')
+        self.assertEqual(ws.get('_override_visual_type'), 'tableEx')
 
-    def test_all_measures_fallback_multirowcard(self):
-        """3+ measures → multiRowCard."""
+    def test_all_measures_fallback_tableEx_many(self):
+        """3+ measures → tableEx (preserves all data columns)."""
         self.gen._measure_names.add('Quantity')
         self.gen._bim_measure_names.add('Quantity')
         fields = [{'name': 'Revenue'}, {'name': 'Profit'}, {'name': 'Quantity'}]
         ws = {'chart_type': 'clusteredBarChart', 'fields': fields}
         result = self.gen._build_visual_query(ws)
-        self.assertEqual(ws.get('_override_visual_type'), 'multiRowCard')
+        self.assertEqual(ws.get('_override_visual_type'), 'tableEx')
 
     def test_multiple_measures_in_y_role(self):
         """Standard chart with dim + multiple measures → all measures in Y."""
@@ -654,6 +654,31 @@ class TestBuildVisualQuery(unittest.TestCase):
         self.assertIn('Category', qs)
         self.assertIn('Y', qs)
         self.assertEqual(len(qs['Y']['projections']), 3)
+
+    def test_bim_measure_in_category_reclassified(self):
+        """Field classified as dim by extractor but measure by TMDL → not in Category.
+
+        Regression test for SecondaryGroupsWithoutPrimary PBI error.
+        When a field is only in _bim_measure_names (not _measure_names),
+        _is_measure_field() must still return True so shelf classification
+        places it in axis_meas (Y/Values), not axis_dims (Category).
+        """
+        # 'Deal Size Bucket' is a BIM measure but not in extraction _measure_names
+        self.gen._bim_measure_names.add('Deal Size Bucket')
+        # Simulate: Deal Size Bucket on rows shelf (treated as dim by Tableau)
+        fields = [
+            {'name': 'Deal Size Bucket', 'shelf': 'rows'},
+            {'name': 'Revenue', 'shelf': 'rows'},
+        ]
+        ws = {'chart_type': 'clusteredBarChart', 'fields': fields}
+        result = self.gen._build_visual_query(ws)
+        qs = result['queryState']
+        # Deal Size Bucket should NOT be in Category (it's a BIM measure)
+        if 'Category' in qs:
+            cat_props = [p['field'].get('Measure', p['field'].get('Column', {})).get('Property', '')
+                         for p in qs['Category']['projections']]
+            self.assertNotIn('Deal Size Bucket', cat_props,
+                             'BIM measure should not appear in Category role')
 
     # ── Shelf-aware tests ────────────────────────────────────────
 

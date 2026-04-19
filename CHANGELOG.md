@@ -1,5 +1,15 @@
 # Changelog
 
+## v28.4.1 — SecondaryGroupsWithoutPrimary Fix
+
+### Changes
+
+- **Fix `SecondaryGroupsWithoutPrimary` PBI Desktop error**: Fields classified as dimensions during Tableau extraction but reclassified as measures by the TMDL generator (e.g. `Deal Size Bucket` — string-split field that transitively references `SUM()`) were placed in Category/Group roles with `Measure` wrappers, causing PBI error "DataShape has secondary groups but no primary".
+- **`_is_measure_field()` now checks `_bim_measure_names`**: Ensures TMDL-time measure classification is visible to shelf-aware field classification, preventing measures from being placed in dimension roles.
+- **Expanded chart fallback to `tableEx`**: When a chart type requiring a Category dimension (bar, column, line, area, pie, etc.) has only measures and no dimensions, it now degrades to `tableEx` (preserving all data columns) instead of `card`/`multiRowCard`. Covers 18 chart types.
+- 7,073 tests (+1).
+
+
 ## v28.4.0 — Aggregation-Aware SUM Wrapping & 12-Agent Architecture
 
 ### Aggregation-Aware Cross-Table Column Ref Wrapping (`tmdl_generator.py`) ✅

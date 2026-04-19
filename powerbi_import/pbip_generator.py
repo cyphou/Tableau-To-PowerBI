@@ -2152,14 +2152,27 @@ class PowerBIProjectGenerator:
         self._main_table = measures_table
     
     def _is_measure_field(self, field_name):
-        """Check if a field is a measure (aggregate) vs a dimension"""
+        """Check if a field is a measure (aggregate) vs a dimension.
+
+        Checks both extraction-time classification (``_measure_names``) and
+        TMDL-time classification (``_bim_measure_names``).  The latter is
+        needed because the TMDL generator may reclassify a calculation as a
+        measure when it transitively depends on aggregation (e.g. a string-
+        split field that references SUM()).  Without this, such fields are
+        placed in Category/Group dimension roles with a ``Measure`` wrapper,
+        causing PBI error ``SecondaryGroupsWithoutPrimary``.
+        """
         clean = field_name.replace('[', '').replace(']', '')
         if hasattr(self, '_measure_names') and clean in self._measure_names:
+            return True
+        if hasattr(self, '_bim_measure_names') and clean in self._bim_measure_names:
             return True
         # Resolve via field_map and check the resolved name
         if hasattr(self, '_field_map') and clean in self._field_map:
             _, prop = self._field_map[clean]
             if hasattr(self, '_measure_names') and prop in self._measure_names:
+                return True
+            if hasattr(self, '_bim_measure_names') and prop in self._bim_measure_names:
                 return True
         return False
     
@@ -2625,32 +2638,35 @@ class PowerBIProjectGenerator:
                                     for f in tip_fields[:5]]
                 }
 
-        # â”€â”€ Fallback: only measures, no dimensions at all â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        # Convert to card (1-2 measures) or multiRowCard (3+).
-        # Note: if color_dims were promoted to Category in the standard
-        # charts branch above, query_state already has "Category";
-        # we must NOT override in that case.  We check query_state instead
-        # of color_dims because the branch consumes color_dims via slicing.
+        # ── Fallback: only measures, no dimensions at all ────────────────
+        # Chart types that require a Category/Group dimension but have none
+        # must degrade — otherwise PBI raises SecondaryGroupsWithoutPrimary.
+        # This occurs when fields classified as dimensions during Tableau
+        # extraction are reclassified as measures by the TMDL generator
+        # (e.g. string-split fields that transitively reference SUM()).
+        # Prefer tableEx (preserves all data columns).
+        _NEEDS_CATEGORY = {
+            'clusteredBarChart', 'stackedBarChart',
+            'hundredPercentStackedBarChart',
+            'clusteredColumnChart', 'stackedColumnChart',
+            'hundredPercentStackedColumnChart',
+            'lineChart', 'areaChart', 'stackedAreaChart',
+            'hundredPercentStackedAreaChart',
+            'pieChart', 'donutChart', 'waterfallChart', 'funnel',
+            'ribbonChart', 'lineClusteredColumnComboChart',
+            'lineStackedColumnComboChart',
+            'boxAndWhisker', 'bulletChart', 'wordCloud',
+        }
         if (axis_meas and not axis_dims
                 and "Category" not in query_state
-                and visual_type in (
-                    'clusteredBarChart', 'stackedBarChart',
-                    'clusteredColumnChart',
-                )):
+                and visual_type in _NEEDS_CATEGORY):
             query_state.clear()
-            card_meas = axis_meas + color_meas
-            if len(card_meas) <= 2:
-                query_state["Fields"] = {
-                    "projections": [self._make_projection_entry(m)
-                                    for m in card_meas[:6]]
-                }
-                ws_data['_override_visual_type'] = 'card'
-            else:
-                query_state["Values"] = {
-                    "projections": [self._make_projection_entry(m)
-                                    for m in card_meas[:6]]
-                }
-                ws_data['_override_visual_type'] = 'multiRowCard'
+            all_fields = axis_meas + color_meas
+            query_state["Values"] = {
+                "projections": [self._make_projection_entry(m)
+                                for m in all_fields[:10]]
+            }
+            ws_data['_override_visual_type'] = 'tableEx'
 
         return {"queryState": query_state} if query_state else None
     
