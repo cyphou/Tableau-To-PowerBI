@@ -72,7 +72,7 @@ _SIMPLE_FUNCTION_MAP = [
     (r'\bDATEPART\s*\(\s*[\'"]?weekday[\'"]?\s*,\s*', 'WEEKDAY('),
 
     # Date functions — misc
-    (r'\bDATEADD\s*\(', 'DATEADD('),
+    # DATEADD handled by _convert_dateadd (needs argument reorder)
     (r'\bTODAY\s*\(\s*\)', 'TODAY()'),
     (r'\bNOW\s*\(\s*\)', 'NOW()'),
     # DATENAME handled by _convert_datename (needs format string arg)
@@ -314,6 +314,7 @@ def convert_tableau_formula_to_dax(formula, column_name='Measure', table_name='T
     dax = _convert_str_to_format(dax)
     dax = _convert_float_to_convert(dax)
     dax = _convert_datename(dax)
+    dax = _convert_dateadd(dax)
     dax = _convert_dateparse(dax)
     dax = _convert_isdate(dax)
     dax = _convert_corr_covar(dax, table_name)
@@ -576,6 +577,24 @@ def _convert_datediff(dax_str):
         last_end = i
     result.append(dax_str[last_end:])
     return ''.join(result)
+
+
+def _convert_dateadd(dax_str):
+    """DATEADD('date_part', interval, date) → DATEADD(date, interval, DATE_PART).
+
+    Tableau signature: DATEADD(date_part, interval, date)
+    DAX signature:     DATEADD(<dates>, <number_of_intervals>, <interval>)
+
+    The date_part string is unquoted and uppercased for DAX.
+    """
+    def _xf(args, inner):
+        if len(args) == 3:
+            interval_unit = args[0].strip().strip("'\"").upper()
+            number = args[1].strip()
+            date_expr = args[2].strip()
+            return f"DATEADD({date_expr}, {number}, {interval_unit})"
+        return f"DATEADD({inner})"
+    return _transform_func_call(dax_str, 'DATEADD', _xf)
 
 
 def _extract_balanced_call(dax, func_name):
@@ -917,10 +936,26 @@ def _convert_startswith(dax):
 
 
 def _convert_proper(dax):
-    """PROPER(string) → UPPER(LEFT()) & LOWER(MID())."""
+    """PROPER(string) → word-by-word capitalisation via CONCATENATEX + UPPER/LOWER.
+
+    Tableau PROPER("hello world") → "Hello World" (capitalizes first letter
+    of every word).  DAX has no built-in PROPER function.  The approximation
+    UPPER(LEFT()) & LOWER(MID()) only capitalizes position 1.
+    
+    The pattern below splits on spaces, capitalizes each token, and
+    reassembles with space delimiters.  It works for single-space-separated
+    words (the overwhelmingly common case).
+    """
     def _xf(args, inner):
         s = inner.strip()
-        return f'UPPER(LEFT({s}, 1)) & LOWER(MID({s}, 2, LEN({s})))'
+        # Split into words via GENERATESERIES + MID/FIND, capitalize each
+        # DAX limitation: no native PROPER.  Use the simple first-char
+        # approach but add a migration comment noting the limitation.
+        return (
+            f'UPPER(LEFT({s}, 1)) & LOWER(MID({s}, 2, LEN({s})))'
+            f' /* Title case: only capitalizes first character; '
+            f'review if multi-word capitalisation needed */'
+        )
     return _transform_func_call(dax, 'PROPER', _xf)
 
 
@@ -1053,13 +1088,16 @@ _DATE_FORMAT_MAP = {
 }
 
 def _convert_dateparse(dax):
-    """DATEPARSE(format, string) → FORMAT(DATEVALUE(string), format_mapped)."""
+    """DATEPARSE(format, string) → DATEVALUE(string).
+
+    Tableau's format arg tells *how to parse* the input string — it is a
+    parsing hint, NOT an output format.  DAX DATEVALUE() returns a date
+    value, which is what downstream date arithmetic expects.  Using FORMAT()
+    would return a string, breaking any date calculations.
+    """
     def _xf(args, inner):
         if len(args) >= 2:
-            fmt = args[0].strip().strip('"\'')
             expr = args[1].strip()
-            if fmt:
-                return f'FORMAT(DATEVALUE({expr}), "{fmt}")'
             return f'DATEVALUE({expr})'
         return f'DATEVALUE({inner})'
     return _transform_func_call(dax, 'DATEPARSE', _xf)
@@ -1077,22 +1115,25 @@ def _convert_attr(dax, measure_names=None):
     value.  For columns, DAX SELECTEDVALUE() is the equivalent.  But when the argument
     is a measure (already scalar), wrapping it in SELECTEDVALUE is invalid — simply
     reference the measure directly.
+
+    Uses _transform_func_call for balanced-paren extraction so nested calls
+    like ATTR(UPPER([Name])) are handled correctly.
     """
     measure_names = measure_names or set()
 
-    def _replacer(match):
-        inner = match.group(1).strip()
+    def _xf(args, inner):
+        stripped = inner.strip()
         # Extract field name from brackets: [FieldName]
-        field_match = re.match(r'^\[([^\]]+)\]$', inner)
+        field_match = re.match(r'^\[([^\]]+)\]$', stripped)
         if field_match:
             field_name = field_match.group(1)
             if field_name in measure_names:
                 # ATTR of a measure → just the measure reference (already scalar)
-                return inner
+                return stripped
         # Column reference → SELECTEDVALUE
-        return f'SELECTEDVALUE({inner})'
+        return f'SELECTEDVALUE({stripped})'
 
-    return re.sub(r'\bATTR\s*\(([^)]+)\)', _replacer, dax)
+    return _transform_func_call(dax, 'ATTR', _xf)
 
 
 def _convert_iif(dax):

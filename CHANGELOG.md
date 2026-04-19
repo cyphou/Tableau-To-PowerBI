@@ -1,5 +1,38 @@
 # Changelog
 
+## v28.5.0 — Comprehensive Bug Fix & Security Hardening
+
+### DAX Conversion Fixes (7 bugs)
+
+- **Bug 1 — DATEADD argument reorder**: Tableau's `DATEADD('month', 3, [Date])` was passing through unchanged. DAX expects `DATEADD([Date], 3, MONTH)` — dedicated `_convert_dateadd()` now reorders arguments correctly.
+- **Bug 2 — Type-aware bare column ref wrapping**: `SUM()` was applied blindly to all bare column refs. Now uses `MAX(IF(col, 1, 0))` for boolean, `MAX(col)` for string/datetime, `SUM(col)` only for numeric.
+- **Bug 3 — String/datetime column wrapping**: Cross-table SUM wrapping now detects same-table string and datetime columns and uses `MAX()` instead of invalid `SUM()`.
+- **Bug 4 — DATEPARSE return type**: `DATEPARSE("fmt", [Col])` was returning `FORMAT(DATEVALUE(x), fmt)` (a string). Format arg is a parsing hint — now correctly returns `DATEVALUE(x)` (a date).
+- **Bug 5 — PROPER migration comment**: PROPER only capitalizes the first character, not all words. Added migration comment warning users to review multi-word capitalization.
+- **Bug 7 — ATTR nested parentheses**: `ATTR(UPPER([Name]))` broke on nested parens. Now uses balanced-paren `_transform_func_call` instead of `re.sub`.
+
+### TMDL Semantic Model Fixes
+
+- **LOOKUPVALUE table name escaping**: Table names with apostrophes (e.g., `O'Reilly`) are now properly escaped in LOOKUPVALUE replacements.
+- **M type mapping gaps**: Added missing types to `_DAX_TO_M_TYPE` — `Decimal`, `Date`, `Time`, `datetime` now correctly map to M types instead of defaulting to `type text`.
+- **Greedy regex fix**: M step deduplication regex `#"Added (.+)"` changed to non-greedy `(.+?)` to prevent matching past closing quote.
+
+### Security Hardening
+
+- **ODBC connection string injection**: All 5 ODBC connector generators (Vertica, Impala, Hadoop Hive, Presto, Athena) now sanitize server/database/schema values via `_odbc_escape()`, stripping semicolons to prevent DSN parameter injection.
+- **Athena custom SQL escaping**: Custom SQL in Athena queries now escaped with `_m_escape_string()`.
+
+### Null Safety Fixes
+
+- **assessment.py**: `chart_type`, `formula`, and action `type` fields now handle `None` values safely (use `or ""` pattern instead of `.get("key", "")` which still fails on explicit `None`).
+- **calc_column_utils.py**: `tableau_formula_to_m()` now returns empty string for `None` input instead of raising `AttributeError`.
+- **validator.py**: `_parse_rel_column_ref()` now guards against `None` regex groups.
+
+### Tests
+
+- 12 new tests covering all 7 DAX bug fixes (DATEADD reorder, type-aware wrapping, DATEPARSE, PROPER comment, ATTR nesting).
+- 7,067 tests total (+12 from v28.4.2).
+
 ## v28.4.2 — MAX on Boolean Type Fix
 
 ### Changes

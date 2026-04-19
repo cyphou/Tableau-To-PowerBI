@@ -71,6 +71,8 @@ def tableau_formula_to_m(formula):
     """Best-effort conversion of a Tableau formula to a Power Query M
     row expression (for use inside ``each …``).
     """
+    if not formula:
+        return ""
     m = formula.strip()
 
     # Pre-process ELSEIF → else if (before keyword lowering)

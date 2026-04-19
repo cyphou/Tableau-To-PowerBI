@@ -61,6 +61,15 @@ def _m_escape_string(value):
     return (value or '').replace('"', '""')
 
 
+def _odbc_escape(value):
+    """Sanitise a value for embedding inside an ODBC connection string.
+
+    Strips semicolons to prevent DSN parameter injection.
+    Also escapes double-quotes for M string safety.
+    """
+    return _m_escape_string((value or '').replace(';', ''))
+
+
 # ── Column type change step (shared helper) ──────────────────────────────────
 
 def _build_type_changes(columns):
@@ -595,50 +604,50 @@ def _gen_m_azure_blob(details, table_name, columns):
 
 def _gen_m_vertica(details, table_name, columns):
     """Generate M query for Vertica (via ODBC)."""
-    server = details.get('server', 'vertica-server')
-    database = details.get('database', 'MyDatabase')
-    schema = details.get('schema', 'public')
+    server = _odbc_escape(details.get('server', 'vertica-server'))
+    database = _odbc_escape(details.get('database', 'MyDatabase'))
+    schema = _m_escape_string(details.get('schema', 'public'))
     m_query = 'let\n'
     m_query += f'    // Source Vertica: {server}/{database}\n'
     m_query += f'    Source = Odbc.DataSource("DSN=Vertica;Server={server};Database={database}"),\n'
-    m_query += f'    SchemaTable = Source{{[Schema="{schema}",Item="{table_name}"]}}[Data],\n'
+    m_query += f'    SchemaTable = Source{{[Schema="{schema}",Item="{_m_escape_string(table_name)}"]}}[Data],\n'
     m_query += '    #"Promoted Headers" = SchemaTable,\n'
     return _append_type_step(m_query, columns)
 
 
 def _gen_m_impala(details, table_name, columns):
     """Generate M query for Apache Impala."""
-    server = details.get('server', 'impala-server')
-    port = details.get('port', '21050')
+    server = _odbc_escape(details.get('server', 'impala-server'))
+    port = _odbc_escape(details.get('port', '21050'))
     m_query = 'let\n'
     m_query += f'    // Source Impala: {server}:{port}\n'
     m_query += f'    Source = Odbc.DataSource("Driver={{Cloudera ODBC Driver for Impala}};Host={server};Port={port}"),\n'
-    m_query += f'    Table = Source{{[Name="{table_name}"]}}[Data],\n'
+    m_query += f'    Table = Source{{[Name="{_m_escape_string(table_name)}"]}}[Data],\n'
     m_query += '    #"Promoted Headers" = Table,\n'
     return _append_type_step(m_query, columns)
 
 
 def _gen_m_hadoop_hive(details, table_name, columns):
     """Generate M query for Hadoop Hive / HDInsight."""
-    server = details.get('server', 'hive-server')
-    port = details.get('port', '443')
+    server = _odbc_escape(details.get('server', 'hive-server'))
+    port = _odbc_escape(details.get('port', '443'))
     m_query = 'let\n'
     m_query += f'    // Source Hadoop Hive: {server}:{port}\n'
     m_query += f'    Source = Odbc.DataSource("Driver={{Microsoft Hive ODBC Driver}};Host={server};Port={port}"),\n'
-    m_query += f'    Table = Source{{[Name="{table_name}"]}}[Data],\n'
+    m_query += f'    Table = Source{{[Name="{_m_escape_string(table_name)}"]}}[Data],\n'
     m_query += '    #"Promoted Headers" = Table,\n'
     return _append_type_step(m_query, columns)
 
 
 def _gen_m_presto(details, table_name, columns):
     """Generate M query for Presto / Trino (via ODBC)."""
-    server = details.get('server', 'presto-server')
-    catalog = details.get('database', details.get('catalog', 'hive'))
-    schema = details.get('schema', 'default')
+    server = _odbc_escape(details.get('server', 'presto-server'))
+    catalog = _odbc_escape(details.get('database', details.get('catalog', 'hive')))
+    schema = _odbc_escape(details.get('schema', 'default'))
     m_query = 'let\n'
     m_query += f'    // Source Presto/Trino: {server}/{catalog}.{schema}\n'
     m_query += f'    Source = Odbc.DataSource("Driver={{Starburst Presto ODBC Driver}};Host={server};Catalog={catalog};Schema={schema}"),\n'
-    m_query += f'    Table = Source{{[Name="{table_name}"]}}[Data],\n'
+    m_query += f'    Table = Source{{[Name="{_m_escape_string(table_name)}"]}}[Data],\n'
     m_query += '    #"Promoted Headers" = Table,\n'
     return _append_type_step(m_query, columns)
 
@@ -801,23 +810,24 @@ def _gen_m_cosmosdb(details, table_name, columns):
 
 def _gen_m_athena(details, table_name, columns):
     """Amazon Athena via ODBC."""
-    region = details.get('region', details.get('server', 'us-east-1'))
+    region = _odbc_escape(details.get('region', details.get('server', 'us-east-1')))
     s3_output = details.get('s3_output', 's3://my-bucket/athena-output/')
-    catalog = details.get('catalog', details.get('database', 'AwsDataCatalog'))
+    catalog = _m_escape_string(details.get('catalog', details.get('database', 'AwsDataCatalog')))
     custom_sql = details.get('custom_sql', '')
+    safe_table = _m_escape_string(table_name)
     if custom_sql:
         m_query = 'let\n'
         m_query += f'    // Source Amazon Athena: {region}\n'
         m_query += f'    Source = Odbc.Query("dsn=AmazonAthena;Region={region}",\n'
-        m_query += f'        "{custom_sql}")\n'
+        m_query += f'        "{_m_escape_string(custom_sql)}")\n'
         m_query += 'in\n    Source'
     else:
         m_query = 'let\n'
         m_query += f'    // Source Amazon Athena: {region}\n'
         m_query += f'    Source = Odbc.DataSource("dsn=AmazonAthena;Region={region}"),\n'
         m_query += f'    #"{catalog}" = Source{{[Name="{catalog}"]}}[Data],\n'
-        m_query += f'    #"{table_name} Table" = #"{catalog}"{{[Name="{table_name}"]}}[Data],\n'
-        m_query += f'    Result = #"{table_name} Table"\nin\n    Result'
+        m_query += f'    #"{safe_table} Table" = #"{catalog}"{{[Name="{safe_table}"]}}[Data],\n'
+        m_query += f'    Result = #"{safe_table} Table"\nin\n    Result'
     return m_query
 
 

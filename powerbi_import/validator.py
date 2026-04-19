@@ -805,9 +805,11 @@ class ArtifactValidator:
         if m.group(1) is not None:
             table = cls._unescape_tmdl_name(m.group(1))
             col = m.group(2).strip().strip("'")
-        else:
+        elif m.group(3) is not None:
             table = m.group(3)
             col = m.group(4).strip().strip("'")
+        else:
+            return None, None
         return table, col
 
     @classmethod

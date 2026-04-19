@@ -353,8 +353,10 @@ class TestDateParseIsdateAttr(unittest.TestCase):
 
     def test_dateparse_with_format(self):
         result = _convert_dateparse("DATEPARSE('%Y-%m-%d', [DateStr])")
-        self.assertIn('FORMAT', result)
+        # DATEPARSE returns a date value — format arg is a parsing hint,
+        # NOT an output format.  Should produce DATEVALUE, not FORMAT.
         self.assertIn('DATEVALUE', result)
+        self.assertNotIn('FORMAT', result)
 
     def test_dateparse_empty_format(self):
         result = _convert_dateparse("DATEPARSE('', [DateStr])")

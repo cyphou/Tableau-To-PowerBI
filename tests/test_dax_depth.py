@@ -135,8 +135,9 @@ class TestAggIfToAggx(unittest.TestCase):
 class TestDateparse(unittest.TestCase):
     def test_dateparse_with_format(self):
         result = _dax('DATEPARSE("yyyy-MM-dd", [Name])')
-        self.assertIn('FORMAT', result)
+        # DATEPARSE format arg is a parsing hint — output is DATEVALUE, not FORMAT
         self.assertIn('DATEVALUE', result)
+        self.assertNotIn('FORMAT', result)
 
     def test_dateparse_no_format(self):
         result = _dax('DATEPARSE("", [Name])')

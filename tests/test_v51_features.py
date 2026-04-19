@@ -119,17 +119,18 @@ class TestWindowCorrCovar(unittest.TestCase):
 
 
 class TestDateparseConversion(unittest.TestCase):
-    """DATEPARSE(format, string) → FORMAT(DATEVALUE(string), format)."""
+    """DATEPARSE(format, string) → DATEVALUE(string) (format is a parsing hint)."""
 
     def test_dateparse_with_format(self):
         result = convert_tableau_formula_to_dax('DATEPARSE("yyyy-MM-dd", [DateStr])')
-        self.assertIn('FORMAT', result)
         self.assertIn('DATEVALUE', result)
+        self.assertNotIn('FORMAT', result)
 
-    def test_dateparse_preserves_format(self):
-        """Format string should appear in the output (not discarded)."""
+    def test_dateparse_discards_format(self):
+        """Format string is a parsing hint — should NOT appear in DAX output."""
         result = convert_tableau_formula_to_dax('DATEPARSE("dd/MM/yyyy", [Col])')
-        self.assertIn('dd/MM/yyyy', result)
+        self.assertNotIn('dd/MM/yyyy', result)
+        self.assertIn('DATEVALUE', result)
 
     def test_dateparse_no_format(self):
         result = convert_tableau_formula_to_dax('DATEPARSE([DateCol])')

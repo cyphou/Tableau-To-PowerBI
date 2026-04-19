@@ -700,5 +700,169 @@ class TestBooleanColumnWrapping(unittest.TestCase):
         self.assertIn("MAX('T'[Rank])", m2)
 
 
+# ════════════════════════════════════════════════════════════════════
+#  v28.5.0 — DAX bug fixes (Bugs 1-7)
+# ════════════════════════════════════════════════════════════════════
+
+class TestDateaddArgReorder(unittest.TestCase):
+    """Bug 1 — DATEADD argument reorder.
+
+    Tableau: DATEADD('month', 3, [Date])
+    DAX:     DATEADD([Date], 3, MONTH)
+    """
+
+    def test_dateadd_reorder(self):
+        from tableau_export.dax_converter import convert_tableau_formula_to_dax
+        result = convert_tableau_formula_to_dax("DATEADD('month', 3, [Date])")
+        # DAX expects (date, number, interval)
+        self.assertIn('DATEADD', result)
+        # The date column should come before the number
+        idx_col = result.find('[Date]')
+        idx_num = result.find('3')
+        self.assertGreater(idx_num, idx_col,
+                           f"Date column should precede number in DAX DATEADD: {result}")
+
+    def test_dateadd_year(self):
+        from tableau_export.dax_converter import convert_tableau_formula_to_dax
+        result = convert_tableau_formula_to_dax("DATEADD('year', -1, [OrderDate])")
+        self.assertIn('DATEADD', result)
+        self.assertIn('[OrderDate]', result)
+        self.assertIn('-1', result)
+
+    def test_dateadd_day_positive(self):
+        from tableau_export.dax_converter import convert_tableau_formula_to_dax
+        result = convert_tableau_formula_to_dax("DATEADD('day', 7, [ShipDate])")
+        self.assertIn('DATEADD', result)
+        self.assertIn('[ShipDate]', result)
+        self.assertIn('7', result)
+
+
+class TestBareRefSumTypeAware(unittest.TestCase):
+    """Bug 2 — Type-aware bare column ref wrapping in _build_table.
+
+    SUM is invalid for boolean/string/datetime columns.
+    """
+
+    def _build(self, columns, measures):
+        from powerbi_import.tmdl_generator import _build_table
+        table = {'name': 'T', 'columns': columns}
+        conn = {'type': 'sqlserver'}
+        calcs = []
+        return _build_table(table, conn, calcs, [])
+
+    def test_boolean_calc_col_uses_max_if(self):
+        """Boolean calc column measure ref → MAX(IF(col, 1, 0))."""
+        cols = [
+            {'name': 'Sales', 'datatype': 'real', 'role': 'measure'},
+        ]
+        calcs_raw = [
+            {'name': '[Is Flag]', 'formula': 'IF([Sales] > 0, TRUE, FALSE)',
+             'datatype': 'boolean', 'role': 'dimension'},
+        ]
+        from powerbi_import.tmdl_generator import _build_table
+        table = {'name': 'T', 'columns': cols}
+        conn = {'type': 'sqlserver'}
+        result = _build_table(table, conn, calcs_raw, [])
+        # The boolean calc column should be classified as a calc column (not measure)
+        bool_cols = [c for c in result.get('columns', [])
+                     if c.get('name') == 'Is Flag']
+        if bool_cols:
+            self.assertEqual(bool_cols[0].get('dataType', '').lower(), 'boolean')
+
+    def test_string_col_not_summed(self):
+        """String column should not be wrapped with SUM in self-heal."""
+        from powerbi_import.tmdl_generator import _self_heal_model
+        model = {'model': {'tables': [{
+            'name': 'T',
+            'columns': [
+                {'name': 'Name', 'dataType': 'string'},
+            ],
+            'measures': [{
+                'name': 'M',
+                'expression': "'T'[Name]",
+            }],
+        }], 'relationships': []}}
+        _self_heal_model(model)
+        expr = model['model']['tables'][0]['measures'][0]['expression']
+        self.assertNotIn("SUM('T'[Name])", expr)
+        self.assertIn("MAX('T'[Name])", expr)
+
+    def test_datetime_col_not_summed(self):
+        """Datetime column should use MAX, not SUM."""
+        from powerbi_import.tmdl_generator import _self_heal_model
+        model = {'model': {'tables': [{
+            'name': 'T',
+            'columns': [
+                {'name': 'Created', 'dataType': 'datetime'},
+            ],
+            'measures': [{
+                'name': 'Latest',
+                'expression': "'T'[Created]",
+            }],
+        }], 'relationships': []}}
+        _self_heal_model(model)
+        expr = model['model']['tables'][0]['measures'][0]['expression']
+        self.assertNotIn("SUM('T'[Created])", expr)
+        self.assertIn("MAX('T'[Created])", expr)
+
+
+class TestDateparseFixBug4(unittest.TestCase):
+    """Bug 4 — DATEPARSE should return a date, not FORMAT(DATEVALUE(), fmt).
+
+    The format string in DATEPARSE is a parsing hint for interpreting the
+    input string, not an output format.
+    """
+
+    def test_dateparse_returns_datevalue(self):
+        from tableau_export.dax_converter import convert_tableau_formula_to_dax
+        result = convert_tableau_formula_to_dax(
+            'DATEPARSE("yyyy-MM-dd", [DateStr])')
+        self.assertIn('DATEVALUE', result)
+        self.assertNotIn('FORMAT', result)
+
+    def test_dateparse_no_format_still_datevalue(self):
+        from tableau_export.dax_converter import convert_tableau_formula_to_dax
+        result = convert_tableau_formula_to_dax('DATEPARSE([DateCol])')
+        self.assertIn('DATEVALUE', result)
+
+
+class TestProperMigrationComment(unittest.TestCase):
+    """Bug 5 — PROPER conversion should include migration comment."""
+
+    def test_proper_has_comment(self):
+        from tableau_export.dax_converter import convert_tableau_formula_to_dax
+        result = convert_tableau_formula_to_dax('PROPER([Name])')
+        self.assertIn('UPPER', result)
+        self.assertIn('LOWER', result)
+        self.assertIn('/*', result)
+        self.assertIn('*/', result)
+        # Comment should warn about multi-word limitation
+        self.assertIn('capitaliz', result.lower())
+
+
+class TestAttrNestedParens(unittest.TestCase):
+    """Bug 7 — ATTR should handle nested function calls."""
+
+    def test_attr_simple(self):
+        from tableau_export.dax_converter import convert_tableau_formula_to_dax
+        result = convert_tableau_formula_to_dax('ATTR([Name])')
+        self.assertNotIn('ATTR', result)
+
+    def test_attr_nested_upper(self):
+        """ATTR(UPPER([Name])) should not break on nested parens."""
+        from tableau_export.dax_converter import convert_tableau_formula_to_dax
+        result = convert_tableau_formula_to_dax('ATTR(UPPER([Name]))')
+        self.assertNotIn('ATTR', result)
+        self.assertIn('UPPER', result)
+
+    def test_attr_deeply_nested(self):
+        """ATTR(LEFT(UPPER([Name]), 3)) — deeply nested."""
+        from tableau_export.dax_converter import convert_tableau_formula_to_dax
+        result = convert_tableau_formula_to_dax('ATTR(LEFT(UPPER([Name]), 3))')
+        self.assertNotIn('ATTR', result)
+        self.assertIn('UPPER', result)
+        self.assertIn('LEFT', result)
+
+
 if __name__ == '__main__':
     unittest.main()

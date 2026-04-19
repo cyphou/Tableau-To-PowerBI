@@ -413,7 +413,7 @@ def _check_calculations(extracted: Dict) -> CategoryResult:
     table_calcs = []
 
     for calc in calculations:
-        formula = calc.get("formula", "")
+        formula = calc.get("formula") or ""
         name = calc.get("caption", calc.get("name", "?"))
 
         if _UNSUPPORTED_FUNCTIONS.search(formula):
@@ -533,7 +533,7 @@ def _check_visuals(extracted: Dict) -> CategoryResult:
     unmapped_types = set()
     mapped_types = set()
     for ws in worksheets:
-        chart_type = ws.get("chart_type", ws.get("mark_type", "")).lower().strip()
+        chart_type = (ws.get("chart_type") or ws.get("mark_type") or "").lower().strip()
         if not chart_type:
             continue
         if chart_type in _MAPPED_CHART_TYPES:
@@ -764,7 +764,7 @@ def _check_interactivity(extracted: Dict) -> CategoryResult:
     # Action types
     action_types: Dict[str, int] = {}
     for a in actions:
-        atype = a.get("type", "").strip() or "filter"
+        atype = (a.get("type") or "").strip() or "filter"
         action_types[atype] = action_types.get(atype, 0) + 1
 
     for atype, count in action_types.items():
@@ -932,7 +932,7 @@ def _check_migration_scope(extracted: Dict) -> CategoryResult:
 
     # Count unsupported features for weighting
     for calc in calculations:
-        formula = calc.get("formula", "")
+        formula = calc.get("formula") or ""
         if _UNSUPPORTED_FUNCTIONS.search(formula):
             complexity += 5
         elif _PARTIAL_FUNCTIONS.search(formula):

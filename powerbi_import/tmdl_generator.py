@@ -86,8 +86,12 @@ _DAX_TO_M_TYPE = {
     'Boolean': 'type logical', 'boolean': 'type logical',
     'String': 'type text', 'string': 'type text',
     'Double': 'type number', 'double': 'type number',
+    'Decimal': 'type number', 'decimal': 'type number',
     'Int64': 'Int64.Type', 'int64': 'Int64.Type',
     'DateTime': 'type datetime', 'dateTime': 'type datetime',
+    'datetime': 'type datetime',
+    'Date': 'type date', 'date': 'type date',
+    'Time': 'type time', 'time': 'type time',
 }
 
 
@@ -2184,7 +2188,7 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
                 m_available_cols = set(_this_table_columns)
                 for step_name, _ in m_calc_steps:
                     # Step names are like '#"Added ColName"' — extract the column name
-                    sm = re.match(r'#"Added (.+)"', step_name)
+                    sm = re.match(r'#"Added (.+?)"', step_name)
                     if sm:
                         m_available_cols.add(sm.group(1))
                 col_refs = re.findall(r'\[#?"?([^\]"]+)"?\]', m_expr)
@@ -2205,7 +2209,7 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
                 # Dedup: replace existing M step for the same column name
                 existing_m_idx = None
                 for mi, (sn, _) in enumerate(m_calc_steps):
-                    sm2 = re.match(r'#"Added (.+)"', sn)
+                    sm2 = re.match(r'#"Added (.+?)"', sn)
                     if sm2 and sm2.group(1).lower() == caption.lower():
                         existing_m_idx = mi
                         break
@@ -2261,11 +2265,18 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
             # DAX measures cannot be bare column references — they need an
             # aggregation.  If the converted DAX is just 'Table'[Col] or
             # [Col], wrap it in SUM() so PBI Desktop accepts it.
+            # Type-aware: SUM for numeric, MAX for string/date, MAX(IF(col,1,0)) for boolean.
             _bare_col_re = re.compile(
                 r"^(?:'[^']*')?\[[^\]]+\]$"
             )
             if _bare_col_re.match(dax_formula.strip()):
-                dax_formula = f"SUM({dax_formula.strip()})"
+                dt_lower = (datatype or '').lower()
+                if dt_lower == 'boolean':
+                    dax_formula = f"MAX(IF({dax_formula.strip()}, 1, 0))"
+                elif dt_lower in ('string', 'date', 'datetime'):
+                    dax_formula = f"MAX({dax_formula.strip()})"
+                else:
+                    dax_formula = f"SUM({dax_formula.strip()})"
 
             # DAX Measure
             bim_measure = {
@@ -2362,6 +2373,12 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
         if (c.get('dataType', '') or '').lower() == 'boolean'
         and c.get('name')
     }
+    # String/DateTime columns should use MAX, not SUM (SUM is invalid for text/dates).
+    _text_date_cols_for_xtable = {
+        c.get('name', '') for c in result_table.get("columns", [])
+        if (c.get('dataType', '') or '').lower() in ('string', 'datetime')
+        and c.get('name')
+    }
     for meas in result_table["measures"]:
         expr = meas.get("expression", "")
         if not expr:
@@ -2418,13 +2435,16 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
                     i += 1
             if agg_depth > 0:
                 continue  # Inside aggregation/iterator — row-level ref
-            # Bare column ref not inside any aggregation → wrap in SUM
-            # (or MAX(IF(col, 1, 0)) for Boolean columns).
+            # Bare column ref not inside any aggregation → wrap.
+            # Type-aware: SUM for numeric, MAX for string/date,
+            # MAX(IF(col, 1, 0)) for Boolean.
             old_ref = m_col.group(0)
             tbl_name = m_col.group(1).replace("''", "'")
-            if (tbl_name == result_table.get("name", "") and
-                    col_name in _bool_cols_for_xtable):
+            is_same_table = tbl_name == result_table.get("name", "")
+            if is_same_table and col_name in _bool_cols_for_xtable:
                 new_ref = f"MAX(IF({old_ref}, 1, 0))"
+            elif is_same_table and col_name in _text_date_cols_for_xtable:
+                new_ref = f"MAX({old_ref})"
             else:
                 new_ref = f"SUM({old_ref})"
             new_expr = new_expr[:m_col.start()] + new_ref + new_expr[m_col.end():]
@@ -2843,8 +2863,11 @@ def _replace_related_with_lookupvalue(expr, m2m_pairs, current_table=''):
 
         ref_join_col, current_join_col = m2m_pairs[pair_key]
 
-        t_ref = f"'{table_name}'" if not table_name.isidentifier() else table_name
-        ct_ref = f"'{current_table}'" if not current_table.isidentifier() else current_table
+        # Escape apostrophes in TMDL table names ('O''Reilly')
+        t_esc = table_name.replace("'", "''")
+        ct_esc = current_table.replace("'", "''")
+        t_ref = f"'{t_esc}'" if not table_name.isidentifier() else table_name
+        ct_ref = f"'{ct_esc}'" if not current_table.isidentifier() else current_table
 
         return f"LOOKUPVALUE({t_ref}[{col_name}], {t_ref}[{ref_join_col}], {ct_ref}[{current_join_col}])"
 
