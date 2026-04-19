@@ -414,6 +414,7 @@ def convert_tableau_formula_to_dax(formula, column_name='Measure', table_name='T
                                                  bool_columns=bool_columns)
 
     # === Phase 6: Final cleanup ===
+    dax = _ensure_comparison_spacing(dax)
     dax = _normalize_spaces_outside_identifiers(dax).strip()
     # Strip // line comments before collapsing newlines — otherwise
     # the comment swallows the rest of the single-line DAX/M expression.
@@ -2749,6 +2750,29 @@ def _convert_agg_expr_to_aggx(dax_text, table_name):
     dax_text = _process_map(dax_text, agg_to_aggx)
 
     return dax_text
+
+
+def _ensure_comparison_spacing(dax):
+    """Ensure spaces around comparison operators outside strings, brackets, and quoted names.
+
+    Prevents tokens like ``]>EDATE`` which some TMDL/DAX engines may
+    misparse.  Multi-character operators (>=, <=, <>) are handled before
+    single-character ones (>, <) to avoid partial matches.
+    """
+    # Split into delimited tokens (strings, brackets, quoted names) and the rest
+    parts = re.split(r'("(?:[^"\\]|\\.)*"|\[[^\]]*\]|\'(?:[^\']|\'\')*\')', dax)
+    result = []
+    for i, part in enumerate(parts):
+        if i % 2 == 1:
+            # Inside delimited token — preserve as-is
+            result.append(part)
+        else:
+            # Add spaces around comparison operators
+            part = re.sub(r'(>=|<=|<>|(?<![<])>(?!=)|<(?![>=]))', r' \1 ', part)
+            # Collapse multiple spaces into one
+            part = re.sub(r'  +', ' ', part)
+            result.append(part)
+    return ''.join(result)
 
 
 # ── Phase 6: Cleanup ─────────────────────────────────────────────────────────

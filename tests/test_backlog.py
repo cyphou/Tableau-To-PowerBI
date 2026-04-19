@@ -2052,5 +2052,62 @@ class TestBareCalcReferenceInlining(unittest.TestCase):
         self.assertIn('"90"', dax)
 
 
+class TestComparisonOperatorSpacing(unittest.TestCase):
+    """Comparison operators (>, <, >=, <=, <>) must have spaces in DAX output."""
+
+    def test_greater_than_gets_spaced(self):
+        """']>EDATE' → '] > EDATE' — prevents TMDL parsing issues."""
+        from tableau_export.dax_converter import _ensure_comparison_spacing
+        result = _ensure_comparison_spacing(
+            "'T'[Col]>EDATE(DATE(2022,04,18), -36) && 'T'[Col] <= DATE(2022,04,18)"
+        )
+        self.assertIn('] > EDATE', result)
+        self.assertIn('] <= DATE', result)
+
+    def test_multi_char_operators_spaced(self):
+        """>=, <=, <> all get spaces."""
+        from tableau_export.dax_converter import _ensure_comparison_spacing
+        result = _ensure_comparison_spacing("[A]>=0 && [B]<=100 && [C]<>0")
+        self.assertIn('] >= 0', result)
+        self.assertIn('] <= 100', result)
+        self.assertIn('] <> 0', result)
+
+    def test_already_spaced_preserved(self):
+        """Operators that already have spaces are not double-spaced."""
+        from tableau_export.dax_converter import _ensure_comparison_spacing
+        result = _ensure_comparison_spacing("[A] > 0 && [B] <= 100")
+        self.assertIn('] > 0', result)
+        self.assertIn('] <= 100', result)
+        self.assertNotIn('  ', result)
+
+    def test_string_contents_not_modified(self):
+        """Operators inside string literals are preserved."""
+        from tableau_export.dax_converter import _ensure_comparison_spacing
+        result = _ensure_comparison_spacing('IF([X]>0, "a>b", "c<=d")')
+        self.assertIn('"a>b"', result)
+        self.assertIn('"c<=d"', result)
+        # But the comparison outside the string IS spaced
+        self.assertIn('] > 0', result)
+
+    def test_bracket_contents_not_modified(self):
+        """Operators inside [column names] are preserved."""
+        from tableau_export.dax_converter import _ensure_comparison_spacing
+        result = _ensure_comparison_spacing("[Col>Name]>5")
+        self.assertIn('[Col>Name]', result)
+        self.assertIn('] > 5', result)
+
+    def test_full_conversion_produces_spaced_comparisons(self):
+        """End-to-end: DATEADD comparison formula gets properly spaced."""
+        from tableau_export.dax_converter import convert_tableau_formula_to_dax
+        formula = "[Created Date]>DATEADD('month',-36,DATE(2022,04,18)) AND [Created Date] <= DATE(2022,04,18)"
+        dax = convert_tableau_formula_to_dax(
+            formula, column_name='Filter', table_name='T', is_calc_column=True,
+            column_table_map={'Created Date': 'T'},
+        )
+        self.assertIn('] > EDATE(', dax)
+        self.assertIn('] <= DATE(', dax)
+        self.assertIn('&&', dax)
+
+
 if __name__ == '__main__':
     unittest.main()
