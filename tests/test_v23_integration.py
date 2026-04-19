@@ -25,11 +25,11 @@ class TestVersionBump(unittest.TestCase):
             content = f.read()
         m = re.search(r'version\s*=\s*"(\d+\.\d+\.\d+)"', content)
         self.assertIsNotNone(m)
-        self.assertEqual(m.group(1), '28.5.2')
+        self.assertEqual(m.group(1), '28.5.3')
 
     def test_init_version(self):
         from powerbi_import import __version__
-        self.assertEqual(__version__, '28.5.2')
+        self.assertEqual(__version__, '28.5.3')
 
 
 # ═══════════════════════════════════════════════════════════════════

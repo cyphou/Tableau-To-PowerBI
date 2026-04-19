@@ -570,7 +570,8 @@ class TestDaxRoundTrip(unittest.TestCase):
 
     def test_dateadd_months(self):
         result = self._convert('DATEADD("month", 3, [Date])')
-        self.assertIn('DATEADD', result)
+        self.assertIn('EDATE', result)
+        self.assertNotIn('DATEADD', result)
 
     def test_str_conversion(self):
         result = self._convert('STR([Amount])')

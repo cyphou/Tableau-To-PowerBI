@@ -474,7 +474,8 @@ class TestDateFunctions(unittest.TestCase):
 
     def test_dateadd(self):
         result = convert_tableau_formula_to_dax("DATEADD('month', 3, [OrderDate])")
-        self.assertIn("DATEADD", result)
+        self.assertIn("EDATE", result)
+        self.assertNotIn("DATEADD", result)
 
     def test_date_literal(self):
         result = convert_tableau_formula_to_dax("#2024-01-15#")

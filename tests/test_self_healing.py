@@ -707,36 +707,38 @@ class TestBooleanColumnWrapping(unittest.TestCase):
 # ════════════════════════════════════════════════════════════════════
 
 class TestDateaddArgReorder(unittest.TestCase):
-    """Bug 1 — DATEADD argument reorder.
+    """Bug 1 — DATEADD scalar conversion.
 
-    Tableau: DATEADD('month', 3, [Date])
-    DAX:     DATEADD([Date], 3, MONTH)
+    Tableau DATEADD('month', 3, [Date]) is scalar.
+    DAX DATEADD is a Time Intelligence TABLE function — wrong semantics.
+    Convert to EDATE (months/years/quarters) or arithmetic (days/weeks).
     """
 
-    def test_dateadd_reorder(self):
+    def test_dateadd_month(self):
         from tableau_export.dax_converter import convert_tableau_formula_to_dax
         result = convert_tableau_formula_to_dax("DATEADD('month', 3, [Date])")
-        # DAX expects (date, number, interval)
-        self.assertIn('DATEADD', result)
-        # The date column should come before the number
-        idx_col = result.find('[Date]')
-        idx_num = result.find('3')
-        self.assertGreater(idx_num, idx_col,
-                           f"Date column should precede number in DAX DATEADD: {result}")
+        # Must use EDATE for scalar month arithmetic, not DAX DATEADD
+        self.assertIn('EDATE', result)
+        self.assertIn('[Date]', result)
+        self.assertIn('3', result)
+        self.assertNotIn('DATEADD', result)
 
     def test_dateadd_year(self):
         from tableau_export.dax_converter import convert_tableau_formula_to_dax
         result = convert_tableau_formula_to_dax("DATEADD('year', -1, [OrderDate])")
-        self.assertIn('DATEADD', result)
+        self.assertIn('EDATE', result)
         self.assertIn('[OrderDate]', result)
         self.assertIn('-1', result)
+        self.assertIn('* 12', result)
 
     def test_dateadd_day_positive(self):
         from tableau_export.dax_converter import convert_tableau_formula_to_dax
         result = convert_tableau_formula_to_dax("DATEADD('day', 7, [ShipDate])")
-        self.assertIn('DATEADD', result)
+        # Day arithmetic: date + n
         self.assertIn('[ShipDate]', result)
         self.assertIn('7', result)
+        self.assertIn('+', result)
+        self.assertNotIn('DATEADD', result)
 
 
 class TestBareRefSumTypeAware(unittest.TestCase):

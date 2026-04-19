@@ -1,5 +1,11 @@
 # Changelog
 
+## v28.5.3 — DATEADD Scalar Conversion (EDATE)
+
+- **Fix Tableau DATEADD → DAX EDATE**: Tableau `DATEADD('month', -36, date)` is a scalar function. DAX `DATEADD` is a Time Intelligence TABLE function (requires a date column from a date table). Generated `DATEADD(__MyToday, -36, MONTH)` failed in calculated columns because `__MyToday` is a scalar measure, not a date column.
+- **Conversion map**: MONTH/YEAR/QUARTER → `EDATE()`, DAY/WEEK → `date + n`, HOUR/MINUTE/SECOND → `date + n/divisor`.
+- Resolves `'Created By'[Is Last N months filter - Closed Date?]` error in Salesforce migration.
+
 ## v28.5.2 — Universal manyToMany Calc Column Fix (SELECTEDVALUE)
 
 - **Fix manyToMany calc columns for all data types**: Calculated columns referencing other tables via manyToMany relationships now use `CALCULATE(SELECTEDVALUE(...))` instead of `CALCULATE(MIN(...))`. MIN/MAX fail on Boolean columns (e.g. `Opportunities[Closed]`, `Opportunities[Won]`). SELECTEDVALUE works for **all** types (Boolean, String, Date, Numeric) — returns the value when filter context yields one distinct value, BLANK() otherwise.

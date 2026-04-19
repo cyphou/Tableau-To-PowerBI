@@ -72,7 +72,7 @@ _SIMPLE_FUNCTION_MAP = [
     (r'\bDATEPART\s*\(\s*[\'"]?weekday[\'"]?\s*,\s*', 'WEEKDAY('),
 
     # Date functions — misc
-    # DATEADD handled by _convert_dateadd (needs argument reorder)
+    # DATEADD handled by _convert_dateadd (scalar: EDATE/arithmetic)
     (r'\bTODAY\s*\(\s*\)', 'TODAY()'),
     (r'\bNOW\s*\(\s*\)', 'NOW()'),
     # DATENAME handled by _convert_datename (needs format string arg)
@@ -580,19 +580,45 @@ def _convert_datediff(dax_str):
 
 
 def _convert_dateadd(dax_str):
-    """DATEADD('date_part', interval, date) → DATEADD(date, interval, DATE_PART).
+    """DATEADD('date_part', interval, date) → scalar date arithmetic.
 
-    Tableau signature: DATEADD(date_part, interval, date)
-    DAX signature:     DATEADD(<dates>, <number_of_intervals>, <interval>)
+    Tableau DATEADD is a **scalar** function: DATEADD(date_part, interval, date).
+    DAX DATEADD is a **Time Intelligence TABLE** function that requires a date
+    column from a marked date table — completely different semantics.
 
-    The date_part string is unquoted and uppercased for DAX.
+    Convert to scalar DAX equivalents:
+      - MONTH  → EDATE(date, n)
+      - YEAR   → EDATE(date, n * 12)
+      - QUARTER→ EDATE(date, n * 3)
+      - DAY    → date + n
+      - WEEK   → date + n * 7
+      - HOUR   → date + n / 24
+      - MINUTE → date + n / 1440
+      - SECOND → date + n / 86400
     """
     def _xf(args, inner):
         if len(args) == 3:
             interval_unit = args[0].strip().strip("'\"").upper()
             number = args[1].strip()
             date_expr = args[2].strip()
-            return f"DATEADD({date_expr}, {number}, {interval_unit})"
+            if interval_unit == 'MONTH':
+                return f"EDATE({date_expr}, {number})"
+            elif interval_unit == 'YEAR':
+                return f"EDATE({date_expr}, ({number}) * 12)"
+            elif interval_unit == 'QUARTER':
+                return f"EDATE({date_expr}, ({number}) * 3)"
+            elif interval_unit == 'DAY':
+                return f"({date_expr} + {number})"
+            elif interval_unit == 'WEEK':
+                return f"({date_expr} + ({number}) * 7)"
+            elif interval_unit == 'HOUR':
+                return f"({date_expr} + ({number}) / 24)"
+            elif interval_unit == 'MINUTE':
+                return f"({date_expr} + ({number}) / 1440)"
+            elif interval_unit == 'SECOND':
+                return f"({date_expr} + ({number}) / 86400)"
+            else:
+                return f"EDATE({date_expr}, {number})"
         return f"DATEADD({inner})"
     return _transform_func_call(dax_str, 'DATEADD', _xf)
 
