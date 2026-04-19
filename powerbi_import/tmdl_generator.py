@@ -647,6 +647,11 @@ def _self_heal_model(model, recovery=None):
         tname = t.get('name', '')
         col_names = {c.get('name', '') for c in t.get('columns', []) if c.get('name')}
         local_measures = {m.get('name', '') for m in t.get('measures', []) if m.get('name')}
+        # Boolean columns need special wrapping: MAX() doesn't support
+        # Boolean type in DAX.  Use MAX(IF(col, 1, 0)) instead.
+        bool_cols = {c.get('name', '') for c in t.get('columns', [])
+                     if (c.get('dataType', '') or '').lower() == 'boolean'
+                     and c.get('name')}
 
         for measure in t.get('measures', []):
             expr = measure.get('expression', '')
@@ -699,10 +704,17 @@ def _self_heal_model(model, recovery=None):
                     continue
 
                 # Wrap: 'Table'[Col] → MAX('Table'[Col])
+                # For Boolean columns, MAX() is invalid — use MAX(IF(col, 1, 0))
+                # which converts TRUE/FALSE → 1/0 before aggregation.
                 ref_text = ref_match.group(0)
-                new_expr = (new_expr[:ref_match.start()] +
-                            f'MAX({ref_text})' +
-                            new_expr[ref_match.end():])
+                if ref_col in bool_cols:
+                    new_expr = (new_expr[:ref_match.start()] +
+                                f'MAX(IF({ref_text}, 1, 0))' +
+                                new_expr[ref_match.end():])
+                else:
+                    new_expr = (new_expr[:ref_match.start()] +
+                                f'MAX({ref_text})' +
+                                new_expr[ref_match.end():])
                 wrapped_any = True
 
             if wrapped_any:
@@ -2050,6 +2062,11 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
     # Build set of column names belonging to *this* table so that
     # _resolve_columns prefers same-table refs over cross-table RELATED().
     _this_table_columns = {c.get('name', '') for c in columns if c.get('name', '')}
+    # Track boolean columns — MAX()/SUM() don't support Boolean type;
+    # these need MAX(IF(col, 1, 0)) wrapping instead.
+    _bool_table_columns = {c.get('name', '') for c in columns
+                           if c.get('name', '')
+                           and (c.get('datatype', '') or '').lower() == 'boolean'}
 
     for calc in calculations:
         calc_name = calc.get('name', '').replace('[', '').replace(']', '')
@@ -2142,7 +2159,8 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
             partition_fields=calc.get('table_calc_partitioning'),
             compute_using=dax_context.get('compute_using_map', {}).get(calc_name)
                           or dax_context.get('compute_using_map', {}).get(caption),
-            table_columns=_this_table_columns
+            table_columns=_this_table_columns,
+            bool_columns=_bool_table_columns
         )
 
         if is_calc_col:
@@ -2237,6 +2255,8 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
             # Track the calc column name so subsequent measures can detect
             # bare column refs at conversion time (Phase 5h).
             _this_table_columns.add(caption)
+            if (datatype or '').lower() == 'boolean':
+                _bool_table_columns.add(caption)
         else:
             # DAX measures cannot be bare column references — they need an
             # aggregation.  If the converted DAX is just 'Table'[Col] or
@@ -2335,6 +2355,13 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
         'HASONEVALUE', 'HASONEFILTER', 'ISINSCOPE',
         'USERELATIONSHIP', 'CROSSFILTER', 'CALCULATETABLE',
     })
+    # Build set of boolean columns in the current table — SUM/MAX don't
+    # support Boolean type, so these need special wrapping (IF(col,1,0)).
+    _bool_cols_for_xtable = {
+        c.get('name', '') for c in result_table.get("columns", [])
+        if (c.get('dataType', '') or '').lower() == 'boolean'
+        and c.get('name')
+    }
     for meas in result_table["measures"]:
         expr = meas.get("expression", "")
         if not expr:
@@ -2392,8 +2419,14 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
             if agg_depth > 0:
                 continue  # Inside aggregation/iterator — row-level ref
             # Bare column ref not inside any aggregation → wrap in SUM
+            # (or MAX(IF(col, 1, 0)) for Boolean columns).
             old_ref = m_col.group(0)
-            new_ref = f"SUM({old_ref})"
+            tbl_name = m_col.group(1).replace("''", "'")
+            if (tbl_name == result_table.get("name", "") and
+                    col_name in _bool_cols_for_xtable):
+                new_ref = f"MAX(IF({old_ref}, 1, 0))"
+            else:
+                new_ref = f"SUM({old_ref})"
             new_expr = new_expr[:m_col.start()] + new_ref + new_expr[m_col.end():]
             logger.debug(
                 "Wrapped bare column ref %s → SUM(%s) in measure '%s'",

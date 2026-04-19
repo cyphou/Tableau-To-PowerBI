@@ -620,5 +620,85 @@ class TestVisualFallbackCascadeConstants(unittest.TestCase):
                 self.fail(f"Cascade from '{start}' doesn't terminate within 10 steps")
 
 
+class TestBooleanColumnWrapping(unittest.TestCase):
+    """v28.4.2 — MAX/SUM cannot work with Boolean type columns.
+
+    When self-heal wraps a bare boolean calculated-column ref in a measure,
+    it must use MAX(IF(col, 1, 0)) instead of MAX(col).
+    """
+
+    def _make_model(self, tables):
+        return {'model': {'tables': tables, 'relationships': []}}
+
+    def test_boolean_col_wrapped_with_if(self):
+        """Same-table boolean calc column → MAX(IF(col, 1, 0))."""
+        from powerbi_import.tmdl_generator import _self_heal_model
+        model = self._make_model([{
+            'name': 'Facts',
+            'columns': [
+                {'name': 'Amount', 'dataType': 'double'},
+                {'name': 'Is Active', 'dataType': 'boolean',
+                 'type': 'calculated'},
+            ],
+            'measures': [{
+                'name': 'Active Amount',
+                'expression': "IF('Facts'[Is Active], SUM('Facts'[Amount]), BLANK())",
+            }],
+        }])
+        _self_heal_model(model)
+        expr = model['model']['tables'][0]['measures'][0]['expression']
+        # Must wrap boolean as MAX(IF(col, 1, 0)), not MAX(col)
+        self.assertIn("MAX(IF('Facts'[Is Active], 1, 0))", expr)
+        self.assertNotIn("MAX('Facts'[Is Active])", expr)
+
+    def test_non_boolean_col_wrapped_with_max(self):
+        """Same-table non-boolean calc column → MAX(col)."""
+        from powerbi_import.tmdl_generator import _self_heal_model
+        model = self._make_model([{
+            'name': 'Facts',
+            'columns': [
+                {'name': 'Amount', 'dataType': 'double'},
+                {'name': 'Score', 'dataType': 'int64',
+                 'type': 'calculated'},
+            ],
+            'measures': [{
+                'name': 'Top Score',
+                'expression': "IF('Facts'[Score] > 0, SUM('Facts'[Amount]), BLANK())",
+            }],
+        }])
+        _self_heal_model(model)
+        expr = model['model']['tables'][0]['measures'][0]['expression']
+        # Non-boolean → regular MAX()
+        self.assertIn("MAX('Facts'[Score])", expr)
+        self.assertNotIn("IF('Facts'[Score], 1, 0)", expr)
+
+    def test_mixed_boolean_and_nonboolean_cols(self):
+        """Table with both boolean and non-boolean calc columns."""
+        from powerbi_import.tmdl_generator import _self_heal_model
+        model = self._make_model([{
+            'name': 'T',
+            'columns': [
+                {'name': 'Val', 'dataType': 'double'},
+                {'name': 'Flag', 'dataType': 'boolean', 'type': 'calculated'},
+                {'name': 'Rank', 'dataType': 'int64', 'type': 'calculated'},
+            ],
+            'measures': [
+                {
+                    'name': 'M1',
+                    'expression': "IF('T'[Flag], 'T'[Val], 0)",
+                },
+                {
+                    'name': 'M2',
+                    'expression': "IF('T'[Rank] > 5, 'T'[Val], 0)",
+                },
+            ],
+        }])
+        _self_heal_model(model)
+        m1 = model['model']['tables'][0]['measures'][0]['expression']
+        m2 = model['model']['tables'][0]['measures'][1]['expression']
+        self.assertIn("MAX(IF('T'[Flag], 1, 0))", m1)
+        self.assertIn("MAX('T'[Rank])", m2)
+
+
 if __name__ == '__main__':
     unittest.main()

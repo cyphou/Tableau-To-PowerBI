@@ -1,5 +1,18 @@
 # Changelog
 
+## v28.4.2 — MAX on Boolean Type Fix
+
+### Changes
+
+- **Fix `MAX cannot work with values of type Boolean` PBI error**: When a measure references a Boolean calculated column (e.g. `Is Won Opportunity?`), the bare-column-ref wrapping now uses `MAX(IF(col, 1, 0))` instead of `MAX(col)`. DAX's `MAX()` and `SUM()` functions do not support Boolean type — the `IF(col, 1, 0)` pattern converts TRUE/FALSE to 1/0 before aggregation.
+- **3 wrapping sites fixed**:
+  - `dax_converter.py` `_wrap_bare_column_refs_in_measure()` — primary wrapping during DAX conversion (new `bool_columns` parameter)
+  - `tmdl_generator.py` self-heal loop — fallback wrapping for calc columns not caught during conversion
+  - `tmdl_generator.py` cross-table SUM wrapping — same-table Boolean columns wrapped with `MAX(IF(col, 1, 0))` instead of `SUM(col)`
+- **Boolean column tracking**: `_build_table()` now tracks `_bool_table_columns` alongside `_this_table_columns` and passes it through to the DAX converter.
+- 7,076 tests (+3).
+
+
 ## v28.4.1 — SecondaryGroupsWithoutPrimary Fix
 
 ### Changes

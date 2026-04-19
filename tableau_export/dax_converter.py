@@ -247,7 +247,8 @@ def convert_tableau_formula_to_dax(formula, column_name='Measure', table_name='T
                                     column_table_map=None, measure_names=None,
                                     is_calc_column=False, param_values=None,
                                     calc_datatype=None, partition_fields=None,
-                                    compute_using=None, table_columns=None):
+                                    compute_using=None, table_columns=None,
+                                    bool_columns=None):
     """
     Converts a Tableau formula to DAX with context resolution.
     
@@ -408,7 +409,8 @@ def convert_tableau_formula_to_dax(formula, column_name='Measure', table_name='T
     # Wrap them in MAX() — safe for LOD-derived calc columns.
     if not is_calc_column and table_columns:
         dax = _wrap_bare_column_refs_in_measure(dax, table_name,
-                                                 table_columns, measure_names)
+                                                 table_columns, measure_names,
+                                                 bool_columns=bool_columns)
 
     # === Phase 6: Final cleanup ===
     dax = _normalize_spaces_outside_identifiers(dax).strip()
@@ -2366,13 +2368,17 @@ _MEASURE_AGG_RE = re.compile(
 _MEASURE_TABLE_COL_RE = re.compile(r"'((?:[^']|'')+)'\[([^\]]+)\]")
 
 
-def _wrap_bare_column_refs_in_measure(dax, table_name, table_columns, measure_names):
+def _wrap_bare_column_refs_in_measure(dax, table_name, table_columns, measure_names,
+                                       bool_columns=None):
     """Wrap bare same-table column refs in MAX() for measure context.
 
     In a measure, a bare 'Table'[Col] that is not inside an aggregation or
     iterator function causes PBI to error with 'single value cannot be
     determined'.  This wraps such refs in MAX(), which is safe for
     LOD-derived calculated columns (they have one value per filter context).
+
+    For Boolean columns, MAX() is invalid in DAX — wrap with
+    MAX(IF(col, 1, 0)) instead, converting TRUE/FALSE to 1/0.
 
     Only wraps refs that:
     - Point to the current table
@@ -2383,6 +2389,7 @@ def _wrap_bare_column_refs_in_measure(dax, table_name, table_columns, measure_na
     if not refs:
         return dax
 
+    _bool_cols = bool_columns or set()
     result = dax
     for ref_match in reversed(refs):
         ref_table = ref_match.group(1).replace("''", "'")
@@ -2417,8 +2424,12 @@ def _wrap_bare_column_refs_in_measure(dax, table_name, table_columns, measure_na
             continue
 
         ref_text = ref_match.group(0)
+        if ref_col in _bool_cols:
+            wrap = f'MAX(IF({ref_text}, 1, 0))'
+        else:
+            wrap = f'MAX({ref_text})'
         result = (result[:ref_match.start()] +
-                  f'MAX({ref_text})' +
+                  wrap +
                   result[ref_match.end():])
 
     return result
