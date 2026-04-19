@@ -1,8 +1,9 @@
 # Changelog
 
-## v28.5.1 — LOOKUPVALUE Ambiguity Fix for Calc Columns
+## v28.5.2 — Universal manyToMany Calc Column Fix (SELECTEDVALUE)
 
-- **Fix LOOKUPVALUE ambiguity in manyToMany calc columns**: Calculated columns that reference other tables via manyToMany relationships now use `CALCULATE(MIN(...))` instead of `LOOKUPVALUE(...)`. LOOKUPVALUE errors at runtime with "single value cannot be determined" when the search column has duplicates (e.g. one user creates many opportunities). `CALCULATE(MIN(...))` safely aggregates across matching rows via the model relationship.
+- **Fix manyToMany calc columns for all data types**: Calculated columns referencing other tables via manyToMany relationships now use `CALCULATE(SELECTEDVALUE(...))` instead of `CALCULATE(MIN(...))`. MIN/MAX fail on Boolean columns (e.g. `Opportunities[Closed]`, `Opportunities[Won]`). SELECTEDVALUE works for **all** types (Boolean, String, Date, Numeric) — returns the value when filter context yields one distinct value, BLANK() otherwise.
+- **Previous fix chain**: RELATED → LOOKUPVALUE (failed on non-unique keys) → CALCULATE(MIN) (failed on Boolean) → CALCULATE(SELECTEDVALUE) (works universally).
 - Measures inside iterators (SUMX, AVERAGEX, etc.) continue to use LOOKUPVALUE — the iterator provides row context where the search column is unique.
 
 ## v28.5.0 — Comprehensive Bug Fix & Security Hardening
