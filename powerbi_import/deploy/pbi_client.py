@@ -66,6 +66,16 @@ class PBIServiceClient:
             if time.time() < self._token_expires_on - 300:  # 5 min buffer
                 return self._token
 
+        # PBI_ACCESS_TOKEN env var takes priority — allows using a pre-acquired
+        # token (e.g. in CI/CD, notebooks) without requiring azure-identity or
+        # a service principal. This also avoids azure-identity's strict client_id
+        # validation when credentials are not configured.
+        env_token = os.getenv('PBI_ACCESS_TOKEN', '')
+        if env_token:
+            self._token = env_token
+            self._token_expires_on = 0
+            return self._token
+
         try:
             from azure.identity import (  # type: ignore[import-not-found]
                 ClientSecretCredential,
@@ -83,14 +93,10 @@ class PBIServiceClient:
             self._token = token.token
             self._token_expires_on = getattr(token, 'expires_on', 0)
         except ImportError:
-            # No azure-identity — check for pre-set token
-            self._token = os.getenv('PBI_ACCESS_TOKEN', '')
-            self._token_expires_on = 0
-            if not self._token:
-                raise RuntimeError(
-                    'azure-identity not installed and PBI_ACCESS_TOKEN not set. '
-                    'Install azure-identity or provide a token via environment.'
-                )
+            raise RuntimeError(
+                'azure-identity not installed and PBI_ACCESS_TOKEN not set. '
+                'Install azure-identity or provide a token via environment.'
+            )
 
         return self._token
 
