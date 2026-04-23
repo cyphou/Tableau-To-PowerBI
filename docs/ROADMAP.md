@@ -1127,19 +1127,19 @@ Standalone `.tfl`/`.tflx` Tableau Prep flow files in `--batch` mode were incorre
 
 These were originally v28.0.0 Phase 2–3 but deferred to v29.0.0 to ship v28.x faster.
 
-#### Sprint 112 — LLM-Assisted DAX Correction (@converter, @orchestrator)
+#### Sprint 112 — LLM-Assisted DAX Correction (@converter, @orchestrator) ✅ **COMPLETE**
 
 **Goal:** Optional AI-powered refinement for approximated DAX formulas — send measures tagged with `MigrationNote` containing "approximated" to an LLM for semantic correction. Pluggable backend (Azure OpenAI, OpenAI, local/Ollama). Original DAX preserved as annotation.
 
-| # | Item | Owner | File(s) | Est. | Details |
-|---|------|-------|---------|------|---------|
-| 112.1 | **LLM client module** | @converter | `powerbi_import/llm_client.py` | High | Pluggable backend: Azure OpenAI, OpenAI, local/Ollama. Token counting, cost tracking, exponential retry. `--llm-max-calls N` budget cap. No external deps (stdlib `urllib.request`). |
-| 112.2 | **DAX refinement prompt engine** | @converter | `powerbi_import/llm_client.py` | High | Structured prompt: Tableau formula + approximated DAX + table schema → refined DAX + confidence score. |
-| 112.3 | **Selective targeting** | @generator | `tmdl_generator.py` | Medium | Scan measures for `MigrationNote` containing "approximated". Queue for LLM refinement. Cap at `--llm-max-calls`. |
-| 112.4 | **Accept/reject validation** | @converter | `powerbi_import/llm_client.py` | Medium | Parse LLM response → validate DAX syntax → accept if valid, reject and keep original if malformed. |
-| 112.5 | **CLI integration** | @orchestrator | `migrate.py` | Low | `--llm-refine`, `--llm-provider`, `--llm-model`, `--llm-endpoint`, `--llm-max-calls`. |
-| 112.6 | **Cost & refinement report** | @converter | `powerbi_import/llm_client.py` | Low | JSON report: per-measure original → refined, confidence, tokens, cost. |
-| 112.7 | **Tests** | @tester | `tests/test_llm_client.py` | Medium | 30+ tests with mock LLM responses. |
+| # | Item | Owner | File(s) | Est. | Status |
+|---|------|-------|---------|------|--------|
+| 112.1 | **LLM client module** | @converter | `powerbi_import/llm_client.py` | High | ✅ Done — pluggable backend (openai, anthropic, azure_openai), token counting, cost tracking, exponential 429 retry, `--llm-max-calls` budget cap, dry-run mode, stdlib `urllib.request`. |
+| 112.2 | **DAX refinement prompt engine** | @converter | `powerbi_import/llm_client.py` | High | ✅ Done — structured `_SYSTEM_PROMPT` + `_USER_PROMPT_TEMPLATE` with Tableau formula + current DAX + MigrationNote + schema context. |
+| 112.3 | **Selective targeting** | @generator | `tmdl_generator.py` | Medium | ✅ Done — `refine_approximated_measures()` filters measures by `approximat`/`approx` substring in MigrationNote. |
+| 112.4 | **Accept/reject validation** | @converter | `powerbi_import/llm_client.py` | Medium | ✅ Done — `_validate_refined_dax()` delegates to `MigrationValidator.validate_dax_formula` (balanced parens, Tableau function leakage, unresolved `[Parameters]` refs). Malformed refinements set `status='rejected'` and keep the original DAX. |
+| 112.5 | **CLI integration** | @orchestrator | `migrate.py` | Low | ✅ Done — `--llm-refine`, `--llm-provider`, `--llm-model`, `--llm-endpoint`, `--llm-max-calls`, `--llm-key`, `--llm-dry-run` wired into post-generation step (`migrate.py:4895`). Loads measures from `migration_metadata.json`, writes `llm_refinement_report.json`. |
+| 112.6 | **Cost & refinement report** | @converter | `powerbi_import/llm_client.py` | Low | ✅ Done — `generate_llm_report()` summary counts (refined / unchanged / skipped / rejected / errors), per-measure tokens/cost, JSON output. |
+| 112.7 | **Tests** | @tester | `tests/test_llm_client.py` | Medium | ✅ Done — **42 tests** with mocked `urlopen` covering: provider construction, request body shape (openai/anthropic/azure), dry-run, 429 retry, HTTP errors, call-budget cap, cost accumulation, syntax validation gate, refinement targeting, markdown-fence stripping, malformed-DAX rejection, report writing. |
 
 > **Note:** `llm_client.py` already exists as a scaffold — Sprint 112 fills in the full implementation.
 

@@ -320,6 +320,35 @@ def _extract_migration_note(dax_or_measure):
     return m.group(1) if m else ''
 
 
+def _validate_refined_dax(formula):
+    """Lightweight syntax validation for LLM-refined DAX.
+
+    Returns a list of issue strings (empty => valid). Delegates to
+    :func:`powerbi_import.validator.MigrationValidator.validate_dax_formula`
+    when available so the LLM's output is held to the same bar as the
+    rest of the migration pipeline. Falls back to a minimal balanced-paren
+    check if the validator can't be imported (e.g. running tests in
+    isolation).
+    """
+    if not formula or not formula.strip():
+        return ['empty refinement']
+    try:
+        from powerbi_import.validator import MigrationValidator
+        return MigrationValidator.validate_dax_formula(formula, context='LLM refinement')
+    except Exception:  # noqa: BLE001 — validator import path varies by entry point
+        depth = 0
+        for ch in formula:
+            if ch == '(':
+                depth += 1
+            elif ch == ')':
+                depth -= 1
+                if depth < 0:
+                    return ['unmatched closing parenthesis']
+        if depth > 0:
+            return [f'unmatched opening parenthesis ({depth} unclosed)']
+        return []
+
+
 def refine_approximated_measures(client, measures, tables=None, source_formulas=None):
     """Refine all approximated measures using the LLM.
 
@@ -396,6 +425,28 @@ def refine_approximated_measures(client, measures, tables=None, source_formulas=
             refined = re.sub(r'\n?```\s*$', '', refined)
         refined = refined.strip()
 
+        # ── 112.4: Accept/reject syntax validation ──────────────────
+        # Reject malformed refinements and keep the original DAX. This guards
+        # against LLM responses that drift into prose, leak Tableau syntax,
+        # or contain unbalanced parentheses.
+        validation_issues = _validate_refined_dax(refined)
+        if refined and validation_issues:
+            logger.warning(
+                "LLM refinement for '%s' rejected (%d issue(s)): %s",
+                name, len(validation_issues), '; '.join(validation_issues[:3])
+            )
+            results.append({
+                'name': name,
+                'original_dax': expression,
+                'refined_dax': expression,
+                'confidence': 0.0,
+                'tokens': {'input': resp['input_tokens'], 'output': resp['output_tokens']},
+                'cost': resp['cost'],
+                'status': 'rejected',
+                'validation_issues': validation_issues,
+            })
+            continue
+
         # Confidence: high if formula changed, low if API returned empty
         if not refined:
             confidence = 0.0
@@ -440,6 +491,7 @@ def generate_llm_report(client, results, output_dir=None):
     refined_count = sum(1 for r in results if r['status'] == 'refined')
     skipped_count = sum(1 for r in results if r['status'] == 'skipped')
     error_count = sum(1 for r in results if r['status'] == 'error')
+    rejected_count = sum(1 for r in results if r['status'] == 'rejected')
 
     report = {
         'timestamp': datetime.now().isoformat(),
@@ -451,6 +503,7 @@ def generate_llm_report(client, results, output_dir=None):
             'refined': refined_count,
             'unchanged': sum(1 for r in results if r['status'] == 'unchanged'),
             'skipped': skipped_count,
+            'rejected': rejected_count,
             'errors': error_count,
             'total_input_tokens': client._total_input_tokens,
             'total_output_tokens': client._total_output_tokens,
