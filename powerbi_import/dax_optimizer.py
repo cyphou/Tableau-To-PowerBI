@@ -128,20 +128,50 @@ def _rule_redundant_calculate(formula):
     """Remove CALCULATE wrapping when there are no filters.
 
     CALCULATE(SUM(x)) → SUM(x)
+
+    Only applies when the ENTIRE formula is a single-argument CALCULATE(...)
+    wrapping a simple aggregation. Using ``re.fullmatch`` prevents silently
+    dropping trailing expressions — e.g. ``CALCULATE(SUM(x)) + 1`` must NOT
+    collapse to ``SUM(x)``.
     """
     pattern = r'CALCULATE\s*\(\s*([A-Z]+\s*\([^)]*\))\s*\)'
-    m = re.match(pattern, formula.strip())
+    m = re.fullmatch(pattern, formula.strip())
     if m:
-        inner = m.group(1).strip()
-        # Only simplify if there's no filter argument (single arg CALCULATE)
-        return inner
+        return m.group(1).strip()
+    return formula
+
+
+def _protect_string_literals(formula):
+    """Replace DAX double-quoted string literals with placeholders.
+
+    Returns (protected_formula, literals) where placeholders are restored
+    via :func:`_restore_string_literals`. DAX escapes internal quotes as
+    ``""`` — handled by the regex ``"(?:[^"]|"")*"``.
+    """
+    literals = []
+
+    def _capture(match):
+        literals.append(match.group(0))
+        return f'\x00STR{len(literals) - 1}\x00'
+
+    protected = re.sub(r'"(?:[^"]|"")*"', _capture, formula)
+    return protected, literals
+
+
+def _restore_string_literals(formula, literals):
+    """Inverse of :func:`_protect_string_literals`."""
+    for i, lit in enumerate(literals):
+        formula = formula.replace(f'\x00STR{i}\x00', lit)
     return formula
 
 
 def _rule_constant_fold(formula):
     """Fold simple constant arithmetic expressions.
 
-    E.g. 1 + 2 → 3, 10 * 5 → 50 (only for simple integer expressions)
+    E.g. ``1 + 2`` → ``3``, ``10 * 5`` → ``50`` (only for simple integer
+    expressions). String literals are protected to prevent corruption of
+    date/version strings like ``"2025-01-01"`` whose internal ``2025-01``
+    would otherwise match the arithmetic pattern.
     """
     pattern = r'\b(\d+)\s*([+\-*/])\s*(\d+)\b'
 
@@ -161,7 +191,9 @@ def _rule_constant_fold(formula):
             pass
         return m.group(0)
 
-    return re.sub(pattern, _fold, formula)
+    protected, literals = _protect_string_literals(formula)
+    folded = re.sub(pattern, _fold, protected)
+    return _restore_string_literals(folded, literals)
 
 
 def _rule_simplify_sumx(formula):

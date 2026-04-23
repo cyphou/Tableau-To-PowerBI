@@ -99,6 +99,26 @@ class TestRedundantCalculate(unittest.TestCase):
         # With filter argument → should NOT be simplified
         self.assertNotIn('redundant_calculate', rules)
 
+    def test_calculate_with_trailing_expression_preserved(self):
+        """Regression: CALCULATE(SUM(x)) + 1 must NOT collapse to SUM(x).
+
+        Previous implementation used re.match (anchored at start only)
+        and returned just the inner aggregation, silently dropping any
+        trailing arithmetic — a silent-wrong-result bug.
+        """
+        from powerbi_import.dax_optimizer import optimize_dax
+        formula = 'CALCULATE(SUM([Sales])) + 1'
+        opt, rules = optimize_dax(formula)
+        self.assertEqual(opt, 'CALCULATE(SUM([Sales])) + 1')
+        self.assertNotIn('redundant_calculate', rules)
+
+    def test_calculate_with_leading_expression_preserved(self):
+        from powerbi_import.dax_optimizer import optimize_dax
+        formula = '1 + CALCULATE(SUM([Sales]))'
+        opt, rules = optimize_dax(formula)
+        self.assertIn('CALCULATE', opt)
+        self.assertNotIn('redundant_calculate', rules)
+
 
 class TestConstantFolding(unittest.TestCase):
     """Tests for constant arithmetic folding."""
@@ -133,6 +153,36 @@ class TestConstantFolding(unittest.TestCase):
         formula = '10 / 3'
         opt, rules = optimize_dax(formula)
         self.assertEqual(opt, '10 / 3')  # Not evenly divisible
+
+    def test_date_string_literal_preserved(self):
+        """Regression: string literals like "2025-01-01" must NOT be folded.
+
+        Previous implementation ran the arithmetic regex on the raw formula,
+        so internal substrings ``2025-01`` were folded to ``2024``, corrupting
+        date/version strings inside DAX literals.
+        """
+        from powerbi_import.dax_optimizer import optimize_dax
+        formula = 'IF([Date] >= DATE(2025,1,1), "2025-01-01", "old")'
+        opt, rules = optimize_dax(formula)
+        self.assertIn('"2025-01-01"', opt)
+        self.assertNotIn('"2024-01"', opt)
+        self.assertNotIn('constant_fold', rules)
+
+    def test_version_string_literal_preserved(self):
+        from powerbi_import.dax_optimizer import optimize_dax
+        formula = '"version-2025-01-01"'
+        opt, rules = optimize_dax(formula)
+        self.assertEqual(opt, '"version-2025-01-01"')
+        self.assertNotIn('constant_fold', rules)
+
+    def test_fold_outside_string_literal(self):
+        """Arithmetic OUTSIDE string literals still gets folded."""
+        from powerbi_import.dax_optimizer import optimize_dax
+        formula = '"label: " & (10 + 5)'
+        opt, rules = optimize_dax(formula)
+        self.assertIn('15', opt)
+        self.assertIn('"label: "', opt)
+        self.assertIn('constant_fold', rules)
 
 
 class TestSumxSimplification(unittest.TestCase):
