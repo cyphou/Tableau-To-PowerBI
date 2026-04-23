@@ -3,9 +3,30 @@
 **Version:** v28.5.8  
 **Date:** 2026-04-23  
 **Current state:** v28.5.8 shipped — **7,099 tests** across 141+ test files (+conftest.py), 0 failures. v28.5.x patch series delivered DAX/M correctness fixes: metadata-record type resolution (v28.5.4), DATEADD scalar conversion (v28.5.3), universal manyToMany calc column fix using SELECTEDVALUE (v28.5.2), bare calculation reference inlining with bracket protection (v28.5.5–v28.5.6), comparison operator spacing (v28.5.7), performance optimizations (v28.5.8).  
-**Previous baseline:** v3.5.0 — 887 → v4.0.0 — 1,387 → v5.0.0 — 1,543 → v5.1.0 — 1,595 → v5.5.0 — 1,777 → v6.0.0 — 1,889 → v6.1.0 — 1,997 → v7.0.0 — 2,057 → Sprint 21 — 2,066 → v8.0.0 — 2,275 → Sprint 27 — 2,542 → Sprint 28 — 2,616 → Sprint 29 — 2,666 → v9.0.0 — 3,196 → v10.0.0 — 3,342 → v11.0.0 — 3,459 → v12.0.0 — 3,729 → v13.0.0 — 3,847 → v14.0.0 — 3,925 → v15.0.0 — 3,988 → v15.0.1 — 3,996 → v16.0.0 — 4,131 → v17.0.0 — 4,219 → Sprint 63 — 4,762 → Sprint 64 — 4,813 → v19.0.0 — 4,923 → v21.0.0 — 5,170 → v22.0.0 — 5,683 → v23.0.0 — 5,782 → v24.0.0 — 5,927 → v25.0.0 — 6,192 → Sprint 97 — 6,251 → Sprint 98 — 6,263 → v26.0.0 — 6,400 → v27.0.0 — 6,454 → v27.1.0 — 6,532 → v28.0.0 — 6,714 → v28.1.0 — 6,831 → v28.1.1 — 6,831 → v28.2.0 — 6,988 → v28.3.0 — 7,072 → **v28.4.0 — 7,072**
+**Previous baseline:** v3.5.0 — 887 → v4.0.0 — 1,387 → v5.0.0 — 1,543 → v5.1.0 — 1,595 → v5.5.0 — 1,777 → v6.0.0 — 1,889 → v6.1.0 — 1,997 → v7.0.0 — 2,057 → Sprint 21 — 2,066 → v8.0.0 — 2,275 → Sprint 27 — 2,542 → Sprint 28 — 2,616 → Sprint 29 — 2,666 → v9.0.0 — 3,196 → v10.0.0 — 3,342 → v11.0.0 — 3,459 → v12.0.0 — 3,729 → v13.0.0 — 3,847 → v14.0.0 — 3,925 → v15.0.0 — 3,988 → v15.0.1 — 3,996 → v16.0.0 — 4,131 → v17.0.0 — 4,219 → Sprint 63 — 4,762 → Sprint 64 — 4,813 → v19.0.0 — 4,923 → v21.0.0 — 5,170 → v22.0.0 — 5,683 → v23.0.0 — 5,782 → v24.0.0 — 5,927 → v25.0.0 — 6,192 → Sprint 97 — 6,251 → Sprint 98 — 6,263 → v26.0.0 — 6,400 → v27.0.0 — 6,454 → v27.1.0 — 6,532 → v28.0.0 — 6,714 → v28.1.0 — 6,831 → v28.1.1 — 6,831 → v28.2.0 — 6,988 → v28.3.0 — 7,072 → v28.4.0 — 7,072 → v28.5.0 — 7,067 → v28.5.7 — 7,099 → **v28.5.8 — 7,099**
 
 **Next roadmap:** See [ROADMAP.md](ROADMAP.md) for v29.0.0 (Sprints 112–117, 120–127) — Migration Completeness & Enterprise Operations
+
+---
+
+## v28.5.x — DAX/M Correctness Hardening ✅ SHIPPED
+
+Post-v28.4.0 patch series addressing real-world edge cases surfaced by Copilot-generated DAX and cloud-connector (Salesforce, ServiceNow) metadata. Each fix was driven by a specific PBI Desktop parse error or silent-wrong-result observation.
+
+| Version | Theme | Fix | Tests |
+|---------|-------|-----|-------|
+| **v28.5.0** | Bug bash + security hardening | Narrowed `except Exception: pass` patterns; `security_validator.py` helpers | 7,067 |
+| **v28.5.2** | manyToMany calc column | Universal cross-table calc refs → `CALCULATE(SELECTEDVALUE('Table'[Col]))` instead of bare `LOOKUPVALUE` (avoids ambiguity in manyToMany) | +1 |
+| **v28.5.3** | DATEADD scalar | Tableau scalar `DATEADD('month', n, d)` → DAX `EDATE(d, n)` / arithmetic (not table-function `DATEADD`) | +3 |
+| **v28.5.4** | Metadata-record types | Cloud connector columns (Salesforce, ServiceNow) lacking `<column>` elements now resolve types from `<metadata-record>` fallback | +1 |
+| **v28.5.5–v28.5.6** | Bare calc reference inlining + bracket protection | Unresolved `[Calculation_xxx]` references inline their DAX formula; regex-substitution protected from corrupting bracket-delimited identifiers | +13 |
+| **v28.5.7** | Comparison operator spacing | `]>EDATE(...)` → `] > EDATE(...)` prevents DAX misparse when engine rewrites adjacent operators | +6 |
+| **v28.5.8** | Performance + docs | Hot-path micro-optimizations in `dax_converter`, `tmdl_generator`, `pbip_generator`; doc refresh | 7,099 |
+
+**Post-release follow-ups (2026-04-23 audit):**
+- Doc drift fixed: test counts (7,072/6,831 → 7,099) and version refs (v28.4.0/v28.1.1 → v28.5.8) aligned across 8 files.
+- 3 silent `except Exception: pass` blocks upgraded to narrowed exception types with `logger.warning/debug` diagnostics (`import_to_powerbi.py` JSON load, `notebook_api.py` M preview, `hyper_reader.py` sqlite tier fallthrough).
+- **Real bug fixed:** `PBIServiceClient._get_token()` only fell back to `PBI_ACCESS_TOKEN` env var inside `except ImportError` — silently ignored when `azure-identity` was installed. Env token now takes priority (commit `35a37b42`).
 
 ---
 
@@ -91,7 +112,7 @@ This project uses a **12-agent specialization model** with scoped domain knowled
 | **@assessor** | Readiness scoring, strategy, diff reports, prep lineage | `assessment.py`, `server_assessment.py`, `strategy_advisor.py`, `schema_drift.py` |
 | **@merger** | Shared semantic model, fingerprint matching | `shared_model.py`, `merge_config.py` |
 | **@deployer** | Fabric/PBI deployment, auth, gateway | `deploy/*.py`, `gateway_config.py`, `telemetry.py` |
-| **@tester** | Tests (7,072+), coverage, regression | `tests/*.py` |
+| **@tester** | Tests (7,099), coverage, regression | `tests/*.py` |
 
 **Rules:** One owner per file. Read access is universal. @tester is cross-cutting (reads all source, writes only `tests/`). @dax, @wiring, @semantic co-own `tmdl_generator.py` functions.
 

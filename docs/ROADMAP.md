@@ -25,6 +25,7 @@ The migration engine is **feature-complete for core single-workbook scenarios**.
 | **v28.2.0** | Standalone Prep Flow Pipeline & Documentation | — | ✅ Shipped |
 | **v28.3.0** | 12-Agent Specialization Model | — | ✅ Shipped |
 | **v28.4.0** | Aggregation-Aware Cross-Table SUM Wrapping | — | ✅ Shipped |
+| **v28.5.x** | DAX/M Correctness Hardening (metadata-record, DATEADD scalar, SELECTEDVALUE, bracket protection, operator spacing) | Patch series | ✅ Shipped |
 | **v29.0.0** | Migration Completeness & Enterprise Operations | Sprints 112–117, 120–127 | Planned |
 
 ---
