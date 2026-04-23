@@ -1,8 +1,8 @@
 # Development Roadmap — v22.0.0 → v29.0.0
 
-**Date:** 2026-04-02
-**Baseline:** v28.4.0 — 7,072 tests across 141+ test files, 0 failures
-**Current state:** v28.4.0 shipped (Sprints 108–111 + 118–119 + standalone prep pipeline + 12-agent model + aggregation-aware SUM wrapping). Migration Confidence Score: 91.9/100 (Grade A).
+**Date:** 2026-04-23
+**Baseline:** v28.5.8 — 7,099 tests across 141+ test files, 0 failures
+**Current state:** v28.5.8 shipped (Sprints 108–111 + 118–119 + standalone prep pipeline + 12-agent model + aggregation-aware SUM wrapping + v28.5.x DAX/M correctness hardening: metadata-record type resolution, DATEADD scalar conversion, manyToMany SELECTEDVALUE, bare calc reference inlining with bracket protection, comparison operator spacing). Migration Confidence Score: 91.9/100 (Grade A).
 
 ---
 

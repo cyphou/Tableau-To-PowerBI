@@ -845,7 +845,7 @@ python -m pytest tests/ --cov --cov-report=html      # Coverage report
 
 ```mermaid
 flowchart LR
-    L["🔍 Lint\nflake8 + ruff"] --> T["🧪 Test\n7,072 tests\nPy 3.9–3.14"]
+    L["🔍 Lint\nflake8 + ruff"] --> T["🧪 Test\n7,099 tests\nPy 3.9–3.14"]
     T --> V["✅ Validate\nStrict .twbx\nmigrations"]
     V --> S["📦 Staging\nFabric deploy"]
     S --> P["🚀 Production\nManual approval"]

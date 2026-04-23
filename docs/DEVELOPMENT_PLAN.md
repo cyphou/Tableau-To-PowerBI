@@ -1,8 +1,8 @@
 # Development Plan — Tableau to Power BI Migration Tool
 
-**Version:** v28.4.0  
-**Date:** 2026-04-18  
-**Current state:** v28.4.0 shipped — **7,072 tests** across 141+ test files (+conftest.py), 0 failures  
+**Version:** v28.5.8  
+**Date:** 2026-04-23  
+**Current state:** v28.5.8 shipped — **7,099 tests** across 141+ test files (+conftest.py), 0 failures. v28.5.x patch series delivered DAX/M correctness fixes: metadata-record type resolution (v28.5.4), DATEADD scalar conversion (v28.5.3), universal manyToMany calc column fix using SELECTEDVALUE (v28.5.2), bare calculation reference inlining with bracket protection (v28.5.5–v28.5.6), comparison operator spacing (v28.5.7), performance optimizations (v28.5.8).  
 **Previous baseline:** v3.5.0 — 887 → v4.0.0 — 1,387 → v5.0.0 — 1,543 → v5.1.0 — 1,595 → v5.5.0 — 1,777 → v6.0.0 — 1,889 → v6.1.0 — 1,997 → v7.0.0 — 2,057 → Sprint 21 — 2,066 → v8.0.0 — 2,275 → Sprint 27 — 2,542 → Sprint 28 — 2,616 → Sprint 29 — 2,666 → v9.0.0 — 3,196 → v10.0.0 — 3,342 → v11.0.0 — 3,459 → v12.0.0 — 3,729 → v13.0.0 — 3,847 → v14.0.0 — 3,925 → v15.0.0 — 3,988 → v15.0.1 — 3,996 → v16.0.0 — 4,131 → v17.0.0 — 4,219 → Sprint 63 — 4,762 → Sprint 64 — 4,813 → v19.0.0 — 4,923 → v21.0.0 — 5,170 → v22.0.0 — 5,683 → v23.0.0 — 5,782 → v24.0.0 — 5,927 → v25.0.0 — 6,192 → Sprint 97 — 6,251 → Sprint 98 — 6,263 → v26.0.0 — 6,400 → v27.0.0 — 6,454 → v27.1.0 — 6,532 → v28.0.0 — 6,714 → v28.1.0 — 6,831 → v28.1.1 — 6,831 → v28.2.0 — 6,988 → v28.3.0 — 7,072 → **v28.4.0 — 7,072**
 
 **Next roadmap:** See [ROADMAP.md](ROADMAP.md) for v29.0.0 (Sprints 112–117, 120–127) — Migration Completeness & Enterprise Operations

@@ -301,8 +301,12 @@ def _read_hyper_sqlite(file_path, max_rows=20):
 
         conn.close()
         return tables
-    except Exception:
-        conn.close()
+    except Exception as exc:  # noqa: BLE001 — fall through to next reader tier
+        logger.debug("sqlite3 hyper reader failed for %s: %s", file_path, exc)
+        try:
+            conn.close()
+        except Exception:  # noqa: BLE001
+            pass
         return None
 
 

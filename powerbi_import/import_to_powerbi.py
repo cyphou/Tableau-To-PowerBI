@@ -7,9 +7,12 @@ generation pipeline (BIM model + TMDL + PBIR report).
 
 import os
 import json
+import logging
 import uuid
 from datetime import datetime
 from pbip_generator import PowerBIProjectGenerator
+
+logger = logging.getLogger(__name__)
 
 
 def _write_json_file(path, data):
@@ -115,7 +118,8 @@ class PowerBIImporter:
                         data[key] = json.load(f)
                 else:
                     data[key] = [] if key != 'aliases' else {}
-            except Exception:
+            except (OSError, json.JSONDecodeError, UnicodeDecodeError) as exc:
+                logger.warning("Failed to load %s (%s): %s — using empty fallback", key, filepath, exc)
                 data[key] = [] if key != 'aliases' else {}
         
         return data

@@ -208,8 +208,9 @@ class MigrationSession:
                 tname = tbl.get('name', '')
                 try:
                     m_expr = generate_power_query_m(conn, tbl)
-                except Exception:
-                    m_expr = f'// Failed to generate M for {tname}'
+                except Exception as exc:  # noqa: BLE001 — preview-only fallback
+                    logger.warning("M preview generation failed for table %r: %s", tname, exc)
+                    m_expr = f'// Failed to generate M for {tname}: {exc}'
                 results.append({
                     'table': tname,
                     'datasource': ds.get('name', ''),
