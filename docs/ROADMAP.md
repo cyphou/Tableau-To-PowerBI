@@ -27,6 +27,7 @@ The migration engine is **feature-complete for core single-workbook scenarios**.
 | **v28.4.0** | Aggregation-Aware Cross-Table SUM Wrapping | — | ✅ Shipped |
 | **v28.5.x** | DAX/M Correctness Hardening (metadata-record, DATEADD scalar, SELECTEDVALUE, bracket protection, operator spacing) | Patch series | ✅ Shipped |
 | **v29.0.0** | Migration Completeness & Enterprise Operations | Sprints 112–117, 120–127 | Planned |
+| **v30.0.0** | Correctness, Observability & Self-Healing | Sprints 128–134 | Planned |
 
 ---
 
@@ -1409,3 +1410,160 @@ These were originally v28.0.0 Phase 2–3 but deferred to v29.0.0 to ship v28.x 
 | **@merger** | — | 114 | — | — | — | — |
 | **@deployer** | — | 114 | 116 | — | — | 125, 126, 127 |
 | **@tester** | ✅ Shipped | 112–114 | 115–117 | 120–122 | 123–124 | 125–127 |
+
+---
+
+## v30.0.0 — Correctness, Observability & Self-Healing (Sprints 128–134)
+
+**Theme:** With v29.0.0 closing the *feature* gaps, v30.0.0 attacks **silent-wrong-result risk**, **operational visibility**, and **automated repair**. Grounded in concrete patterns surfaced during the v28.5.x audit (re.match tail-drop, string-literal regex collisions, missing PBI_ACCESS_TOKEN env priority, ungated LLM responses): every conversion path needs a *validation gate*, every gate needs *telemetry*, and every telemetry signal should drive an *auto-repair* attempt before failing the migration.
+
+| Version | Theme | Sprints | Status |
+|---------|-------|---------|--------|
+| **v30.0.0** | Correctness, Observability & Self-Healing | 128–134 | Planned |
+
+---
+
+### Sprint 128 — DAX Correctness Property Tests (@dax, @tester)
+
+**Goal:** Catch the next "re.match tail-drop" / "string-literal regex collision" class of bugs *before* it ships. Add property-based testing to every DAX rewrite rule and conversion path.
+
+| # | Item | Owner | File(s) | Est. | Details |
+|---|------|-------|---------|------|---------|
+| 128.1 | **DAX AST round-trip property** | @dax | `tests/test_dax_property.py` (new) | High | Generate random valid DAX (parens, string literals with `""`, nested CALCULATE, IF/SWITCH) → run through every `dax_optimizer._rule_*` → assert: balanced parens preserved, string literal contents byte-identical, no Tableau function leakage introduced. Use `hypothesis` if available, else stdlib `random.seed(*)` corpus. |
+| 128.2 | **String-literal protect/restore audit** | @dax | `dax_optimizer.py`, `dax_converter.py` | Medium | Audit every `re.sub` / `re.split` against DAX text — wrap each in `_protect_string_literals` / `_restore_string_literals`. Add lint rule (`tests/test_no_unprotected_regex.py`) that greps for `re.sub(...formula...)` outside the protect helper. |
+| 128.3 | **Anchor-correctness lint** | @dax | `tests/test_regex_anchors.py` (new) | Low | Static check: any `re.match(r'^.*\)$', ...)` or "consume entire formula" intent must use `re.fullmatch`. Walk AST of `dax_*.py`, flag offenders. |
+| 128.4 | **Conversion fixture corpus** | @tester | `tests/fixtures/dax_corpus.json` (new) | Medium | 500+ Tableau→DAX before/after pairs (LOD, table calcs, RLS, edge cases — string with `""`, deeply nested IFs, multi-line calcs). Diff-based regression test. |
+| 128.5 | **Aggregation-context fuzzing** | @dax | `tests/test_aggregation_context.py` (new) | Medium | Random measure/calc-column combinations → assert SUM-of-measure unwrapping correct, bare column refs wrapped, cross-table refs use RELATED/LOOKUPVALUE per cardinality. |
+
+**Success:** Zero silent-wrong-result regressions in DAX optimizer for the 500-case corpus.
+
+---
+
+### Sprint 129 — M Query & Wiring Validation Gate (@wiring, @tester)
+
+**Goal:** Same protect-restore + anchor discipline applied to Power Query M generation. Every generated M query must parse cleanly before it's written to disk.
+
+| # | Item | Owner | File(s) | Est. | Details |
+|---|------|-------|---------|------|---------|
+| 129.1 | **M syntax validator** | @wiring | `powerbi_import/m_validator.py` (new) | High | Lightweight M parser: balanced `let`/`in`, balanced parens/brackets, `#"..."` quoting correctness, `Table.AddColumn` / `Table.RenameColumns` argument shape. Returns issue list (parallel to `validator.validate_dax_formula`). |
+| 129.2 | **Generation gate** | @wiring | `m_query_builder.py` | Medium | Wrap final M output in `_validate_m_query(text)`; on failure log a warning and emit a recovery report entry rather than ship a broken partition. |
+| 129.3 | **Identifier quoting audit** | @wiring | `tmdl_generator.py`, `calc_column_utils.py` | Low | Both `_quote_m_identifiers` paths share a single helper; remove the duplicate in `calc_column_utils.py`. |
+| 129.4 | **Tests** | @tester | `tests/test_m_validator.py` (new) | Medium | 60+ tests: balanced/unbalanced let-in, quoted identifiers with all 18 special chars, nested `Table.AddColumn`, error injection. |
+
+**Success:** No `.pbip` ships with an M partition that fails Power Query parsing.
+
+---
+
+### Sprint 130 — Self-Healing Migration v2 (@orchestrator, @assessor)
+
+**Goal:** Promote the existing `recovery_report.py` from passive log to active repair loop — when a validation gate (DAX, M, TMDL, PBIR) fails, attempt deterministic repair, then optionally LLM repair, then escalate.
+
+| # | Item | Owner | File(s) | Est. | Details |
+|---|------|-------|---------|------|---------|
+| 130.1 | **Repair strategy registry** | @orchestrator | `powerbi_import/repair_strategies.py` (new) | High | Pluggable `RepairStrategy(category, severity).attempt(artifact, issues) → (artifact, applied, follow_up)`. Built-ins: balanced-paren auto-close, missing-comma insert, Tableau-leak strip, `[Parameters].[X]` resolution. |
+| 130.2 | **LLM repair fallback** | @orchestrator | `llm_client.py`, `repair_strategies.py` | Medium | When deterministic strategies fail and `--llm-refine` enabled, route the failed artifact through a focused "fix this DAX" prompt with the validation issue list as context. Reuses Sprint 112 plumbing. |
+| 130.3 | **Repair report v2** | @assessor | `recovery_report.py` | Low | Per-artifact: original → strategies tried → final state → confidence. JSON + HTML render. |
+| 130.4 | **Tests** | @tester | `tests/test_repair_strategies.py` (new) | Medium | 40+ tests covering each strategy + LLM fallback (mocked). |
+
+**Success:** Migration completes successfully on workbooks that previously hit DAX/M validation errors, with full audit trail.
+
+---
+
+### Sprint 131 — Telemetry v3 & Operational Dashboards (@deployer, @assessor)
+
+**Goal:** Today telemetry records *that* something happened. v3 records *why it diverged from baseline* — every conversion decision, every fallback, every repair. Surface as live dashboards.
+
+| # | Item | Owner | File(s) | Est. | Details |
+|---|------|-------|---------|------|---------|
+| 131.1 | **Decision telemetry** | @deployer | `telemetry.py` | Medium | Every `if/else` branch in DAX converter / M builder / TMDL generator emits `record_decision(category, choice, reason)`. Aggregate as conversion-decision histogram. |
+| 131.2 | **Validation telemetry** | @deployer | `telemetry.py` | Low | Every gate (DAX, M, TMDL, PBIR, LLM) emits pass/fail/repaired counters with issue categories. |
+| 131.3 | **Live ops dashboard** | @assessor | `telemetry_dashboard.py` | Medium | Add 5th tab: "Decision Log" with searchable per-conversion drill-down. Heatmap of repair frequency by file/category. |
+| 131.4 | **Prometheus exporter** | @deployer | `monitoring.py` | Low | `/metrics` HTTP endpoint emitting all v3 counters in OpenMetrics format. Hook into `api_server.py`. |
+| 131.5 | **Tests** | @tester | `tests/test_telemetry_v3.py` (new) | Medium | 30+ tests: decision/validation counter shape, Prometheus format, dashboard HTML rendering. |
+
+**Success:** Operators can see at a glance which conversion rules fire most, which repairs succeed, and which workbooks consistently degrade.
+
+---
+
+### Sprint 132 — Performance & Large-Workbook Stress (@orchestrator, @tester)
+
+**Goal:** Benchmark and harden against real-world enterprise workbooks (500+ measures, 100+ worksheets, 10MB+ TWBX).
+
+| # | Item | Owner | File(s) | Est. | Details |
+|---|------|-------|---------|------|---------|
+| 132.1 | **Large-workbook test fixtures** | @tester | `tests/fixtures/large_workbooks/` (new) | Medium | Synthetic generator producing 500-measure / 100-worksheet / 50-datasource TWBX files. Reproducible (seeded). |
+| 132.2 | **End-to-end perf benchmark** | @tester | `tests/test_perf_benchmark.py` (new) | Medium | Asserts: extraction <60s, generation <120s, peak RSS <2GB for the synthetic large workbook. Records to telemetry. |
+| 132.3 | **Hot-path profiling** | @orchestrator | `scripts/profile_migration.py` (new) | Low | `cProfile` wrapper + flamegraph SVG output. CI-runnable. |
+| 132.4 | **Streaming JSON writes** | @orchestrator | `extract_tableau_data.py` | Low | Replace any `json.dump(huge_obj)` with streaming where the object exceeds 50MB. |
+| 132.5 | **Memory ceiling guards** | @tester | `tests/test_memory_ceiling.py` (new) | Low | Asserts no module loads >500MB into RAM by default. |
+
+**Success:** 500-measure workbook completes within 3 minutes on a laptop without OOM.
+
+---
+
+### Sprint 133 — Multi-Tenant & Connection Hardening (@deployer, @semantic)
+
+**Goal:** Multi-tenant deployment shipped in v28 with template substitution; v30 adds **encrypted credential vault**, **per-tenant validation**, and **connection-string drift detection**.
+
+| # | Item | Owner | File(s) | Est. | Details |
+|---|------|-------|---------|------|---------|
+| 133.1 | **Credential vault adapter** | @deployer | `deploy/credential_vault.py` (new) | High | Pluggable: env vars, Azure Key Vault, plain JSON (dev only). Per-tenant credential lookup, never written to disk in cleartext. |
+| 133.2 | **Pre-deploy validation** | @deployer | `deploy/multi_tenant.py` | Medium | Before deploying tenant N, dry-run validate: all `${TENANT_*}` placeholders resolved, target workspace reachable, credentials present. Fail-fast list. |
+| 133.3 | **Connection drift detection** | @semantic | `tmdl_generator.py`, `schema_drift.py` | Medium | Compare deployed dataset's connection string vs source-of-truth; flag drift in next migration. |
+| 133.4 | **Tests** | @tester | `tests/test_credential_vault.py` (new) | Medium | 30+ tests including malicious placeholders (null bytes, path traversal, command injection). |
+
+**Success:** A 50-tenant deploy completes with 0 cleartext credentials on disk and per-tenant pass/fail report.
+
+---
+
+### Sprint 134 — v30.0.0 Release & Hardening (All Agents)
+
+**Goal:** Version bump, regression sweep, doc refresh, PyPI publish.
+
+| # | Item | Owner | File(s) | Est. | Details |
+|---|------|-------|---------|------|---------|
+| 134.1 | **Version bump** | @orchestrator | `pyproject.toml`, `CHANGELOG.md` | Low | `29.x` → `30.0.0`. Document Sprints 128–134. |
+| 134.2 | **Real-world re-validation** | @tester | `tests/test_real_world_e2e.py` | Medium | Re-run all 27+ workbooks. Assert zero new validation failures, all repairs logged. |
+| 134.3 | **Migration Confidence Score recompute** | @assessor | `docs/GAP_ANALYSIS.md` | Low | Target: ≥97/100 (Grade A+). |
+| 134.4 | **Docs refresh** | @orchestrator | `docs/*.md`, `README.md` | Medium | Add v30 sections to ENTERPRISE_GUIDE, ARCHITECTURE, KNOWN_LIMITATIONS. |
+| 134.5 | **PyPI publish** | @deployer | `.github/workflows/publish.yml` | Low | Tag `v30.0.0` → publish. |
+| 134.6 | **Test baseline** | @tester | — | — | Target: **7,400+** tests (from 7,146 baseline). |
+
+---
+
+### v30.0.0 Success Criteria
+
+| Metric | Target | Owner |
+|--------|--------|-------|
+| DAX correctness corpus | 500+ before/after fixtures, zero regressions | @dax |
+| M validation gate | 100% of generated `.pbip` projects pass M parse | @wiring |
+| Self-healing repair rate | ≥80% of validation failures auto-repaired | @orchestrator |
+| Decision telemetry coverage | Every conversion branch records a decision | @deployer |
+| Performance ceiling | 500-measure workbook in <3min, <2GB RAM | @orchestrator |
+| Multi-tenant hardening | Zero cleartext credentials at rest | @deployer |
+| **Migration Confidence Score** | **≥97 (Grade A+)** | @assessor |
+| Tests | **7,400+** | @tester |
+
+### v30.0.0 Agent Ownership Matrix
+
+| Agent | Sprint 128 | Sprint 129 | Sprint 130 | Sprint 131 | Sprint 132 | Sprint 133 | Sprint 134 |
+|-------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|
+| **@dax** | 128.1–128.3, 128.5 | — | — | — | — | — | 134 |
+| **@wiring** | — | 129.1–129.3 | — | — | — | — | 134 |
+| **@semantic** | — | — | — | — | — | 133.3 | 134 |
+| **@visual** | — | — | — | — | — | — | 134 |
+| **@orchestrator** | — | — | 130.1, 130.2 | — | 132.3, 132.4 | — | 134.1, 134.4 |
+| **@assessor** | — | — | 130.3 | 131.3 | — | — | 134.3 |
+| **@deployer** | — | — | — | 131.1, 131.2, 131.4 | — | 133.1, 133.2 | 134.5 |
+| **@tester** | 128.4 | 129.4 | 130.4 | 131.5 | 132.1, 132.2, 132.5 | 133.4 | 134.2, 134.6 |
+
+### Why this theme set
+
+This v30.0.0 plan is **directly informed by the v28.5.x audit findings** (April 2026):
+- `re.match` tail-drop bug in `_rule_redundant_calculate` → **Sprint 128.3 anchor lint**
+- string-literal regex collision in `_rule_constant_fold` → **Sprint 128.2 protect/restore audit**
+- ungated LLM response could overwrite working DAX → **Sprint 130.2 LLM repair as fallback only after deterministic strategies**
+- `PBI_ACCESS_TOKEN` env priority bug hidden by silent except → **Sprint 131.1 decision telemetry surfaces fallback choices**
+- doc drift across 8 files unnoticed → **Sprint 134.4 docs refresh as a release gate**
+
+The pattern: every silent failure mode caught in v28.5.x becomes a class of tests in v30.0.0.
