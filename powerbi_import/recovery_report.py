@@ -128,6 +128,117 @@ class RecoveryReport:
             json.dump(self.to_dict(), f, indent=2, ensure_ascii=False)
         return filepath
 
+    def save_html(self, output_dir='artifacts/migration_reports'):
+        """Save the recovery report as a styled HTML page (Sprint 130.3).
+
+        Renders per-artifact: original → strategies tried → final state.
+        Uses the shared ``html_template`` for consistent Fluent styling.
+
+        Returns:
+            str: filepath of the written HTML file.
+        """
+        from powerbi_import import html_template as ht
+
+        os.makedirs(output_dir, exist_ok=True)
+        safe_name = self.report_name.replace(' ', '_').replace('/', '_')
+        filepath = os.path.join(output_dir, f'{safe_name}_recovery.html')
+
+        summary = self.get_summary()
+        total = summary['total_repairs']
+
+        # ── Header / stat grid ──────────────────────────────────────────
+        cards = [
+            ht.stat_card(total, 'Total Repairs',
+                         accent='blue' if total else 'success'),
+            ht.stat_card(summary['by_severity'].get(self.INFO, 0),
+                         'Info', accent='success'),
+            ht.stat_card(summary['by_severity'].get(self.WARNING, 0),
+                         'Warnings', accent='warn'),
+            ht.stat_card(summary['by_severity'].get(self.ERROR, 0),
+                         'Errors', accent='fail'),
+            ht.stat_card(summary['needs_follow_up'],
+                         'Need Follow-Up',
+                         accent='warn' if summary['needs_follow_up'] else 'success'),
+        ]
+
+        parts = [
+            ht.html_open(
+                title='Self-Healing Recovery Report',
+                subtitle=f'Migration: {self.report_name}',
+                timestamp=self.created_at[:16].replace('T', ' '),
+            ),
+            ht.stat_grid(cards),
+        ]
+
+        if total == 0:
+            parts.append(
+                '<div class="card"><p>&#9989; No automatic repairs were '
+                'required during this migration.</p></div>'
+            )
+            parts.append(ht.html_close())
+            with open(filepath, 'w', encoding='utf-8') as f:
+                f.write('\n'.join(parts))
+            return filepath
+
+        # ── Repairs by category ─────────────────────────────────────────
+        parts.append(ht.section_open(
+            'by-category', 'Repairs by Category', icon='&#128202;'))
+        cat_rows = [
+            [ht.esc(cat), str(count)]
+            for cat, count in sorted(summary['by_category'].items(),
+                                     key=lambda kv: -kv[1])
+        ]
+        parts.append(ht.data_table(
+            ['Category', 'Count'], cat_rows,
+            table_id='cat-table', sortable=True))
+        parts.append(ht.section_close())
+
+        # ── Per-artifact repair audit ───────────────────────────────────
+        parts.append(ht.section_open(
+            'audit', 'Per-Artifact Repair Audit', icon='&#128270;'))
+
+        sev_badge_level = {self.INFO: 'green', self.WARNING: 'yellow',
+                           self.ERROR: 'red'}
+        rows = []
+        for r in self.repairs:
+            sev = r.get('severity', self.WARNING)
+            level = sev_badge_level.get(sev, 'gray')
+            badge_html = ht.badge(sev.upper(), level=level)
+            original = r.get('original_value', '') or '—'
+            repaired = r.get('repaired_value', '') or '—'
+            follow = r.get('follow_up', '') or ''
+            follow_html = (
+                f'<span style="color:var(--warn)">&#9888; {ht.esc(follow)}</span>'
+                if follow else '<span style="color:var(--muted)">—</span>'
+            )
+            rows.append([
+                ht.esc(r.get('item_name', '') or '<unnamed>'),
+                ht.esc(r.get('category', '')),
+                ht.esc(r.get('repair_type', '')),
+                badge_html,
+                ht.esc(r.get('description', '')),
+                ht.esc(r.get('action', '')),
+                f'<code style="font-size:0.85em">{ht.esc(str(original)[:200])}</code>',
+                f'<code style="font-size:0.85em">{ht.esc(str(repaired)[:200])}</code>',
+                follow_html,
+            ])
+
+        parts.append(ht.data_table(
+            ['Item', 'Category', 'Repair Type', 'Severity',
+             'Description', 'Action', 'Original', 'Repaired', 'Follow-Up'],
+            rows,
+            table_id='audit-table',
+            sortable=True,
+            searchable=True,
+        ))
+        parts.append(ht.section_close())
+
+        parts.append(ht.html_close())
+
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(parts))
+        return filepath
+
     def merge_into(self, migration_report):
         """Append recovery summary into a MigrationReport instance.
 

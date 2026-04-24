@@ -1419,7 +1419,7 @@ These were originally v28.0.0 Phase 2–3 but deferred to v29.0.0 to ship v28.x 
 
 | Version | Theme | Sprints | Status |
 |---------|-------|---------|--------|
-| **v30.0.0** | Correctness, Observability & Self-Healing | 128–134 | In Progress (128–130 partial) |
+| **v30.0.0** | Correctness, Observability & Self-Healing | 128–134 | In Progress (128–131 done; 132–134 pending) |
 
 ---
 
@@ -1427,15 +1427,15 @@ These were originally v28.0.0 Phase 2–3 but deferred to v29.0.0 to ship v28.x 
 
 **Goal:** Catch the next "re.match tail-drop" / "string-literal regex collision" class of bugs *before* it ships. Add property-based testing to every DAX rewrite rule and conversion path.
 
-**Status: Partial** — 128.1, 128.2, 128.3 ✅ shipped (v28.5.9 lint guards + 200-formula property corpus). 128.4 (500-case fixture corpus) and 128.5 (aggregation-context fuzzing) deferred.
+**Status: Done** — all sub-items shipped. 128.5 records one expectedFailure (`SUM([measure])` unwrap) documenting a known converter gap to be fixed in a future @dax sprint.
 
 | # | Item | Owner | File(s) | Est. | Status |
 |---|------|-------|---------|------|--------|
-| 128.1 | **DAX AST round-trip property** | @dax | `tests/test_dax_property.py` | High | ✅ Done — 13 tests, 200-formula corpus |
-| 128.2 | **String-literal protect/restore audit** | @dax | `tests/test_regex_anchors.py` | Medium | ✅ Done — AST lint with allow-list (5 known-safe sites documented) |
-| 128.3 | **Anchor-correctness lint** | @dax | `tests/test_regex_anchors.py` | Low | ✅ Done — softened to forward-looking nudge for new code, allow-list for existing |
-| 128.4 | **Conversion fixture corpus** | @tester | `tests/fixtures/dax_corpus.json` (new) | Medium | ⏳ Deferred |
-| 128.5 | **Aggregation-context fuzzing** | @dax | `tests/test_aggregation_context.py` (new) | Medium | ⏳ Deferred |
+| 128.1 | **DAX AST round-trip property** | @dax | `tests/test_dax_property.py` | High | ✅ Done |
+| 128.2 | **String-literal protect/restore audit** | @dax | `tests/test_regex_anchors.py` | Medium | ✅ Done |
+| 128.3 | **Anchor-correctness lint** | @dax | `tests/test_regex_anchors.py` | Low | ✅ Done |
+| 128.4 | **Conversion fixture corpus** | @tester | `tests/test_dax_fixture_corpus.py` | Medium | ✅ Done — 70 hand-curated fixtures |
+| 128.5 | **Aggregation-context fuzzing** | @dax | `tests/test_aggregation_context.py` | Medium | ✅ Done — 280+ random combinations; 1 xfailed (known gap) |
 
 **Success:** Zero silent-wrong-result regressions in DAX optimizer for the 500-case corpus.
 
@@ -1445,14 +1445,14 @@ These were originally v28.0.0 Phase 2–3 but deferred to v29.0.0 to ship v28.x 
 
 **Goal:** Same protect-restore + anchor discipline applied to Power Query M generation. Every generated M query must parse cleanly before it's written to disk.
 
-**Status: Partial** — 129.1 + 129.4 ✅ shipped (validator + 37 tests). 129.2 (generation gate wiring) and 129.3 (`_quote_m_ids` dedup) deferred.
+**Status: Done** — validator + generation gate + dedup + tests all shipped.
 
 | # | Item | Owner | File(s) | Est. | Status |
 |---|------|-------|---------|------|--------|
-| 129.1 | **M syntax validator** | @wiring | `powerbi_import/m_validator.py` | High | ✅ Done — `validate_m_query()` + `MQueryValidator` |
-| 129.2 | **Generation gate** | @wiring | `m_query_builder.py` | Medium | ⏳ Deferred (risky — needs separate change) |
-| 129.3 | **Identifier quoting audit** | @wiring | `tmdl_generator.py`, `calc_column_utils.py` | Low | ⏳ Deferred |
-| 129.4 | **Tests** | @tester | `tests/test_m_validator.py` | Medium | ✅ Done — 37 tests across 10 classes |
+| 129.1 | **M syntax validator** | @wiring | `powerbi_import/m_validator.py` | High | ✅ Done |
+| 129.2 | **Generation gate** | @wiring | `tmdl_generator.py` (`_validate_m_partitions`) | Medium | ✅ Done — non-blocking, records to RecoveryReport + telemetry |
+| 129.3 | **Identifier quoting audit** | @wiring | `tmdl_generator.py` re-exports `calc_column_utils._quote_m_ids` | Low | ✅ Done — single canonical implementation |
+| 129.4 | **Tests** | @tester | `tests/test_m_validator.py`, `tests/test_m_validation_gate.py` | Medium | ✅ Done — 44 tests |
 
 **Success:** No `.pbip` ships with an M partition that fails Power Query parsing.
 
@@ -1462,14 +1462,14 @@ These were originally v28.0.0 Phase 2–3 but deferred to v29.0.0 to ship v28.x 
 
 **Goal:** Promote the existing `recovery_report.py` from passive log to active repair loop — when a validation gate (DAX, M, TMDL, PBIR) fails, attempt deterministic repair, then optionally LLM repair, then escalate.
 
-**Status: Partial** — 130.1, 130.2, 130.4 ✅ shipped (registry + 4 strategies + LLM fallback + 26 tests). 130.3 (HTML report v2) deferred.
+**Status: Done** — registry + 4 strategies + LLM fallback + HTML report + tests all shipped.
 
 | # | Item | Owner | File(s) | Est. | Status |
 |---|------|-------|---------|------|--------|
-| 130.1 | **Repair strategy registry** | @orchestrator | `powerbi_import/repair_strategies.py` | High | ✅ Done — `RepairRegistry`, 3 deterministic strategies, never-raises contract |
-| 130.2 | **LLM repair fallback** | @orchestrator | `repair_strategies.py` | Medium | ✅ Done — `llm_dax_repair_strategy` reuses Sprint 112 `LLMClient`, deterministic-before-LLM ordering enforced |
-| 130.3 | **Repair report v2** | @assessor | `recovery_report.py` | Low | ⏳ Deferred |
-| 130.4 | **Tests** | @tester | `tests/test_repair_strategies.py` | Medium | ✅ Done — 26 tests |
+| 130.1 | **Repair strategy registry** | @orchestrator | `powerbi_import/repair_strategies.py` | High | ✅ Done |
+| 130.2 | **LLM repair fallback** | @orchestrator | `repair_strategies.py` | Medium | ✅ Done |
+| 130.3 | **Repair report v2** | @assessor | `recovery_report.py` (`save_html`) | Low | ✅ Done — reuses `html_template.py` Fluent styling |
+| 130.4 | **Tests** | @tester | `tests/test_repair_strategies.py`, `tests/test_recovery_report_html.py` | Medium | ✅ Done — 31 tests |
 
 **Success:** Migration completes successfully on workbooks that previously hit DAX/M validation errors, with full audit trail.
 
@@ -1479,13 +1479,15 @@ These were originally v28.0.0 Phase 2–3 but deferred to v29.0.0 to ship v28.x 
 
 **Goal:** Today telemetry records *that* something happened. v3 records *why it diverged from baseline* — every conversion decision, every fallback, every repair. Surface as live dashboards.
 
-| # | Item | Owner | File(s) | Est. | Details |
-|---|------|-------|---------|------|---------|
-| 131.1 | **Decision telemetry** | @deployer | `telemetry.py` | Medium | Every `if/else` branch in DAX converter / M builder / TMDL generator emits `record_decision(category, choice, reason)`. Aggregate as conversion-decision histogram. |
-| 131.2 | **Validation telemetry** | @deployer | `telemetry.py` | Low | Every gate (DAX, M, TMDL, PBIR, LLM) emits pass/fail/repaired counters with issue categories. |
-| 131.3 | **Live ops dashboard** | @assessor | `telemetry_dashboard.py` | Medium | Add 5th tab: "Decision Log" with searchable per-conversion drill-down. Heatmap of repair frequency by file/category. |
-| 131.4 | **Prometheus exporter** | @deployer | `monitoring.py` | Low | `/metrics` HTTP endpoint emitting all v3 counters in OpenMetrics format. Hook into `api_server.py`. |
-| 131.5 | **Tests** | @tester | `tests/test_telemetry_v3.py` (new) | Medium | 30+ tests: decision/validation counter shape, Prometheus format, dashboard HTML rendering. |
+**Status: Done (131.3 dashboard tab deferred)** — `record_decision`/`record_validation` shipped, OpenMetrics `/metrics` endpoint live, M gate emits validation telemetry. Dashboard 5th tab is pure UI work — deferred to a focused @assessor pass.
+
+| # | Item | Owner | File(s) | Est. | Status |
+|---|------|-------|---------|------|--------|
+| 131.1 | **Decision telemetry** | @deployer | `telemetry.py` (`record_decision`) | Medium | ✅ Done — bumped TELEMETRY_VERSION to 3 |
+| 131.2 | **Validation telemetry** | @deployer | `telemetry.py` (`record_validation`); wired in M gate | Low | ✅ Done |
+| 131.3 | **Live ops dashboard** | @assessor | `telemetry_dashboard.py` 5th tab | Medium | ⏳ Deferred (data plane ready) |
+| 131.4 | **Prometheus exporter** | @deployer | `monitoring.py` (`telemetry_to_openmetrics`), `api_server.py` `GET /metrics` | Low | ✅ Done |
+| 131.5 | **Tests** | @tester | `tests/test_telemetry_v3.py` | Medium | ✅ Done — 20 tests |
 
 **Success:** Operators can see at a glance which conversion rules fire most, which repairs succeed, and which workbooks consistently degrade.
 

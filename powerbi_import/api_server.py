@@ -181,6 +181,25 @@ class MigrationHandler(BaseHTTPRequestHandler):
             self._send_json({'status': 'ok', 'version': _get_version()})
             return
 
+        # GET /metrics — Sprint 131.4 OpenMetrics scrape endpoint
+        if path == '/metrics':
+            try:
+                from powerbi_import import telemetry as _tel_mod
+                from powerbi_import.monitoring import telemetry_to_openmetrics
+                collector = getattr(_tel_mod, '_GLOBAL_COLLECTOR', None)
+                body = telemetry_to_openmetrics(collector).encode('utf-8')
+                self.send_response(200)
+                self.send_header(
+                    'Content-Type',
+                    'application/openmetrics-text; version=1.0.0; charset=utf-8'
+                )
+                self.send_header('Content-Length', str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            except Exception as exc:  # never crash the server
+                self._send_error(500, f'metrics export failed: {exc}')
+            return
+
         # GET /status/{id}
         if path.startswith('/status/'):
             job_id = path.split('/status/')[-1]

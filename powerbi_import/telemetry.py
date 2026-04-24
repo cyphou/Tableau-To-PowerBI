@@ -33,7 +33,9 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 # Telemetry version — bump when schema changes
-TELEMETRY_VERSION = 2
+# v3 (Sprint 131): adds 'decisions' and 'validations' buckets for
+# per-conversion-branch and per-gate observability.
+TELEMETRY_VERSION = 3
 
 # Default local log location
 DEFAULT_LOG_PATH = os.path.join(
@@ -91,6 +93,11 @@ class TelemetryCollector:
             'stats': {},
             'errors': [],
             'events': [],
+            # Sprint 131.1: per-decision counter (category → choice → count)
+            'decisions': {},
+            # Sprint 131.2: per-gate validation counter
+            #   {gate: {pass: N, fail: N, repaired: N, by_issue: {category: N}}}
+            'validations': {},
         }
 
     def start(self):
@@ -149,6 +156,68 @@ class TelemetryCollector:
             else:
                 event[k] = v
         self._data['events'].append(event)
+
+    def record_decision(self, category, choice, reason=''):
+        """Record a single conversion decision (Sprint 131.1).
+
+        Aggregated as ``decisions[category][choice]`` count, plus a
+        rolling sample of reasons (capped to avoid log bloat).
+
+        Args:
+            category: Decision domain — e.g. 'classification',
+                'cardinality', 'connector', 'visual_mapping',
+                'repair_strategy', 'parameter_inlining'.
+            choice: The branch taken — e.g. 'measure', 'calc_column',
+                'manyToOne', 'manyToMany', 'RELATED', 'LOOKUPVALUE'.
+            reason: Short free-text reason (truncated to 200 chars).
+        """
+        if not self.enabled:
+            return
+        decisions = self._data.setdefault('decisions', {})
+        bucket = decisions.setdefault(category, {})
+        leaf = bucket.setdefault(choice, {'count': 0, 'sample_reasons': []})
+        leaf['count'] += 1
+        if reason and len(leaf['sample_reasons']) < 5:
+            leaf['sample_reasons'].append(reason[:200])
+
+    def record_validation(self, gate, status, issue_category=''):
+        """Record a single validation outcome (Sprint 131.2).
+
+        Args:
+            gate: Validation gate name — e.g. 'dax', 'm', 'tmdl',
+                'pbir', 'llm_repair'.
+            status: One of 'pass', 'fail', 'repaired'.
+            issue_category: Optional issue subcategory (e.g.
+                'paren_balance', 'tableau_leak', 'unknown_column').
+        """
+        if not self.enabled:
+            return
+        if status not in ('pass', 'fail', 'repaired'):
+            status = 'fail'
+        validations = self._data.setdefault('validations', {})
+        bucket = validations.setdefault(gate, {
+            'pass': 0, 'fail': 0, 'repaired': 0, 'by_issue': {},
+        })
+        bucket[status] = bucket.get(status, 0) + 1
+        if issue_category:
+            bucket['by_issue'][issue_category] = (
+                bucket['by_issue'].get(issue_category, 0) + 1
+            )
+
+    def get_decision_summary(self):
+        """Return aggregated decision counters (Sprint 131.1).
+
+        Convenience for dashboards/tests:
+            {category: {choice: count}}
+        """
+        out = {}
+        for cat, choices in self._data.get('decisions', {}).items():
+            out[cat] = {ch: leaf['count'] for ch, leaf in choices.items()}
+        return out
+
+    def get_validation_summary(self):
+        """Return aggregated gate counters (Sprint 131.2)."""
+        return dict(self._data.get('validations', {}))
 
     def finish(self):
         """Record the end of migration and compute duration."""

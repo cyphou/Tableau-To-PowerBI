@@ -252,3 +252,116 @@ class MigrationMonitor:
     def flush(self):
         """Flush buffered metrics/events to the backend."""
         return self._backend.flush()
+
+
+# ── Sprint 131.4: OpenMetrics text exporter ─────────────────────────────────
+
+
+def _sanitize_metric_name(name):
+    """Conform a name to Prometheus metric naming rules."""
+    out = []
+    for ch in str(name):
+        if ch.isalnum() or ch == '_':
+            out.append(ch)
+        else:
+            out.append('_')
+    s = ''.join(out)
+    # Must start with letter or underscore
+    if s and s[0].isdigit():
+        s = '_' + s
+    return s or 'unknown'
+
+
+def _escape_label_value(val):
+    """Escape a label value for OpenMetrics text format."""
+    return (str(val)
+            .replace('\\', '\\\\')
+            .replace('\n', '\\n')
+            .replace('"', '\\"'))
+
+
+def telemetry_to_openmetrics(telemetry_collector):
+    """Render a TelemetryCollector's v3 counters as OpenMetrics text.
+
+    Sprint 131.4 — emits decision and validation buckets so a
+    Prometheus scrape against ``GET /metrics`` yields a complete
+    snapshot without any push-gateway dependency.
+
+    Args:
+        telemetry_collector: A ``TelemetryCollector`` instance (any
+            object with a ``get_data() -> dict`` method).
+
+    Returns:
+        str: Plain-text body suitable for the
+        ``application/openmetrics-text`` Content-Type.
+    """
+    data = telemetry_collector.get_data() if telemetry_collector else {}
+    lines = []
+
+    # ── Decisions ────────────────────────────────────────────────────
+    decisions = data.get('decisions', {}) or {}
+    if decisions:
+        lines.append('# HELP ttpbi_decisions_total Conversion decisions made by category and choice.')
+        lines.append('# TYPE ttpbi_decisions_total counter')
+        for cat, choices in decisions.items():
+            cat_safe = _sanitize_metric_name(cat)
+            for choice, leaf in choices.items():
+                count = leaf.get('count', 0) if isinstance(leaf, dict) else int(leaf)
+                lines.append(
+                    f'ttpbi_decisions_total{{category="{_escape_label_value(cat_safe)}",'
+                    f'choice="{_escape_label_value(choice)}"}} {count}'
+                )
+
+    # ── Validations ──────────────────────────────────────────────────
+    validations = data.get('validations', {}) or {}
+    if validations:
+        lines.append('# HELP ttpbi_validations_total Validation gate outcomes by gate and status.')
+        lines.append('# TYPE ttpbi_validations_total counter')
+        for gate, bucket in validations.items():
+            gate_safe = _sanitize_metric_name(gate)
+            for status in ('pass', 'fail', 'repaired'):
+                lines.append(
+                    f'ttpbi_validations_total{{gate="{_escape_label_value(gate_safe)}",'
+                    f'status="{status}"}} {bucket.get(status, 0)}'
+                )
+        # Per-issue subcategory
+        lines.append('# HELP ttpbi_validation_issues_total Validation failures broken down by issue category.')
+        lines.append('# TYPE ttpbi_validation_issues_total counter')
+        for gate, bucket in validations.items():
+            gate_safe = _sanitize_metric_name(gate)
+            for issue, n in (bucket.get('by_issue', {}) or {}).items():
+                lines.append(
+                    f'ttpbi_validation_issues_total{{gate="{_escape_label_value(gate_safe)}",'
+                    f'issue="{_escape_label_value(issue)}"}} {n}'
+                )
+
+    # ── Errors ───────────────────────────────────────────────────────
+    errors = data.get('errors', []) or []
+    if errors:
+        by_cat = {}
+        for e in errors:
+            c = (e.get('category') if isinstance(e, dict) else None) or 'unknown'
+            by_cat[c] = by_cat.get(c, 0) + 1
+        lines.append('# HELP ttpbi_errors_total Errors recorded during migration by category.')
+        lines.append('# TYPE ttpbi_errors_total counter')
+        for cat, n in by_cat.items():
+            cat_safe = _sanitize_metric_name(cat)
+            lines.append(
+                f'ttpbi_errors_total{{category="{_escape_label_value(cat_safe)}"}} {n}'
+            )
+
+    # ── Stats (gauges) ───────────────────────────────────────────────
+    stats = data.get('stats', {}) or {}
+    if stats:
+        for stat_name, stat_val in stats.items():
+            try:
+                v = float(stat_val)
+            except (TypeError, ValueError):
+                continue
+            safe = 'ttpbi_stat_' + _sanitize_metric_name(stat_name)
+            lines.append(f'# TYPE {safe} gauge')
+            lines.append(f'{safe} {v}')
+
+    # OpenMetrics requires terminating EOF marker
+    lines.append('# EOF')
+    return '\n'.join(lines) + '\n'

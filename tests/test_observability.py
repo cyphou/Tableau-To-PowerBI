@@ -26,11 +26,12 @@ from powerbi_import.telemetry_dashboard import (
 
 class TestTelemetryVersion(unittest.TestCase):
     def test_version_is_2(self):
-        self.assertEqual(TELEMETRY_VERSION, 2)
+        # Bumped to v3 in Sprint 131 (decisions + validations buckets).
+        self.assertEqual(TELEMETRY_VERSION, 3)
 
     def test_collector_includes_version(self):
         t = TelemetryCollector(enabled=True)
-        self.assertEqual(t.get_data()['telemetry_version'], 2)
+        self.assertEqual(t.get_data()['telemetry_version'], 3)
 
 
 class TestRecordEvent(unittest.TestCase):

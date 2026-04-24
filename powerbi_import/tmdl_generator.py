@@ -152,36 +152,13 @@ def _extract_function_body(expr, func_name):
 
 
 # Characters that are NOT valid in M generalized identifiers inside [...].
-# Letters (incl. accented), digits, spaces, and underscores are OK;
-# dots and everything else (. / ( ) ' " + @ # $ % ^ & * ! ~ ` < > ? ; : { } | \ - ,) needs quoting.
-# Dots are the record-field-access operator in M, so [Stat.util.] is parsed as
-# nested access — must be quoted as [#"Stat.util."].
-_M_SPECIAL_CHARS = set('./()\'"+@#$%^&*!~`<>?;:{}|\\,-')
-
-
-def _quote_m_identifiers(m_expr):
-    """Quote [field] references containing chars invalid in M generalized identifiers.
-
-    Converts [Pays/Région] → [#"Pays/Région"], leaves [Normal Col] unchanged.
-    Skips already-quoted [#"..."] and record literals (contain '=').
-    """
-    if not m_expr:
-        return m_expr
-
-    def _replacer(match):
-        name = match.group(1)
-        # Skip already-quoted identifiers
-        if name.startswith('#"'):
-            return match.group(0)
-        # Skip record literals (contain '=')
-        if '=' in name:
-            return match.group(0)
-        # Check if quoting is needed
-        if any(ch in _M_SPECIAL_CHARS for ch in name):
-            return f'[#"{name}"]'
-        return match.group(0)
-
-    return re.sub(r'\[([^\]]+)\]', _replacer, m_expr)
+# M generalized-identifier quoting is implemented once in
+# powerbi_import.calc_column_utils._quote_m_ids; re-exported here under
+# the historical name for backward compatibility (Sprint 129.3 dedup).
+from powerbi_import.calc_column_utils import (
+    _M_SPECIAL as _M_SPECIAL_CHARS,
+    _quote_m_ids as _quote_m_identifiers,
+)
 
 
 def _dax_to_m_expression(dax_expr, table_name=''):
@@ -454,6 +431,95 @@ def resolve_table_for_formula(formula, datasource_name=None, dax_context=None):
 # ════════════════════════════════════════════════════════════════════
 #  SELF-HEALING — SEMANTIC MODEL VALIDATION & REPAIR
 # ════════════════════════════════════════════════════════════════════
+
+def _validate_m_partitions(model, recovery=None):
+    """Parse every M partition in the model; record issues to recovery.
+
+    Sprint 129.2 generation gate. Non-blocking: issues are logged but do
+    not prevent the migration from completing — the .pbip still ships,
+    but operators get a per-table audit of any M that may fail to
+    refresh in Power BI Desktop or the Service.
+
+    Sprint 131.2: each partition outcome is also recorded to the
+    process-wide TelemetryCollector singleton (if telemetry enabled)
+    via ``record_validation('m', status, issue_category)``.
+
+    Returns:
+        int: total count of M partitions that produced at least one
+        validation issue.
+    """
+    try:
+        from powerbi_import.m_validator import validate_m_query
+    except Exception:
+        return 0
+
+    # Best-effort telemetry hook — never block on telemetry errors.
+    telemetry = None
+    try:
+        from powerbi_import import telemetry as _tel_mod
+        telemetry = getattr(_tel_mod, '_GLOBAL_COLLECTOR', None)
+    except Exception:
+        telemetry = None
+
+    failing = 0
+    tables = model.get('model', {}).get('tables', []) or []
+    for table in tables:
+        tname = table.get('name', '') or '<unnamed>'
+        for part in table.get('partitions', []) or []:
+            source = part.get('source', {}) or {}
+            if source.get('type') != 'm':
+                continue
+            expr = source.get('expression', '') or ''
+            if not expr.strip():
+                continue
+            try:
+                issues = validate_m_query(expr)
+            except Exception as exc:  # validator must never block generation
+                issues = [f'm_validator raised: {exc!r}']
+            if not issues:
+                if telemetry is not None:
+                    try:
+                        telemetry.record_validation('m', 'pass')
+                    except Exception:
+                        pass
+                continue
+            failing += 1
+            issue_cat = _categorize_m_issue(issues[0])
+            if telemetry is not None:
+                try:
+                    telemetry.record_validation('m', 'fail', issue_cat)
+                except Exception:
+                    pass
+            if recovery is not None:
+                recovery.record(
+                    category='m_query',
+                    repair_type='validation_warning',
+                    description=f"M partition '{part.get('name','')}' on table "
+                                f"'{tname}' has {len(issues)} parse issue(s)",
+                    action='; '.join(issues[:5]),
+                    severity='warning',
+                    item_name=f'{tname}/{part.get("name","")}',
+                )
+    return failing
+
+
+def _categorize_m_issue(issue_msg):
+    """Map a validator issue string to a coarse category for telemetry."""
+    if not issue_msg:
+        return 'unknown'
+    s = issue_msg.lower()
+    if 'paren' in s or 'bracket' in s or 'brace' in s:
+        return 'bracket_balance'
+    if 'string' in s or 'quote' in s:
+        return 'string_literal'
+    if 'let' in s or 'in' in s:
+        return 'let_in'
+    if 'comma' in s:
+        return 'trailing_comma'
+    if 'identifier' in s:
+        return 'quoted_identifier'
+    return 'other'
+
 
 def _self_heal_model(model, recovery=None):
     """Run post-generation semantic validation and auto-repair.
@@ -813,6 +879,11 @@ def generate_tmdl(datasources, report_name, extra_objects, output_dir,
     recovery = RecoveryReport(report_name)
     repair_count = _self_heal_model(model, recovery=recovery)
 
+    # Step 1c: M-partition validation gate (Sprint 129.2). Every generated
+    # M expression is parsed before write; issues are logged to the recovery
+    # report so operators can triage without blocking the migration.
+    m_validation_issues = _validate_m_partitions(model, recovery=recovery)
+
     # Attach languages metadata for _write_tmdl_files
     if languages:
         model['model']['_languages'] = languages
@@ -865,6 +936,7 @@ def generate_tmdl(datasources, report_name, extra_objects, output_dir,
         'actual_bim_symbols': actual_bim_symbols,
         'self_heal_repairs': repair_count,
         'recovery_summary': recovery.get_summary() if recovery.has_repairs else None,
+        'm_validation_issues': m_validation_issues,
         'lineage': lineage,
     }
     return stats
