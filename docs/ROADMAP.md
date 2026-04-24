@@ -27,7 +27,7 @@ The migration engine is **feature-complete for core single-workbook scenarios**.
 | **v28.4.0** | Aggregation-Aware Cross-Table SUM Wrapping | — | ✅ Shipped |
 | **v28.5.x** | DAX/M Correctness Hardening (metadata-record, DATEADD scalar, SELECTEDVALUE, bracket protection, operator spacing) | Patch series | ✅ Shipped |
 | **v29.0.0** | Migration Completeness & Enterprise Operations | Sprints 112–117, 120–127 | Planned |
-| **v30.0.0** | Correctness, Observability & Self-Healing | Sprints 128–134 | Planned |
+| **v30.0.0** | Correctness, Observability & Self-Healing | Sprints 128–134 | In Progress (128–131 done; 132–134 pending) |
 
 ---
 
