@@ -938,6 +938,7 @@ def generate_tmdl(datasources, report_name, extra_objects, output_dir,
         'recovery_summary': recovery.get_summary() if recovery.has_repairs else None,
         'm_validation_issues': m_validation_issues,
         'lineage': lineage,
+        'table_rename_map': model.get('_table_rename_map', {}),
     }
     return stats
 
@@ -1087,6 +1088,9 @@ def _build_semantic_model(datasources, report_name="Report", extra_objects=None,
         _enforce_hybrid_relationship_constraints(model)
         if (agg_tables or 'none') == 'auto':
             _generate_aggregation_tables(model)
+
+    # Attach table rename map for PBIP report generator
+    model['_table_rename_map'] = ctx.get('table_rename_map', {})
 
     return model
 
@@ -1511,6 +1515,7 @@ def _collect_semantic_context(datasources, extra_objects):
         'ds_main_table': ds_main_table,
         'measure_names': measure_names,
         'datasource_table_map': datasource_table_map,
+        'table_rename_map': table_rename_map,
     }
 
 

@@ -341,6 +341,12 @@ class PowerBIProjectGenerator:
             self._actual_bim_measure_names = stats.get('actual_bim_measures', set())
             self._actual_bim_symbols = stats.get('actual_bim_symbols', set())
 
+            # Store table rename map for multi-datasource entity resolution.
+            # When multiple datasources share the same table name, the TMDL
+            # generator renames colliding tables.  The report generator must
+            # use the same renamed names in visual Entity references.
+            self._table_rename_map = stats.get('table_rename_map', {})
+
             # Write lineage map alongside the project for traceability
             lineage = stats.get('lineage')
             if lineage:
@@ -2007,8 +2013,19 @@ class PowerBIProjectGenerator:
         datasources = converted_objects.get('datasources', [])
         
         # Phase 1: Collect deduplicated physical tables
+        # Use table_rename_map from the TMDL generator so table names in the
+        # report (Entity references) match the semantic model exactly.
+        rename_map = getattr(self, '_table_rename_map', {})
         best_tables = {}
+        # Build ds_table_map ONLY from rename_map entries — these are
+        # datasources whose tables got renamed due to cross-datasource
+        # collision.  Single-datasource workbooks (or datasources without
+        # renames) must NOT appear here to avoid overriding correct
+        # multi-table entity resolution within a datasource.
+        self._ds_table_map = {ds_name: new_name
+                              for (ds_name, _orig), new_name in rename_map.items()}
         for ds in datasources:
+            ds_name = ds.get('name', '')
             tables = ds.get('tables', [])
             # Extract physical columns from datasource-level list (excluding calculations)
             ds_cols = [c for c in ds.get('columns', []) if not c.get('calculation')]
@@ -2029,8 +2046,10 @@ class PowerBIProjectGenerator:
                         clean['name'] = raw.strip('[]')
                         cleaned_cols.append(clean)
                     table['columns'] = cleaned_cols
-                if tname not in best_tables or len(table.get('columns', [])) > len(best_tables[tname].get('columns', [])):
-                    best_tables[tname] = table
+                # Apply table rename from TMDL generator (multi-datasource collision)
+                actual_name = rename_map.get((ds_name, tname), tname)
+                if actual_name not in best_tables or len(table.get('columns', [])) > len(best_tables[actual_name].get('columns', [])):
+                    best_tables[actual_name] = table
         
         # Phase 2: Identify the main table (the one with the most columns)
         main_table = None
@@ -2702,6 +2721,14 @@ class PowerBIProjectGenerator:
                         self._field_map[clean_name] = (entity, prop)
                         break
 
+        # Override entity for multi-datasource renamed tables
+        ds_ref = field.get('datasource', '')
+        if ds_ref and hasattr(self, '_ds_table_map') and ds_ref in self._ds_table_map:
+            ds_entity = self._ds_table_map[ds_ref]
+            main = getattr(self, '_main_table', 'Table')
+            if ds_entity != entity and entity == main:
+                entity = ds_entity
+
         is_bim_measure = hasattr(self, '_bim_measure_names') and (
             clean_name in self._bim_measure_names or prop in self._bim_measure_names
         )
@@ -2768,6 +2795,20 @@ class PowerBIProjectGenerator:
                         prop = calc.get('caption', clean_name)
                         self._field_map[clean_name] = (entity, prop)
                         break
+
+        # Override entity when the field comes from a datasource whose table
+        # was renamed (multi-datasource collision).  The field's 'datasource'
+        # attribute tells us which Tableau datasource it belongs to, and
+        # _ds_table_map resolves that to the correct (possibly renamed) table.
+        # Only override when the entity resolved to the main table (default),
+        # to avoid incorrectly overriding correct multi-table resolution
+        # within a single datasource.
+        ds_ref = field.get('datasource', '')
+        if ds_ref and hasattr(self, '_ds_table_map') and ds_ref in self._ds_table_map:
+            ds_entity = self._ds_table_map[ds_ref]
+            main = getattr(self, '_main_table', 'Table')
+            if ds_entity != entity and entity == main:
+                entity = ds_entity
 
         shelf_agg = field.get('aggregation', '')
         explicit_agg_func = _TABLEAU_AGG_TO_PBI_FUNC.get(shelf_agg)
@@ -3009,23 +3050,45 @@ class PowerBIProjectGenerator:
         
         return report_filters
     
-    def _resolve_field_entity(self, field_name):
-        """Resolves a field name to (entity_table, property_name) via _field_map"""
+    def _resolve_field_entity(self, field_name, datasource=''):
+        """Resolves a field name to (entity_table, property_name) via _field_map.
+
+        Args:
+            field_name: Raw or cleaned field name.
+            datasource: Optional Tableau datasource reference for multi-
+                datasource disambiguation.
+        """
         clean = field_name.replace('[', '').replace(']', '')
+        main = getattr(self, '_main_table', clean)
         if hasattr(self, '_field_map'):
             # Direct match
             if clean in self._field_map:
-                return self._field_map[clean]
+                entity, prop = self._field_map[clean]
+                # Override entity for multi-datasource renamed tables —
+                # only when entity is the main table (fallback default)
+                if (datasource and entity == main
+                        and hasattr(self, '_ds_table_map')
+                        and datasource in self._ds_table_map
+                        and self._ds_table_map[datasource] != entity):
+                    entity = self._ds_table_map[datasource]
+                return (entity, prop)
             # Try without attr:/ prefix
             for prefix in ('attr:', ':'):
                 if clean.startswith(prefix) and clean[len(prefix):] in self._field_map:
-                    return self._field_map[clean[len(prefix):]]
+                    entity, prop = self._field_map[clean[len(prefix):]]
+                    if (datasource and entity == main
+                            and hasattr(self, '_ds_table_map')
+                            and datasource in self._ds_table_map
+                            and self._ds_table_map[datasource] != entity):
+                        entity = self._ds_table_map[datasource]
+                    return (entity, prop)
             # Partial match (calc ID may contain Calculation_xxx)
             for key, val in self._field_map.items():
                 if key == clean or val[1] == clean:
                     return val
-        # Fallback: use main table (all calc columns are there)
-        main = getattr(self, '_main_table', clean)
+        # Fallback: use ds_table_map if datasource known, else main table
+        if datasource and hasattr(self, '_ds_table_map') and datasource in self._ds_table_map:
+            return (self._ds_table_map[datasource], clean)
         return (main, clean)
 
     def _create_visual_filters(self, filters):
@@ -3041,8 +3104,22 @@ class PowerBIProjectGenerator:
             if not field:
                 continue
             
-            # Clean field name (remove Tableau brackets)
-            clean_field = field.replace('[', '').replace(']', '')
+            # Parse [datasource].[derivation:field:suffix] pattern from global filters
+            # (worksheet-level filters are already cleaned by the extractor)
+            ds_ref = f.get('datasource', '')
+            _col_m = re.findall(r'\[([^\]]+)\]\.\[([^\]]+)\]', field) if '.' in field and '[' in field else None
+            if _col_m:
+                _ds_part, _field_part = _col_m[0]
+                if not ds_ref:
+                    ds_ref = _ds_part
+                # Strip derivation prefix (none:, sum:, attr:, etc.) and suffix (:nk, :qk, etc.)
+                clean_field = re.sub(
+                    r'^(none|sum|avg|count|cnt|countd|min|max|usr|yr|mn|dy|qr|wk|attr|md|mdy|hms|hr|mt|sc|thr|trunc):',
+                    '', _field_part)
+                clean_field = re.sub(r':(nk|qk|ok|fn|tn)$', '', clean_field)
+            else:
+                # Clean field name (remove Tableau brackets)
+                clean_field = field.replace('[', '').replace(']', '')
             
             # Skip Tableau virtual fields (no PBI column exists)
             if clean_field in skip_fields or field.replace('[', '').replace(']', '') in skip_fields:
@@ -3060,7 +3137,8 @@ class PowerBIProjectGenerator:
                 continue
             
             # Resolve Entity (table) and Property (column) via mapping
-            entity, prop = self._resolve_field_entity(clean_field)
+            ds_ref = f.get('datasource', '')
+            entity, prop = self._resolve_field_entity(clean_field, datasource=ds_ref)
             
             filter_type = f.get('type', 'categorical')
             filter_mode = f.get('filter_mode', '')
@@ -4185,13 +4263,19 @@ class PowerBIProjectGenerator:
 
     def _find_column_table(self, column_name, converted_objects):
         """Finds the table containing a given column"""
+        # Prefer _field_map (already applies table renames)
+        if hasattr(self, '_field_map') and column_name in self._field_map:
+            return self._field_map[column_name][0]
+        rename_map = getattr(self, '_table_rename_map', {})
         datasources = converted_objects.get('datasources', [])
         for ds in datasources:
+            ds_name = ds.get('name', '')
             for table in ds.get('tables', []):
+                tname = table.get('name', '')
                 for col in table.get('columns', []):
                     col_caption = col.get('caption', col.get('name', ''))
                     if col_caption == column_name or col.get('name', '') == column_name:
-                        return table.get('name', '')
+                        return rename_map.get((ds_name, tname), tname)
                 # Also search in calculations
                 for calc in ds.get('calculations', []):
                     calc_caption = calc.get('caption', '')
@@ -4199,7 +4283,8 @@ class PowerBIProjectGenerator:
                         # The calculation is in the main table of this datasource
                         tables = ds.get('tables', [])
                         if tables:
-                            return tables[0].get('name', '')
+                            t0 = tables[0].get('name', '')
+                            return rename_map.get((ds_name, t0), t0)
         return ''
     
     def _detect_script_visual(self, ws_data, converted_objects):
