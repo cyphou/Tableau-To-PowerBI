@@ -527,12 +527,19 @@ def _self_heal_model(model, recovery=None):
     Checks for common issues that would prevent the .pbip from opening
     in Power BI Desktop, and applies corrective strategies:
 
-      1. Broken column references in measures → hide measure + MigrationNote
-      2. Duplicate table names → auto-suffix with _2, _3, ...
+      1. Duplicate table names → auto-suffix with _2, _3, ...
+      2. Broken column references in measures → hide measure + MigrationNote
       3. Orphan measures (table missing) → reassign to first available table
-      4. Circular relationships → deactivate weakest link (delegate to existing)
-      5. Empty table names → skip
-      6. Measures referencing non-existent tables → rewrite table ref
+      4. Empty table names → skip
+      5. Circular relationships → log deactivated
+      6. Bare column refs in measures → wrap with MAX()
+      7. M partitions without try/otherwise → wrap for error handling
+      8. Data type / formatString mismatch → fix dataType
+      9. Duplicate column names → auto-suffix with _2, _3, ...
+      10. Tables with zero columns → add placeholder or remove
+      11. Missing relationship endpoints → remove broken relationships
+      12. Measures with empty expressions → remove
+      13. Cross-table DAX broken refs → hide measure + MigrationNote
 
     Args:
         model: Complete semantic model dict
@@ -826,6 +833,228 @@ def _self_heal_model(model, recovery=None):
                                     description=f"M partition for '{tname}' lacks error handling",
                                     action="Wrapped Source with try...otherwise fallback",
                                     severity='info')
+
+    # 8. Data type / formatString consistency
+    #    A numeric formatString on a String column causes PBI Desktop to
+    #    report "Missing_References".  Fix by changing dataType to Double.
+    _NUMERIC_FMT_RE = re.compile(r'[#0,.]')  # digits/decimal in format
+    for t in model.get('model', {}).get('tables', []):
+        tname = t.get('name', '')
+        for col in t.get('columns', []):
+            cname = col.get('name', '')
+            dt = (col.get('dataType') or '').lower()
+            fmt = col.get('formatString', '')
+            if dt == 'string' and fmt and _NUMERIC_FMT_RE.search(fmt):
+                # Numeric format on a string column — fix type
+                col['dataType'] = 'Double'
+                col['summarizeBy'] = 'sum'
+                repairs += 1
+                print(f"  \u2695 Self-heal: Fixed dataType for '{tname}'.'{cname}' "
+                      f"String \u2192 Double (formatString '{fmt}')")
+                if recovery:
+                    recovery.record('tmdl', 'datatype_format_mismatch',
+                                    item_name=f'{tname}.{cname}',
+                                    description=f"Column '{cname}' has dataType String "
+                                                f"but numeric formatString '{fmt}'",
+                                    action="Changed dataType to Double",
+                                    severity='warning')
+
+    # 9. Duplicate column names within a table
+    #    PBI Desktop crashes when two columns share the same name.
+    for t in model.get('model', {}).get('tables', []):
+        tname = t.get('name', '')
+        seen_cols = {}
+        for col in t.get('columns', []):
+            cname = col.get('name', '')
+            if not cname:
+                continue
+            if cname in seen_cols:
+                suffix = 2
+                new_name = f"{cname}_{suffix}"
+                existing = {c.get('name', '') for c in t.get('columns', [])}
+                while new_name in existing:
+                    suffix += 1
+                    new_name = f"{cname}_{suffix}"
+                col['name'] = new_name
+                repairs += 1
+                print(f"  \u2695 Self-heal: Renamed duplicate column '{tname}'.'{cname}' \u2192 '{new_name}'")
+                if recovery:
+                    recovery.record('tmdl', 'duplicate_column',
+                                    item_name=f'{tname}.{cname}',
+                                    description=f"Duplicate column name '{cname}' in table '{tname}'",
+                                    action=f"Renamed to '{new_name}'",
+                                    severity='warning')
+            else:
+                seen_cols[cname] = col
+
+    # 10. Tables with zero columns (PBI Desktop can't load them)
+    tables_after = model.get('model', {}).get('tables', [])
+    empty_tables = [t for t in tables_after
+                    if not t.get('columns') and t.get('name', '').strip()]
+    for t in empty_tables:
+        tname = t.get('name', '')
+        # Keep the table only if it has measures — add a placeholder column
+        if t.get('measures'):
+            t['columns'] = [{
+                'name': '_Placeholder',
+                'dataType': 'String',
+                'sourceColumn': '_Placeholder',
+                'summarizeBy': 'none',
+                'isHidden': True,
+            }]
+            repairs += 1
+            print(f"  \u2695 Self-heal: Added placeholder column to empty table '{tname}'")
+            if recovery:
+                recovery.record('tmdl', 'empty_table_columns',
+                                item_name=tname,
+                                description=f"Table '{tname}' has measures but no columns",
+                                action="Added hidden _Placeholder column",
+                                severity='info')
+        else:
+            # No columns AND no measures — remove entirely
+            tables_after.remove(t)
+            # Clean up relationships referencing removed table
+            rels = model.get('model', {}).get('relationships', [])
+            model['model']['relationships'] = [
+                r for r in rels
+                if r.get('fromTable') != tname and r.get('toTable') != tname
+            ]
+            repairs += 1
+            print(f"  \u2695 Self-heal: Removed empty table '{tname}' (no columns, no measures)")
+            if recovery:
+                recovery.record('tmdl', 'empty_table_removed',
+                                item_name=tname,
+                                description=f"Table '{tname}' has no columns and no measures",
+                                action="Removed from model",
+                                severity='warning')
+
+    # 11. Missing relationship endpoints
+    #     Remove relationships referencing non-existent tables or columns.
+    current_tables = {t.get('name', ''): t
+                      for t in model.get('model', {}).get('tables', [])
+                      if t.get('name', '')}
+    valid_rels = []
+    for rel in model.get('model', {}).get('relationships', []):
+        ft = rel.get('fromTable', '')
+        tt = rel.get('toTable', '')
+        fc = rel.get('fromColumn', '')
+        tc = rel.get('toColumn', '')
+        from_t = current_tables.get(ft)
+        to_t = current_tables.get(tt)
+        if not from_t or not to_t:
+            missing = ft if not from_t else tt
+            repairs += 1
+            desc = f"{ft}[{fc}] \u2192 {tt}[{tc}]"
+            print(f"  \u2695 Self-heal: Removed relationship {desc} (table '{missing}' not found)")
+            if recovery:
+                recovery.record('relationship', 'missing_table',
+                                item_name=desc,
+                                description=f"Relationship references non-existent table '{missing}'",
+                                action="Relationship removed",
+                                severity='warning')
+            continue
+        from_cols = {c.get('name', '') for c in from_t.get('columns', [])}
+        to_cols = {c.get('name', '') for c in to_t.get('columns', [])}
+        if fc and fc not in from_cols:
+            repairs += 1
+            desc = f"{ft}[{fc}] \u2192 {tt}[{tc}]"
+            print(f"  \u2695 Self-heal: Removed relationship {desc} (column '{fc}' not in '{ft}')")
+            if recovery:
+                recovery.record('relationship', 'missing_column',
+                                item_name=desc,
+                                description=f"Relationship column '{fc}' not found in table '{ft}'",
+                                action="Relationship removed",
+                                severity='warning')
+            continue
+        if tc and tc not in to_cols:
+            repairs += 1
+            desc = f"{ft}[{fc}] \u2192 {tt}[{tc}]"
+            print(f"  \u2695 Self-heal: Removed relationship {desc} (column '{tc}' not in '{tt}')")
+            if recovery:
+                recovery.record('relationship', 'missing_column',
+                                item_name=desc,
+                                description=f"Relationship column '{tc}' not found in table '{tt}'",
+                                action="Relationship removed",
+                                severity='warning')
+            continue
+        valid_rels.append(rel)
+    model['model']['relationships'] = valid_rels
+
+    # 12. Measures with empty expressions
+    for t in model.get('model', {}).get('tables', []):
+        tname = t.get('name', '')
+        remaining_measures = []
+        for m in t.get('measures', []):
+            expr = (m.get('expression', '') or '').strip()
+            mname = m.get('name', '?')
+            if not expr:
+                repairs += 1
+                print(f"  \u2695 Self-heal: Removed empty measure '{mname}' from '{tname}'")
+                if recovery:
+                    recovery.record('tmdl', 'empty_measure',
+                                    item_name=mname,
+                                    description=f"Measure '{mname}' in '{tname}' has empty expression",
+                                    action="Measure removed",
+                                    severity='warning')
+                continue
+            remaining_measures.append(m)
+        t['measures'] = remaining_measures
+
+    # 13. Cross-table DAX references — 'Table'[Column] where table or
+    #     column doesn't exist.  Hide the measure and annotate.
+    all_table_fields = {}
+    for t in model.get('model', {}).get('tables', []):
+        tname = t.get('name', '')
+        if not tname:
+            continue
+        fields = {c.get('name', '') for c in t.get('columns', []) if c.get('name')}
+        fields |= {m.get('name', '') for m in t.get('measures', []) if m.get('name')}
+        all_table_fields[tname] = fields
+
+    for t in model.get('model', {}).get('tables', []):
+        for measure in t.get('measures', []):
+            if measure.get('isHidden'):
+                continue  # Already handled
+            expr = measure.get('expression', '')
+            if not expr:
+                continue
+            for ref_match in _TABLE_COL_RE.finditer(expr):
+                ref_table = ref_match.group(1).replace("''", "'")
+                ref_col = ref_match.group(2)
+                if ref_table not in all_table_fields:
+                    measure['isHidden'] = True
+                    measure.setdefault('annotations', []).append({
+                        'name': 'MigrationNote',
+                        'value': f"Self-heal: references non-existent table '{ref_table}'. Review and fix."
+                    })
+                    repairs += 1
+                    mname = measure.get('name', '?')
+                    print(f"  \u2695 Self-heal: Hidden measure '{mname}' (unknown table '{ref_table}')")
+                    if recovery:
+                        recovery.record('tmdl', 'cross_table_broken_ref',
+                                        item_name=mname,
+                                        description=f"Measure references non-existent table '{ref_table}'",
+                                        action="Measure hidden with MigrationNote",
+                                        severity='warning',
+                                        follow_up=f"Fix table reference '{ref_table}' in measure '{mname}'")
+                    break
+                elif ref_col not in all_table_fields[ref_table]:
+                    measure['isHidden'] = True
+                    measure.setdefault('annotations', []).append({
+                        'name': 'MigrationNote',
+                        'value': f"Self-heal: references non-existent column '{ref_table}'[{ref_col}]. Review and fix."
+                    })
+                    repairs += 1
+                    mname = measure.get('name', '?')
+                    print(f"  \u2695 Self-heal: Hidden measure '{mname}' (unknown column '{ref_table}'[{ref_col}])")
+                    if recovery:
+                        recovery.record('tmdl', 'cross_table_broken_ref',
+                                        item_name=mname,
+                                        description=f"Measure references non-existent column '{ref_table}'[{ref_col}]",
+                                        action="Measure hidden with MigrationNote",
+                                        severity='warning',
+                                        follow_up=f"Fix column reference [{ref_col}] in measure '{mname}'")
+                    break
 
     return repairs
 

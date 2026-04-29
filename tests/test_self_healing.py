@@ -140,8 +140,8 @@ class TestTMDLSelfHealDuplicateTables(unittest.TestCase):
     def test_duplicate_table_renamed(self):
         from powerbi_import.tmdl_generator import _self_heal_model
         model = self._make_model([
-            {'name': 'Orders', 'columns': [], 'measures': []},
-            {'name': 'Orders', 'columns': [], 'measures': []},
+            {'name': 'Orders', 'columns': [{'name': 'id', 'dataType': 'Int64'}], 'measures': []},
+            {'name': 'Orders', 'columns': [{'name': 'id', 'dataType': 'Int64'}], 'measures': []},
         ])
         repairs = _self_heal_model(model)
         self.assertGreater(repairs, 0)
@@ -152,9 +152,9 @@ class TestTMDLSelfHealDuplicateTables(unittest.TestCase):
     def test_triplicate_table_renamed(self):
         from powerbi_import.tmdl_generator import _self_heal_model
         model = self._make_model([
-            {'name': 'T', 'columns': [], 'measures': []},
-            {'name': 'T', 'columns': [], 'measures': []},
-            {'name': 'T', 'columns': [], 'measures': []},
+            {'name': 'T', 'columns': [{'name': 'id', 'dataType': 'Int64'}], 'measures': []},
+            {'name': 'T', 'columns': [{'name': 'id', 'dataType': 'Int64'}], 'measures': []},
+            {'name': 'T', 'columns': [{'name': 'id', 'dataType': 'Int64'}], 'measures': []},
         ])
         repairs = _self_heal_model(model)
         names = [t['name'] for t in model['model']['tables']]
@@ -183,8 +183,8 @@ class TestTMDLSelfHealDuplicateTables(unittest.TestCase):
     def test_no_duplicate_no_repair(self):
         from powerbi_import.tmdl_generator import _self_heal_model
         model = self._make_model([
-            {'name': 'A', 'columns': [], 'measures': []},
-            {'name': 'B', 'columns': [], 'measures': []},
+            {'name': 'A', 'columns': [{'name': 'id', 'dataType': 'Int64'}], 'measures': []},
+            {'name': 'B', 'columns': [{'name': 'id', 'dataType': 'Int64'}], 'measures': []},
         ])
         repairs = _self_heal_model(model)
         self.assertEqual(repairs, 0)
@@ -271,7 +271,7 @@ class TestTMDLSelfHealOrphanMeasures(unittest.TestCase):
         from powerbi_import.tmdl_generator import _self_heal_model
         model = {'model': {
             'tables': [
-                {'name': 'Main', 'columns': [], 'measures': []},
+                {'name': 'Main', 'columns': [{'name': 'id', 'dataType': 'Int64'}], 'measures': []},
                 {'name': '', 'columns': [], 'measures': [
                     {'name': 'Orphan', 'expression': '42'}
                 ]},
@@ -291,7 +291,7 @@ class TestTMDLSelfHealEmptyTables(unittest.TestCase):
         from powerbi_import.tmdl_generator import _self_heal_model
         model = {'model': {
             'tables': [
-                {'name': 'Valid', 'columns': [], 'measures': []},
+                {'name': 'Valid', 'columns': [{'name': 'id', 'dataType': 'Int64'}], 'measures': []},
                 {'name': '', 'columns': [], 'measures': []},
                 {'name': '  ', 'columns': [], 'measures': []},
             ],
@@ -311,8 +311,8 @@ class TestTMDLSelfHealRecoveryReport(unittest.TestCase):
         from powerbi_import.recovery_report import RecoveryReport
         model = {'model': {
             'tables': [
-                {'name': 'T', 'columns': [], 'measures': []},
-                {'name': 'T', 'columns': [], 'measures': []},
+                {'name': 'T', 'columns': [{'name': 'id', 'dataType': 'Int64'}], 'measures': []},
+                {'name': 'T', 'columns': [{'name': 'id', 'dataType': 'Int64'}], 'measures': []},
             ],
             'relationships': [],
         }}
@@ -325,7 +325,7 @@ class TestTMDLSelfHealRecoveryReport(unittest.TestCase):
         from powerbi_import.tmdl_generator import _self_heal_model
         from powerbi_import.recovery_report import RecoveryReport
         model = {'model': {
-            'tables': [{'name': 'T', 'columns': [], 'measures': []}],
+            'tables': [{'name': 'T', 'columns': [{'name': 'id', 'dataType': 'Int64'}], 'measures': []}],
             'relationships': [],
         }}
         recovery = RecoveryReport("Test")
@@ -866,6 +866,315 @@ class TestAttrNestedParens(unittest.TestCase):
         self.assertNotIn('ATTR', result)
         self.assertIn('UPPER', result)
         self.assertIn('LEFT', result)
+
+
+# ════════════════════════════════════════════════════════════════════
+#  Expanded self-healing checks (Sprint 132)
+# ════════════════════════════════════════════════════════════════════
+
+class TestSelfHealDataTypeFormatMismatch(unittest.TestCase):
+    """Check 8 — dataType/formatString inconsistency auto-repair."""
+
+    def _make_model(self, columns):
+        return {
+            'model': {
+                'tables': [{'name': 'T', 'columns': columns, 'measures': [],
+                             'partitions': []}],
+                'relationships': [],
+            }
+        }
+
+    def test_string_with_numeric_format_fixed(self):
+        from powerbi_import.tmdl_generator import _self_heal_model
+        model = self._make_model([
+            {'name': 'Score', 'dataType': 'String', 'formatString': '#,0;-#,0',
+             'sourceColumn': 'Score', 'summarizeBy': 'none'},
+        ])
+        repairs = _self_heal_model(model)
+        self.assertGreaterEqual(repairs, 1)
+        col = model['model']['tables'][0]['columns'][0]
+        self.assertEqual(col['dataType'], 'Double')
+
+    def test_string_without_format_untouched(self):
+        from powerbi_import.tmdl_generator import _self_heal_model
+        model = self._make_model([
+            {'name': 'Name', 'dataType': 'String', 'sourceColumn': 'Name',
+             'summarizeBy': 'none'},
+        ])
+        repairs = _self_heal_model(model)
+        col = model['model']['tables'][0]['columns'][0]
+        self.assertEqual(col['dataType'], 'String')
+
+    def test_double_with_numeric_format_untouched(self):
+        from powerbi_import.tmdl_generator import _self_heal_model
+        model = self._make_model([
+            {'name': 'Amount', 'dataType': 'Double', 'formatString': '#,0.00',
+             'sourceColumn': 'Amount', 'summarizeBy': 'sum'},
+        ])
+        repairs = _self_heal_model(model)
+        col = model['model']['tables'][0]['columns'][0]
+        self.assertEqual(col['dataType'], 'Double')
+
+    def test_recovery_report_logged(self):
+        from powerbi_import.tmdl_generator import _self_heal_model
+        from powerbi_import.recovery_report import RecoveryReport
+        model = self._make_model([
+            {'name': 'Rank', 'dataType': 'String', 'formatString': '0',
+             'sourceColumn': 'Rank', 'summarizeBy': 'none'},
+        ])
+        recovery = RecoveryReport("Test")
+        _self_heal_model(model, recovery=recovery)
+        self.assertTrue(recovery.has_repairs)
+        self.assertEqual(recovery.repairs[0]['repair_type'], 'datatype_format_mismatch')
+
+
+class TestSelfHealDuplicateColumns(unittest.TestCase):
+    """Check 9 — duplicate column names within a table."""
+
+    def _make_model(self, columns):
+        return {
+            'model': {
+                'tables': [{'name': 'T', 'columns': columns, 'measures': [],
+                             'partitions': []}],
+                'relationships': [],
+            }
+        }
+
+    def test_duplicate_column_renamed(self):
+        from powerbi_import.tmdl_generator import _self_heal_model
+        model = self._make_model([
+            {'name': 'Status', 'dataType': 'String', 'sourceColumn': 'Status'},
+            {'name': 'Status', 'dataType': 'String', 'sourceColumn': 'Status2'},
+        ])
+        repairs = _self_heal_model(model)
+        self.assertGreaterEqual(repairs, 1)
+        names = [c['name'] for c in model['model']['tables'][0]['columns']]
+        self.assertEqual(len(names), len(set(names)), "Column names should be unique")
+        self.assertIn('Status', names)
+        self.assertIn('Status_2', names)
+
+    def test_no_duplicates_untouched(self):
+        from powerbi_import.tmdl_generator import _self_heal_model
+        model = self._make_model([
+            {'name': 'A', 'dataType': 'String', 'sourceColumn': 'A'},
+            {'name': 'B', 'dataType': 'Int64', 'sourceColumn': 'B'},
+        ])
+        repairs = _self_heal_model(model)
+        names = [c['name'] for c in model['model']['tables'][0]['columns']]
+        self.assertEqual(names, ['A', 'B'])
+
+
+class TestSelfHealEmptyTables(unittest.TestCase):
+    """Check 10 — tables with zero columns."""
+
+    def test_empty_table_with_measures_gets_placeholder(self):
+        from powerbi_import.tmdl_generator import _self_heal_model
+        model = {
+            'model': {
+                'tables': [
+                    {'name': 'Facts', 'columns': [
+                        {'name': 'ID', 'dataType': 'Int64'}
+                    ], 'measures': [], 'partitions': []},
+                    {'name': 'KPIs', 'columns': [], 'measures': [
+                        {'name': 'Total', 'expression': 'SUM(Facts[ID])'}
+                    ], 'partitions': []},
+                ],
+                'relationships': [],
+            }
+        }
+        repairs = _self_heal_model(model)
+        self.assertGreaterEqual(repairs, 1)
+        kpi_table = model['model']['tables'][1]
+        self.assertEqual(len(kpi_table['columns']), 1)
+        self.assertEqual(kpi_table['columns'][0]['name'], '_Placeholder')
+        self.assertTrue(kpi_table['columns'][0].get('isHidden'))
+
+    def test_empty_table_no_measures_removed(self):
+        from powerbi_import.tmdl_generator import _self_heal_model
+        model = {
+            'model': {
+                'tables': [
+                    {'name': 'Facts', 'columns': [
+                        {'name': 'ID', 'dataType': 'Int64'}
+                    ], 'measures': [], 'partitions': []},
+                    {'name': 'Empty', 'columns': [], 'measures': [],
+                     'partitions': []},
+                ],
+                'relationships': [
+                    {'fromTable': 'Facts', 'fromColumn': 'ID',
+                     'toTable': 'Empty', 'toColumn': 'ID'},
+                ],
+            }
+        }
+        repairs = _self_heal_model(model)
+        self.assertGreaterEqual(repairs, 1)
+        table_names = [t['name'] for t in model['model']['tables']]
+        self.assertNotIn('Empty', table_names)
+        # Relationship to removed table should also be removed
+        for r in model['model']['relationships']:
+            self.assertNotEqual(r.get('toTable'), 'Empty')
+
+
+class TestSelfHealMissingRelationshipEndpoints(unittest.TestCase):
+    """Check 11 — relationships referencing non-existent tables/columns."""
+
+    def test_missing_table_relationship_removed(self):
+        from powerbi_import.tmdl_generator import _self_heal_model
+        model = {
+            'model': {
+                'tables': [
+                    {'name': 'Orders', 'columns': [
+                        {'name': 'CustID', 'dataType': 'Int64'}
+                    ], 'measures': [], 'partitions': []},
+                ],
+                'relationships': [
+                    {'fromTable': 'Orders', 'fromColumn': 'CustID',
+                     'toTable': 'Customers', 'toColumn': 'ID'},
+                ],
+            }
+        }
+        repairs = _self_heal_model(model)
+        self.assertGreaterEqual(repairs, 1)
+        self.assertEqual(len(model['model']['relationships']), 0)
+
+    def test_missing_column_relationship_removed(self):
+        from powerbi_import.tmdl_generator import _self_heal_model
+        model = {
+            'model': {
+                'tables': [
+                    {'name': 'Orders', 'columns': [
+                        {'name': 'ID', 'dataType': 'Int64'}
+                    ], 'measures': [], 'partitions': []},
+                    {'name': 'Items', 'columns': [
+                        {'name': 'ItemID', 'dataType': 'Int64'}
+                    ], 'measures': [], 'partitions': []},
+                ],
+                'relationships': [
+                    {'fromTable': 'Orders', 'fromColumn': 'OrderKey',
+                     'toTable': 'Items', 'toColumn': 'ItemID'},
+                ],
+            }
+        }
+        repairs = _self_heal_model(model)
+        self.assertGreaterEqual(repairs, 1)
+        self.assertEqual(len(model['model']['relationships']), 0)
+
+    def test_valid_relationship_kept(self):
+        from powerbi_import.tmdl_generator import _self_heal_model
+        model = {
+            'model': {
+                'tables': [
+                    {'name': 'Orders', 'columns': [
+                        {'name': 'CustID', 'dataType': 'Int64'}
+                    ], 'measures': [], 'partitions': []},
+                    {'name': 'Customers', 'columns': [
+                        {'name': 'CustID', 'dataType': 'Int64'}
+                    ], 'measures': [], 'partitions': []},
+                ],
+                'relationships': [
+                    {'fromTable': 'Orders', 'fromColumn': 'CustID',
+                     'toTable': 'Customers', 'toColumn': 'CustID'},
+                ],
+            }
+        }
+        repairs = _self_heal_model(model)
+        self.assertEqual(len(model['model']['relationships']), 1)
+
+
+class TestSelfHealEmptyMeasures(unittest.TestCase):
+    """Check 12 — measures with empty expressions."""
+
+    def test_empty_expression_removed(self):
+        from powerbi_import.tmdl_generator import _self_heal_model
+        model = {
+            'model': {
+                'tables': [{
+                    'name': 'T', 'columns': [
+                        {'name': 'ID', 'dataType': 'Int64'}
+                    ],
+                    'measures': [
+                        {'name': 'Good', 'expression': 'SUM(T[ID])'},
+                        {'name': 'Bad', 'expression': ''},
+                        {'name': 'Blank', 'expression': '   '},
+                    ],
+                    'partitions': [],
+                }],
+                'relationships': [],
+            }
+        }
+        repairs = _self_heal_model(model)
+        self.assertGreaterEqual(repairs, 2)  # Bad + Blank
+        measure_names = [m['name'] for m in model['model']['tables'][0]['measures']]
+        self.assertIn('Good', measure_names)
+        self.assertNotIn('Bad', measure_names)
+        self.assertNotIn('Blank', measure_names)
+
+
+class TestSelfHealCrossTableBrokenRefs(unittest.TestCase):
+    """Check 13 — cross-table DAX references to non-existent tables/columns."""
+
+    def test_nonexistent_table_ref_hidden(self):
+        from powerbi_import.tmdl_generator import _self_heal_model
+        model = {
+            'model': {
+                'tables': [{
+                    'name': 'Sales',
+                    'columns': [{'name': 'Amount', 'dataType': 'Double'}],
+                    'measures': [
+                        {'name': 'Total', 'expression': "SUM('Ghost'[Value])"},
+                    ],
+                    'partitions': [],
+                }],
+                'relationships': [],
+            }
+        }
+        repairs = _self_heal_model(model)
+        self.assertGreaterEqual(repairs, 1)
+        m = model['model']['tables'][0]['measures'][0]
+        self.assertTrue(m.get('isHidden'))
+
+    def test_nonexistent_column_ref_hidden(self):
+        from powerbi_import.tmdl_generator import _self_heal_model
+        model = {
+            'model': {
+                'tables': [
+                    {'name': 'Sales',
+                     'columns': [{'name': 'Amount', 'dataType': 'Double'}],
+                     'measures': [
+                         {'name': 'Ratio', 'expression': "DIVIDE('Sales'[Amount], 'Sales'[Missing])"},
+                     ],
+                     'partitions': []},
+                ],
+                'relationships': [],
+            }
+        }
+        repairs = _self_heal_model(model)
+        self.assertGreaterEqual(repairs, 1)
+        m = model['model']['tables'][0]['measures'][0]
+        self.assertTrue(m.get('isHidden'))
+
+    def test_valid_cross_table_ref_untouched(self):
+        from powerbi_import.tmdl_generator import _self_heal_model
+        model = {
+            'model': {
+                'tables': [
+                    {'name': 'Sales',
+                     'columns': [{'name': 'CustID', 'dataType': 'Int64'}],
+                     'measures': [
+                         {'name': 'CustCount', 'expression': "DISTINCTCOUNT('Customers'[CustID])"},
+                     ],
+                     'partitions': []},
+                    {'name': 'Customers',
+                     'columns': [{'name': 'CustID', 'dataType': 'Int64'}],
+                     'measures': [],
+                     'partitions': []},
+                ],
+                'relationships': [],
+            }
+        }
+        _self_heal_model(model)
+        m = model['model']['tables'][0]['measures'][0]
+        self.assertFalse(m.get('isHidden', False))
 
 
 if __name__ == '__main__':
