@@ -2044,15 +2044,23 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
             column_name_counts[original_col_name] = 0
             unique_col_name = original_col_name
 
+        # Determine data type — prefer DS-level metadata over table-level
+        # because Tableau's datasource XML carries the semantic type override
+        # (e.g. a hyper column typed 'string' may actually be 'real' in the DS).
+        col_meta = col_metadata_map.get(unique_col_name, col_metadata_map.get(col.get('name', ''), {}))
+        col_datatype = col.get('datatype', 'string')
+        ds_datatype = col_meta.get('datatype', '')
+        if ds_datatype and ds_datatype != col_datatype:
+            col_datatype = ds_datatype
+
         bim_column = {
             "name": unique_col_name,
-            "dataType": map_tableau_to_powerbi_type(col.get('datatype', 'string')),
+            "dataType": map_tableau_to_powerbi_type(col_datatype),
             "sourceColumn": col.get('name', 'Column'),
             "summarizeBy": "none"
         }
 
         # Apply metadata (hidden, semantic_role, description)
-        col_meta = col_metadata_map.get(unique_col_name, col_metadata_map.get(col.get('name', ''), {}))
         if col_meta.get('hidden', False):
             bim_column["isHidden"] = True
         if col_meta.get('description', ''):
