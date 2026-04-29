@@ -2017,13 +2017,20 @@ class PowerBIProjectGenerator:
         # report (Entity references) match the semantic model exactly.
         rename_map = getattr(self, '_table_rename_map', {})
         best_tables = {}
-        # Build ds_table_map ONLY from rename_map entries — these are
+        # Build ds_table_map from rename_map entries — these are
         # datasources whose tables got renamed due to cross-datasource
-        # collision.  Single-datasource workbooks (or datasources without
-        # renames) must NOT appear here to avoid overriding correct
-        # multi-table entity resolution within a datasource.
+        # collision.  Also includes the primary (un-renamed) datasource.
         self._ds_table_map = {ds_name: new_name
                               for (ds_name, _orig), new_name in rename_map.items()}
+        # Build collision_tables: the set of table names involved in
+        # cross-datasource name collisions (original + all renamed variants).
+        # Used to scope the entity override — only fields resolving to a
+        # collision table get overridden, leaving multi-table datasources
+        # (like Salesforce) unaffected.
+        _collision_originals = {orig for (_ds, orig) in rename_map}
+        self._collision_tables = set(_collision_originals)
+        for new_name in rename_map.values():
+            self._collision_tables.add(new_name)
         for ds in datasources:
             ds_name = ds.get('name', '')
             tables = ds.get('tables', [])
@@ -2050,7 +2057,19 @@ class PowerBIProjectGenerator:
                 actual_name = rename_map.get((ds_name, tname), tname)
                 if actual_name not in best_tables or len(table.get('columns', [])) > len(best_tables[actual_name].get('columns', [])):
                     best_tables[actual_name] = table
-        
+
+        # Map primary (un-renamed) datasources to their original table.
+        # These DSes have tables matching collision names but no rename entry.
+        if _collision_originals:
+            for ds in datasources:
+                ds_name = ds.get('name', '')
+                if ds_name and ds_name not in self._ds_table_map:
+                    for table in ds.get('tables', []):
+                        tname = table.get('name', '')
+                        if tname in _collision_originals:
+                            self._ds_table_map[ds_name] = tname
+                            break
+
         # Phase 2: Identify the main table (the one with the most columns)
         main_table = None
         max_cols = 0
@@ -2723,10 +2742,10 @@ class PowerBIProjectGenerator:
 
         # Override entity for multi-datasource renamed tables
         ds_ref = field.get('datasource', '')
-        if ds_ref and hasattr(self, '_ds_table_map') and ds_ref in self._ds_table_map:
+        collision = getattr(self, '_collision_tables', set())
+        if ds_ref and entity in collision and hasattr(self, '_ds_table_map') and ds_ref in self._ds_table_map:
             ds_entity = self._ds_table_map[ds_ref]
-            main = getattr(self, '_main_table', 'Table')
-            if ds_entity != entity and entity == main:
+            if ds_entity != entity:
                 entity = ds_entity
 
         is_bim_measure = hasattr(self, '_bim_measure_names') and (
@@ -2800,14 +2819,13 @@ class PowerBIProjectGenerator:
         # was renamed (multi-datasource collision).  The field's 'datasource'
         # attribute tells us which Tableau datasource it belongs to, and
         # _ds_table_map resolves that to the correct (possibly renamed) table.
-        # Only override when the entity resolved to the main table (default),
-        # to avoid incorrectly overriding correct multi-table resolution
-        # within a single datasource.
+        # Override when entity is in the collision group — ambiguous columns
+        # shared across renamed tables need datasource-based disambiguation.
         ds_ref = field.get('datasource', '')
-        if ds_ref and hasattr(self, '_ds_table_map') and ds_ref in self._ds_table_map:
+        collision = getattr(self, '_collision_tables', set())
+        if ds_ref and entity in collision and hasattr(self, '_ds_table_map') and ds_ref in self._ds_table_map:
             ds_entity = self._ds_table_map[ds_ref]
-            main = getattr(self, '_main_table', 'Table')
-            if ds_entity != entity and entity == main:
+            if ds_entity != entity:
                 entity = ds_entity
 
         shelf_agg = field.get('aggregation', '')
@@ -3060,13 +3078,14 @@ class PowerBIProjectGenerator:
         """
         clean = field_name.replace('[', '').replace(']', '')
         main = getattr(self, '_main_table', clean)
+        collision = getattr(self, '_collision_tables', set())
         if hasattr(self, '_field_map'):
             # Direct match
             if clean in self._field_map:
                 entity, prop = self._field_map[clean]
                 # Override entity for multi-datasource renamed tables —
-                # only when entity is the main table (fallback default)
-                if (datasource and entity == main
+                # only when entity is in the collision group (ambiguous)
+                if (datasource and entity in collision
                         and hasattr(self, '_ds_table_map')
                         and datasource in self._ds_table_map
                         and self._ds_table_map[datasource] != entity):
@@ -3076,7 +3095,7 @@ class PowerBIProjectGenerator:
             for prefix in ('attr:', ':'):
                 if clean.startswith(prefix) and clean[len(prefix):] in self._field_map:
                     entity, prop = self._field_map[clean[len(prefix):]]
-                    if (datasource and entity == main
+                    if (datasource and entity in collision
                             and hasattr(self, '_ds_table_map')
                             and datasource in self._ds_table_map
                             and self._ds_table_map[datasource] != entity):

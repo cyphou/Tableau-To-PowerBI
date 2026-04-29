@@ -2875,6 +2875,11 @@ def _detect_many_to_many(model, datasources):
         tname = table.get('name', '')
         table_col_counts[tname] = len(table.get('columns', []))
 
+    # Count Calendar relationships — when >1 table connects to Calendar,
+    # use bothDirections so Calendar acts as a shared dimension bridge.
+    _cal_rel_count = sum(1 for r in model['model']['relationships']
+                         if r.get('toTable') == 'Calendar')
+
     for rel in model['model']['relationships']:
         to_table = rel.get('toTable', '')
         to_col = rel.get('toColumn', '')
@@ -2917,8 +2922,14 @@ def _detect_many_to_many(model, datasources):
                 # Calendar.Date is guaranteed unique (generated table)
                 rel['fromCardinality'] = 'many'
                 rel['toCardinality'] = 'one'
-                rel['crossFilteringBehavior'] = 'oneDirection'
-                print(f"  ✓  Relation → '{to_table}.{to_col}' set to manyToOne (Calendar table).")
+                # Use bothDirections when multiple tables connect to Calendar
+                # so Calendar acts as a shared dimension bridge (star schema).
+                if _cal_rel_count > 1:
+                    rel['crossFilteringBehavior'] = 'bothDirections'
+                    print(f"  ✓  Relation → '{to_table}.{to_col}' set to manyToOne bothDirections (Calendar bridge).")
+                else:
+                    rel['crossFilteringBehavior'] = 'oneDirection'
+                    print(f"  ✓  Relation → '{to_table}.{to_col}' set to manyToOne (Calendar table).")
             else:
                 # Default to manyToMany — we cannot verify uniqueness without data
                 # PBI silently drops manyToOne relationships if the "one" side has duplicates
@@ -4839,6 +4850,7 @@ def _add_date_table(model):
     model["model"]["tables"].append(date_table)
 
     # Add relationships: Calendar[Date] -> each table's first date column
+    cal_candidates = []
     for t in model["model"]["tables"]:
         tname = t.get("name", "")
         if tname == "Calendar":
@@ -4847,15 +4859,23 @@ def _add_date_table(model):
             if col.get("dataType") == "DateTime" or col.get("dataCategory") == "DateTime":
                 date_col_name = col.get("name", "")
                 if date_col_name and not col.get("isCalculated", False):
-                    model["model"]["relationships"].append({
-                        "name": f"Calendar_{tname}_{date_col_name}",
-                        "fromTable": tname,
-                        "fromColumn": date_col_name,
-                        "toTable": "Calendar",
-                        "toColumn": "Date",
-                        "crossFilteringBehavior": "oneDirection"
-                    })
+                    cal_candidates.append((tname, date_col_name))
                     break  # one date column per table is enough
+
+    # When multiple tables connect to Calendar, use bothDirections so
+    # Calendar acts as a shared dimension that bridges cross-table
+    # filtering (star schema pattern).  This prevents
+    # InvalidUnconstrainedJoin errors in multi-datasource workbooks.
+    cross_dir = "bothDirections" if len(cal_candidates) > 1 else "oneDirection"
+    for tname, date_col_name in cal_candidates:
+        model["model"]["relationships"].append({
+            "name": f"Calendar_{tname}_{date_col_name}",
+            "fromTable": tname,
+            "fromColumn": date_col_name,
+            "toTable": "Calendar",
+            "toColumn": "Date",
+            "crossFilteringBehavior": cross_dir
+        })
 
 
 # ════════════════════════════════════════════════════════════════════
