@@ -3280,8 +3280,29 @@ class PowerBIProjectGenerator:
                 pbi_filter["filter"]["Where"].append({"Condition": condition})
                 
                 visual_filters.append(pbi_filter)
-        
-        return visual_filters
+
+        # Deduplicate by (Entity, Property) — PBI only allows one filter per
+        # field at each level.  Keep the first filter that has actual conditions
+        # (non-empty Where) so per-worksheet duplicates are collapsed.
+        seen_keys = {}
+        deduped = []
+        for flt in visual_filters:
+            col_info = flt.get('field', {}).get('Column', {})
+            entity = col_info.get('Expression', {}).get('SourceRef', {}).get('Entity', '')
+            prop = col_info.get('Property', '')
+            key = (entity, prop)
+            if key in seen_keys:
+                # Prefer filters with actual conditions over empty ones
+                prev_idx = seen_keys[key]
+                prev_where = deduped[prev_idx].get('filter', {}).get('Where', [])
+                cur_where = flt.get('filter', {}).get('Where', [])
+                if not prev_where and cur_where:
+                    deduped[prev_idx] = flt  # replace empty with substantive
+                continue
+            seen_keys[key] = len(deduped)
+            deduped.append(flt)
+
+        return deduped
     
     def _build_visual_objects(self, ws_name, ws_data, visual_type):
         """Builds visual objects (title, colors, labels, legend, axes).

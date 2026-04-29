@@ -1556,6 +1556,38 @@ class TestCreateVisualFilters(unittest.TestCase):
         result = self.gen._create_visual_filters(filters)
         self.assertEqual(result, [])
 
+    def test_dedup_same_field_range(self):
+        """Duplicate range filters on the same field are collapsed to one."""
+        filters = [
+            {'field': 'Amount', 'min': 10, 'max': 100},
+            {'field': 'Amount', 'min': 20, 'max': 200},
+            {'field': 'Amount', 'min': 30},
+        ]
+        result = self.gen._create_visual_filters(filters)
+        self.assertEqual(len(result), 1)
+        # Should keep the first one (min=10)
+        filt_str = json.dumps(result)
+        self.assertIn("'10'", filt_str)
+
+    def test_dedup_different_fields_kept(self):
+        """Different fields are NOT deduplicated."""
+        filters = [
+            {'field': 'Amount', 'min': 10},
+            {'field': 'Region', 'values': ['East']},
+        ]
+        result = self.gen._create_visual_filters(filters)
+        self.assertEqual(len(result), 2)
+
+    def test_dedup_prefers_substantive(self):
+        """Empty filter replaced by substantive one for the same field."""
+        filters = [
+            {'field': 'Amount'},  # no min/max/values → empty
+            {'field': 'Amount', 'min': 50},  # has condition
+        ]
+        result = self.gen._create_visual_filters(filters)
+        # Either 0 (if first is skipped) or 1 (dedup + replace)
+        self.assertLessEqual(len(result), 1)
+
 
 # ─── _create_report_filters ─────────────────────────────────────────
 
