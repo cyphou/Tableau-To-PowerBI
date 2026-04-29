@@ -154,7 +154,7 @@ def slide_title(prs):
 
     # Stats bar
     stats = [
-        ("6,818", "Tests Passed"),
+        ("7,099", "Tests Passed"),
         ("180+", "DAX Conversions"),
         ("118+", "Visual Types"),
         ("42", "Data Connectors"),
@@ -187,7 +187,7 @@ def slide_executive_summary(prs):
 
     layers = [
         ("📥 INPUT", "TWB / TWBX / TDS / Prep / Hyper / Server API", TABLEAU_ORANGE),
-        ("🔍 EXTRACT", "20 object types → 17 JSON intermediate files", PBI_BLUE),
+        ("🔍 EXTRACT", "17 object types → 17 JSON intermediate files", PBI_BLUE),
         ("🧮 CONVERT", "180+ DAX formulas • 43 M transforms • 42 connectors", PURPLE),
         ("⚙️ GENERATE", "TMDL semantic model • PBIR v4.0 report • themes", PBI_BLUE),
         ("🧠 OPTIMIZE", "DAX AST rewriter • Time Intelligence inject • auto-fix", TEAL),
@@ -305,7 +305,7 @@ def slide_pipeline(prs):
 
     # Output
     _add_box(slide, Inches(10.4), y, box_w, box_h, SUCCESS,
-             "📊 Power BI\n.pbip project\nOpen in PBI Desktop\n(Dec 2025+)", 14, WHITE, bold=True)
+             "📊 Power BI\n.pbip project\nOpen in PBI Desktop\n(March 2025+)", 14, WHITE, bold=True)
 
     # Optional deploy path
     _add_text(slide, Inches(10.4), Inches(3.8), Inches(2.5), Inches(0.5),
@@ -342,7 +342,7 @@ def slide_features(prs):
               "Key Features", 32, PBI_DARK, bold=True)
 
     features = [
-        ("🔄 Complete Extraction", "20 object types from .twb/.twbx\nPrep flows, Hyper files, Server API", PBI_BLUE),
+        ("🔄 Complete Extraction", "17 object types from .twb/.twbx\nPrep flows, Hyper files, Server API", PBI_BLUE),
         ("🧮 180+ DAX Conversions", "LOD, table calcs, RANK, WINDOW\ncross-table RELATED/LOOKUPVALUE", PURPLE),
         ("📊 118+ Visual Types", "Bar, line, map, treemap, Sankey\ncombo, gauge, word cloud, KPI", TEAL),
         ("🔌 42 Data Connectors", "SQL Server, Snowflake, BigQuery\nDatabricks, Oracle, Excel, CSV…", PBI_BLUE),
@@ -541,7 +541,7 @@ def slide_migration_results(prs):
         ("27/27", "Workbooks\nSucceeded", SUCCESS),
         ("0", "Failed", RGBColor(0xA4, 0x26, 0x2C)),
         ("100%", "Average\nFidelity", PBI_BLUE),
-        ("6,818", "Tests\nPassed", PURPLE),
+        ("7,099", "Tests\nPassed", PURPLE),
         ("0", "Test\nFailures", SUCCESS),
     ]
     card_w = Inches(2.2)
@@ -651,7 +651,7 @@ def slide_testing(prs):
     # CI steps
     ci_steps = [
         ("🔍 Lint\nflake8 + ruff", PURPLE),
-        ("🧪 Test\n6,818 tests\nPy 3.9–3.14", SUCCESS),
+        ("🧪 Test\n7,099 tests\nPy 3.12–3.14", SUCCESS),
         ("✅ Validate\nStrict .twbx\nmigrations", PBI_BLUE),
         ("📦 Staging\nFabric deploy", PBI_YELLOW),
         ("🚀 Production\nManual approval", RGBColor(0xEF, 0x44, 0x44)),
@@ -677,7 +677,7 @@ def slide_testing(prs):
         ("Visual Generator", "65 tests", "118+ types, sync, buttons"),
         ("Real-World E2E", "63 tests", "End-to-end sample migrations"),
         ("Automation", "64 tests", "Auto-fix, lineage, QA, governance"),
-        ("+ 134 more files", "6,017 tests", "Sprint, coverage, wizard, telemetry…"),
+        ("+ 134 more files", "6,400 tests", "Sprint, coverage, wizard, telemetry…"),
     ]
 
     _add_text(slide, Inches(0.5), Inches(3.0), Inches(4), Inches(0.5),

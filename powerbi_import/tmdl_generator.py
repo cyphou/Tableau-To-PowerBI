@@ -1174,6 +1174,8 @@ def _collect_semantic_context(datasources, extra_objects):
     """
     # Phase 1: Collect all physical tables and deduplicate
     best_tables = {}  # name -> (table_dict, connection_details)
+    table_ds_origin = {}  # table_name -> ds_name (datasource that first defined it)
+    table_rename_map = {}  # (ds_name, orig_table_name) -> new_table_name
     m_query_overrides = {}  # table_name -> complete M query (from Prep flows)
     all_calculations = []
     all_columns_metadata = []
@@ -1181,8 +1183,11 @@ def _collect_semantic_context(datasources, extra_objects):
     all_sets = []
     all_groups = []
     all_bins = []
+    _logger = logging.getLogger(__name__)
 
     for ds in datasources:
+        ds_name = ds.get('name', '')
+        ds_caption = ds.get('caption', ds_name)
         ds_connection = ds.get('connection', {})
         connection_map = ds.get('connection_map', {})
         calculations = ds.get('calculations', [])
@@ -1225,11 +1230,14 @@ def _collect_semantic_context(datasources, extra_objects):
                 conn_ref = table.get('connection', '')
                 table_conn = connection_map.get(conn_ref, ds_connection)
 
-            # Deduplicate: merge columns from all datasources sharing the same table name
+            # Deduplicate: merge columns only within the SAME datasource.
+            # Tables with the same name from DIFFERENT datasources get a
+            # datasource-prefixed name to avoid cross-datasource column mixing.
             if table_name not in best_tables:
                 best_tables[table_name] = (table, table_conn)
-            else:
-                # Merge columns: add any new columns not already present
+                table_ds_origin[table_name] = ds_name
+            elif table_ds_origin.get(table_name) == ds_name:
+                # Same datasource — merge columns (existing behavior)
                 existing_cols = best_tables[table_name][0].get('columns', [])
                 existing_names = {c.get('name', '') for c in existing_cols}
                 for col in table.get('columns', []):
@@ -1239,6 +1247,27 @@ def _collect_semantic_context(datasources, extra_objects):
                 # Keep the connection from the table with more columns originally
                 if col_count > len(existing_cols) - len(table.get('columns', [])):
                     best_tables[table_name] = (best_tables[table_name][0], table_conn)
+            else:
+                # Different datasource — create separate table to avoid
+                # mixing columns from unrelated data sources.
+                ds_label = ds_caption.replace('[', '').replace(']', '')
+                if ds_label == ds_name and ds_label.startswith('federated.'):
+                    ds_label = ds_label.replace('federated.', '', 1)[:8]
+                unique_name = f"{table_name} ({ds_label})"
+                counter = 2
+                while unique_name in best_tables:
+                    unique_name = f"{table_name} ({ds_label} {counter})"
+                    counter += 1
+                table_copy = dict(table)
+                table_copy['name'] = unique_name
+                best_tables[unique_name] = (table_copy, table_conn)
+                table_ds_origin[unique_name] = ds_name
+                table_rename_map[(ds_name, table_name)] = unique_name
+                _logger.info(
+                    "Table '%s' from datasource '%s' renamed to '%s' to avoid "
+                    "collision with same-named table from another datasource.",
+                    table_name, ds_caption, unique_name,
+                )
 
         # Collect Prep flow M query overrides
         ds_m_overrides = ds.get('m_query_overrides', {})
@@ -1334,10 +1363,12 @@ def _collect_semantic_context(datasources, extra_objects):
         role = calc.get('role', 'measure')
         formula = calc.get('formula', '').strip()
         has_agg = bool(_agg_pat_mn.search(formula)) if formula else False
-        # Tableau role='measure' means the formula is aggregated in view context
-        # (implicit SUM/COUNT).  Only dimension-role calcs without aggregation
-        # are calculated columns; measure-role calcs are always measures.
-        is_calc_col = (role == 'dimension' and not has_agg)
+        # A formula without aggregation that references columns (has [brackets])
+        # is a calculated column — it needs row context.  Tableau's role
+        # attribute is unreliable: role='measure' only means the field was
+        # placed on a measure shelf, not that the formula is aggregated.
+        has_col_brackets = bool(formula and '[' in formula)
+        is_calc_col = not has_agg and (role == 'dimension' or has_col_brackets)
         if not is_calc_col:
             measure_names.add(caption)
     measure_names.update(param_map.values())
@@ -1392,16 +1423,18 @@ def _collect_semantic_context(datasources, extra_objects):
         ds_col_map = {}
         for table in ds.get('tables', []):
             tname = table.get('name', 'Table1')
-            if tname in best_tables:
-                datasource_table_map[tname] = ds_name
+            # Use renamed table name if this DS caused a collision
+            actual_tname = table_rename_map.get((ds_name, tname), tname)
+            if actual_tname in best_tables:
+                datasource_table_map[actual_tname] = ds_name
                 # Track ALL datasources that own this table (for calculation routing)
-                if tname not in table_datasource_set:
-                    table_datasource_set[tname] = set()
-                table_datasource_set[tname].add(ds_name)
+                if actual_tname not in table_datasource_set:
+                    table_datasource_set[actual_tname] = set()
+                table_datasource_set[actual_tname].add(ds_name)
                 for col in table.get('columns', []):
                     cname = col.get('name', '')
                     if cname:
-                        ds_col_map[cname] = tname
+                        ds_col_map[cname] = actual_tname
         if ds_name:
             ds_column_table_map[ds_name] = ds_col_map
 
@@ -2088,11 +2121,10 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
             if not (_r in measure_names_ctx or _r in calc_map_ctx.values() or _r in calc_map_ctx):
                 _pc_has_col = True
                 break
-        # Dimension-role calcs without aggregation → pre-classify as calc columns.
-        # Measure-role calcs are always measures (Tableau's role='measure'
-        # means the formula is aggregated in view context — implicit SUM).
-        _pc_is_cc = (not _pc_is_literal) and (
-            _pc_role == 'dimension' and not _pc_has_agg
+        # A formula without aggregation that has physical column refs is a
+        # calculated column regardless of Tableau's role attribute.
+        _pc_is_cc = (not _pc_is_literal) and not _pc_has_agg and (
+            _pc_role == 'dimension' or _pc_has_col
         )
         if _pc_is_cc:
             prelim_calc_col_captions.add(_pc_caption)
@@ -2196,11 +2228,11 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
                 references_only_measures = False
                 break
 
-        is_calc_col = (not is_literal) and (
-            role == 'dimension' and not has_aggregation
+        is_calc_col = (not is_literal) and not has_aggregation and (
+            role == 'dimension' or has_column_refs
         )
 
-        # If a dimension-role calc references ONLY other measures/calcs
+        # If a calc references ONLY other measures/calcs
         # (no physical columns), it must be a measure — calc columns
         # cannot reference measures in DAX.
         if is_calc_col and not has_column_refs and references_only_measures:

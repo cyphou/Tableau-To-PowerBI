@@ -3175,7 +3175,7 @@ class PowerBIProjectGenerator:
                 condition = {
                     "In": {
                         "Expressions": [{"Column": {"Expression": {"SourceRef": {"Source": "t"}}, "Property": prop}}],
-                        "Values": [[{"Literal": {"Value": _pbi_literal(v)}}] for v in values[:100]]
+                        "Values": [[{"Literal": {"Value": _pbi_literal(v)}}] for v in values]
                     }
                 }
                 if is_exclude:
