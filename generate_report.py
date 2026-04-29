@@ -453,6 +453,10 @@ def generate_html(assessments, reports, metadata, lineage=None, pbi_validation=N
                 status = item.get("status", "")
                 src = esc(item.get("source_formula") or item.get("note") or "")
                 dax = esc(item.get("dax") or "")
+                # Suppress redundant DAX when identical to source
+                # (e.g. string-literal Tableau parameters / KPI metadata)
+                if dax and src and dax == src:
+                    dax = ""
                 short_rpt = rpt_name.split("\\")[-1] if "\\" in rpt_name else rpt_name
                 row = []
                 if show_report:
@@ -671,6 +675,8 @@ def generate_html(assessments, reports, metadata, lineage=None, pbi_validation=N
                     status = item.get("status", "")
                     src = esc(item.get("source_formula") or item.get("note") or "")
                     dax = esc(item.get("dax") or "")
+                    if dax and src and dax == src:
+                        dax = ""
                     rows.append([
                         f'<span class="tag tag-connector">{esc(item.get("category", ""))}</span>',
                         f'<strong>{esc(item.get("name", ""))}</strong>',

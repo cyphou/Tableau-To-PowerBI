@@ -720,3 +720,55 @@ class TestLineageHTMLReport:
                 html = f.read()
             assert 'Lineage Map' in html
             assert 'Orders' in html
+
+
+class TestReportDaxSuppression:
+    """DAX column suppressed when identical to source formula."""
+
+    def test_conv_rows_suppresses_identical_dax(self):
+        """generate_html _conv_rows suppresses DAX when it equals source."""
+        from generate_report import generate_html
+
+        reports = {
+            'Test': {
+                'items': [
+                    {
+                        'category': 'calculation',
+                        'name': 'KPI_Desc',
+                        'status': 'exact',
+                        'source_formula': '"Some description text"',
+                        'dax': '"Some description text"',
+                    },
+                    {
+                        'category': 'calculation',
+                        'name': 'Real Calc',
+                        'status': 'exact',
+                        'source_formula': 'SUM([Sales])',
+                        'dax': 'SUM([Sales])',
+                    },
+                    {
+                        'category': 'calculation',
+                        'name': 'Converted',
+                        'status': 'exact',
+                        'source_formula': 'COUNTD([Customer ID])',
+                        'dax': 'DISTINCTCOUNT([Customer ID])',
+                    },
+                ],
+                'summary': {'exact': 3, 'approximate': 0, 'unsupported': 0, 'skipped': 0},
+            }
+        }
+        # Note: generate_html signature is (assessments, reports, metadata, ...)
+        html = generate_html({}, reports, {})
+        # The identical string-literal and identical SUM should have DAX suppressed
+        assert 'DISTINCTCOUNT([Customer ID])' in html  # different DAX is shown
+        # Without suppression, identical source+dax renders twice per tab view
+        # (once in source col, once in dax col).
+        # With suppression, it only renders once per tab view (source col only).
+        src_count = html.count('Some description text')
+        # Also count how many times source formula appears for the DIFFERENT calc
+        countd_src = html.count('COUNTD([Customer ID])')
+        # Both source formulas should appear the same number of times (once per view)
+        assert src_count == countd_src, (
+            f"Identical-dax source and different-dax source should have "
+            f"same occurrence count: {src_count} vs {countd_src}"
+        )
