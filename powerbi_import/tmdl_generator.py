@@ -2216,6 +2216,15 @@ def _build_table(table, connection, calculations, columns_metadata, dax_context=
     table_name = table.get('name', 'Table1')
     columns = table.get('columns', [])
 
+    # Apply DS-level type overrides to columns BEFORE M query generation
+    # so that sample data in #table matches the BIM dataType.
+    for col in columns:
+        cname = col.get('name', '')
+        meta = col_metadata_map.get(cname, {})
+        ds_dt = meta.get('datatype', '')
+        if ds_dt and ds_dt != col.get('datatype', ''):
+            col['datatype'] = ds_dt
+
     # Generate M query: use Prep flow override if available, else generate from connection
     if m_query_override:
         m_query = m_query_override
