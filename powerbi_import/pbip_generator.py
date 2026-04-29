@@ -126,6 +126,38 @@ def _pbi_literal(v):
     return f"'{v_str}'"
 
 
+def _filter_literal(v, date_part_prefix='', boundary='min'):
+    """Convert a filter min/max value to a PBI literal.
+
+    Handles three cases:
+    - **Year-part prefix** (``yr:``): integer year → PBI datetime literal
+      for the start (Jan 1) or end (Dec 31) of that year.
+    - **Tableau date hash** (``#2001-12-07#``): → PBI datetime literal.
+    - **Other**: fall through to ``_pbi_literal()``.
+    """
+    v_str = str(v).strip()
+
+    # Tableau date literal: #YYYY-MM-DD# → datetime'...'
+    if v_str.startswith('#') and v_str.endswith('#'):
+        date_str = v_str.strip('#')
+        # Normalize to ISO datetime
+        if len(date_str) == 10:  # YYYY-MM-DD
+            return f"datetime'{date_str}T00:00:00'"
+        return f"datetime'{date_str}'"
+
+    # Year-part prefix (yr:) — convert integer year to date boundary
+    if date_part_prefix == 'yr':
+        try:
+            year = int(float(v_str))
+            if boundary == 'max':
+                return f"datetime'{year}-12-31T23:59:59'"
+            return f"datetime'{year}-01-01T00:00:00'"
+        except (ValueError, TypeError):
+            pass
+
+    return f"'{v_str}'"
+
+
 class PowerBIProjectGenerator:
     """Generates Power BI Project (.pbip) files"""
     
@@ -3131,6 +3163,12 @@ class PowerBIProjectGenerator:
                 _ds_part, _field_part = _col_m[0]
                 if not ds_ref:
                     ds_ref = _ds_part
+                # Detect date-part prefix before stripping
+                _date_part_prefix = ''
+                _dp_match = re.match(
+                    r'^(yr|mn|dy|qr|wk|md|mdy|hms|hr|mt|sc|trunc):', _field_part)
+                if _dp_match:
+                    _date_part_prefix = _dp_match.group(1)
                 # Strip derivation prefix (none:, sum:, attr:, etc.) and suffix (:nk, :qk, etc.)
                 clean_field = re.sub(
                     r'^(none|sum|avg|count|cnt|countd|min|max|usr|yr|mn|dy|qr|wk|attr|md|mdy|hms|hr|mt|sc|thr|trunc):',
@@ -3139,6 +3177,7 @@ class PowerBIProjectGenerator:
             else:
                 # Clean field name (remove Tableau brackets)
                 clean_field = field.replace('[', '').replace(']', '')
+                _date_part_prefix = ''
             
             # Skip Tableau virtual fields (no PBI column exists)
             if clean_field in skip_fields or field.replace('[', '').replace(']', '') in skip_fields:
@@ -3230,7 +3269,7 @@ class PowerBIProjectGenerator:
                         "Comparison": {
                             "ComparisonKind": 2,  # >=
                             "Left": {"Column": {"Expression": {"SourceRef": {"Source": "t"}}, "Property": prop}},
-                            "Right": {"Literal": {"Value": f"'{f['min']}'"}} 
+                            "Right": {"Literal": {"Value": _filter_literal(f['min'], _date_part_prefix, 'min')}}
                         }
                     })
                 if f.get('max') is not None:
@@ -3238,7 +3277,7 @@ class PowerBIProjectGenerator:
                         "Comparison": {
                             "ComparisonKind": 3,  # <=
                             "Left": {"Column": {"Expression": {"SourceRef": {"Source": "t"}}, "Property": prop}},
-                            "Right": {"Literal": {"Value": f"'{f['max']}'"}} 
+                            "Right": {"Literal": {"Value": _filter_literal(f['max'], _date_part_prefix, 'max')}}
                         }
                     })
                 if conditions:

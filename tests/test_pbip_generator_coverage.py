@@ -1588,6 +1588,35 @@ class TestCreateVisualFilters(unittest.TestCase):
         # Either 0 (if first is skipped) or 1 (dedup + replace)
         self.assertLessEqual(len(result), 1)
 
+    def test_year_part_range_uses_datetime_literal(self):
+        """yr: date-part prefix → datetime literal, not integer string."""
+        _init_field_map(self.gen, {'Year': ('Extract', 'Year')})
+        filters = [{
+            'field': '[ds].[yr:Year:qk]',
+            'min': '2000', 'max': '2012',
+            'filter_mode': 'range',
+        }]
+        result = self.gen._create_visual_filters(filters)
+        self.assertEqual(len(result), 1)
+        filt_str = json.dumps(result)
+        self.assertIn("datetime'2000-01-01T00:00:00'", filt_str)
+        self.assertIn("datetime'2012-12-31T23:59:59'", filt_str)
+        self.assertNotIn("'2000'", filt_str)
+
+    def test_tableau_date_hash_literal(self):
+        """Tableau #YYYY-MM-DD# → PBI datetime literal."""
+        _init_field_map(self.gen, {'Year': ('Extract', 'Year')})
+        filters = [{
+            'field': '[ds].[none:Year:qk]',
+            'min': '#2001-12-07#', 'max': '#2012-12-01#',
+            'filter_mode': 'range',
+        }]
+        result = self.gen._create_visual_filters(filters)
+        self.assertEqual(len(result), 1)
+        filt_str = json.dumps(result)
+        self.assertIn("datetime'2001-12-07T00:00:00'", filt_str)
+        self.assertIn("datetime'2012-12-01T00:00:00'", filt_str)
+
 
 # ─── _create_report_filters ─────────────────────────────────────────
 
