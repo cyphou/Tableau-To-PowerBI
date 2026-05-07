@@ -123,38 +123,67 @@ python -m pytest tests/test_dax_converter.py::TestDaxConverter::test_isnull_to_i
 
 ## Contribution Workflow
 
-### 1. Create a Branch
+We use a **fork-based** workflow. External contributors do not have write access to the main repository — all changes come through Pull Requests.
+
+### For External Contributors
+
+1. **Fork** the repository on GitHub (click the "Fork" button).
+
+2. **Clone your fork** locally:
+   ```bash
+   git clone https://github.com/<your-username>/TableauToPowerBI.git
+   cd TableauToPowerBI
+   ```
+
+3. **Add the upstream remote** (to stay in sync):
+   ```bash
+   git remote add upstream https://github.com/cyphou/Tableau-To-PowerBI.git
+   ```
+
+4. **Create a feature branch** from `main`:
+   ```bash
+   git fetch upstream
+   git checkout -b feature/your-feature-name upstream/main
+   ```
+
+5. **Make your changes**, following the coding standards above. Add tests for any new functionality and update documentation if adding new features.
+
+6. **Run the tests** — all existing tests must pass:
+   ```bash
+   python -m pytest tests/ -v
+   ```
+
+7. **Validate sample migrations**:
+   ```bash
+   python migrate.py --batch examples/tableau_samples/ --output-dir /tmp/test_output
+   ```
+
+8. **Push to your fork** and open a Pull Request against `main`:
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+
+9. **Open a Pull Request** on GitHub from your fork's branch to the upstream `main` branch. Provide a clear description, reference any related issues, and include before/after screenshots for visual changes.
+
+10. **Wait for review** — CI must pass (lint + tests) and at least one maintainer must approve before merge.
+
+### For Internal Contributors
+
+1. Create a branch directly on the repo:
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+2. Follow steps 5–10 above.
+
+### Keeping Your Fork in Sync
 
 ```bash
-git checkout -b feature/your-feature-name
+git fetch upstream
+git checkout main
+git merge upstream/main
+git push origin main
 ```
-
-### 2. Make Changes
-
-- Follow the coding standards above
-- Add tests for any new functionality
-- Update documentation if adding new features
-
-### 3. Run Tests
-
-```bash
-python -m unittest discover -s tests -v
-```
-
-All existing tests must pass. New features should include tests.
-
-### 4. Validate Sample Migrations
-
-```bash
-# Migrate all samples and validate
-python migrate.py --batch examples/tableau_samples/ --output-dir /tmp/test_output
-```
-
-### 5. Submit a Pull Request
-
-- Provide a clear description of the change
-- Reference any related issues
-- Include before/after screenshots for visual changes
 
 ## Areas for Contribution
 

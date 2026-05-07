@@ -1,0 +1,16 @@
+# Default owners for everything
+* @cyphou
+
+# Core pipeline
+migrate.py @cyphou
+tableau_export/ @cyphou
+powerbi_import/ @cyphou
+
+# Tests
+tests/ @cyphou
+
+# CI/CD and repo config
+.github/ @cyphou
+
+# Docs — reviewable by the team
+docs/ @cyphou
