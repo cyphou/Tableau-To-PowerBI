@@ -125,6 +125,24 @@ python -m pytest tests/test_dax_converter.py::TestDaxConverter::test_isnull_to_i
 
 We use a **fork-based** workflow. External contributors do not have write access to the main repository — all changes come through Pull Requests.
 
+```mermaid
+flowchart LR
+    A[Fork repo] --> B[Clone fork locally]
+    B --> C[Create feature branch]
+    C --> D[Make changes + tests]
+    D --> E[Push to your fork]
+    E --> F[Open Pull Request]
+    F --> G{CI passes?}
+    G -- No --> D
+    G -- Yes --> H{Review approved?}
+    H -- Changes requested --> D
+    H -- Yes --> I[Merge to main]
+```
+
+> **Access rights**: This repo is public — anyone can fork and open PRs.
+> No invitation or special permissions are needed to contribute.
+> Maintainers (`@cyphou`) review and merge all PRs.
+
 ### For External Contributors
 
 1. **Fork** the repository on GitHub (click the "Fork" button).
